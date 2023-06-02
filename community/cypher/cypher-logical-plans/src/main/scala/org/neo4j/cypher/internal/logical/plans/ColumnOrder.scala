@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-sealed trait ColumnOrder {
-  def id: String
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 
+sealed trait ColumnOrder {
+  def id: LogicalVariable
   def isAscending: Boolean
 }
 
-case class Ascending(id: String) extends ColumnOrder {
+case class Ascending(id: LogicalVariable) extends ColumnOrder {
   override def isAscending: Boolean = true
 }
 
-case class Descending(id: String) extends ColumnOrder {
+case class Descending(id: LogicalVariable) extends ColumnOrder {
   override def isAscending: Boolean = false
 }

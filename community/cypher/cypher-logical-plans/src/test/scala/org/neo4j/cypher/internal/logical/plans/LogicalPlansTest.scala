@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.True
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -42,10 +43,10 @@ class LogicalPlansTest extends CypherFunSuite {
      *      /   /  \
      *     p0  p2  p3
      */
-    val p0 = AllNodesScan("p0", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
     val p1 = Selection(List(True()(pos)), p0)
-    val p2 = AllNodesScan("p2", Set.empty)
-    val p3 = AllNodesScan("p3", Set.empty)
+    val p2 = AllNodesScan(varFor("p2"), Set.empty)
+    val p3 = AllNodesScan(varFor("p3"), Set.empty)
     val p4 = Apply(p2, p3)
     val p5 = Apply(p1, p4)
 
@@ -89,9 +90,9 @@ class LogicalPlansTest extends CypherFunSuite {
 
     implicit val idGen: IdGen = new SequentialIdGen
 
-    val p0 = AllNodesScan("p0", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
     val p1 = Selection(List(True()(pos)), p0)
-    val p2 = AllNodesScan("p2", Set.empty)
+    val p2 = AllNodesScan(varFor("p2"), Set.empty)
     val p3 = Apply(p1, p2)
 
     val foldedString =
@@ -104,8 +105,8 @@ class LogicalPlansTest extends CypherFunSuite {
 
     implicit val idGen: IdGen = new SequentialIdGen
 
-    val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p1", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
+    val p1 = AllNodesScan(varFor("p1"), Set.empty)
     val p2 = Selection(List(True()(pos)), p1)
     val p3 = Apply(p0, p2)
 
@@ -119,8 +120,8 @@ class LogicalPlansTest extends CypherFunSuite {
 
     implicit val idGen: IdGen = new SequentialIdGen
 
-    val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p1", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
+    val p1 = AllNodesScan(varFor("p1"), Set.empty)
     val p2 = Apply(p0, p1)
     val p3 = Selection(List(True()(pos)), p2)
 
@@ -133,8 +134,8 @@ class LogicalPlansTest extends CypherFunSuite {
   test("LogicalPlans.foldPlan: should map argument accumulator of apply") {
     implicit val idGen: IdGen = new SequentialIdGen
 
-    val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p1", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
+    val p1 = AllNodesScan(varFor("p1"), Set.empty)
     val p2 = Apply(p0, p1)
     val p3 = Selection(List(True()(pos)), p2)
 
@@ -159,8 +160,8 @@ class LogicalPlansTest extends CypherFunSuite {
   test("LogicalPlans.foldPlan: should not map argument accumulator of CartesianProduct") {
     implicit val idGen: IdGen = new SequentialIdGen
 
-    val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p1", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
+    val p1 = AllNodesScan(varFor("p1"), Set.empty)
     val p2 = CartesianProduct(p0, p1)
     val p3 = Selection(List(True()(pos)), p2)
 
@@ -183,8 +184,8 @@ class LogicalPlansTest extends CypherFunSuite {
 
     implicit val idGen: IdGen = new SequentialIdGen
 
-    val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p1", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
+    val p1 = AllNodesScan(varFor("p1"), Set.empty)
     val p2 = CartesianProduct(p0, p1)
     val p3 = Selection(List(True()(pos)), p2)
 
@@ -207,11 +208,11 @@ class LogicalPlansTest extends CypherFunSuite {
      *             /   \
      *            p3    p4
      */
-    val p0 = AllNodesScan("p0", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
     val p1 = Selection(List(True()(pos)), p0)
-    val p2 = AllNodesScan("p2", Set.empty)
-    val p3 = AllNodesScan("p3", Set.empty)
-    val p4 = AllNodesScan("p4", Set.empty)
+    val p2 = AllNodesScan(varFor("p2"), Set.empty)
+    val p3 = AllNodesScan(varFor("p3"), Set.empty)
+    val p4 = AllNodesScan(varFor("p4"), Set.empty)
     val p5 = CartesianProduct(p3, p4)
     val p6 = Apply(p2, p5)
     val p7 = Apply(p1, p6)
@@ -240,10 +241,10 @@ class LogicalPlansTest extends CypherFunSuite {
      *      /   /   \
      *     p0  p2   p3
      */
-    val p0 = AllNodesScan("p0", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
     val p1 = Selection(List(True()(pos)), p0)
-    val p2 = AllNodesScan("p2", Set.empty)
-    val p3 = AllNodesScan("p3", Set.empty)
+    val p2 = AllNodesScan(varFor("p2"), Set.empty)
+    val p3 = AllNodesScan(varFor("p3"), Set.empty)
     val p4 = CartesianProduct(p2, p3)
     val p5 = Apply(p1, p4)
 
@@ -281,11 +282,11 @@ class LogicalPlansTest extends CypherFunSuite {
      *      /   \      /    \
      *     p0   p1    p3    p4
      */
-    val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p1", Set.empty)
+    val p0 = AllNodesScan(varFor("p0"), Set.empty)
+    val p1 = AllNodesScan(varFor("p1"), Set.empty)
     val p2 = Apply(p0, p1)
-    val p3 = AllNodesScan("p3", Set.empty)
-    val p4 = AllNodesScan("p4", Set.empty)
+    val p3 = AllNodesScan(varFor("p3"), Set.empty)
+    val p4 = AllNodesScan(varFor("p4"), Set.empty)
     val p5 = Apply(p3, p4)
     val p6 = CartesianProduct(p2, p5)
     val p7 = Selection(List(True()(pos)), p6)

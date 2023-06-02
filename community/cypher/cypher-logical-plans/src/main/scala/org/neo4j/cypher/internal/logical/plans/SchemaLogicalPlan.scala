@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -35,7 +36,7 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlanExtension(idGe
 
   override def rhs: Option[LogicalPlan] = None
 
-  override val availableSymbols: Set[String] = Set.empty
+  override val availableSymbols: Set[LogicalVariable] = Set.empty
 }
 
 case class CreateConstraint(

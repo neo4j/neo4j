@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransitions
@@ -52,7 +54,11 @@ object NFABuilder {
   case class Transition(nfaPredicate: NFA.Predicate, end: State)
 
   def asVarName(name: String, groupVar: Boolean): VarName = {
-    if (groupVar) GroupVarName(name) else SingletonVarName(name)
+    if (groupVar) GroupVarName(varFor(name)) else SingletonVarName(varFor(name))
+  }
+
+  def asVarName(variable: LogicalVariable, groupVar: Boolean): VarName = {
+    if (groupVar) GroupVarName(variable) else SingletonVarName(variable)
   }
 }
 
@@ -124,7 +130,7 @@ class NFABuilder protected (_startState: State) {
   /**
    * To support TestNFABuilder.
    */
-  protected def getOrCreateState(id: Int, name: String, groupVar: Boolean): State = {
+  protected def getOrCreateState(id: Int, name: LogicalVariable, groupVar: Boolean): State = {
     StateImpl(id, states.getOrElseUpdate(id, asVarName(name, groupVar)))
   }
 

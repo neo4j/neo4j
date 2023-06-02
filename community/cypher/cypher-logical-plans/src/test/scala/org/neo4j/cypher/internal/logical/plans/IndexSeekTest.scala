@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
@@ -59,9 +60,9 @@ class IndexSeekTest extends CypherFunSuite {
     indexType: IndexType
   ): Boolean => NodeIndexSeekLeafPlan = { unique =>
     if (unique) {
-      NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder, indexType)
+      NodeUniqueIndexSeek(varFor(idName), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
     } else {
-      NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder, indexType)
+      NodeIndexSeek(varFor(idName), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
     }
   }
 
@@ -312,11 +313,11 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder, indexType) =>
       "b:Y(name ENDS WITH 'hi')" -> (_ =>
         NodeIndexEndsWithScan(
-          "b",
+          varFor("b"),
           label("Y"),
           prop("name", getValue("name"), NODE_TYPE),
           string("hi"),
-          args,
+          args.map(varFor),
           indexOrder,
           indexType
         )
@@ -334,10 +335,10 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder, indexType) =>
       "b:Y(name ENDS WITH 'hi', dogs = 1)" -> (_ =>
         NodeIndexScan(
-          "b",
+          varFor("b"),
           label("Y"),
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
-          args,
+          args.map(varFor),
           indexOrder,
           indexType
         )
@@ -345,11 +346,11 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder, indexType) =>
       "b:Y(name CONTAINS 'hi')" -> (_ =>
         NodeIndexContainsScan(
-          "b",
+          varFor("b"),
           label("Y"),
           prop("name", getValue("name"), NODE_TYPE),
           string("hi"),
-          args,
+          args.map(varFor),
           indexOrder,
           indexType
         )
@@ -367,25 +368,32 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder, indexType) =>
       "b:Y(name CONTAINS 'hi', dogs)" -> (_ =>
         NodeIndexScan(
-          "b",
+          varFor("b"),
           label("Y"),
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
-          args,
+          args.map(varFor),
           indexOrder,
           indexType
         )
       ),
     (getValue, args, indexOrder, indexType) =>
       "b:Y(name)" -> (_ =>
-        NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), args, indexOrder, indexType)
+        NodeIndexScan(
+          varFor("b"),
+          label("Y"),
+          Seq(prop("name", getValue("name"), NODE_TYPE)),
+          args.map(varFor),
+          indexOrder,
+          indexType
+        )
       ),
     (getValue, args, indexOrder, indexType) =>
       "b:Y(name, dogs)" -> (_ =>
         NodeIndexScan(
-          "b",
+          varFor("b"),
           label("Y"),
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
-          args,
+          args.map(varFor),
           indexOrder,
           indexType
         )
@@ -393,10 +401,10 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder, indexType) =>
       "b:Y(name, dogs = 3)" -> (_ =>
         NodeIndexScan(
-          "b",
+          varFor("b"),
           label("Y"),
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
-          args,
+          args.map(varFor),
           indexOrder,
           indexType
         )
@@ -407,48 +415,48 @@ class IndexSeekTest extends CypherFunSuite {
     : List[(String => GetValueFromIndexBehavior, Set[String], IndexOrder, IndexType) => (String, LogicalPlan)] = List(
     (getValue, args, indexOrder, indexType) =>
       "(a)-[r:R(prop = 1)]->(b)" -> DirectedRelationshipIndexSeek(
-        "r",
-        "a",
-        "b",
+        varFor("r"),
+        varFor("a"),
+        varFor("b"),
         typ("R"),
         Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)),
         exactInt(1),
-        args,
+        args.map(varFor),
         indexOrder,
         indexType
       ),
     (getValue, args, indexOrder, indexType) =>
       "(a)<-[r:R(prop = 1)]-(b)" -> DirectedRelationshipIndexSeek(
-        "r",
-        "b",
-        "a",
+        varFor("r"),
+        varFor("b"),
+        varFor("a"),
         typ("R"),
         Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)),
         exactInt(1),
-        args,
+        args.map(varFor),
         indexOrder,
         indexType
       ),
     (getValue, args, indexOrder, indexType) =>
       "(a)-[r:R(prop = 1)]-(b)" -> UndirectedRelationshipIndexSeek(
-        "r",
-        "a",
-        "b",
+        varFor("r"),
+        varFor("a"),
+        varFor("b"),
         typ("R"),
         Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)),
         exactInt(1),
-        args,
+        args.map(varFor),
         indexOrder,
         indexType
       ),
     (getValue, args, indexOrder, indexType) =>
       "(a)-[r:REL_ABC(id)]-(b)" -> UndirectedRelationshipIndexScan(
-        "r",
-        "a",
-        "b",
+        varFor("r"),
+        varFor("a"),
+        varFor("b"),
         typ("REL_ABC"),
         Seq(prop("id", getValue("id"), RELATIONSHIP_TYPE)),
-        args,
+        args.map(varFor),
         indexOrder,
         indexType
       )
@@ -504,7 +512,7 @@ class IndexSeekTest extends CypherFunSuite {
   test("custom value expression") {
     nodeIndexSeek("a:X(prop = ???)", paramExpr = Some(string("101"))) should be(
       NodeIndexSeek(
-        "a",
+        varFor("a"),
         label("X"),
         Seq(prop("prop", DoNotGetValue, NODE_TYPE)),
         exactString("101"),
@@ -518,7 +526,7 @@ class IndexSeekTest extends CypherFunSuite {
   test("custom query expression") {
     nodeIndexSeek("a:X(prop)", customQueryExpression = Some(exactInts(1, 2, 3))) should be(
       NodeIndexSeek(
-        "a",
+        varFor("a"),
         label("X"),
         Seq(prop("prop", DoNotGetValue, NODE_TYPE)),
         exactInts(1, 2, 3),

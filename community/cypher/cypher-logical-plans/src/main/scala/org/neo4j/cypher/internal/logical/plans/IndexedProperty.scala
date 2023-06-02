@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.EntityType
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.Variable
@@ -33,15 +34,17 @@ case class IndexedProperty(
 ) {
   def shouldGetValue: Boolean = getValueFromIndex == GetValue
 
-  def asCachedProperty(node: String): CachedProperty =
+  def asCachedProperty(node: String): CachedProperty = asCachedProperty(Variable(node)(InputPosition.NONE))
+
+  def asCachedProperty(node: LogicalVariable): CachedProperty =
     CachedProperty(
+      node.name,
       node,
-      Variable(node)(InputPosition.NONE),
       PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE),
       entityType
     )(InputPosition.NONE)
 
-  def maybeCachedProperty(entity: String): Option[CachedProperty] =
+  def maybeCachedProperty(entity: LogicalVariable): Option[CachedProperty] =
     if (shouldGetValue)
       Some(asCachedProperty(entity))
     else None

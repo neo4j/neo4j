@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
@@ -35,19 +36,19 @@ object NFA {
     private[plans] def expressionStringifier: ExpressionStringifier = ExpressionStringifier(_.asCanonicalStringVal)
 
     sealed trait VarName {
-      val name: String
+      val name: LogicalVariable
 
       def toDotString: String
     }
 
     object VarName {
 
-      case class SingletonVarName(name: String) extends VarName {
-        override def toDotString: String = name
+      case class SingletonVarName(name: LogicalVariable) extends VarName {
+        override def toDotString: String = name.name
       }
 
-      case class GroupVarName(name: String) extends VarName {
-        override def toDotString: String = s"<i>$name</i>"
+      case class GroupVarName(name: LogicalVariable) extends VarName {
+        override def toDotString: String = s"<i>${name.name}</i>"
       }
     }
   }
@@ -128,8 +129,8 @@ object NFA {
   final case class Transition[+P <: Predicate](predicate: P, end: State)
 
   /**
-   * The outgoing transitions of a state can either all have NodeJuxtapositionPredicates 
-   * or all have RelationshipExpansionPredicates. This trait is here to guarantee this in a type-safe way. 
+   * The outgoing transitions of a state can either all have NodeJuxtapositionPredicates
+   * or all have RelationshipExpansionPredicates. This trait is here to guarantee this in a type-safe way.
    */
   sealed trait Transitions {
     def transitions: Set[_ <: Transition[Predicate]]
@@ -161,15 +162,15 @@ case class NFA(
   finalStates: Set[State]
 ) {
 
-  def nodeNames: Set[String] = states.map(_.varName.name)
+  def nodeNames: Set[LogicalVariable] = states.map(_.varName.name)
 
-  def relationshipNames: Set[String] =
+  def relationshipNames: Set[LogicalVariable] =
     transitions.flatMap(_._2.transitions).map(_.predicate).collect {
       case RelationshipExpansionPredicate(relVarName, _, _, _, _) =>
         relVarName.name
     }.toSet
 
-  def availableSymbols: Set[String] = nodeNames ++ relationshipNames
+  def availableSymbols: Set[LogicalVariable] = nodeNames ++ relationshipNames
 
   /**
    * @return a DOT String to generate a graphviz. For example use

@@ -40,21 +40,23 @@ import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.SecurityAdministrationException
 
-abstract class AdministrationCommandLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit
-idGen: IdGen) extends LogicalPlanExtension(idGen) {
+abstract class AdministrationCommandLogicalPlan(
+  source: Option[AdministrationCommandLogicalPlan] = None
+)(implicit idGen: IdGen) extends LogicalPlanExtension(idGen) {
   override def lhs: Option[LogicalPlan] = source
 
   override def rhs: Option[LogicalPlan] = None
 
-  val returnColumns: List[String] = List.empty
+  val returnColumns: List[LogicalVariable] = List.empty
 
-  override val availableSymbols: Set[String] = returnColumns.toSet
+  override val availableSymbols: Set[LogicalVariable] = returnColumns.toSet
 
   def invalid(message: String): RuntimeException
 }
@@ -76,12 +78,16 @@ case class AllowedNonAdministrationCommands(statement: Statement)(implicit idGen
 // Security administration commands
 case class ShowUsers(
   source: PrivilegePlan,
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
-case class ShowCurrentUser(override val returnColumns: List[String], yields: Option[Yield], returns: Option[Return])(
+case class ShowCurrentUser(
+  override val returnColumns: List[LogicalVariable],
+  yields: Option[Yield],
+  returns: Option[Return]
+)(
   implicit idGen: IdGen
 ) extends SecurityAdministrationLogicalPlan(None)
 
@@ -121,7 +127,7 @@ case class ShowRoles(
   source: PrivilegePlan,
   withUsers: Boolean,
   showAll: Boolean,
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -342,7 +348,7 @@ case class AssertDbmsActionIsAssignable(
 )(implicit idGen: IdGen) extends PrivilegePlan(source)
 
 case class ShowSupportedPrivileges(
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(None)
@@ -350,7 +356,7 @@ case class ShowSupportedPrivileges(
 case class ShowPrivileges(
   source: Option[PrivilegePlan],
   scope: ShowPrivilegeScope,
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
@@ -359,7 +365,7 @@ case class ShowPrivilegeCommands(
   source: Option[PrivilegePlan],
   scope: ShowPrivilegeScope,
   asRevoke: Boolean,
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
@@ -416,7 +422,7 @@ case class EnsureDatabaseNodeExists(
 case class ShowDatabase(
   scope: DatabaseScope,
   verbose: Boolean,
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
@@ -500,7 +506,7 @@ case class ShowAliases(
   source: AdministrationCommandLogicalPlan,
   aliasName: Option[DatabaseName],
   verbose: Boolean,
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
@@ -555,7 +561,7 @@ case class DropServer(
 case class ShowServers(
   source: AdministrationCommandLogicalPlan,
   verbose: Boolean,
-  override val returnColumns: List[String],
+  override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan

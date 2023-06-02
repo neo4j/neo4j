@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class NestedPlanCollectExpression(
@@ -43,7 +45,7 @@ case class NestedPlanExistsExpression(
 
 case class NestedPlanGetByNameExpression(
   override val plan: LogicalPlan,
-  columnNameToGet: String,
+  columnNameToGet: LogicalVariable,
   // We cannot put the actual pattern expression in the case class, that would lead to endless recursion
   // while trying to rewrite such pattern expressions away.
   override val solvedExpressionAsString: String
@@ -84,5 +86,9 @@ object NestedPlanExpression {
     countVariableName: String,
     solvedExpression: Expression
   )(position: InputPosition): NestedPlanGetByNameExpression =
-    NestedPlanGetByNameExpression(plan, countVariableName, stringifier(solvedExpression))(position)
+    NestedPlanGetByNameExpression(
+      plan,
+      Variable(countVariableName)(InputPosition.NONE),
+      stringifier(solvedExpression)
+    )(position)
 }

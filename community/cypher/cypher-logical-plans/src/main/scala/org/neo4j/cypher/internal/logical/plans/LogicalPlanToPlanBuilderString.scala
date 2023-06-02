@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -36,26 +37,8 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.ir.CreateCommand
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.CreatePattern
-import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Reason
-import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetPropertyPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
-import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -67,6 +50,24 @@ import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
 import org.neo4j.cypher.internal.logical.plans.NFA.Transitions
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
+import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
+import org.neo4j.cypher.internal.logical.plans.create.CreateNode
+import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
+import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
+import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
+import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
+import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.graphdb.schema.IndexType
@@ -243,29 +244,29 @@ object LogicalPlanToPlanBuilderString {
   private def par(logicalPlan: LogicalPlan): String = {
     val plansWithContent: PartialFunction[LogicalPlan, String] = {
       case Aggregation(_, groupingExpressions, aggregationExpression) =>
-        s"Seq(${projectStrs(groupingExpressions)}), Seq(${projectStrs(aggregationExpression)})"
+        s"Seq(${projectVars(groupingExpressions)}), Seq(${projectVars(aggregationExpression)})"
       case OrderedAggregation(_, groupingExpressions, aggregationExpression, orderToLeverage) =>
-        s"Seq(${projectStrs(groupingExpressions)}), Seq(${projectStrs(aggregationExpression)}), Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))})"
+        s"Seq(${projectVars(groupingExpressions)}), Seq(${projectVars(aggregationExpression)}), Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))})"
       case Distinct(_, groupingExpressions) =>
-        projectStrs(groupingExpressions)
+        projectVars(groupingExpressions)
       case OrderedDistinct(_, groupingExpressions, orderToLeverage) =>
-        s""" Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))}), ${projectStrs(
+        s""" Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))}), ${projectVars(
             groupingExpressions
           )} """.trim
       case Projection(_, discardSymbols, projectExpressions) =>
         if (discardSymbols.isEmpty) {
-          projectStrs(projectExpressions)
+          projectVars(projectExpressions)
         } else {
-          val projectString = projectStrs(projectExpressions)
-          val discardString = wrapInQuotationsAndMkString(discardSymbols)
+          val projectString = projectVars(projectExpressions)
+          val discardString = wrapVarsInQuotationsAndMkString(discardSymbols)
           s"project = Seq($projectString), discard = Set($discardString)"
         }
       case UnwindCollection(_, variable, expression) =>
-        projectStrs(Map(variable -> expression))
+        projectVars(Map(variable -> expression))
       case AllNodesScan(idName, argumentIds) =>
-        wrapInQuotationsAndMkString(idName +: argumentIds.toSeq)
+        wrapVarsInQuotationsAndMkString(idName +: argumentIds.toSeq)
       case Argument(argumentIds) =>
-        wrapInQuotationsAndMkString(argumentIds.toSeq)
+        wrapVarsInQuotationsAndMkString(argumentIds.toSeq)
       case CacheProperties(_, properties) =>
         wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
       case Create(_, commands) =>
@@ -279,7 +280,7 @@ object LogicalPlanToPlanBuilderString {
 
         s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(
             ", "
-          )}), Seq(${onCreateString.mkString(", ")}), Set(${wrapInQuotationsAndMkString(nodesToLock)})"
+          )}), Seq(${onCreateString.mkString(", ")}), Set(${wrapVarsInQuotationsAndMkString(nodesToLock)})"
 
       case Foreach(_, variable, list, mutations) =>
         s"${wrapInQuotations(variable)}, ${wrapInQuotations(expressionStringifier(list))}, Seq(${mutations.map(mutationToString).mkString(", ")})"
@@ -287,7 +288,7 @@ object LogicalPlanToPlanBuilderString {
       case Expand(_, from, dir, types, to, relName, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
-        s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)" """.trim
+        s""" "(${from.name})$dirStrA[${relName.name}$typeStr]$dirStrB(${to.name})" """.trim
       case VarExpand(_, from, dir, pDir, types, to, relName, length, mode, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
@@ -296,7 +297,7 @@ object LogicalPlanToPlanBuilderString {
         val pDirStr = s", projectedDir = ${objectName(pDir)}"
         val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
         val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
-        s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$modeStr$pDirStr$nPredStr$rPredStr """.trim
+        s""" "(${from.name})$dirStrA[${relName.name}$typeStr*$lenStr]$dirStrB(${to.name})"$modeStr$pDirStr$nPredStr$rPredStr """.trim
 
       case PathPropagatingBFS(
           _,
@@ -317,7 +318,7 @@ object LogicalPlanToPlanBuilderString {
         val pDirStr = s", projectedDir = ${objectName(projectedDir)}"
         val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
         val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
-        s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$pDirStr$nPredStr$rPredStr """.trim
+        s""" "(${from.name})$dirStrA[${relName.name}$typeStr*$lenStr]$dirStrB(${to.name})"$pDirStr$nPredStr$rPredStr """.trim
 
       case FindShortestPaths(
           _,
@@ -351,7 +352,7 @@ object LogicalPlanToPlanBuilderString {
               else ", pathPredicates = Seq(" + wrapInQuotationsAndMkString(
                 pathPredicates.map(expressionStringifier(_))
               ) + ")"
-            s""" "($from)$dirStrA[$relName$typeStr$lenStr]$dirStrB($to)"$pNameStr$allStr$nPredStr$rPredStr$pPredStr$fbStr$dsnStr """.trim
+            s""" "(${from.name})$dirStrA[${relName.name}$typeStr$lenStr]$dirStrB(${to.name})"$pNameStr$allStr$nPredStr$rPredStr$pPredStr$fbStr$dsnStr """.trim
         }
       case LegacyFindShortestPaths(_, shortestPath, predicates, withFallBack, disallowSameNode) =>
         val fbStr = if (withFallBack) ", withFallback = true" else ""
@@ -373,7 +374,7 @@ object LogicalPlanToPlanBuilderString {
             val predStr =
               if (predicates.isEmpty) ""
               else ", predicates = Seq(" + wrapInQuotationsAndMkString(predicates.map(expressionStringifier(_))) + ")"
-            s""" "($from)$dirStrA[$relName$typeStr$lenStr]$dirStrB($to)"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
+            s""" "(${from.name})$dirStrA[${relName.name}$typeStr$lenStr]$dirStrB(${to.name})"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
         }
       case StatefulShortestPath(
           _,
@@ -400,7 +401,7 @@ object LogicalPlanToPlanBuilderString {
         val lenStr = s"$minLength..$maxLength"
         val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
         val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
-        s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
+        s""" "(${from.name})$dirStrA[$typeStr*$lenStr]$dirStrB(${to.name})"$nPredStr$rPredStr """.trim
       case BFSPruningVarExpand(
           _,
           from,
@@ -419,8 +420,8 @@ object LogicalPlanToPlanBuilderString {
         val lenStr = s"$minLength..$maxLength"
         val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
         val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
-        val depthNameStr = depthName.map(d => s""", depthName = Some("$d")""").getOrElse("")
-        s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr$depthNameStr """.trim
+        val depthNameStr = depthName.map(d => s""", depthName = Some("${d.name}")""").getOrElse("")
+        s""" "(${from.name})$dirStrA[$typeStr*$lenStr]$dirStrB(${to.name})"$nPredStr$rPredStr$depthNameStr """.trim
       case Limit(_, count) =>
         integerString(count)
       case ExhaustiveLimit(_, count) =>
@@ -428,7 +429,7 @@ object LogicalPlanToPlanBuilderString {
       case Skip(_, count) =>
         integerString(count)
       case NodeByLabelScan(idName, label, argumentIds, indexOrder) =>
-        val args = Seq(idName, label.name).map(wrapInQuotations) ++ Seq(objectName(indexOrder)) ++ argumentIds.map(
+        val args = Seq(idName.name, label.name).map(wrapInQuotations) ++ Seq(objectName(indexOrder)) ++ argumentIds.map(
           wrapInQuotations
         )
         args.mkString(", ")
@@ -449,20 +450,20 @@ object LogicalPlanToPlanBuilderString {
       case DirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds, indexOrder) =>
         val typeNames = types.map(l => l.name).mkString("|")
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
-        s""" "($start)-[$idName:$typeNames]->($end)", ${args.mkString(", ")} """.trim
+        s""" "(${start.name})-[${idName.name}:$typeNames]->(${end.name})", ${args.mkString(", ")} """.trim
 
       case UndirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds, indexOrder) =>
         val typeNames = types.map(l => l.name).mkString("|")
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
-        s""" "($start)-[$idName:$typeNames]-($end)", ${args.mkString(", ")} """.trim
+        s""" "(${start.name})-[${idName.name}:$typeNames]-(${end.name})", ${args.mkString(", ")} """.trim
 
       case Optional(_, protectedSymbols) =>
-        wrapInQuotationsAndMkString(protectedSymbols)
+        wrapVarsInQuotationsAndMkString(protectedSymbols)
       case OptionalExpand(_, from, dir, types, to, relName, _, predicate) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         val predStr = predicate.fold("")(p => s""", Some("${expressionStringifier(p)}")""")
-        s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)"$predStr""".trim
+        s""" "(${from.name})$dirStrA[${relName.name}$typeStr]$dirStrB(${to.name})"$predStr""".trim
       case ProcedureCall(
           _,
           ResolvedCall(
@@ -486,7 +487,7 @@ object LogicalPlanToPlanBuilderString {
             ", "
           )})$yielding" """.trim
       case ProduceResult(_, columns) =>
-        wrapInQuotationsAndMkString(columns.map(escapeIdentifier))
+        wrapInQuotationsAndMkString(columns.map(c => escapeIdentifier(c.name)))
       case ProjectEndpoints(_, relName, start, startInScope, end, endInScope, types, direction, length) =>
         val (dirStrA, dirStrB) = arrows(direction)
         val typeStr = relTypeStr(types)
@@ -494,58 +495,58 @@ object LogicalPlanToPlanBuilderString {
           case SimplePatternLength        => ""
           case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
         }
-        s""" "($start)$dirStrA[$relName$typeStr$lenStr]$dirStrB($end)", startInScope = $startInScope, endInScope = $endInScope """.trim
+        s""" "(${start.name})$dirStrA[${relName.name}$typeStr$lenStr]$dirStrB(${end.name})", startInScope = $startInScope, endInScope = $endInScope """.trim
       case ValueHashJoin(_, _, join) =>
         wrapInQuotations(expressionStringifier(join))
       case NodeHashJoin(nodes, _, _) =>
-        wrapInQuotationsAndMkString(nodes)
+        wrapVarsInQuotationsAndMkString(nodes)
       case RightOuterHashJoin(nodes, _, _) =>
-        wrapInQuotationsAndMkString(nodes)
+        wrapVarsInQuotationsAndMkString(nodes)
       case LeftOuterHashJoin(nodes, _, _) =>
-        wrapInQuotationsAndMkString(nodes)
+        wrapVarsInQuotationsAndMkString(nodes)
       case Sort(_, sortItems) =>
         sortItemsStr(sortItems)
       case Top(_, sortItems, limit) =>
         val siStr = sortItemsStr(sortItems)
         val lStr = integerString(limit)
-        s""" $siStr, $lStr """.trim
+        s""" $lStr, $siStr """.trim
       case Top1WithTies(_, sortItems) =>
         sortItemsStr(sortItems)
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength) =>
-        val asStr = sortItemsStr(alreadySortedPrefix)
-        val stsStr = sortItemsStr(stillToSortSuffix)
+        val asStr = sortItemsStrSeq(alreadySortedPrefix)
+        val stsStr = sortItemsStrSeq(stillToSortSuffix)
         val ssplStr = skipSortingPrefixLength.map(integerString) match {
           case Some(value) => s", $value"
           case None        => ""
         }
         s""" $asStr, $stsStr$ssplStr """.trim
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, skipSortingPrefixLength) =>
-        val asStr = sortItemsStr(alreadySortedPrefix)
-        val stsStr = sortItemsStr(stillToSortSuffix)
+        val asStr = sortItemsStrSeq(alreadySortedPrefix)
+        val stsStr = sortItemsStrSeq(stillToSortSuffix)
         val lStr = integerString(limit)
         val ssplStr = skipSortingPrefixLength.map(integerString) match {
           case Some(value) => s", $value"
           case None        => ""
         }
-        s""" $asStr, $stsStr, $lStr$ssplStr """.trim
+        s""" $lStr$ssplStr, $asStr, $stsStr """.trim
       case OrderedUnion(_, _, sortedColumns) =>
         sortItemsStr(sortedColumns)
       case ErrorPlan(_, exception) =>
         // This is by no means complete, but the best we can do.
         s"new ${exception.getClass.getSimpleName}()"
       case Input(nodes, rels, vars, nullable) =>
-        s""" Seq(${wrapInQuotationsAndMkString(nodes)}), Seq(${wrapInQuotationsAndMkString(
+        s""" Seq(${wrapVarsInQuotationsAndMkString(nodes)}), Seq(${wrapVarsInQuotationsAndMkString(
             rels
-          )}), Seq(${wrapInQuotationsAndMkString(vars)}), $nullable  """.trim
+          )}), Seq(${wrapVarsInQuotationsAndMkString(vars)}), $nullable  """.trim
       case RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds) =>
-        val args = if (argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
-        s""" "$idName", ${startLabel.map(l => wrapInQuotations(l.name))}, Seq(${wrapInQuotationsAndMkString(
+        val args = if (argumentIds.isEmpty) "" else ", " + wrapVarsInQuotationsAndMkString(argumentIds.toSeq)
+        s""" "${idName.name}", ${startLabel.map(l => wrapInQuotations(l.name))}, Seq(${wrapInQuotationsAndMkString(
             typeNames.map(_.name)
           )}), ${endLabel.map(l => wrapInQuotations(l.name))}$args """.trim
       case NodeCountFromCountStore(idName, labelNames, argumentIds) =>
-        val args = if (argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
+        val args = if (argumentIds.isEmpty) "" else ", " + wrapVarsInQuotationsAndMkString(argumentIds.toSeq)
         val labelStr = labelNames.map(_.map(l => wrapInQuotations(l.name)).toString).mkString(", ")
-        s""" "$idName", Seq($labelStr)$args """.trim
+        s""" "${idName.name}", Seq($labelStr)$args """.trim
       case DetachDeleteNode(_, expression) =>
         wrapInQuotations(expressionStringifier(expression))
       case DeleteRelationship(_, expression) =>
@@ -563,9 +564,9 @@ object LogicalPlanToPlanBuilderString {
       case SetProperty(_, entity, propertyKey, value) =>
         wrapInQuotationsAndMkString(Seq(expressionStringifier(entity), propertyKey.name, expressionStringifier(value)))
       case SetNodeProperty(_, idName, propertyKey, value) =>
-        wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
+        wrapInQuotationsAndMkString(Seq(idName.name, propertyKey.name, expressionStringifier(value)))
       case SetRelationshipProperty(_, idName, propertyKey, value) =>
-        wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
+        wrapInQuotationsAndMkString(Seq(idName.name, propertyKey.name, expressionStringifier(value)))
       case SetProperties(_, entity, items)             => setPropertiesParam(expressionStringifier(entity), items)
       case SetNodeProperties(_, entity, items)         => setPropertiesParam(entity, items)
       case SetRelationshipProperties(_, entity, items) => setPropertiesParam(entity, items)
@@ -574,17 +575,21 @@ object LogicalPlanToPlanBuilderString {
             Seq(expressionStringifier(idName), expressionStringifier(expression))
           )}, $removeOtherProps """.trim
       case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps """.trim
+        s""" ${wrapInQuotationsAndMkString(
+            Seq(idName.name, expressionStringifier(expression))
+          )}, $removeOtherProps """.trim
       case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps """.trim
+        s""" ${wrapInQuotationsAndMkString(
+            Seq(idName.name, expressionStringifier(expression))
+          )}, $removeOtherProps """.trim
       case Selection(ands, _) =>
         wrapInQuotationsAndMkString(ands.exprs.map(expressionStringifier(_)))
       case SelectOrSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
       case LetSelectOrSemiApply(_, _, idName, predicate) =>
-        wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
+        wrapInQuotationsAndMkString(Seq(idName.name, expressionStringifier(predicate)))
       case SelectOrAntiSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
       case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
-        wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
+        wrapInQuotationsAndMkString(Seq(idName.name, expressionStringifier(predicate)))
       case Trail(
           _,
           _,
@@ -644,44 +649,52 @@ object LogicalPlanToPlanBuilderString {
 
       case NodeByIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotations(idName)}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
+        s""" ${wrapInQuotations(idName)}, Set(${wrapVarsInQuotationsAndMkString(argumentIds)}), $idsString """.trim
       case NodeByElementIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotations(idName)}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
+        s""" ${wrapInQuotations(idName)}, Set(${wrapVarsInQuotationsAndMkString(argumentIds)}), $idsString """.trim
       case UndirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+        s""" ${wrapVarsInQuotationsAndMkString(
+            Seq(idName, leftNode, rightNode)
+          )}, Set(${wrapVarsInQuotationsAndMkString(
             argumentIds
           )}), $idsString """.trim
       case UndirectedRelationshipByElementIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+        s""" ${wrapVarsInQuotationsAndMkString(
+            Seq(idName, leftNode, rightNode)
+          )}, Set(${wrapVarsInQuotationsAndMkString(
             argumentIds
           )}), $idsString """.trim
       case DirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+        s""" ${wrapVarsInQuotationsAndMkString(
+            Seq(idName, leftNode, rightNode)
+          )}, Set(${wrapVarsInQuotationsAndMkString(
             argumentIds
           )}), $idsString """.trim
       case DirectedRelationshipByElementIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
-        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+        s""" ${wrapVarsInQuotationsAndMkString(
+            Seq(idName, leftNode, rightNode)
+          )}, Set(${wrapVarsInQuotationsAndMkString(
             argumentIds
           )}), $idsString """.trim
       case DirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
         val args = argumentIds.map(wrapInQuotations)
         val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
-        s""" "($start)-[$idName]->($end)"$argString """.trim
+        s""" "(${start.name})-[${idName.name}]->(${end.name})"$argString """.trim
       case UndirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
         val args = argumentIds.map(wrapInQuotations)
         val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
-        s""" "($start)-[$idName]-($end)"$argString """.trim
+        s""" "(${start.name})-[${idName.name}]-(${end.name})"$argString """.trim
       case DirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
-        s""" "($start)-[$idName:${typ.name}]->($end)", ${args.mkString(", ")} """.trim
+        s""" "(${start.name})-[${idName.name}:${typ.name}]->(${end.name})", ${args.mkString(", ")} """.trim
       case UndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
-        s""" "($start)-[$idName:${typ.name}]-($end)", ${args.mkString(", ")} """.trim
+        s""" "(${start.name})-[${idName.name}:${typ.name}]-(${end.name})", ${args.mkString(", ")} """.trim
       case NodeIndexScan(idName, labelToken, properties, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         nodeIndexOperator(
@@ -1132,25 +1145,26 @@ object LogicalPlanToPlanBuilderString {
       case RollUpApply(_, _, collectionName, variableToCollect) =>
         s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}"""
       case ForeachApply(_, _, variable, expression) =>
-        Seq(variable, expressionStringifier(expression)).map(wrapInQuotations).mkString(", ")
-      case ConditionalApply(_, _, items)     => wrapInQuotationsAndMkString(items)
-      case AntiConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
+        Seq(variable.name, expressionStringifier(expression)).map(wrapInQuotations).mkString(", ")
+      case ConditionalApply(_, _, items)     => wrapVarsInQuotationsAndMkString(items)
+      case AntiConditionalApply(_, _, items) => wrapVarsInQuotationsAndMkString(items)
       case LetSemiApply(_, _, idName)        => wrapInQuotations(idName)
       case LetAntiSemiApply(_, _, idName)    => wrapInQuotations(idName)
       case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
-        s"$positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, seenId, targetId))}"
+        s"$positivePredicate, ${wrapVarsInQuotationsAndMkString(Seq(sourceId, seenId, targetId))}"
       case TriadicBuild(_, sourceId, seenId, triadicSelectionId) =>
-        s"${triadicSelectionId.value.x}, ${wrapInQuotationsAndMkString(Seq(sourceId, seenId))}"
+        s"${triadicSelectionId.value.x}, ${wrapVarsInQuotationsAndMkString(Seq(sourceId, seenId))}"
       case TriadicFilter(_, positivePredicate, sourceId, targetId, triadicSelectionId) =>
-        s"${triadicSelectionId.value.x}, $positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, targetId))}"
+        s"${triadicSelectionId.value.x}, $positivePredicate, ${wrapVarsInQuotationsAndMkString(Seq(sourceId, targetId))}"
       case AssertSameNode(idName, _, _) =>
         wrapInQuotations(idName)
       case AssertSameRelationship(idName, _, _) =>
         wrapInQuotations(idName)
       case Prober(_, _) =>
         "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
-      case RemoveLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name).toSeq)
-      case SetLabels(_, idName, labelNames)    => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name).toSeq)
+      case RemoveLabels(_, idName, labelNames) =>
+        wrapInQuotationsAndMkString(idName.name +: labelNames.map(_.name).toSeq)
+      case SetLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName.name +: labelNames.map(_.name).toSeq)
       case LoadCSV(_, url, variableName, format, fieldTerminator, _, _) =>
         val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
         Seq(
@@ -1162,16 +1176,16 @@ object LogicalPlanToPlanBuilderString {
       case Eager(_, reasons) => reasons.map(eagernessReasonStr).mkString("ListSet(", ", ", ")")
       case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
         val params =
-          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.toSeq
+          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.map(_.name)
         params.mkString(", ")
       case TransactionApply(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
         val params =
-          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.toSeq
+          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.map(_.name)
         params.mkString(", ")
       case SimulatedNodeScan(idName, numberOfRows) =>
         s"${wrapInQuotations(idName)}, $numberOfRows"
       case SimulatedExpand(_, from, rel, to, factor) =>
-        s"${wrapInQuotationsAndMkString(Seq(from, rel, to))}, $factor"
+        s"${wrapInQuotationsAndMkString(Seq(from.name, rel.name, to.name))}, $factor"
       case SimulatedSelection(_, selectivity) =>
         s"$selectivity"
     }
@@ -1205,10 +1219,10 @@ object LogicalPlanToPlanBuilderString {
     val (patternString, groupVars) = nfaPredicate match {
       case NodeJuxtapositionPredicate(variablePredicate) =>
         val whereString = variablePredicate.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
-        val patternString = s""" "(${from.varName.name}) (${to.varName.name}$whereString)" """.trim
+        val patternString = s""" "(${from.varName.name.name}) (${to.varName.name.name}$whereString)" """.trim
         val groupVars = Set(
-          Option.when(from.varName.isInstanceOf[GroupVarName])(wrapInQuotations(from.varName.name)),
-          Option.when(to.varName.isInstanceOf[GroupVarName])(wrapInQuotations(to.varName.name))
+          Option.when(from.varName.isInstanceOf[GroupVarName])(wrapInQuotations(from.varName.name.name)),
+          Option.when(to.varName.isInstanceOf[GroupVarName])(wrapInQuotations(to.varName.name.name))
         ).flatten
         (patternString, groupVars)
       case RelationshipExpansionPredicate(relName, relPred, types, dir, nodePred) =>
@@ -1217,7 +1231,7 @@ object LogicalPlanToPlanBuilderString {
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         val patternString =
-          s""" "(${from.varName.name})$dirStrA[${relName.name}$typeStr$relWhereString]$dirStrB(${to.varName.name}$nodeWhereString)" """.trim
+          s""" "(${from.varName.name.name})$dirStrA[${relName.name.name}$typeStr$relWhereString]$dirStrB(${to.varName.name.name}$nodeWhereString)" """.trim
         val groupVars = Set(
           Option.when(from.varName.isInstanceOf[GroupVarName])(wrapInQuotations(from.varName.name)),
           Option.when(to.varName.isInstanceOf[GroupVarName])(wrapInQuotations(to.varName.name)),
@@ -1231,24 +1245,24 @@ object LogicalPlanToPlanBuilderString {
 
   private def trailParametersString(
     repetition: Repetition,
-    start: String,
-    end: String,
-    innerStart: String,
-    innerEnd: String,
+    start: LogicalVariable,
+    end: LogicalVariable,
+    innerStart: LogicalVariable,
+    innerEnd: LogicalVariable,
     groupNodes: Set[VariableGrouping],
     groupRelationships: Set[VariableGrouping],
-    innerRelationships: Set[String],
-    previouslyBoundRelationships: Set[String],
-    previouslyBoundRelationshipGroups: Set[String],
+    innerRelationships: Set[LogicalVariable],
+    previouslyBoundRelationships: Set[LogicalVariable],
+    previouslyBoundRelationshipGroups: Set[LogicalVariable],
     reverseGroupVariableProjections: Boolean
   ) = {
 
     val trailParameters =
-      s"""${repetition.min}, ${repetition.max}, "$start", "$end", "$innerStart", "$innerEnd", """ +
+      s"""${repetition.min}, ${repetition.max}, "${start.name}", "${end.name}", "${innerStart.name}", "${innerEnd.name}", """ +
         s"Set(${groupEntitiesString(groupNodes)}), Set(${groupEntitiesString(groupRelationships)}), " +
-        s"Set(${wrapInQuotationsAndMkString(innerRelationships)}), " +
-        s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationships)}), " +
-        s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationshipGroups)}), " +
+        s"Set(${wrapVarsInQuotationsAndMkString(innerRelationships)}), " +
+        s"Set(${wrapVarsInQuotationsAndMkString(previouslyBoundRelationships)}), " +
+        s"Set(${wrapVarsInQuotationsAndMkString(previouslyBoundRelationshipGroups)}), " +
         reverseGroupVariableProjections
 
     s"TrailParameters($trailParameters)"
@@ -1259,6 +1273,10 @@ object LogicalPlanToPlanBuilderString {
       case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
     }.mkString(", ")
     Seq(wrapInQuotations(entity), args).mkString(", ")
+  }
+
+  private def setPropertiesParam(entity: LogicalVariable, items: Seq[(PropertyKeyName, Expression)]): String = {
+    setPropertiesParam(entity.name, items)
   }
 
   private def queryExpressionStr(valueExpr: QueryExpression[Expression], propNames: Seq[String]): String = {
@@ -1319,18 +1337,18 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def nodeIndexOperator(
-    idName: String,
+    idName: LogicalVariable,
     labelToken: LabelToken,
     properties: Seq[IndexedProperty],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder,
     unique: Boolean,
     parenthesesContent: String,
     indexType: IndexType
   ): String = {
-    val indexStr = s"$idName:${labelToken.name}($parenthesesContent)"
+    val indexStr = s"${idName.name}:${labelToken.name}($parenthesesContent)"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
-    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val argStr = s", argumentIds = Set(${wrapVarsInQuotationsAndMkString(argumentIds)})"
     val uniqueStr = s", unique = $unique"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
 
@@ -1340,12 +1358,12 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def relationshipIndexOperator(
-    idName: String,
-    start: String,
-    end: String,
+    idName: LogicalVariable,
+    start: LogicalVariable,
+    end: LogicalVariable,
     typeToken: RelationshipTypeToken,
     properties: Seq[IndexedProperty],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder,
     directed: Boolean,
     unique: Boolean,
@@ -1353,9 +1371,9 @@ object LogicalPlanToPlanBuilderString {
     indexType: IndexType
   ): String = {
     val rarrow = if (directed) "->" else "-"
-    val indexStr = s"($start)-[$idName:${typeToken.name}($parenthesesContent)]$rarrow($end)"
+    val indexStr = s"(${start.name})-[${idName.name}:${typeToken.name}($parenthesesContent)]$rarrow(${end.name})"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
-    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val argStr = s", argumentIds = Set(${wrapVarsInQuotationsAndMkString(argumentIds)})"
     val uniqueStr = s", unique = $unique"
 
     val getValueBehaviors = indexedPropertyGetValueBehaviors(properties)
@@ -1371,40 +1389,42 @@ object LogicalPlanToPlanBuilderString {
     }.mkString("Map(", ", ", ")")
   }
 
-  private def createCreateCommandToString(create: CreateCommand) = create match {
+  private def createCreateCommandToString(create: CreateEntity) = create match {
     case c: CreateNode         => createNodeToString(c)
     case c: CreateRelationship => createRelationshipToString(c)
   }
 
   private def createNodeToString(createNode: CreateNode) = createNode match {
     case CreateNode(idName, labels, None) =>
-      s"createNode(${wrapInQuotationsAndMkString(idName +: labels.map(_.name).toSeq)})"
+      s"createNode(${wrapInQuotationsAndMkString(idName.name +: labels.map(_.name).toSeq)})"
     case CreateNode(idName, labels, Some(props)) =>
-      s"createNodeWithProperties(${wrapInQuotations(idName)}, Seq(${wrapInQuotationsAndMkString(labels.map(_.name))}), ${wrapInQuotations(expressionStringifier(props))})"
+      s"createNodeWithProperties(${wrapInQuotations(idName.name)}, Seq(${wrapInQuotationsAndMkString(labels.map(_.name))}), ${wrapInQuotations(expressionStringifier(props))})"
   }
 
   private def createRelationshipToString(rel: CreateRelationship) = {
     val propString = rel.properties.map(p => s", Some(${wrapInQuotations(expressionStringifier(p))})").getOrElse("")
-    s"createRelationship(${wrapInQuotationsAndMkString(Seq(rel.idName, rel.leftNode, rel.relType.name, rel.rightNode))}, ${rel.direction}$propString)"
+    s"createRelationship(${wrapInQuotationsAndMkString(
+        Seq(rel.variable.name, rel.leftNode.name, rel.relType.name, rel.rightNode.name)
+      )}, ${rel.direction}$propString)"
   }
 
   private def mutationToString(op: SimpleMutatingPattern): String = op match {
     case c: CreatePattern =>
       s"createPattern(Seq(${c.nodes.map(createNodeToString).mkString(", ")}), Seq(${c.relationships.map(createRelationshipToString).mkString(", ")}))"
-    case org.neo4j.cypher.internal.ir.DeleteExpression(expression, forced) =>
+    case org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(expression, forced) =>
       s"delete(${wrapInQuotations(expressionStringifier(expression))}, $forced)"
     case SetLabelPattern(node, labelNames) =>
-      s"setLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
+      s"setLabel(${wrapInQuotationsAndMkString(node.name +: labelNames.map(_.name))})"
     case RemoveLabelPattern(node, labelNames) =>
-      s"removeLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
+      s"removeLabel(${wrapInQuotationsAndMkString(node.name +: labelNames.map(_.name))})"
     case SetNodePropertyPattern(node, propertyKey, value) =>
-      s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node, propertyKey.name, expressionStringifier(value)))})"
+      s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node.name, propertyKey.name, expressionStringifier(value)))})"
     case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
-      s"setRelationshipProperty(${wrapInQuotationsAndMkString(Seq(relationship, propertyKey.name, expressionStringifier(value)))})"
+      s"setRelationshipProperty(${wrapInQuotationsAndMkString(Seq(relationship.name, propertyKey.name, expressionStringifier(value)))})"
     case SetNodePropertiesFromMapPattern(idName, expression, removeOtherProps) =>
-      s"setNodePropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
+      s"setNodePropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName.name, expressionStringifier(expression)))}, $removeOtherProps)"
     case SetRelationshipPropertiesFromMapPattern(idName, expression, removeOtherProps) =>
-      s"setRelationshipPropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
+      s"setRelationshipPropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName.name, expressionStringifier(expression)))}, $removeOtherProps)"
     case SetPropertyPattern(entityExpression, propertyKey, value) =>
       s"setProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), propertyKey.name, expressionStringifier(value)))})"
     case SetPropertiesFromMapPattern(entityExpression, map, removeOtherProps) =>
@@ -1418,19 +1438,19 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def pointDistanceNodeIndexSeek(
-    idName: String,
+    idName: LogicalVariable,
     labelToken: LabelToken,
     properties: Seq[IndexedProperty],
     point: Expression,
     distance: Expression,
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder,
     inclusive: Boolean,
     indexType: IndexType
   ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
-    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val argStr = s", argumentIds = Set(${wrapVarsInQuotationsAndMkString(argumentIds)})"
     val inclusiveStr = s", inclusive = $inclusive"
     val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
       (v1, v2) =>
@@ -1444,24 +1464,26 @@ object LogicalPlanToPlanBuilderString {
     }
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(
+    s""" "${idName.name}", "${labelToken.name}", "$propName", "${expressionStringifier(
+        point
+      )}", ${expressionStringifier(
         distance
       )}$indexOrderStr$argStr$getValueStr$inclusiveStr$indexTypeStr """.trim
   }
 
   private def pointBoundingBoxNodeIndexSeek(
-    idName: String,
+    idName: LogicalVariable,
     labelToken: LabelToken,
     properties: Seq[IndexedProperty],
     lowerLeft: Expression,
     upperRight: Expression,
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder,
     indexType: IndexType
   ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
-    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val argStr = s", argumentIds = Set(${wrapVarsInQuotationsAndMkString(argumentIds)})"
     val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
       (v1, v2) =>
         if (v1 == v2) {
@@ -1474,27 +1496,29 @@ object LogicalPlanToPlanBuilderString {
     }
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(lowerLeft)}", "${expressionStringifier(
+    s""" "${idName.name}", "${labelToken.name}", "$propName", "${expressionStringifier(
+        lowerLeft
+      )}", "${expressionStringifier(
         upperRight
       )}"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
   }
 
   private def pointBoundingBoxRelationshipIndexSeek(
-    idName: String,
-    start: String,
-    end: String,
+    idName: LogicalVariable,
+    start: LogicalVariable,
+    end: LogicalVariable,
     typeToken: RelationshipTypeToken,
     properties: Seq[IndexedProperty],
     lowerLeft: Expression,
     upperRight: Expression,
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder,
     indexType: IndexType,
     directed: Boolean
   ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
-    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val argStr = s", argumentIds = Set(${wrapVarsInQuotationsAndMkString(argumentIds)})"
     val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
       (v1, v2) =>
         if (v1 == v2) {
@@ -1508,20 +1532,20 @@ object LogicalPlanToPlanBuilderString {
     val directedString = s", directed = $directed"
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(
+    s""" "${idName.name}", "${start.name}", "${end.name}", "${typeToken.name}", "$propName", "${expressionStringifier(
         lowerLeft
       )}", "${expressionStringifier(upperRight)}"$directedString$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
   }
 
   private def pointDistanceRelationshipIndexSeek(
-    idName: String,
-    start: String,
-    end: String,
+    idName: LogicalVariable,
+    start: LogicalVariable,
+    end: LogicalVariable,
     typeToken: RelationshipTypeToken,
     properties: Seq[IndexedProperty],
     point: Expression,
     distance: Expression,
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder,
     indexType: IndexType,
     directed: Boolean,
@@ -1529,7 +1553,7 @@ object LogicalPlanToPlanBuilderString {
   ): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
-    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val argStr = s", argumentIds = Set(${wrapVarsInQuotationsAndMkString(argumentIds)})"
     val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
       (v1, v2) =>
         if (v1 == v2) {
@@ -1544,7 +1568,7 @@ object LogicalPlanToPlanBuilderString {
     val inclusiveStr = s", inclusive = $inclusive"
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(
+    s""" "${idName.name}", "${start.name}", "${end.name}", "${typeToken.name}", "$propName", "${expressionStringifier(
         point
       )}", ${expressionStringifier(
         distance
@@ -1573,10 +1597,16 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def sortItemsStr(sortItems: Seq[ColumnOrder]) = {
+    sortItems.map(sortItemStr).mkString(", ")
+  }
+
+  private def sortItemsStrSeq(sortItems: Seq[ColumnOrder]) = {
     sortItems.map(sortItemStr).mkString("Seq(", ", ", ")")
   }
 
-  private def sortItemStr(si: ColumnOrder): String = s""" ${si.getClass.getSimpleName}("${si.id}") """.trim
+  private def sortItemStr(si: ColumnOrder): String = {
+    s"\"${si.id.name} ${if (si.isAscending) "ASC" else "DESC"}\""
+  }
 
   def conflictStr(maybeConflict: Option[EagernessReason.Conflict]): String =
     maybeConflict match {
@@ -1622,18 +1652,26 @@ object LogicalPlanToPlanBuilderString {
     }
   }
 
-  private def projectStrs(map: Map[String, Expression]): String = wrapInQuotationsAndMkString(map.map {
+  private def projectStrs(map: Iterable[(String, Expression)]): String = wrapInQuotationsAndMkString(map.map {
     case (alias, expr) => s"${expressionStringifier(expr)} AS ${escapeIdentifier(alias)}"
   })
+
+  private def projectVars(map: Map[LogicalVariable, Expression]): String = {
+    projectStrs(map.view.map { case (key, e) => key.name -> e })
+  }
 
   private def escapeIdentifier(alias: String) = {
     if (alias.matches("\\w+")) alias else s"`$alias`"
   }
 
   private def wrapInQuotations(c: String): String = "\"" + c + "\""
+  private def wrapInQuotations(v: LogicalVariable): String = wrapInQuotations(v.name)
 
   private def wrapInQuotationsAndMkString(strings: Iterable[String]): String =
     strings.map(wrapInQuotations).mkString(", ")
+
+  private def wrapVarsInQuotationsAndMkString(vars: Iterable[LogicalVariable]): String =
+    vars.map(v => wrapInQuotations(v)).mkString(", ")
 
   private def objectName(obj: AnyRef): String = {
     val str = obj.getClass.getSimpleName

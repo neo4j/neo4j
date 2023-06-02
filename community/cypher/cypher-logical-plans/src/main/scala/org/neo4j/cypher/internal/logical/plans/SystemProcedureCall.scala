@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.values.virtual.MapValue
 
@@ -38,5 +39,5 @@ case class SystemProcedureCall(
 
   override def lhs: Option[LogicalPlan] = None
   override def rhs: Option[LogicalPlan] = None
-  override def availableSymbols: Set[String] = Set.empty
+  override def availableSymbols: Set[LogicalVariable] = Set.empty
 }

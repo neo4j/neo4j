@@ -36,15 +36,10 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CSVFormat
-import org.neo4j.cypher.internal.ir.CreateCommand
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternLength
-import org.neo4j.cypher.internal.ir.SetMutatingPattern
-import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
-import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -53,9 +48,14 @@ import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
+import org.neo4j.cypher.internal.logical.plans.create.CreateNode
+import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
+import org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern
+import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
@@ -92,24 +92,24 @@ case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {
 }
 
 sealed trait IndexUsage {
-  def identifier: String
+  def identifier: LogicalVariable
 }
 
 final case class SchemaLabelIndexUsage(
-  identifier: String,
+  identifier: LogicalVariable,
   labelId: Int,
   label: String,
   propertyTokens: Seq[PropertyKeyToken]
 ) extends IndexUsage
 
 final case class SchemaRelationshipIndexUsage(
-  identifier: String,
+  identifier: LogicalVariable,
   relTypeId: Int,
   relType: String,
   propertyTokens: Seq[PropertyKeyToken]
 ) extends IndexUsage
 
-final case class SchemaIndexLookupUsage(identifier: String, entityType: EntityType) extends IndexUsage
+final case class SchemaIndexLookupUsage(identifier: LogicalVariable, entityType: EntityType) extends IndexUsage
 
 trait IndexSeekNames {
   def PLAN_DESCRIPTION_INDEX_SCAN_NAME: String
@@ -146,7 +146,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
-  def availableSymbols: Set[String]
+  def availableSymbols: Set[LogicalVariable]
 
   override val id: Id = idGen.id()
 
@@ -260,7 +260,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
   }
 
   def satisfiesExpressionDependencies(e: Expression): Boolean =
-    e.dependencies.map(_.name).forall(availableSymbols.contains)
+    e.dependencies.forall(availableSymbols.contains)
 
   def debugId: String = f"0x$hashCode%08x"
 
@@ -304,8 +304,8 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 
 // Marker interface for all plans that aggregate inputs.
 sealed trait AggregatingPlan extends LogicalPlan {
-  def groupingExpressions: Map[String, Expression]
-  def aggregationExpressions: Map[String, Expression]
+  def groupingExpressions: Map[LogicalVariable, Expression]
+  def aggregationExpressions: Map[LogicalVariable, Expression]
 }
 
 // Marker interface for all plans that performs updates
@@ -315,7 +315,7 @@ sealed trait UpdatingPlan extends LogicalUnaryPlan {
 
 // Marker trait for relationship type scans
 sealed trait RelationshipTypeScan {
-  def idName: String
+  def idName: LogicalVariable
 }
 
 sealed abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
@@ -352,26 +352,26 @@ sealed abstract class LogicalUnaryPlan(idGen: IdGen) extends LogicalPlan(idGen) 
 sealed abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   final def lhs: Option[LogicalPlan] = None
   final def rhs: Option[LogicalPlan] = None
-  def argumentIds: Set[String]
+  def argumentIds: Set[LogicalVariable]
 
-  def usedVariables: Set[String]
+  def usedVariables: Set[LogicalVariable]
 
-  def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan
+  def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): LogicalLeafPlan
 }
 
 sealed abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
-  def idName: String
+  def idName: LogicalVariable
 }
 
 sealed abstract class RelationshipLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
-  def idName: String
-  def leftNode: String
-  def rightNode: String
+  def idName: LogicalVariable
+  def leftNode: LogicalVariable
+  def rightNode: LogicalVariable
   def directed: Boolean
 }
 
 sealed trait MultiEntityLogicalLeafPlan extends PhysicalPlanningPlan {
-  def idNames: Set[String]
+  def idNames: Set[LogicalVariable]
 }
 
 sealed trait IndexedPropertyProvidingPlan {
@@ -452,7 +452,7 @@ sealed abstract class RelationshipIndexSeekLeafPlan(idGen: IdGen) extends Relati
 
   def unique: Boolean
 
-  def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan
+  def withNewLeftAndRightNodes(leftNode: LogicalVariable, rightNode: LogicalVariable): RelationshipIndexSeekLeafPlan
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexSeekLeafPlan
 }
@@ -490,21 +490,21 @@ sealed trait ProjectingPlan extends LogicalUnaryPlan {
   /**
    * override def withLhs(newLHS: LogicalPlan): LogicalUnaryPlan = copy(source = newLHS)
    */
-  def projectExpressions: Map[String, Expression]
+  def projectExpressions: Map[LogicalVariable, Expression]
 
-  def aliases: Map[String, Expression] =
+  def aliases: Map[LogicalVariable, Expression] =
     projectExpressions.filter { case (_, expr) => expr.isInstanceOf[LogicalVariable] }
 
   /**
    * Columns from the source plan that can be discarded after this plan.
    */
-  def discardSymbols: Set[String] = Set.empty
+  def discardSymbols: Set[LogicalVariable] = Set.empty
 }
 
 sealed abstract class AbstractVarExpand(
-  val from: String,
+  val from: LogicalVariable,
   val types: Seq[RelTypeName],
-  val to: String,
+  val to: LogicalVariable,
   val nodePredicates: Seq[VariablePredicate],
   val relationshipPredicates: Seq[VariablePredicate],
   idGen: IdGen
@@ -526,24 +526,25 @@ object ApplyPlan {
   def unapply(applyPlan: ApplyPlan): Option[(LogicalPlan, LogicalPlan)] = Some((applyPlan.left, applyPlan.right))
 }
 
-sealed abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, val idName: String)(idGen: IdGen)
+sealed abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, val idName: LogicalVariable)(idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
   def expression: Expression
 
-  override val availableSymbols: Set[String] = left.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols + idName
 }
 
-sealed abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen)
+sealed abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: LogicalVariable)(implicit
+idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
-  override val availableSymbols: Set[String] = left.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols + idName
 }
 
 sealed abstract class AbstractSelectOrSemiApply(left: LogicalPlan)(idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
-  val availableSymbols: Set[String] = left.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols
 
   def expression: Expression
 }
@@ -551,7 +552,7 @@ sealed abstract class AbstractSelectOrSemiApply(left: LogicalPlan)(idGen: IdGen)
 sealed abstract class AbstractSemiApply(left: LogicalPlan)(idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
-  val availableSymbols: Set[String] = left.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols
 }
 
 /**
@@ -561,14 +562,14 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
 
   def defaultColumns: List[ShowColumn]
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): CommandLogicalPlan = this
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): CommandLogicalPlan = this
 
   // Always the first leaf plan, so arguments is always empty
-  override def argumentIds: Set[String] = Set.empty
+  override def argumentIds: Set[LogicalVariable] = Set.empty
 
-  override def availableSymbols: Set[String] = defaultColumns.map(_.variable.name).toSet
+  override def availableSymbols: Set[LogicalVariable] = defaultColumns.map(_.variable).toSet
 }
 
 /**
@@ -606,18 +607,18 @@ abstract class LogicalLeafPlanExtension(idGen: IdGen) extends LogicalLeafPlan(id
  */
 case class Aggregation(
   override val source: LogicalPlan,
-  override val groupingExpressions: Map[String, Expression],
-  override val aggregationExpressions: Map[String, Expression]
+  override val groupingExpressions: Map[LogicalVariable, Expression],
+  override val aggregationExpressions: Map[LogicalVariable, Expression]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val projectExpressions: Map[String, Expression] = groupingExpressions
+  override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
 
-  val groupingKeys: Set[String] = groupingExpressions.keySet
+  val groupingKeys: Set[LogicalVariable] = groupingExpressions.keySet
 
-  val availableSymbols: Set[String] = groupingKeys ++ aggregationExpressions.keySet
+  override val availableSymbols: Set[LogicalVariable] = groupingKeys ++ aggregationExpressions.keySet
 
 }
 
@@ -625,14 +626,14 @@ case class Aggregation(
  * Produce one row for every node in the graph. Each row contains the contents of argument, and
  * a node assigned to the variable IdName.
  */
-case class AllNodesScan(idName: String, argumentIds: Set[String])(implicit idGen: IdGen)
+case class AllNodesScan(idName: LogicalVariable, argumentIds: Set[LogicalVariable])(implicit idGen: IdGen)
     extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): AllNodesScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): AllNodesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -646,7 +647,7 @@ case class Anti(override val source: LogicalPlan)(implicit idGen: IdGen) extends
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -663,14 +664,18 @@ case class Anti(override val source: LogicalPlan)(implicit idGen: IdGen) extends
  *   }
  * }
  */
-case class AntiConditionalApply(override val left: LogicalPlan, override val right: LogicalPlan, items: Seq[String])(
+case class AntiConditionalApply(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  items: Seq[LogicalVariable]
+)(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols ++ items
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols ++ items
 
 }
 
@@ -693,20 +698,20 @@ case class Apply(override val left: LogicalPlan, override val right: LogicalPlan
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 }
 
 /**
  * Produce a single row with the contents of argument
  */
-case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen)
+case class Argument(argumentIds: Set[LogicalVariable] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen)
     with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds
+  override val availableSymbols: Set[LogicalVariable] = argumentIds
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): Argument =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): Argument =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -719,7 +724,7 @@ case class ArgumentTracker(override val source: LogicalPlan)(implicit idGen: IdG
     with PhysicalPlanningPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -728,15 +733,16 @@ case class ArgumentTracker(override val source: LogicalPlan)(implicit idGen: IdG
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
  * node is guaranteed per seek.
  */
-case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implicit idGen: IdGen)
+case class AssertingMultiNodeIndexSeek(node: LogicalVariable, nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implicit
+idGen: IdGen)
     extends MultiNodeIndexLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     nodeIndexSeeks.flatMap(_.availableSymbols).toSet
 
-  override def usedVariables: Set[String] = nodeIndexSeeks.flatMap(_.usedVariables).toSet
+  override def usedVariables: Set[LogicalVariable] = nodeIndexSeeks.flatMap(_.usedVariables).toSet
 
-  override def argumentIds: Set[String] =
+  override def argumentIds: Set[LogicalVariable] =
     nodeIndexSeeks.flatMap(_.argumentIds).toSet
 
   override def cachedProperties: Seq[CachedProperty] =
@@ -745,7 +751,7 @@ case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeInd
   override def properties: Seq[IndexedProperty] =
     nodeIndexSeeks.flatMap(_.properties)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): MultiNodeIndexLeafPlan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): MultiNodeIndexLeafPlan =
     copy(nodeIndexSeeks = nodeIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[NodeIndexSeekLeafPlan]))(
       SameId(this.id)
     )
@@ -758,7 +764,7 @@ case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeInd
     // Since our generalized tree rewriters will descend into children (including Seq) we do not need to do anything
     this
 
-  override def idNames: Set[String] =
+  override def idNames: Set[LogicalVariable] =
     nodeIndexSeeks.map(_.idName).toSet
 }
 
@@ -769,21 +775,21 @@ case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeInd
  * relationship is guaranteed per seek.
  */
 case class AssertingMultiRelationshipIndexSeek(
-  relationship: String,
-  leftNode: String,
-  rightNode: String,
+  relationship: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
   directed: Boolean,
   relIndexSeeks: Seq[RelationshipIndexSeekLeafPlan]
 )(
   implicit idGen: IdGen
 ) extends MultiRelationshipIndexLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     relIndexSeeks.flatMap(_.availableSymbols).toSet
 
-  override def usedVariables: Set[String] = relIndexSeeks.flatMap(_.usedVariables).toSet
+  override def usedVariables: Set[LogicalVariable] = relIndexSeeks.flatMap(_.usedVariables).toSet
 
-  override def argumentIds: Set[String] =
+  override def argumentIds: Set[LogicalVariable] =
     relIndexSeeks.flatMap(_.argumentIds).toSet
 
   override def cachedProperties: Seq[CachedProperty] =
@@ -792,7 +798,7 @@ case class AssertingMultiRelationshipIndexSeek(
   override def properties: Seq[IndexedProperty] =
     relIndexSeeks.flatMap(_.properties)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): MultiRelationshipIndexLeafPlan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): MultiRelationshipIndexLeafPlan =
     copy(relIndexSeeks =
       relIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[RelationshipIndexSeekLeafPlan])
     )(
@@ -813,10 +819,10 @@ case class AssertingMultiRelationshipIndexSeek(
     // Since our generalized tree rewriters will descend into children (including Seq) we do not need to do anything
     this
 
-  override def idNames: Set[String] =
+  override def idNames: Set[LogicalVariable] =
     relIndexSeeks.map(_.idName).toSet
 
-  override def idName: String = relationship
+  override def idName: LogicalVariable = relationship
 }
 
 /**
@@ -830,13 +836,14 @@ case class AssertingMultiRelationshipIndexSeek(
  *
  * This operator is planned for merges using unique index seeks.
  */
-case class AssertSameNode(node: String, override val left: LogicalPlan, override val right: LogicalPlan)(implicit
-idGen: IdGen) extends LogicalBinaryPlan(idGen) {
+case class AssertSameNode(node: LogicalVariable, override val left: LogicalPlan, override val right: LogicalPlan)(
+  implicit idGen: IdGen
+) extends LogicalBinaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols + node
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols + node
 }
 
 /**
@@ -853,7 +860,7 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) {
  * This operator is planned for merges using unique index seeks.
  */
 case class AssertSameRelationship(
-  idName: String,
+  idName: LogicalVariable,
   override val left: LogicalPlan,
   override val right: LogicalPlan
 )(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
@@ -861,7 +868,7 @@ case class AssertSameRelationship(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols + idName
 }
 
 /**
@@ -890,15 +897,15 @@ case class BidirectionalRepeatTrail(
   override val left: LogicalPlan,
   override val right: RepeatOptions,
   repetition: Repetition,
-  start: String,
-  end: String,
-  innerStart: String,
-  innerEnd: String,
+  start: LogicalVariable,
+  end: LogicalVariable,
+  innerStart: LogicalVariable,
+  innerEnd: LogicalVariable,
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping],
-  innerRelationships: Set[String],
-  previouslyBoundRelationships: Set[String],
-  previouslyBoundRelationshipGroups: Set[String],
+  innerRelationships: Set[LogicalVariable],
+  previouslyBoundRelationships: Set[LogicalVariable],
+  previouslyBoundRelationshipGroups: Set[LogicalVariable],
   reverseGroupVariableProjections: Boolean
 )(implicit idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
@@ -911,7 +918,7 @@ case class BidirectionalRepeatTrail(
     }
   }
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
       _.groupName
     )
@@ -931,7 +938,7 @@ case class RepeatOptions(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override def availableSymbols: Set[String] = left.availableSymbols
+  override def availableSymbols: Set[LogicalVariable] = left.availableSymbols
 }
 
 /**
@@ -941,7 +948,7 @@ case class RepeatOptions(
 case class CacheProperties(override val source: LogicalPlan, properties: Set[LogicalProperty])(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -961,7 +968,7 @@ case class CartesianProduct(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 }
 
 /**
@@ -978,36 +985,40 @@ case class CartesianProduct(
  *   }
  * }
  */
-case class ConditionalApply(override val left: LogicalPlan, override val right: LogicalPlan, items: Seq[String])(
+case class ConditionalApply(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  items: Seq[LogicalVariable]
+)(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols ++ items
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols ++ items
 }
 
 /**
  * For each input row, create new nodes and relationships.
  */
-case class Create(override val source: LogicalPlan, commands: Seq[CreateCommand])(
+case class Create(override val source: LogicalPlan, commands: Seq[create.CreateEntity])(
   implicit idGen: IdGen
 ) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  def nodes: Seq[CreateNode] = commands.collect {
-    case c: CreateNode => c
+  def nodes: Seq[create.CreateNode] = commands.collect {
+    case c: create.CreateNode => c
   }
 
-  def relationships: Seq[CreateRelationship] = commands.collect {
-    case c: CreateRelationship => c
+  def relationships: Seq[create.CreateRelationship] = commands.collect {
+    case c: create.CreateRelationship => c
   }
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = {
-    source.availableSymbols ++ commands.map(_.idName)
+  override val availableSymbols: Set[LogicalVariable] = {
+    source.availableSymbols ++ commands.map(_.variable)
   }
 }
 
@@ -1020,7 +1031,7 @@ case class DeleteExpression(override val source: LogicalPlan, expression: Expres
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1032,7 +1043,7 @@ case class DeleteNode(override val source: LogicalPlan, expression: Expression)(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1044,7 +1055,7 @@ case class DeletePath(override val source: LogicalPlan, expression: Expression)(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1056,7 +1067,7 @@ case class DeleteRelationship(override val source: LogicalPlan, expression: Expr
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1070,7 +1081,7 @@ case class DetachDeleteExpression(override val source: LogicalPlan, expression: 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1082,7 +1093,7 @@ case class DetachDeleteNode(override val source: LogicalPlan, expression: Expres
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1095,7 +1106,7 @@ case class DetachDeletePath(override val source: LogicalPlan, expression: Expres
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1106,23 +1117,23 @@ case class DetachDeletePath(override val source: LogicalPlan, expression: Expres
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedAllRelationshipsScan(
-  idName: String,
-  startNode: String,
-  endNode: String,
-  argumentIds: Set[String]
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedAllRelationshipsScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1136,24 +1147,24 @@ case class DirectedAllRelationshipsScan(
  *   - the end node as 'endNode'
  */
 case class DirectedRelationshipByElementIdSeek(
-  idName: String,
+  idName: LogicalVariable,
   relIds: SeekableArgs,
-  startNode: String,
-  endNode: String,
-  argumentIds: Set[String]
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) {
 
-  val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = relIds.expr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipByElementIdSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipByElementIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1167,24 +1178,24 @@ case class DirectedRelationshipByElementIdSeek(
  *   - the end node as 'endNode'
  */
 case class DirectedRelationshipByIdSeek(
-  idName: String,
+  idName: LogicalVariable,
   relIds: SeekableArgs,
-  startNode: String,
-  endNode: String,
-  argumentIds: Set[String]
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) {
 
-  val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = relIds.expr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipByIdSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipByIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1197,13 +1208,13 @@ case class DirectedRelationshipByIdSeek(
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipIndexContainsScan(
-  idName: String,
-  startNode: String,
-  endNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   property: IndexedProperty,
   valueExpr: Expression,
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
@@ -1211,11 +1222,11 @@ case class DirectedRelationshipIndexContainsScan(
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = valueExpr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexContainsScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexContainsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexContainsScan =
@@ -1224,9 +1235,9 @@ case class DirectedRelationshipIndexContainsScan(
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexLeafPlan =
     copy(property = f(property))(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1239,13 +1250,13 @@ case class DirectedRelationshipIndexContainsScan(
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipIndexEndsWithScan(
-  idName: String,
-  startNode: String,
-  endNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   property: IndexedProperty,
   valueExpr: Expression,
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
@@ -1253,11 +1264,11 @@ case class DirectedRelationshipIndexEndsWithScan(
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = valueExpr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexEndsWithScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexEndsWithScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexEndsWithScan =
@@ -1266,9 +1277,9 @@ case class DirectedRelationshipIndexEndsWithScan(
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexEndsWithScan =
     copy(property = f(property))(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1280,22 +1291,22 @@ case class DirectedRelationshipIndexEndsWithScan(
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipIndexScan(
-  idName: String,
-  startNode: String,
-  endNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   properties: Seq[IndexedProperty],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
     extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexScan =
@@ -1304,9 +1315,9 @@ case class DirectedRelationshipIndexScan(
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexScan =
     copy(properties = properties.map(f))(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1319,22 +1330,22 @@ case class DirectedRelationshipIndexScan(
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipIndexSeek(
-  idName: String,
-  startNode: String,
-  endNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   properties: Seq[IndexedProperty],
   valueExpr: QueryExpression[Expression],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexSeek =
@@ -1343,15 +1354,18 @@ case class DirectedRelationshipIndexSeek(
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexSeek =
     copy(properties = properties.map(f))(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def unique: Boolean = false
 
   override def directed: Boolean = true
 
-  override def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan =
+  override def withNewLeftAndRightNodes(
+    leftNode: LogicalVariable,
+    rightNode: LogicalVariable
+  ): RelationshipIndexSeekLeafPlan =
     copy(startNode = leftNode, endNode = rightNode)
 }
 
@@ -1372,25 +1386,25 @@ object DirectedRelationshipIndexSeek extends IndexSeekNames {
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipTypeScan(
-  idName: String,
-  startNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
   relType: RelTypeName,
-  endNode: String,
-  argumentIds: Set[String],
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipTypeScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1405,22 +1419,22 @@ case class DirectedRelationshipTypeScan(
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipUniqueIndexSeek(
-  idName: String,
-  startNode: String,
-  endNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   properties: Seq[IndexedProperty],
   valueExpr: QueryExpression[Expression],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipUniqueIndexSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipUniqueIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipUniqueIndexSeek =
@@ -1429,15 +1443,18 @@ case class DirectedRelationshipUniqueIndexSeek(
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipUniqueIndexSeek =
     copy(properties = properties.map(f))(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def unique: Boolean = true
 
   override def directed: Boolean = true
 
-  override def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan =
+  override def withNewLeftAndRightNodes(
+    leftNode: LogicalVariable,
+    rightNode: LogicalVariable
+  ): RelationshipIndexSeekLeafPlan =
     copy(startNode = leftNode, endNode = rightNode)
 
 }
@@ -1447,25 +1464,25 @@ case class DirectedRelationshipUniqueIndexSeek(
  * This row contains the relationship (assigned to 'idName') and the contents of argument.
  */
 case class DirectedUnionRelationshipTypesScan(
-  idName: String,
-  startNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
   types: Seq[RelTypeName],
-  endNode: String,
-  argumentIds: Set[String],
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedUnionRelationshipTypesScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedUnionRelationshipTypesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
 }
@@ -1475,16 +1492,19 @@ case class DirectedUnionRelationshipTypesScan(
  * which have been produced before. That is, the order of rows is unchanged, but each
  * unique combination of values is only produced once.
  */
-case class Distinct(override val source: LogicalPlan, override val groupingExpressions: Map[String, Expression])(
+case class Distinct(
+  override val source: LogicalPlan,
+  override val groupingExpressions: Map[LogicalVariable, Expression]
+)(
   implicit idGen: IdGen
 ) extends LogicalUnaryPlan(idGen) with ProjectingPlan with AggregatingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val projectExpressions: Map[String, Expression] = groupingExpressions
-  override val availableSymbols: Set[String] = groupingExpressions.keySet
+  override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
+  override val availableSymbols: Set[LogicalVariable] = groupingExpressions.keySet
 
-  override def aggregationExpressions: Map[String, Expression] = Map.empty
+  override def aggregationExpressions: Map[LogicalVariable, Expression] = Map.empty
 }
 
 /**
@@ -1497,7 +1517,7 @@ case class Eager(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /*
@@ -1508,7 +1528,7 @@ case class EmptyResult(override val source: LogicalPlan)(implicit idGen: IdGen) 
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1519,7 +1539,7 @@ case class ErrorPlan(override val source: LogicalPlan, exception: Exception)(imp
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /*
@@ -1530,7 +1550,7 @@ case class ExhaustiveLimit(override val source: LogicalPlan, count: Expression)(
     extends LogicalUnaryPlan(idGen) with ExhaustiveLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 object Expand {
@@ -1556,16 +1576,16 @@ object Expand {
  */
 case class Expand(
   override val source: LogicalPlan,
-  from: String,
+  from: LogicalVariable,
   dir: SemanticDirection,
   types: Seq[RelTypeName],
-  to: String,
-  relName: String,
+  to: LogicalVariable,
+  relName: LogicalVariable,
   mode: ExpansionMode = ExpandAll
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[String] = source.availableSymbols + relName + to
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + relName + to
 }
 
 /**
@@ -1575,18 +1595,18 @@ case class Expand(
  */
 case class OptionalExpand(
   override val source: LogicalPlan,
-  from: String,
+  from: LogicalVariable,
   dir: SemanticDirection,
   types: Seq[RelTypeName],
-  to: String,
-  relName: String,
+  to: LogicalVariable,
+  relName: LogicalVariable,
   mode: ExpansionMode = ExpandAll,
   predicate: Option[Expression] = None
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[String] = source.availableSymbols + relName + to
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + relName + to
 }
 
 /**
@@ -1599,19 +1619,19 @@ case class OptionalExpand(
  */
 case class VarExpand(
   override val source: LogicalPlan,
-  override val from: String,
+  override val from: LogicalVariable,
   dir: SemanticDirection,
   projectedDir: SemanticDirection,
   override val types: Seq[RelTypeName],
-  override val to: String,
-  relName: String,
+  override val to: LogicalVariable,
+  relName: LogicalVariable,
   length: VarPatternLength,
   mode: ExpansionMode = ExpandAll,
   override val nodePredicates: Seq[VariablePredicate] = Seq.empty,
   override val relationshipPredicates: Seq[VariablePredicate] = Seq.empty
 )(implicit idGen: IdGen) extends AbstractVarExpand(from, types, to, nodePredicates, relationshipPredicates, idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[String] = source.availableSymbols + relName + to
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + relName + to
 
   override def withNewPredicates(
     newNodePredicates: Seq[VariablePredicate],
@@ -1631,10 +1651,10 @@ case class VarExpand(
  */
 case class PruningVarExpand(
   override val source: LogicalPlan,
-  override val from: String,
+  override val from: LogicalVariable,
   dir: SemanticDirection,
   override val types: Seq[RelTypeName],
-  override val to: String,
+  override val to: LogicalVariable,
   minLength: Int,
   maxLength: Int,
   override val nodePredicates: Seq[VariablePredicate] = Seq.empty,
@@ -1642,7 +1662,7 @@ case class PruningVarExpand(
 )(implicit idGen: IdGen)
     extends AbstractVarExpand(from, types, to, nodePredicates, relationshipPredicates, idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[String] = source.availableSymbols + to
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + to
 
   override def withNewPredicates(
     newNodePredicates: Seq[VariablePredicate],
@@ -1661,20 +1681,20 @@ case class PruningVarExpand(
  */
 case class BFSPruningVarExpand(
   override val source: LogicalPlan,
-  override val from: String,
+  override val from: LogicalVariable,
   dir: SemanticDirection,
   override val types: Seq[RelTypeName],
-  override val to: String,
+  override val to: LogicalVariable,
   includeStartNode: Boolean,
   maxLength: Int,
-  depthName: Option[String],
+  depthName: Option[LogicalVariable],
   override val nodePredicates: Seq[VariablePredicate] = Seq.empty,
   override val relationshipPredicates: Seq[VariablePredicate] = Seq.empty
 )(implicit idGen: IdGen)
     extends AbstractVarExpand(from, types, to, nodePredicates, relationshipPredicates, idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[String] = source.availableSymbols + to
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + to
 
   override def withNewPredicates(
     newNodePredicates: Seq[VariablePredicate],
@@ -1687,12 +1707,12 @@ case class BFSPruningVarExpand(
 case class PathPropagatingBFS(
   left: LogicalPlan,
   right: LogicalPlan,
-  from: String,
+  from: LogicalVariable,
   dir: SemanticDirection,
   projectedDir: SemanticDirection,
   types: Seq[RelTypeName],
-  to: String,
-  relName: String,
+  to: LogicalVariable,
+  relName: LogicalVariable,
   length: VarPatternLength,
   nodePredicates: Seq[VariablePredicate] = Seq.empty,
   relationshipPredicates: Seq[VariablePredicate] = Seq.empty
@@ -1702,7 +1722,7 @@ case class PathPropagatingBFS(
 
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols + relName + to ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols + relName + to ++ right.availableSymbols
 
   def withNewPredicates(
     newNodePredicates: Seq[VariablePredicate],
@@ -1717,7 +1737,7 @@ case class PathPropagatingBFS(
  */
 case class FindShortestPaths(
   override val source: LogicalPlan,
-  shortestRelationship: ShortestRelationshipPattern,
+  pattern: shortest.ShortestRelationshipPattern,
   perStepNodePredicates: Seq[VariablePredicate] = Seq.empty,
   perStepRelPredicates: Seq[VariablePredicate] = Seq.empty,
   pathPredicates: Seq[Expression] = Seq.empty,
@@ -1728,7 +1748,7 @@ case class FindShortestPaths(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols ++ shortestRelationship.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ pattern.availableSymbols
 }
 
 object StatefulShortestPath {
@@ -1756,8 +1776,8 @@ object StatefulShortestPath {
 
 case class StatefulShortestPath(
   override val source: LogicalPlan,
-  sourceNode: String,
-  targetNode: String,
+  sourceNode: LogicalVariable,
+  targetNode: LogicalVariable,
   nfa: NFA,
   nonInlinablePreFilters: Option[Expression],
   nodeVariableGroupings: Set[VariableGrouping],
@@ -1767,7 +1787,7 @@ case class StatefulShortestPath(
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols ++ nfa.availableSymbols ++
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ nfa.availableSymbols ++
     nodeVariableGroupings.map(_.groupName) ++
     relationshipVariableGroupings.map(_.groupName)
 }
@@ -1777,7 +1797,7 @@ case class StatefulShortestPath(
  */
 case class Foreach(
   source: LogicalPlan,
-  variable: String,
+  variable: LogicalVariable,
   expression: Expression,
   mutations: collection.Seq[SimpleMutatingPattern]
 )(implicit idGen: IdGen)
@@ -1786,7 +1806,8 @@ case class Foreach(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override def availableSymbols: Set[String] = source.availableSymbols // NOTE: variable is not available outside
+  override def availableSymbols: Set[LogicalVariable] =
+    source.availableSymbols // NOTE: variable is not available outside
 }
 
 /**
@@ -1807,7 +1828,7 @@ case class Foreach(
 case class ForeachApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
-  variable: String,
+  variable: LogicalVariable,
   expression: Expression
 )(implicit idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
@@ -1815,7 +1836,7 @@ case class ForeachApply(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
 }
 
@@ -1825,18 +1846,22 @@ case class ForeachApply(
  *
  * @param nullable if there can be null values among the nodes, relationships or variables
  */
-case class Input(nodes: Seq[String], relationships: Seq[String], variables: Seq[String], nullable: Boolean)(implicit
-idGen: IdGen) extends LogicalLeafPlan(idGen) with StableLeafPlan {
-  val availableSymbols: Set[String] = nodes.toSet ++ relationships.toSet ++ variables.toSet
-  override def argumentIds: Set[String] = Set.empty
-  override def usedVariables: Set[String] = Set.empty
-  override def withoutArgumentIds(argsToExclude: Set[String]): Input = this
+case class Input(
+  nodes: Seq[LogicalVariable],
+  relationships: Seq[LogicalVariable],
+  variables: Seq[LogicalVariable],
+  nullable: Boolean
+)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) with StableLeafPlan {
+  override val availableSymbols: Set[LogicalVariable] = nodes.toSet ++ relationships ++ variables
+  override def argumentIds: Set[LogicalVariable] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): Input = this
 }
 
 object Input {
 
   def apply(variables: Seq[String])(implicit idGen: IdGen): Input =
-    new Input(Seq.empty, Seq.empty, variables, true)(idGen)
+    new Input(Seq.empty, Seq.empty, variables.map(Variable(_)(InputPosition.NONE)), true)(idGen)
 }
 
 /**
@@ -1844,18 +1869,18 @@ object Input {
  * and the contents of argument.
  */
 case class IntersectionNodeByLabelsScan(
-  idName: String,
+  idName: LogicalVariable,
   labels: Seq[LabelName],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
     extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): IntersectionNodeByLabelsScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): IntersectionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -1866,13 +1891,17 @@ case class IntersectionNodeByLabelsScan(
  *
  * This is equivalent to a left outer join in relational algebra.
  */
-case class LeftOuterHashJoin(nodes: Set[String], override val left: LogicalPlan, override val right: LogicalPlan)(
+case class LeftOuterHashJoin(
+  nodes: Set[LogicalVariable],
+  override val left: LogicalPlan,
+  override val right: LogicalPlan
+)(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 }
 
 /**
@@ -1881,7 +1910,7 @@ case class LeftOuterHashJoin(nodes: Set[String], override val left: LogicalPlan,
  */
 case class LegacyFindShortestPaths(
   override val source: LogicalPlan,
-  shortestRelationship: ShortestRelationshipPattern,
+  pattern: shortest.ShortestRelationshipPattern,
   predicates: Seq[Expression] = Seq.empty,
   withFallBack: Boolean = false,
   disallowSameNode: Boolean = true
@@ -1890,7 +1919,7 @@ case class LegacyFindShortestPaths(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols ++ shortestRelationship.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ pattern.availableSymbols
 }
 
 /**
@@ -1911,7 +1940,7 @@ case class LegacyFindShortestPaths(
 case class LetSelectOrSemiApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
-  override val idName: String,
+  override val idName: LogicalVariable,
   override val expression: Expression
 )(implicit idGen: IdGen)
     extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
@@ -1937,7 +1966,7 @@ case class LetSelectOrSemiApply(
 case class LetSelectOrAntiSemiApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
-  override val idName: String,
+  override val idName: LogicalVariable,
   override val expression: Expression
 )(implicit idGen: IdGen)
     extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
@@ -1955,8 +1984,9 @@ case class LetSelectOrAntiSemiApply(
  *   produce leftRow
  * }
  */
-case class LetSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String)(implicit
-idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen) {
+case class LetSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: LogicalVariable)(
+  implicit idGen: IdGen
+) extends AbstractLetSemiApply(left, right, idName)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 }
@@ -1971,8 +2001,9 @@ idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen) {
  *   produce leftRow
  * }
  */
-case class LetAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String)(implicit
-idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen) {
+case class LetAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: LogicalVariable)(
+  implicit idGen: IdGen
+) extends AbstractLetSemiApply(left, right, idName)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 }
@@ -1984,7 +2015,7 @@ case class Limit(override val source: LogicalPlan, count: Expression)(implicit i
     extends LogicalUnaryPlan(idGen) with LimitingLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -1997,14 +2028,14 @@ case class Limit(override val source: LogicalPlan, count: Expression)(implicit i
 case class LoadCSV(
   override val source: LogicalPlan,
   url: Expression,
-  variableName: String,
+  variableName: LogicalVariable,
   format: CSVFormat,
   fieldTerminator: Option[String],
   legacyCsvQuoteEscaping: Boolean,
   csvBufferSize: Int
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
 
-  override val availableSymbols: Set[String] = source.availableSymbols + variableName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + variableName
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 }
@@ -2019,14 +2050,14 @@ case class Merge(
   createRelationships: Seq[CreateRelationship],
   onMatch: Seq[SetMutatingPattern],
   onCreate: Seq[SetMutatingPattern],
-  nodesToLock: Set[String]
+  nodesToLock: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
   override def source: LogicalPlan = read
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(read = newLHS)(idGen)
 
-  override def availableSymbols: Set[String] = read.availableSymbols
+  override def availableSymbols: Set[LogicalVariable] = read.availableSymbols
 }
 
 /**
@@ -2038,12 +2069,12 @@ case class Merge(
 case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implicit idGen: IdGen)
     extends MultiNodeIndexLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     nodeIndexSeeks.flatMap(_.availableSymbols).toSet
 
-  override def usedVariables: Set[String] = nodeIndexSeeks.flatMap(_.usedVariables).toSet
+  override def usedVariables: Set[LogicalVariable] = nodeIndexSeeks.flatMap(_.usedVariables).toSet
 
-  override def argumentIds: Set[String] =
+  override def argumentIds: Set[LogicalVariable] =
     nodeIndexSeeks.flatMap(_.argumentIds).toSet
 
   override def cachedProperties: Seq[CachedProperty] =
@@ -2052,7 +2083,7 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implic
   override def properties: Seq[IndexedProperty] =
     nodeIndexSeeks.flatMap(_.properties)
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): MultiNodeIndexLeafPlan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): MultiNodeIndexLeafPlan =
     copy(nodeIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[NodeIndexSeekLeafPlan]))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): MultiNodeIndexLeafPlan =
@@ -2063,7 +2094,7 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implic
     // Since our generalized tree rewriters will descend into children (including Seq) we do not need to do anything
     this
 
-  override def idNames: Set[String] =
+  override def idNames: Set[LogicalVariable] =
     nodeIndexSeeks.map(_.idName).toSet
 }
 
@@ -2071,14 +2102,15 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implic
  * For each node element id in 'nodeIds', fetch the corresponding node. Produce one row with the contents of argument and
  * the node (assigned to 'idName').
  */
-case class NodeByElementIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[String])(implicit idGen: IdGen)
-    extends NodeLogicalLeafPlan(idGen) {
+case class NodeByElementIdSeek(idName: LogicalVariable, nodeIds: SeekableArgs, argumentIds: Set[LogicalVariable])(
+  implicit idGen: IdGen
+) extends NodeLogicalLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = nodeIds.expr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = nodeIds.expr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeByElementIdSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeByElementIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -2086,14 +2118,15 @@ case class NodeByElementIdSeek(idName: String, nodeIds: SeekableArgs, argumentId
  * For each nodeId in 'nodeIds', fetch the corresponding node. Produce one row with the contents of argument and
  * the node (assigned to 'idName').
  */
-case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[String])(implicit idGen: IdGen)
+case class NodeByIdSeek(idName: LogicalVariable, nodeIds: SeekableArgs, argumentIds: Set[LogicalVariable])(implicit
+idGen: IdGen)
     extends NodeLogicalLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = nodeIds.expr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = nodeIds.expr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeByIdSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeByIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -2101,14 +2134,18 @@ case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[
  * Produce one row for every node in the graph labelled 'label'. This row contains the node (assigned to 'idName')
  * and the contents of argument.
  */
-case class NodeByLabelScan(idName: String, label: LabelName, argumentIds: Set[String], indexOrder: IndexOrder)(implicit
-idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
+case class NodeByLabelScan(
+  idName: LogicalVariable,
+  label: LabelName,
+  argumentIds: Set[LogicalVariable],
+  indexOrder: IndexOrder
+)(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeByLabelScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeByLabelScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -2119,15 +2156,19 @@ idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
  *
  * Returns only a single row, thus a StableLeafPlan.
  */
-case class NodeCountFromCountStore(idName: String, labelNames: List[Option[LabelName]], argumentIds: Set[String])(
+case class NodeCountFromCountStore(
+  idName: LogicalVariable,
+  labelNames: List[Option[LabelName]],
+  argumentIds: Set[LogicalVariable]
+)(
   implicit idGen: IdGen
 ) extends LogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = Set(idName)
+  override val availableSymbols: Set[LogicalVariable] = Set(idName)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeCountFromCountStore =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeCountFromCountStore =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -2146,12 +2187,13 @@ case class NodeCountFromCountStore(idName: String, labelNames: List[Option[Label
  *   for ( leftRow <- group )
  *     produce (leftRow merge rightRow)
  */
-case class NodeHashJoin(nodes: Set[String], override val left: LogicalPlan, override val right: LogicalPlan)(implicit
-idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+case class NodeHashJoin(nodes: Set[LogicalVariable], override val left: LogicalPlan, override val right: LogicalPlan)(
+  implicit idGen: IdGen
+) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 }
 
 /**
@@ -2161,11 +2203,11 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
  * all-nodes scan or label scan followed by a property value filter.
  */
 case class NodeIndexContainsScan(
-  idName: String,
+  idName: LogicalVariable,
   override val label: LabelToken,
   property: IndexedProperty,
   valueExpr: Expression,
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
@@ -2173,11 +2215,11 @@ case class NodeIndexContainsScan(
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = valueExpr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexContainsScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexContainsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexContainsScan =
@@ -2194,11 +2236,11 @@ case class NodeIndexContainsScan(
  * all-nodes scan or label scan followed by a property value filter.
  */
 case class NodeIndexEndsWithScan(
-  idName: String,
+  idName: LogicalVariable,
   override val label: LabelToken,
   property: IndexedProperty,
   valueExpr: Expression,
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
@@ -2206,11 +2248,11 @@ case class NodeIndexEndsWithScan(
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = valueExpr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexEndsWithScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexEndsWithScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
@@ -2224,20 +2266,20 @@ case class NodeIndexEndsWithScan(
  * This operator does a full scan of an index, producing one row per entry.
  */
 case class NodeIndexScan(
-  idName: String,
+  idName: LogicalVariable,
   override val label: LabelToken,
   properties: Seq[IndexedProperty],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
     extends NodeIndexLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexScan =
@@ -2251,20 +2293,20 @@ case class NodeIndexScan(
  * For every node with the given label and property values, produces rows with that node.
  */
 case class NodeIndexSeek(
-  idName: String,
+  idName: LogicalVariable,
   override val label: LabelToken,
   properties: Seq[IndexedProperty],
   valueExpr: QueryExpression[Expression],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexSeek =
@@ -2290,20 +2332,20 @@ object NodeIndexSeek extends IndexSeekNames {
  * node is guaranteed.
  */
 case class NodeUniqueIndexSeek(
-  idName: String,
+  idName: LogicalVariable,
   override val label: LabelToken,
   properties: Seq[IndexedProperty],
   valueExpr: QueryExpression[Expression],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): NodeUniqueIndexSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeUniqueIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
@@ -2320,7 +2362,7 @@ case class NonFuseable(override val source: LogicalPlan)(implicit idGen: IdGen) 
     with TestOnlyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2330,7 +2372,7 @@ case class InjectCompilationError(override val source: LogicalPlan)(implicit idG
     extends LogicalUnaryPlan(idGen) with TestOnlyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2341,7 +2383,7 @@ case class NonPipelined(override val source: LogicalPlan)(implicit idGen: IdGen)
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 case class NullifyMetadata(override val source: LogicalPlan, key: String, planId: Int)(implicit idGen: IdGen)
@@ -2349,19 +2391,21 @@ case class NullifyMetadata(override val source: LogicalPlan, key: String, planId
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override def availableSymbols: Set[String] = source.availableSymbols
+  override def availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
  * Produces source rows, unless source is empty. In that case, a single row is produced containing argument and any
  * non-argument variables set to NO_VALUE.
  */
-case class Optional(override val source: LogicalPlan, protectedSymbols: Set[String] = Set.empty)(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) {
+case class Optional(
+  override val source: LogicalPlan,
+  protectedSymbols: Set[LogicalVariable] = Set.empty
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2370,19 +2414,19 @@ case class Optional(override val source: LogicalPlan, protectedSymbols: Set[Stri
  */
 case class OrderedAggregation(
   override val source: LogicalPlan,
-  override val groupingExpressions: Map[String, Expression],
-  override val aggregationExpressions: Map[String, Expression],
+  override val groupingExpressions: Map[LogicalVariable, Expression],
+  override val aggregationExpressions: Map[LogicalVariable, Expression],
   orderToLeverage: Seq[Expression]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with AggregatingPlan with ProjectingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val projectExpressions: Map[String, Expression] = groupingExpressions
+  override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
 
-  val groupingKeys: Set[String] = groupingExpressions.keySet
+  val groupingKeys: Set[LogicalVariable] = groupingExpressions.keySet
 
-  val availableSymbols: Set[String] = groupingKeys ++ aggregationExpressions.keySet
+  override val availableSymbols: Set[LogicalVariable] = groupingKeys ++ aggregationExpressions.keySet
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
     orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
@@ -2400,14 +2444,14 @@ case class OrderedAggregation(
  */
 case class OrderedDistinct(
   override val source: LogicalPlan,
-  override val groupingExpressions: Map[String, Expression],
+  override val groupingExpressions: Map[LogicalVariable, Expression],
   orderToLeverage: Seq[Expression]
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan with AggregatingPlan {
 
-  override val projectExpressions: Map[String, Expression] = groupingExpressions
-  override val availableSymbols: Set[String] = groupingExpressions.keySet
+  override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
+  override val availableSymbols: Set[LogicalVariable] = groupingExpressions.keySet
 
-  override def aggregationExpressions: Map[String, Expression] = Map.empty
+  override def aggregationExpressions: Map[LogicalVariable, Expression] = Map.empty
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -2431,7 +2475,7 @@ case class OrderedUnion(left: LogicalPlan, right: LogicalPlan, sortedColumns: Se
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols intersect right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols intersect right.availableSymbols
 }
 
 /**
@@ -2448,7 +2492,7 @@ case class PartialSort(
   skipSortingPrefixLength: Option[Expression] = None
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /*
@@ -2465,7 +2509,7 @@ case class PartialTop(
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with LimitingLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2476,7 +2520,7 @@ case class PreserveOrder(override val source: LogicalPlan)(implicit idGen: IdGen
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2489,7 +2533,7 @@ case class Prober(override val source: LogicalPlan, probe: Probe)(implicit idGen
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 object Prober {
@@ -2533,20 +2577,19 @@ case class ProcedureCall(override val source: LogicalPlan, call: ResolvedCall)(i
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] =
-    source.availableSymbols ++ call.callResults.map { result => result.variable.name }
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ call.callResults.map(_.variable)
 }
 
 /**
  * For every source row, produce a row containing only the variables in 'columns'. The ProduceResult operator is
  * always planned as the root operator in a logical plan tree.
  */
-case class ProduceResult(override val source: LogicalPlan, columns: Seq[String])(implicit idGen: IdGen)
+case class ProduceResult(override val source: LogicalPlan, columns: Seq[LogicalVariable])(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2625,10 +2668,10 @@ case class ProduceResult(override val source: LogicalPlan, columns: Seq[String])
  */
 case class ProjectEndpoints(
   override val source: LogicalPlan,
-  rels: String,
-  start: String,
+  rels: LogicalVariable,
+  start: LogicalVariable,
   startInScope: Boolean,
-  end: String,
+  end: LogicalVariable,
   endInScope: Boolean,
   types: Seq[RelTypeName],
   direction: SemanticDirection,
@@ -2643,7 +2686,7 @@ case class ProjectEndpoints(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols + rels + start + end
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + rels + start + end
 }
 
 /**
@@ -2659,8 +2702,8 @@ case class ProjectEndpoints(
  */
 case class Projection(
   override val source: LogicalPlan,
-  override val discardSymbols: Set[String],
-  projectExpressions: Map[String, Expression]
+  override val discardSymbols: Set[LogicalVariable],
+  projectExpressions: Map[LogicalVariable, Expression]
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan {
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
@@ -2670,15 +2713,16 @@ case class Projection(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = (source.availableSymbols -- discardSymbols) ++ projectExpressions.keySet
+  override val availableSymbols: Set[LogicalVariable] =
+    (source.availableSymbols -- discardSymbols) ++ projectExpressions.keySet
 
   /**
    * Custom copy method to make rewriting work.
    */
   def copy(
     source: LogicalPlan = this.source,
-    discardSymbols: Set[String] = this.discardSymbols,
-    projectExpressions: Map[String, Expression] = this.projectExpressions
+    discardSymbols: Set[LogicalVariable] = this.discardSymbols,
+    projectExpressions: Map[LogicalVariable, Expression] = this.projectExpressions
   )(implicit idGen: IdGen = this.idGen): Projection = {
     val newDiscardSymbols = discardSymbols.intersect(source.availableSymbols)
     Projection(source, newDiscardSymbols, projectExpressions)(idGen)
@@ -2697,19 +2741,19 @@ case class Projection(
  * Returns only a single row, thus a StableLeafPlan.
  */
 case class RelationshipCountFromCountStore(
-  idName: String,
+  idName: LogicalVariable,
   startLabel: Option[LabelName],
   typeNames: Seq[RelTypeName],
   endLabel: Option[LabelName],
-  argumentIds: Set[String]
+  argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
     extends LogicalLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols = Set(idName)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): RelationshipCountFromCountStore =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): RelationshipCountFromCountStore =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -2717,13 +2761,13 @@ case class RelationshipCountFromCountStore(
  * For each source row, the labels in 'labelNamed' are removed from the node 'idName'.
  * The source row is produced.
  */
-case class RemoveLabels(override val source: LogicalPlan, idName: String, labelNames: Set[LabelName])(implicit
+case class RemoveLabels(override val source: LogicalPlan, idName: LogicalVariable, labelNames: Set[LabelName])(implicit
 idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 /**
@@ -2733,14 +2777,18 @@ idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
  *
  * This is equivalent to a right outer join in relational algebra.
  */
-case class RightOuterHashJoin(nodes: Set[String], override val left: LogicalPlan, override val right: LogicalPlan)(
+case class RightOuterHashJoin(
+  nodes: Set[LogicalVariable],
+  override val left: LogicalPlan,
+  override val right: LogicalPlan
+)(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 
 }
 
@@ -2757,15 +2805,15 @@ case class RightOuterHashJoin(nodes: Set[String], override val left: LogicalPlan
 case class RollUpApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
-  collectionName: String,
-  variableToCollect: String
+  collectionName: LogicalVariable,
+  variableToCollect: LogicalVariable
 )(implicit idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols + collectionName
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols + collectionName
 }
 
 /**
@@ -2779,7 +2827,7 @@ case class Selection(predicate: Ands, override val source: LogicalPlan)(implicit
 
   def numPredicates: Int = predicate.exprs.size
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 object Selection {
@@ -2878,18 +2926,18 @@ case class AntiSemiApply(override val left: LogicalPlan, override val right: Log
  * For each source row, add the labels in 'labelNamed' to the node 'idName'.
  * The source row is produced.
  */
-case class SetLabels(override val source: LogicalPlan, idName: String, labelNames: Set[LabelName])(implicit
+case class SetLabels(override val source: LogicalPlan, idName: LogicalVariable, labelNames: Set[LabelName])(implicit
 idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 case class SetNodeProperties(
   override val source: LogicalPlan,
-  idName: String,
+  idName: LogicalVariable,
   items: Seq[(PropertyKeyName, Expression)]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with UpdatingPlan {
@@ -2897,7 +2945,7 @@ case class SetNodeProperties(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 /**
@@ -2911,7 +2959,7 @@ case class SetNodeProperties(
  */
 case class SetNodePropertiesFromMap(
   override val source: LogicalPlan,
-  idName: String,
+  idName: LogicalVariable,
   expression: Expression,
   removeOtherProps: Boolean
 )(implicit idGen: IdGen)
@@ -2920,7 +2968,7 @@ case class SetNodePropertiesFromMap(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 /**
@@ -2932,7 +2980,7 @@ case class SetNodePropertiesFromMap(
  */
 case class SetNodeProperty(
   override val source: LogicalPlan,
-  idName: String,
+  idName: LogicalVariable,
   propertyKey: PropertyKeyName,
   value: Expression
 )(implicit idGen: IdGen)
@@ -2941,7 +2989,7 @@ case class SetNodeProperty(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 case class SetProperties(
@@ -2953,7 +3001,7 @@ case class SetProperties(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2974,7 +3022,7 @@ case class SetPropertiesFromMap(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -2994,12 +3042,12 @@ case class SetProperty(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 case class SetRelationshipProperties(
   override val source: LogicalPlan,
-  idName: String,
+  idName: LogicalVariable,
   items: Seq[(PropertyKeyName, Expression)]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with UpdatingPlan {
@@ -3007,7 +3055,7 @@ case class SetRelationshipProperties(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 /**
@@ -3021,7 +3069,7 @@ case class SetRelationshipProperties(
  */
 case class SetRelationshipPropertiesFromMap(
   override val source: LogicalPlan,
-  idName: String,
+  idName: LogicalVariable,
   expression: Expression,
   removeOtherProps: Boolean
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
@@ -3029,7 +3077,7 @@ case class SetRelationshipPropertiesFromMap(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 /**
@@ -3041,7 +3089,7 @@ case class SetRelationshipPropertiesFromMap(
  */
 case class SetRelationshipProperty(
   override val source: LogicalPlan,
-  idName: String,
+  idName: LogicalVariable,
   propertyKey: PropertyKeyName,
   expression: Expression
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
@@ -3049,7 +3097,7 @@ case class SetRelationshipProperty(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + idName
 }
 
 /*
@@ -3059,7 +3107,7 @@ case class Skip(override val source: LogicalPlan, count: Expression)(implicit id
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -3070,7 +3118,7 @@ case class Sort(override val source: LogicalPlan, sortItems: Seq[ColumnOrder])(i
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -3091,7 +3139,7 @@ case class SubqueryForeach(override val left: LogicalPlan, override val right: L
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols // NOTE: right.availableSymbols are not available outside
 }
 
@@ -3102,7 +3150,7 @@ case class SubqueryForeach(override val left: LogicalPlan, override val right: L
 case class Top(override val source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -3112,7 +3160,7 @@ case class Top1WithTies(override val source: LogicalPlan, sortItems: Seq[ColumnO
     extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -3140,22 +3188,22 @@ case class Trail(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
   repetition: Repetition,
-  start: String,
-  end: String,
-  innerStart: String,
-  innerEnd: String,
+  start: LogicalVariable,
+  end: LogicalVariable,
+  innerStart: LogicalVariable,
+  innerEnd: LogicalVariable,
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping],
-  innerRelationships: Set[String],
-  previouslyBoundRelationships: Set[String],
-  previouslyBoundRelationshipGroups: Set[String],
+  innerRelationships: Set[LogicalVariable],
+  previouslyBoundRelationships: Set[LogicalVariable],
+  previouslyBoundRelationshipGroups: Set[LogicalVariable],
   reverseGroupVariableProjections: Boolean
 )(implicit idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
       _.groupName
     )
@@ -3169,7 +3217,7 @@ object Trail {
    * @param singletonName the name of the singleton variable inside the QuantifiedPath.
    * @param groupName     the name of the group variable exposed outside of the QuantifiedPath.
    */
-  case class VariableGrouping(singletonName: String, groupName: String)
+  case class VariableGrouping(singletonName: LogicalVariable, groupName: LogicalVariable)
 }
 
 /**
@@ -3204,7 +3252,7 @@ case class TransactionApply(
   override val right: LogicalPlan,
   batchSize: Expression,
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
-  maybeReportAs: Option[String]
+  maybeReportAs: Option[LogicalVariable]
 )(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
@@ -3212,7 +3260,7 @@ case class TransactionApply(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] =
+  override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols ++ right.availableSymbols ++ maybeReportAs.toList
 }
 
@@ -3225,7 +3273,7 @@ case class TransactionCommit(override val source: LogicalPlan, batchSize: Expres
     extends LogicalUnaryPlan(idGen) with PhysicalPlanningPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -3261,7 +3309,7 @@ case class TransactionForeach(
   override val right: LogicalPlan,
   batchSize: Expression,
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
-  maybeReportAs: Option[String]
+  maybeReportAs: Option[LogicalVariable]
 )(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
@@ -3269,7 +3317,7 @@ case class TransactionForeach(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionForeach = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionForeach = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ maybeReportAs.toList
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ maybeReportAs.toList
 }
 
 object TransactionForeach {
@@ -3317,16 +3365,16 @@ case class TriadicSelection(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
   positivePredicate: Boolean,
-  sourceId: String,
-  seenId: String,
-  targetId: String
+  sourceId: LogicalVariable,
+  seenId: LogicalVariable,
+  targetId: LogicalVariable
 )(implicit idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 }
 
 /**
@@ -3335,8 +3383,8 @@ case class TriadicSelection(
  */
 case class TriadicBuild(
   override val source: LogicalPlan,
-  sourceId: String,
-  seenId: String,
+  sourceId: LogicalVariable,
+  seenId: LogicalVariable,
   triadicSelectionId: Some[Id]
 ) // wrapped in Some because Id is a value class and doesn't play well with rewriting
 (implicit idGen: IdGen)
@@ -3344,20 +3392,20 @@ case class TriadicBuild(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override def availableSymbols: Set[String] = source.availableSymbols
+  override def availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 case class TriadicFilter(
   override val source: LogicalPlan,
   positivePredicate: Boolean,
-  sourceId: String,
-  targetId: String,
+  sourceId: LogicalVariable,
+  targetId: LogicalVariable,
   triadicSelectionId: Some[Id]
 ) // wrapped in Some because Id is a value class and doesn't play well with rewriting
 (implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with PhysicalPlanningPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override def availableSymbols: Set[String] = source.availableSymbols
+  override def availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
 /**
@@ -3369,18 +3417,18 @@ case class TriadicFilter(
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedAllRelationshipsScan(
-  idName: String,
-  leftNode: String,
-  rightNode: String,
-  argumentIds: Set[String]
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedAllRelationshipsScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def directed: Boolean = false
@@ -3393,19 +3441,19 @@ case class UndirectedAllRelationshipsScan(
  * row has the end node as 'leftNode' = endNode and the start node as 'rightNode'.
  */
 case class UndirectedRelationshipByElementIdSeek(
-  idName: String,
+  idName: LogicalVariable,
   relIds: SeekableArgs,
-  leftNode: String,
-  rightNode: String,
-  argumentIds: Set[String]
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = relIds.expr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipByElementIdSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipByElementIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def directed: Boolean = false
@@ -3418,19 +3466,19 @@ case class UndirectedRelationshipByElementIdSeek(
  * row has the end node as 'leftNode' = endNode and the start node as 'rightNode'.
  */
 case class UndirectedRelationshipByIdSeek(
-  idName: String,
+  idName: LogicalVariable,
   relIds: SeekableArgs,
-  leftNode: String,
-  rightNode: String,
-  argumentIds: Set[String]
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = relIds.expr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipByIdSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipByIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def directed: Boolean = false
@@ -3445,13 +3493,13 @@ case class UndirectedRelationshipByIdSeek(
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedRelationshipIndexContainsScan(
-  idName: String,
-  leftNode: String,
-  rightNode: String,
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   property: IndexedProperty,
   valueExpr: Expression,
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
@@ -3459,11 +3507,11 @@ case class UndirectedRelationshipIndexContainsScan(
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = valueExpr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexContainsScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexContainsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexContainsScan =
@@ -3484,13 +3532,13 @@ case class UndirectedRelationshipIndexContainsScan(
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedRelationshipIndexEndsWithScan(
-  idName: String,
-  leftNode: String,
-  rightNode: String,
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   property: IndexedProperty,
   valueExpr: Expression,
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
@@ -3498,11 +3546,11 @@ case class UndirectedRelationshipIndexEndsWithScan(
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
+  override def usedVariables: Set[LogicalVariable] = valueExpr.dependencies
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexEndsWithScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexEndsWithScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexEndsWithScan =
@@ -3523,22 +3571,22 @@ case class UndirectedRelationshipIndexEndsWithScan(
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedRelationshipIndexScan(
-  idName: String,
-  leftNode: String,
-  rightNode: String,
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   properties: Seq[IndexedProperty],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
     extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexScan =
@@ -3559,22 +3607,22 @@ case class UndirectedRelationshipIndexScan(
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedRelationshipIndexSeek(
-  idName: String,
-  leftNode: String,
-  rightNode: String,
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   properties: Seq[IndexedProperty],
   valueExpr: QueryExpression[Expression],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexSeek =
@@ -3587,7 +3635,10 @@ case class UndirectedRelationshipIndexSeek(
 
   override def directed: Boolean = false
 
-  override def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan =
+  override def withNewLeftAndRightNodes(
+    leftNode: LogicalVariable,
+    rightNode: LogicalVariable
+  ): RelationshipIndexSeekLeafPlan =
     copy(leftNode = leftNode, rightNode = rightNode)
 
 }
@@ -3610,20 +3661,20 @@ object UndirectedRelationshipIndexSeek extends IndexSeekNames {
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedRelationshipTypeScan(
-  idName: String,
-  leftNode: String,
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
   relType: RelTypeName,
-  rightNode: String,
-  argumentIds: Set[String],
+  rightNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipTypeScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def directed: Boolean = false
@@ -3640,22 +3691,22 @@ case class UndirectedRelationshipTypeScan(
  *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedRelationshipUniqueIndexSeek(
-  idName: String,
-  leftNode: String,
-  rightNode: String,
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
   override val typeToken: RelationshipTypeToken,
   properties: Seq[IndexedProperty],
   valueExpr: QueryExpression[Expression],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipUniqueIndexSeek =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipUniqueIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipUniqueIndexSeek =
@@ -3668,7 +3719,10 @@ case class UndirectedRelationshipUniqueIndexSeek(
 
   override def directed: Boolean = false
 
-  override def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan =
+  override def withNewLeftAndRightNodes(
+    leftNode: LogicalVariable,
+    rightNode: LogicalVariable
+  ): RelationshipIndexSeekLeafPlan =
     copy(leftNode = leftNode, rightNode = rightNode)
 }
 
@@ -3677,25 +3731,25 @@ case class UndirectedRelationshipUniqueIndexSeek(
  * This row contains the relationship (assigned to 'idName') and the contents of argument.
  */
 case class UndirectedUnionRelationshipTypesScan(
-  idName: String,
-  startNode: String,
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
   types: Seq[RelTypeName],
-  endNode: String,
-  argumentIds: Set[String],
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
     extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedUnionRelationshipTypesScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedUnionRelationshipTypesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
-  override def leftNode: String = startNode
+  override def leftNode: LogicalVariable = startNode
 
-  override def rightNode: String = endNode
+  override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = false
 }
@@ -3709,7 +3763,7 @@ case class Union(override val left: LogicalPlan, override val right: LogicalPlan
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols intersect right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols intersect right.availableSymbols
 }
 
 /**
@@ -3717,18 +3771,18 @@ case class Union(override val left: LogicalPlan, override val right: LogicalPlan
  * and the contents of argument.
  */
 case class UnionNodeByLabelsScan(
-  idName: String,
+  idName: LogicalVariable,
   labels: Seq[LabelName],
-  argumentIds: Set[String],
+  argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
     extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[String] = argumentIds + idName
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): UnionNodeByLabelsScan =
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UnionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }
 
@@ -3738,12 +3792,12 @@ case class UnionNodeByLabelsScan(
  * If 'expression' does evaluate to null, produce nothing.
  * If 'expression' does not evaluate to a list, produce a single row with the value.
  */
-case class UnwindCollection(override val source: LogicalPlan, variable: String, expression: Expression)(implicit
-idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) {
+case class UnwindCollection(override val source: LogicalPlan, variable: LogicalVariable, expression: Expression)(
+  implicit idGen: IdGen
+) extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols + variable
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + variable
 }
 
 /**
@@ -3755,7 +3809,7 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 }
 
 /**
@@ -3767,16 +3821,16 @@ sealed trait SimulatedPlan extends TestOnlyPlan
 /**
  * Produce the given number of nodes
  */
-case class SimulatedNodeScan(idName: String, numberOfRows: Long)(implicit idGen: IdGen)
+case class SimulatedNodeScan(idName: LogicalVariable, numberOfRows: Long)(implicit idGen: IdGen)
     extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with SimulatedPlan {
 
-  override val availableSymbols: Set[String] = Set(idName)
+  override val availableSymbols: Set[LogicalVariable] = Set(idName)
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def argumentIds: Set[String] = Set.empty
+  override def argumentIds: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): SimulatedNodeScan = this
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): SimulatedNodeScan = this
 }
 
 /**
@@ -3784,9 +3838,9 @@ case class SimulatedNodeScan(idName: String, numberOfRows: Long)(implicit idGen:
  */
 case class SimulatedExpand(
   override val source: LogicalPlan,
-  fromNode: String,
-  relName: String,
-  toNode: String,
+  fromNode: LogicalVariable,
+  relName: LogicalVariable,
+  toNode: LogicalVariable,
   factor: Double
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with SimulatedPlan {
@@ -3794,7 +3848,7 @@ case class SimulatedExpand(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + relName + toNode
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + relName + toNode
 }
 
 /**
@@ -3806,5 +3860,5 @@ case class SimulatedSelection(override val source: LogicalPlan, selectivity: Dou
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -35,7 +36,7 @@ class LogicalPlanTreeRendererTest extends CypherFunSuite {
   test("Should render plan with depth 0") {
     val plan = ProduceResult(
       Limit(
-        AllNodesScan("n", Set.empty),
+        AllNodesScan(varFor("n"), Set.empty),
         SignedDecimalIntegerLiteral("10")(InputPosition.NONE)
       ),
       Seq.empty
@@ -50,8 +51,8 @@ class LogicalPlanTreeRendererTest extends CypherFunSuite {
   test("Should render plan with depth 1") {
     val plan = ProduceResult(
       CartesianProduct(
-        AllNodesScan("n", Set.empty),
-        AllNodesScan("m", Set.empty)
+        AllNodesScan(varFor("n"), Set.empty),
+        AllNodesScan(varFor("m"), Set.empty)
       ),
       Seq.empty
     )
@@ -65,8 +66,8 @@ class LogicalPlanTreeRendererTest extends CypherFunSuite {
 
   test("Should render complex plan with depth >1") {
     val cp = CartesianProduct(
-      AllNodesScan("n", Set.empty),
-      AllNodesScan("m", Set.empty)
+      AllNodesScan(varFor("n"), Set.empty),
+      AllNodesScan(varFor("m"), Set.empty)
     )
 
     val innerApply = Apply(
@@ -78,14 +79,14 @@ class LogicalPlanTreeRendererTest extends CypherFunSuite {
       Apply(
         Limit(
           Apply(
-            NodeByLabelScan("x", LabelName("X")(InputPosition.NONE), Set.empty, IndexOrderNone),
+            NodeByLabelScan(varFor("x"), LabelName("X")(InputPosition.NONE), Set.empty, IndexOrderNone),
             innerApply
           ),
           SignedDecimalIntegerLiteral("10")(InputPosition.NONE)
         ),
         cp
       ),
-      columns = Seq("n")
+      columns = Seq(varFor("n"))
     )
 
     render(plan) shouldEqual
