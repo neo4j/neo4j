@@ -31,14 +31,14 @@ object Eagerly {
 
   // These two methods could in theory be replaced by a single one. My attempts so far didn't type out or broke scalac. You get a cookie if you get it to work -- boggle
 
-  def immutableMapValues[A, B, C](m: collection.Map[A, B], f: B => C): immutable.Map[A, C] =
+  def immutableMapValues[A, B, C](m: Iterable[(A, B)], f: B => C): immutable.Map[A, C] =
     mapToBuilder(m, f, immutable.Map.newBuilder[A, C])
 
   def mutableMapValues[A, B, C](m: collection.Map[A, B], f: B => C): mutable.Map[A, C] =
     mapToBuilder(m, f, mutable.Map.newBuilder[A, C])
 
   private def mapToBuilder[A, B, C, To](
-    m: collection.Map[A, B],
+    m: Iterable[(A, B)],
     f: B => C,
     builder: mutable.Builder[(A, C), To]
   ): To = {

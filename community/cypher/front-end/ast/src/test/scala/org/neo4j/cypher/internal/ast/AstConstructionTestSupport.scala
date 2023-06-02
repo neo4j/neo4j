@@ -181,7 +181,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   // noinspection LanguageFeature
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
-  def varFor(name: String, position: InputPosition = pos): Variable = Variable(name)(position)
+  def varFor(name: String): Variable = varFor(name, pos)
+  def varFor(name: String, position: InputPosition): Variable = Variable(name)(position)
 
   def labelName(s: String, position: InputPosition = pos): LabelName = LabelName(s)(position)
 

@@ -34,3 +34,7 @@ object Variable {
       (variable.name, variable.position)
     }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
 }
+
+object UnPositionedVariable {
+  def varFor(name: String): Variable = Variable(name)(InputPosition.NONE)
+}

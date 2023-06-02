@@ -53,22 +53,26 @@ object Expression {
     def popScope: TreeAcc[A] = copy(list = list.tail)
   }
 
-  def mapExpressionHasPropertyReadDependency(mapEntityName: String, mapExpression: Expression): Boolean =
+  def mapExpressionHasPropertyReadDependency(mapEntity: LogicalVariable, mapExpression: Expression): Boolean =
     mapExpression match {
       case MapExpression(items) => items.exists {
           case (k, v) => v.subExpressions.exists {
               case LogicalProperty(LogicalVariable(entityName), propertyKey) =>
-                entityName == mapEntityName && propertyKey == k
+                entityName == mapEntity.name && propertyKey == k
               case _ => false
             }
         }
       case _ => false
     }
 
-  def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: PropertyKeyName): Boolean =
+  def hasPropertyReadDependency(
+    entity: LogicalVariable,
+    expression: Expression,
+    propertyKey: PropertyKeyName
+  ): Boolean =
     expression.subExpressions.exists {
       case LogicalProperty(LogicalVariable(name), key) =>
-        name == entityName && key == propertyKey
+        name == entity.name && key == propertyKey
       case _ =>
         false
     }
