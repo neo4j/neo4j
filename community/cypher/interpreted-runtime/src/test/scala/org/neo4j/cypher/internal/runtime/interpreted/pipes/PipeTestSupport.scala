@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -43,7 +44,8 @@ trait PipeTestSupport {
     override def id: Id = Id.INVALID_ID
   }
 
-  def row(values: (String, Any)*): CypherRow = CypherRow.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)
+  def row(values: (LogicalVariable, Any)*): CypherRow =
+    CypherRow.from(values.map(v => (v._1.name, ValueUtils.of(v._2))): _*)
 
   def newMockedNode(id: Int): Node = {
     val node = mock[Node]

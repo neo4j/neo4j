@@ -73,13 +73,13 @@ trait ExpressionConverter {
 
   def toCommandProjection(
     id: Id,
-    projections: Map[String, Expression],
+    projections: Map[LogicalVariable, Expression],
     self: ExpressionConverters
   ): Option[CommandProjection]
 
   def toGroupingExpression(
     id: Id,
-    groupings: Map[String, Expression],
+    groupings: Map[LogicalVariable, Expression],
     orderToLeverage: collection.Seq[Expression],
     self: ExpressionConverters
   ): Option[GroupingExpression]
@@ -87,13 +87,13 @@ trait ExpressionConverter {
 
 trait ExpressionConversionLogger {
   def failedToConvertExpression(expression: internal.expressions.Expression): Unit
-  def failedToConvertProjection(projection: Map[String, expressions.Expression]): Unit
+  def failedToConvertProjection(projection: Map[LogicalVariable, expressions.Expression]): Unit
   def warnings: Set[InternalNotification]
 }
 
 object NullExpressionConversionLogger extends ExpressionConversionLogger {
   override def failedToConvertExpression(expression: internal.expressions.Expression): Unit = {}
-  override def failedToConvertProjection(projection: Map[String, Expression]): Unit = {}
+  override def failedToConvertProjection(projection: Map[LogicalVariable, Expression]): Unit = {}
   override def warnings: Set[InternalNotification] = Set.empty
 
 }
@@ -115,7 +115,10 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   }
 
   @nowarn("msg=return statement")
-  def toCommandProjection(id: Id, projections: Map[String, internal.expressions.Expression]): CommandProjection = {
+  def toCommandProjection(
+    id: Id,
+    projections: Map[LogicalVariable, internal.expressions.Expression]
+  ): CommandProjection = {
     converters foreach { c: ExpressionConverter =>
       c.toCommandProjection(id, projections, this) match {
         case Some(x) => return x
@@ -129,7 +132,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   @nowarn("msg=return statement")
   def toGroupingExpression(
     id: Id,
-    groupings: Map[String, internal.expressions.Expression],
+    groupings: Map[LogicalVariable, internal.expressions.Expression],
     orderToLeverage: Seq[internal.expressions.Expression]
   ): GroupingExpression = {
     converters foreach { c: ExpressionConverter =>

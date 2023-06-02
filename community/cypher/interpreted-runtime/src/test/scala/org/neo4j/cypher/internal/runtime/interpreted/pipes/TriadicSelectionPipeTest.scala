@@ -45,9 +45,10 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val right = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22))
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: VirtualNodeValue =>
-      y.id()
-    }.toSet
+    val ids = pipe.createResults(queryState)
+      .map(ctx => ctx.getByName("c"))
+      .collect { case y: VirtualNodeValue => y.id() }
+      .toSet
     ids should equal(Set(11, 12, 21, 22))
   }
 
@@ -77,9 +78,10 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val right = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12, 2), 2 -> List(21, 22))
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: VirtualNodeValue =>
-      y.id()
-    }.toSet
+    val ids = pipe.createResults(queryState)
+      .map(ctx => ctx.getByName("c"))
+      .collect { case y: VirtualNodeValue => y.id() }
+      .toSet
     ids should equal(Set(11, 12, 21, 22))
   }
 
@@ -88,9 +90,10 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val right = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12, 2), 2 -> List(21, 22))
     val pipe = TriadicSelectionPipe(positivePredicate = true, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: VirtualNodeValue =>
-      y.id()
-    }.toSet
+    val ids = pipe.createResults(queryState)
+      .map(ctx => ctx.getByName("c"))
+      .collect { case y: VirtualNodeValue => y.id() }
+      .toSet
     ids should equal(Set(2))
   }
 
@@ -179,6 +182,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
         related.map {
           case a: Int => Map(keys(1) -> nodeWithId(a), keys(0) -> nodeWithId(x))
           case null   => Map(keys(1) -> null, keys(0) -> nodeWithId(x))
+          case _      => throw new RuntimeException("Invalid fake data")
         }
     }
   }

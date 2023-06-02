@@ -24,6 +24,8 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -109,7 +111,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = Projection(
       Argument(),
       Set.empty,
-      Map("42" -> literalInt(42))
+      Map(varFor("42") -> literalInt(42))
     )
     val pipe = build(logicalPlan)
 
@@ -117,14 +119,14 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("simple pattern query") {
-    val logicalPlan = AllNodesScan("n", Set.empty)
+    val logicalPlan = AllNodesScan(varFor("n"), Set.empty)
     val pipe = build(logicalPlan)
 
     pipe should equal(AllNodesScanPipe("n")())
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan("n", labelName("Foo"), Set.empty, IndexOrderAscending)
+    val logicalPlan = NodeByLabelScan(varFor("n"), labelName("Foo"), Set.empty, IndexOrderAscending)
     val pipe = build(logicalPlan)
 
     pipe should equal(NodeByLabelScanPipe("n", LazyLabel("Foo"), IndexOrderAscending)())
@@ -132,7 +134,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
   test("simple node by id seek query") {
     val astLiteral = listOfInt(42)
-    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astLiteral), Set.empty)
+    val logicalPlan = NodeByIdSeek(varFor("n"), ManySeekableArgs(astLiteral), Set.empty)
     val pipe = build(logicalPlan)
 
     pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(commands.expressions.Literal(intValue(42))))())
@@ -140,7 +142,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
   test("simple node by id seek query with multiple values") {
     val astCollection = listOfInt(42, 43, 43)
-    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astCollection), Set.empty)
+    val logicalPlan = NodeByIdSeek(varFor("n"), ManySeekableArgs(astCollection), Set.empty)
     val pipe = build(logicalPlan)
 
     pipe should equal(NodeByIdSeekPipe(
@@ -153,7 +155,13 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val astLiteral = listOfInt(42)
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)
+    val logicalPlan = DirectedRelationshipByIdSeek(
+      varFor("r"),
+      ManySeekableArgs(astLiteral),
+      varFor(fromNode),
+      varFor(toNode),
+      Set.empty
+    )
     val pipe = build(logicalPlan)
 
     pipe should equal(DirectedRelationshipByIdSeekPipe(
@@ -169,7 +177,13 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
+    val logicalPlan = DirectedRelationshipByIdSeek(
+      varFor("r"),
+      ManySeekableArgs(astCollection),
+      varFor(fromNode),
+      varFor(toNode),
+      Set.empty
+    )
     val pipe = build(logicalPlan)
 
     pipe should equal(DirectedRelationshipByIdSeekPipe(
@@ -185,7 +199,13 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = UndirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
+    val logicalPlan = UndirectedRelationshipByIdSeek(
+      varFor("r"),
+      ManySeekableArgs(astCollection),
+      varFor(fromNode),
+      varFor(toNode),
+      Set.empty
+    )
     val pipe = build(logicalPlan)
 
     pipe should equal(UndirectedRelationshipByIdSeekPipe(
@@ -197,8 +217,8 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("simple cartesian product") {
-    val lhs = AllNodesScan("n", Set.empty)
-    val rhs = AllNodesScan("m", Set.empty)
+    val lhs = AllNodesScan(varFor("n"), Set.empty)
+    val rhs = AllNodesScan(varFor("m"), Set.empty)
     val logicalPlan = CartesianProduct(lhs, rhs)
     val pipe = build(logicalPlan)
 
@@ -206,7 +226,14 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("simple expand") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(idGen)
+    val logicalPlan = Expand(
+      AllNodesScan(varFor("a"), Set.empty),
+      varFor("a"),
+      SemanticDirection.INCOMING,
+      Seq(),
+      varFor("b"),
+      varFor("r1")
+    )(idGen)
     val pipe = build(logicalPlan)
 
     pipe should equal(ExpandAllPipe(
@@ -221,7 +248,15 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
   test("simple expand into existing variable MATCH a-[r]->a ") {
     val logicalPlan =
-      Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
+      Expand(
+        AllNodesScan(varFor("a"), Set.empty),
+        varFor("a"),
+        SemanticDirection.INCOMING,
+        Seq(),
+        varFor("a"),
+        varFor("r"),
+        ExpandInto
+      )(idGen)
     val pipe = build(logicalPlan)
 
     val inner: Pipe =
@@ -232,7 +267,15 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
   test("optional expand into existing variable MATCH a OPTIONAL MATCH a-[r]->a ") {
     val logicalPlan =
-      OptionalExpand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
+      OptionalExpand(
+        AllNodesScan(varFor("a"), Set.empty),
+        varFor("a"),
+        SemanticDirection.INCOMING,
+        Seq(),
+        varFor("a"),
+        varFor("r"),
+        ExpandInto
+      )(idGen)
     val pipe = build(logicalPlan)
 
     pipe should equal(
@@ -251,9 +294,23 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
   test("simple hash join") {
     val logicalPlan =
       NodeHashJoin(
-        Set("b"),
-        Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "b", "r1"),
-        Expand(AllNodesScan("c", Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+        Set(varFor("b")),
+        Expand(
+          AllNodesScan(varFor("a"), Set.empty),
+          varFor("a"),
+          SemanticDirection.INCOMING,
+          Seq(),
+          varFor("b"),
+          varFor("r1")
+        ),
+        Expand(
+          AllNodesScan(varFor("c"), Set.empty),
+          varFor("c"),
+          SemanticDirection.INCOMING,
+          Seq(),
+          varFor("b"),
+          varFor("r2")
+        )
       )
     val pipe = build(logicalPlan)
 
@@ -268,8 +325,8 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     // GIVEN
     val token = 42
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(token))
-    val allNodesScan = AllNodesScan("n", Set.empty)
-    val expressions = Map("n.prop" -> prop("n", "prop"))
+    val allNodesScan = AllNodesScan(varFor("n"), Set.empty)
+    val expressions = Map[LogicalVariable, Expression](varFor("n.prop") -> prop("n", "prop"))
     val aggregation = Aggregation(allNodesScan, expressions, Map.empty)
 
     // WHEN

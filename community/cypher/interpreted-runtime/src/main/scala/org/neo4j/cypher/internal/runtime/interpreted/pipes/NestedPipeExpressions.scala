@@ -50,7 +50,7 @@ object NestedPipeExpressions {
         case expr @ NestedPlanGetByNameExpression(patternPlan, columnToGet, _) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
           val pipe = pipeBuilder.build(patternPlan)
-          NestedPipeGetByNameExpression(pipe, columnToGet, availableForPlan)(expr.position)
+          NestedPipeGetByNameExpression(pipe, columnToGet.name, availableForPlan)(expr.position)
       })
 
       override def apply(that: AnyRef): AnyRef = instance.apply(that)

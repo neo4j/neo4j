@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
@@ -157,17 +158,21 @@ case class CommunityExpressionConverter(
 
   override def toCommandProjection(
     id: Id,
-    projections: Map[String, Expression],
+    projections: Map[LogicalVariable, Expression],
     self: ExpressionConverters
   ): Option[CommandProjection] = {
-    val projected = for ((k, Some(v)) <- projections.view.mapValues(e => toCommandExpression(id, e, self)).toMap)
-      yield (k, v)
-    if (projected.size < projections.size) None else Some(InterpretedCommandProjection(projected))
+    projections
+      .foldLeft(Option(Map.empty[String, commands.expressions.Expression])) {
+        case (Some(acc), (variable, e)) =>
+          toCommandExpression(id, e, self).map(cmdExpr => acc.updated(variable.name, cmdExpr))
+        case _ => None
+      }
+      .map(InterpretedCommandProjection.apply)
   }
 
   override def toGroupingExpression(
     id: Id,
-    groupings: Map[String, Expression],
+    groupings: Map[LogicalVariable, Expression],
     orderToLeverage: collection.Seq[Expression],
     self: ExpressionConverters
   ): Option[GroupingExpression] = {
