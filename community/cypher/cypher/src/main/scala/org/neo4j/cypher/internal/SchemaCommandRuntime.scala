@@ -410,7 +410,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           None
         )
 
-    case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name, options) => _ =>
+    case DoNothingIfExistsForConstraint(entityName, props, assertion, name, options) => _ =>
         SchemaExecutionPlan(
           "DoNothingIfExist",
           (ctx, params) => {

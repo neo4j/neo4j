@@ -125,7 +125,6 @@ case class DoNothingIfExistsForFulltextIndex(
 )(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForConstraint(
-  entity: String,
   entityName: ElementTypeName,
   props: Seq[Property],
   assertion: ConstraintType,

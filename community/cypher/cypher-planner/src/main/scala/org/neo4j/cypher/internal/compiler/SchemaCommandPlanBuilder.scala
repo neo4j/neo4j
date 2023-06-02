@@ -147,10 +147,9 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
-      case CreateNodeKeyConstraint(node, label, props, name, ifExistsDo, options, _, _, _) =>
+      case CreateNodeKeyConstraint(_, label, props, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              node.name,
               label,
               props,
               plans.NodeKey,
@@ -162,10 +161,9 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.CreateConstraint(source, NodeKey, label, props, name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS RELATIONSHIP KEY [OPTIONS {...}]
-      case CreateRelationshipKeyConstraint(rel, relType, props, name, ifExistsDo, options, _, _, _) =>
+      case CreateRelationshipKeyConstraint(_, relType, props, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              rel.name,
               relType,
               props,
               plans.RelationshipKey,
@@ -178,10 +176,9 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
-      case CreateNodePropertyUniquenessConstraint(node, label, props, name, ifExistsDo, options, _, _, _) =>
+      case CreateNodePropertyUniquenessConstraint(_, label, props, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              node.name,
               label,
               props,
               plans.NodeUniqueness,
@@ -194,10 +191,9 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
-      case CreateRelationshipPropertyUniquenessConstraint(rel, relType, props, name, ifExistsDo, options, _, _, _) =>
+      case CreateRelationshipPropertyUniquenessConstraint(_, relType, props, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              rel.name,
               relType,
               props,
               plans.RelationshipUniqueness,
@@ -212,7 +208,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              prop.map.asCanonicalStringVal,
               label,
               Seq(prop),
               plans.NodePropertyExistence,
@@ -227,7 +222,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              prop.map.asCanonicalStringVal,
               relType,
               Seq(prop),
               plans.RelationshipPropertyExistence,
@@ -242,7 +236,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case CreateNodePropertyTypeConstraint(_, label, prop, propertyType, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              prop.map.asCanonicalStringVal,
               label,
               Seq(prop),
               plans.NodePropertyType(propertyType),
@@ -268,7 +261,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         ) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              prop.map.asCanonicalStringVal,
               relType,
               Seq(prop),
               plans.RelationshipPropertyType(propertyType),

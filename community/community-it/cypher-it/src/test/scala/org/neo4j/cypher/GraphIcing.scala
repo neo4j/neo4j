@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
-import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
@@ -65,218 +64,176 @@ trait GraphIcing {
 
     // Create node uniqueness constraint
 
-    def createNodeUniquenessConstraint(label: String, property: String): ConstraintDefinition = {
-      var constraint = withTx(tx => {
-        tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
-      })
-      awaitIndexesOnline()
-      constraint = withTx(tx => {
-        tx.schema().getConstraintByName(constraint.getName)
-      })
-      constraint
-    }
+    def createNodeUniquenessConstraint(label: String, property: String): ConstraintDefinition =
+      createNodeUniquenessConstraintCoreApi(None, label, property)
 
-    def createNodeUniquenessConstraint(label: String, properties: String*): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
-      })
-      awaitIndexesOnline()
-      getNodeConstraint(label, properties)
-    }
+    def createNodeUniquenessConstraint(label: String, properties: String*): ConstraintDefinition =
+      createNodeConstraint(None, label, properties, "IS UNIQUE")
 
-    def createNodeUniquenessConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
-      val constraint = withTx(tx => {
-        tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
-      })
-      awaitIndexesOnline()
-      constraint
-    }
+    def createNodeUniquenessConstraintWithName(name: String, label: String, property: String): ConstraintDefinition =
+      createNodeUniquenessConstraintCoreApi(Some(name), label, property)
 
     def createNodeUniquenessConstraintWithName(
       name: String,
       label: String,
       properties: String*
-    ): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
-      })
-      awaitIndexesOnline()
-      getNodeConstraint(label, properties)
-    }
+    ): ConstraintDefinition =
+      createNodeConstraint(Some(name), label, properties, "IS UNIQUE")
 
     // Create relationship uniqueness constraint
 
-    def createRelationshipUniquenessConstraint(relType: String, properties: String*): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS UNIQUE")
-      })
-      awaitIndexesOnline()
-      getRelationshipConstraint(relType, properties)
-    }
+    def createRelationshipUniquenessConstraint(relType: String, properties: String*): ConstraintDefinition =
+      createRelationshipConstraint(None, relType, properties, "IS UNIQUE")
 
     def createRelationshipUniquenessConstraintWithName(
       name: String,
       relType: String,
       properties: String*
-    ): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(
-          s"CREATE CONSTRAINT `$name` FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS UNIQUE"
-        )
-      })
-      awaitIndexesOnline()
-      getRelationshipConstraint(relType, properties)
-    }
+    ): ConstraintDefinition =
+      createRelationshipConstraint(Some(name), relType, properties, "IS UNIQUE")
 
     // Create node existence constraint
 
-    def createNodeExistenceConstraint(label: String, property: String): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
-      })
-      getNodeConstraint(label, Seq(property))
-    }
+    def createNodeExistenceConstraint(label: String, property: String): ConstraintDefinition =
+      createNodeConstraint(None, label, Seq(property), "IS NOT NULL", awaitIndexes = false)
 
-    def createNodeExistenceConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
-      })
-      getNodeConstraint(label, Seq(property))
-    }
+    def createNodeExistenceConstraintWithName(name: String, label: String, property: String): ConstraintDefinition =
+      createNodeConstraint(Some(name), label, Seq(property), "IS NOT NULL", awaitIndexes = false)
 
     // Create relationship existence constraint
 
     def createRelationshipExistenceConstraint(
       relType: String,
-      property: String,
-      direction: Direction = Direction.BOTH
-    ): ConstraintDefinition = {
-      val relSyntax = direction match {
-        case Direction.OUTGOING => s"()-[r:$relType]->()"
-        case Direction.INCOMING => s"()<-[r:$relType]-()"
-        case _                  => s"()-[r:$relType]-()"
-      }
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
-      })
-      getRelationshipConstraint(relType, property)
-    }
+      property: String
+    ): ConstraintDefinition =
+      createRelationshipConstraint(None, relType, Seq(property), "IS NOT NULL", awaitIndexes = false)
 
     def createRelationshipExistenceConstraintWithName(
       name: String,
       relType: String,
-      property: String,
-      direction: Direction = Direction.BOTH
-    ): ConstraintDefinition = {
-      val relSyntax = direction match {
-        case Direction.OUTGOING => s"()-[r:$relType]->()"
-        case Direction.INCOMING => s"()<-[r:$relType]-()"
-        case _                  => s"()-[r:$relType]-()"
-      }
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
-      })
-      getRelationshipConstraint(relType, property)
-    }
+      property: String
+    ): ConstraintDefinition =
+      createRelationshipConstraint(Some(name), relType, Seq(property), "IS NOT NULL", awaitIndexes = false)
 
     // Create node property type constraint
 
-    def createNodePropTypeConstraint(label: String, property: String, propType: String): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.$property) IS :: $propType")
-      })
-      getNodeConstraint(label, Seq(property))
-    }
+    def createNodePropTypeConstraint(label: String, property: String, propType: String): ConstraintDefinition =
+      createNodeConstraint(None, label, Seq(property), s"IS :: $propType", awaitIndexes = false)
 
     def createNodePropTypeConstraintWithName(
       name: String,
       label: String,
       property: String,
       propType: String
-    ): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.$property) IS :: $propType")
-      })
-      getNodeConstraint(label, Seq(property))
-    }
+    ): ConstraintDefinition =
+      createNodeConstraint(Some(name), label, Seq(property), s"IS :: $propType", awaitIndexes = false)
 
     // Create relationship property type constraint
 
     def createRelationshipPropTypeConstraint(
       relType: String,
       property: String,
-      propType: String,
-      direction: Direction = Direction.BOTH
-    ): ConstraintDefinition = {
-      val relSyntax = direction match {
-        case Direction.OUTGOING => s"()-[r:$relType]->()"
-        case Direction.INCOMING => s"()<-[r:$relType]-()"
-        case _                  => s"()-[r:$relType]-()"
-      }
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR $relSyntax REQUIRE (r.$property) IS :: $propType")
-      })
-      getRelationshipConstraint(relType, property)
-    }
+      propType: String
+    ): ConstraintDefinition =
+      createRelationshipConstraint(None, relType, Seq(property), s"IS :: $propType", awaitIndexes = false)
 
     def createRelationshipPropTypeConstraintWithName(
       name: String,
       relType: String,
       property: String,
-      propType: String,
-      direction: Direction = Direction.BOTH
-    ): ConstraintDefinition = {
-      val relSyntax = direction match {
-        case Direction.OUTGOING => s"()-[r:$relType]->()"
-        case Direction.INCOMING => s"()<-[r:$relType]-()"
-        case _                  => s"()-[r:$relType]-()"
-      }
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` FOR $relSyntax REQUIRE (r.$property) IS :: $propType")
-      })
-      getRelationshipConstraint(relType, property)
-    }
+      propType: String
+    ): ConstraintDefinition =
+      createRelationshipConstraint(Some(name), relType, Seq(property), s"IS :: $propType", awaitIndexes = false)
 
     // Create node key constraint
 
-    def createNodeKeyConstraint(label: String, properties: String*): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
-      })
-      awaitIndexesOnline()
-      getNodeConstraint(label, properties)
-    }
+    def createNodeKeyConstraint(label: String, properties: String*): ConstraintDefinition =
+      createNodeConstraint(None, label, properties, "IS NODE KEY")
 
-    def createNodeKeyConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
-      })
-      awaitIndexesOnline()
-      getNodeConstraint(label, properties)
-    }
+    def createNodeKeyConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition =
+      createNodeConstraint(Some(name), label, properties, "IS NODE KEY")
 
     // Create relationship key constraint
 
-    def createRelationshipKeyConstraint(relType: String, properties: String*): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS REL KEY")
-      })
-      awaitIndexesOnline()
-      getRelationshipConstraint(relType, properties)
-    }
+    def createRelationshipKeyConstraint(relType: String, properties: String*): ConstraintDefinition =
+      createRelationshipConstraint(None, relType, properties, "IS REL KEY")
 
     def createRelationshipKeyConstraintWithName(
       name: String,
       relType: String,
       properties: String*
+    ): ConstraintDefinition =
+      createRelationshipConstraint(Some(name), relType, properties, "IS REL KEY")
+
+    // Create constraint help methods
+
+    private def createNodeUniquenessConstraintCoreApi(
+      name: Option[String],
+      label: String,
+      property: String
     ): ConstraintDefinition = {
-      withTx(tx => {
-        tx.execute(
-          s"CREATE CONSTRAINT `$name` FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS REL KEY"
-        )
+      val constraint = withTx(tx => {
+        val cc = tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property)
+        name.map(n => cc.withName(n)).getOrElse(cc).create()
       })
       awaitIndexesOnline()
-      getRelationshipConstraint(relType, properties)
+      withTx(tx => {
+        tx.schema().getConstraintByName(constraint.getName)
+      })
+    }
+
+    private def createNodeConstraint(
+      maybeName: Option[String],
+      label: String,
+      properties: Seq[String],
+      constraintTypePredicate: String,
+      awaitIndexes: Boolean = true
+    ): ConstraintDefinition = {
+      createConstraint(
+        maybeName,
+        s"(e:$label)",
+        properties,
+        constraintTypePredicate,
+        () => {
+          if (awaitIndexes) awaitIndexesOnline()
+          getNodeConstraint(label, properties)
+        }
+      )
+    }
+
+    private def createRelationshipConstraint(
+      maybeName: Option[String],
+      relType: String,
+      properties: Seq[String],
+      constraintTypePredicate: String,
+      awaitIndexes: Boolean = true
+    ): ConstraintDefinition = {
+      createConstraint(
+        maybeName,
+        s"()-[e:$relType]-()",
+        properties,
+        constraintTypePredicate,
+        () => {
+          if (awaitIndexes) awaitIndexesOnline()
+          getRelationshipConstraint(relType, properties)
+        }
+      )
+    }
+
+    private def createConstraint(
+      maybeName: Option[String],
+      pattern: String,
+      properties: Seq[String],
+      constraintTypePredicate: String,
+      getConstraint: () => ConstraintDefinition
+    ): ConstraintDefinition = {
+      val nameString = maybeName.map(n => s" `$n`").getOrElse("")
+      withTx(tx => {
+        tx.execute(
+          s"CREATE CONSTRAINT$nameString FOR $pattern REQUIRE (${properties.map(p => s"e.`$p`").mkString(",")}) $constraintTypePredicate"
+        )
+      })
+      getConstraint()
     }
 
     // Create index with given type

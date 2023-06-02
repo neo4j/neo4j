@@ -2637,7 +2637,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             label("Label"),
             Seq(prop(" x", "prop")),
             NodeUniqueness,
@@ -2775,7 +2774,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             relType("REL_TYPE"),
             Seq(prop(" x", "prop")),
             RelationshipUniqueness,
@@ -2889,7 +2887,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             label("Label"),
             Seq(prop(" x", "prop")),
             NodeKey,
@@ -3006,7 +3003,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             relType("REL_TYPE"),
             Seq(prop(" x", "prop")),
             RelationshipKey,
@@ -3100,7 +3096,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             label("Label"),
             Seq(prop(" x", "prop")),
             NodePropertyExistence,
@@ -3173,7 +3168,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             relType("R"),
             Seq(prop(" x", "prop")),
             RelationshipPropertyExistence,
@@ -3253,7 +3247,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             label("Label"),
             Seq(prop(" x", "prop")),
             NodePropertyType(ZonedDateTimeTypeName()),
@@ -3333,7 +3326,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
-            " x",
             relType("R"),
             Seq(prop(" x", "prop")),
             RelationshipPropertyType(DurationTypeName()),
