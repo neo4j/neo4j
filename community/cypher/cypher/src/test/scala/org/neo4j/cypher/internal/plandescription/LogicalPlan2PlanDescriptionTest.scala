@@ -130,18 +130,9 @@ import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Point
-import org.neo4j.cypher.internal.ir
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.NoHeaders
-import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -367,6 +358,14 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.WaitForCompletion
+import org.neo4j.cypher.internal.logical.plans.create.CreateNode
+import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
+import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
+import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
@@ -451,10 +450,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   private val privLhsLP = attach(AssertAllowedDbmsActions(ShowUserAction), 2.0, providedOrder = ProvidedOrder.empty)
 
-  private val lhsLP = attach(AllNodesScan("a", Set.empty), EffectiveCardinality(2.0, Some(10.0)), ProvidedOrder.empty)
+  private val lhsLP =
+    attach(AllNodesScan(varFor("a"), Set.empty), EffectiveCardinality(2.0, Some(10.0)), ProvidedOrder.empty)
 
   private val lhsRelLP = attach(
-    UndirectedAllRelationshipsScan("r", "a", "b", Set.empty),
+    UndirectedAllRelationshipsScan(varFor("r"), varFor("a"), varFor("b"), Set.empty),
     EffectiveCardinality(2.0, Some(10.0)),
     ProvidedOrder.empty
   )
@@ -470,14 +470,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     Set(pretty"r", pretty"a", pretty"b")
   )
 
-  private val rhsLP = attach(AllNodesScan("b", Set.empty), 2.0, providedOrder = ProvidedOrder.empty)
+  private val rhsLP = attach(AllNodesScan(varFor("b"), Set.empty), 2.0, providedOrder = ProvidedOrder.empty)
 
   private val rhsPD =
     PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), EstimatedRows(2, Some(10))), Set(pretty"b"))
 
   test("Validate all arguments") {
     assertGood(
-      attach(AllNodesScan("a", Set.empty), EffectiveCardinality(1.0, Some(15.0)), ProvidedOrder.asc(varFor("a"))),
+      attach(
+        AllNodesScan(varFor("a"), Set.empty),
+        EffectiveCardinality(1.0, Some(15.0)),
+        ProvidedOrder.asc(varFor("a"))
+      ),
       planDescription(
         id,
         "AllNodesScan",
@@ -498,7 +502,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        AllNodesScan("  UNNAMED111", Set.empty),
+        AllNodesScan(varFor("  UNNAMED111"), Set.empty),
         EffectiveCardinality(1.0, Some(10.0)),
         ProvidedOrder.asc(varFor("  UNNAMED111"))
       ),
@@ -522,7 +526,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false),
+        Input(Seq(varFor("n1"), varFor("n2")), Seq(varFor("r")), Seq(varFor("v1"), varFor("v2")), nullable = false),
         EffectiveCardinality(42.3, Some(132))
       ),
       planDescription(
@@ -546,12 +550,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   // Leaf Plans
   test("AllNodesScan") {
     assertGood(
-      attach(AllNodesScan("a", Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
+      attach(AllNodesScan(varFor("a"), Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
       planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), Order(asPrettyString.raw("a ASC"))), Set("a"))
     )
 
     assertGood(
-      attach(AllNodesScan("  UNNAMED111", Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("  UNNAMED111"))),
+      attach(
+        AllNodesScan(varFor("  UNNAMED111"), Set.empty),
+        1.0,
+        providedOrder = ProvidedOrder.asc(varFor("  UNNAMED111"))
+      ),
       planDescription(
         id,
         "AllNodesScan",
@@ -562,7 +570,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(AllNodesScan("b", Set.empty), 42.0, providedOrder = ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))),
+      attach(
+        AllNodesScan(varFor("b"), Set.empty),
+        42.0,
+        providedOrder = ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))
+      ),
       planDescription(
         id,
         "AllNodesScan",
@@ -575,25 +587,33 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("NodeByLabelScan") {
     assertGood(
-      attach(NodeByLabelScan("node", label("X"), Set.empty, IndexOrderNone), 33.0),
+      attach(NodeByLabelScan(varFor("node"), label("X"), Set.empty, IndexOrderNone), 33.0),
       planDescription(id, "NodeByLabelScan", NoChildren, Seq(details("node:X")), Set("node"))
     )
 
     assertGood(
-      attach(NodeByLabelScan("  UNNAMED123", label("X"), Set.empty, IndexOrderNone), 33.0),
+      attach(NodeByLabelScan(varFor("  UNNAMED123"), label("X"), Set.empty, IndexOrderNone), 33.0),
       planDescription(id, "NodeByLabelScan", NoChildren, Seq(details(s"${anonVar("123")}:X")), Set(anonVar("123")))
     )
   }
 
   test("UnionNodeByLabelScan") {
     assertGood(
-      attach(UnionNodeByLabelsScan("node", Seq(label("X"), label("Y"), label("Z")), Set.empty, IndexOrderNone), 33.0),
+      attach(
+        UnionNodeByLabelsScan(varFor("node"), Seq(label("X"), label("Y"), label("Z")), Set.empty, IndexOrderNone),
+        33.0
+      ),
       planDescription(id, "UnionNodeByLabelsScan", NoChildren, Seq(details("node:X|Y|Z")), Set("node"))
     )
 
     assertGood(
       attach(
-        UnionNodeByLabelsScan("  UNNAMED123", Seq(label("X"), label("Y"), label("Z")), Set.empty, IndexOrderNone),
+        UnionNodeByLabelsScan(
+          varFor("  UNNAMED123"),
+          Seq(label("X"), label("Y"), label("Z")),
+          Set.empty,
+          IndexOrderNone
+        ),
         33.0
       ),
       planDescription(
@@ -610,10 +630,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         DirectedUnionRelationshipTypesScan(
-          "r",
-          "x",
+          varFor("r"),
+          varFor("x"),
           Seq(relType("A"), relType("B"), relType("C")),
-          "y",
+          varFor("y"),
           Set.empty,
           IndexOrderNone
         ),
@@ -631,10 +651,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         UndirectedUnionRelationshipTypesScan(
-          "r",
-          "x",
+          varFor("r"),
+          varFor("x"),
           Seq(relType("A"), relType("B"), relType("C")),
-          "y",
+          varFor("y"),
           Set.empty,
           IndexOrderNone
         ),
@@ -653,7 +673,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("IntersectionNodeByLabelScan") {
     assertGood(
       attach(
-        IntersectionNodeByLabelsScan("node", Seq(label("X"), label("Y"), label("Z")), Set.empty, IndexOrderNone),
+        IntersectionNodeByLabelsScan(
+          varFor("node"),
+          Seq(label("X"), label("Y"), label("Z")),
+          Set.empty,
+          IndexOrderNone
+        ),
         33.0
       ),
       planDescription(id, "IntersectionNodeByLabelsScan", NoChildren, Seq(details("node:X&Y&Z")), Set("node"))
@@ -662,7 +687,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         IntersectionNodeByLabelsScan(
-          "  UNNAMED123",
+          varFor("  UNNAMED123"),
           Seq(label("X"), label("Y"), label("Z")),
           Set.empty,
           IndexOrderNone
@@ -682,7 +707,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("NodeByIdSeek") {
     assertGood(
       attach(
-        NodeByIdSeek("node", ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty),
+        NodeByIdSeek(varFor("node"), ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty),
         333.0
       ),
       planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) IN [1, 32]")), Set("node"))
@@ -691,7 +716,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         NodeByIdSeek(
-          "node",
+          varFor("node"),
           ManySeekableArgs(AutoExtractedParameter("autolist_0", CTList(CTAny))(pos)),
           Set.empty
         ),
@@ -703,7 +728,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         NodeByIdSeek(
-          "node",
+          varFor("node"),
           ManySeekableArgs(ExplicitParameter("listParam", CTList(CTAny), ExactSize(5))(pos)),
           Set.empty
         ),
@@ -715,7 +740,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         NodeByIdSeek(
-          "node",
+          varFor("node"),
           SingleSeekableArg(AutoExtractedParameter("autoint_0", CTInteger)(pos)),
           Set.empty
         ),
@@ -726,7 +751,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        NodeByIdSeek("  UNNAMED11", ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty),
+        NodeByIdSeek(
+          varFor("  UNNAMED11"),
+          ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)),
+          Set.empty
+        ),
         333.0
       ),
       planDescription(
@@ -742,7 +771,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("NodeByElementIdSeek") {
     assertGood(
       attach(
-        NodeByElementIdSeek("node", ManySeekableArgs(listOfString("some-id", "other-id")), Set.empty),
+        NodeByElementIdSeek(varFor("node"), ManySeekableArgs(listOfString("some-id", "other-id")), Set.empty),
         333.0
       ),
       planDescription(
@@ -757,7 +786,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         NodeByElementIdSeek(
-          "node",
+          varFor("node"),
           ManySeekableArgs(autoParameter("autolist_0", CTList(CTAny))),
           Set.empty
         ),
@@ -774,7 +803,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        NodeByElementIdSeek("node", SingleSeekableArg(stringLiteral("some-id")), Set.empty),
+        NodeByElementIdSeek(varFor("node"), SingleSeekableArg(stringLiteral("some-id")), Set.empty),
         333.0
       ),
       planDescription(
@@ -1025,7 +1054,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         NodeUniqueIndexSeek(
-          "x",
+          varFor("x"),
           LabelToken("Label", LabelId(0)),
           Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
           ManyQueryExpression(ListLiteral(Seq(stringLiteral("Andres")))(pos)),
@@ -1047,7 +1076,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         NodeIndexSeek(
-          "x",
+          varFor("x"),
           LabelToken("Label", LabelId(0)),
           Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(
@@ -1080,7 +1109,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         NodeIndexSeek(
-          "x",
+          varFor("x"),
           LabelToken("Label", LabelId(0)),
           Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(PointBoundingBoxRange(
@@ -1278,7 +1307,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("AllRelationshipsScan") {
     assertGood(
       attach(
-        DirectedAllRelationshipsScan("r", "x", "y", Set.empty),
+        DirectedAllRelationshipsScan(varFor("r"), varFor("x"), varFor("y"), Set.empty),
         23.0
       ),
       planDescription(
@@ -1292,7 +1321,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        UndirectedAllRelationshipsScan("r", "x", "y", Set.empty),
+        UndirectedAllRelationshipsScan(varFor("r"), varFor("x"), varFor("y"), Set.empty),
         23.0
       ),
       planDescription(
@@ -1308,7 +1337,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("RelationshipTypeScan") {
     assertGood(
       attach(
-        DirectedRelationshipTypeScan("r", "x", RelTypeName("R")(InputPosition.NONE), "y", Set.empty, IndexOrderNone),
+        DirectedRelationshipTypeScan(
+          varFor("r"),
+          varFor("x"),
+          RelTypeName("R")(InputPosition.NONE),
+          varFor("y"),
+          Set.empty,
+          IndexOrderNone
+        ),
         23.0
       ),
       planDescription(
@@ -1322,7 +1358,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        UndirectedRelationshipTypeScan("r", "x", RelTypeName("R")(InputPosition.NONE), "y", Set.empty, IndexOrderNone),
+        UndirectedRelationshipTypeScan(
+          varFor("r"),
+          varFor("x"),
+          RelTypeName("R")(InputPosition.NONE),
+          varFor("y"),
+          Set.empty,
+          IndexOrderNone
+        ),
         23.0
       ),
       planDescription(
@@ -1359,7 +1402,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("ProduceResult") {
     assertGood(
-      attach(ProduceResult(lhsLP, Seq("a", "b", "c\nd")), 12.0),
+      attach(ProduceResult(lhsLP, Seq(varFor("a"), varFor("b"), varFor("c\nd"))), 12.0),
       planDescription(id, "ProduceResults", SingleChild(lhsPD), Seq(details(Seq("a", "b", "`c d`"))), Set("a"))
     )
   }
@@ -1371,14 +1414,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(plans.Argument(Set("a", "b")), 95.0),
+      attach(plans.Argument(Set(varFor("a"), varFor("b"))), 95.0),
       planDescription(id, "Argument", NoChildren, Seq(details("a, b")), Set("a", "b"))
     )
   }
 
   test("RelationshipByIdSeek") {
     assertGood(
-      attach(DirectedRelationshipByIdSeek("r", SingleSeekableArg(number("1")), "a", "b", Set.empty), 70.0),
+      attach(
+        DirectedRelationshipByIdSeek(varFor("r"), SingleSeekableArg(number("1")), varFor("a"), varFor("b"), Set.empty),
+        70.0
+      ),
       planDescription(
         id,
         "DirectedRelationshipByIdSeek",
@@ -1389,19 +1435,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(DirectedRelationshipByIdSeek("r", SingleSeekableArg(number("1")), "a", "b", Set("x")), 70.0),
-      planDescription(
-        id,
-        "DirectedRelationshipByIdSeek",
-        NoChildren,
-        Seq(details("(a)-[r]->(b) WHERE id(r) = 1")),
-        Set("r", "a", "b", "x")
-      )
-    )
-
-    assertGood(
       attach(
-        DirectedRelationshipByIdSeek("r", ManySeekableArgs(ListLiteral(Seq(number("1")))(pos)), "a", "b", Set("x")),
+        DirectedRelationshipByIdSeek(
+          varFor("r"),
+          SingleSeekableArg(number("1")),
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
+        ),
         70.0
       ),
       planDescription(
@@ -1416,11 +1457,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         DirectedRelationshipByIdSeek(
-          "r",
+          varFor("r"),
+          ManySeekableArgs(ListLiteral(Seq(number("1")))(pos)),
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
+        ),
+        70.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipByIdSeek",
+        NoChildren,
+        Seq(details("(a)-[r]->(b) WHERE id(r) = 1")),
+        Set("r", "a", "b", "x")
+      )
+    )
+
+    assertGood(
+      attach(
+        DirectedRelationshipByIdSeek(
+          varFor("r"),
           ManySeekableArgs(ListLiteral(Seq(number("1"), number("2")))(pos)),
-          "a",
-          "b",
-          Set("x")
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
         ),
         70.0
       ),
@@ -1434,7 +1495,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(UndirectedRelationshipByIdSeek("r", SingleSeekableArg(number("1")), "a", "b", Set("x")), 70.0),
+      attach(
+        UndirectedRelationshipByIdSeek(
+          varFor("r"),
+          SingleSeekableArg(number("1")),
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
+        ),
+        70.0
+      ),
       planDescription(
         id,
         "UndirectedRelationshipByIdSeek",
@@ -1446,7 +1516,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        UndirectedRelationshipByIdSeek("  UNNAMED2", SingleSeekableArg(number("1")), "a", "  UNNAMED32", Set("x")),
+        UndirectedRelationshipByIdSeek(
+          varFor("  UNNAMED2"),
+          SingleSeekableArg(number("1")),
+          varFor("a"),
+          varFor("  UNNAMED32"),
+          Set(varFor("x"))
+        ),
         70.0
       ),
       planDescription(
@@ -1462,7 +1538,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("RelationshipByElementIdSeek") {
     assertGood(
       attach(
-        DirectedRelationshipByElementIdSeek("r", SingleSeekableArg(stringLiteral("some-id")), "a", "b", Set.empty),
+        DirectedRelationshipByElementIdSeek(
+          varFor("r"),
+          SingleSeekableArg(stringLiteral("some-id")),
+          varFor("a"),
+          varFor("b"),
+          Set.empty
+        ),
         70.0
       ),
       planDescription(
@@ -1476,21 +1558,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        DirectedRelationshipByElementIdSeek("r", SingleSeekableArg(stringLiteral("some-id")), "a", "b", Set("x")),
-        70.0
-      ),
-      planDescription(
-        id,
-        "DirectedRelationshipByElementIdSeek",
-        NoChildren,
-        Seq(details("(a)-[r]->(b) WHERE elementId(r) = \"some-id\"")),
-        Set("r", "a", "b", "x")
-      )
-    )
-
-    assertGood(
-      attach(
-        DirectedRelationshipByElementIdSeek("r", ManySeekableArgs(listOfString("some-id")), "a", "b", Set("x")),
+        DirectedRelationshipByElementIdSeek(
+          varFor("r"),
+          SingleSeekableArg(stringLiteral("some-id")),
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
+        ),
         70.0
       ),
       planDescription(
@@ -1505,11 +1579,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         DirectedRelationshipByElementIdSeek(
-          "r",
+          varFor("r"),
+          ManySeekableArgs(listOfString("some-id")),
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
+        ),
+        70.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipByElementIdSeek",
+        NoChildren,
+        Seq(details("(a)-[r]->(b) WHERE elementId(r) = \"some-id\"")),
+        Set("r", "a", "b", "x")
+      )
+    )
+
+    assertGood(
+      attach(
+        DirectedRelationshipByElementIdSeek(
+          varFor("r"),
           ManySeekableArgs(listOfString("some-id", "other-id")),
-          "a",
-          "b",
-          Set("x")
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
         ),
         70.0
       ),
@@ -1524,7 +1618,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        UndirectedRelationshipByElementIdSeek("r", SingleSeekableArg(stringLiteral("some-id")), "a", "b", Set("x")),
+        UndirectedRelationshipByElementIdSeek(
+          varFor("r"),
+          SingleSeekableArg(stringLiteral("some-id")),
+          varFor("a"),
+          varFor("b"),
+          Set(varFor("x"))
+        ),
         70.0
       ),
       planDescription(
@@ -1539,11 +1639,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         UndirectedRelationshipByElementIdSeek(
-          "  UNNAMED2",
+          varFor("  UNNAMED2"),
           SingleSeekableArg(stringLiteral("some-id")),
-          "a",
-          "  UNNAMED32",
-          Set("x")
+          varFor("a"),
+          varFor("  UNNAMED32"),
+          Set(varFor("x"))
         ),
         70.0
       ),
@@ -1563,7 +1663,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         LoadCSV(
           lhsLP,
           stringLiteral("file:///tmp/foo.csv"),
-          "u",
+          varFor("u"),
           NoHeaders,
           None,
           legacyCsvQuoteEscaping = false,
@@ -1579,7 +1679,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         LoadCSV(
           lhsLP,
           stringLiteral("file:///tmp/foo.csv"),
-          "  UNNAMED2",
+          varFor("  UNNAMED2"),
           NoHeaders,
           None,
           legacyCsvQuoteEscaping = false,
@@ -1593,7 +1693,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Input") {
     assertGood(
-      attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), 4.0),
+      attach(
+        Input(Seq(varFor("n1"), varFor("n2")), Seq(varFor("r")), Seq(varFor("v1"), varFor("v2")), nullable = false),
+        4.0
+      ),
       planDescription(
         id,
         "Input",
@@ -1606,12 +1709,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("NodeCountFromCountStore") {
     assertGood(
-      attach(NodeCountFromCountStore("x", List(Some(label("LabelName"))), Set.empty), 54.2),
+      attach(NodeCountFromCountStore(varFor("x"), List(Some(label("LabelName"))), Set.empty), 54.2),
       planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (:LabelName) ) AS x")), Set("x"))
     )
 
     assertGood(
-      attach(NodeCountFromCountStore("x", List(Some(label("LabelName")), Some(label("LabelName2"))), Set.empty), 54.2),
+      attach(
+        NodeCountFromCountStore(varFor("x"), List(Some(label("LabelName")), Some(label("LabelName2"))), Set.empty),
+        54.2
+      ),
       planDescription(
         id,
         "NodeCountFromCountStore",
@@ -1622,7 +1728,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(NodeCountFromCountStore("  UNNAMED123", List(Some(label("LabelName"))), Set.empty), 54.2),
+      attach(NodeCountFromCountStore(varFor("  UNNAMED123"), List(Some(label("LabelName"))), Set.empty), 54.2),
       planDescription(
         id,
         "NodeCountFromCountStore",
@@ -1633,7 +1739,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(NodeCountFromCountStore("x", List(None, None), Set.empty), 54.2),
+      attach(NodeCountFromCountStore(varFor("x"), List(None, None), Set.empty), 54.2),
       planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (), () ) AS x")), Set("x"))
     )
   }
@@ -1664,7 +1770,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("RelationshipCountFromCountStore") {
     assertGood(
       attach(
-        RelationshipCountFromCountStore("x", None, Seq(relType("LIKES"), relType("LOVES")), None, Set.empty),
+        RelationshipCountFromCountStore(varFor("x"), None, Seq(relType("LIKES"), relType("LOVES")), None, Set.empty),
         54.2
       ),
       planDescription(
@@ -1677,7 +1783,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(RelationshipCountFromCountStore("  UNNAMED122", None, Seq(relType("LIKES")), None, Set.empty), 54.2),
+      attach(
+        RelationshipCountFromCountStore(varFor("  UNNAMED122"), None, Seq(relType("LIKES")), None, Set.empty),
+        54.2
+      ),
       planDescription(
         id,
         "RelationshipCountFromCountStore",
@@ -1690,7 +1799,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         RelationshipCountFromCountStore(
-          "x",
+          varFor("x"),
           Some(label("StartLabel")),
           Seq(relType("LIKES"), relType("LOVES")),
           None,
@@ -1710,7 +1819,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         RelationshipCountFromCountStore(
-          "x",
+          varFor("x"),
           Some(label("StartLabel")),
           Seq(relType("LIKES"), relType("LOVES")),
           Some(label("EndLabel")),
@@ -1729,7 +1838,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq.empty, Some(label("EndLabel")), Set.empty),
+        RelationshipCountFromCountStore(
+          varFor("x"),
+          Some(label("StartLabel")),
+          Seq.empty,
+          Some(label("EndLabel")),
+          Set.empty
+        ),
         54.2
       ),
       planDescription(
@@ -3778,13 +3893,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Aggregation") {
     // Aggregation 1 grouping, 0 aggregating
     assertGood(
-      attach(Aggregation(lhsLP, Map("a" -> varFor("a")), Map.empty), 17.5),
+      attach(Aggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map.empty), 17.5),
       planDescription(id, "EagerAggregation", SingleChild(lhsPD), Seq(details("a")), Set("a"))
     )
 
     // Aggregation 2 grouping, 0 aggregating
     assertGood(
-      attach(Aggregation(lhsLP, Map("a" -> varFor("a"), "b" -> varFor("c")), Map.empty), 17.5),
+      attach(Aggregation(lhsLP, Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c")), Map.empty), 17.5),
       planDescription(id, "EagerAggregation", SingleChild(lhsPD), Seq(details("a, c AS b")), Set("a", "b"))
     )
 
@@ -3795,7 +3910,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // Aggregation 1 grouping, 1 aggregating
     assertGood(
-      attach(Aggregation(lhsLP, Map("a" -> varFor("a")), Map("count" -> countFunction)), 1.3),
+      attach(Aggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map(varFor("count") -> countFunction)), 1.3),
       planDescription(
         id,
         "EagerAggregation",
@@ -3810,8 +3925,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Aggregation(
           lhsLP,
-          Map("a" -> varFor("a"), "b" -> varFor("c")),
-          Map("count(c)" -> countFunction, "collect" -> collectDistinctFunction)
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c")),
+          Map(varFor("count(c)") -> countFunction, varFor("collect") -> collectDistinctFunction)
         ),
         1.3
       ),
@@ -3826,19 +3941,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // Distinct 1 grouping
     assertGood(
-      attach(Distinct(lhsLP, Map("  a@23" -> varFor("  a@23"))), 45.9),
+      attach(Distinct(lhsLP, Map(varFor("  a@23") -> varFor("  a@23"))), 45.9),
       planDescription(id, "Distinct", SingleChild(lhsPD), Seq(details("a")), Set("a"))
     )
 
     // Distinct 2 grouping
     assertGood(
-      attach(Distinct(lhsLP, Map("a" -> varFor("a"), "b" -> varFor("c"))), 45.9),
+      attach(Distinct(lhsLP, Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"))), 45.9),
       planDescription(id, "Distinct", SingleChild(lhsPD), Seq(details("a, c AS b")), Set("a", "b"))
     )
 
     // OrderedDistinct 1 column, 1 sorted
     assertGood(
-      attach(OrderedDistinct(lhsLP, Map("a" -> varFor("a")), Seq(varFor("a"))), 45.9),
+      attach(OrderedDistinct(lhsLP, Map(varFor("a") -> varFor("a")), Seq(varFor("a"))), 45.9),
       planDescription(id, "OrderedDistinct", SingleChild(lhsPD), Seq(details("a")), Set("a"))
     )
 
@@ -3847,7 +3962,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         OrderedDistinct(
           lhsLP,
-          Map("a" -> varFor("a"), "b" -> varFor("c"), "d" -> varFor("d")),
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
           Seq(varFor("d"), varFor("a"))
         ),
         45.9
@@ -3857,7 +3972,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // OrderedAggregation 1 grouping, 0 aggregating, 1 sorted
     assertGood(
-      attach(OrderedAggregation(lhsLP, Map("a" -> varFor("a")), Map.empty, Seq(varFor("a"))), 17.5),
+      attach(OrderedAggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map.empty, Seq(varFor("a"))), 17.5),
       planDescription(id, "OrderedAggregation", SingleChild(lhsPD), Seq(details("a")), Set("a"))
     )
 
@@ -3866,7 +3981,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         OrderedAggregation(
           lhsLP,
-          Map("a" -> varFor("a"), "b" -> varFor("c"), "d" -> varFor("d")),
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
           Map.empty,
           Seq(varFor("d"), varFor("a"))
         ),
@@ -3880,8 +3995,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         OrderedAggregation(
           lhsLP,
-          Map("a" -> varFor("a"), "b" -> varFor("c"), "d" -> varFor("d")),
-          Map("count" -> countFunction),
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
+          Map(varFor("count") -> countFunction),
           Seq(varFor("d"), varFor("a"))
         ),
         1.3
@@ -3900,8 +4015,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         OrderedAggregation(
           lhsLP,
-          Map("a" -> varFor("a"), "b" -> varFor("c"), "d" -> varFor("d")),
-          Map("collect(DISTINCT c)" -> collectDistinctFunction),
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
+          Map(varFor("collect(DISTINCT c)") -> collectDistinctFunction),
           Seq(varFor("d"), varFor("a"))
         ),
         1.3
@@ -3920,8 +4035,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         OrderedAggregation(
           lhsLP,
-          Map("a" -> varFor("a"), "b" -> varFor("c"), "d" -> varFor("d")),
-          Map("collect(DISTINCT c)" -> collectDistinctFunction),
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
+          Map(varFor("collect(DISTINCT c)") -> collectDistinctFunction),
           Seq(varFor("d"), varFor("c"))
         ),
         1.3
@@ -3958,7 +4073,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       args = args
     )(pos)
     assertGood(
-      attach(SetRelationshipProperty(lhsLP, "x", key("prop"), functionInvocation), 1.0),
+      attach(SetRelationshipProperty(lhsLP, varFor("x"), key("prop"), functionInvocation), 1.0),
       planDescription(
         id,
         "SetProperty",
@@ -3974,7 +4089,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       callArguments = args
     )(pos)
     assertGood(
-      attach(SetRelationshipProperty(lhsLP, "x", key("prop"), resolvedFunctionInvocation), 1.0),
+      attach(SetRelationshipProperty(lhsLP, varFor("x"), key("prop"), resolvedFunctionInvocation), 1.0),
       planDescription(
         id,
         "SetProperty",
@@ -3996,8 +4111,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Create(
           lhsLP,
           Seq(
-            CreateNode("x", Set.empty, None),
-            CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)
+            CreateNode(varFor("x"), Set.empty, None),
+            CreateRelationship(varFor("r"), varFor("x"), relType("R"), varFor("y"), SemanticDirection.INCOMING, None)
           )
         ),
         32.2
@@ -4010,8 +4125,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Create(
           lhsLP,
           Seq(
-            CreateNode("x", Set(label("Label")), None),
-            CreateRelationship("  UNNAMED67", "x", relType("R"), "y", SemanticDirection.INCOMING, None)
+            CreateNode(varFor("x"), Set(label("Label")), None),
+            CreateRelationship(
+              varFor("  UNNAMED67"),
+              varFor("x"),
+              relType("R"),
+              varFor("y"),
+              SemanticDirection.INCOMING,
+              None
+            )
           )
         ),
         32.2
@@ -4030,8 +4152,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Create(
           lhsLP,
           Seq(
-            CreateNode("x", Set(label("Label1"), label("Label2")), None),
-            CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)
+            CreateNode(varFor("x"), Set(label("Label1"), label("Label2")), None),
+            CreateRelationship(varFor("r"), varFor("x"), relType("R"), varFor("y"), SemanticDirection.INCOMING, None)
           )
         ),
         32.2
@@ -4050,8 +4172,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Create(
           lhsLP,
           Seq(
-            CreateNode("x", Set(label("Label")), Some(properties)),
-            CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))
+            CreateNode(varFor("x"), Set(label("Label")), Some(properties)),
+            CreateRelationship(
+              varFor("r"),
+              varFor("x"),
+              relType("R"),
+              varFor("y"),
+              SemanticDirection.INCOMING,
+              Some(properties)
+            )
           )
         ),
         32.2
@@ -4076,8 +4205,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Set.empty, None)),
-          Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),
+          Seq(CreateNode(varFor("x"), Set.empty, None)),
+          Seq(CreateRelationship(
+            varFor("r"),
+            varFor("x"),
+            relType("R"),
+            varFor("y"),
+            SemanticDirection.INCOMING,
+            None
+          )),
           Seq.empty,
           Seq.empty,
           Set.empty
@@ -4091,9 +4227,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Set(label("L")), None)),
+          Seq(CreateNode(varFor("x"), Set(label("L")), None)),
           Seq.empty,
-          Seq(SetLabelPattern("x", Seq(label("NEW")))),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("NEW")))),
           Seq.empty,
           Set.empty
         ),
@@ -4112,10 +4248,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Set(label("L")), None)),
+          Seq(CreateNode(varFor("x"), Set(label("L")), None)),
           Seq.empty,
           Seq.empty,
-          Seq(SetLabelPattern("x", Seq(label("NEW")))),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("NEW")))),
           Set.empty
         ),
         32.2
@@ -4133,10 +4269,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Set(label("L")), None)),
+          Seq(CreateNode(varFor("x"), Set(label("L")), None)),
           Seq.empty,
-          Seq(SetLabelPattern("x", Seq(label("ON_MATCH")))),
-          Seq(SetLabelPattern("x", Seq(label("ON_CREATE")))),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("ON_MATCH")))),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("ON_CREATE")))),
           Set.empty
         ),
         32.2
@@ -4154,8 +4290,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Set.empty, Some(properties))),
-          Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))),
+          Seq(CreateNode(varFor("x"), Set.empty, Some(properties))),
+          Seq(CreateRelationship(
+            varFor("r"),
+            varFor("x"),
+            relType("R"),
+            varFor("y"),
+            SemanticDirection.INCOMING,
+            Some(properties)
+          )),
           Seq.empty,
           Seq.empty,
           Set.empty
@@ -4175,8 +4318,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Set(label("L")), Some(properties))),
-          Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))),
+          Seq(CreateNode(varFor("x"), Set(label("L")), Some(properties))),
+          Seq(CreateRelationship(
+            varFor("r"),
+            varFor("x"),
+            relType("R"),
+            varFor("y"),
+            SemanticDirection.INCOMING,
+            Some(properties)
+          )),
           Seq.empty,
           Seq.empty,
           Set.empty
@@ -4197,10 +4347,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Merge(
           lhsLP,
           Seq.empty,
-          Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),
+          Seq(CreateRelationship(
+            varFor("r"),
+            varFor("x"),
+            relType("R"),
+            varFor("y"),
+            SemanticDirection.INCOMING,
+            None
+          )),
           Seq.empty,
           Seq.empty,
-          Set("x", "y")
+          Set(varFor("x"), varFor("y"))
         ),
         32.2
       ),
@@ -4217,9 +4374,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Merge(
           lhsLP,
-          Seq(CreateNode("x", Set(label("L")), None)),
+          Seq(CreateNode(varFor("x"), Set(label("L")), None)),
           Seq.empty,
-          Seq(SetNodePropertiesPattern("x", Seq((key("p1"), number("1")), (key("p2"), number("2"))))),
+          Seq(SetNodePropertiesPattern(varFor("x"), Seq((key("p1"), number("1")), (key("p2"), number("2"))))),
           Seq.empty,
           Set.empty
         ),
@@ -4241,9 +4398,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Foreach(
           lhsLP,
-          "i",
+          varFor("i"),
           parameter("p", CTList(CTInteger)),
-          Seq(SetNodePropertyPattern("x", PropertyKeyName("prop")(InputPosition.NONE), stringLiteral("foo")))
+          Seq(SetNodePropertyPattern(varFor("x"), PropertyKeyName("prop")(InputPosition.NONE), stringLiteral("foo")))
         ),
         32.2
       ),
@@ -4254,9 +4411,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Foreach(
           lhsLP,
-          "i",
+          varFor("i"),
           parameter("p", CTList(CTInteger)),
-          Seq(RemoveLabelPattern("x", Seq(label("L"), label("M"))))
+          Seq(RemoveLabelPattern(varFor("x"), Seq(label("L"), label("M"))))
         ),
         32.2
       ),
@@ -4265,14 +4422,24 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(ir.DeleteExpression(varFor("x"), forced = true))),
+        Foreach(
+          lhsLP,
+          varFor("i"),
+          parameter("p", CTList(CTInteger)),
+          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), forced = true))
+        ),
         32.2
       ),
       planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "DETACH DELETE x"))), Set("a"))
     )
     assertGood(
       attach(
-        Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(ir.DeleteExpression(varFor("x"), forced = false))),
+        Foreach(
+          lhsLP,
+          varFor("i"),
+          parameter("p", CTList(CTInteger)),
+          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), forced = false))
+        ),
         32.2
       ),
       planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "DELETE x"))), Set("a"))
@@ -4483,7 +4650,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Expand") {
     assertGood(
-      attach(Expand(lhsLP, "a", OUTGOING, Seq.empty, "  UNNAMED4", "r1", ExpandAll), 95.0),
+      attach(Expand(lhsLP, varFor("a"), OUTGOING, Seq.empty, varFor("  UNNAMED4"), varFor("r1"), ExpandAll), 95.0),
       planDescription(
         id,
         "Expand(All)",
@@ -4494,32 +4661,49 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(Expand(lhsLP, "a", INCOMING, Seq(relType("R")), "y", "r1", ExpandAll), 95.0),
+      attach(Expand(lhsLP, varFor("a"), INCOMING, Seq(relType("R")), varFor("y"), varFor("r1"), ExpandAll), 95.0),
       planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details("(a)<-[r1:R]-(y)")), Set("a", "y", "r1"))
     )
 
     assertGood(
-      attach(Expand(lhsLP, "a", BOTH, Seq(relType("R1"), relType("R2")), "y", "r1", ExpandAll), 95.0),
+      attach(
+        Expand(lhsLP, varFor("a"), BOTH, Seq(relType("R1"), relType("R2")), varFor("y"), varFor("r1"), ExpandAll),
+        95.0
+      ),
       planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details("(a)-[r1:R1|R2]-(y)")), Set("a", "y", "r1"))
     )
 
     assertGood(
-      attach(Expand(lhsLP, "a", OUTGOING, Seq.empty, "y", "r1", ExpandInto), 113.0),
+      attach(Expand(lhsLP, varFor("a"), OUTGOING, Seq.empty, varFor("y"), varFor("r1"), ExpandInto), 113.0),
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)-[r1]->(y)")), Set("a", "y", "r1"))
     )
 
     assertGood(
-      attach(Expand(lhsLP, "a", INCOMING, Seq(relType("R")), "y", "r1", ExpandInto), 113.0),
+      attach(Expand(lhsLP, varFor("a"), INCOMING, Seq(relType("R")), varFor("y"), varFor("r1"), ExpandInto), 113.0),
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)<-[r1:R]-(y)")), Set("a", "y", "r1"))
     )
 
     assertGood(
-      attach(Expand(lhsLP, "a", BOTH, Seq(relType("R1"), relType("R2")), "y", "r1", ExpandInto), 113.0),
+      attach(
+        Expand(lhsLP, varFor("a"), BOTH, Seq(relType("R1"), relType("R2")), varFor("y"), varFor("r1"), ExpandInto),
+        113.0
+      ),
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)-[r1:R1|R2]-(y)")), Set("a", "y", "r1"))
     )
 
     assertGood(
-      attach(Expand(lhsLP, "a", BOTH, Seq(relType("R1"), relType("R2")), "y", "  UNNAMED1", ExpandInto), 113.0),
+      attach(
+        Expand(
+          lhsLP,
+          varFor("a"),
+          BOTH,
+          Seq(relType("R1"), relType("R2")),
+          varFor("y"),
+          varFor("  UNNAMED1"),
+          ExpandInto
+        ),
+        113.0
+      ),
       planDescription(
         id,
         "Expand(Into)",
@@ -4555,7 +4739,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // Without predicate
     assertGood(
-      attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(relType("R")), "  UNNAMED5", "r", ExpandAll, None), 12.0),
+      attach(
+        OptionalExpand(
+          lhsLP,
+          varFor("a"),
+          INCOMING,
+          Seq(relType("R")),
+          varFor("  UNNAMED5"),
+          varFor("r"),
+          ExpandAll,
+          None
+        ),
+        12.0
+      ),
       planDescription(
         id,
         "OptionalExpand(All)",
@@ -4567,7 +4763,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // With predicate and no relationship types
     assertGood(
-      attach(OptionalExpand(lhsLP, "a", OUTGOING, Seq(), "to", "r", ExpandAll, Some(predicate1)), 12.0),
+      attach(
+        OptionalExpand(lhsLP, varFor("a"), OUTGOING, Seq(), varFor("to"), varFor("r"), ExpandAll, Some(predicate1)),
+        12.0
+      ),
       planDescription(
         id,
         "OptionalExpand(All)",
@@ -4582,11 +4781,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         OptionalExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           BOTH,
           Seq(relType("R")),
-          "to",
-          "r",
+          varFor("to"),
+          varFor("r"),
           ExpandAll,
           Some(And(predicate1, predicate2)(pos))
         ),
@@ -4603,7 +4802,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // With multiple relationship types
     assertGood(
-      attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(relType("R1"), relType("R2")), "to", "r", ExpandAll, None), 12.0),
+      attach(
+        OptionalExpand(
+          lhsLP,
+          varFor("a"),
+          INCOMING,
+          Seq(relType("R1"), relType("R2")),
+          varFor("to"),
+          varFor("r"),
+          ExpandAll,
+          None
+        ),
+        12.0
+      ),
       planDescription(
         id,
         "OptionalExpand(All)",
@@ -4621,12 +4832,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )(pos))(pos)
 
     assertGood(
-      attach(Projection(lhsLP, Set.empty, Map("x" -> varFor("y"))), 2345.0),
+      attach(Projection(lhsLP, Set.empty, Map(varFor("x") -> varFor("y"))), 2345.0),
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details("y AS x")), Set("a", "x"))
     )
 
     assertGood(
-      attach(Projection(lhsLP, Set.empty, Map("x" -> pathExpression)), 2345.0),
+      attach(Projection(lhsLP, Set.empty, Map(varFor("x") -> pathExpression)), 2345.0),
       planDescription(
         id,
         "Projection",
@@ -4637,7 +4848,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(Projection(lhsLP, Set.empty, Map("x" -> varFor("  UNNAMED42"), "n.prop" -> prop("n", "prop"))), 2345.0),
+      attach(
+        Projection(lhsLP, Set.empty, Map(varFor("x") -> varFor("  UNNAMED42"), varFor("n.prop") -> prop("n", "prop"))),
+        2345.0
+      ),
       planDescription(
         id,
         "Projection",
@@ -4649,7 +4863,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // Projection should show up in the order they were specified in
     assertGood(
-      attach(Projection(lhsLP, Set.empty, Map("n.prop" -> prop("n", "prop"), "x" -> varFor("y"))), 2345.0),
+      attach(
+        Projection(lhsLP, Set.empty, Map(varFor("n.prop") -> prop("n", "prop"), varFor("x") -> varFor("y"))),
+        2345.0
+      ),
       planDescription(
         id,
         "Projection",
@@ -4700,8 +4917,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ShortestRelationshipPattern(
             None,
             PatternRelationship(
-              "r",
-              ("  UNNAMED23", "y"),
+              varFor("r"),
+              (varFor("  UNNAMED23"), varFor("y")),
               SemanticDirection.BOTH,
               Seq.empty,
               SimplePatternLength
@@ -4731,8 +4948,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ShortestRelationshipPattern(
             None,
             PatternRelationship(
-              "r",
-              ("  UNNAMED23", "y"),
+              varFor("r"),
+              (varFor("  UNNAMED23"), varFor("y")),
               SemanticDirection.BOTH,
               Seq.empty,
               VarPatternLength(1, Some(1))
@@ -4762,8 +4979,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ShortestRelationshipPattern(
             None,
             PatternRelationship(
-              "r",
-              ("  UNNAMED23", "y"),
+              varFor("r"),
+              (varFor("  UNNAMED23"), varFor("y")),
               SemanticDirection.BOTH,
               Seq.empty,
               VarPatternLength(2, Some(4))
@@ -4791,10 +5008,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         FindShortestPaths(
           lhsLP,
           ShortestRelationshipPattern(
-            Some("  UNNAMED12"),
+            Some(varFor("  UNNAMED12")),
             PatternRelationship(
-              "r",
-              ("a", "y"),
+              varFor("r"),
+              (varFor("a"), varFor("y")),
               SemanticDirection.BOTH,
               Seq(relType("R")),
               VarPatternLength(2, Some(4))
@@ -4824,10 +5041,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         FindShortestPaths(
           lhsLP,
           ShortestRelationshipPattern(
-            Some("  UNNAMED12"),
+            Some(varFor("  UNNAMED12")),
             PatternRelationship(
-              "r",
-              ("a", "  UNNAMED2"),
+              varFor("r"),
+              (varFor("a"), varFor("  UNNAMED2")),
               SemanticDirection.BOTH,
               Seq(relType("R")),
               VarPatternLength(2, None)
@@ -4857,10 +5074,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         FindShortestPaths(
           lhsLP,
           ShortestRelationshipPattern(
-            Some("  UNNAMED12"),
+            Some(varFor("  UNNAMED12")),
             PatternRelationship(
-              "r",
-              ("a", "  UNNAMED2"),
+              varFor("r"),
+              (varFor("a"), varFor("  UNNAMED2")),
               SemanticDirection.BOTH,
               Seq(relType("R")),
               VarPatternLength(1, None)
@@ -4887,7 +5104,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Optional") {
     assertGood(
-      attach(Optional(lhsLP, Set("a")), 113.0),
+      attach(Optional(lhsLP, Set(varFor("a"))), 113.0),
       planDescription(id, "Optional", SingleChild(lhsPD), Seq(details("a")), Set("a"))
     )
   }
@@ -4901,10 +5118,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         ProjectEndpoints(
           lhsLP,
-          "r",
-          "start",
+          varFor("r"),
+          varFor("start"),
           startInScope = true,
-          "end",
+          varFor("end"),
           endInScope = true,
           Seq.empty,
           direction = SemanticDirection.OUTGOING,
@@ -4925,10 +5142,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         ProjectEndpoints(
           lhsLP,
-          "r",
-          "start",
+          varFor("r"),
+          varFor("start"),
           startInScope = true,
-          "end",
+          varFor("end"),
           endInScope = true,
           Seq.empty,
           direction = SemanticDirection.OUTGOING,
@@ -4949,10 +5166,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         ProjectEndpoints(
           lhsLP,
-          "r",
-          "start",
+          varFor("r"),
+          varFor("start"),
           startInScope = true,
-          "end",
+          varFor("end"),
           endInScope = true,
           Seq.empty,
           direction = SemanticDirection.INCOMING,
@@ -4973,10 +5190,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         ProjectEndpoints(
           lhsLP,
-          "r",
-          "start",
+          varFor("r"),
+          varFor("start"),
           startInScope = true,
-          "end",
+          varFor("end"),
           endInScope = true,
           Seq(relType("R")),
           direction = SemanticDirection.BOTH,
@@ -5007,10 +5224,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         PruningVarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           SemanticDirection.OUTGOING,
           Seq(relType("R")),
-          "y",
+          varFor("y"),
           1,
           4,
           Seq(nodePredicate),
@@ -5034,10 +5251,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         PruningVarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           SemanticDirection.OUTGOING,
           Seq(relType("R")),
-          "y",
+          varFor("y"),
           2,
           4,
           Seq(nodePredicate),
@@ -5059,10 +5276,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         PruningVarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           SemanticDirection.OUTGOING,
           Seq(relType("R")),
-          "y",
+          varFor("y"),
           2,
           4,
           Seq(nodePredicate, nodePredicate2),
@@ -5083,7 +5300,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // Without predicates, without relationship type
     assertGood(
-      attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", 2, 4, Seq(), Seq()), 1.0),
+      attach(
+        PruningVarExpand(lhsLP, varFor("a"), SemanticDirection.OUTGOING, Seq(), varFor("y"), 2, 4, Seq(), Seq()),
+        1.0
+      ),
       planDescription(
         id,
         "VarLengthExpand(Pruning)",
@@ -5100,13 +5320,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         BFSPruningVarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           SemanticDirection.OUTGOING,
           Seq(relType("R")),
-          "y",
+          varFor("y"),
           includeStartNode = false,
           maxLength = 4,
-          depthName = Some("depth"),
+          depthName = Some(varFor("depth")),
           nodePredicates = Seq(nodePredicate),
           relationshipPredicates = Seq(relationshipPredicate)
         ),
@@ -5128,13 +5348,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         BFSPruningVarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           SemanticDirection.OUTGOING,
           Seq(relType("R")),
-          "y",
+          varFor("y"),
           includeStartNode = true,
           4,
-          depthName = Some("depth"),
+          depthName = Some(varFor("depth")),
           Seq(nodePredicate),
           Seq()
         ),
@@ -5154,13 +5374,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         BFSPruningVarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           SemanticDirection.OUTGOING,
           Seq(),
-          "y",
+          varFor("y"),
           includeStartNode = false,
           4,
-          depthName = Some("depth"),
+          depthName = Some(varFor("depth")),
           Seq(),
           Seq()
         ),
@@ -5182,12 +5402,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         VarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           INCOMING,
           INCOMING,
           Seq(relType("LIKES"), relType("LOVES")),
-          "  UNNAMED123",
-          "  UNNAMED99",
+          varFor("  UNNAMED123"),
+          varFor("  UNNAMED99"),
           VarPatternLength(1, Some(1)),
           ExpandAll
         ),
@@ -5207,12 +5427,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         VarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           INCOMING,
           INCOMING,
           Seq(relType("LIKES"), relType("LOVES")),
-          "to",
-          "rel",
+          varFor("to"),
+          varFor("rel"),
           VarPatternLength(1, Some(1)),
           ExpandAll,
           Seq(nodePredicate),
@@ -5236,12 +5456,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         VarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           INCOMING,
           INCOMING,
           Seq(relType("LIKES"), relType("LOVES")),
-          "to",
-          "rel",
+          varFor("to"),
+          varFor("rel"),
           VarPatternLength(2, Some(3)),
           ExpandAll,
           Seq(nodePredicate)
@@ -5262,12 +5482,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         VarExpand(
           lhsLP,
-          "a",
+          varFor("a"),
           OUTGOING,
           OUTGOING,
           Seq(relType("LIKES"), relType("LOVES")),
-          "to",
-          "rel",
+          varFor("to"),
+          varFor("rel"),
           VarPatternLength(2, None),
           ExpandAll
         ),
@@ -5286,23 +5506,23 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Updates") {
     // RemoveLabels
     assertGood(
-      attach(RemoveLabels(lhsLP, "x", Set(label("L1"))), 1.0),
+      attach(RemoveLabels(lhsLP, varFor("x"), Set(label("L1"))), 1.0),
       planDescription(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x"))
     )
 
     assertGood(
-      attach(RemoveLabels(lhsLP, "x", Set(label("L1"), label("L2"))), 1.0),
+      attach(RemoveLabels(lhsLP, varFor("x"), Set(label("L1"), label("L2"))), 1.0),
       planDescription(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x"))
     )
 
     // SetLabels
     assertGood(
-      attach(SetLabels(lhsLP, "x", Set(label("L1"))), 1.0),
+      attach(SetLabels(lhsLP, varFor("x"), Set(label("L1"))), 1.0),
       planDescription(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x"))
     )
 
     assertGood(
-      attach(SetLabels(lhsLP, "x", Set(label("L1"), label("L2"))), 1.0),
+      attach(SetLabels(lhsLP, varFor("x"), Set(label("L1"), label("L2"))), 1.0),
       planDescription(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x"))
     )
 
@@ -5314,7 +5534,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // Set From Map
     assertGood(
-      attach(SetNodePropertiesFromMap(lhsLP, "x", map, removeOtherProps = true), 1.0),
+      attach(SetNodePropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = true), 1.0),
       planDescription(
         id,
         "SetNodePropertiesFromMap",
@@ -5325,7 +5545,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(SetNodePropertiesFromMap(lhsLP, "x", map, removeOtherProps = false), 1.0),
+      attach(SetNodePropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = false), 1.0),
       planDescription(
         id,
         "SetNodePropertiesFromMap",
@@ -5336,7 +5556,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(SetRelationshipPropertiesFromMap(lhsLP, "x", map, removeOtherProps = true), 1.0),
+      attach(SetRelationshipPropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = true), 1.0),
       planDescription(
         id,
         "SetRelationshipPropertiesFromMap",
@@ -5347,7 +5567,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(SetRelationshipPropertiesFromMap(lhsLP, "x", map, removeOtherProps = false), 1.0),
+      attach(SetRelationshipPropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = false), 1.0),
       planDescription(
         id,
         "SetRelationshipPropertiesFromMap",
@@ -5380,12 +5600,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(SetNodeProperty(lhsLP, "x", key("prop"), number("1")), 1.0),
+      attach(SetNodeProperty(lhsLP, varFor("x"), key("prop"), number("1")), 1.0),
       planDescription(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1")), Set("a", "x"))
     )
 
     assertGood(
-      attach(SetRelationshipProperty(lhsLP, "x", key("prop"), number("1")), 1.0),
+      attach(SetRelationshipProperty(lhsLP, varFor("x"), key("prop"), number("1")), 1.0),
       planDescription(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1")), Set("a", "x"))
     )
     // Set multiple properties
@@ -5395,12 +5615,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(SetNodeProperties(lhsLP, "x", Seq((key("p1"), number("1")), (key("p2"), number("2")))), 1.0),
+      attach(SetNodeProperties(lhsLP, varFor("x"), Seq((key("p1"), number("1")), (key("p2"), number("2")))), 1.0),
       planDescription(id, "SetProperties", SingleChild(lhsPD), Seq(details("x.p1 = 1, x.p2 = 2")), Set("a", "x"))
     )
 
     assertGood(
-      attach(SetNodeProperties(lhsLP, "x", Seq((key("p1"), number("1")), (key("p2"), number("2")))), 1.0),
+      attach(SetNodeProperties(lhsLP, varFor("x"), Seq((key("p1"), number("1")), (key("p2"), number("2")))), 1.0),
       planDescription(id, "SetProperties", SingleChild(lhsPD), Seq(details("x.p1 = 1, x.p2 = 2")), Set("a", "x"))
     )
 
@@ -5409,42 +5629,42 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Sort") {
     // Sort
     assertGood(
-      attach(Sort(lhsLP, Seq(Ascending("a"))), 1.0),
+      attach(Sort(lhsLP, Seq(Ascending(varFor("a")))), 1.0),
       planDescription(id, "Sort", SingleChild(lhsPD), Seq(details("a ASC")), Set("a"))
     )
 
     assertGood(
-      attach(Sort(lhsLP, Seq(Descending("a"), Ascending("y"))), 1.0),
+      attach(Sort(lhsLP, Seq(Descending(varFor("a")), Ascending(varFor("y")))), 1.0),
       planDescription(id, "Sort", SingleChild(lhsPD), Seq(details("a DESC, y ASC")), Set("a"))
     )
 
     // Top
     assertGood(
-      attach(Top(lhsLP, Seq(Ascending("a")), number("3")), 1.0),
+      attach(Top(lhsLP, Seq(Ascending(varFor("a"))), number("3")), 1.0),
       planDescription(id, "Top", SingleChild(lhsPD), Seq(details("a ASC LIMIT 3")), Set("a"))
     )
 
     assertGood(
-      attach(Top(lhsLP, Seq(Descending("a"), Ascending("y")), number("3")), 1.0),
+      attach(Top(lhsLP, Seq(Descending(varFor("a")), Ascending(varFor("y"))), number("3")), 1.0),
       planDescription(id, "Top", SingleChild(lhsPD), Seq(details("a DESC, y ASC LIMIT 3")), Set("a"))
     )
 
     // Partial Sort
     assertGood(
-      attach(PartialSort(lhsLP, Seq(Ascending("a")), Seq(Descending("y"))), 1.0),
+      attach(PartialSort(lhsLP, Seq(Ascending(varFor("a"))), Seq(Descending(varFor("y")))), 1.0),
       planDescription(id, "PartialSort", SingleChild(lhsPD), Seq(details("a ASC, y DESC")), Set("a"))
     )
 
     // Partial Top
     assertGood(
-      attach(PartialTop(lhsLP, Seq(Ascending("a")), Seq(Descending("y")), number("3")), 1.0),
+      attach(PartialTop(lhsLP, Seq(Ascending(varFor("a"))), Seq(Descending(varFor("y"))), number("3")), 1.0),
       planDescription(id, "PartialTop", SingleChild(lhsPD), Seq(details("a ASC, y DESC LIMIT 3")), Set("a"))
     )
   }
 
   test("Unwind") {
     assertGood(
-      attach(UnwindCollection(lhsLP, "x", varFor("list")), 1.0),
+      attach(UnwindCollection(lhsLP, varFor("x"), varFor("list")), 1.0),
       planDescription(id, "Unwind", SingleChild(lhsPD), Seq(details("list AS x")), Set("a", "x"))
     )
   }
@@ -5732,7 +5952,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowDatabase(AllDatabasesScope()(pos), verbose = false, List("foo", "bar"), None, None), 1.0),
+      attach(
+        ShowDatabase(AllDatabasesScope()(pos), verbose = false, List(varFor("foo"), varFor("bar")), None, None),
+        1.0
+      ),
       adminPlanDescription
     )
 
@@ -5783,7 +6006,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowServers(privLhsLP, verbose = false, List.empty[String], None, None), 1.0),
+      attach(ShowServers(privLhsLP, verbose = false, List.empty, None, None), 1.0),
       adminPlanDescription
     )
 
@@ -5954,7 +6177,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("AntiConditionalApply") {
     assertGood(
-      attach(AntiConditionalApply(lhsLP, rhsLP, Seq("c")), 2345.0),
+      attach(AntiConditionalApply(lhsLP, rhsLP, Seq(varFor("c"))), 2345.0),
       planDescription(id, "AntiConditionalApply", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a", "b", "c"))
     )
   }
@@ -5968,7 +6191,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("ConditionalApply") {
     assertGood(
-      attach(ConditionalApply(lhsLP, rhsLP, Seq("c")), 2345.0),
+      attach(ConditionalApply(lhsLP, rhsLP, Seq(varFor("c"))), 2345.0),
       planDescription(id, "ConditionalApply", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a", "b", "c"))
     )
   }
@@ -5982,14 +6205,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("AssertSameNode") {
     assertGood(
-      attach(AssertSameNode("n", lhsLP, rhsLP), 2345.0),
+      attach(AssertSameNode(varFor("n"), lhsLP, rhsLP), 2345.0),
       planDescription(id, "AssertSameNode", TwoChildren(lhsPD, rhsPD), Seq(details(Seq("n"))), Set("a", "b", "n"))
     )
   }
 
   test("AssertSameRelationship") {
     assertGood(
-      attach(AssertSameRelationship("r", lhsLP, rhsLP), 2345.0),
+      attach(AssertSameRelationship(varFor("r"), lhsLP, rhsLP), 2345.0),
       planDescription(
         id,
         "AssertSameRelationship",
@@ -6009,7 +6232,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("NodeHashJoin") {
     assertGood(
-      attach(NodeHashJoin(Set("a"), lhsLP, rhsLP), 2345.0),
+      attach(NodeHashJoin(Set(varFor("a")), lhsLP, rhsLP), 2345.0),
       planDescription(id, "NodeHashJoin", TwoChildren(lhsPD, rhsPD), Seq(details("a")), Set("a", "b"))
     )
   }
@@ -6028,7 +6251,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     for (((variable, expr), expectedDetails) <- testCases) {
       assertGood(
-        attach(ForeachApply(lhsLP, rhsLP, variable, expr), 2345.0),
+        attach(ForeachApply(lhsLP, rhsLP, varFor(variable), expr), 2345.0),
         planDescription(id, "Foreach", TwoChildren(lhsPD, rhsPD), Seq(details(expectedDetails)), Set("a"))
       )
     }
@@ -6036,14 +6259,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("LetSelectOrSemiApply") {
     assertGood(
-      attach(LetSelectOrSemiApply(lhsLP, rhsLP, "x", Equals(prop("a", "foo"), number("42"))(pos)), 2345.0),
+      attach(LetSelectOrSemiApply(lhsLP, rhsLP, varFor("x"), Equals(prop("a", "foo"), number("42"))(pos)), 2345.0),
       planDescription(id, "LetSelectOrSemiApply", TwoChildren(lhsPD, rhsPD), Seq(details("a.foo = 42")), Set("a", "x"))
     )
   }
 
   test("LetSelectOrAntiSemiApply") {
     assertGood(
-      attach(LetSelectOrAntiSemiApply(lhsLP, rhsLP, "x", Equals(prop("a", "foo"), number("42"))(pos)), 2345.0),
+      attach(LetSelectOrAntiSemiApply(lhsLP, rhsLP, varFor("x"), Equals(prop("a", "foo"), number("42"))(pos)), 2345.0),
       planDescription(
         id,
         "LetSelectOrAntiSemiApply",
@@ -6056,35 +6279,35 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("LetSemiApply") {
     assertGood(
-      attach(LetSemiApply(lhsLP, rhsLP, "x"), 2345.0),
+      attach(LetSemiApply(lhsLP, rhsLP, varFor("x")), 2345.0),
       planDescription(id, "LetSemiApply", TwoChildren(lhsPD, rhsPD), Seq(details("x")), Set("a", "x"))
     )
   }
 
   test("LetAntiSemiApply") {
     assertGood(
-      attach(LetAntiSemiApply(lhsLP, rhsLP, "x"), 2345.0),
+      attach(LetAntiSemiApply(lhsLP, rhsLP, varFor("x")), 2345.0),
       planDescription(id, "LetAntiSemiApply", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a", "x"))
     )
   }
 
   test("LeftOuterHashJoin") {
     assertGood(
-      attach(LeftOuterHashJoin(Set("a"), lhsLP, rhsLP), 2345.0),
+      attach(LeftOuterHashJoin(Set(varFor("a")), lhsLP, rhsLP), 2345.0),
       planDescription(id, "NodeLeftOuterHashJoin", TwoChildren(lhsPD, rhsPD), Seq(details("a")), Set("a", "b"))
     )
   }
 
   test("RightOuterHashJoin") {
     assertGood(
-      attach(RightOuterHashJoin(Set("a"), lhsLP, rhsLP), 2345.0),
+      attach(RightOuterHashJoin(Set(varFor("a")), lhsLP, rhsLP), 2345.0),
       planDescription(id, "NodeRightOuterHashJoin", TwoChildren(lhsPD, rhsPD), Seq(details("a")), Set("a", "b"))
     )
   }
 
   test("RollUpApply") {
     assertGood(
-      attach(RollUpApply(lhsLP, rhsLP, "collection", "x"), 2345.0),
+      attach(RollUpApply(lhsLP, rhsLP, varFor("collection"), varFor("x")), 2345.0),
       planDescription(
         id,
         "RollUpApply",
@@ -6146,7 +6369,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           rhsLP,
           batchSize = number("100"),
           onErrorBehaviour = OnErrorBreak,
-          maybeReportAs = Some("status")
+          maybeReportAs = Some(varFor("status"))
         ),
         2345.0
       ),
@@ -6190,7 +6413,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           rhsLP,
           batchSize = number("100"),
           onErrorBehaviour = OnErrorFail,
-          maybeReportAs = Some("status")
+          maybeReportAs = Some(varFor("status"))
         ),
         2345.0
       ),
@@ -6206,31 +6429,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("TriadicBuild") {
     assertGood(
-      attach(TriadicBuild(lhsLP, "a", "b", Some(Id(1))), 113.0),
+      attach(TriadicBuild(lhsLP, varFor("a"), varFor("b"), Some(Id(1))), 113.0),
       planDescription(id, "TriadicBuild", SingleChild(lhsPD), Seq(details("(a)--(b)")), Set("a"))
     )
   }
 
   test("TriadicFilter") {
     assertGood(
-      attach(TriadicFilter(lhsLP, positivePredicate = true, "a", "b", Some(Id(1))), 113.0),
+      attach(TriadicFilter(lhsLP, positivePredicate = true, varFor("a"), varFor("b"), Some(Id(1))), 113.0),
       planDescription(id, "TriadicFilter", SingleChild(lhsPD), Seq(details("WHERE (a)--(b)")), Set("a"))
     )
 
     assertGood(
-      attach(TriadicFilter(lhsLP, positivePredicate = false, "a", "b", Some(Id(1))), 113.0),
+      attach(TriadicFilter(lhsLP, positivePredicate = false, varFor("a"), varFor("b"), Some(Id(1))), 113.0),
       planDescription(id, "TriadicFilter", SingleChild(lhsPD), Seq(details("WHERE NOT (a)--(b)")), Set("a"))
     )
   }
 
   test("TriadicSelection") {
     assertGood(
-      attach(TriadicSelection(lhsLP, rhsLP, positivePredicate = true, "a", "b", "c"), 2345.0),
+      attach(TriadicSelection(lhsLP, rhsLP, positivePredicate = true, varFor("a"), varFor("b"), varFor("c")), 2345.0),
       planDescription(id, "TriadicSelection", TwoChildren(lhsPD, rhsPD), Seq(details("WHERE (a)--(c)")), Set("a", "b"))
     )
 
     assertGood(
-      attach(TriadicSelection(lhsLP, rhsLP, positivePredicate = false, "a", "b", "c"), 2345.0),
+      attach(TriadicSelection(lhsLP, rhsLP, positivePredicate = false, varFor("a"), varFor("b"), varFor("c")), 2345.0),
       planDescription(
         id,
         "TriadicSelection",
@@ -6249,7 +6472,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     // leafs with overlapping variables
-    val lp = attach(AllNodesScan("a", Set.empty), 2.0, providedOrder = ProvidedOrder.empty)
+    val lp = attach(AllNodesScan(varFor("a"), Set.empty), 2.0, providedOrder = ProvidedOrder.empty)
     val pd = planDescription(id, "AllNodesScan", NoChildren, Seq(details("a")), Set("a"))
     assertGood(
       attach(Union(lhsLP, lp), 2345.0),
@@ -6278,13 +6501,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           rhsLP,
           Repetition(0, Unlimited),
-          "start",
-          "end",
-          "  a@1",
-          "  UNNAMED1",
-          Set(VariableGrouping("  a@1", "  a@2"), VariableGrouping("  UNNAMED1", "  UNNAMED2")),
-          Set(VariableGrouping("  r@1", "  r@2")),
-          Set("  r@1"),
+          varFor("start"),
+          varFor("end"),
+          varFor("  a@1"),
+          varFor("  UNNAMED1"),
+          Set(
+            VariableGrouping(varFor("  a@1"), varFor("  a@2")),
+            VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
+          ),
+          Set(VariableGrouping(varFor("  r@1"), varFor("  r@2"))),
+          Set(varFor("  r@1")),
           Set.empty,
           Set.empty,
           reverseGroupVariableProjections = false
@@ -6306,13 +6532,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           rhsLP,
           Repetition(0, Unlimited),
-          "  UNNAMED0",
-          "  end@1",
-          "  a@1",
-          "  UNNAMED1",
-          Set(VariableGrouping("  a@1", "  a@2"), VariableGrouping("  UNNAMED1", "  UNNAMED2")),
-          Set(VariableGrouping("  r@1", "  r@2")),
-          Set("  r@1"),
+          varFor("  UNNAMED0"),
+          varFor("  end@1"),
+          varFor("  a@1"),
+          varFor("  UNNAMED1"),
+          Set(
+            VariableGrouping(varFor("  a@1"), varFor("  a@2")),
+            VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
+          ),
+          Set(VariableGrouping(varFor("  r@1"), varFor("  r@2"))),
+          Set(varFor("  r@1")),
           Set.empty,
           Set.empty,
           reverseGroupVariableProjections = false
@@ -6336,13 +6565,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           RepeatOptions(lhsLP, rhsLP),
           Repetition(0, Unlimited),
-          "  UNNAMED0",
-          "  end@1",
-          "  a@1",
-          "  UNNAMED1",
-          Set(VariableGrouping("  a@1", "  a@2"), VariableGrouping("  UNNAMED1", "  UNNAMED2")),
-          Set(VariableGrouping("  r@1", "  r@2")),
-          Set("  r@1"),
+          varFor("  UNNAMED0"),
+          varFor("  end@1"),
+          varFor("  a@1"),
+          varFor("  UNNAMED1"),
+          Set(
+            VariableGrouping(varFor("  a@1"), varFor("  a@2")),
+            VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
+          ),
+          Set(VariableGrouping(varFor("  r@1"), varFor("  r@2"))),
+          Set(varFor("  r@1")),
           Set.empty,
           Set.empty,
           reverseGroupVariableProjections = false
@@ -6370,7 +6602,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("SimulatedNodeScan") {
     assertGood(
-      attach(SimulatedNodeScan("a", 1000), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
+      attach(SimulatedNodeScan(varFor("a"), 1000), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
       planDescription(
         id,
         "SimulatedNodeScan",
@@ -6383,7 +6615,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("SimulatedExpand") {
     assertGood(
-      attach(SimulatedExpand(lhsLP, "a", "r1", "b", 1.0), 95.0),
+      attach(SimulatedExpand(lhsLP, varFor("a"), varFor("r1"), varFor("b"), 1.0), 95.0),
       planDescription(
         id,
         "SimulatedExpand",

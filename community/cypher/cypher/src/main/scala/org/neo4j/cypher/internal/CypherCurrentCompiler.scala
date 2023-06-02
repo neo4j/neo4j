@@ -238,7 +238,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     logicalPlan.indexUsage().foreach {
       case SchemaLabelIndexUsage(identifier, labelId, label, propertyKeys) =>
         schemaIndexUsage.addOne(new SchemaIndexUsage(
-          identifier,
+          identifier.name,
           labelId,
           label,
           propertyKeys.map(_.nameId.id).toArray,
@@ -247,7 +247,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
 
       case SchemaRelationshipIndexUsage(identifier, relTypeId, relType, propertyKeys) =>
         relationshipTypeIndexUsage.addOne(new RelationshipTypeIndexUsage(
-          identifier,
+          identifier.name,
           relTypeId,
           relType,
           propertyKeys.map(_.nameId.id).toArray,
@@ -255,7 +255,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         ))
 
       case SchemaIndexLookupUsage(identifier, entityType) =>
-        lookupIndexUsage.addOne(new LookupIndexUsage(identifier, entityType))
+        lookupIndexUsage.addOne(new LookupIndexUsage(identifier.name, entityType))
     }
 
     new CompilerInfo(
@@ -299,7 +299,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
 
   private def columnNames(logicalPlan: LogicalPlan): Array[String] =
     logicalPlan match {
-      case produceResult: ProduceResult => produceResult.columns.toArray
+      case produceResult: ProduceResult => produceResult.columns.map(_.name).toArray
 
       case _ => Array()
     }

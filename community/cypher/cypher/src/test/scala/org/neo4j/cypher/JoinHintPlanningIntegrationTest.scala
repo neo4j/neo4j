@@ -89,7 +89,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     }
 
     flattenedPlan.collect {
-      case nhj: NodeHashJoin => nhj.nodes
+      case nhj: NodeHashJoin => nhj.nodes.map(_.name)
     }
   }
 
