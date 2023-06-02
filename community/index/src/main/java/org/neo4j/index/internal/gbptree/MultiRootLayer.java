@@ -359,7 +359,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                     var seeker = support.internalAllocateSeeker(
                             dataLayout, dataTreeNode, CursorContext.NULL_CONTEXT, monitor)) {
                 for (var root : batch) {
-                    var treeDepth = depthOf(root, seeker, low, high);
+                    int treeDepth = depthOf(root, seeker, low, high, monitor);
                     new GBPTreeConsistencyChecker<>(
                                     dataTreeNode,
                                     dataLayout,
@@ -379,13 +379,18 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         });
     }
 
-    private int depthOf(Root root, SeekCursor<DATA_KEY, DATA_VALUE> seeker, DATA_KEY low, DATA_KEY high) {
+    /**
+     * @return depth of the tree or -1 if it cannot be decided due to tree being inconsistent.
+     */
+    private int depthOf(
+            Root root, SeekCursor<DATA_KEY, DATA_VALUE> seeker, DATA_KEY low, DATA_KEY high, SeekDepthMonitor monitor)
+            throws IOException {
         try {
-            var monitor = new SeekDepthMonitor();
+            monitor.reset();
             support.initializeSeeker(seeker, () -> root, low, high, 1, LEAF_LEVEL);
             return monitor.treeDepth;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (TreeInconsistencyException e) {
+            return -1;
         }
     }
 
