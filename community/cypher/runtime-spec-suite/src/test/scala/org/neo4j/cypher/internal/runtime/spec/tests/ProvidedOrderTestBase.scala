@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.Parser
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -156,7 +154,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("y.prop AS yprop").withLeveragedOrder()
         .apply().withLeveragedOrder()
         .|.cartesianProduct().withLeveragedOrder()
-        .|.|.sort(Seq(Descending(varFor("zprop"))))
+        .|.|.sort("zprop DESC")
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
         .|.nodeIndexOperator(
@@ -430,7 +428,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
-        .|.sort(Seq(Ascending(varFor("name"))))
+        .|.sort("name ASC")
         .|.projection("a.name AS name")
         .|.argument("a")
         .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
@@ -467,7 +465,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
-        .|.top(Seq(Ascending(varFor("name"))), 1)
+        .|.top(1, "name ASC")
         .|.projection("a.name AS name")
         .|.argument("a")
         .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
@@ -627,7 +625,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("y.prop AS yprop").withLeveragedOrder()
         .cartesianProduct().withLeveragedOrder()
         .|.cartesianProduct().withLeveragedOrder()
-        .|.|.sort(Seq(Descending(varFor("zprop"))))
+        .|.|.sort("zprop DESC")
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
         .|.nodeIndexOperator(
@@ -659,7 +657,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > (rand() * $sizeHint)")
       .|.argument("x")
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .unwind(s"range(0, $sizeHint) AS x")
       .argument()
       .build()
@@ -872,7 +870,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > (rand() * $sizeHint)")
       .|.argument("x")
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .unwind(s"range(0, $sizeHint) AS x")
       .argument()
       .build()
@@ -891,7 +889,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > (rand() * $sizeHint)")
       .|.argument("x")
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .unwind(s"range(0, $sizeHint) AS x")
       .argument()
       .build()
@@ -1051,7 +1049,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > 0.5")
       .|.argument("x")
@@ -1070,7 +1068,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.top1WithTies(Seq(Ascending(varFor("y"))))
+      .|.top1WithTies("y ASC")
       .|.unwind("[0] AS y")
       .|.filter(s"x > 0.5")
       .|.argument("x")
@@ -1089,7 +1087,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.top(Seq(Ascending(varFor("y"))), 1)
+      .|.top(1, "y ASC")
       .|.unwind("[rand(), rand()] AS y")
       .|.filter(s"x > 0.5")
       .|.argument("x")
@@ -1243,7 +1241,7 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("prop", "yprop").withLeveragedOrder()
         .projection("z.prop AS prop").withLeveragedOrder()
         .cartesianProduct().withLeveragedOrder()
-        .|.sort(Seq(Descending(varFor("yprop"))))
+        .|.sort("yprop DESC")
         .|.projection("y.prop AS yprop")
         .|.allNodeScan("y")
         .nodeIndexOperator(

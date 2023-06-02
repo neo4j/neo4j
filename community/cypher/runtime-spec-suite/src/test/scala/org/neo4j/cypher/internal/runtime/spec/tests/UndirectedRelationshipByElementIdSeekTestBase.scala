@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -158,7 +157,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
       .produceResults("x")
       .apply()
       .|.limit(limit)
-      .|.sort(Seq(Ascending(varFor("r")), Ascending(varFor("x"))))
+      .|.sort("r ASC", "x ASC")
       .|.undirectedRelationshipByElementIdSeek("r", "x", "y", Set("a1"), quote(relationships.head.getElementId))
       .allNodeScan("a1")
       .build()

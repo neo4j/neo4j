@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -151,7 +150,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .sort(Seq(Ascending(varFor("y"))))
+      .sort("y ASC")
       .filter("id(y) >= 0")
       .union()
       .|.expand("(z)-->(y)")
@@ -793,11 +792,11 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .union()
-      .|.sort(Seq(Ascending(varFor("x"))))
+      .|.sort("x ASC")
       .|.nodeByLabelScan("x", "B", IndexOrderNone)
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -438,7 +437,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .allNodeScan("x")
       .build()
 
@@ -623,7 +622,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -382,7 +381,7 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -401,7 +400,7 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
-      .|.top(Seq(Ascending(varFor("x"))), 10)
+      .|.top(0, "x ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -486,7 +485,7 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
       .|.filter("x % 2 = 0")
-      .|.sort(Seq(Ascending(varFor("x"))))
+      .|.sort("x ASC")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
@@ -888,7 +887,7 @@ trait OrderedLetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false").withLeveragedOrder()
-      .|.sort(Seq(Ascending("y")))
+      .|.sort("y ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -907,7 +906,7 @@ trait OrderedLetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false").withLeveragedOrder()
-      .|.top(Seq(Ascending("x")), 10)
+      .|.top(0, "x ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -992,7 +991,7 @@ trait OrderedLetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false").withLeveragedOrder()
       .|.filter("x % 2 = 0")
-      .|.sort(Seq(Ascending("x")))
+      .|.sort("x ASC")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()

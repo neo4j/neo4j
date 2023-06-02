@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -209,7 +208,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "z")
       .antiConditionalApply("x")
       .|.limit(limit)
-      .|.sort(Seq(Ascending(varFor("z"))))
+      .|.sort("z ASC")
       .|.expandAll("(y)-->(z)")
       .|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
       .input(variables = Seq("x"))
@@ -534,7 +533,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x", "z")
       .antiConditionalApply("x").withLeveragedOrder()
       .|.limit(limit)
-      .|.sort(Seq(Ascending("z")))
+      .|.sort("z ASC")
       .|.expandAll("(y)-->(z)")
       .|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
       .input(variables = Seq("x"))

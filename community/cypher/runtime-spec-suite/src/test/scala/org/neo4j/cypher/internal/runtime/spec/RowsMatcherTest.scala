@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.values.AnyValue

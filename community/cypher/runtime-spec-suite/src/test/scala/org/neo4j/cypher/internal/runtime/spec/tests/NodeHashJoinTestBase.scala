@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -386,7 +384,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
-      .sort(Seq(Descending(varFor("x")), Descending(varFor("y")), Descending(varFor("z"))))
+      .sort("x DESC", "y DESC", "z DESC")
       .apply()
       .|.nodeHashJoin("x")
       .|.|.expand("(x)<--(z)")
@@ -422,8 +420,8 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .limit(count = limitCount)
-      .sort(sortItems = Seq(Descending(varFor("x")), Ascending(varFor("y"))))
-      .sort(sortItems = Seq(Ascending(varFor("x")), Descending(varFor("y"))))
+      .sort("x DESC", "y ASC")
+      .sort("x ASC", "y DESC")
       .nodeHashJoin("x")
       .|.expand("(y)--(x)")
       .|.allNodeScan("y")
@@ -454,7 +452,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .limit(count = limitCount)
-      .sort(sortItems = Seq(Descending(varFor("x")), Ascending(varFor("y"))))
+      .sort("x DESC", "y ASC")
       .nodeHashJoin("x")
       .|.expand("(y)--(x)")
       .|.allNodeScan("y")
@@ -488,7 +486,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
       .|.expand("(y)--(x)")
       .|.allNodeScan("y")
       .limit(count = limitCount)
-      .sort(sortItems = Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .input(nodes = Seq("x"))
       .build()
 
@@ -567,7 +565,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .nodeHashJoin("x")
       .|.limit(count = limitCount)
-      .|.sort(sortItems = Seq(Descending(varFor("x")), Descending(varFor("y"))))
+      .|.sort("x DESC", "y DESC")
       .|.expand("(y)-->(x)")
       .|.allNodeScan("y")
       .input(nodes = Seq("x"))

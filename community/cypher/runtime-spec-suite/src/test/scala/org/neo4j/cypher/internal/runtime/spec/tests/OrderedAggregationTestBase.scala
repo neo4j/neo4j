@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.TestSubscriber
@@ -64,7 +63,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
       .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq("x"))
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .expand("(x)--(y)")
       .allNodeScan("x")
       .build()
@@ -93,7 +92,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
       .orderedAggregation(Seq("name AS name"), Seq("count(*) AS c"), Seq("name"))
-      .sort(Seq(Ascending(varFor("name"))))
+      .sort("name ASC")
       .projection("x.name AS name")
       .allNodeScan("x")
       .build()
@@ -116,7 +115,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
       .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq("x"))
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .expand("(x)--(y)")
       .input(nodes = Seq("x"))
       .build()
@@ -186,7 +185,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
       .orderedAggregation(Seq("x AS x", "x2 AS x2"), Seq("count(*) AS c"), Seq("x"))
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .projection("x AS x2")
       .expand("(x)--(y)")
       .input(nodes = Seq("x"))
@@ -209,7 +208,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "c")
       .orderedAggregation(Seq("x AS x", "x2 AS x2"), Seq("count(*) AS c"), Seq("x", "x2"))
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .projection("x AS x2")
       .expand("(x)--(y)")
       .input(nodes = Seq("x"))

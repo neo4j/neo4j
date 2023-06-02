@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -39,7 +37,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 1)
+      .partialTop(1, Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -59,7 +57,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 1)
+      .partialTop(1, Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -84,7 +82,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 1)
+      .partialTop(1, Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -106,7 +104,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending(varFor("x"))), Seq(Descending(varFor("y"))), 1)
+      .partialTop(1, Seq("x ASC"), Seq("y DESC"))
       .input(variables = Seq("x", "y"))
       .build()
 

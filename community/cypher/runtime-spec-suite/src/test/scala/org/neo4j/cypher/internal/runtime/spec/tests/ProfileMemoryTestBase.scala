@@ -48,7 +48,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .allNodeScan("x")
       .build()
 
@@ -62,7 +62,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -209,7 +209,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top1WithTies(Seq(Ascending(varFor("x"))))
+      .top1WithTies("x ASC")
       .allNodeScan("x")
       .build()
 

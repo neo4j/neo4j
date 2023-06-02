@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -386,7 +385,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .antiSemiApply()
       .|.limit(0)
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -405,7 +404,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .antiSemiApply()
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -425,7 +424,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .antiSemiApply()
       .|.limit(0)
-      .|.top(Seq(Ascending(varFor("x"))), 10)
+      .|.top(0, "x ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -444,7 +443,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .antiSemiApply()
-      .|.top(Seq(Ascending(varFor("x"))), 10)
+      .|.top(10, "x ASC")
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
       .build()
@@ -563,7 +562,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending(varFor("x"))))
+      .sort("x ASC")
       .antiSemiApply()
       .|.filter(s"NOT x=${sizeHint / 2}")
       .|.argument("x")

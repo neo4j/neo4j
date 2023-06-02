@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.TestSubscriber
@@ -56,7 +54,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -72,7 +70,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 10)
+      .partialSort(Seq("x ASC"), Seq("y ASC"), 10)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -88,7 +86,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -104,7 +102,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), sizeHint / 2)
+      .partialSort(Seq("x ASC"), Seq("y ASC"), sizeHint / 2)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -120,7 +118,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -143,7 +141,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), skip)
+      .partialSort(Seq("x ASC"), Seq("y ASC"), skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -167,7 +165,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), skip)
+      .partialSort(Seq("x ASC"), Seq("y ASC"), skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -191,7 +189,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), skip)
+      .partialSort(Seq("x ASC"), Seq("y ASC"), skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -214,7 +212,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), sizeHint)
+      .partialSort(Seq("x ASC"), Seq("y ASC"), sizeHint)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -230,7 +228,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -246,7 +244,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 55)
+      .partialSort(Seq("x ASC"), Seq("y ASC"), 55)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -269,10 +267,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z", "a")
-      .partialSort(
-        Seq(Ascending(varFor("x")), Descending(varFor("y"))),
-        Seq(Ascending(varFor("z")), Descending(varFor("a")))
-      )
+      .partialSort(Seq("x ASC", "y DESC"), Seq("z ASC", "a DESC"))
       .input(variables = Seq("x", "y", "z", "a"))
       .build()
 
@@ -296,7 +291,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -332,7 +327,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "x", "y")
       .apply()
-      .|.partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .|.partialSort(Seq("x ASC"), Seq("y ASC"))
       .|.projection("b.x AS x", "b.y AS y")
       .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
@@ -370,7 +365,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "x", "y")
       .apply()
-      .|.partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), skip)
+      .|.partialSort(Seq("x ASC"), Seq("y ASC"), skip)
       .|.projection("b.x AS x", "b.y AS y")
       .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
@@ -393,7 +388,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+      .partialSort(Seq("x ASC"), Seq("y ASC"))
       .input(variables = Seq("x", "y"))
       .build()
 

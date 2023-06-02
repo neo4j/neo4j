@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -538,7 +537,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
-      .|.top(Seq(Ascending(varFor("length(p)"))), 2)
+      .|.top(2, "`length(p)` ASC")
       .|.projection("length(p) AS `length(p)`")
       .|.shortestPath(
         "(a)-[rs*1..]-(b)",
@@ -591,7 +590,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b")
       .projection("nodes(p) AS nodes")
       .apply()
-      .|.top(Seq(Ascending(varFor("length(p)"))), 2)
+      .|.top(2, "`length(p)` ASC")
       .|.projection("length(p) AS `length(p)`")
       .|.shortestPath(
         "(a)-[rs*1..]-(b)",

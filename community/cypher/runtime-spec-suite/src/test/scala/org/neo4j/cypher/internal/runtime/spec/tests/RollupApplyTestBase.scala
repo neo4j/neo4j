@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -107,7 +106,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
       .rollUpApply("list", "y")
-      .|.sort(Seq(Ascending(varFor("y")))) // to get consistent order in the produced lists
+      .|.sort("y ASC") // to get consistent order in the produced lists
       .|.optionalExpandAll("(x)-->(y)")
       .|.argument("y")
       .allNodeScan("x")
@@ -133,7 +132,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("i", "x", "list")
       .apply()
       .|.rollUpApply("list", "y")
-      .|.|.sort(Seq(Ascending(varFor("y")))) // to get consistent order in the produced lists
+      .|.|.sort("y ASC") // to get consistent order in the produced lists
       .|.|.expandAll("(x)-->(y)")
       .|.|.argument("x")
       .|.filter("id(x) % 4 = i")
@@ -161,9 +160,9 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
-      .top(Seq(Ascending(varFor("x"))), limit)
+      .top(limit, "x ASC")
       .rollUpApply("list", "y")
-      .|.sort(Seq(Ascending(varFor("y")))) // to get consistent order in the produced lists
+      .|.sort("y ASC") // to get consistent order in the produced lists
       .|.expandAll("(x)-->(y)")
       .|.argument()
       .allNodeScan("x")
@@ -192,7 +191,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "list")
       .nodeHashJoin("x")
       .|.rollUpApply("list", "y")
-      .|.|.sort(Seq(Ascending(varFor("y")))) // to get consistent order in the produced lists
+      .|.|.sort("y ASC") // to get consistent order in the produced lists
       .|.|.expandAll("(x)-->(y)")
       .|.|.argument()
       .|.allNodeScan("x")

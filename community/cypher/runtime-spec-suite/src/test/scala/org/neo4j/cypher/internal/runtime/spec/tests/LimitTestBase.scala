@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -261,7 +260,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .apply()
       .|.limit(10)
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.expandAll("(x)-->(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -288,7 +287,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.limit(LIMIT)
       .|.expandAll("(x)-->(y)")
       .|.argument()
@@ -1198,7 +1197,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .apply()
       .|.limit(0)
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.expandAll("(x)-->(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -1215,7 +1214,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.limit(0)
       .|.expandAll("(x)-->(y)")
       .|.argument()

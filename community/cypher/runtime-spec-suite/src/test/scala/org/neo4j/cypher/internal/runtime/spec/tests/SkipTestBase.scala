@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -216,7 +215,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .apply()
       .|.skip(90)
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.expandAll("(x)-->(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -243,7 +242,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.skip(SKIP)
       .|.expandAll("(x)-->(y)")
       .|.argument()

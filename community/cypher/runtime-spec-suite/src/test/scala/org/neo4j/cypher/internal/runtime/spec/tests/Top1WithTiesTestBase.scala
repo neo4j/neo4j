@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -43,7 +41,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .top1WithTies(Seq(Ascending(varFor("x")), Ascending(varFor("y"))))
+      .top1WithTies("x ASC", "y ASC")
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -61,7 +59,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top1WithTies(Seq(Ascending(varFor("x"))))
+      .top1WithTies("x ASC")
       .input(nodes = Seq("x"))
       .build()
 
@@ -78,7 +76,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
-      .top1WithTies(Seq(Descending(varFor("a")), Ascending(varFor("b")), Descending(varFor("c"))))
+      .top1WithTies("a DESC", "b ASC", "c DESC")
       .input(variables = Seq("a", "b", "c"))
       .build()
 
@@ -99,7 +97,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
-      .|.top1WithTies(Seq(Ascending(varFor("b"))))
+      .|.top1WithTies("b ASC")
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
       .allNodeScan("a")
@@ -122,7 +120,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
-      .top1WithTies(Seq(Ascending(varFor("a"))))
+      .top1WithTies("a ASC")
       .input(variables = Seq("a"))
       .build()
 
@@ -140,8 +138,8 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top1WithTies(sortItems = Seq(Ascending(varFor("x"))))
-      .top1WithTies(sortItems = Seq(Descending(varFor("x"))))
+      .top1WithTies("x ASC")
+      .top1WithTies("x DESC")
       .allNodeScan("x")
       .build()
 
@@ -161,9 +159,9 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .top1WithTies(sortItems = Seq(Ascending(varFor("y"))))
+      .top1WithTies("y ASC")
       .apply()
-      .|.top1WithTies(sortItems = Seq(Descending(varFor("y"))))
+      .|.top1WithTies("y DESC")
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -184,7 +182,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .top1WithTies(Seq(Descending(varFor("y")), Ascending(varFor("x"))))
+      .top1WithTies("y DESC", "x ASC")
       .apply()
       .|.expandAll("(x)--(y)")
       .|.argument()
@@ -216,10 +214,10 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y", "z")
       .apply()
       .|.apply()
-      .|.|.top1WithTies(Seq(Ascending(varFor("z"))))
+      .|.|.top1WithTies("z ASC")
       .|.|.expandAll("(y)--(z)")
       .|.|.argument()
-      .|.top1WithTies(Seq(Descending(varFor("y"))))
+      .|.top1WithTies("y DESC")
       .|.expandAll("(x)--(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)

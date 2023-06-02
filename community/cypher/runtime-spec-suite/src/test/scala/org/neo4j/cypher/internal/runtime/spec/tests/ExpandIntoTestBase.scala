@@ -23,7 +23,6 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -483,7 +482,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
       .apply()
-      .|.sort(Seq(Ascending(varFor("a")), Ascending(varFor("b"))))
+      .|.sort("a ASC", "b ASC")
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandInto("(a)-[:R]->(b)")
       .|.nodeByLabelScan("b", "B", IndexOrderNone, "a")
@@ -1059,7 +1058,7 @@ trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends CypherScalaCheckDr
         .produceResults("from", "to", "rel")
         .projection("elementId(a) AS from", "elementId(b) AS to", "elementId(r) AS rel")
         .expandInto(s"(a)$relPattern(b)")
-        .sort(Seq(Ascending(varFor("rand"))))
+        .sort("rand ASC")
         .projection("rand() as rand")
         .unwind("[0,1] as x")
         .cartesianProduct()

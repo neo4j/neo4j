@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -283,7 +281,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
-      .sort(Seq(Ascending(varFor("z")), Descending(varFor("x")), Ascending(varFor("y"))))
+      .sort("z ASC", "x DESC", "y ASC")
       .apply()
       .|.optional("x")
       .|.expandAll("(x)-[:NEXT]->(z)")

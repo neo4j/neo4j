@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -400,7 +399,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
       .apply()
-      .|.sort(Seq(Ascending(varFor("a")), Ascending(varFor("b"))))
+      .|.sort("a ASC", "b ASC")
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandAll("(a)-[:R]->(b)")
       .|.argument("a")

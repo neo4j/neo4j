@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Prober
@@ -287,7 +285,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults("i")
       .transactionApply(3, OnErrorContinue)
-      .|.top(Seq(Descending(varFor("i"))), 2)
+      .|.top(2, "i DESC")
       .|.unwind("range(1, x) AS i")
       .|.create(createNodeWithProperties("n", Seq("N"), "{prop: x}"))
       .|.argument("x")
@@ -693,7 +691,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .transactionApply(batchSize, randomErrorBehaviour())
-      .|.sort(Seq(Ascending(varFor("y"))))
+      .|.sort("y ASC")
       .|.create(createNode("n"))
       .|.eager()
       .|.allNodeScan("y", "x")
@@ -838,7 +836,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .|.|.|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
       .|.|.|.|.|.argument("middle", "c_inner")
       .|.|.|.|.argument("middle")
-      .|.|.|.sort(Seq(Ascending(varFor("foo"))))
+      .|.|.|.sort("foo ASC")
       .|.|.|.projection("start.foo AS foo")
       .|.|.|.filter("middle:MIDDLE:LOOP")
       .|.|.|.trail(TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`)
@@ -869,7 +867,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .|.|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
       .|.|.|.|.argument("middle", "c_inner")
       .|.|.|.argument("middle")
-      .|.|.sort(Seq(Ascending(varFor("foo"))))
+      .|.|.sort("foo ASC")
       .|.|.projection("start.foo AS foo")
       .|.|.filter("middle:MIDDLE:LOOP")
       .|.|.trail(TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`)
@@ -903,7 +901,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .|.|.|.argument("middle", "c_inner")
       .|.|.argument("middle")
       .|.limit(Long.MaxValue)
-      .|.sort(Seq(Ascending(varFor("foo"))))
+      .|.sort("foo ASC")
       .|.projection("start.foo AS foo")
       .|.filter("middle:MIDDLE:LOOP")
       .|.trail(TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`)

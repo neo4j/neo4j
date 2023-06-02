@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.BufferInputStream
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -393,7 +392,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "i")
       .apply()
-      .|.sort(Seq(Ascending(varFor("x")), Ascending(varFor("i"))))
+      .|.sort("x ASC", "i ASC")
       .|.eager()
       .|.prober(probe)
       .|.unwind(s"range(1,$rowsPerArgument) as i")
@@ -420,7 +419,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.eager()
       .|.prober(probe)
-      .|.sort(Seq(Ascending(varFor("x")), Ascending(varFor("i"))))
+      .|.sort("x ASC", "i ASC")
       .|.unwind(s"range(1,$rowsPerArgument) as i")
       .|.argument("x")
       .input(variables = Seq("x"))

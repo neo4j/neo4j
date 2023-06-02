@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -496,8 +494,8 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
       .limit(count = limitCount)
-      .sort(sortItems = Seq(Descending(varFor("x")), Ascending(varFor("y")), Ascending(varFor("z"))))
-      .sort(sortItems = Seq(Ascending(varFor("x")), Descending(varFor("y")), Descending(varFor("z"))))
+      .sort("x DESC", "y ASC", "z ASC")
+      .sort("x ASC", "y DESC", "z DESC")
       .cartesianProduct()
       .|.expand("(y)--(z)")
       .|.allNodeScan("y")
