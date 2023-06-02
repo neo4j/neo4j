@@ -415,9 +415,9 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(3)
     newPlan should be(projectPlan(
       withExpressionVariables(expr1, TemporaryExpressionVariable(2, "x")),
-      withExpressionVariables(expr2, ConstantExpressionVariable(1, "A")),
+      withExpressionVariables(expr2, ConstantExpressionVariable(0, "A")),
       withExpressionVariables(expr3, TemporaryExpressionVariable(2, "y")),
-      withExpressionVariables(expr4, ConstantExpressionVariable(0, "B")),
+      withExpressionVariables(expr4, ConstantExpressionVariable(1, "B")),
       withExpressionVariables(expr5, TemporaryExpressionVariable(2, "z"))
     ))
   }
@@ -441,7 +441,8 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
   }
 
   private def projectPlan(exprs: Expression*): LogicalPlan = {
-    val projections = (for (i <- exprs.indices) yield s"x$i" -> exprs(i)).toMap
+    val projections: Map[LogicalVariable, Expression] =
+      (for (i <- exprs.indices) yield varFor(s"x$i") -> exprs(i)).toMap
     Projection(Argument(), Set.empty, projections)
   }
 
@@ -453,12 +454,12 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
   ): LogicalPlan = {
     VarExpand(
       Argument(),
-      "a",
+      varFor("a"),
       SemanticDirection.OUTGOING,
       SemanticDirection.OUTGOING,
       Seq.empty,
-      "b",
-      "r",
+      varFor("b"),
+      varFor("r"),
       VarPatternLength(2, Some(10)),
       ExpandAll,
       Seq(VariablePredicate(tempNode, nodePred)),
@@ -474,10 +475,10 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
   ): LogicalPlan = {
     PruningVarExpand(
       Argument(),
-      "a",
+      varFor("a"),
       SemanticDirection.OUTGOING,
       Seq.empty,
-      "b",
+      varFor("b"),
       2,
       10,
       Seq(VariablePredicate(tempNode, nodePred)),
