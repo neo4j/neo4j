@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -52,30 +53,11 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CSVFormat
-import org.neo4j.cypher.internal.ir.CreateCommand
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.CreatePattern
-import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
-import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetMutatingPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetPropertyPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
-import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.disjoinRelTypesToLabelExpression
@@ -232,6 +214,25 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
+import org.neo4j.cypher.internal.logical.plans.create.CreateNode
+import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
+import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
+import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
+import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
+import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.rewriting.rewriters.HasLabelsAndHasTypeNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.combineHasLabels
 import org.neo4j.cypher.internal.util.InputPosition
@@ -385,7 +386,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def produceResults(vars: String*): IMPL = {
     val resultColumnsSeq = vars.map(VariableParser.unescaped)
     resultColumns = resultColumnsSeq.toArray
-    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq)(_)))
+    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq.map(varFor))(_)))
     looseEnds += tree
     self
   }
@@ -404,7 +405,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def optional(protectedSymbols: String*): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Optional(lp, protectedSymbols.toSet)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => Optional(lp, protectedSymbols.map(varFor).toSet)(_)))
     self
   }
 
@@ -458,18 +459,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     p.length match {
       case SimplePatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp =>
-          Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)
+          Expand(lp, varFor(p.from), p.dir, p.relTypes, varFor(p.to), varFor(p.relName), expandMode)(_)
         ))
       case varPatternLength: VarPatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp =>
           VarExpand(
             lp,
-            p.from,
+            varFor(p.from),
             p.dir,
             projectedDir,
             p.relTypes,
-            p.to,
-            p.relName,
+            varFor(p.to),
+            varFor(p.relName),
             varPatternLength,
             expandMode,
             nodePredicates.map(_.asVariablePredicate),
@@ -488,7 +489,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newRelationship(varFor(urel))
     newNode(varFor(to))
     appendAtCurrentIndent(UnaryOperator(lp =>
-      SimulatedExpand(lp, from, urel, to, factor)(_)
+      SimulatedExpand(lp, varFor(from), varFor(urel), varFor(to), factor)(_)
     ))
     self
   }
@@ -562,17 +563,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nfa: NFA
   ): IMPL = {
     val predicates = nonInlinablePreFilters.map(parseExpression)
-    val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(x, y) }
-    val relationshipVariableGroupings = groupRelationships.map { case (x, y) => VariableGrouping(x, y) }
+    val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
+    val relationshipVariableGroupings = groupRelationships.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
 
-    newNodes(nfa.nodeNames + targetNode)
-    newRelationships(nfa.relationshipNames)
+    newNodes(nfa.nodeNames.map(_.name) + targetNode)
+    newRelationships(nfa.relationshipNames.map(_.name))
 
     appendAtCurrentIndent(UnaryOperator(lp =>
       StatefulShortestPath(
         lp,
-        sourceNode,
-        targetNode,
+        varFor(sourceNode),
+        varFor(targetNode),
         nfa.endoRewrite(expressionRewriter),
         predicates,
         nodeVariableGroupings,
@@ -608,8 +609,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       FindShortestPaths(
         lp,
         ShortestRelationshipPattern(
-          pathName,
-          PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length),
+          pathName.map(varFor),
+          PatternRelationship(varFor(p.relName), (varFor(p.from), varFor(p.to)), p.dir, p.relTypes, p.length),
           !all
         )(ShortestPathsPatternPart(
           RelationshipChain(
@@ -662,8 +663,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       LegacyFindShortestPaths(
         lp,
         ShortestRelationshipPattern(
-          pathName,
-          PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length),
+          pathName.map(varFor),
+          PatternRelationship(varFor(p.relName), (varFor(p.from), varFor(p.to)), p.dir, p.relTypes, p.length),
           !all
         )(ShortestPathsPatternPart(
           RelationshipChain(
@@ -704,10 +705,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         appendAtCurrentIndent(UnaryOperator(lp =>
           PruningVarExpand(
             lp,
-            p.from,
+            varFor(p.from),
             p.dir,
             p.relTypes,
-            p.to,
+            varFor(p.to),
             min,
             max,
             nodePredicates.map(_.asVariablePredicate),
@@ -734,13 +735,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         appendAtCurrentIndent(UnaryOperator(lp =>
           BFSPruningVarExpand(
             lp,
-            p.from,
+            varFor(p.from),
             p.dir,
             p.relTypes,
-            p.to,
+            varFor(p.to),
             min == 0,
             maxLength = maybeMax.getOrElse(Int.MaxValue),
-            depthName,
+            depthName.map(varFor),
             nodePredicates.map(_.asVariablePredicate),
             relationshipPredicates.map(_.asVariablePredicate)
           )(_)
@@ -767,12 +768,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       PathPropagatingBFS(
         lhs,
         rhs,
-        p.from,
+        varFor(p.from),
         p.dir,
         projectedDir,
         p.relTypes,
-        p.to,
-        p.relName,
+        varFor(p.to),
+        varFor(p.relName),
         varPatternLength,
         nodePredicates.map(_.asVariablePredicate),
         relationshipPredicates.map(_.asVariablePredicate)
@@ -801,11 +802,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         appendAtCurrentIndent(UnaryOperator(lp =>
           OptionalExpand(
             lp,
-            pattern.from,
+            varFor(pattern.from),
             pattern.dir,
             pattern.relTypes,
-            pattern.to,
-            pattern.relName,
+            varFor(pattern.to),
+            varFor(pattern.relName),
             ExpandAll,
             rewrittenPredicate
           )(_)
@@ -822,7 +823,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       case SimplePatternLength =>
         val pred = predicate.map(parseExpression).map(p => Ands(ListSet(p))(p.position))
         appendAtCurrentIndent(UnaryOperator(lp =>
-          OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto, pred)(_)
+          OptionalExpand(lp, varFor(p.from), p.dir, p.relTypes, varFor(p.to), varFor(p.relName), ExpandInto, pred)(_)
         ))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
@@ -837,10 +838,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp =>
       ProjectEndpoints(
         lp,
-        p.relName,
-        p.from,
+        varFor(p.relName),
+        varFor(p.from),
         startInScope,
-        p.to,
+        varFor(p.to),
         endInScope,
         p.relTypes,
         p.dir,
@@ -849,12 +850,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
-  def partialSort(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder]): IMPL = {
+  def partialSort(alreadySortedPrefix: Seq[String], stillToSortSuffix: Seq[String]): IMPL =
+    partialSortColumns(Parser.parseSort(alreadySortedPrefix), Parser.parseSort(stillToSortSuffix))
+
+  def partialSortColumns(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => PartialSort(lp, alreadySortedPrefix, stillToSortSuffix, None)(_)))
     self
   }
 
-  def partialSort(
+  // TODO Replace with partialSortStrings
+  def partialSortColumns(
     alreadySortedPrefix: Seq[ColumnOrder],
     stillToSortSuffix: Seq[ColumnOrder],
     skipSortingPrefixLength: Long
@@ -865,10 +870,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def sort(sortItems: Seq[ColumnOrder]): IMPL = {
+  def partialSort(
+    alreadySortedPrefix: Seq[String],
+    stillToSortSuffix: Seq[String],
+    skipSortingPrefixLength: Long = 0
+  ): IMPL = {
+    val skipSort = if (skipSortingPrefixLength == 0) None else Some(literalInt(skipSortingPrefixLength))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      PartialSort(lp, Parser.parseSort(alreadySortedPrefix), Parser.parseSort(stillToSortSuffix), skipSort)(_)
+    ))
+    self
+  }
+
+  def sortColumns(sortItems: Seq[ColumnOrder]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Sort(lp, sortItems)(_)))
     self
   }
+
+  def sort(sortItems: String*): IMPL = sortColumns(Parser.parseSort(sortItems))
+
+  def top(limit: Long, sortItems: String*): IMPL = top(Parser.parseSort(sortItems), limit)
 
   def top(sortItems: Seq[ColumnOrder], limit: Long): IMPL =
     top(sortItems, literalInt(limit))
@@ -878,7 +899,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def top1WithTies(sortItems: Seq[ColumnOrder]): IMPL = {
+  def top1WithTies(sortItems: String*): IMPL = top1WithTiesColumns(Parser.parseSort(sortItems))
+
+  def top1WithTiesColumns(sortItems: Seq[ColumnOrder]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Top1WithTies(lp, sortItems)(_)))
     self
   }
@@ -888,6 +911,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit), None)(_)
     ))
     self
+  }
+
+  def partialTop(limit: Long, alreadySortedPrefix: Seq[String], stillToSortSuffix: Seq[String]): IMPL = {
+    partialTop(Parser.parseSort(alreadySortedPrefix), Parser.parseSort(stillToSortSuffix), limit)
   }
 
   def partialTop(
@@ -906,6 +933,20 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       )(_)
     ))
     self
+  }
+
+  def partialTop(
+    limit: Long,
+    skipSortingPrefixLength: Long,
+    alreadySortedPrefix: Seq[String],
+    stillToSortSuffix: Seq[String]
+  ): IMPL = {
+    partialTop(
+      Parser.parseSort(alreadySortedPrefix),
+      Parser.parseSort(stillToSortSuffix),
+      limit,
+      skipSortingPrefixLength
+    )
   }
 
   def eager(reasons: ListSet[EagernessReason.Reason] = ListSet(EagernessReason.Unknown)): IMPL = {
@@ -970,74 +1011,84 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def setLabels(nodeVariable: String, labels: String*): IMPL = {
     val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE)).toSet
-    appendAtCurrentIndent(UnaryOperator(lp => SetLabels(lp, nodeVariable, labelNames)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => SetLabels(lp, varFor(nodeVariable), labelNames)(_)))
   }
 
   def removeLabels(nodeVariable: String, labels: String*): IMPL = {
     val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE)).toSet
-    appendAtCurrentIndent(UnaryOperator(lp => RemoveLabels(lp, nodeVariable, labelNames)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => RemoveLabels(lp, varFor(nodeVariable), labelNames)(_)))
   }
 
   def unwind(projectionString: String): IMPL = {
-    val (name, expression) = Parser.parseProjections(projectionString).head
+    val (name, expression) = toVarMap(Parser.parseProjections(projectionString)).head
     appendAtCurrentIndent(UnaryOperator(lp => UnwindCollection(lp, name, expression)(_)))
     self
   }
 
   def projection(projectionStrings: String*): IMPL = {
-    projectionWithDiscard(Parser.parseProjections(projectionStrings: _*), Set.empty)
+    projectionWithDiscard(toVarMap(Parser.parseProjections(projectionStrings: _*)), Set.empty)
   }
 
   def projection(projectExpressions: Map[String, Expression]): IMPL = {
-    projectionWithDiscard(projectExpressions, Set.empty)
+    projectionWithDiscard(toVarMap(projectExpressions), Set.empty)
   }
 
   def projection(project: Seq[String], discard: Set[String]): IMPL = {
-    projectionWithDiscard(Parser.parseProjections(project: _*), discard)
+    projectionWithDiscard(toVarMap(Parser.parseProjections(project: _*)), discard)
   }
 
   def projection(project: Map[String, Expression], discard: Set[String]): IMPL = {
-    projectionWithDiscard(project, discard)
+    projectionWithDiscard(toVarMap(project), discard)
   }
 
-  private def projectionWithDiscard(projectExpressions: Map[String, Expression], discard: Set[String]): IMPL = {
+  private def projectionWithDiscard(
+    projectExpressions: Map[LogicalVariable, Expression],
+    discard: Set[String]
+  ): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
       val rewrittenProjections = projectExpressions.map { case (name, expr) =>
         name -> expr.endoRewrite(expressionRewriter)
       }
-      projectExpressions.foreach { case (name, expr) => newAlias(varFor(name), expr) }
-      Projection(lp, discard, rewrittenProjections)(_)
+      projectExpressions.foreach { case (name, expr) => newAlias(name, expr) }
+      Projection(lp, discard.map(varFor), rewrittenProjections)(_)
     }))
     self
   }
 
+  private def toVarMap(map: Map[String, Expression]): Map[LogicalVariable, Expression] = map.map {
+    case (key, value) => varFor(key) -> value
+  }
+
   def distinct(projectionStrings: String*): IMPL = {
     val projections = Parser.parseProjections(projectionStrings: _*)
-    appendAtCurrentIndent(UnaryOperator(lp => Distinct(lp, projections)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => Distinct(lp, toVarMap(projections))(_)))
     self
   }
 
   def orderedDistinct(orderToLeverage: Seq[String], projectionStrings: String*): IMPL = {
     val order = orderToLeverage.map(parseExpression)
     val projections = Parser.parseProjections(projectionStrings: _*)
-    appendAtCurrentIndent(UnaryOperator(lp => OrderedDistinct(lp, projections, order)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => OrderedDistinct(lp, toVarMap(projections), order)(_)))
     self
   }
 
   def allNodeScan(node: String, args: String*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
-    appendAtCurrentIndent(LeafOperator(AllNodesScan(n, args.map(VariableParser.unescaped).toSet)(_)))
+    appendAtCurrentIndent(LeafOperator(AllNodesScan(
+      varFor(n),
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet
+    )(_)))
   }
 
   def simulatedNodeScan(node: String, numberOfRows: Long): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
-    appendAtCurrentIndent(LeafOperator(SimulatedNodeScan(n, numberOfRows)(_)))
+    appendAtCurrentIndent(LeafOperator(SimulatedNodeScan(varFor(n), numberOfRows)(_)))
   }
 
   def argument(args: String*): IMPL = {
-    appendAtCurrentIndent(LeafOperator(Argument(args.toSet)(_)))
+    appendAtCurrentIndent(LeafOperator(Argument(args.map(varFor).toSet)(_)))
   }
 
   def nodeByLabelScan(node: String, label: String, args: String*): IMPL =
@@ -1047,9 +1098,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(NodeByLabelScan(
-      n,
+      varFor(n),
       labelName(label),
-      args.map(VariableParser.unescaped).toSet,
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet,
       indexOrder
     )(_)))
   }
@@ -1062,9 +1113,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(UnionNodeByLabelsScan(
-      n,
+      varFor(n),
       labels.map(labelName),
-      args.map(VariableParser.unescaped).toSet,
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet,
       indexOrder
     )(_)))
   }
@@ -1077,9 +1128,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(IntersectionNodeByLabelsScan(
-      n,
+      varFor(n),
       labels.map(labelName),
-      args.map(VariableParser.unescaped).toSet,
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet,
       indexOrder
     )(_)))
   }
@@ -1098,29 +1149,29 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     p.dir match {
       case SemanticDirection.OUTGOING =>
         appendAtCurrentIndent(LeafOperator(DirectedUnionRelationshipTypesScan(
-          p.relName,
-          p.from,
+          varFor(p.relName),
+          varFor(p.from),
           p.relTypes,
-          p.to,
-          args.toSet,
+          varFor(p.to),
+          args.map(varFor).toSet,
           indexOrder
         )(_)))
       case SemanticDirection.INCOMING =>
         appendAtCurrentIndent(LeafOperator(DirectedUnionRelationshipTypesScan(
-          p.relName,
-          p.to,
+          varFor(p.relName),
+          varFor(p.to),
           p.relTypes,
-          p.from,
-          args.toSet,
+          varFor(p.from),
+          args.map(varFor).toSet,
           indexOrder
         )(_)))
       case SemanticDirection.BOTH =>
         appendAtCurrentIndent(LeafOperator(UndirectedUnionRelationshipTypesScan(
-          p.relName,
-          p.from,
+          varFor(p.relName),
+          varFor(p.from),
           p.relTypes,
-          p.to,
-          args.toSet,
+          varFor(p.to),
+          args.map(varFor).toSet,
           indexOrder
         )(_)))
     }
@@ -1131,7 +1182,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(n))
 
     val input = idSeekInput(ids)
-    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, args)(_)))
+    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(varFor(n), input, args.map(varFor))(_)))
   }
 
   private def directedRelationshipByIdSeekSolver(
@@ -1146,7 +1197,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(to))
     val input = ManySeekableArgs(ListLiteral(expr)(pos))
 
-    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
+    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(
+      varFor(relationship),
+      input,
+      varFor(from),
+      varFor(to),
+      args.map(varFor)
+    )(_)))
   }
 
   def directedRelationshipByIdSeek(
@@ -1187,7 +1244,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(to))
     val input = ManySeekableArgs(ListLiteral(expr)(pos))
 
-    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
+    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(
+      varFor(relationship),
+      input,
+      varFor(from),
+      varFor(to),
+      args.map(varFor)
+    )(_)))
   }
 
   def undirectedRelationshipByIdSeek(
@@ -1224,7 +1287,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(n))
 
     val input = idSeekInput(ids)
-    appendAtCurrentIndent(LeafOperator(NodeByElementIdSeek(n, input, args)(_)))
+    appendAtCurrentIndent(LeafOperator(NodeByElementIdSeek(varFor(n), input, args.map(varFor))(_)))
   }
 
   def directedRelationshipByElementIdSeek(
@@ -1239,7 +1302,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(to))
 
     val input = idSeekInput(ids)
-    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByElementIdSeek(relationship, input, from, to, args)(_)))
+    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByElementIdSeek(
+      varFor(relationship),
+      input,
+      varFor(from),
+      varFor(to),
+      args.map(varFor)
+    )(_)))
   }
 
   def undirectedRelationshipByElementIdSeek(
@@ -1254,7 +1323,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(to))
 
     val input = idSeekInput(ids)
-    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByElementIdSeek(relationship, input, from, to, args)(_)))
+    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByElementIdSeek(
+      varFor(relationship),
+      input,
+      varFor(from),
+      varFor(to),
+      args.map(varFor)
+    )(_)))
   }
 
   private def idSeekInput(ids: Seq[Any]): ManySeekableArgs = {
@@ -1283,24 +1358,24 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     p.dir match {
       case SemanticDirection.OUTGOING =>
         appendAtCurrentIndent(LeafOperator(DirectedAllRelationshipsScan(
-          p.relName,
-          p.from,
-          p.to,
-          args.toSet
+          varFor(p.relName),
+          varFor(p.from),
+          varFor(p.to),
+          args.map(varFor).toSet
         )(_)))
       case SemanticDirection.INCOMING =>
         appendAtCurrentIndent(LeafOperator(DirectedAllRelationshipsScan(
-          p.relName,
-          p.to,
-          p.from,
-          args.toSet
+          varFor(p.relName),
+          varFor(p.to),
+          varFor(p.from),
+          args.map(varFor).toSet
         )(_)))
       case SemanticDirection.BOTH =>
         appendAtCurrentIndent(LeafOperator(UndirectedAllRelationshipsScan(
-          p.relName,
-          p.from,
-          p.to,
-          args.toSet
+          varFor(p.relName),
+          varFor(p.from),
+          varFor(p.to),
+          args.map(varFor).toSet
         )(_)))
     }
   }
@@ -1322,29 +1397,29 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     p.dir match {
       case SemanticDirection.OUTGOING =>
         appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(
-          p.relName,
-          p.from,
+          varFor(p.relName),
+          varFor(p.from),
           typ,
-          p.to,
-          args.toSet,
+          varFor(p.to),
+          args.map(varFor).toSet,
           indexOrder
         )(_)))
       case SemanticDirection.INCOMING =>
         appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(
-          p.relName,
-          p.to,
+          varFor(p.relName),
+          varFor(p.to),
           typ,
-          p.from,
-          args.toSet,
+          varFor(p.from),
+          args.map(varFor).toSet,
           indexOrder
         )(_)))
       case SemanticDirection.BOTH =>
         appendAtCurrentIndent(LeafOperator(UndirectedRelationshipTypeScan(
-          p.relName,
-          p.from,
+          varFor(p.relName),
+          varFor(p.from),
           typ,
-          p.to,
-          args.toSet,
+          varFor(p.to),
+          args.map(varFor).toSet,
           indexOrder
         )(_)))
     }
@@ -1353,9 +1428,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nodeCountFromCountStore(name: String, labels: Seq[Option[String]], args: String*): IMPL = {
     val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName)).toList
     appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(
-      name,
+      varFor(name),
       labelNames,
-      args.map(VariableParser.unescaped).toSet
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet
     )(_)))
   }
 
@@ -1370,11 +1445,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val relTypeNames = relTypes.map(relTypeName)
     val endLabel = maybeEndLabel.map(labelName)
     appendAtCurrentIndent(LeafOperator(RelationshipCountFromCountStore(
-      name,
+      varFor(name),
       startLabel,
       relTypeNames,
       endLabel,
-      args.map(VariableParser.unescaped).toSet
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet
     )(_)))
   }
 
@@ -1457,7 +1532,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         customQueryExpression,
         indexType
       )(idGen)
-      newNode(varFor(plan.idName))
+      newNode(varFor(plan.idName.name))
       plan
     }
     planBuilder
@@ -1490,9 +1565,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         customQueryExpression,
         indexType
       )(idGen)
-      newRelationship(varFor(plan.idName))
-      newNode(varFor(plan.leftNode))
-      newNode(varFor(plan.rightNode))
+      newRelationship(varFor(plan.idName.name))
+      newNode(varFor(plan.leftNode.name))
+      newNode(varFor(plan.rightNode.name))
       plan
     }
     planBuilder
@@ -1578,8 +1653,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         RangeQueryExpression(PointDistanceSeekRangeWrapper(
           PointDistanceRange(function("point", parseExpression(point)), distanceExpr, inclusive)
         )(NONE))
-      val plan = NodeIndexSeek(node, labelToken, Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
-      newNode(varFor(plan.idName))
+      val plan = NodeIndexSeek(
+        varFor(node),
+        labelToken,
+        Seq(indexedProperty),
+        e,
+        argumentIds.map(varFor),
+        indexOrder,
+        indexType
+      )(idGen)
+      newNode(plan.idName)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
@@ -1610,8 +1693,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             function("point", parseExpression(upperRight))
           )
         )(NONE))
-      val plan = NodeIndexSeek(node, labelToken, Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
-      newNode(varFor(plan.idName))
+      val plan = NodeIndexSeek(
+        varFor(node),
+        labelToken,
+        Seq(indexedProperty),
+        e,
+        argumentIds.map(varFor),
+        indexOrder,
+        indexType
+      )(idGen)
+      newNode(plan.idName)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
@@ -1679,25 +1770,25 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val plan =
         if (directed) {
           DirectedRelationshipIndexSeek(
-            relationship,
-            startNode,
-            endNode,
+            varFor(relationship),
+            varFor(startNode),
+            varFor(endNode),
             typeToken,
             Seq(indexedProperty),
             e,
-            argumentIds,
+            argumentIds.map(varFor),
             indexOrder,
             indexType
           )(idGen)
         } else {
           UndirectedRelationshipIndexSeek(
-            relationship,
-            startNode,
-            endNode,
+            varFor(relationship),
+            varFor(startNode),
+            varFor(endNode),
             typeToken,
             Seq(indexedProperty),
             e,
-            argumentIds,
+            argumentIds.map(varFor),
             indexOrder,
             indexType
           )(idGen)
@@ -1769,25 +1860,25 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val plan =
         if (directed) {
           DirectedRelationshipIndexSeek(
-            relationship,
-            startNode,
-            endNode,
+            varFor(relationship),
+            varFor(startNode),
+            varFor(endNode),
             typeToken,
             Seq(indexedProperty),
             e,
-            argumentIds,
+            argumentIds.map(varFor),
             indexOrder,
             indexType
           )(idGen)
         } else {
           UndirectedRelationshipIndexSeek(
-            relationship,
-            startNode,
-            endNode,
+            varFor(relationship),
+            varFor(startNode),
+            varFor(endNode),
             typeToken,
             Seq(indexedProperty),
             e,
-            argumentIds,
+            argumentIds.map(varFor),
             indexOrder,
             indexType
           )(idGen)
@@ -1798,14 +1889,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def aggregation(groupingExpressions: Seq[String], aggregationExpression: Seq[String]): IMPL = {
-    val expressions = Parser.parseProjections(aggregationExpression: _*).view.mapValues {
+    val expressions = toVarMap(Parser.parseProjections(aggregationExpression: _*)).view.mapValues {
       case f: FunctionInvocation if f.needsToBeResolved =>
         ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
       case e => e
     }.toMap
 
     appendAtCurrentIndent(UnaryOperator(lp => {
-      Aggregation(lp, Parser.parseProjections(groupingExpressions: _*), expressions)(_)
+      Aggregation(lp, toVarMap(Parser.parseProjections(groupingExpressions: _*)), expressions)(_)
     }))
   }
 
@@ -1814,7 +1905,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     aggregationExpressions: Map[String, Expression]
   ): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
-      Aggregation(lp, groupingExpressions, aggregationExpressions)(_)
+      Aggregation(lp, toVarMap(groupingExpressions), toVarMap(aggregationExpressions))(_)
     }))
   }
 
@@ -1827,8 +1918,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp =>
       OrderedAggregation(
         lp,
-        Parser.parseProjections(groupingExpressions: _*),
-        Parser.parseProjections(aggregationExpression: _*),
+        toVarMap(Parser.parseProjections(groupingExpressions: _*)),
+        toVarMap(Parser.parseProjections(aggregationExpression: _*)),
         order
       )(_)
     ))
@@ -1844,16 +1935,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SemiApply(lhs, rhs)(_)))
 
   def letAntiSemiApply(item: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetAntiSemiApply(lhs, rhs, item)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetAntiSemiApply(lhs, rhs, varFor(item))(_)))
 
   def letSemiApply(item: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSemiApply(lhs, rhs, item)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSemiApply(lhs, rhs, varFor(item))(_)))
 
   def conditionalApply(items: String*): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ConditionalApply(lhs, rhs, items)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ConditionalApply(lhs, rhs, items.map(varFor))(_)))
 
   def antiConditionalApply(items: String*): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiConditionalApply(lhs, rhs, items)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiConditionalApply(lhs, rhs, items.map(varFor))(_)))
 
   def selectOrSemiApply(predicateString: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
@@ -1872,26 +1963,28 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def letSelectOrSemiApply(idName: String, predicateString: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
-      LetSelectOrSemiApply(lhs, rhs, idName, parseExpression(predicateString))(_)
+      LetSelectOrSemiApply(lhs, rhs, varFor(idName), parseExpression(predicateString))(_)
     }))
   }
 
   def letSelectOrAntiSemiApply(idName: String, predicateString: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
-      LetSelectOrAntiSemiApply(lhs, rhs, idName, parseExpression(predicateString))(_)
+      LetSelectOrAntiSemiApply(lhs, rhs, varFor(idName), parseExpression(predicateString))(_)
     }))
   }
 
   def rollUpApply(collectionName: String, variableToCollect: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      RollUpApply(lhs, rhs, varFor(collectionName), varFor(variableToCollect))(_)
+    ))
 
   def foreachApply(variable: String, expression: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      ForeachApply(lhs, rhs, variable, parseExpression(expression))(_)
+      ForeachApply(lhs, rhs, varFor(variable), parseExpression(expression))(_)
     ))
 
   def foreach(variable: String, expression: String, mutations: Seq[SimpleMutatingPattern]): IMPL =
-    appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, variable, parseExpression(expression), mutations)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, varFor(variable), parseExpression(expression), mutations)(_)))
 
   def subqueryForeach(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SubqueryForeach(lhs, rhs)(_)))
@@ -1903,12 +1996,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)(_)))
 
   def assertSameNode(node: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameNode(node, lhs, rhs)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameNode(varFor(node), lhs, rhs)(_)))
 
   def assertSameRelationship(idName: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameRelationship(idName, lhs, rhs)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameRelationship(varFor(idName), lhs, rhs)(_)))
 
-  def orderedUnion(sortedOn: Seq[ColumnOrder]): IMPL =
+  def orderedUnion(sortedOn: String*): IMPL =
+    orderedUnionColumns(Parser.parseSort(sortedOn))
+
+  def orderedUnionColumns(sortedOn: Seq[ColumnOrder]): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => OrderedUnion(lhs, rhs, sortedOn)(_)))
 
   def expandAll(pattern: String): IMPL = expand(pattern, ExpandAll)
@@ -1938,20 +2034,27 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def setNodeProperty(node: String, propertyKey: String, value: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
-      SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
+      SetNodeProperty(source, varFor(node), PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
     ))
   }
 
   def setNodeProperty(node: String, propertyKey: String, value: Expression): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
-      SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), value)(_)
+      SetNodeProperty(source, varFor(node), PropertyKeyName(propertyKey)(pos), value)(_)
     ))
   }
 
   def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source =>
-      SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
-    ))
+    appendAtCurrentIndent(
+      UnaryOperator(source =>
+        SetRelationshipProperty(
+          source,
+          varFor(relationship),
+          PropertyKeyName(propertyKey)(pos),
+          parseExpression(value)
+        )(_)
+      )
+    )
   }
 
   def setProperties(entity: String, items: (String, String)*): IMPL = {
@@ -1966,7 +2069,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def setNodeProperties(node: String, items: (String, String)*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
-      SetNodeProperties(source, node, items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)
+      SetNodeProperties(
+        source,
+        varFor(node),
+        items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
+      )(_)
     ))
   }
 
@@ -1974,7 +2081,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(source =>
       SetRelationshipProperties(
         source,
-        relationship,
+        varFor(relationship),
         items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
       )(_)
     ))
@@ -1988,23 +2095,23 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
-      SetNodePropertiesFromMap(source, node, parseExpression(map), removeOtherProps)(_)
+      SetNodePropertiesFromMap(source, varFor(node), parseExpression(map), removeOtherProps)(_)
     ))
   }
 
   def setRelationshipPropertiesFromMap(relationship: String, map: String, removeOtherProps: Boolean): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
-      SetRelationshipPropertiesFromMap(source, relationship, parseExpression(map), removeOtherProps)(_)
+      SetRelationshipPropertiesFromMap(source, varFor(relationship), parseExpression(map), removeOtherProps)(_)
     ))
   }
 
-  def create(commands: CreateCommand*): IMPL = {
+  def create(commands: CreateEntity*): IMPL = {
     commands.foreach {
-      case node: CreateNode => newNode(varFor(VariableParser.unescaped(node.idName)))
+      case node: CreateNode => newNode(VariableParser.unescaped(node.variable))
       case relationship: CreateRelationship =>
-        newRelationship(varFor(VariableParser.unescaped(relationship.idName)))
-        newNode(varFor(VariableParser.unescaped(relationship.startNode)))
-        newNode(varFor(VariableParser.unescaped(relationship.endNode)))
+        newRelationship(VariableParser.unescaped(relationship.variable))
+        newNode(VariableParser.unescaped(relationship.startNode))
+        newNode(VariableParser.unescaped(relationship.endNode))
     }
 
     appendAtCurrentIndent(UnaryOperator(source => Create(source, commands)(_)))
@@ -2017,19 +2124,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     onCreate: Seq[SetMutatingPattern] = Seq.empty,
     lockNodes: Set[String] = Set.empty
   ): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => Merge(source, nodes, relationships, onMatch, onCreate, lockNodes)(_)))
+    appendAtCurrentIndent(UnaryOperator(source =>
+      Merge(source, nodes, relationships, onMatch, onCreate, lockNodes.map(varFor))(_)
+    ))
   }
 
   def nodeHashJoin(nodes: String*): IMPL = {
-    appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)(_)))
+    appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.map(varFor).toSet, left, right)(_)))
   }
 
   def rightOuterHashJoin(nodes: String*): IMPL = {
-    appendAtCurrentIndent(BinaryOperator((left, right) => RightOuterHashJoin(nodes.toSet, left, right)(_)))
+    appendAtCurrentIndent(BinaryOperator((left, right) => RightOuterHashJoin(nodes.map(varFor).toSet, left, right)(_)))
   }
 
   def leftOuterHashJoin(nodes: String*): IMPL = {
-    appendAtCurrentIndent(BinaryOperator((left, right) => LeftOuterHashJoin(nodes.toSet, left, right)(_)))
+    appendAtCurrentIndent(BinaryOperator((left, right) => LeftOuterHashJoin(nodes.map(varFor).toSet, left, right)(_)))
   }
 
   def valueHashJoin(predicate: String): IMPL = {
@@ -2059,9 +2168,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newRelationships(relationships)
     newVariables(variables)
     appendAtCurrentIndent(LeafOperator(Input(
-      nodes,
-      relationships,
-      variables,
+      nodes.map(varFor),
+      relationships.map(varFor),
+      variables.map(varFor),
       nullable
     )(_)))
   }
@@ -2109,14 +2218,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val inner = parseExpression(resultPart)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       // TODO Set.empty?
-      Projection(lhs, Set.empty, Map(resultList -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE)))(_)
+      Projection(
+        lhs,
+        Set.empty,
+        Map(varFor(resultList) -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE))
+      )(_)
     ))
   }
 
   def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       // TODO Set.empty?
-      Projection(lhs, Set.empty, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
+      Projection(lhs, Set.empty, Map(varFor(resultList) -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
     ))
   }
 
@@ -2126,22 +2239,24 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       Projection(
         lhs,
         Set.empty,
-        Map(resultName -> NestedPlanGetByNameExpression(rhs, columnNameToGet, "getByName(...)")(NONE))
+        Map(varFor(resultName) -> NestedPlanGetByNameExpression(rhs, varFor(columnNameToGet), "getByName(...)")(NONE))
       )(_)
     ))
   }
 
   def triadicSelection(positivePredicate: Boolean, sourceId: String, seenId: String, targetId: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      TriadicSelection(lhs, rhs, positivePredicate, sourceId, seenId, targetId)(_)
+      TriadicSelection(lhs, rhs, positivePredicate, varFor(sourceId), varFor(seenId), varFor(targetId))(_)
     ))
 
   def triadicBuild(triadicSelectionId: Int, sourceId: String, seenId: String): IMPL =
-    appendAtCurrentIndent(UnaryOperator(lp => TriadicBuild(lp, sourceId, seenId, Some(Id(triadicSelectionId)))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      TriadicBuild(lp, varFor(sourceId), varFor(seenId), Some(Id(triadicSelectionId)))(_)
+    ))
 
   def triadicFilter(triadicSelectionId: Int, positivePredicate: Boolean, sourceId: String, targetId: String): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp =>
-      TriadicFilter(lp, positivePredicate, sourceId, targetId, Some(Id(triadicSelectionId)))(_)
+      TriadicFilter(lp, positivePredicate, varFor(sourceId), varFor(targetId), Some(Id(triadicSelectionId)))(_)
     ))
 
   def loadCSV(url: String, variableName: String, format: CSVFormat, fieldTerminator: Option[String] = None): IMPL = {
@@ -2150,7 +2265,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       LoadCSV(
         lp,
         urlExpr,
-        variableName,
+        varFor(variableName),
         format,
         fieldTerminator,
         legacyCsvQuoteEscaping = GraphDatabaseSettings.csv_legacy_quote_escaping.defaultValue(),
@@ -2177,7 +2292,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     maybeReportAs: Option[String] = None
   ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      TransactionForeach(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs)(_)
+      TransactionForeach(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs.map(varFor))(_)
     ))
 
   def transactionApply(
@@ -2186,7 +2301,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     maybeReportAs: Option[String] = None
   ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      TransactionApply(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs)(_)
+      TransactionApply(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs.map(varFor))(_)
     ))
 
   def trail(
@@ -2202,15 +2317,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         lhs,
         rhs,
         Repetition(trailParameters.min, trailParameters.max),
-        trailParameters.start,
-        trailParameters.end,
-        trailParameters.innerStart,
-        trailParameters.innerEnd,
-        trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(inner, outer) },
-        trailParameters.groupRelationships.map { case (inner, outer) => VariableGrouping(inner, outer) },
-        trailParameters.innerRelationships,
-        trailParameters.previouslyBoundRelationships,
-        trailParameters.previouslyBoundRelationshipGroups,
+        varFor(trailParameters.start),
+        varFor(trailParameters.end),
+        varFor(trailParameters.innerStart),
+        varFor(trailParameters.innerEnd),
+        trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(varFor(inner), varFor(outer)) },
+        trailParameters.groupRelationships.map { case (inner, outer) =>
+          VariableGrouping(varFor(inner), varFor(outer))
+        },
+        trailParameters.innerRelationships.map(varFor),
+        trailParameters.previouslyBoundRelationships.map(varFor),
+        trailParameters.previouslyBoundRelationshipGroups.map(varFor),
         trailParameters.reverseGroupVariableProjections
       )(_)
     ))
@@ -2230,15 +2347,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             lhs,
             repeatOptions,
             Repetition(trailParameters.min, trailParameters.max),
-            trailParameters.start,
-            trailParameters.end,
-            trailParameters.innerStart,
-            trailParameters.innerEnd,
-            trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(inner, outer) },
-            trailParameters.groupRelationships.map { case (inner, outer) => VariableGrouping(inner, outer) },
-            trailParameters.innerRelationships,
-            trailParameters.previouslyBoundRelationships,
-            trailParameters.previouslyBoundRelationshipGroups,
+            varFor(trailParameters.start),
+            varFor(trailParameters.end),
+            varFor(trailParameters.innerStart),
+            varFor(trailParameters.innerEnd),
+            trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(varFor(inner), varFor(outer)) },
+            trailParameters.groupRelationships.map { case (inner, outer) =>
+              VariableGrouping(varFor(inner), varFor(outer))
+            },
+            trailParameters.innerRelationships.map(varFor),
+            trailParameters.previouslyBoundRelationships.map(varFor),
+            trailParameters.previouslyBoundRelationshipGroups.map(varFor),
             trailParameters.reverseGroupVariableProjections
           )(_)
         case _ => throw new IllegalArgumentException("BidirectionalRepeatTrail must have RepeatOptions as its RHS.")
@@ -2261,15 +2380,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   /**
    * Called every time a new node is introduced by some logical operator.
    */
-  def newNode(node: Variable): Unit = {
-    semanticTable = semanticTable.addNode(node)
+  def newNode(node: LogicalVariable): Unit = {
+    semanticTable = semanticTable.addNode(node.asInstanceOf[Variable])
   }
 
   /**
    * Called every time a new relationship is introduced by some logical operator.
    */
-  def newRelationship(relationship: Variable): Unit = {
-    semanticTable = semanticTable.addRelationship(relationship)
+  def newRelationship(relationship: LogicalVariable): Unit = {
+    semanticTable = semanticTable.addRelationship(relationship.asInstanceOf[Variable])
   }
 
   /**
@@ -2286,7 +2405,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     semanticTable = semanticTable.addTypeInfo(variable, typ.invariant)
   }
 
-  protected def newAlias(variable: Variable, expression: Expression): Unit = {
+  protected def newAlias(variable: LogicalVariable, expression: Expression): Unit = {
     val typeInfo = semanticTable.types.get(expression).orElse(findTypeIgnoringPosition(expression))
     val spec = typeInfo.map(_.actual).getOrElse(CTAny.invariant)
     semanticTable = semanticTable.addTypeInfo(variable, spec)
@@ -2297,16 +2416,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       .map { case (k, v) => (k.node, v) } // unwrap nodes to discard position
       .collectFirst { case (`expr`, t) => t }
 
-  protected def newNodes(nodes: Iterable[String]): Unit = {
-    nodes.map(varFor).foreach(newNode)
+  protected def newNodes(nodes: Iterable[String]): Seq[LogicalVariable] = {
+    val result = nodes.map(varFor).toSeq
+    result.foreach(newNode)
+    result
   }
 
-  protected def newRelationships(relationships: Iterable[String]): Unit = {
-    relationships.map(varFor).foreach(newRelationship)
+  protected def newRelationships(relationships: Iterable[String]): Seq[LogicalVariable] = {
+    val result = relationships.map(varFor).toSeq
+    result.foreach(newRelationship)
+    result
   }
 
-  protected def newVariables(variables: Iterable[String]): Unit = {
-    variables.map(varFor).foreach(newVariable)
+  protected def newVariables(variables: Iterable[String]): Seq[LogicalVariable] = {
+    val result = variables.map(varFor).toSeq
+    result.foreach(newVariable)
+    result
   }
 
   private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {
@@ -2417,11 +2542,21 @@ object AbstractLogicalPlanBuilder {
     CreatePattern(nodes ++ relationships)
   }
 
+  def createPatternIr(
+    nodes: Seq[org.neo4j.cypher.internal.ir.CreateNode] = Seq.empty,
+    relationships: Seq[org.neo4j.cypher.internal.ir.CreateRelationship] = Seq.empty
+  ): org.neo4j.cypher.internal.ir.CreatePattern = {
+    org.neo4j.cypher.internal.ir.CreatePattern(nodes ++ relationships)
+  }
+
   def createNode(node: String, labels: String*): CreateNode =
-    CreateNode(node, labels.map(LabelName(_)(pos)).toSet, None)
+    CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, None)
+
+  def createNodeIr(node: String, labels: String*): org.neo4j.cypher.internal.ir.CreateNode =
+    org.neo4j.cypher.internal.ir.CreateNode(node, labels.map(LabelName(_)(pos)).toSet, None)
 
   def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
-    CreateNode(node, labels.map(LabelName(_)(pos)).toSet, Some(Parser.parseExpression(properties)))
+    CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, Some(Parser.parseExpression(properties)))
 
   def createRelationship(
     relationship: String,
@@ -2435,6 +2570,27 @@ object AbstractLogicalPlanBuilder {
     if (props.exists(!_.isInstanceOf[MapExpression]))
       throw new IllegalArgumentException("Property must be a Map Expression")
     CreateRelationship(
+      varFor(relationship),
+      varFor(left),
+      RelTypeName(typ)(pos),
+      varFor(right),
+      direction,
+      properties.map(Parser.parseExpression)
+    )
+  }
+
+  def createRelationshipIr(
+    relationship: String,
+    left: String,
+    typ: String,
+    right: String,
+    direction: SemanticDirection = OUTGOING,
+    properties: Option[String] = None
+  ): org.neo4j.cypher.internal.ir.CreateRelationship = {
+    val props = properties.map(Parser.parseExpression)
+    if (props.exists(!_.isInstanceOf[MapExpression]))
+      throw new IllegalArgumentException("Property must be a Map Expression")
+    org.neo4j.cypher.internal.ir.CreateRelationship(
       relationship,
       left,
       RelTypeName(typ)(pos),
@@ -2445,27 +2601,27 @@ object AbstractLogicalPlanBuilder {
   }
 
   def setNodeProperty(node: String, key: String, value: String): SetMutatingPattern =
-    SetNodePropertyPattern(node, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+    SetNodePropertyPattern(varFor(node), PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
 
   def setNodeProperties(node: String, items: (String, String)*): SetMutatingPattern =
     SetNodePropertiesPattern(
-      node,
+      varFor(node),
       items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2)))
     )
 
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
-    SetNodePropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
+    SetNodePropertiesFromMapPattern(varFor(node), Parser.parseExpression(map), removeOtherProps)
 
   def setRelationshipProperty(relationship: String, key: String, value: String): SetMutatingPattern =
     SetRelationshipPropertyPattern(
-      relationship,
+      varFor(relationship),
       PropertyKeyName(key)(InputPosition.NONE),
       Parser.parseExpression(value)
     )
 
   def setRelationshipProperties(rel: String, items: (String, String)*): SetMutatingPattern =
     SetRelationshipPropertiesPattern(
-      rel,
+      varFor(rel),
       items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2)))
     )
 
@@ -2474,10 +2630,17 @@ object AbstractLogicalPlanBuilder {
     map: String,
     removeOtherProps: Boolean = true
   ): SetMutatingPattern =
-    SetRelationshipPropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
+    SetRelationshipPropertiesFromMapPattern(varFor(node), Parser.parseExpression(map), removeOtherProps)
 
   def setProperty(entity: String, key: String, value: String): SetMutatingPattern =
     SetPropertyPattern(
+      Parser.parseExpression(entity),
+      PropertyKeyName(key)(InputPosition.NONE),
+      Parser.parseExpression(value)
+    )
+
+  def setPropertyIr(entity: String, key: String, value: String): org.neo4j.cypher.internal.ir.SetMutatingPattern =
+    org.neo4j.cypher.internal.ir.SetPropertyPattern(
       Parser.parseExpression(entity),
       PropertyKeyName(key)(InputPosition.NONE),
       Parser.parseExpression(value)
@@ -2493,11 +2656,14 @@ object AbstractLogicalPlanBuilder {
     SetPropertiesFromMapPattern(Parser.parseExpression(entity), Parser.parseExpression(map), removeOtherProps)
 
   def setLabel(node: String, labels: String*): SetMutatingPattern =
-    SetLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
+    SetLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
 
   def removeLabel(node: String, labels: String*): RemoveLabelPattern =
-    RemoveLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
+    RemoveLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
 
-  def delete(entity: String, forced: Boolean = false): ir.DeleteExpression =
-    ir.DeleteExpression(Parser.parseExpression(entity), forced)
+  def removeLabelIr(node: String, labels: String*): org.neo4j.cypher.internal.ir.RemoveLabelPattern =
+    org.neo4j.cypher.internal.ir.RemoveLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
+
+  def delete(entity: String, forced: Boolean = false): org.neo4j.cypher.internal.logical.plans.set.DeleteExpression =
+    org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(Parser.parseExpression(entity), forced)
 }

@@ -46,8 +46,8 @@ object TestNFABuilder {
 
   object NodePredicate {
 
-    def unapply(node: NodePattern): Option[(String, Option[Expand.VariablePredicate])] = node match {
-      case NodePattern(Some(nodeVariable @ LogicalVariable(name)), labelExpression, None, nodePredicate) =>
+    def unapply(node: NodePattern): Option[(LogicalVariable, Option[Expand.VariablePredicate])] = node match {
+      case NodePattern(Some(nodeVariable: LogicalVariable), labelExpression, None, nodePredicate) =>
         val labelExpressionRewriter = LabelExpressionNormalizer(nodeVariable, Some(NODE_TYPE))
         val normalizedLabelExpression = labelExpression.map(labelExpressionRewriter(_).asInstanceOf[Expression])
 
@@ -61,7 +61,7 @@ object TestNFABuilder {
         val rewrittenNodeJointPredicate =
           nodeJointPredicate.endoRewrite(inSequence(flattenBooleanOperators, combineHasLabels))
 
-        Some((name, rewrittenNodeJointPredicate.map(Expand.VariablePredicate(nodeVariable, _))))
+        Some((nodeVariable, rewrittenNodeJointPredicate.map(Expand.VariablePredicate(nodeVariable, _))))
       case _ => None
     }
   }
@@ -76,7 +76,7 @@ class TestNFABuilder(startStateId: Int, startStateName: String, groupVar: Boolea
   def addTransition(fromId: Int, toId: Int, pattern: String, groupVars: Set[String] = Set.empty): TestNFABuilder = {
 
     def assertFromNameMatchesFromId(actualState: State, specifiedName: String): Unit = {
-      if (actualState.name.name != specifiedName) {
+      if (actualState.name.name.name != specifiedName) {
         throw new IllegalArgumentException(
           s"For id $fromId in pattern '$pattern': expected '${actualState.name.name}' but was '$specifiedName'"
         )
@@ -86,9 +86,9 @@ class TestNFABuilder(startStateId: Int, startStateName: String, groupVar: Boolea
     val parsedPattern = Parser.parsePatternElement(pattern)
     parsedPattern match {
       case RelationshipChain(
-          NodePattern(Some(LogicalVariable(fromName)), None, None, None),
+          NodePattern(Some(from: LogicalVariable), None, None, None),
           RelationshipPattern(
-            Some(rel @ LogicalVariable(relName)),
+            Some(rel: LogicalVariable),
             relTypeExpression,
             None,
             None,
@@ -101,26 +101,26 @@ class TestNFABuilder(startStateId: Int, startStateName: String, groupVar: Boolea
         val relVariablePredicate = relPredicate.map(Expand.VariablePredicate(rel, _))
 
         val nfaPredicate = RelationshipExpansionPredicate(
-          NFABuilder.asVarName(relName, groupVars.contains(relName)),
+          NFABuilder.asVarName(rel, groupVars.contains(rel.name)),
           relVariablePredicate,
           types,
           direction,
           toNodePredicate
         )
 
-        val fromState = getOrCreateState(fromId, fromName, groupVars.contains(fromName))
-        assertFromNameMatchesFromId(fromState, fromName)
-        val toState = getOrCreateState(toId, toName, groupVars.contains(toName))
+        val fromState = getOrCreateState(fromId, from, groupVars.contains(from.name))
+        assertFromNameMatchesFromId(fromState, from.name)
+        val toState = getOrCreateState(toId, toName, groupVars.contains(toName.name))
 
         addTransition(fromState, toState, nfaPredicate)
 
       case PathConcatenation(Seq(
-          NodePattern(Some(LogicalVariable(fromName)), None, None, None),
-          NodePredicate(toName, toNodePredicate)
+          NodePattern(Some(from: LogicalVariable), None, None, None),
+          NodePredicate(to, toNodePredicate)
         )) =>
-        val fromState = getOrCreateState(fromId, fromName, groupVars.contains(fromName))
-        assertFromNameMatchesFromId(fromState, fromName)
-        val toState = getOrCreateState(toId, toName, groupVars.contains(toName))
+        val fromState = getOrCreateState(fromId, from, groupVars.contains(from.name))
+        assertFromNameMatchesFromId(fromState, from.name)
+        val toState = getOrCreateState(toId, to, groupVars.contains(to.name))
         addTransition(fromState, toState, NodeJuxtapositionPredicate(toNodePredicate))
 
       case _ => throw new IllegalArgumentException(s"Expected path pattern or two juxtaposed nodes but was: $pattern")

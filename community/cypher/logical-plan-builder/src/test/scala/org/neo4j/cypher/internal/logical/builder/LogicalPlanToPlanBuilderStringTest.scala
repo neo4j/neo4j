@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -899,8 +900,28 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "sort",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .sort(Seq(Ascending("x"), Ascending("y")))
-      .sort(Seq(Descending("x")))
+      .sort("x ASC", "y ASC")
+      .sort("x DESC")
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "sortColumns",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .sortColumns(Seq(Ascending(varFor("x")), Ascending(varFor("y"))))
+      .sortColumns(Seq(Descending(varFor("x"))))
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "sortStrings",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .sort("x ASC", "y ASC")
+      .sort("x DESC")
       .argument()
       .build()
   )
@@ -909,9 +930,24 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "partialSort",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .partialSort(Seq(Ascending("x"), Ascending("y")), Seq(Ascending("xxx"), Descending("y")))
-      .partialSort(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")))
-      .partialSort(Seq(Descending("x")), Seq(Ascending("x")), 10)
+      .partialSort(
+        Seq("x ASC", "y ASC"),
+        Seq("xxx ASC", "y DESC")
+      )
+      .partialSort(Seq("x DESC"), Seq("x ASC", "y ASC"))
+      .partialSort(Seq("x DESC"), Seq("x ASC"), 10)
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "partialSortColumns",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .partialSortColumns(
+        Seq(Ascending(varFor("x")), Ascending(varFor("y"))),
+        Seq(Descending(varFor("a")), Ascending(varFor("f")))
+      )
       .argument()
       .build()
   )
@@ -920,8 +956,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "top",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .top(Seq(Ascending("xxx"), Descending("y")), 100)
-      .top(Seq(Ascending("x"), Ascending("y")), 42)
+      .top(Seq(Ascending(varFor("xxx")), Descending(varFor("y"))), 100)
+      .top(Seq(Ascending(varFor("x")), Ascending(varFor("y"))), 42)
       .argument()
       .build()
   )
@@ -930,8 +966,18 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "top1WithTies",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .top1WithTies(Seq(Ascending("xxx"), Descending("y")))
-      .top1WithTies(Seq(Ascending("x"), Ascending("y")))
+      .top1WithTies("xxx ASC", "y DESC")
+      .top1WithTies("x ASC", "y ASC")
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "top1WithTiesColumns",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .top1WithTiesColumns(Seq(Ascending(varFor("xxx")), Descending(varFor("y"))))
+      .top1WithTiesColumns(Seq(Ascending(varFor("x")), Ascending(varFor("y"))))
       .argument()
       .build()
   )
@@ -940,9 +986,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "partialTop",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x"), Ascending("y")), Seq(Ascending("xxx"), Descending("y")), 100)
-      .partialTop(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")), 42)
-      .partialTop(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")), 42, 17)
+      .partialTop(
+        Seq(Ascending(varFor("x")), Ascending(varFor("y"))),
+        Seq(Ascending(varFor("xxx")), Descending(varFor("y"))),
+        100
+      )
+      .partialTop(Seq(Descending(varFor("x"))), Seq(Ascending(varFor("x")), Ascending(varFor("y"))), 42)
+      .partialTop(Seq(Descending(varFor("x"))), Seq(Ascending(varFor("x")), Ascending(varFor("y"))), 42, 17)
       .argument()
       .build()
   )
@@ -1005,7 +1055,17 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "orderedUnion",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion("x ASC")
+      .|.argument()
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "orderedUnionColumns",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .orderedUnionColumns(Seq(Ascending(varFor("x"))))
       .|.argument()
       .argument()
       .build()

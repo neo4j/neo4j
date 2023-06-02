@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
+
 object VariableParser {
 
   private val raw = "([a-zA-Z0-9_]*)".r
@@ -27,6 +30,11 @@ object VariableParser {
   def unescaped(varName: String): String = unapply(varName) match {
     case Some(value) => value
     case None        => throw new IllegalArgumentException(s"'$varName' cannot be parsed as a variable name")
+  }
+
+  def unescaped(variable: LogicalVariable): LogicalVariable = unapply(variable.name) match {
+    case Some(value) => varFor(value)
+    case None        => throw new IllegalArgumentException(s"'${variable.name}' cannot be parsed as a variable name")
   }
 
   def unapply(varName: String): Option[String] = varName match {

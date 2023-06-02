@@ -34,9 +34,13 @@ import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
+import org.neo4j.cypher.internal.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Rewriter
@@ -115,6 +119,18 @@ object Parser {
     clause match {
       case u: UnresolvedCall => Parser.cleanup(u)
       case c                 => throw new IllegalArgumentException(s"Expected UnresolvedCall but got: $c")
+    }
+  }
+
+  private val sortRegex = s"(.+) (ASC|DESC)".r
+
+  def parseSort(text: Seq[String]): Seq[ColumnOrder] = {
+    text.map {
+      case sortRegex(VariableParser(variable), direction) =>
+        if ("ASC" == direction) Ascending(varFor(variable))
+        else if ("DESC" == direction) Descending(varFor(variable))
+        else throw new IllegalArgumentException(s"Invalid direction $direction")
+      case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
     }
   }
 
