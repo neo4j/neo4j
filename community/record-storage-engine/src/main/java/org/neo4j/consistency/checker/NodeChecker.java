@@ -148,7 +148,7 @@ class NodeChecker implements Checker {
                         context, mandatoryProperties, allowedTypes, smallIndexes, cursorContext, storeCursors);
                 var localProgress = nodeProgress.threadLocalReporter();
                 var freeIdsIterator =
-                        context.neoStores.getNodeStore().getIdGenerator().freeIdsIterator(fromNodeId, toNodeId)) {
+                        context.neoStores.getNodeStore().getIdGenerator().notUsedIdsIterator(fromNodeId, toNodeId)) {
             IntObjectHashMap<Value> propertyValues = new IntObjectHashMap<>();
             CacheAccess.Client client = context.cacheAccess.client();
             long[] nextRelCacheFields =

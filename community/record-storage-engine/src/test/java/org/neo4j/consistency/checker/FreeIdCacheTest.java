@@ -121,8 +121,8 @@ class FreeIdCacheTest {
         Arrays.sort(ids);
         IdGenerator mock = mock(IdGenerator.class);
         when(mock.getHighId()).thenReturn(Long.MAX_VALUE);
-        when(mock.freeIdsIterator()).thenReturn(PrimitiveLongResourceCollections.iterator(null, ids));
-        when(mock.freeIdsIterator(anyLong(), anyLong()))
+        when(mock.notUsedIdsIterator()).thenReturn(PrimitiveLongResourceCollections.iterator(null, ids));
+        when(mock.notUsedIdsIterator(anyLong(), anyLong()))
                 .thenAnswer(inv -> iterator(inv.getArgument(0), inv.getArgument(1), ids));
         return mock;
     }

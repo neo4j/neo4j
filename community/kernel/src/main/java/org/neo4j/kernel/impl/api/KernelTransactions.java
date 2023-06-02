@@ -435,7 +435,8 @@ public class KernelTransactions extends LifecycleAdapter
         return new IdController.TransactionSnapshot(
                 transactionIdSequence.currentValue(),
                 clock.millis(),
-                transactionIdStore.getLastCommittedTransactionId());
+                transactionIdStore.getLastCommittedTransactionId(),
+                transactionIdStore.getClosedTransactionSnapshot());
     }
 
     @Override

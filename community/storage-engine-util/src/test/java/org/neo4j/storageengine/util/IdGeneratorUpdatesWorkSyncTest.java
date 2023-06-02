@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,8 +31,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 class IdGeneratorUpdatesWorkSyncTest {
     @Test
@@ -46,8 +43,7 @@ class IdGeneratorUpdatesWorkSyncTest {
         workSync.add(idGenerator);
 
         // when
-        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
-        IdGeneratorUpdatesWorkSync.Batch batch = workSync.newBatch(contextFactory);
+        IdGeneratorUpdatesWorkSync.Batch batch = workSync.newBatch(CursorContext.NULL_CONTEXT);
         batch.markIdAsUsed(idGenerator, 10, 1, CursorContext.NULL_CONTEXT);
         batch.markIdAsUnused(idGenerator, 11, 1, CursorContext.NULL_CONTEXT);
         batch.markIdAsUsed(idGenerator, 270, 4, CursorContext.NULL_CONTEXT);

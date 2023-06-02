@@ -140,7 +140,7 @@ class RelationshipChecker implements Checker {
                         ? context.neoStores
                                 .getRelationshipStore()
                                 .getIdGenerator()
-                                .freeIdsIterator(fromRelationshipId, toRelationshipId)
+                                .notUsedIdsIterator(fromRelationshipId, toRelationshipId)
                         : null) {
             CacheAccess.Client client = cacheAccess.client();
             IntObjectHashMap<Value> propertyValues = new IntObjectHashMap<>();

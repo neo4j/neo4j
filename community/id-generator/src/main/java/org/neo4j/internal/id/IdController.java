@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
 
@@ -45,7 +46,20 @@ public interface IdController extends Lifecycle {
         boolean eligibleForFreeing(TransactionSnapshot snapshot);
     }
 
-    record TransactionSnapshot(long currentSequenceNumber, long snapshotTimeMillis, long lastCommittedTransactionId) {}
+    record TransactionSnapshot(
+            long currentSequenceNumber,
+            long snapshotTimeMillis,
+            long lastCommittedTransactionId,
+            TransactionIdSnapshot idSnapshot) {
+        public TransactionSnapshot(
+                long currentSequenceNumber, long snapshotTimeMillis, long lastCommittedTransactionId) {
+            this(
+                    currentSequenceNumber,
+                    snapshotTimeMillis,
+                    lastCommittedTransactionId,
+                    TransactionIdSnapshot.EMPTY_ID_SNAPSHOT);
+        }
+    }
 
     /**
      * Perform ids related maintenance.

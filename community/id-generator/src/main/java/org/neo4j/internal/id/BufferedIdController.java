@@ -46,7 +46,7 @@ import org.neo4j.scheduler.JobScheduler;
  */
 public class BufferedIdController extends LifecycleAdapter implements IdController {
     private static final String BUFFERED_ID_CONTROLLER = "idController";
-    private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
+    private final AbstractBufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
     private final CursorContextFactory contextFactory;
     private final String databaseName;
@@ -57,7 +57,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private volatile DatabaseReadOnlyChecker databaseReadOnlyChecker;
 
     public BufferedIdController(
-            BufferingIdGeneratorFactory bufferingIdGeneratorFactory,
+            AbstractBufferingIdGeneratorFactory bufferingIdGeneratorFactory,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
             String databaseName,

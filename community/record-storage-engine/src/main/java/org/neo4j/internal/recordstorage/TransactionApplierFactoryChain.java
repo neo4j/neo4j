@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import java.util.function.Function;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
@@ -32,18 +32,18 @@ import org.neo4j.storageengine.util.IdUpdateListener;
  * Chains are reused between the batches of transactions as a consequence they should be stateless.
  */
 public class TransactionApplierFactoryChain implements TransactionApplierFactory {
-    private final Function<IdGeneratorUpdatesWorkSync, IdUpdateListener> idUpdateListenerFunction;
+    private final IdUpdateListenerFactory idUpdateListenerFunction;
     private final TransactionApplierFactory[] appliers;
 
     public TransactionApplierFactoryChain(
-            Function<IdGeneratorUpdatesWorkSync, IdUpdateListener> idUpdateListenerFunction,
-            TransactionApplierFactory... appliers) {
+            IdUpdateListenerFactory idUpdateListenerFunction, TransactionApplierFactory... appliers) {
         this.idUpdateListenerFunction = idUpdateListenerFunction;
         this.appliers = appliers;
     }
 
-    public IdUpdateListener getIdUpdateListener(IdGeneratorUpdatesWorkSync idGeneratorUpdatesWorkSync) {
-        return idUpdateListenerFunction.apply(idGeneratorUpdatesWorkSync);
+    public IdUpdateListener getIdUpdateListener(
+            IdGeneratorUpdatesWorkSync idGeneratorUpdatesWorkSync, CursorContext cursorContext) {
+        return idUpdateListenerFunction.create(idGeneratorUpdatesWorkSync, cursorContext);
     }
 
     @Override
@@ -53,5 +53,10 @@ public class TransactionApplierFactoryChain implements TransactionApplierFactory
             txAppliers[i] = appliers[i].startTx(transaction, batchContext);
         }
         return new TransactionApplierFacade(txAppliers);
+    }
+
+    @FunctionalInterface
+    public interface IdUpdateListenerFactory {
+        IdUpdateListener create(IdGeneratorUpdatesWorkSync workSync, CursorContext cursorContext);
     }
 }

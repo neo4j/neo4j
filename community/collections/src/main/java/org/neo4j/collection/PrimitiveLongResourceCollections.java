@@ -63,6 +63,12 @@ public class PrimitiveLongResourceCollections {
         return new PrimitiveLongConcatenatingResourceIterator(primitiveLongResourceIterators);
     }
 
+    public static long[] asArray(PrimitiveLongResourceIterator iterator) throws IOException {
+        try (iterator) {
+            return PrimitiveLongCollections.asArray(iterator);
+        }
+    }
+
     public abstract static class AbstractPrimitiveLongBaseResourceIterator
             extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator
             implements PrimitiveLongResourceIterator {

@@ -26,10 +26,8 @@ import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,20 +35,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
@@ -58,7 +51,7 @@ import org.neo4j.util.Preconditions;
  * Wraps {@link IdGenerator} so that ids can be freed using reuse marker at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
-public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdGeneratorFactory {
+public class BufferingIdGeneratorFactory extends AbstractBufferingIdGeneratorFactory {
     public static final String PAGED_ID_BUFFER_FILE_NAME = "id-buffer.tmp";
     public static final Predicate<String> PAGED_ID_BUFFER_FILE_NAME_FILTER = new Predicate<>() {
         private final Pattern pattern = Pattern.compile(".*" + PAGED_ID_BUFFER_FILE_NAME + ".+\\d$");
@@ -76,16 +69,16 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
     private Supplier<IdController.TransactionSnapshot> snapshotSupplier;
     private IdController.IdFreeCondition condition;
     private MemoryTracker memoryTracker;
-    private final IdGeneratorFactory delegate;
     private BufferedIds bufferQueue;
     private final IdTypeMapping idTypeMapping = new IdTypeMapping();
     private final Lock bufferWriteLock = new ReentrantLock();
     private final Lock bufferReadLock = new ReentrantLock();
 
     public BufferingIdGeneratorFactory(IdGeneratorFactory delegate) {
-        this.delegate = delegate;
+        super(delegate);
     }
 
+    @Override
     public void initialize(
             FileSystemAbstraction fs,
             Path bufferBasePath,
@@ -100,64 +93,6 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
         this.snapshotSupplier = snapshotSupplier;
         this.condition = condition;
         this.memoryTracker = memoryTracker;
-    }
-
-    @Override
-    public IdGenerator open(
-            PageCache pageCache,
-            Path filename,
-            IdType idType,
-            LongSupplier highIdScanner,
-            long maxId,
-            boolean readOnly,
-            Config config,
-            CursorContextFactory contextFactory,
-            ImmutableSet<OpenOption> openOptions,
-            IdSlotDistribution slotDistribution)
-            throws IOException {
-        assert snapshotSupplier != null : "Factory needs to be initialized before usage";
-
-        IdGenerator generator = delegate.open(
-                pageCache,
-                filename,
-                idType,
-                highIdScanner,
-                maxId,
-                readOnly,
-                config,
-                contextFactory,
-                openOptions,
-                slotDistribution);
-        return wrapAndKeep(idType, generator);
-    }
-
-    @Override
-    public IdGenerator create(
-            PageCache pageCache,
-            Path filename,
-            IdType idType,
-            long highId,
-            boolean throwIfFileExists,
-            long maxId,
-            boolean readOnly,
-            Config config,
-            CursorContextFactory contextFactory,
-            ImmutableSet<OpenOption> openOptions,
-            IdSlotDistribution slotDistribution)
-            throws IOException {
-        IdGenerator idGenerator = delegate.create(
-                pageCache,
-                filename,
-                idType,
-                highId,
-                throwIfFileExists,
-                maxId,
-                readOnly,
-                config,
-                contextFactory,
-                openOptions,
-                slotDistribution);
-        return wrapAndKeep(idType, idGenerator);
     }
 
     @Override
@@ -177,11 +112,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
     }
 
     @Override
-    public Collection<Path> listIdFiles() {
-        return delegate.listIdFiles();
-    }
-
-    private IdGenerator wrapAndKeep(IdType idType, IdGenerator generator) {
+    protected IdGenerator wrapAndKeep(IdType idType, IdGenerator generator) {
         int id = idTypeMapping.map(idType);
         BufferingIdGenerator bufferingGenerator =
                 new BufferingIdGenerator(this, generator, id, memoryTracker, () -> collectAndOffloadBufferedIds(false));
@@ -189,6 +120,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
         return bufferingGenerator;
     }
 
+    @Override
     public void maintenance(CursorContext cursorContext) {
         collectAndOffloadBufferedIds(true);
 

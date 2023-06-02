@@ -75,7 +75,7 @@ public final class IdContextFactoryBuilder {
         return this;
     }
 
-    public IdContextFactory build() {
+    public DefaultIdContextFactory build() {
         if (idGeneratorFactoryProvider == null) {
             requireNonNull(fileSystemAbstraction, "File system is required to build id generator factory.");
             // Note on the RecoveryCleanupWorkCollector: this is just using the immediate() because we aren't
@@ -86,7 +86,7 @@ public final class IdContextFactoryBuilder {
         if (factoryWrapper == null) {
             factoryWrapper = identity();
         }
-        return new IdContextFactory(jobScheduler, idGeneratorFactoryProvider, factoryWrapper, logService);
+        return new DefaultIdContextFactory(jobScheduler, idGeneratorFactoryProvider, factoryWrapper, logService);
     }
 
     public static Function<NamedDatabaseId, IdGeneratorFactory> defaultIdGeneratorFactoryProvider(

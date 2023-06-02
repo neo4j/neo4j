@@ -79,12 +79,8 @@ public class IdRollbackTransactionApplier extends TransactionApplier.Adapter {
 
         for (PropertyBlock block : command.getAfter()) {
             switch (block.getType()) {
-                case STRING -> {
-                    markIds(block.getValueRecords(), stringBlockDiffs);
-                }
-                case ARRAY -> {
-                    markIds(block.getValueRecords(), arrayBlockDiffs);
-                }
+                case STRING -> markIds(block.getValueRecords(), stringBlockDiffs);
+                case ARRAY -> markIds(block.getValueRecords(), arrayBlockDiffs);
                 default -> {
                     // Not needed, no dynamic records then
                 }
@@ -93,12 +89,8 @@ public class IdRollbackTransactionApplier extends TransactionApplier.Adapter {
 
         for (PropertyBlock block : command.getBefore()) {
             switch (block.getType()) {
-                case STRING -> {
-                    markIdsUsed(block.getValueRecords(), stringBlockDiffs);
-                }
-                case ARRAY -> {
-                    markIdsUsed(block.getValueRecords(), arrayBlockDiffs);
-                }
+                case STRING -> markIdsUsed(block.getValueRecords(), stringBlockDiffs);
+                case ARRAY -> markIdsUsed(block.getValueRecords(), arrayBlockDiffs);
                 default -> {
                     // Not needed, no dynamic records then
                 }
@@ -124,6 +116,8 @@ public class IdRollbackTransactionApplier extends TransactionApplier.Adapter {
 
     @Override
     public void close() throws Exception {
+        idGeneratorFactory.notifyTransactionRollback(
+                cursorContext.getVersionContext().committingTransactionId());
         idMaps.forEach((type, longDiffSets) -> {
             IdGenerator idGenerator = idGeneratorFactory.get(type);
             try (var marker = idGenerator.transactionalMarker(cursorContext)) {

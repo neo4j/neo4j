@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
@@ -165,7 +164,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final GBPTreeCountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final int denseNodeThreshold;
-    private final IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
+    private final IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs;
     private final Map<TransactionApplicationMode, TransactionApplierFactoryChain> applierChains =
             new EnumMap<>(TransactionApplicationMode.class);
     private final RecordDatabaseEntityCounters storeEntityCounters;
@@ -210,19 +209,19 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.otherMemoryTracker = otherMemoryTracker;
         this.kernelVersionRepository = kernelVersionRepository;
         this.lockVerificationFactory = lockVerificationFactory;
-
-        StoreFactory factory = new StoreFactory(
-                databaseLayout,
-                config,
-                idGeneratorFactory,
-                pageCache,
-                pageCacheTracer,
-                fs,
-                internalLogProvider,
-                contextFactory,
-                false,
-                logTailMetadata);
-        neoStores = factory.openAllNeoStores();
+        this.neoStores = new StoreFactory(
+                        databaseLayout,
+                        config,
+                        idGeneratorFactory,
+                        pageCache,
+                        pageCacheTracer,
+                        fs,
+                        internalLogProvider,
+                        contextFactory,
+                        false,
+                        logTailMetadata)
+                .openAllNeoStores();
+        this.idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync(false);
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
         Stream.of(SchemaIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
 
@@ -275,9 +274,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     private TransactionApplierFactoryChain buildApplierFacadeChain(TransactionApplicationMode mode) {
-        Function<IdGeneratorUpdatesWorkSync, IdUpdateListener> idUpdateListenerFunction = mode.isReverseStep()
-                ? workSync -> IdUpdateListener.IGNORE
-                : workSync -> workSync.newBatch(contextFactory);
+        TransactionApplierFactoryChain.IdUpdateListenerFactory idUpdateListenerFunction =
+                mode.isReverseStep() ? (w, c) -> IdUpdateListener.IGNORE : IdGeneratorUpdatesWorkSync::newBatch;
         List<TransactionApplierFactory> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
         if (consistencyCheckApply && mode.needsAuxiliaryStores()) {
@@ -303,7 +301,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             appliers.add(new IndexTransactionApplierFactory(mode, indexUpdateListener));
         }
         return new TransactionApplierFactoryChain(
-                idUpdateListenerFunction, appliers.toArray(new TransactionApplierFactory[0]));
+                idUpdateListenerFunction, appliers.toArray(TransactionApplierFactory[]::new));
     }
 
     private GBPTreeCountsStore openCountsStore(
@@ -595,7 +593,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 schemaCache,
                 initialBatch.cursorContext(),
                 otherMemoryTracker,
-                batchApplier.getIdUpdateListener(idGeneratorWorkSyncs),
+                batchApplier.getIdUpdateListener(idGeneratorWorkSyncs, initialBatch.cursorContext()),
                 initialBatch.storeCursors());
     }
 

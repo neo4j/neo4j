@@ -52,7 +52,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
-import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryProvider;
 import org.neo4j.internal.collector.DataCollectorProcedures;
 import org.neo4j.kernel.api.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -218,13 +218,9 @@ public abstract class AbstractEditionModule {
 
     public static IdContextFactory createIdContextFactory(GlobalModule globalModule) {
         return tryResolveOrCreate(
-                IdContextFactory.class, globalModule.getExternalDependencyResolver(), () -> IdContextFactoryBuilder.of(
-                                globalModule.getFileSystem(),
-                                globalModule.getJobScheduler(),
-                                globalModule.getGlobalConfig(),
-                                globalModule.getTracers().getPageCacheTracer())
-                        .withLogService(globalModule.getLogService())
-                        .build());
+                IdContextFactory.class,
+                globalModule.getExternalDependencyResolver(),
+                () -> IdContextFactoryProvider.getInstance().buildIdContextFactory(globalModule));
     }
 
     protected static Supplier<GraphDatabaseService> systemSupplier(DependencyResolver dependencies) {

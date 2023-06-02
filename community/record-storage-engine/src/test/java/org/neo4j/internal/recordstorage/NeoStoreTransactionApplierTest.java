@@ -35,7 +35,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -58,8 +57,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -767,8 +764,8 @@ class NeoStoreTransactionApplierTest {
         TransactionApplierFactory indexApplier = newIndexApplier();
         IdGeneratorUpdatesWorkSync idGeneratorUpdatesWorkSync = new IdGeneratorUpdatesWorkSync();
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorUpdatesWorkSync.add(mock(IdGenerator.class)));
-        TransactionApplierFactoryChain applier = new TransactionApplierFactoryChain(
-                w -> w.newBatch(new CursorContextFactory(PageCacheTracer.NULL, EMPTY)), base, indexApplier);
+        TransactionApplierFactoryChain applier =
+                new TransactionApplierFactoryChain(IdGeneratorUpdatesWorkSync::newBatch, base, indexApplier);
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         SchemaRecord after = new SchemaRecord(before).initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = indexRule(0, 1, 2, "K", "X.Y");
@@ -950,8 +947,7 @@ class NeoStoreTransactionApplierTest {
     }
 
     private static TransactionApplierFactory newApplierFacade(TransactionApplierFactory... appliers) {
-        return new TransactionApplierFactoryChain(
-                w -> w.newBatch(new CursorContextFactory(PageCacheTracer.NULL, EMPTY)), appliers);
+        return new TransactionApplierFactoryChain(IdGeneratorUpdatesWorkSync::newBatch, appliers);
     }
 
     private TransactionApplierFactory newIndexApplier() {

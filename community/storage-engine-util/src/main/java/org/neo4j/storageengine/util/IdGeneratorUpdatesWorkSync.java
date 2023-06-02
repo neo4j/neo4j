@@ -33,57 +33,52 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
 
 /**
  * Convenience for updating one or more {@link IdGenerator} in a concurrent fashion. Supports applying in batches, e.g. multiple transactions
- * in one go, see {@link #newBatch(CursorContextFactory)}.
+ * in one go, see {@link #newBatch(CursorContext)}.
  */
 public class IdGeneratorUpdatesWorkSync {
     public static final String ID_GENERATOR_BATCH_APPLIER_TAG = "idGeneratorBatchApplier";
 
     private final Map<IdGenerator, WorkSync<IdGenerator, IdGeneratorUpdateWork>> workSyncMap = new HashMap<>();
-    private final boolean alsoFreeOnDelete;
+    private final boolean alwaysFreeOnDelete;
 
     public IdGeneratorUpdatesWorkSync() {
         this(false);
     }
 
-    public IdGeneratorUpdatesWorkSync(boolean alsoFreeOnDelete) {
-        this.alsoFreeOnDelete = alsoFreeOnDelete;
+    public IdGeneratorUpdatesWorkSync(boolean alwaysFreeOnDelete) {
+        this.alwaysFreeOnDelete = alwaysFreeOnDelete;
     }
 
     public void add(IdGenerator idGenerator) {
         this.workSyncMap.put(idGenerator, new WorkSync<>(idGenerator));
     }
 
-    public Batch newBatch(CursorContextFactory contextFactory) {
-        return new Batch(contextFactory);
+    public Batch newBatch(CursorContext cursorContext) {
+        return new Batch(cursorContext);
     }
 
     public class Batch implements IdUpdateListener {
         private final Map<IdGenerator, ChangedIds> idUpdatesMap = new HashMap<>();
-        private final CursorContextFactory contextFactory;
+        private final CursorContext cursorContext;
 
-        protected Batch(CursorContextFactory contextFactory) {
-            this.contextFactory = contextFactory;
+        protected Batch(CursorContext cursorContext) {
+            this.cursorContext = cursorContext;
         }
 
         @Override
         public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            idUpdatesMap
-                    .computeIfAbsent(idGenerator, t -> new ChangedIds(alsoFreeOnDelete))
-                    .addUsedId(id, size);
+            idUpdatesMap.computeIfAbsent(idGenerator, this::createChangedIds).addUsedId(id, size);
         }
 
         @Override
         public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            idUpdatesMap
-                    .computeIfAbsent(idGenerator, t -> new ChangedIds(alsoFreeOnDelete))
-                    .addUnusedId(id, size);
+            idUpdatesMap.computeIfAbsent(idGenerator, this::createChangedIds).addUnusedId(id, size);
         }
 
         public AsyncApply applyAsync() {
@@ -115,7 +110,7 @@ public class IdGeneratorUpdatesWorkSync {
         private void applyInternal() {
             for (Map.Entry<IdGenerator, ChangedIds> idChanges : idUpdatesMap.entrySet()) {
                 ChangedIds unit = idChanges.getValue();
-                unit.applyAsync(workSyncMap.get(idChanges.getKey()), contextFactory);
+                unit.applyAsync(workSyncMap.get(idChanges.getKey()));
             }
         }
 
@@ -123,17 +118,23 @@ public class IdGeneratorUpdatesWorkSync {
         public void close() throws Exception {
             apply();
         }
+
+        private ChangedIds createChangedIds(IdGenerator ignored) {
+            return new ChangedIds(alwaysFreeOnDelete, cursorContext);
+        }
     }
 
     private static class ChangedIds {
         // The order in which IDs come in, used vs. unused must be kept and therefore all IDs must reside in the same
         // list
         private final MutableLongList ids = LongLists.mutable.empty();
-        private final boolean alsoFreeOnDelete;
+        private final boolean freeOnDelete;
+        private final CursorContext cursorContext;
         private AsyncApply asyncApply;
 
-        ChangedIds(boolean alsoFreeOnDelete) {
-            this.alsoFreeOnDelete = alsoFreeOnDelete;
+        ChangedIds(boolean freeOnDelete, CursorContext cursorContext) {
+            this.freeOnDelete = freeOnDelete;
+            this.cursorContext = cursorContext;
         }
 
         private void addUsedId(long id, int numberOfIds) {
@@ -151,7 +152,7 @@ public class IdGeneratorUpdatesWorkSync {
                 if (usedFromCombinedId(combined)) {
                     visitor.markUsed(id, slots);
                 } else {
-                    if (alsoFreeOnDelete) {
+                    if (freeOnDelete) {
                         visitor.markDeletedAndFree(id, slots);
                     } else {
                         visitor.markDeleted(id, slots);
@@ -160,8 +161,8 @@ public class IdGeneratorUpdatesWorkSync {
             });
         }
 
-        void applyAsync(WorkSync<IdGenerator, IdGeneratorUpdateWork> workSync, CursorContextFactory contextFactory) {
-            asyncApply = workSync.applyAsync(new IdGeneratorUpdateWork(this, contextFactory));
+        void applyAsync(WorkSync<IdGenerator, IdGeneratorUpdateWork> workSync) {
+            asyncApply = workSync.applyAsync(new IdGeneratorUpdateWork(this));
         }
 
         void awaitApply() throws ExecutionException {
@@ -171,10 +172,8 @@ public class IdGeneratorUpdatesWorkSync {
 
     private static class IdGeneratorUpdateWork implements Work<IdGenerator, IdGeneratorUpdateWork> {
         private final List<ChangedIds> changeList = new ArrayList<>();
-        private final CursorContextFactory contextFactory;
 
-        IdGeneratorUpdateWork(ChangedIds changes, CursorContextFactory contextFactory) {
-            this.contextFactory = contextFactory;
+        IdGeneratorUpdateWork(ChangedIds changes) {
             this.changeList.add(changes);
         }
 
@@ -186,9 +185,10 @@ public class IdGeneratorUpdatesWorkSync {
 
         @Override
         public void apply(IdGenerator idGenerator) {
-            try (var cursorContext = contextFactory.create(ID_GENERATOR_BATCH_APPLIER_TAG);
-                    var marker = idGenerator.transactionalMarker(cursorContext)) {
-                for (ChangedIds changes : this.changeList) {
+            for (ChangedIds changes : this.changeList) {
+                // work units are applied in parallel and shouldn't share the same context
+                try (var marker = idGenerator.transactionalMarker(
+                        changes.cursorContext.createRelatedContext(ID_GENERATOR_BATCH_APPLIER_TAG))) {
                     changes.accept(marker);
                 }
             }

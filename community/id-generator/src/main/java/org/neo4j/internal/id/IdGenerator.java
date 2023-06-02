@@ -135,21 +135,29 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     boolean hasOnlySingleIds();
 
     /**
-     * Allows iteration over free ids in the generator, see {@link #freeIdsIterator(long, long)}
+     * Allows iteration over free or deleted ids in the generator, see {@link #notUsedIdsIterator(long, long)}
      * @throws IOException
      */
-    default PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
+    default PrimitiveLongResourceIterator notUsedIdsIterator() throws IOException {
         return PrimitiveLongResourceCollections.emptyIterator();
     }
 
     /**
-     * Allows iteration over free (incl deleted) ids in the generator, up to highId. Items are return in sorted order
+     * Allows iteration over free or deleted ids in the generator, up to highId. Items are return in sorted order
      * @param fromIdInclusive The id to start from (inclusive)
      * @param toIdExclusive The id to end at (exclusive)
      * @return A resource iterator. Not that this needs to be closed!
      * @throws IOException
      */
-    default PrimitiveLongResourceIterator freeIdsIterator(long fromIdInclusive, long toIdExclusive) throws IOException {
+    default PrimitiveLongResourceIterator notUsedIdsIterator(long fromIdInclusive, long toIdExclusive)
+            throws IOException {
+        return PrimitiveLongResourceCollections.emptyIterator();
+    }
+
+    /**
+     * Allows iteration over free ids in the generator, see {@link #notUsedIdsIterator(long, long)}
+     */
+    default PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
         return PrimitiveLongResourceCollections.emptyIterator();
     }
 
@@ -203,7 +211,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         class Delegate implements TransactionalMarker {
             protected final TransactionalMarker actual;
 
-            Delegate(TransactionalMarker actual) {
+            public Delegate(TransactionalMarker actual) {
                 this.actual = actual;
             }
 
@@ -379,14 +387,14 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
-            return delegate.freeIdsIterator();
+        public PrimitiveLongResourceIterator notUsedIdsIterator() throws IOException {
+            return delegate.notUsedIdsIterator();
         }
 
         @Override
-        public PrimitiveLongResourceIterator freeIdsIterator(long fromIdInclusive, long toIdExclusive)
+        public PrimitiveLongResourceIterator notUsedIdsIterator(long fromIdInclusive, long toIdExclusive)
                 throws IOException {
-            return delegate.freeIdsIterator(fromIdInclusive, toIdExclusive);
+            return delegate.notUsedIdsIterator(fromIdInclusive, toIdExclusive);
         }
 
         @Override

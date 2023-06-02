@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -845,12 +846,23 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     @Override
-    public PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
-        return freeIdsIterator(0, getHighId());
+    public PrimitiveLongResourceIterator notUsedIdsIterator() throws IOException {
+        return notUsedIdsIterator(0, getHighId());
     }
 
     @Override
-    public PrimitiveLongResourceIterator freeIdsIterator(long fromIdInclusive, long toIdExclusive) throws IOException {
+    public PrimitiveLongResourceIterator notUsedIdsIterator(long fromIdInclusive, long toIdExclusive)
+            throws IOException {
+        return conditionalIdIterator(fromIdInclusive, toIdExclusive, state -> IdRange.IdState.USED != state);
+    }
+
+    @Override
+    public PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
+        return conditionalIdIterator(0, getHighId(), state -> IdRange.IdState.FREE == state);
+    }
+
+    private PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator conditionalIdIterator(
+            long fromIdInclusive, long toIdExclusive, Predicate<IdRange.IdState> idStatePredicate) throws IOException {
         Preconditions.checkArgument(fromIdInclusive <= toIdExclusive, "From Id needs to be lesser than toId");
         long fromRange = fromIdInclusive / idsPerEntry;
         long toRange = (toIdExclusive / idsPerEntry) + 1;
@@ -885,7 +897,7 @@ public class IndexedIdGenerator implements IdGenerator {
                             if (id >= compareToIdExclusive) {
                                 return false;
                             }
-                            if ((id >= fromIdInclusive) && (IdRange.IdState.USED != currentRange.getState(index))) {
+                            if ((id >= fromIdInclusive) && idStatePredicate.test(currentRange.getState(index))) {
                                 return next(id);
                             }
                         }

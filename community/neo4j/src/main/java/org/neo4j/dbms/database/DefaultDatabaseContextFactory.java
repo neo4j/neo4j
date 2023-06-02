@@ -105,7 +105,7 @@ public class DefaultDatabaseContextFactory
                     ModularDatabaseCreationContext.defaultFileWatcherFilter(),
                     AccessCapabilityFactory.configDependent(),
                     ExternalIdReuseConditionProvider.NONE,
-                    idContextFactory.createIdContext(namedDatabaseId, contextFactory),
+                    idContextFactory.createIdContext(namedDatabaseId, contextFactory, databaseConfig),
                     commitProcessFactory,
                     createTokenHolderProvider(this::kernel),
                     new GlobalAvailabilityGuardController(globalModule.getGlobalAvailabilityGuard()),

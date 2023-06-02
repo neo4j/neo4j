@@ -335,7 +335,7 @@ class IndexedIdGeneratorTest {
         open();
         idGenerator.start(freeIds(10, 20, 30, IDS_PER_ENTRY + 10, 10 * IDS_PER_ENTRY + 10), NULL_CONTEXT);
         // when/then
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator()) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator()) {
             assertEquals(10L, freeIds.next());
             assertEquals(20L, freeIds.next());
             assertEquals(30L, freeIds.next());
@@ -351,7 +351,7 @@ class IndexedIdGeneratorTest {
         open();
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         // when/then
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator()) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator()) {
             assertFalse(freeIds.hasNext());
         }
     }
@@ -363,30 +363,30 @@ class IndexedIdGeneratorTest {
         idGenerator.start(freeIds(10, 20, 30), NULL_CONTEXT);
         // when/then
         // simple cases
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(5, 15)) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(5, 15)) {
             assertEquals(10L, freeIds.next());
             assertFalse(freeIds.hasNext());
         }
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(15, 35)) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(15, 35)) {
             assertEquals(20L, freeIds.next());
             assertEquals(30L, freeIds.next());
             assertFalse(freeIds.hasNext());
         }
         // edge cases inclusiveFrom exclusiveTo
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(0, 10)) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(0, 10)) {
             assertFalse(freeIds.hasNext());
         }
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(10, 20)) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(10, 20)) {
             assertEquals(10L, freeIds.next());
             assertFalse(freeIds.hasNext());
         }
         // looking for only one id
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(10, 10)) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(10, 10)) {
             assertTrue(freeIds.hasNext());
             assertEquals(10L, freeIds.next());
             assertFalse(freeIds.hasNext());
         }
-        try (PrimitiveLongResourceIterator freeIds = idGenerator.freeIdsIterator(15, 15)) {
+        try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(15, 15)) {
             assertFalse(freeIds.hasNext());
         }
     }
@@ -399,7 +399,7 @@ class IndexedIdGeneratorTest {
         idGenerator.start(freeIds(id), NULL_CONTEXT);
 
         // when
-        try (var freeIds = idGenerator.freeIdsIterator(20, id + 10)) {
+        try (var freeIds = idGenerator.notUsedIdsIterator(20, id + 10)) {
             assertThat(freeIds.hasNext()).isTrue();
             assertThat(freeIds.next()).isEqualTo(id);
             assertThat(freeIds.hasNext()).isFalse();
@@ -511,7 +511,7 @@ class IndexedIdGeneratorTest {
         idGenerator.start(usedIds(usedIds), NULL_CONTEXT);
 
         // then
-        var actualFreeIds = asList(idGenerator.freeIdsIterator());
+        var actualFreeIds = asList(idGenerator.notUsedIdsIterator());
         var expectedFreeIds = asFreeIds(usedIds);
         assertThat(actualFreeIds).isEqualTo(expectedFreeIds);
     }

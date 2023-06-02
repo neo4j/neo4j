@@ -66,4 +66,6 @@ public interface IdGeneratorFactory {
     void clearCache(CursorContext cursorContext);
 
     Collection<Path> listIdFiles();
+
+    default void notifyTransactionRollback(long transactionId) {}
 }

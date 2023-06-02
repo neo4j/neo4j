@@ -19,23 +19,24 @@
  */
 package org.neo4j.graphdb.factory.module.id;
 
-import org.neo4j.internal.id.IdController;
-import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 
-public class DatabaseIdContext {
-    private final IdGeneratorFactory idGeneratorFactory;
-    private final IdController idController;
-
-    public DatabaseIdContext(IdGeneratorFactory idGeneratorFactory, IdController idController) {
-        this.idGeneratorFactory = idGeneratorFactory;
-        this.idController = idController;
+@ServiceProvider
+public class DefaultIdContextFactoryProvider implements IdContextFactoryProvider {
+    @Override
+    public IdContextFactory buildIdContextFactory(GlobalModule globalModule) {
+        return IdContextFactoryBuilder.of(
+                        globalModule.getFileSystem(),
+                        globalModule.getJobScheduler(),
+                        globalModule.getGlobalConfig(),
+                        globalModule.getTracers().getPageCacheTracer())
+                .withLogService(globalModule.getLogService())
+                .build();
     }
 
-    public IdGeneratorFactory getIdGeneratorFactory() {
-        return idGeneratorFactory;
-    }
-
-    public IdController getIdController() {
-        return idController;
+    @Override
+    public int getPriority() {
+        return 1000;
     }
 }

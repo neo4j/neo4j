@@ -70,7 +70,7 @@ class FreeIdCache {
         if (bloomFilter.idMayBeFree(id)) {
             // This is either for inconsistencies or false positives (should be rare)
             // It's not optimal to create a seeker for each check, but it works for now
-            try (PrimitiveLongResourceIterator freeId = idGenerator.freeIdsIterator(id, id)) {
+            try (PrimitiveLongResourceIterator freeId = idGenerator.notUsedIdsIterator(id, id)) {
                 return freeId.hasNext() && freeId.next() == id;
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -82,7 +82,7 @@ class FreeIdCache {
     private void buildCache(int maxItemsInCache) {
         try {
             MutableLongSet ids = LongSets.mutable.empty();
-            try (PrimitiveLongResourceIterator freeIdsIterator = idGenerator.freeIdsIterator()) {
+            try (PrimitiveLongResourceIterator freeIdsIterator = idGenerator.notUsedIdsIterator()) {
                 // First fill the set
                 while (freeIdsIterator.hasNext() && ids.size() < maxItemsInCache) {
                     ids.add(freeIdsIterator.next());

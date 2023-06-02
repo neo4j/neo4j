@@ -30,7 +30,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 import java.io.IOException;
@@ -54,8 +53,6 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.Lock;
@@ -67,6 +64,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -239,7 +237,7 @@ class RecordStorageEngineTest {
         private TransactionApplierFactoryChain actual;
 
         CapturingTransactionApplierFactoryChain(Consumer<Boolean> applierCloseCall) {
-            super(w -> w.newBatch(new CursorContextFactory(PageCacheTracer.NULL, EMPTY)));
+            super(IdGeneratorUpdatesWorkSync::newBatch);
             this.applierCloseCall = applierCloseCall;
         }
 

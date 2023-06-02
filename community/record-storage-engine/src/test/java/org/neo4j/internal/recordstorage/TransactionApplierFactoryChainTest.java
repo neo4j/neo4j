@@ -24,14 +24,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
 class TransactionApplierFactoryChainTest {
     private TransactionApplierFactoryChain facade;
@@ -59,8 +57,7 @@ class TransactionApplierFactoryChainTest {
         when(applier3.startTx(any(CommandBatchToApply.class), any(BatchContext.class)))
                 .thenReturn(txApplier3);
 
-        facade = new TransactionApplierFactoryChain(
-                w -> w.newBatch(new CursorContextFactory(PageCacheTracer.NULL, EMPTY)), applier1, applier2, applier3);
+        facade = new TransactionApplierFactoryChain(IdGeneratorUpdatesWorkSync::newBatch, applier1, applier2, applier3);
     }
 
     @Test

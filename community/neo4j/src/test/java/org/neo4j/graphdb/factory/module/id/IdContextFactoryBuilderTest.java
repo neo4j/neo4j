@@ -34,12 +34,14 @@ import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.FreeIds;
@@ -94,8 +96,8 @@ class IdContextFactoryBuilderTest {
         IdContextFactory contextFactory = IdContextFactoryBuilder.of(fs, jobScheduler, config, PageCacheTracer.NULL)
                 .withIdGenerationFactoryProvider(any -> idGeneratorFactory)
                 .build();
-        DatabaseIdContext idContext =
-                contextFactory.createIdContext(from("database", UUID.randomUUID()), CONTEXT_FACTORY);
+        DatabaseIdContext idContext = contextFactory.createIdContext(
+                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), config));
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
         assertThat(idContext.getIdController()).isInstanceOf(BufferedIdController.class);
@@ -150,8 +152,8 @@ class IdContextFactoryBuilderTest {
                 .withFactoryWrapper(factoryWrapper)
                 .build();
 
-        DatabaseIdContext idContext =
-                contextFactory.createIdContext(from("database", UUID.randomUUID()), CONTEXT_FACTORY);
+        DatabaseIdContext idContext = contextFactory.createIdContext(
+                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), defaults()));
 
         assertSame(idGeneratorFactory, idContext.getIdGeneratorFactory());
     }
@@ -163,7 +165,8 @@ class IdContextFactoryBuilderTest {
         Config config = defaults();
         var idContextFactory = IdContextFactoryBuilder.of(fs, jobScheduler, config, cacheTracer)
                 .build();
-        var idContext = idContextFactory.createIdContext(from("test", UUID.randomUUID()), contextFactory);
+        var idContext = idContextFactory.createIdContext(
+                from("test", UUID.randomUUID()), contextFactory, new DatabaseConfig(Map.of(), config));
         var idGeneratorFactory = idContext.getIdGeneratorFactory();
         var idController = idContext.getIdController();
         idController.initialize(
