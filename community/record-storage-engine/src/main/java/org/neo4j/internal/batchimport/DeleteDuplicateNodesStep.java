@@ -44,7 +44,6 @@ public class DeleteDuplicateNodesStep extends ProcessorStep<long[]> {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
     private final DataImporter.Monitor storeMonitor;
-    private final CursorContextFactory contextFactory;
     private final IdGeneratorUpdatesWorkSync idUpdatesWorkSync;
     private final NeoStores neoStores;
     private final LongAdder nodesRemoved = new LongAdder();
@@ -62,7 +61,6 @@ public class DeleteDuplicateNodesStep extends ProcessorStep<long[]> {
         this.nodeStore = neoStores.getNodeStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.storeMonitor = storeMonitor;
-        this.contextFactory = contextFactory;
         this.idUpdatesWorkSync = idUpdatesWorkSync;
     }
 
@@ -71,7 +69,7 @@ public class DeleteDuplicateNodesStep extends ProcessorStep<long[]> {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
         try (var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
-                var idUpdates = idUpdatesWorkSync.newBatch(contextFactory)) {
+                var idUpdates = idUpdatesWorkSync.newBatch(cursorContext)) {
             long batchPropertiesRemoved = 0;
             for (long duplicateNodeId : batch) {
                 nodeStore.getRecordByCursor(duplicateNodeId, nodeRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR));
