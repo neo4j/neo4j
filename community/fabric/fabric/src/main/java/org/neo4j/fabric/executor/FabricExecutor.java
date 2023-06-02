@@ -68,6 +68,7 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.AnyValue;
@@ -130,11 +131,7 @@ public class FabricExecutor {
                     parameters,
                     defaultGraphName,
                     catalog,
-                    fabricTransaction.cancellationChecker(),
-                    fabricTransaction
-                            .getTransactionInfo()
-                            .getQueryExecutionConfiguration()
-                            .notificationFilters());
+                    fabricTransaction.cancellationChecker());
             var plan = plannerInstance.plan();
             var query = plan.query();
 
@@ -159,7 +156,11 @@ public class FabricExecutor {
                             ctx,
                             log,
                             lifecycle,
-                            dataStreamConfig);
+                            dataStreamConfig,
+                            fabricTransaction
+                                    .getTransactionInfo()
+                                    .getQueryExecutionConfiguration()
+                                    .notificationFilters());
                 } else {
                     execution = new FabricStatementExecution(
                             plan,
@@ -169,7 +170,11 @@ public class FabricExecutor {
                             accessMode,
                             ctx,
                             lifecycle,
-                            dataStreamConfig);
+                            dataStreamConfig,
+                            fabricTransaction
+                                    .getTransactionInfo()
+                                    .getQueryExecutionConfiguration()
+                                    .notificationFilters());
                 }
                 return execution.run();
             });
@@ -199,6 +204,7 @@ public class FabricExecutor {
         private final StatementLifecycle lifecycle;
         private final Prefetcher prefetcher;
         private final AccessMode accessMode;
+        private final NotificationConfiguration notificationConfiguration;
 
         FabricStatementExecution(
                 FabricPlan plan,
@@ -208,7 +214,8 @@ public class FabricExecutor {
                 AccessMode accessMode,
                 FabricTransaction.FabricExecutionContext ctx,
                 StatementLifecycle lifecycle,
-                FabricConfig.DataStream dataStreamConfig) {
+                FabricConfig.DataStream dataStreamConfig,
+                NotificationConfiguration notificationConfiguration) {
             this.plan = plan;
             this.plannerInstance = plannerInstance;
             this.useEvaluator = useEvaluator;
@@ -217,10 +224,14 @@ public class FabricExecutor {
             this.lifecycle = lifecycle;
             this.prefetcher = new Prefetcher(dataStreamConfig);
             this.accessMode = accessMode;
+            this.notificationConfiguration = notificationConfiguration;
         }
 
         StatementResult run() {
-            notifications.addAll(asJava(plan.notifications()));
+            var filteredNotifications = plan.notifications()
+                    .filter(notificationConfiguration::includes)
+                    .toList();
+            notifications.addAll(asJava(filteredNotifications));
 
             lifecycle.startExecution(false);
             var query = plan.query();
@@ -579,8 +590,18 @@ public class FabricExecutor {
                 FabricTransaction.FabricExecutionContext ctx,
                 InternalLog log,
                 StatementLifecycle lifecycle,
-                FabricConfig.DataStream dataStreamConfig) {
-            super(plan, plannerInstance, useEvaluator, params, accessMode, ctx, lifecycle, dataStreamConfig);
+                FabricConfig.DataStream dataStreamConfig,
+                NotificationConfiguration notificationConfiguration) {
+            super(
+                    plan,
+                    plannerInstance,
+                    useEvaluator,
+                    params,
+                    accessMode,
+                    ctx,
+                    lifecycle,
+                    dataStreamConfig,
+                    notificationConfiguration);
             this.step = new AtomicInteger(0);
             this.log = log;
         }

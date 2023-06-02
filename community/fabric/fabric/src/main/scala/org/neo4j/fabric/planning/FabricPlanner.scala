@@ -73,8 +73,7 @@ case class FabricPlanner(
     queryParams: MapValue,
     defaultGraphName: String,
     catalog: Catalog,
-    cancellationChecker: CancellationChecker,
-    notificationConfig: NotificationConfiguration = NotificationConfiguration.DEFAULT_FILTER
+    cancellationChecker: CancellationChecker
   ): PlannerInstance = {
     val notificationLogger = new RecordingNotificationLogger()
     val query = frontend.preParsing.preParse(queryString, notificationLogger)
@@ -85,8 +84,7 @@ case class FabricPlanner(
       defaultGraphName,
       catalog,
       cancellationChecker,
-      notificationLogger,
-      notificationConfig
+      notificationLogger
     )
   }
 
@@ -97,8 +95,7 @@ case class FabricPlanner(
     defaultContextName: String,
     catalog: Catalog,
     cancellationChecker: CancellationChecker,
-    notificationLogger: InternalNotificationLogger,
-    notificationConfig: NotificationConfiguration
+    notificationLogger: InternalNotificationLogger
   ) {
 
     private lazy val pipeline =
@@ -107,8 +104,7 @@ case class FabricPlanner(
         query,
         queryParams,
         cancellationChecker,
-        notificationLogger,
-        notificationConfig
+        notificationLogger
       )
 
     private val useHelper = new UseHelper(catalog, defaultContextName)

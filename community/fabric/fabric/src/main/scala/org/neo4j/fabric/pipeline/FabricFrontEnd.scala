@@ -99,8 +99,7 @@ case class FabricFrontEnd(
     query: PreParsedQuery,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    notificationLogger: InternalNotificationLogger,
-    notificationConfig: NotificationConfiguration
+    notificationLogger: InternalNotificationLogger
   ) {
 
     def traceStart(): CompilationTracer.QueryCompilationEvent =
@@ -173,7 +172,6 @@ case class FabricFrontEnd(
     def notifications: Seq[Notification] =
       context.notificationLogger.notifications
         .toSeq.map(NotificationWrapping.asKernelNotification(Some(query.options.offset)))
-        .filter(notificationConfig.includes(_))
   }
 }
 

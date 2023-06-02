@@ -162,8 +162,7 @@ trait FragmentTestUtils {
       frontend.preParsing.preParse(query, devNullLogger),
       params,
       CancellationChecker.NeverCancelled,
-      devNullLogger,
-      NotificationConfiguration.DEFAULT_FILTER
+      devNullLogger
     )
 
   def fragment(query: String): Fragment = {
