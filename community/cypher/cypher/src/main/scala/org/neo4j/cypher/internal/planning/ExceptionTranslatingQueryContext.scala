@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.InternalLogProvider
@@ -540,6 +541,9 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     override def close(): Unit = translateException(tokenNameLookup, super.close())
 
     override def rollback(): Unit = translateException(tokenNameLookup, super.rollback())
+
+    override def markForTermination(reason: Status): Unit =
+      translateException(tokenNameLookup, super.markForTermination(reason))
   }
 }
 

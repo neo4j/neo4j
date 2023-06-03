@@ -69,6 +69,7 @@ import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
@@ -709,6 +710,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def close(): Unit
 
   def rollback(): Unit
+
+  def markForTermination(reason: Status): Unit
 
   def kernelStatisticProvider: KernelStatisticProvider
 

@@ -14,26 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.util
+package org.neo4j.cypher.internal.result
 
 import scala.collection.mutable.ArrayBuffer
 
+sealed trait CloseReason
+case object Success extends CloseReason
+case object Failure extends CloseReason
+case class Error(t: Throwable) extends CloseReason
+
 class TaskCloser {
 
-  private val _tasks: ArrayBuffer[Boolean => Unit] = ArrayBuffer.empty
+  private val _tasks: ArrayBuffer[CloseReason => Unit] = ArrayBuffer.empty
   private var closed = false
 
   /**
    *
    * @param task This task will be called, with true if the query went OK, and a false if an error occurred
    */
-  def addTask(task: Boolean => Unit): Unit = {
+  def addTask(task: CloseReason => Unit): Unit = {
     if (closed)
       throw new IllegalStateException("Already closed")
     _tasks += task
   }
 
-  def close(success: Boolean): Unit = {
+  def close(closeReason: CloseReason): Unit = {
     if (!closed) {
       closed = true
       var foundException: Option[Throwable] = None
@@ -41,7 +46,7 @@ class TaskCloser {
       while (iterator.hasNext) {
         val f = iterator.next()
         try {
-          f(success)
+          f(closeReason)
         } catch {
           case e: Throwable =>
             foundException match {

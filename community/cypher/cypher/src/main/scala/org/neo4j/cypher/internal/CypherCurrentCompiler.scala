@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.CypherCurrentCompiler.getTerminationStatus
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.CachedExecutionPlan
@@ -43,11 +44,15 @@ import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.planning.LogicalPlanResult
 import org.neo4j.cypher.internal.result.ClosingExecutionResult
+import org.neo4j.cypher.internal.result.Error
 import org.neo4j.cypher.internal.result.ExplainExecutionResult
 import org.neo4j.cypher.internal.result.FailedExecutionResult
+import org.neo4j.cypher.internal.result.Failure
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.result.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.result.StandardInternalExecutionResult.NoOuterCloseable
+import org.neo4j.cypher.internal.result.Success
+import org.neo4j.cypher.internal.result.TaskCloser
 import org.neo4j.cypher.internal.runtime.DBMS
 import org.neo4j.cypher.internal.runtime.DBMS_READ
 import org.neo4j.cypher.internal.runtime.ExplainMode
@@ -66,11 +71,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
-import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.impl.notification.NotificationImplementation
+import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -337,7 +343,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         renderPlanDescription
       )
 
-    private def getQueryContext(transactionalContext: TransactionalContext, taskCloser: TaskCloser) = {
+    private def createQueryContext(transactionalContext: TransactionalContext, taskCloser: TaskCloser) = {
       val resourceManager = executionPlan.threadSafeExecutionResources() match {
         case Some(resourceManagerFactory) => resourceManagerFactory(resourceMonitor)
         case None =>
@@ -366,16 +372,24 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     ): QueryExecution = {
 
       val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext, taskCloser) // We create the QueryContext here
+      val queryContext = createQueryContext(transactionalContext, taskCloser)
+      val exceptionTranslatingContext = queryContext.transactionalContext
       val outerCloseable: AutoCloseable =
         if (isOutermostQuery) {
-          () =>
-            {
-              val context = queryContext.transactionalContext
-              context.close()
-              // NOTE: We leave it up to outer layers to rollback on failure.
-              // This will only close the statement.
-            }
+          taskCloser.addTask {
+            case Failure =>
+              val status = Status.Transaction.QueryExecutionFailedOnTransaction
+              exceptionTranslatingContext.markForTermination(status)
+            case Error(e) =>
+              val status = getTerminationStatus(e)
+              exceptionTranslatingContext.markForTermination(status)
+            case _ =>
+          }
+          () => {
+            exceptionTranslatingContext.close()
+            // NOTE: We leave it up to outer layers to rollback on failure.
+            // This will only close the statement.
+          }
         } else {
           NoOuterCloseable
         }
@@ -398,7 +412,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       } catch {
         case e: Throwable =>
           QuerySubscriber.safelyOnError(subscriber, e)
-          taskCloser.close(false)
+          taskCloser.close(Error(e))
           transactionalContext.rollback()
           outerCloseable.close()
           new FailedExecutionResult(columnNames(logicalPlan), internalQueryType, subscriber)
@@ -435,7 +449,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         .filter(notificationConfig.includes(_))
       val inner =
         if (innerExecutionMode == ExplainMode) {
-          taskCloser.close(success = true)
+          taskCloser.close(Success)
           outerCloseable.close()
           val columns = columnNames(logicalPlan)
 
@@ -505,4 +519,16 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   }
 
   def clearExecutionPlanCache(): Unit = queryCaches.executionPlanCache.clear()
+}
+
+object CypherCurrentCompiler {
+
+  private def getTerminationStatus(error: Throwable): Status = {
+    error match {
+      case e: HasStatus =>
+        e.status()
+      case _ =>
+        Status.Transaction.QueryExecutionFailedOnTransaction
+    }
+  }
 }

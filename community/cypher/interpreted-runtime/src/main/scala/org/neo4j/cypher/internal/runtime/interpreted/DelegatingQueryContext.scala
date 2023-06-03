@@ -84,6 +84,7 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.ExecutionContext
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
@@ -756,6 +757,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def schemaWrite: SchemaWrite = inner.schemaWrite
 
   override def rollback(): Unit = inner.rollback()
+
+  override def markForTermination(reason: Status): Unit = inner.markForTermination(reason)
 
   override def kernelQueryContext: api.QueryContext = inner.kernelQueryContext
 

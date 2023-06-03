@@ -29,6 +29,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -80,7 +81,7 @@ class QueryFailureTransactionIT {
     }
 
     @Test
-    void rollbackTransactionOnResultException() {
+    void markTransactionForTerminationOnResultException() {
         try (var transaction = databaseAPI.beginTx()) {
             var result = transaction.execute("CALL exception.stream.generate()");
             assertThrows(QueryExecutionException.class, () -> {
@@ -88,7 +89,10 @@ class QueryFailureTransactionIT {
                     result.next();
                 }
             });
-            checkFailToCommit(transaction);
+            assertThatThrownBy(transaction::commit)
+                    .isInstanceOf(TransactionFailureException.class)
+                    .rootCause()
+                    .isInstanceOf(TransactionTerminatedException.class);
         }
     }
 

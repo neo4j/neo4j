@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.runtime.READ_WRITE
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
 import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult

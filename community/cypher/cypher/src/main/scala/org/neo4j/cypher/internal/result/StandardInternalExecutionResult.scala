@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.WRITE
-import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
@@ -84,20 +83,19 @@ class StandardInternalExecutionResult(
   override def isClosed: Boolean = taskCloser.isClosed
 
   override def close(reason: CloseReason): Unit = {
-    val success: Boolean = reason == Success
     val closer: TaskCloser = taskCloser
 
     runtimeResult match {
       case result: AsyncCleanupOnClose =>
         val onFinishedCallback = () => {
-          closer.close(success)
+          closer.close(reason)
         }
         result.registerOnFinishedCallback(onFinishedCallback)
         runtimeResult.cancel()
 
       case _ =>
         runtimeResult.cancel()
-        closer.close(success)
+        closer.close(reason)
         outerCloseable.close()
     }
   }
@@ -129,9 +127,10 @@ class StandardInternalExecutionResult(
     if (executionMode == ProfileMode) {
       if (runtimeResult.consumptionState != ConsumptionState.EXHAUSTED) {
         // TODO: Do we really need to close here?
-        taskCloser.close(success = false)
+        val error = new ProfilerStatisticsNotReadyException()
+        taskCloser.close(Error(error))
         outerCloseable.close()
-        throw new ProfilerStatisticsNotReadyException()
+        throw error
       }
       planDescriptionBuilder.profile(runtimeResult.queryProfile)
     } else {

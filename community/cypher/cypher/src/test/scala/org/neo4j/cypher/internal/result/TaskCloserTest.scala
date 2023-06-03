@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.util
+package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.BeforeAndAfter
@@ -22,7 +22,7 @@ import org.scalatest.BeforeAndAfter
 class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
   var taskCloser: TaskCloser = _
   var ran = false
-  var outcome = false
+  var outcome: CloseReason = Failure
 
   before {
     taskCloser = new TaskCloser
@@ -31,30 +31,30 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
 
   test("cleanUp call methods") {
     taskCloser.addTask(closingTask)
-    taskCloser.close(success = true)
+    taskCloser.close(Success)
 
     ran should equal(true)
-    outcome should equal(true)
+    outcome should equal(Success)
   }
 
   test("cleanUp call methods and pass on the success") {
-    outcome = true
+    outcome = Success
 
     taskCloser.addTask(closingTask)
-    taskCloser.close(success = false)
+    taskCloser.close(Failure)
 
     ran should equal(true)
-    outcome should equal(false)
+    outcome should equal(Failure)
   }
 
   test("cleanUp calls all cleanUp methods even if some fail") {
     taskCloser.addTask(_ => throw new Exception("oh noes"))
     taskCloser.addTask(closingTask)
 
-    intercept[Exception](taskCloser.close(success = true))
+    intercept[Exception](taskCloser.close(Success))
 
     ran should equal(true)
-    outcome should equal(true)
+    outcome should equal(Success)
   }
 
   test("cleanUp calls all cleanUp and if there are failures the first exception is thrown") {
@@ -62,7 +62,7 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     taskCloser.addTask(_ => throw new Exception)
     taskCloser.addTask(_ => throw expected)
 
-    val ex = intercept[Exception](taskCloser.close(success = true))
+    val ex = intercept[Exception](taskCloser.close(Success))
 
     ex should equal(expected)
   }
@@ -70,23 +70,23 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
   test("does not close twice") {
     taskCloser.addTask(closingTask)
 
-    taskCloser.close(success = true)
+    taskCloser.close(Success)
     ran = false
-    taskCloser.close(success = true)
+    taskCloser.close(Success)
 
     // If we close the closer twice, it should only run this once
     ran should not equal true
   }
 
   test("cleanup without any cleanups does not fail") {
-    taskCloser.close(success = true)
+    taskCloser.close(Success)
 
     ran should equal(false)
   }
 
-  private def closingTask(success: Boolean) = {
+  private def closingTask(reason: CloseReason): Unit = {
     ran = true
-    outcome = success
+    outcome = reason
   }
 
 }

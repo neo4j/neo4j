@@ -189,7 +189,10 @@ public interface Status {
                         + "reached (db.transaction.concurrent.maximum). "
                         + "You can retry at a later time or consider increasing allowed maximum of concurrent transactions."),
         Interrupted(TransientError, "Interrupted while waiting."),
-        LeaderSwitch(TransientError, "The request could not be completed due to cluster leader switch");
+        LeaderSwitch(TransientError, "The request could not be completed due to cluster leader switch"),
+        QueryExecutionFailedOnTransaction(
+                TransientError,
+                "The transaction was marked as failed because a query failed while executing on the transaction");
 
         private final Code code;
 

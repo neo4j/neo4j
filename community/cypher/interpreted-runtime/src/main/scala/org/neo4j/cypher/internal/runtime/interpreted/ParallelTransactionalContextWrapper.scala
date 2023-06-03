@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper
@@ -130,6 +131,8 @@ class ParallelTransactionalContextWrapper(
   override def getOrCreateFromSchemaState[T](key: SchemaStateKey, f: => T): T = unsupported()
 
   override def rollback(): Unit = unsupported()
+
+  override def markForTermination(reason: Status): Unit = unsupported()
 
   override def contextWithNewTransaction: ParallelTransactionalContextWrapper = unsupported()
 
