@@ -28,6 +28,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -50,7 +51,13 @@ abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorC
     @Test
     void testExactMatchOnRandomValues() throws Exception {
         // given
-        ValueType[] types = randomSetOfSupportedTypes();
+        ValueType[] types;
+        do {
+            types = randomSetOfSupportedTypes();
+            // Handle the unlikely case when we pick value types that can't generate enough values.
+        } while (types.length == 2
+                && Arrays.stream(types).allMatch(type -> type == ValueType.BOOLEAN || type == ValueType.BYTE));
+
         List<Value> values = generateValuesFromType(types, new HashSet<>(), 30_000);
         List<ValueIndexEntryUpdate<?>> updates = generateUpdatesFromValues(values, new MutableLong());
         updateAndCommit(updates);
