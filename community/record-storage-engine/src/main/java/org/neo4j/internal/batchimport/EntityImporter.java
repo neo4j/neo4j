@@ -132,7 +132,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
     }
 
     @Override
-    public void endOfEntity() {
+    public void reset() {
         propertyBlocksCursor = 0;
         hasPropertyId = false;
         propertyCount += entityPropertyCount;

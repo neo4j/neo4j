@@ -40,7 +40,7 @@ public class InputEntity implements InputEntityVisitor {
 
     public InputEntity(InputEntityVisitor delegate) {
         this.delegate = delegate;
-        clear();
+        reset();
     }
 
     public InputEntity() {
@@ -227,11 +227,12 @@ public class InputEntity implements InputEntityVisitor {
 
     private void checkClear() {
         if (end) {
-            clear();
+            reset();
         }
     }
 
-    private void clear() {
+    @Override
+    public void reset() {
         end = false;
         hasPropertyId = false;
         propertyId = -1;

@@ -60,6 +60,8 @@ public interface InputEntityVisitor extends Closeable {
 
     void endOfEntity() throws IOException;
 
+    void reset();
+
     class Adapter implements InputEntityVisitor {
         @Override
         public boolean property(String key, Object value) {
@@ -133,6 +135,9 @@ public interface InputEntityVisitor extends Closeable {
 
         @Override
         public void endOfEntity() {}
+
+        @Override
+        public void reset() {}
 
         @Override
         public void close() {}
@@ -218,6 +223,11 @@ public interface InputEntityVisitor extends Closeable {
         @Override
         public void endOfEntity() throws IOException {
             actual.endOfEntity();
+        }
+
+        @Override
+        public void reset() {
+            actual.reset();
         }
 
         @Override

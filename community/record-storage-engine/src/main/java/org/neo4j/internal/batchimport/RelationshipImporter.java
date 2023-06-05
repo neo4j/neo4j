@@ -212,7 +212,12 @@ public class RelationshipImporter extends EntityImporter {
                     relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId);
             entityPropertyCount = 0;
         }
+        reset();
+    }
 
+    @Override
+    public void reset() {
+        super.reset();
         relationshipRecord.clear();
         relationshipRecord.setInUse(true);
         startId = null;
@@ -220,7 +225,6 @@ public class RelationshipImporter extends EntityImporter {
         endId = null;
         endIdGroup = null;
         type = null;
-        super.endOfEntity();
     }
 
     private void validateNode(Object id, Type fieldType) {

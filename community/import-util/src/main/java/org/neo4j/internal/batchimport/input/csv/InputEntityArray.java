@@ -116,6 +116,11 @@ public class InputEntityArray implements InputEntityVisitor {
         cursor++;
     }
 
+    @Override
+    public void reset() {
+        currentEntity().reset();
+    }
+
     private InputEntity currentEntity() {
         if (entities[cursor] == null) {
             entities[cursor] = new InputEntity();

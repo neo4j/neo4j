@@ -202,13 +202,18 @@ public class NodeImporter extends EntityImporter {
         } else {
             freeUnusedId(nodeStore, nodeRecord.getId(), cursorContext);
         }
+        reset();
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
         nodeRecord.clear();
         nodeRecord.setId(NULL_REFERENCE.longValue());
         hasLabelField = false;
         labels.clear();
         inputId = null;
         group = null;
-        super.endOfEntity();
     }
 
     @Override
