@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.expressions.BooleanTypeName;
 import org.neo4j.cypher.internal.expressions.CypherTypeName;
@@ -99,6 +100,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.RelationshipVisitor;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -423,10 +425,10 @@ public final class CypherFunctions {
 
     public static VirtualNodeValue startNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (anyValue instanceof RelationshipValue) {
-            return ((RelationshipValue) anyValue).startNode();
-        } else if (anyValue instanceof VirtualRelationshipValue) {
-            return startNode((VirtualRelationshipValue) anyValue, access, cursor);
+        if (anyValue instanceof RelationshipValue rel) {
+            return rel.startNode();
+        } else if (anyValue instanceof VirtualRelationshipValue rel) {
+            return startNode(rel, access, cursor);
         } else {
             throw new CypherTypeException(format(
                     "Invalid input for function 'startNode()': Expected %s to be a RelationshipValue", anyValue));
@@ -435,20 +437,15 @@ public final class CypherFunctions {
 
     public static VirtualNodeValue startNode(
             VirtualRelationshipValue relationship, DbAccess access, RelationshipScanCursor cursor) {
-        return VirtualValues.node(relationship.startNodeId(relationshipVisitor -> {
-            access.singleRelationship(relationshipVisitor.id(), cursor);
-            if (cursor.next()) {
-                relationshipVisitor.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type());
-            }
-        }));
+        return VirtualValues.node(relationship.startNodeId(consumer(access, cursor)));
     }
 
     public static VirtualNodeValue endNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (anyValue instanceof RelationshipValue) {
-            return ((RelationshipValue) anyValue).endNode();
-        } else if (anyValue instanceof VirtualRelationshipValue) {
-            return endNode((VirtualRelationshipValue) anyValue, access, cursor);
+        if (anyValue instanceof RelationshipValue rel) {
+            return rel.endNode();
+        } else if (anyValue instanceof VirtualRelationshipValue rel) {
+            return endNode(rel, access, cursor);
         } else {
             throw new CypherTypeException(
                     format("Invalid input for function 'endNode()': Expected %s to be a RelationshipValue", anyValue));
@@ -457,12 +454,7 @@ public final class CypherFunctions {
 
     public static VirtualNodeValue endNode(
             VirtualRelationshipValue relationship, DbAccess access, RelationshipScanCursor cursor) {
-        return VirtualValues.node(relationship.endNodeId(relationshipVisitor -> {
-            access.singleRelationship(relationshipVisitor.id(), cursor);
-            if (cursor.next()) {
-                relationshipVisitor.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type());
-            }
-        }));
+        return VirtualValues.node(relationship.endNodeId(consumer(access, cursor)));
     }
 
     @CalledFromGeneratedCode
@@ -470,8 +462,8 @@ public final class CypherFunctions {
             AnyValue anyValue, DbAccess access, VirtualNodeValue node, RelationshipScanCursor cursor) {
         // This is not a function exposed to the user
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (anyValue instanceof VirtualRelationshipValue) {
-            return otherNode((VirtualRelationshipValue) anyValue, access, node, cursor);
+        if (anyValue instanceof VirtualRelationshipValue rel) {
+            return otherNode(rel, access, node, cursor);
         } else {
             throw new CypherTypeException(format("Expected %s to be a RelationshipValue", anyValue));
         }
@@ -482,12 +474,7 @@ public final class CypherFunctions {
             DbAccess access,
             VirtualNodeValue node,
             RelationshipScanCursor cursor) {
-        return VirtualValues.node(relationship.otherNodeId(node.id(), relationshipVisitor -> {
-            access.singleRelationship(relationshipVisitor.id(), cursor);
-            if (cursor.next()) {
-                relationshipVisitor.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type());
-            }
-        }));
+        return VirtualValues.node(relationship.otherNodeId(node.id(), consumer(access, cursor)));
     }
 
     @CalledFromGeneratedCode
@@ -504,7 +491,7 @@ public final class CypherFunctions {
             return dbAccess.nodeProperty(node.id(), dbAccess.propertyKey(key), nodeCursor, propertyCursor, true);
         } else if (container instanceof VirtualRelationshipValue rel) {
             return dbAccess.relationshipProperty(
-                    rel.id(), dbAccess.propertyKey(key), relationshipScanCursor, propertyCursor, true);
+                    rel, dbAccess.propertyKey(key), relationshipScanCursor, propertyCursor, true);
         } else if (container instanceof MapValue map) {
             return map.get(key);
         } else if (container instanceof TemporalValue<?, ?> temporal) {
@@ -530,7 +517,7 @@ public final class CypherFunctions {
             return dbAccess.nodeProperties(node.id(), propertyKeys(keys, dbAccess), nodeCursor, propertyCursor);
         } else if (container instanceof VirtualRelationshipValue rel) {
             return dbAccess.relationshipProperties(
-                    rel.id(), propertyKeys(keys, dbAccess), relationshipScanCursor, propertyCursor);
+                    rel, propertyKeys(keys, dbAccess), relationshipScanCursor, propertyCursor);
         } else {
             return CursorUtils.propertiesGet(keys, container);
         }
@@ -550,7 +537,7 @@ public final class CypherFunctions {
             return dbAccess.nodeProperty(node.id(), propertyKeyId(dbAccess, index), nodeCursor, propertyCursor, true);
         } else if (container instanceof VirtualRelationshipValue rel) {
             return dbAccess.relationshipProperty(
-                    rel.id(), propertyKeyId(dbAccess, index), relationshipScanCursor, propertyCursor, true);
+                    rel, propertyKeyId(dbAccess, index), relationshipScanCursor, propertyCursor, true);
         }
         if (container instanceof MapValue map) {
             return mapAccess(map, index);
@@ -579,7 +566,7 @@ public final class CypherFunctions {
                     dbAccess.nodeHasProperty(node.id(), propertyKeyId(dbAccess, index), nodeCursor, propertyCursor));
         } else if (container instanceof VirtualRelationshipValue rel) {
             return booleanValue(dbAccess.relationshipHasProperty(
-                    rel.id(), propertyKeyId(dbAccess, index), relationshipScanCursor, propertyCursor));
+                    rel, propertyKeyId(dbAccess, index), relationshipScanCursor, propertyCursor));
         }
         if (container instanceof MapValue map) {
             return booleanValue(map.containsKey(asString(
@@ -938,7 +925,7 @@ public final class CypherFunctions {
         if (entity instanceof VirtualNodeValue node) {
             return access.areLabelsSetOnNode(labels, node.id(), nodeCursor);
         } else if (entity instanceof VirtualRelationshipValue relationship) {
-            return access.areTypesSetOnRelationship(types, relationship.id(), relationshipScanCursor);
+            return access.areTypesSetOnRelationship(types, relationship, relationshipScanCursor);
         } else {
             throw new CypherTypeException(format(
                     "Invalid input for function 'hasALabelOrType()': Expected %s to be a node or relationship, but it was `%s`",
@@ -982,20 +969,6 @@ public final class CypherFunctions {
         }
     }
 
-    public static AnyValue threadSafeType(AnyValue item, DbAccess access, RelationshipScanCursor relCursor, Read read) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof VirtualRelationshipValue relationship) {
-            long relationshipId = relationship.id();
-            access.singleRelationship(relationshipId, relCursor);
-            if (!relCursor.next() && !read.relationshipDeletedInTransaction(relationshipId)) {
-                return NO_VALUE;
-            }
-            return Values.stringValue(access.relationshipTypeName(relCursor.type()));
-        } else {
-            throw new CypherTypeException("Invalid input for function 'type()': Expected a Relationship, got: " + item);
-        }
-    }
-
     @CalledFromGeneratedCode
     public static boolean hasType(AnyValue entity, int typeToken, DbAccess access, RelationshipScanCursor relCursor) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -1003,14 +976,7 @@ public final class CypherFunctions {
             if (typeToken == StatementConstants.NO_SUCH_RELATIONSHIP_TYPE) {
                 return false;
             } else {
-                int actualType = relationship.relationshipTypeId(relationshipVisitor -> {
-                    access.singleRelationship(relationshipVisitor.id(), relCursor);
-                    if (relCursor.next()) {
-                        relationshipVisitor.visit(
-                                relCursor.sourceNodeReference(), relCursor.targetNodeReference(), relCursor.type());
-                    }
-                });
-                return typeToken == actualType;
+                return typeToken == relationship.relationshipTypeId(consumer(access, relCursor));
             }
         } else {
             throw new CypherTypeException("Expected a Relationship, got: " + entity);
@@ -1022,7 +988,7 @@ public final class CypherFunctions {
             AnyValue entity, int[] typeTokens, DbAccess access, RelationshipScanCursor relCursor) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (entity instanceof VirtualRelationshipValue relationship) {
-            return access.areTypesSetOnRelationship(typeTokens, relationship.id(), relCursor);
+            return access.areTypesSetOnRelationship(typeTokens, relationship, relCursor);
         } else {
             throw new CypherTypeException("Expected a Relationship, got: " + entity);
         }
@@ -1046,15 +1012,8 @@ public final class CypherFunctions {
 
     public static ListValue relationships(AnyValue in) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof PathValue) {
-            return VirtualValues.list(((PathValue) in).relationships());
-        } else if (in instanceof VirtualPathValue) {
-            long[] ids = ((VirtualPathValue) in).relationshipIds();
-            ListValueBuilder builder = ListValueBuilder.newListBuilder(ids.length);
-            for (long id : ids) {
-                builder.add(VirtualValues.relationship(id));
-            }
-            return builder.build();
+        if (in instanceof VirtualPathValue path) {
+            return path.relationshipsAsList();
         } else {
             throw new CypherTypeException(
                     format("Invalid input for function 'relationships()': Expected %s to be a path", in));
@@ -1063,11 +1022,10 @@ public final class CypherFunctions {
 
     public static Value point(AnyValue in, DbAccess access, ExpressionCursors cursors) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof VirtualNodeValue) {
-            return asPoint(access, (VirtualNodeValue) in, cursors.nodeCursor(), cursors.propertyCursor());
-        } else if (in instanceof VirtualRelationshipValue) {
-            return asPoint(
-                    access, (VirtualRelationshipValue) in, cursors.relationshipScanCursor(), cursors.propertyCursor());
+        if (in instanceof VirtualNodeValue node) {
+            return asPoint(access, node, cursors.nodeCursor(), cursors.propertyCursor());
+        } else if (in instanceof VirtualRelationshipValue rel) {
+            return asPoint(access, rel, cursors.relationshipScanCursor(), cursors.propertyCursor());
         } else if (in instanceof MapValue map) {
             if (containsNull(map)) {
                 return NO_VALUE;
@@ -1086,14 +1044,10 @@ public final class CypherFunctions {
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof VirtualNodeValue) {
-            return extractKeys(
-                    access, access.nodePropertyIds(((VirtualNodeValue) in).id(), nodeCursor, propertyCursor));
-        } else if (in instanceof VirtualRelationshipValue) {
-            return extractKeys(
-                    access,
-                    access.relationshipPropertyIds(
-                            ((VirtualRelationshipValue) in).id(), relationshipScanCursor, propertyCursor));
+        if (in instanceof VirtualNodeValue node) {
+            return extractKeys(access, access.nodePropertyIds(node.id(), nodeCursor, propertyCursor));
+        } else if (in instanceof VirtualRelationshipValue rel) {
+            return extractKeys(access, access.relationshipPropertyIds(rel, relationshipScanCursor, propertyCursor));
         } else if (in instanceof MapValue) {
             return ((MapValue) in).keys();
         } else {
@@ -1110,10 +1064,10 @@ public final class CypherFunctions {
             RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof VirtualNodeValue) {
-            return access.nodeAsMap(((VirtualNodeValue) in).id(), nodeCursor, propertyCursor);
-        } else if (in instanceof VirtualRelationshipValue) {
-            return access.relationshipAsMap(((VirtualRelationshipValue) in).id(), relationshipCursor, propertyCursor);
+        if (in instanceof VirtualNodeValue node) {
+            return access.nodeAsMap(node.id(), nodeCursor, propertyCursor);
+        } else if (in instanceof VirtualRelationshipValue rel) {
+            return access.relationshipAsMap(rel, relationshipCursor, propertyCursor);
         } else if (in instanceof MapValue) {
             return (MapValue) in;
         } else {
@@ -1451,7 +1405,7 @@ public final class CypherFunctions {
         MapValueBuilder builder = new MapValueBuilder();
         for (String key : POINT_KEYS) {
             Value value = access.relationshipProperty(
-                    relationshipValue.id(), access.propertyKey(key), relationshipScanCursor, propertyCursor, true);
+                    relationshipValue, access.propertyKey(key), relationshipScanCursor, propertyCursor, true);
             if (value == NO_VALUE) {
                 continue;
             }
@@ -1658,5 +1612,14 @@ public final class CypherFunctions {
             converted.add(value != NO_VALUE ? toIntegerOrNull(value) : NO_VALUE);
         }
         return converted.build();
+    }
+
+    private static Consumer<RelationshipVisitor> consumer(DbAccess access, RelationshipScanCursor cursor) {
+        return relationshipVisitor -> {
+            access.singleRelationship(relationshipVisitor.id(), cursor);
+            if (cursor.next()) {
+                relationshipVisitor.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type());
+            }
+        };
     }
 }

@@ -145,7 +145,7 @@ public final class VirtualValues {
         }
         assert nodes.length == relationships.length + 1;
 
-        return new PathReference(nodes, relationships);
+        return PathReference.path(nodes, relationships);
     }
 
     public static PathReference pathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
@@ -156,15 +156,8 @@ public final class VirtualValues {
             throw new IllegalArgumentException(
                     "Tried to construct a path that is not built like a path: even number of elements");
         }
-        long[] nodeIds = new long[nodes.length];
-        long[] relIds = new long[relationships.length];
-        for (int i = 0; i < nodeIds.length; i++) {
-            nodeIds[i] = nodes[i].id();
-        }
-        for (int i = 0; i < relationships.length; i++) {
-            relIds[i] = relationships[i].id();
-        }
-        return new PathReference(nodeIds, relIds);
+
+        return PathReference.path(nodes, relationships);
     }
 
     public static PathValue path(NodeValue[] nodes, RelationshipValue[] relationships) {

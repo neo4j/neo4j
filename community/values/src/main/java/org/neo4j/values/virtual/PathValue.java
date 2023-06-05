@@ -73,6 +73,11 @@ public abstract class PathValue extends VirtualPathValue {
     }
 
     @Override
+    public ListValue relationshipsAsList() {
+        return VirtualValues.fromList(Arrays.asList(relationships()));
+    }
+
+    @Override
     public boolean equals(VirtualValue other) {
         if (other instanceof PathValue that) {
             return size() == that.size()

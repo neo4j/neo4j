@@ -25,6 +25,8 @@ import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 /**
  * Writer of any values.
@@ -77,6 +79,8 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
     void endList() throws E;
 
     void writePathReference(long[] nodes, long[] relationships) throws E;
+
+    void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) throws E;
 
     void writePath(NodeValue[] nodes, RelationshipValue[] relationships) throws E;
 

@@ -387,6 +387,16 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     map
   }
 
+  override def relationshipAsMap(
+    relationship: VirtualRelationshipValue,
+    relationshipCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor
+  ): MapValue = {
+    val map = inner.relationshipAsMap(relationship, relationshipCursor, propertyCursor)
+    manyDbHits(1 + map.size())
+    map
+  }
+
   override def createNodeKeyConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
@@ -533,6 +543,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   ): Boolean =
     singleDbHit(inner.areTypesSetOnRelationship(types, id, relationshipCursor))
 
+  override def areTypesSetOnRelationship(
+    types: Array[Int],
+    obj: VirtualRelationshipValue,
+    relationshipCursor: RelationshipScanCursor
+  ): Boolean =
+    singleDbHit(inner.areTypesSetOnRelationship(types, obj, relationshipCursor))
+
   override def nodeCountByCountStore(labelId: Int): Long = singleDbHit(inner.nodeCountByCountStore(labelId))
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
@@ -673,8 +690,25 @@ class DelegatingReadOperations[T, CURSOR](protected val inner: ReadOperations[T,
   ): Value =
     singleDbHit(inner.getProperty(obj, propertyKeyId, cursor, propertyCursor, throwOnDeleted))
 
+  override def getProperty(
+    obj: T,
+    propertyKeyId: Int,
+    cursor: CURSOR,
+    propertyCursor: PropertyCursor,
+    throwOnDeleted: Boolean
+  ): Value =
+    singleDbHit(inner.getProperty(obj, propertyKeyId, cursor, propertyCursor, throwOnDeleted))
+
   override def getProperties(
     obj: Long,
+    properties: Array[Int],
+    cursor: CURSOR,
+    propertyCursor: PropertyCursor
+  ): Array[Value] =
+    singleDbHit(inner.getProperties(obj, properties, cursor, propertyCursor))
+
+  override def getProperties(
+    obj: T,
     properties: Array[Int],
     cursor: CURSOR,
     propertyCursor: PropertyCursor
@@ -686,10 +720,16 @@ class DelegatingReadOperations[T, CURSOR](protected val inner: ReadOperations[T,
   override def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
     singleDbHit(inner.hasProperty(obj, propertyKeyId, cursor, propertyCursor))
 
+  override def hasProperty(obj: T, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
+    singleDbHit(inner.hasProperty(obj, propertyKeyId, cursor, propertyCursor))
+
   override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Option[Boolean] =
     inner.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId)
 
   override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
+    singleDbHit(inner.propertyKeyIds(obj, cursor, propertyCursor))
+
+  override def propertyKeyIds(obj: T, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
     singleDbHit(inner.propertyKeyIds(obj, cursor, propertyCursor))
 
   override def all: ClosingLongIterator = manyDbHits(inner.all)

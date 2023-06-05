@@ -50,6 +50,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 /**
  * Base class for converting AnyValue to normal java objects.
@@ -161,7 +163,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writePathReference(long[] nodes, long[] relationships) throws E {
+    public void writePathReference(long[] nodes, long[] relationships) {
         assert nodes != null;
         assert nodes.length > 0;
         assert relationships != null;
@@ -174,6 +176,24 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         Relationship[] relProxies = new Relationship[relationships.length];
         for (int i = 0; i < relationships.length; i++) {
             relProxies[i] = newRelationshipEntityById(relationships[i]);
+        }
+        writeValue(new PathProxy(nodeProxies, relProxies));
+    }
+
+    @Override
+    public void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
+        assert nodes != null;
+        assert nodes.length > 0;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
+
+        Node[] nodeProxies = new Node[nodes.length];
+        for (int i = 0; i < nodes.length; i++) {
+            nodeProxies[i] = newNodeEntityById(nodes[i].id());
+        }
+        Relationship[] relProxies = new Relationship[relationships.length];
+        for (int i = 0; i < relationships.length; i++) {
+            relProxies[i] = newRelationshipEntityById(relationships[i].id());
         }
         writeValue(new PathProxy(nodeProxies, relProxies));
     }

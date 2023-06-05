@@ -38,6 +38,8 @@ public abstract class VirtualPathValue extends VirtualValue {
 
     public abstract long[] relationshipIds();
 
+    public abstract ListValue relationshipsAsList();
+
     public abstract int size();
 
     public abstract ListValue asList();

@@ -29,6 +29,8 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.EntityNotFoundException;
@@ -41,6 +43,8 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.StatementConstants;
@@ -54,8 +58,11 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.RelationshipVisitor;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * Utilities for working with cursors from within generated code
@@ -324,6 +331,7 @@ public final class CursorUtils {
      * @param type The id of the type
      * @return {@code true} if the relationship has the type, otherwise {@code false}
      */
+    @CalledFromGeneratedCode
     public static boolean relationshipHasType(
             Read read, RelationshipScanCursor relationshipCursor, long relationship, int type) {
         if (type == NO_SUCH_RELATIONSHIP_TYPE) {
@@ -367,6 +375,23 @@ public final class CursorUtils {
         return relationshipCursor.type() == typeToLookFor;
     }
 
+    public static boolean relationshipHasTypes(
+            Read read, RelationshipScanCursor relationshipCursor, VirtualRelationshipValue relationship, int[] types) {
+        assert types.length > 0;
+        int typeToLookFor = types[0];
+        for (int i = 1; i < types.length; i++) {
+            if (types[i] != typeToLookFor) {
+                return false;
+            }
+        }
+        if (typeToLookFor == NO_SUCH_RELATIONSHIP_TYPE) {
+            return false;
+        }
+
+        return new VirtualRelationshipReader(read, relationshipCursor, relationship, true).hasType(typeToLookFor);
+    }
+
+    @CalledFromGeneratedCode
     public static boolean relationshipHasTypes(RelationshipScanCursor relationshipCursor, int[] types) {
         assert types.length > 0;
         int typeToLookFor = types[0];
@@ -464,6 +489,38 @@ public final class CursorUtils {
     }
 
     /**
+     * Fetches a given property from a relationship
+     *
+     * @param read The current Read instance
+     * @param relationshipCursor The relationship cursor to use
+     * @param relationship The id of the relationship
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @param throwOnDeleted if <code>true</code> and exception will be thrown if node has been deleted
+     * @return The value of the given property
+     * @throws EntityNotFoundException If the node cannot be find.
+     */
+    public static Value relationshipGetProperty(
+            Read read,
+            RelationshipScanCursor relationshipCursor,
+            VirtualRelationshipValue relationship,
+            PropertyCursor propertyCursor,
+            int prop,
+            boolean throwOnDeleted)
+            throws EntityNotFoundException {
+        assert relationship.id() >= NO_SUCH_RELATIONSHIP;
+
+        if (relationship.id() == NO_SUCH_RELATIONSHIP) {
+            return NO_VALUE;
+        }
+        if (prop == NO_SUCH_PROPERTY_KEY) {
+            return NO_VALUE;
+        }
+        return new VirtualRelationshipReader(read, relationshipCursor, relationship, throwOnDeleted)
+                .property(propertyCursor, prop);
+    }
+
+    /**
      * Fetches a given property from a relationship, where the relationship has already been loaded.
      *
      * @param relationshipCursor relationship cursor which currently points to the relationship to get the property from.
@@ -508,6 +565,20 @@ public final class CursorUtils {
         return propertyCursor.next();
     }
 
+    public static boolean relationshipHasProperty(
+            Read read,
+            RelationshipScanCursor relationshipCursor,
+            VirtualRelationshipValue relationship,
+            PropertyCursor propertyCursor,
+            int prop)
+            throws EntityNotFoundException {
+        if (prop == NO_SUCH_PROPERTY_KEY) {
+            return false;
+        }
+        return new VirtualRelationshipReader(read, relationshipCursor, relationship, true)
+                .hasProperty(propertyCursor, prop);
+    }
+
     /**
      * Checks if a given relationship has the given property, where the relationship has already been loaded.
      *
@@ -516,6 +587,7 @@ public final class CursorUtils {
      * @param prop The id of the property to find
      * @return {@code true} if relationship has property otherwise {@code false}.
      */
+    @CalledFromGeneratedCode
     public static boolean relationshipHasProperty(
             RelationshipDataAccessor relationshipCursor, PropertyCursor propertyCursor, int prop) {
         if (prop == NO_SUCH_PROPERTY_KEY) {
@@ -525,14 +597,22 @@ public final class CursorUtils {
         return propertyCursor.next();
     }
 
-    public static RelationshipTraversalCursor nodeGetRelationships(
+    public static int[] relationshipPropertyIds(
             Read read,
-            CursorFactory cursors,
-            NodeCursor node,
-            long nodeId,
-            Direction direction,
-            CursorContext cursorContext) {
-        return nodeGetRelationships(read, cursors, node, nodeId, direction, null, cursorContext);
+            VirtualRelationshipValue relationship,
+            RelationshipScanCursor cursor,
+            PropertyCursor propertyCursor) {
+        return new VirtualRelationshipReader(read, cursor, relationship).propertyIds(propertyCursor);
+    }
+
+    public static MapValue relationshipAsMap(
+            Read read,
+            TokenRead tokenRead,
+            VirtualRelationshipValue relationship,
+            RelationshipScanCursor cursor,
+            PropertyCursor propertyCursor)
+            throws PropertyKeyIdNotFoundKernelException {
+        return new VirtualRelationshipReader(read, cursor, relationship).asMap(tokenRead, propertyCursor);
     }
 
     public static AnyValue propertyGet(
@@ -549,7 +629,7 @@ public final class CursorUtils {
             return nodeGetProperty(read, nodeCursor, node.id(), propertyCursor, dbAccess.propertyKey(key));
         } else if (container instanceof VirtualRelationshipValue rel) {
             return relationshipGetProperty(
-                    read, relationshipScanCursor, rel.id(), propertyCursor, dbAccess.propertyKey(key));
+                    read, relationshipScanCursor, rel, propertyCursor, dbAccess.propertyKey(key), true);
         } else if (container instanceof MapValue map) {
             return map.get(key);
         } else if (container instanceof TemporalValue<?, ?> temporal) {
@@ -577,7 +657,7 @@ public final class CursorUtils {
         } else if (container instanceof VirtualNodeValue node) {
             return propertiesGet(propertyKeys(keys, dbAccess), node.id(), read, nodeCursor, propertyCursor);
         } else if (container instanceof VirtualRelationshipValue rel) {
-            return propertiesGet(propertyKeys(keys, dbAccess), rel.id(), read, relationshipScanCursor, propertyCursor);
+            return propertiesGet(propertyKeys(keys, dbAccess), rel, read, relationshipScanCursor, propertyCursor);
         } else {
             return propertiesGet(keys, container);
         }
@@ -623,6 +703,15 @@ public final class CursorUtils {
         }
     }
 
+    public static Value[] propertiesGet(
+            int[] keys,
+            VirtualRelationshipValue rel,
+            Read read,
+            RelationshipScanCursor relCursor,
+            PropertyCursor propertyCursor) {
+        return new VirtualRelationshipReader(read, relCursor, rel, true).properties(keys, propertyCursor);
+    }
+
     public static int[] propertyKeys(String[] keys, DbAccess dbAccess) {
         int[] tokens = new int[keys.length];
         for (int i = 0; i < keys.length; i++) {
@@ -661,5 +750,128 @@ public final class CursorUtils {
             result[i] = map.get(keys[i]);
         }
         return result;
+    }
+
+    public static VirtualRelationshipValue relationshipById(RelationshipDataAccessor cursor) {
+        return VirtualValues.relationship(
+                cursor.relationshipReference(),
+                cursor.sourceNodeReference(),
+                cursor.targetNodeReference(),
+                cursor.type());
+    }
+
+    static class VirtualRelationshipReader implements Consumer<RelationshipVisitor> {
+
+        private final Read read;
+        private final RelationshipScanCursor cursor;
+        private final VirtualRelationshipValue relationship;
+        private final boolean throwOnDeleted;
+
+        private boolean isSet;
+
+        VirtualRelationshipReader(Read read, RelationshipScanCursor cursor, VirtualRelationshipValue relationship) {
+            this(read, cursor, relationship, true);
+        }
+
+        VirtualRelationshipReader(
+                Read read,
+                RelationshipScanCursor cursor,
+                VirtualRelationshipValue relationship,
+                boolean throwOnDeleted) {
+            this.read = read;
+            this.cursor = cursor;
+            this.relationship = relationship;
+            this.throwOnDeleted = throwOnDeleted;
+            this.isSet = false;
+        }
+
+        @Override
+        public void accept(RelationshipVisitor relationshipVisitor) {
+            read.singleRelationship(relationship.id(), cursor);
+            if (cursor.next()) {
+                relationshipVisitor.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type());
+                this.isSet = true;
+            }
+        }
+
+        private boolean next() {
+            long start = relationship.startNodeId(this);
+            long end = relationship.endNodeId(this);
+            int type = relationship.relationshipTypeId(this);
+            if (!isSet) {
+                read.singleRelationship(relationship.id(), start, type, end, cursor);
+                if (!cursor.next()) {
+                    if (throwOnDeleted && read.relationshipDeletedInTransaction(relationship.id())) {
+                        throw new EntityNotFoundException(String.format(
+                                "Relationship with id %d has been deleted in this transaction", relationship.id()));
+                    } else {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        public Value property(PropertyCursor propertyCursor, int prop) {
+            if (next()) {
+                cursor.properties(propertyCursor, PropertySelection.selection(prop));
+                return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
+            } else {
+                return NO_VALUE;
+            }
+        }
+
+        public Value[] properties(int[] keys, PropertyCursor propertyCursor) {
+            if (next()) {
+                return entityGetProperties(cursor, propertyCursor, keys);
+            } else {
+                return emptyPropertyArray(keys.length);
+            }
+        }
+
+        public boolean hasProperty(PropertyCursor propertyCursor, int prop) {
+            if (next()) {
+                cursor.properties(propertyCursor, PropertySelection.onlyKeysSelection(prop));
+                return propertyCursor.next();
+            } else {
+                return false;
+            }
+        }
+
+        public boolean hasType(int typeToLookFor) {
+            if (next()) {
+                return cursor.type() == typeToLookFor;
+            } else {
+                return false;
+            }
+        }
+
+        public int[] propertyIds(PropertyCursor propertyCursor) {
+            if (next()) {
+                var res = new IntArrayList();
+                cursor.properties(propertyCursor);
+                while (propertyCursor.next()) {
+                    res.add(propertyCursor.propertyKey());
+                }
+                return res.toArray();
+            } else {
+                return new int[0];
+            }
+        }
+
+        public MapValue asMap(TokenRead tokenRead, PropertyCursor propertyCursor)
+                throws PropertyKeyIdNotFoundKernelException {
+            if (next()) {
+                var builder = new MapValueBuilder();
+                cursor.properties(propertyCursor);
+                while (propertyCursor.next()) {
+                    builder.add(
+                            tokenRead.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue());
+                }
+                return builder.build();
+            } else {
+                return VirtualValues.EMPTY_MAP;
+            }
+        }
     }
 }

@@ -215,6 +215,13 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   ): MapValue =
     translateException(tokenNameLookup, inner.relationshipAsMap(id, relationshipCursor, propertyCursor))
 
+  override def relationshipAsMap(
+    rel: VirtualRelationshipValue,
+    relationshipCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor
+  ): MapValue =
+    translateException(tokenNameLookup, inner.relationshipAsMap(rel, relationshipCursor, propertyCursor))
+
   override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int =
     translateException(tokenNameLookup, inner.nodeGetOutgoingDegreeWithMax(maxDegree, node, nodeCursor))
 
@@ -332,6 +339,13 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def areTypesSetOnRelationship(
     types: Array[Int],
     relationship: Long,
+    relationshipCursor: RelationshipScanCursor
+  ): Boolean =
+    translateException(tokenNameLookup, inner.areTypesSetOnRelationship(types, relationship, relationshipCursor))
+
+  override def areTypesSetOnRelationship(
+    types: Array[Int],
+    relationship: VirtualRelationshipValue,
     relationshipCursor: RelationshipScanCursor
   ): Boolean =
     translateException(tokenNameLookup, inner.areTypesSetOnRelationship(types, relationship, relationshipCursor))
@@ -500,6 +514,23 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     ): Value =
       translateException(tokenNameLookup, inner.getProperty(id, propertyKeyId, cursor, propertyCursor, throwOnDeleted))
 
+    override def getProperty(
+      obj: T,
+      propertyKeyId: Int,
+      cursor: CURSOR,
+      propertyCursor: PropertyCursor,
+      throwOnDeleted: Boolean
+    ): Value =
+      translateException(tokenNameLookup, inner.getProperty(obj, propertyKeyId, cursor, propertyCursor, throwOnDeleted))
+
+    override def getProperties(
+      obj: T,
+      properties: Array[Int],
+      cursor: CURSOR,
+      propertyCursor: PropertyCursor
+    ): Array[Value] =
+      translateException(tokenNameLookup, inner.getProperties(obj, properties, cursor, propertyCursor))
+
     override def getProperties(
       obj: Long,
       properties: Array[Int],
@@ -511,8 +542,14 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     override def hasProperty(id: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
       translateException(tokenNameLookup, inner.hasProperty(id, propertyKeyId, cursor, propertyCursor))
 
+    override def hasProperty(obj: T, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
+      translateException(tokenNameLookup, inner.hasProperty(obj, propertyKeyId, cursor, propertyCursor))
+
     override def propertyKeyIds(id: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
       translateException(tokenNameLookup, inner.propertyKeyIds(id, cursor, propertyCursor))
+
+    override def propertyKeyIds(obj: T, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
+      translateException(tokenNameLookup, inner.propertyKeyIds(obj, cursor, propertyCursor))
 
     override def all: ClosingLongIterator =
       translateException(tokenNameLookup, inner.all)

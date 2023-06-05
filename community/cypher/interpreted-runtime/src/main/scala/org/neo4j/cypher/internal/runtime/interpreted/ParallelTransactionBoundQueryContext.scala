@@ -209,6 +209,14 @@ object ParallelTransactionBoundQueryContext {
       throwOnDeleted: Boolean
     ): Value = unsupported()
 
+    override def getProperty(
+      obj: T,
+      propertyKeyId: Int,
+      cursor: CURSOR,
+      propertyCursor: PropertyCursor,
+      throwOnDeleted: Boolean
+    ): Value = unsupported()
+
     override def getProperties(
       obj: Long,
       properties: Array[Int],
@@ -217,13 +225,30 @@ object ParallelTransactionBoundQueryContext {
     ): Array[Value] =
       unsupported()
 
+    override def getProperties(
+      obj: T,
+      properties: Array[Int],
+      cursor: CURSOR,
+      propertyCursor: PropertyCursor
+    ): Array[Value] =
+      unsupported()
+
     override def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
+      unsupported()
+
+    override def hasProperty(obj: T, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
       unsupported()
     override def getTxStateProperty(obj: Long, propertyKeyId: Int): Value = unsupported()
 
     override def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Option[Boolean] =
       unsupported()
     override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] = unsupported()
+
+    override def propertyKeyIds(
+      obj: T,
+      cursor: CURSOR,
+      propertyCursor: PropertyCursor
+    ): Array[Int] = unsupported()
     override def getById(id: Long): T = unsupported()
     override def isDeletedInThisTx(id: Long): Boolean = unsupported()
     override def all: ClosingLongIterator = unsupported()

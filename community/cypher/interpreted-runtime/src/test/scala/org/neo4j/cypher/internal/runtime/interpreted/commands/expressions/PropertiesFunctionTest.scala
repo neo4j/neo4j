@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.map
 
 import java.util
@@ -78,7 +79,11 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.relationshipAsMap(0, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)).thenReturn(
+    when(query.relationshipAsMap(
+      VirtualValues.relationship(rel.getId),
+      state.cursors.relationshipScanCursor,
+      state.cursors.propertyCursor
+    )).thenReturn(
       value
     )
 

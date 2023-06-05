@@ -34,6 +34,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 /**
  * Pretty printer for AnyValues.
@@ -191,6 +193,21 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
             writeRelationshipReference(relationships[i]);
             append(">");
             writeNodeReference(nodes[i + 1]);
+        }
+    }
+
+    @Override
+    public void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships)
+            throws RuntimeException {
+        if (nodes.length == 0) {
+            return;
+        }
+        // Path guarantees that nodes.length = edges.length = 1
+        writeNodeReference(nodes[0].id());
+        for (int i = 0; i < relationships.length; i++) {
+            writeRelationshipReference(relationships[i].id());
+            append(">");
+            writeNodeReference(nodes[i + 1].id());
         }
     }
 

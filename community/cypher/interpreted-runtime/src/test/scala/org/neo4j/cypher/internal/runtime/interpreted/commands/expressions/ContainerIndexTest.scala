@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -109,10 +111,22 @@ class ContainerIndexTest extends CypherFunSuite {
 
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
-    when(qtx.relationshipProperty(0, 42, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(
+    when(qtx.relationshipProperty(
+      VirtualValues.relationship(0),
+      42,
+      relationshipScanCursor,
+      propertyCursor,
+      throwOnDeleted = true
+    )).thenReturn(
       longValue(1)
     )
-    when(qtx.relationshipProperty(0, 43, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(
+    when(qtx.relationshipProperty(
+      VirtualValues.relationship(0),
+      43,
+      relationshipScanCursor,
+      propertyCursor,
+      throwOnDeleted = true
+    )).thenReturn(
       Values.NO_VALUE
     )
     idx("v") should equal(longValue(1))

@@ -367,8 +367,25 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   ): Value =
     relationshipReadOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor, throwOnDeleted)
 
+  override def relationshipProperty(
+    relationship: VirtualRelationshipValue,
+    property: Int,
+    relationshipScanCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor,
+    throwOnDeleted: Boolean
+  ): Value =
+    relationshipReadOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor, throwOnDeleted)
+
   override def relationshipProperties(
     relationship: Long,
+    properties: Array[Int],
+    relationshipScanCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor
+  ): Array[Value] =
+    relationshipReadOps.getProperties(relationship, properties, relationshipScanCursor, propertyCursor)
+
+  override def relationshipProperties(
+    relationship: VirtualRelationshipValue,
     properties: Array[Int],
     relationshipScanCursor: RelationshipScanCursor,
     propertyCursor: PropertyCursor
@@ -382,8 +399,23 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   ): Array[Int] =
     relationshipReadOps.propertyKeyIds(relationship, relationshipScanCursor, propertyCursor)
 
+  override def relationshipPropertyIds(
+    relationship: VirtualRelationshipValue,
+    relationshipScanCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor
+  ): Array[Int] =
+    relationshipReadOps.propertyKeyIds(relationship, relationshipScanCursor, propertyCursor)
+
   override def relationshipHasProperty(
     relationship: Long,
+    property: Int,
+    relationshipScanCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor
+  ): Boolean =
+    relationshipReadOps.hasProperty(relationship, property, relationshipScanCursor, propertyCursor)
+
+  override def relationshipHasProperty(
+    relationship: VirtualRelationshipValue,
     property: Int,
     relationshipScanCursor: RelationshipScanCursor,
     propertyCursor: PropertyCursor
@@ -598,6 +630,14 @@ trait ReadOperations[T, CURSOR] {
     throwOnDeleted: Boolean
   ): Value
 
+  def getProperty(
+    obj: T,
+    propertyKeyId: Int,
+    cursor: CURSOR,
+    propertyCursor: PropertyCursor,
+    throwOnDeleted: Boolean
+  ): Value
+
   def getProperties(
     obj: Long,
     properties: Array[Int],
@@ -605,7 +645,16 @@ trait ReadOperations[T, CURSOR] {
     propertyCursor: PropertyCursor
   ): Array[Value]
 
+  def getProperties(
+    obj: T,
+    properties: Array[Int],
+    cursor: CURSOR,
+    propertyCursor: PropertyCursor
+  ): Array[Value]
+
   def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
+
+  def hasProperty(obj: T, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
 
   /**
    * @return `null` if there are no changes.
@@ -623,6 +672,8 @@ trait ReadOperations[T, CURSOR] {
   def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Option[Boolean]
 
   def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int]
+
+  def propertyKeyIds(obj: T, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int]
 
   def getById(id: Long): T
 

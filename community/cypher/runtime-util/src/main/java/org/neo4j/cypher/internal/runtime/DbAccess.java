@@ -29,6 +29,7 @@ import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 /**
  * Used to expose db access to expressions
@@ -56,7 +57,14 @@ public interface DbAccess extends EntityById {
     boolean nodeHasProperty(long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor);
 
     Value relationshipProperty(
-            long node,
+            long relationship,
+            int property,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor,
+            boolean throwOnDeleted);
+
+    Value relationshipProperty(
+            VirtualRelationshipValue relationship,
             int property,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
@@ -68,11 +76,31 @@ public interface DbAccess extends EntityById {
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor);
 
+    Value[] relationshipProperties(
+            VirtualRelationshipValue relationship,
+            int[] properties,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor);
+
     int[] relationshipPropertyIds(
-            long node, RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor);
+            long relationship, RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor);
+
+    int[] relationshipPropertyIds(
+            VirtualRelationshipValue relationship,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor);
 
     boolean relationshipHasProperty(
-            long node, int property, RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor);
+            long relationship,
+            int property,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor);
+
+    boolean relationshipHasProperty(
+            VirtualRelationshipValue relationship,
+            int property,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor);
 
     int nodeGetOutgoingDegreeWithMax(int maxDegree, long node, NodeCursor nodeCursor);
 
@@ -118,11 +146,19 @@ public interface DbAccess extends EntityById {
 
     boolean areTypesSetOnRelationship(int[] types, long id, RelationshipScanCursor relationshipCursor);
 
+    boolean areTypesSetOnRelationship(
+            int[] types, VirtualRelationshipValue obj, RelationshipScanCursor relationshipCursor);
+
     String getPropertyKeyName(int token);
 
     MapValue nodeAsMap(long id, NodeCursor nodeCursor, PropertyCursor propertyCursor);
 
     MapValue relationshipAsMap(long id, RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor);
+
+    MapValue relationshipAsMap(
+            VirtualRelationshipValue relationship,
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor);
 
     Value getTxStateNodePropertyOrNull(long nodeId, int propertyKey);
 

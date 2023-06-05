@@ -147,6 +147,16 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         buffer.add(Specials.writePathReference(nodes, relationships));
     }
 
+    @Override
+    public void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships)
+            throws RuntimeException {
+        writePathReference(
+                Arrays.stream(nodes).mapToLong(VirtualNodeValue::id).toArray(),
+                Arrays.stream(relationships)
+                        .mapToLong(VirtualRelationshipValue::id)
+                        .toArray());
+    }
+
     public static class Specials {
 
         public static Special writeNode(long nodeId, TextArray labels, MapValue properties) {

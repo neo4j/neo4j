@@ -189,6 +189,12 @@ object StaticEvaluation {
     override def relationshipById(id: Long, startNode: Long, endNode: Long, `type`: Int): VirtualRelationshipValue =
       notAvailable()
 
+    override def relationshipAsMap(
+      relationship: VirtualRelationshipValue,
+      relationshipCursor: RelationshipScanCursor,
+      propertyCursor: PropertyCursor
+    ): MapValue = notAvailable()
+
     override def getOrCreateLabelId(labelName: String): Int = notAvailable()
 
     override def getOrCreateTypeId(relTypeName: String): Int = notAvailable()
@@ -590,6 +596,12 @@ object StaticEvaluation {
     override def areTypesSetOnRelationship(
       types: Array[Int],
       id: Long,
+      relationshipCursor: RelationshipScanCursor
+    ): Boolean = notAvailable()
+
+    override def areTypesSetOnRelationship(
+      types: Array[Int],
+      obj: VirtualRelationshipValue,
       relationshipCursor: RelationshipScanCursor
     ): Boolean = notAvailable()
 

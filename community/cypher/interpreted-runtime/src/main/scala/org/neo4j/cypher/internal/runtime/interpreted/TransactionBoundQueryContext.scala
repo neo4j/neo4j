@@ -684,6 +684,14 @@ private[internal] class TransactionBoundReadQueryContext(
     CursorUtils.relationshipHasTypes(reads(), relationshipCursor, id, types)
   }
 
+  override def areTypesSetOnRelationship(
+    types: Array[Int],
+    obj: VirtualRelationshipValue,
+    relationshipCursor: RelationshipScanCursor
+  ): Boolean = {
+    CursorUtils.relationshipHasTypes(reads(), relationshipCursor, obj, types)
+  }
+
   override def getRelationshipsForIds(
     node: Long,
     dir: SemanticDirection,
@@ -1042,6 +1050,14 @@ private[internal] class TransactionBoundReadQueryContext(
     }
   }
 
+  override def relationshipAsMap(
+    relationship: VirtualRelationshipValue,
+    relationshipCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor
+  ): MapValue = {
+    CursorUtils.relationshipAsMap(reads(), tokenRead, relationship, relationshipCursor, propertyCursor);
+  }
+
   override def getNodesByLabel(
     tokenReadSession: TokenReadSession,
     id: Int,
@@ -1204,6 +1220,9 @@ private[internal] class TransactionBoundReadQueryContext(
       }
     }
 
+    override def propertyKeyIds(obj: VirtualNodeValue, cursor: NodeCursor, propertyCursor: PropertyCursor): Array[Int] =
+      propertyKeyIds(obj.id(), cursor, propertyCursor)
+
     override def getProperty(
       id: Long,
       propertyKeyId: Int,
@@ -1214,6 +1233,15 @@ private[internal] class TransactionBoundReadQueryContext(
       CursorUtils.nodeGetProperty(reads(), nodeCursor, id, propertyCursor, propertyKeyId, throwOnDeleted)
     }
 
+    override def getProperty(
+      obj: VirtualNodeValue,
+      propertyKeyId: Int,
+      cursor: NodeCursor,
+      propertyCursor: PropertyCursor,
+      throwOnDeleted: Boolean
+    ): Value =
+      CursorUtils.nodeGetProperty(reads(), cursor, obj.id(), propertyCursor, propertyKeyId, throwOnDeleted)
+
     override def getProperties(
       node: Long,
       properties: Array[Int],
@@ -1221,6 +1249,15 @@ private[internal] class TransactionBoundReadQueryContext(
       propertyCursor: PropertyCursor
     ): Array[Value] = {
       CursorUtils.propertiesGet(properties, node, reads(), cursor, propertyCursor);
+    }
+
+    override def getProperties(
+      node: VirtualNodeValue,
+      properties: Array[Int],
+      cursor: NodeCursor,
+      propertyCursor: PropertyCursor
+    ): Array[Value] = {
+      CursorUtils.propertiesGet(properties, node.id(), reads(), cursor, propertyCursor);
     }
 
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Value =
@@ -1233,6 +1270,15 @@ private[internal] class TransactionBoundReadQueryContext(
       propertyCursor: PropertyCursor
     ): Boolean = {
       CursorUtils.nodeHasProperty(reads(), nodeCursor, id, propertyCursor, propertyKey)
+    }
+
+    override def hasProperty(
+      node: VirtualNodeValue,
+      propertyKey: Int,
+      nodeCursor: NodeCursor,
+      propertyCursor: PropertyCursor
+    ): Boolean = {
+      CursorUtils.nodeHasProperty(reads(), nodeCursor, node.id(), propertyCursor, propertyKey)
     }
 
     override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Option[Boolean] = {
@@ -1291,6 +1337,14 @@ private[internal] class TransactionBoundReadQueryContext(
       }
     }
 
+    override def propertyKeyIds(
+      rel: VirtualRelationshipValue,
+      relationshipScanCursor: RelationshipScanCursor,
+      propertyCursor: PropertyCursor
+    ): Array[Int] = {
+      CursorUtils.relationshipPropertyIds(reads(), rel, relationshipScanCursor, propertyCursor);
+    }
+
     override def getProperty(
       id: Long,
       propertyKeyId: Int,
@@ -1302,8 +1356,28 @@ private[internal] class TransactionBoundReadQueryContext(
         .relationshipGetProperty(reads(), relationshipCursor, id, propertyCursor, propertyKeyId, throwOnDeleted)
     }
 
+    override def getProperty(
+      obj: VirtualRelationshipValue,
+      propertyKeyId: Int,
+      cursor: RelationshipScanCursor,
+      propertyCursor: PropertyCursor,
+      throwOnDeleted: Boolean
+    ): Value = {
+      CursorUtils
+        .relationshipGetProperty(reads(), cursor, obj, propertyCursor, propertyKeyId, throwOnDeleted)
+    }
+
     override def getProperties(
       id: Long,
+      properties: Array[Int],
+      cursor: RelationshipScanCursor,
+      propertyCursor: PropertyCursor
+    ): Array[Value] = {
+      CursorUtils.propertiesGet(properties, id, reads(), cursor, propertyCursor)
+    }
+
+    override def getProperties(
+      id: VirtualRelationshipValue,
       properties: Array[Int],
       cursor: RelationshipScanCursor,
       propertyCursor: PropertyCursor
@@ -1318,6 +1392,15 @@ private[internal] class TransactionBoundReadQueryContext(
       propertyCursor: PropertyCursor
     ): Boolean = {
       CursorUtils.relationshipHasProperty(reads(), relationshipCursor, id, propertyCursor, propertyKey)
+    }
+
+    override def hasProperty(
+      obj: VirtualRelationshipValue,
+      propertyKey: Int,
+      relationshipCursor: RelationshipScanCursor,
+      propertyCursor: PropertyCursor
+    ): Boolean = {
+      CursorUtils.relationshipHasProperty(reads(), relationshipCursor, obj, propertyCursor, propertyKey)
     }
 
     override def getById(id: Long): VirtualRelationshipValue =
