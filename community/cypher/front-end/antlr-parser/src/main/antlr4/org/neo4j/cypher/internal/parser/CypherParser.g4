@@ -104,7 +104,7 @@ matchClause:
    ((OPTIONAL MATCH) | MATCH) matchMode? patternList hints* whereClause?;
 
 matchMode:
-   (REPEATABLE (ELEMENT BINDINGS? | ELEMENTS) | DIFFERENT (RELATIONSHIP BINDINGS? | RELATIONSHIPS));
+    REPEATABLE (ELEMENT BINDINGS | ELEMENTS | ELEMENT) | DIFFERENT (RELATIONSHIP BINDINGS? | RELATIONSHIPS);
 
 hints:
    USING (INDEX indexHintBody | BTREE INDEX indexHintBody | TEXT INDEX indexHintBody | RANGE INDEX indexHintBody | POINT INDEX indexHintBody | JOIN ON variableList1 | SCAN variable labelOrRelType);
@@ -228,24 +228,31 @@ pathLengthLiteral:
    (UNSIGNED_DECIMAL_INTEGER? DOTDOT UNSIGNED_DECIMAL_INTEGER? | UNSIGNED_DECIMAL_INTEGER);
 
 labelExpression:
-   (COLON | IS) labelExpressionName;
-
-labelExpressionName:
-   labelExpression4;
+   (COLON labelExpression4 | IS labelExpression4Is);
 
 labelExpression4:
    labelExpression3 (BAR (COLON labelExpression3 | labelExpression3))*;
 
+labelExpression4Is:
+   labelExpression3Is (BAR (COLON labelExpression3Is | labelExpression3Is))*;
+
 labelExpression3:
    labelExpression2 (AMPERSAND labelExpression2 | COLON labelExpression2)*;
+
+labelExpression3Is:
+   labelExpression2Is (AMPERSAND labelExpression2Is | COLON labelExpression2Is)*;
 
 labelExpression2:
    (EXCLAMATION_MARK labelExpression2 | labelExpression1);
 
+labelExpression2Is:
+   (EXCLAMATION_MARK labelExpression2Is | labelExpression1Is);
+
 labelExpression1:
-   (LPAREN labelExpression4 RPAREN) #ParenthesizedLabelExpression
-   | PERCENT                        #AnyLabel
-   | symbolicNameString             #LabelName;
+   (LPAREN labelExpression4 RPAREN | PERCENT | symbolicNameString);
+
+labelExpression1Is:
+   (LPAREN labelExpression4Is RPAREN | PERCENT | symbolicLabelNameString);
 
 expression:
    expression12;
@@ -269,7 +276,7 @@ expression7:
    expression6 comparisonExpression6?;
 
 comparisonExpression6:
-   (REGEQ expression6 | STARTS WITH expression6 | ENDS WITH expression6 | CONTAINS expression6 | IN expression6 | IS (NULL | NOT NULL));
+   (REGEQ expression6 | STARTS WITH expression6 | ENDS WITH expression6 | CONTAINS expression6 | IN expression6 | IS (NULL | NOT (NULL | (TYPED | COLONCOLON) cypherTypeName) | (TYPED | COLONCOLON) cypherTypeName) | COLONCOLON cypherTypeName);
 
 expression6:
    expression5 (PLUS expression5 | MINUS expression5)*;
@@ -287,7 +294,7 @@ expression2:
    expression1 postFix1*;
 
 postFix1:
-   (property | IS NULL | IS NOT NULL | labelExpressionPredicate | LBRACKET expression RBRACKET | LBRACKET expression? DOTDOT expression? RBRACKET);
+   (property | labelExpressionPredicate | labelExpressionPredicate | LBRACKET expression RBRACKET | LBRACKET expression? DOTDOT expression? RBRACKET);
 
 property:
    DOT propertyKeyName;
@@ -422,7 +429,7 @@ alterCommand:
    ALTER (alterDatabase | alterAlias | alterCurrentUser | alterUser | alterServer);
 
 showCommand:
-   SHOW (ALL showAllCommand | POPULATED (ROLES | ROLE) showRoles | BTREE showIndexesAllowBrief | RANGE showIndexesNoBrief | FULLTEXT showIndexesNoBrief | TEXT showIndexesNoBrief | POINT showIndexesNoBrief | LOOKUP showIndexesNoBrief | UNIQUE showConstraintsAllowBriefAndYield | UNIQUENESS showConstraintsAllowYield | KEY showConstraintsAllowYield | NODE showNodeCommand | PROPERTY showPropertyCommand | EXISTENCE showConstraintsAllowYield | EXISTS showConstraintsAllowBrief | EXIST showConstraintsAllowBriefAndYield | RELATIONSHIP showRelationshipCommand | REL showRelCommand | BUILT IN showFunctions | showIndexesAllowBrief | showDatabase | showCurrentUser | showConstraintsAllowBriefAndYield | showProcedures | showSettings | showFunctions | showTransactions | showAliases | showServers | showPrivileges | (ROLES | ROLE) (showRolePrivileges | showRoles | showRolePrivileges) | USER DEFINED showFunctions | (USERS | USER) (showUserPrivileges | showUsers | showUserPrivileges));
+   SHOW (ALL showAllCommand | POPULATED (ROLES | ROLE) showRoles | BTREE showIndexesAllowBrief | RANGE showIndexesNoBrief | FULLTEXT showIndexesNoBrief | TEXT showIndexesNoBrief | POINT showIndexesNoBrief | LOOKUP showIndexesNoBrief | UNIQUE showConstraintsAllowBriefAndYield | UNIQUENESS showConstraintsAllowYield | KEY showConstraintsAllowYield | NODE showNodeCommand | PROPERTY showPropertyCommand | EXISTENCE showConstraintsAllowYield | EXISTS showConstraintsAllowBrief | EXIST showConstraintsAllowBriefAndYield | RELATIONSHIP showRelationshipCommand | REL showRelCommand | BUILT IN showFunctions | showIndexesAllowBrief | showDatabase | showCurrentUser | showConstraintsAllowBriefAndYield | showProcedures | showSettings | showFunctions | showTransactions | showAliases | showServers | showPrivileges | showSupportedPrivileges | (ROLES | ROLE) (showRolePrivileges | showRoles | showRolePrivileges) | USER DEFINED showFunctions | (USERS | USER) (showUserPrivileges | showUsers | showUserPrivileges));
 
 terminateCommand:
    TERMINATE terminateTransactions;
@@ -440,7 +447,7 @@ showRelCommand:
    ((UNIQUE | UNIQUENESS) showConstraintsAllowYield | KEY showConstraintsAllowYield | PROPERTY showPropertyCommand | EXISTENCE showConstraintsAllowYield | EXIST showConstraintsAllowYield);
 
 showPropertyCommand:
-   (EXISTENCE | EXIST) showConstraintsAllowYield;
+   ((EXISTENCE | EXIST) | TYPE) showConstraintsAllowYield;
 
 yieldItem:
    variable (AS variable)?;
@@ -486,8 +493,11 @@ showSettings:
 
 createConstraint:
    CONSTRAINT (ON LPAREN | FOR LPAREN | IF NOT EXISTS (ON | FOR) LPAREN | symbolicNameString? (IF NOT EXISTS)? (ON | FOR) LPAREN) (
-        constraintNodePattern | constraintRelPattern
-    ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL)) (OPTIONS mapOrParameter)?;
+       constraintNodePattern | constraintRelPattern
+   ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList (COLONCOLON cypherTypeName | IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL | (TYPED | COLONCOLON) cypherTypeName))) (OPTIONS mapOrParameter)?;
+
+cypherTypeName:
+   ((BOOLEAN | BOOL) | (STRING | VARCHAR) | (INT | SIGNED? INTEGER) | FLOAT | DATE | LOCAL (TIME | DATETIME) | ZONED (TIME | DATETIME) | TIME (WITHOUT TIMEZONE | WITH TIMEZONE) | TIMESTAMP (WITHOUT TIMEZONE | WITH TIMEZONE) | DURATION | POINT);
 
 constraintNodePattern:
    variable labelOrRelType RPAREN;
@@ -622,6 +632,9 @@ showUsers:
 
 showCurrentUser:
    CURRENT USER (yieldClause returnClause? | whereClause)?;
+
+showSupportedPrivileges:
+   SUPPORTED (PRIVILEGE | PRIVILEGES) (yieldClause returnClause? | whereClause)?;
 
 showPrivileges:
    (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? (yieldClause returnClause? | whereClause)?;
@@ -810,7 +823,13 @@ escapedSymbolicNameString:
    ESCAPED_SYMBOLIC_NAME;
 
 unescapedSymbolicNameString:
-   (IDENTIFIER | ACCESS | ACTIVE | ADMIN | ADMINISTRATOR | ALIAS | ALIASES | ALL_SHORTEST_PATH | ALL | ALTER | AND | ANY | AS | ASC | ASSERT | ASSIGN | AT | BINDINGS | BOOSTED | BREAK | BRIEF | BTREE | BUILT | BY | CALL | CASE | CHANGE | COLLECT | COMMAND | COMMANDS | COMMIT | COMPOSITE | CONSTRAINT | CONSTRAINTS | CONTAINS | CONTINUE | COPY | COUNT | CREATE | CSV | CURRENT | DATA | DATABASE | DATABASES | DBMS | DEALLOCATE | DEFAULT | DEFINED | DELETE | DENY | DESC | DESTROY | DETACH | DIFFERENT | DISTINCT | DRIVER | DROP | DRYRUN | DUMP | EACH | ELEMENT | ELEMENTS | ELSE | ENABLE | ENCRYPTED | END | ENDS | ERROR | EXECUTABLE | EXECUTE | EXIST | EXISTENCE | EXISTS | FAIL | FALSE | FIELDTERMINATOR | FOREACH | FOR | FROM | FULLTEXT | FUNCTION | FUNCTIONS | GRANT | GRAPH | GRAPHS | GROUP | GROUPS | HEADERS | HOME | IF | IMMUTABLE | IN | INDEX | INDEXES | INF | INFINITY | IS | JOIN | KEY | LABEL | LABELS | LIMITROWS | LOAD | LOOKUP | MATCH | MANAGEMENT | MERGE | NAME | NAMES | NAN | NEW | NODE | NODES | NONE | NOT | NOWAIT | NULL | OF | ON | ONLY | OPTIONAL | OPTIONS | OPTION | OR | ORDER | OUTPUT | PASSWORD | PASSWORDS | PATH | PATHS | PERIODIC | PLAINTEXT | POINT | POPULATED | PRIMARY | PRIMARIES | PRIVILEGE | PRIVILEGES | PROCEDURE | PROCEDURES | PROPERTIES | PROPERTY | RANGE | READ | REALLOCATE | REDUCE | REL | RELATIONSHIP | RELATIONSHIPS | REMOVE | RENAME | REPEATABLE | REPLACE | REPORT | REQUIRE | REQUIRED | RETURN | REVOKE | ROLE | ROLES | ROW | ROWS | SCAN | SEC | SECOND | SECONDARY | SECONDARIES | SECONDS | SEEK | SERVER | SERVERS | SET | SETTING | SETTINGS | SHORTEST | SHORTEST_PATH | SHOW | SINGLE | SKIPROWS | START | STARTS | STATUS | STOP | SUSPENDED | TARGET | TERMINATE | TEXT | THEN | TO | TOPOLOGY | TRANSACTION | TRANSACTIONS | TRAVERSE | TRUE | TYPE | TYPES | UNION | UNIQUE | UNIQUENESS | UNWIND | USE | USER | USERS | USING | VERBOSE | WAIT | WHEN | WHERE | WITH | WRITE | XOR | YIELD);
+   (unescapedLabelSymbolicNameString | NOT | NULL | TYPED);
+
+symbolicLabelNameString:
+   (escapedSymbolicNameString | unescapedLabelSymbolicNameString);
+
+unescapedLabelSymbolicNameString:
+   (IDENTIFIER | ACCESS | ACTIVE | ADMIN | ADMINISTRATOR | ALIAS | ALIASES | ALL_SHORTEST_PATH | ALL | ALTER | AND | ANY | AS | ASC | ASSERT | ASSIGN | AT | BINDINGS | BOOL | BOOLEAN | BOOSTED | BREAK | BRIEF | BTREE | BUILT | BY | CALL | CASE | CHANGE | COLLECT | COMMAND | COMMANDS | COMMIT | COMPOSITE | CONSTRAINT | CONSTRAINTS | CONTAINS | CONTINUE | COPY | COUNT | CREATE | CSV | CURRENT | DATA | DATABASE | DATABASES | DATE | DATETIME | DBMS | DEALLOCATE | DEFAULT | DEFINED | DELETE | DENY | DESC | DESTROY | DETACH | DIFFERENT | DISTINCT | DRIVER | DROP | DRYRUN | DUMP | DURATION | EACH | ELEMENT | ELEMENTS | ELSE | ENABLE | ENCRYPTED | END | ENDS | ERROR | EXECUTABLE | EXECUTE | EXIST | EXISTENCE | EXISTS | FAIL | FALSE | FIELDTERMINATOR | FLOAT | FOREACH | FOR | FROM | FULLTEXT | FUNCTION | FUNCTIONS | GRANT | GRAPH | GRAPHS | GROUP | GROUPS | HEADERS | HOME | IF | IMMUTABLE | IN | INDEX | INDEXES | INF | INFINITY | INT | INTEGER | IS | JOIN | KEY | LABEL | LABELS | LIMITROWS | LOAD | LOCAL | LOOKUP | MATCH | MANAGEMENT | MERGE | NAME | NAMES | NAN | NEW | NODE | NODES | NONE | NOWAIT | OF | ON | ONLY | OPTIONAL | OPTIONS | OPTION | OR | ORDER | OUTPUT | PASSWORD | PASSWORDS | PATH | PATHS | PERIODIC | PLAINTEXT | POINT | POPULATED | PRIMARY | PRIMARIES | PRIVILEGE | PRIVILEGES | PROCEDURE | PROCEDURES | PROPERTIES | PROPERTY | RANGE | READ | REALLOCATE | REDUCE | REL | RELATIONSHIP | RELATIONSHIPS | REMOVE | RENAME | REPEATABLE | REPLACE | REPORT | REQUIRE | REQUIRED | RETURN | REVOKE | ROLE | ROLES | ROW | ROWS | SCAN | SEC | SECOND | SECONDARY | SECONDARIES | SECONDS | SEEK | SERVER | SERVERS | SET | SETTING | SETTINGS | SHORTEST | SHORTEST_PATH | SHOW | SIGNED | SINGLE | SKIPROWS | START | STARTS | STATUS | STOP | STRING | SUPPORTED | SUSPENDED | TARGET | TERMINATE | TEXT | THEN | TIME | TIMESTAMP | TIMEZONE | TO | TOPOLOGY | TRANSACTION | TRANSACTIONS | TRAVERSE | TRUE | TYPE | TYPES | UNION | UNIQUE | UNIQUENESS | UNWIND | USE | USER | USERS | USING | VARCHAR | VERBOSE | WAIT | WHEN | WHERE | WITH | WITHOUT | WRITE | XOR | YIELD | ZONED);
 
 endOfFile:
    EOF;

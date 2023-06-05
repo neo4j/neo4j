@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
-class PeriodicCommitParserTest extends JavaccParserAstTestBase[Statement] {
+class PeriodicCommitParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
+  implicit private val javaccRule = JavaccRule.Statement
+  implicit private val antlrRule = AntlrRule.Statement
 
   val message =
     "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead. (line 1, column 7 (offset: 6))"

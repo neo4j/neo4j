@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 
@@ -26,9 +28,11 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
  * The aim of this class is to test parsing for all combinations of
  * IS and WHERE used in relationship patterns e.g. [WHERE IS WHERE WHERE IS]
  */
-class IsWhereRelationshipPatternParserTest extends JavaccParserAstTestBase[RelationshipPattern] {
+class IsWhereRelationshipPatternParserTest
+    extends ParserSyntaxTreeBase[Cst.RelationshipPattern, RelationshipPattern] {
 
-  implicit val parser: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
+  implicit val javaccRule = JavaccRule.RelationshipPattern
+  implicit val antlrRule = AntlrRule.RelationshipPattern
 
   for {
     (maybeVariable, maybeVariableName) <-

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
@@ -29,12 +29,16 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with VerifyAstPositionTestSupport {
+class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClause, ast.Clause]
+    with VerifyAstPositionTestSupport {
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.SubqueryClause
+  implicit private val javaccRule = JavaccRule.SubqueryClause
+  implicit private val antlrRule = AntlrRule.SubqueryClause
 
   test("CALL { CREATE (n) } IN TRANSACTIONS") {
     val expected =

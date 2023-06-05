@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.antlr.v4.runtime.ParserRuleContext
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.parser.javacc.ParseException
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -27,7 +29,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-trait JavaccParserTestBase[T, J] extends CypherFunSuite {
+trait ParserTestBase[S <: ParserRuleContext, T, J] extends CypherFunSuite {
 
   type Extra
 
@@ -63,22 +65,45 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
     override def toString: String = s"ResultCheck( $text -> $actuals )"
   }
 
-  def parsing(s: String)(implicit p: JavaccRule[T]): ResultCheck = convertResult(parseRule(p, s), None, s)
+  def parsing(s: String)(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): ResultCheck = {
+    parseWithAntlrRule(s, expectSucceeds = true)
+    convertResult(parseWithJavaccRule(s), None, s)
+  }
 
-  def parsingWith(s: String, extra: Extra)(implicit p: JavaccRule[T]): ResultCheck =
-    convertResult(parseRule(p, s), Some(extra), s)
+  def parsingWith(s: String, extra: Extra)(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): ResultCheck = {
+    parseWithAntlrRule(s, expectSucceeds = true)
+    convertResult(parseWithJavaccRule(s), Some(extra), s)
+  }
 
-  def partiallyParsing(s: String)(implicit p: JavaccRule[T]): ResultCheck = convertResult(parseRule(p, s), None, s)
+  def partiallyParsing(s: String)(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): ResultCheck = {
+    parseWithAntlrRule(s, expectSucceeds = true)
+    convertResult(parseWithJavaccRule(s), None, s)
+  }
 
-  def assertFails(s: String)(implicit p: JavaccRule[T]): Unit = {
-    parseRule(p, s).toOption match {
+  def assertFails(s: String)(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
+    parseWithAntlrRule(s, expectSucceeds = false)
+    parseWithJavaccRule(s).toOption match {
       case None        =>
-      case Some(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
+      case Some(thing) => fail(s"'$s' should not have been parsed correctly with JavaCC, parsed as $thing")
     }
   }
 
-  def assertFailsWithException(s: String, expected: Exception)(implicit p: JavaccRule[T]): Unit = {
-    parseRule(p, s) match {
+  def assertFailsOnlyJavaCC(s: String)(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
+    parseWithAntlrRule(s, expectSucceeds = true)
+    parseWithJavaccRule(s).toOption match {
+      case None        =>
+      case Some(thing) => fail(s"'$s' should not have been parsed correctly with JavaCC, parsed as $thing")
+    }
+  }
+
+  def assertFailsWithException(
+    s: String,
+    expected: Exception
+  )(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
+    // We currently do not check the exact error message for ANTLR, just that it fails
+    parseWithAntlrRule(s, expectSucceeds = false)
+
+    parseWithJavaccRule(s) match {
       case Failure(exception) =>
         exception.getClass should be(expected.getClass)
         exception.getMessage shouldBe fixLineSeparator(expected.getMessage)
@@ -86,24 +111,42 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
     }
   }
 
-  def assertFailsWithMessage(s: String, expectedMessage: String)(implicit p: JavaccRule[T]): Unit = {
-    parseRule(p, s) match {
+  def assertFailsWithMessage(
+    s: String,
+    expectedMessage: String
+  )(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
+    // We currently do not check the exact error message for ANTLR, just that it fails
+    parseWithAntlrRule(s, expectSucceeds = false)
+
+    parseWithJavaccRule(s) match {
       case Failure(exception) =>
         exception.getMessage shouldBe fixLineSeparator(expectedMessage)
       case Success(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
     }
   }
 
-  def assertFailsWithMessageStart(s: String, expectedMessage: String)(implicit p: JavaccRule[T]): Unit = {
-    parseRule(p, s) match {
+  def assertFailsWithMessageStart(
+    s: String,
+    expectedMessage: String
+  )(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
+    // We currently do not check the exact error message for ANTLR, just that it fails
+    parseWithAntlrRule(s, expectSucceeds = false)
+
+    parseWithJavaccRule(s) match {
       case Failure(exception) =>
         exception.getMessage should startWith(fixLineSeparator(expectedMessage))
       case Success(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
     }
   }
 
-  def assertFailsWithMessageContains(s: String, expectedMessage: String)(implicit p: JavaccRule[T]): Unit = {
-    parseRule(p, s) match {
+  def assertFailsWithMessageContains(
+    s: String,
+    expectedMessage: String
+  )(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
+    // We currently do not check the exact error message for ANTLR, just that it fails
+    parseWithAntlrRule(s, expectSucceeds = false)
+
+    parseWithJavaccRule(s) match {
       case Failure(exception) =>
         exception.getMessage.contains(fixLineSeparator(expectedMessage)) shouldBe true
       case Success(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
@@ -119,7 +162,21 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
       message.replaceAll("\n", System.lineSeparator())
   }
 
-  protected def parseRule(rule: JavaccRule[T], queryText: String): Try[T] = Try(rule(queryText))
+  protected def parseWithJavaccRule(queryText: String)(implicit rule: JavaccRule[T]): Try[T] = Try(rule(queryText))
+
+  protected def parseWithAntlrRule(queryText: String, expectSucceeds: Boolean)(implicit rule: AntlrRule[S]): Unit = {
+    val antlrResult = rule(queryText)
+
+    antlrResult.parsingErrors match {
+      case Seq() if !expectSucceeds =>
+        fail(s"'$queryText' should not have been parsed correctly with ANTLR")
+      case errors if errors.nonEmpty && expectSucceeds =>
+        fail(
+          s"'$queryText' should have been parsed correctly with ANTLR, instead failed with following errors: ${errors.mkString}"
+        )
+      case _ =>
+    }
+  }
 
   private def convertResult(r: Try[T], extra: Option[Extra], input: String) = r match {
     case Success(t) =>

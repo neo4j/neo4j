@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FilterScope
@@ -34,9 +36,10 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 
-class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
+class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement] {
 
-  implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
+  implicit private val javaccRule = JavaccRule.Statement
+  implicit private val antlrRule = AntlrRule.Statement
 
   test(
     """MATCH (m)

@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
+import org.neo4j.cypher.internal.ast.factory.neo4j.ParserTestBase
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -31,8 +33,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
-class MapLiteralTest extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
-  implicit val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.MapLiteral
+class MapLiteralTest
+    extends ParserTestBase[
+      Cst.MapLiteral,
+      internal.expressions.Expression,
+      commands.expressions.Expression
+    ] {
+  implicit val javaccRule: JavaccRule[internal.expressions.Expression] = JavaccRule.MapLiteral
+  implicit val antlrRule: AntlrRule[Cst.MapLiteral] = AntlrRule.MapLiteral
 
   test("literal_maps") {
     parsing("{ name: 'Andres' }") shouldGive

@@ -22,12 +22,15 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.symbols
 
-class MultipleGraphClausesParsingTest extends JavaccParserAstTestBase[Clause] {
+class MultipleGraphClausesParsingTest extends ParserSyntaxTreeBase[Cst.Clause, Clause] {
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.Clause
+  implicit private val javaccRule = JavaccRule.Clause
+  implicit private val antlrRule = AntlrRule.Clause
 
   val keywords: Seq[(String, expressions.Expression => ast.GraphSelection)] = Seq(
     "USE" -> use,

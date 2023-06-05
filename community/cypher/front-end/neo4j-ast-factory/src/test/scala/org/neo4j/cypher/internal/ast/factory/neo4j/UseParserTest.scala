@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
-class UseParserTest extends JavaccParserAstTestBase[Statement] {
+class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
+  implicit private val javaccRule = JavaccRule.Statements
+  implicit private val antlrRule = AntlrRule.Statements()
 
   test("USING PERIODIC COMMIT USE db LOAD CSV FROM 'url' AS line RETURN line") {
     failsToParse

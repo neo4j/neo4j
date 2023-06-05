@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -35,14 +37,16 @@ import java.nio.charset.StandardCharsets
 import scala.util.Failure
 import scala.util.Success
 
-class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBase[ast.Statement]
+class AdministrationAndSchemaCommandParserTestBase
+    extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement]
     with VerifyAstPositionTestSupport {
 
-  implicit protected val parser: JavaccRule[ast.Statement] = JavaccRule.Statements
+  implicit protected val javaccParser = JavaccRule.Statements
+  implicit protected val antlrParser = AntlrRule.Statements()
 
   protected def assertAst(expected: ast.Statement, comparePosition: Boolean = true)(implicit
   p: JavaccRule[ast.Statement]): Unit = {
-    parseRule(p, testName) match {
+    parseWithJavaccRule(testName)(p) match {
       case Success(statement) =>
         statement shouldBe expected
         if (comparePosition) {

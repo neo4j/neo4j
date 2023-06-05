@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -27,10 +29,11 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
-class ListComprehensionParserTest extends JavaccParserTestBase[Expression, Any] {
+class ListComprehensionParserTest extends ParserTestBase[Cst.ListComprehension, Expression, Any] {
   private val t = DummyPosition(0)
 
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.ListComprehension
+  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.ListComprehension
+  implicit private val antlrRule: AntlrRule[Cst.ListComprehension] = AntlrRule.ListComprehension
 
   test("tests") {
 

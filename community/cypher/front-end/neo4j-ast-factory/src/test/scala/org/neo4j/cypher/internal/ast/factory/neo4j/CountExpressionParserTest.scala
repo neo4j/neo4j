@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Equals
@@ -40,9 +42,10 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.InputPosition
 
-class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
+class CountExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement] {
 
-  implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
+  implicit private val javaccRule = JavaccRule.Statement
+  implicit private val antlrRule = AntlrRule.Statement
 
   test(
     """MATCH (m)

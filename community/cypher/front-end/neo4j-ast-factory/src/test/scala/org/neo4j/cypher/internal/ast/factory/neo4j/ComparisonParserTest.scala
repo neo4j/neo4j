@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Expression
 
-class ComparisonParserTest extends JavaccParserAstTestBase[Expression] {
+class ComparisonParserTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
 
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
+  implicit private val javaccRule = JavaccRule.Expression
+  implicit private val antlrRule = AntlrRule.Expression
 
   test("a < b") {
     gives(lt(id("a"), id("b")))

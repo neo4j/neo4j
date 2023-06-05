@@ -19,14 +19,18 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class NodePatternPredicateParserTest extends CypherFunSuite with TestName with JavaccParserAstTestBase[NodePattern] {
+class NodePatternPredicateParserTest extends CypherFunSuite with TestName
+    with ParserSyntaxTreeBase[Cst.NodePattern, NodePattern] {
 
-  implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
+  implicit val javaccRule = JavaccRule.NodePattern
+  implicit val antlrRule = AntlrRule.NodePattern
 
   for {
     (maybeLabelExpression, maybeLabelExpressionAst) <-

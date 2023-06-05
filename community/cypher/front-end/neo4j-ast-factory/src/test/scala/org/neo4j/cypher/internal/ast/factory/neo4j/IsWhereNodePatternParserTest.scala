@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 
@@ -26,9 +28,10 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
  * The aim of this class is to test parsing for all combinations of
  * IS and WHERE used in node patterns e.g. (WHERE IS WHERE WHERE IS)
  */
-class IsWhereNodePatternParserTest extends JavaccParserAstTestBase[NodePattern] {
+class IsWhereNodePatternParserTest extends ParserSyntaxTreeBase[Cst.NodePattern, NodePattern] {
 
-  implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
+  implicit val javaccRule = JavaccRule.NodePattern
+  implicit val antlrRule = AntlrRule.NodePattern
 
   for {
     (maybeVariable, maybeVariableName) <-

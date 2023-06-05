@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -28,9 +30,10 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 
-class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
+class ExpressionParserTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
 
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
+  implicit private val javaccRule = JavaccRule.Expression
+  implicit private val antlrRule = AntlrRule.Expression
 
   test("[true IN [1, 2]]") {
     gives(listComprehension(varFor("true"), listOf(literalInt(1), literalInt(2)), None, None))

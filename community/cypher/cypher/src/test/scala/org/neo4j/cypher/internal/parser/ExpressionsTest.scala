@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
+import org.neo4j.cypher.internal.ast.factory.neo4j.ParserTestBase
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -36,9 +38,15 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module
-class ExpressionsTest extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
+class ExpressionsTest
+    extends ParserTestBase[
+      Cst.Expression,
+      internal.expressions.Expression,
+      commands.expressions.Expression
+    ] {
 
-  implicit private val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.Expression
+  implicit private val javaccRule: JavaccRule[internal.expressions.Expression] = JavaccRule.Expression
+  implicit private val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
 
   test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive

@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Expression
 
-class FunctionInvocationParserTest extends JavaccParserAstTestBase[Expression] {
+class FunctionInvocationParserTest extends ParserSyntaxTreeBase[Cst.FunctionInvocation, Expression] {
 
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.FunctionInvocation
+  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.FunctionInvocation
+  implicit private val antlrRule: AntlrRule[Cst.FunctionInvocation] = AntlrRule.FunctionInvocation
 
   test("foo()") {
     gives(function("foo"))

@@ -19,33 +19,43 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.antlr.v4.runtime.ParserRuleContext
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-trait JavaccParserAstTestBase[AST <: ASTNode] extends JavaccParserTestBase[AST, AST] with TestName
+trait ParserSyntaxTreeBase[CST <: ParserRuleContext, AST <: ASTNode] extends ParserTestBase[CST, AST, AST] with TestName
     with AstConstructionTestSupport with VerifyAstPositionTestSupport {
 
   final override def convert(astNode: AST): AST = astNode
 
-  final def yields(expr: InputPosition => AST)(implicit parser: JavaccRule[AST]): Unit =
+  final def yields(expr: InputPosition => AST)(implicit javaccRule: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit =
     parsing(testName) shouldGive expr
 
-  final def gives(ast: AST)(implicit parser: JavaccRule[AST]): Unit = parsing(testName) shouldGive ast
+  final def gives(ast: AST)(implicit parser: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit =
+    parsing(testName) shouldGive ast
 
-  final def givesIncludingPositions(expected: AST, query: String = testName)(implicit parser: JavaccRule[AST]): Unit = {
+  final def givesIncludingPositions(expected: AST, query: String = testName)(
+    implicit javaccRule: JavaccRule[AST],
+    antlrRule: AntlrRule[CST]
+  ): Unit = {
     parsing(query) shouldVerify { actual =>
       actual shouldBe expected
       verifyPositions(actual, expected)
     }
   }
 
-  final def failsToParse(query: String)(implicit parser: JavaccRule[AST]): Unit = assertFails(query)
+  final def failsToParse(query: String)(implicit parser: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit =
+    assertFails(query)
 
-  final def failsToParse(implicit parser: JavaccRule[AST]): Unit = assertFails(testName)
+  final def failsToParse(implicit parser: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit = assertFails(testName)
+
+  final def failsToParseOnlyJavaCC(implicit parser: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit =
+    assertFailsOnlyJavaCC(testName)
 
   final def id(id: String): Variable = varFor(id)
 

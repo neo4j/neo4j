@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -2416,6 +2417,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT my_constraint FOR (n:Person) REQUIRE n.prop IS NOT NULL OPTIONS {indexProvider : 'range-1.0'};"
   ) {
+    implicit val javaccRule = JavaccRule.Statements
+    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+
     yields(ast.CreateNodePropertyExistenceConstraint(
       varFor("n"),
       labelName("Person"),
@@ -2425,12 +2429,15 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
       containsOn = false,
       constraintVersion = ast.ConstraintVersion2
-    ))
+    ))(javaccRule, antlrRule)
   }
 
   test(
     "CREATE CONSTRAINT FOR (n:Person) REQUIRE n.prop IS NOT NULL; CREATE CONSTRAINT FOR (n:User) REQUIRE n.prop IS UNIQUE"
   ) {
+    implicit val javaccRule = JavaccRule.Statements
+    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+
     // The test setup does 'fromParser(_.Statements().get(0)', so only the first statement is yielded.
     // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
     // If we want to test that both statements are parsed, the test framework needs to be extended.
@@ -2443,7 +2450,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ast.NoOptions,
       containsOn = false,
       constraintVersion = ast.ConstraintVersion2
-    ))
+    ))(javaccRule, antlrRule)
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS NODE KEY") {
@@ -2844,14 +2851,20 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT my_constraint IF EXISTS;") {
-    yields(ast.DropConstraintOnName("my_constraint", ifExists = true))
+    implicit val javaccRule = JavaccRule.Statements
+    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+
+    yields(ast.DropConstraintOnName("my_constraint", ifExists = true))(javaccRule, antlrRule)
   }
 
   test("DROP CONSTRAINT my_constraint; DROP CONSTRAINT my_constraint2;") {
+    implicit val javaccRule = JavaccRule.Statements
+    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+
     // The test setup does 'fromParser(_.Statements().get(0)', so only the first statement is yielded.
     // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
     // If we want to test that both statements are parsed, the test framework needs to be extended.
-    yields(ast.DropConstraintOnName("my_constraint", ifExists = false))
+    yields(ast.DropConstraintOnName("my_constraint", ifExists = false))(javaccRule, antlrRule)
   }
 
   test("DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {

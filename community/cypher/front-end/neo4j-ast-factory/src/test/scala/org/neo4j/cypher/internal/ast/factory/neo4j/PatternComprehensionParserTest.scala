@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
 /**
  * This test class was created due to a bug in Javacc code generation and does not cover general pattern comprehensions
  */
-class PatternComprehensionParserTest extends JavaccParserAstTestBase[Statement] {
+class PatternComprehensionParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit private val parser: JavaccRule[Statement] = JavaccRule.Statements
+  implicit private val javaccRule = JavaccRule.Statements
+  implicit private val antlrRule = AntlrRule.Statements()
 
   private val variable = Seq("", "x")
   private val labelExpressions = Seq("", ":A", "IS A")

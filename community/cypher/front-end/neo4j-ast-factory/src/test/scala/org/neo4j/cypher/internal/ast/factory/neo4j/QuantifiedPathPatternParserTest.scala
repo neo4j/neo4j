@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
@@ -42,10 +44,12 @@ import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAstTestBase[PatternPart]
+class QuantifiedPathPatternParserTest extends CypherFunSuite
+    with ParserSyntaxTreeBase[Cst.Pattern, PatternPart]
     with AstConstructionTestSupport {
 
-  implicit val parser: JavaccRule[PatternPart] = JavaccRule.PatternPart
+  implicit val javaccRule = JavaccRule.PatternPart
+  implicit val antlrRule = AntlrRule.PatternPart
 
   test("(n)") {
     givesIncludingPositions {
@@ -277,10 +281,12 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
   }
 }
 
-class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccParserAstTestBase[ast.Clause]
+class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
+    with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
     with AstConstructionTestSupport {
 
-  implicit val parser: JavaccRule[ast.Clause] = JavaccRule.Clause
+  implicit val javaccRule = JavaccRule.Clause
+  implicit val antlrRule = AntlrRule.Clause
 
   test("MATCH p= ( (a)-->(b) ) WHERE a.prop") {
     gives {
@@ -406,9 +412,10 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
 }
 
 class QuantifiedPathParserTest extends CypherFunSuite
-    with JavaccParserAstTestBase[PatternAtom]
+    with ParserSyntaxTreeBase[Cst.ParenthesizedPath, PatternAtom]
     with AstConstructionTestSupport {
-  implicit val parser: JavaccRule[PatternAtom] = JavaccRule.ParenthesizedPath
+  implicit val javaccRule: JavaccRule[PatternAtom] = JavaccRule.ParenthesizedPath
+  implicit val antlrRule: AntlrRule[Cst.ParenthesizedPath] = AntlrRule.ParenthesizedPath
 
   test("((n)-[r]->(m))*") {
     gives {
@@ -506,9 +513,10 @@ class QuantifiedPathParserTest extends CypherFunSuite
 }
 
 class QuantifiedPathPatternsQuantifierParserTest extends CypherFunSuite
-    with JavaccParserAstTestBase[GraphPatternQuantifier]
+    with ParserSyntaxTreeBase[Cst.Quantifier, GraphPatternQuantifier]
     with AstConstructionTestSupport {
-  implicit val parser: JavaccRule[GraphPatternQuantifier] = JavaccRule.Quantifier
+  implicit val javaccParser: JavaccRule[GraphPatternQuantifier] = JavaccRule.Quantifier
+  implicit val antlrParser: AntlrRule[Cst.Quantifier] = AntlrRule.Quantifier
 
   test("+") {
     givesIncludingPositions {

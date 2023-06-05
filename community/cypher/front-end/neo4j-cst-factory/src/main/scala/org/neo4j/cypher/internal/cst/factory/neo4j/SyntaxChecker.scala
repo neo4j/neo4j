@@ -48,17 +48,17 @@ class SyntaxChecker extends CypherParserBaseListener {
     errors.iterator
   }
 
+  private def inputPosition(symbol: Token): InputPosition = {
+    new InputPosition(symbol.getStartIndex, symbol.getLine, symbol.getCharPositionInLine + 1)
+  }
+
   private def errorOnDuplicated(
     token: Token,
     paramDescription: String
   ): Unit = {
     errors :+= exceptionFactory.syntaxException(
       s"Duplicated $paramDescription parameters",
-      new InputPosition(
-        token.getStartIndex,
-        token.getLine,
-        token.getCharPositionInLine
-      )
+      inputPosition(token)
     )
   }
 
@@ -87,7 +87,7 @@ class SyntaxChecker extends CypherParserBaseListener {
         val start = aliasName.symbolicNameString().get(0).getStart
         errors :+= exceptionFactory.syntaxException(
           s"'.' is not a valid character in the remote alias name '${aliasName.symbolicNameString().asScala.map(_.getText).mkString}'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
-          new InputPosition(start.getStartIndex, start.getLine, start.getCharPositionInLine)
+          inputPosition(start)
         )
       }
     }
@@ -107,11 +107,7 @@ class SyntaxChecker extends CypherParserBaseListener {
 
       errors :+= exceptionFactory.syntaxException(
         nodeType.toString ++ " does not allow relationship patterns",
-        new InputPosition(
-          relPattern.getStart.getStartIndex,
-          relPattern.getStart.getLine,
-          relPattern.getStart.getCharPositionInLine
-        )
+        inputPosition(relPattern.getStart)
       )
     }
   }
@@ -130,11 +126,7 @@ class SyntaxChecker extends CypherParserBaseListener {
 
       errors :+= exceptionFactory.syntaxException(
         relType.toString ++ " does not allow node patterns",
-        new InputPosition(
-          nodePattern.getStart.getStartIndex,
-          nodePattern.getStart.getLine,
-          nodePattern.getStart.getCharPositionInLine
-        )
+        inputPosition(nodePattern.getStart)
       )
     }
   }
@@ -196,11 +188,7 @@ class SyntaxChecker extends CypherParserBaseListener {
           if (!target.startsWith(privilege)) {
             errors :+= exceptionFactory.syntaxException(
               s"Invalid input $target': expected \"$privilege\"",
-              new InputPosition(
-                symbol.getStartIndex,
-                symbol.getLine,
-                symbol.getCharPositionInLine
-              )
+              inputPosition(symbol)
             )
           }
         case _ =>
@@ -223,7 +211,7 @@ class SyntaxChecker extends CypherParserBaseListener {
       def addError(): Unit = {
         errors :+= exceptionFactory.syntaxException(
           "Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all.",
-          new InputPosition(ctx.start.getStartIndex, ctx.getStart.getLine, ctx.getStart.getCharPositionInLine)
+          inputPosition(ctx.start)
         )
       }
     }
@@ -248,12 +236,17 @@ class SyntaxChecker extends CypherParserBaseListener {
       if (ctx.NULL() != null) {
         errors :+= exceptionFactory.syntaxException(
           "Constraint type 'IS NOT NULL' does not allow multiple properties",
-          new InputPosition(secondProperty.getStartIndex, secondProperty.getLine, secondProperty.getCharPositionInLine)
+          inputPosition(secondProperty)
+        )
+      } else if (ctx.TYPED() != null || ctx.COLONCOLON() != null) {
+        errors :+= exceptionFactory.syntaxException(
+          "Constraint type 'IS TYPED' does not allow multiple properties",
+          inputPosition(secondProperty)
         )
       } else if (ctx.EXISTS().size() == 2 || ctx.EXISTS().size() == 1 && ctx.IF() == null) {
         errors :+= exceptionFactory.syntaxException(
           "Constraint type 'EXISTS' does not allow multiple properties",
-          new InputPosition(secondProperty.getStartIndex, secondProperty.getLine, secondProperty.getCharPositionInLine)
+          inputPosition(secondProperty)
         )
       }
     }
@@ -269,7 +262,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     if (ctx.NULL() != null) {
       errors :+= exceptionFactory.syntaxException(
         "Unsupported drop constraint command: Please delete the constraint by name instead",
-        new InputPosition(ctx.start.getStartIndex, ctx.start.getLine, ctx.start.getCharPositionInLine)
+        inputPosition(ctx.start)
       )
     }
   }
@@ -299,9 +292,11 @@ class SyntaxChecker extends CypherParserBaseListener {
   }
 
   override def exitPeriodicCommitQueryHintFailure(ctx: CypherParser.PeriodicCommitQueryHintFailureContext): Unit = {
+    val periodic = ctx.PERIODIC().getSymbol
+
     errors :+= exceptionFactory.syntaxException(
       "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.",
-      new InputPosition(ctx.start.getStartIndex, ctx.start.getLine, ctx.start.getCharPositionInLine)
+      inputPosition(periodic)
     )
   }
 
@@ -313,11 +308,7 @@ class SyntaxChecker extends CypherParserBaseListener {
       if (createIndex.oldCreateIndex() != null) {
         errors :+= exceptionFactory.syntaxException(
           "'REPLACE' is not allowed for this index syntax",
-          new InputPosition(
-            replace.getSymbol.getStartIndex,
-            replace.getSymbol.getLine,
-            replace.getSymbol.getCharPositionInLine
-          )
+          inputPosition(replace.getSymbol)
         )
       }
     }
@@ -337,11 +328,7 @@ class SyntaxChecker extends CypherParserBaseListener {
       if (functionName.getText.toUpperCase() == "EACH" && ctx.EACH() == null) {
         errors :+= exceptionFactory.syntaxException(
           "Missing function name for the LOOKUP INDEX",
-          new InputPosition(
-            functionName.start.getStartIndex,
-            functionName.start.getLine,
-            functionName.start.getCharPositionInLine
-          )
+          inputPosition(functionName.start)
         )
       }
     }

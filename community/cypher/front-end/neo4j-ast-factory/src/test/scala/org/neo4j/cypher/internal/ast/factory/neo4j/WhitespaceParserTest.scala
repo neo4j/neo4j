@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
-class WhitespaceParserTest extends JavaccParserAstTestBase[Statement] {
+class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
+  implicit val javaccRule = JavaccRule.Statement
+  implicit val antlrRule = AntlrRule.Statement
 
   private val whitespaceCharacters =
     Seq(

@@ -140,6 +140,12 @@ BAR:
 BINDINGS:
    B I N D I N G S;
 
+BOOL:
+   B O O L;
+
+BOOLEAN:
+   B O O L E A N;
+
 BOOSTED:
    B O O S T E D;
 
@@ -167,14 +173,17 @@ CASE:
 CHANGE:
    C H A N G E;
 
+COLLECT:
+   C O L L E C T;
+
 COLON:
    ':';
 
+COLONCOLON:
+   '::';
+
 COMMA:
    ',';
-
-COLLECT:
-   C O L L E C T;
 
 COMMAND:
    C O M M A N D;
@@ -223,6 +232,12 @@ DATABASE:
 
 DATABASES:
    D A T A B A S E S;
+
+DATE:
+   D A T E;
+
+DATETIME:
+   D A T E T I M E;
 
 DBMS:
    D B M S;
@@ -281,6 +296,9 @@ DRYRUN:
 DUMP:
    D U M P;
 
+DURATION:
+   D U R A T I O N;
+
 EACH:
    E A C H;
 
@@ -334,6 +352,9 @@ FALSE:
 
 FIELDTERMINATOR:
    F I E L D T E R M I N A T O R;
+
+FLOAT:
+   F L O A T;
 
 FOR:
    F O R;
@@ -404,6 +425,12 @@ INF:
 INFINITY:
    I N F I N I T Y;
 
+INT:
+   I N T;
+
+INTEGER:
+   I N T E G E R;
+
 IS:
    I S;
 
@@ -439,6 +466,9 @@ LIMITROWS:
 
 LOAD:
    L O A D;
+
+LOCAL:
+   L O C A L;
 
 LOOKUP:
    L O O K U P;
@@ -707,6 +737,9 @@ SHORTEST:
 SHOW:
    S H O W;
 
+SIGNED:
+   S I G N E D;
+
 SINGLE:
    S I N G L E;
 
@@ -725,6 +758,12 @@ STATUS:
 STOP:
    S T O P;
 
+STRING:
+   S T R I N G;
+
+SUPPORTED:
+   S U P P O R T E D;
+
 SUSPENDED:
    S U S P E N D E D;
 
@@ -740,8 +779,17 @@ TEXT:
 THEN:
    T H E N;
 
+TIME:
+   T I M E;
+
 TIMES:
    '*';
+
+TIMESTAMP:
+   T I M E S T A M P;
+
+TIMEZONE:
+   T I M E Z O N E;
 
 TO:
    T O;
@@ -763,6 +811,9 @@ TRUE:
 
 TYPE:
    T Y P E;
+
+TYPED:
+   T Y P E D;
 
 TYPES:
    T Y P E S;
@@ -791,6 +842,9 @@ USERS:
 USING:
    U S I N G;
 
+VARCHAR:
+   V A R C H A R;
+
 VERBOSE:
    V E R B O S E;
 
@@ -806,6 +860,9 @@ WHERE:
 WITH:
    W I T H;
 
+WITHOUT:
+   W I T H O U T;
+
 WRITE:
    W R I T E;
 
@@ -814,6 +871,9 @@ XOR:
 
 YIELD:
    Y I E L D;
+
+ZONED:
+   Z O N E D;
 
 IDENTIFIER:
    LETTER (PART_LETTER)*;

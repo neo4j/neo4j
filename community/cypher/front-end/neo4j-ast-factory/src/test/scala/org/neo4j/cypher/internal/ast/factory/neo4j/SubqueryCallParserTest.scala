@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
-class SubqueryCallParserTest extends JavaccParserAstTestBase[Clause] {
+class SubqueryCallParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClause, Clause] {
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.SubqueryClause
+  implicit private val javaccRule: JavaccRule[Clause] = JavaccRule.SubqueryClause
+  implicit private val antlrRule: AntlrRule[Cst.SubqueryClause] = AntlrRule.SubqueryClause
 
   test("CALL { RETURN 1 }") {
     gives(subqueryCall(return_(literalInt(1).unaliased)))

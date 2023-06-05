@@ -19,31 +19,37 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
+import org.antlr.v4.runtime.ParserRuleContext
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetPropertyItem
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.ASTNode
 
-class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
+class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
 
   test("RETURN 1 AS x //l33t comment") {
-    implicit val parser: JavaccRule[Statement] = JavaccRule.Statement
+    implicit val javaccRule = JavaccRule.Statement
+    implicit val antlrRule = AntlrRule.Statement
+
     gives {
       singleQuery(returnLit(1 -> "x"))
     }
   }
 
   test("keywords are allowed names") {
-    implicit val parser: JavaccRule[Statement] = JavaccRule.Statement
+    implicit val javaccRule = JavaccRule.Statement
+    implicit val antlrRule = AntlrRule.Statement
+
     val keywords =
       Seq(
         "TRUE",
@@ -131,7 +137,8 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
   }
 
   test("should allow chained map access in SET/REMOVE") {
-    implicit val parser: JavaccRule[Clause] = JavaccRule.Clause
+    implicit val javaccRule = JavaccRule.Clause
+    implicit val antlrRule = AntlrRule.Clause
 
     val chainedProperties = prop(prop(varFor("map"), "node"), "property")
 
@@ -147,7 +154,8 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
   }
 
   test("should allow True and False as label name") {
-    implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
+    implicit val javaccRule = JavaccRule.NodePattern
+    implicit val antlrRule = AntlrRule.NodePattern
 
     parsing("(:True)") shouldGive NodePattern(None, Some(labelLeaf("True")), None, None) _
     parsing("(:False)") shouldGive NodePattern(None, Some(labelLeaf("False")), None, None) _
@@ -157,7 +165,9 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
   }
 
   test("-[:Person*1..2]-") {
-    implicit val parser: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
+    implicit val javaccRule = JavaccRule.RelationshipPattern
+    implicit val antlrRule = AntlrRule.RelationshipPattern
+
     yields {
       RelationshipPattern(
         None,
@@ -176,7 +186,8 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
   }
 
   test("should not parse list literal as pattern comprehension") {
-    implicit val parser: JavaccRule[Expression] = JavaccRule.Expression
+    implicit val javaccRule = JavaccRule.Expression
+    implicit val antlrRule = AntlrRule.Expression
 
     val listLiterals = Seq(
       "[x = '1']",
@@ -189,12 +200,16 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
   }
 
   test("should not parse pattern comprehensions with single nodes") {
-    implicit val parser: JavaccRule[Expression] = JavaccRule.PatternComprehension
+    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.PatternComprehension
+    implicit val antlrRule: AntlrRule[Cst.PatternComprehension] = AntlrRule.PatternComprehension
+
     assertFails("[p = (x) | p]")
   }
 
   test("should handle escaping in string literals") {
-    implicit val parser: JavaccRule[Expression] = JavaccRule.StringLiteral
+    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.StringLiteral
+    implicit val antlrRule: AntlrRule[CypherParser.StringLiteralContext] = AntlrRule.StringLiteral
+
     parsing("""'\\\''""") shouldGive literalString("""\'""")
   }
 }

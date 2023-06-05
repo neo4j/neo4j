@@ -20,10 +20,14 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.parser.CypherParser
 
-class ProcedureCallParserTest extends JavaccParserAstTestBase[Clause] {
+class ProcedureCallParserTest extends ParserSyntaxTreeBase[Cst.CallClause, Clause] {
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.CallClause
+  implicit private val javaccRule: JavaccRule[Clause] = JavaccRule.CallClause
+  implicit private val antlrRule: AntlrRule[CypherParser.CallClauseContext] = AntlrRule.CallClause
 
   test("CALL foo") {
     gives(call(Seq.empty, "foo", None))

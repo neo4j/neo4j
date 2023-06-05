@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
@@ -40,10 +42,11 @@ import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PatternPartWithSelectorParserTest extends CypherFunSuite
-    with JavaccParserAstTestBase[ast.Clause]
+    with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
     with AstConstructionTestSupport {
 
-  implicit val parser: JavaccRule[ast.Clause] = JavaccRule.Clause
+  implicit val javaccRule = JavaccRule.Clause
+  implicit val antlrRule = AntlrRule.Clause
 
   private val selectors = Map(
     "ALL" -> allPathsSelector(),

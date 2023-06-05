@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.Expression
@@ -32,9 +34,10 @@ import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class ExpressionPrecedenceParsingTest extends JavaccParserAstTestBase[Expression] {
+class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
 
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
+  implicit protected val javaccRule = JavaccRule.Expression
+  implicit protected val antlrRule = AntlrRule.Expression
 
   /**
    * Precedence in Cypher:

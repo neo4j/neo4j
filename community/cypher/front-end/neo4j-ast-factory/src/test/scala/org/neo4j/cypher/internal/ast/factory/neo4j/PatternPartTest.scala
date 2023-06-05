@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PatternPartTest extends CypherFunSuite with JavaccParserAstTestBase[PatternPart]
+class PatternPartTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Pattern, PatternPart]
     with AstConstructionTestSupport {
 
-  implicit val parser: JavaccRule[PatternPart] = JavaccRule.PatternPart
+  implicit val javaccRule: JavaccRule[PatternPart] = JavaccRule.PatternPart
+  implicit val antlrRule: AntlrRule[Cst.Pattern] = AntlrRule.PatternPart
 
   test("(n)-->(m)") {
     val m = parsing(testName)

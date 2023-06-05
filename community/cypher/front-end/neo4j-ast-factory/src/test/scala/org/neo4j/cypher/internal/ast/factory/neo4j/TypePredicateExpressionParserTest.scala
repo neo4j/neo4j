@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.DateTypeName
@@ -33,12 +35,14 @@ import org.neo4j.cypher.internal.expressions.PointTypeName
 import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
+import org.neo4j.cypher.internal.parser.CypherParser.ExpressionContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class TypePredicateExpressionParserTest extends CypherFunSuite with JavaccParserAstTestBase[Expression]
+class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Expression, Expression]
     with AstConstructionTestSupport {
 
-  implicit val parser: JavaccRule[Expression] = JavaccRule.Expression
+  implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
+  implicit val antlrRule: AntlrRule[ExpressionContext] = AntlrRule.Expression
 
   Seq(
     ("BOOL", BooleanTypeName()),

@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
+import org.neo4j.cypher.internal.ast.factory.neo4j.ParserTestBase
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -35,8 +37,13 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
 class CaseExpressionTest
-    extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
-  implicit private val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.CaseExpression
+    extends ParserTestBase[
+      Cst.CaseExpression,
+      internal.expressions.Expression,
+      commands.expressions.Expression
+    ] {
+  implicit private val javaccRule: JavaccRule[internal.expressions.Expression] = JavaccRule.CaseExpression
+  implicit private val antlrRule: AntlrRule[Cst.CaseExpression] = AntlrRule.CaseExpression
 
   test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive

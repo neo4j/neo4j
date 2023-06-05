@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.antlr.v4.runtime.ParserRuleContext
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
-class MapProjectionParserTest extends JavaccParserTestBase[Any, Any] {
+class MapProjectionParserTest extends ParserTestBase[Any with ParserRuleContext, Any, Any] {
 
   private val t = DummyPosition(0)
 
   test("testIdentifierCanContainASCII") {
-    implicit val parser: JavaccRule[Expression] = JavaccRule.MapProjection
+    implicit val javaccRule = JavaccRule.MapProjection
+    implicit val antlrRule = AntlrRule.MapProjection
 
     parsing("abc{}") shouldGive expressions.MapProjection(expressions.Variable("abc")(t), Seq.empty)(t)
 

@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -29,10 +31,11 @@ import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class MatchModeParserTest extends CypherFunSuite with JavaccParserAstTestBase[Clause]
+class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.MatchClause, ast.Clause]
     with AstConstructionTestSupport {
 
-  implicit val parser: JavaccRule[Clause] = JavaccRule.MatchClause
+  implicit val javaccRule: JavaccRule[ast.Clause] = JavaccRule.MatchClause
+  implicit val antlrRule: AntlrRule[Cst.MatchClause] = AntlrRule.MatchClause
 
   test("MATCH DIFFERENT RELATIONSHIPS (n)-->(m)") {
     gives {
@@ -251,10 +254,10 @@ class MatchModeParserTest extends CypherFunSuite with JavaccParserAstTestBase[Cl
   }
 
   test("MATCH REPEATABLE ELEMENT BINDINGS = ()-->()") {
-    failsToParse
+    failsToParseOnlyJavaCC
   }
 
   test("MATCH DIFFERENT RELATIONSHIP BINDINGS = ()-->()") {
-    failsToParse
+    failsToParseOnlyJavaCC
   }
 }

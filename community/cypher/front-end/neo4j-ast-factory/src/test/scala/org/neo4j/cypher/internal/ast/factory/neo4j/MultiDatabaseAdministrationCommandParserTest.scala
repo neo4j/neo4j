@@ -548,6 +548,20 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  test("CREATE DATABASE foo TOPOLOGY 2 PRIMARIES 1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Duplicate PRIMARY clause (line 1, column 44 (offset: 43))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 2 SECONDARIES 1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Duplicate SECONDARY clause (line 1, column 46 (offset: 45))""".stripMargin
+    )
+  }
+
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
     assertFailsWithMessage(
       testName,
@@ -1234,6 +1248,20 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         Set.empty,
         ast.NoWait
       )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 2 PRIMARIES 1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Duplicate PRIMARY clause (line 1, column 47 (offset: 46))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 2 SECONDARIES 1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Duplicate SECONDARY clause (line 1, column 49 (offset: 48))""".stripMargin
     )
   }
 

@@ -20,12 +20,15 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
-class StatementReturnColumnsParserTest extends JavaccParserTestBase[Statement, List[String]] {
+class StatementReturnColumnsParserTest extends ParserTestBase[Cst.Statement, Statement, List[String]] {
 
   override def convert(statement: Statement): List[String] = statement.returnColumns.map(_.name)
 
-  implicit private val parserToTest: JavaccRule[Statement] = JavaccRule.Statement
+  implicit private val javaccRule = JavaccRule.Statement
+  implicit private val antlrRule = AntlrRule.Statement
 
   test("MATCH ... RETURN ...") {
     parsing("MATCH (n) RETURN n, n.prop AS m") shouldGive List("n", "m")
