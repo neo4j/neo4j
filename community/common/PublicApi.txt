@@ -202,6 +202,7 @@ org.neo4j.kernel.api.exceptions.Status.Transaction::LockAcquisitionTimeout org.n
 org.neo4j.kernel.api.exceptions.Status.Transaction::LockClientStopped org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::MaximumTransactionLimitReached org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::Outdated org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::QueryExecutionFailedOnTransaction org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::Terminated org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionAccessedConcurrently org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionCommitFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
