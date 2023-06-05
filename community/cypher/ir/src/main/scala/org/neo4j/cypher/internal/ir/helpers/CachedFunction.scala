@@ -19,21 +19,41 @@
  */
 package org.neo4j.cypher.internal.ir.helpers
 
-import scala.collection.concurrent.TrieMap
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 
 trait CachedFunction {
-  def cacheSize: Int
+  def cacheSize: Long
 }
 
+/**
+ * CachedFunction is not thread-safe.
+ */
 object CachedFunction {
 
   def apply[A, B](f: A => B): (A => B) with CachedFunction = new (A => B) with CachedFunction {
-    private val cache = TrieMap.empty[A, B]
+    private val cache: Cache[A, B] = Caffeine.newBuilder().maximumSize(100).build[A, B]()
 
-    override def cacheSize: Int = cache.size
+    override def cacheSize: Long = {
+      cache.cleanUp()
+      cache.estimatedSize()
+    }
 
-    def apply(input: A): B =
-      cache.getOrElseUpdate(input, f(input))
+    def apply(input: A): B = {
+      /*
+       * For concurrency reasons, it's better to use cache.get(), which utilizes proper locking.
+       * However, because `f` may update other mappings of this cache, cache.get() can not be used.
+       * This means that `CachedFunction` is not thread-safe.
+       */
+      val cachedValue = cache.getIfPresent(input)
+      if (cachedValue != null) {
+        cachedValue
+      } else {
+        val newValue = f(input)
+        cache.put(input, newValue)
+        newValue
+      }
+    }
   }
 
   def apply[A, B, C](f: (A, B) => C): ((A, B) => C) with CachedFunction = {
@@ -41,7 +61,7 @@ object CachedFunction {
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B) => C) with CachedFunction {
       override def apply(v1: A, v2: B): C = untupledCachedFunction(v1, v2)
-      override def cacheSize: Int = tupledCachedFunction.cacheSize
+      override def cacheSize: Long = tupledCachedFunction.cacheSize
     }
   }
 
@@ -50,7 +70,7 @@ object CachedFunction {
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B, C) => D) with CachedFunction {
       override def apply(a: A, b: B, c: C): D = untupledCachedFunction(a, b, c)
-      override def cacheSize: Int = tupledCachedFunction.cacheSize
+      override def cacheSize: Long = tupledCachedFunction.cacheSize
     }
   }
 
@@ -59,7 +79,7 @@ object CachedFunction {
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B, C, D) => E) with CachedFunction {
       override def apply(v1: A, v2: B, v3: C, v4: D): E = untupledCachedFunction(v1, v2, v3, v4)
-      override def cacheSize: Int = tupledCachedFunction.cacheSize
+      override def cacheSize: Long = tupledCachedFunction.cacheSize
     }
   }
 
@@ -68,7 +88,7 @@ object CachedFunction {
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B, C, D, E) => F) with CachedFunction {
       override def apply(v1: A, v2: B, v3: C, v4: D, v5: E): F = untupledCachedFunction(v1, v2, v3, v4, v5)
-      override def cacheSize: Int = tupledCachedFunction.cacheSize
+      override def cacheSize: Long = tupledCachedFunction.cacheSize
     }
   }
 
@@ -78,7 +98,7 @@ object CachedFunction {
       val untupledCachedFunction = untupled(tupledCachedFunction)
       new ((A, B, C, D, E, F) => G) with CachedFunction {
         override def apply(v1: A, v2: B, v3: C, v4: D, v5: E, v6: F): G = untupledCachedFunction(v1, v2, v3, v4, v5, v6)
-        override def cacheSize: Int = tupledCachedFunction.cacheSize
+        override def cacheSize: Long = tupledCachedFunction.cacheSize
       }
     }
   }
