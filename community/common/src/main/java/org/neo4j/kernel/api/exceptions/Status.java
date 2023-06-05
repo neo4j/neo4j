@@ -192,7 +192,7 @@ public interface Status {
         LeaderSwitch(TransientError, "The request could not be completed due to cluster leader switch"),
         QueryExecutionFailedOnTransaction(
                 TransientError,
-                "The transaction was marked as failed because a query failed while executing on the transaction");
+                "The transaction was marked as failed because a query failed.");
 
         private final Code code;
 
