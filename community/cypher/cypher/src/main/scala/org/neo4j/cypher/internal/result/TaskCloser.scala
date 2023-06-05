@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.result
 
+import org.neo4j.internal.helpers.Exceptions
+
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait CloseReason
@@ -53,7 +55,7 @@ class TaskCloser {
         } catch {
           case e: Throwable =>
             foundException match {
-              case Some(first) => first.addSuppressed(e)
+              case Some(first) => Exceptions.chain(first, e)
               case None        => foundException = Some(e)
             }
         }
