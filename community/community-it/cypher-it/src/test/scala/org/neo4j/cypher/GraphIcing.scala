@@ -692,7 +692,7 @@ trait GraphIcing {
             r.close()
           case _ =>
         }
-        if (tx.isOpen) {
+        if (tx.isOpen && tx.terminationReason.isEmpty) {
           tx.commit()
         }
         result

@@ -180,9 +180,10 @@ class CommunityEditionEndToEndTest {
                 .collectList()
                 .block());
 
-        // The Fabric layer should not rollback transactions automatically on failure
-        assertTrue(tx1.isOpen());
-        assertTrue(tx2.isOpen());
+        // The Fabric layer should not rollback transactions automatically on failure,
+        // but the community Cypher runtime will mark the transaction as terminated
+        assertTrue(tx1.getReasonIfTerminated().isPresent());
+        assertTrue(tx2.getReasonIfTerminated().isPresent());
         assertFalse(transactionManager.getOpenTransactions().isEmpty());
 
         tx1.rollback();
