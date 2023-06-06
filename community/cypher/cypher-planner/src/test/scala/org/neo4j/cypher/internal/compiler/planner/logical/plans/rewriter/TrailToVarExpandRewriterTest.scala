@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Attributes
-import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 
@@ -852,11 +851,8 @@ object TrailToVarExpandRewriterTest
     reverseGroupVariableProjections = false
   )
 
-  private def rewrite(p: LogicalPlan): LogicalPlan = {
-    fixedPoint((p: LogicalPlan) =>
-      p.endoRewrite(TrailToVarExpandRewriter(new StubLabelAndRelTypeInfos, Attributes(idGen)))
-    )(p)
-  }
+  private def rewrite(p: LogicalPlan): LogicalPlan =
+    p.endoRewrite(TrailToVarExpandRewriter(new StubLabelAndRelTypeInfos, Attributes(idGen)))
 
   private def subPlanBuilder = new LogicalPlanBuilder(wholePlan = false)
 }

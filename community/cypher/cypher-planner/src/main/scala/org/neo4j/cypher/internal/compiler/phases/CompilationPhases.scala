@@ -56,7 +56,6 @@ import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
-import org.neo4j.cypher.internal.frontend.phases.RemoveUnusedNamedGroupVariablesPhase
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarningsAndReplacements
@@ -117,7 +116,6 @@ object CompilationPhases {
           CheckForUnresolvedTokens,
           EagerRewriter,
           SortPredicatesBySelectivity,
-          RemoveUnusedNamedGroupVariablesPhase,
           ParameterToDefaultRewriter
         ) ++ CNFNormalizer.steps,
         initialConditions =
