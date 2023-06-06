@@ -70,7 +70,6 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityTo
 import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
@@ -90,7 +89,7 @@ object CompilationPhases {
     defaultSemanticFeatures ++ extra.map(SemanticFeature.fromString)
 
   private val AccumulatedSteps(orderedPlanPipelineSteps, _) =
-    StepSequencer(ListStepAccumulator[StepSequencer.Step with PlanPipelineTransformerFactory]())
+    StepSequencer[StepSequencer.Step with PlanPipelineTransformerFactory]()
       .orderSteps(
         Set(
           SemanticAnalysis,

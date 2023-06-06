@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
@@ -57,7 +56,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 object ASTRewriter {
 
   val AccumulatedSteps(orderedSteps, postConditions) =
-    StepSequencer(ListStepAccumulator[StepSequencer.Step with ASTRewriterFactory]()).orderSteps(
+    StepSequencer[StepSequencer.Step with ASTRewriterFactory]().orderSteps(
       Set(
         combineSetProperty,
         expandStar,

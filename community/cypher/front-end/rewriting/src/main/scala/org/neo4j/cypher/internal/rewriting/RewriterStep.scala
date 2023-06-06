@@ -21,11 +21,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 
-case class ListStepAccumulator[T <: StepSequencer.Step]() extends StepSequencer.StepAccumulator[T, Seq[T]] {
-  override def empty: Seq[T] = Seq.empty
-  override def addNext(acc: Seq[T], step: T): Seq[T] = acc :+ step
-}
-
 case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
 
   final override def apply(that: AnyRef): AnyRef = {

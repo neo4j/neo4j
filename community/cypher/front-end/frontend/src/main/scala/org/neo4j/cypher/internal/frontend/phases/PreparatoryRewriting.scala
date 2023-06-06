@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
-import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
@@ -44,7 +43,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
     with ParsePipelineTransformerFactory {
 
   val AccumulatedSteps(orderedSteps, _postConditions) =
-    new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(
+    StepSequencer[StepSequencer.Step with PreparatoryRewritingRewriterFactory]().orderSteps(
       Set(
         normalizeWithAndReturnClauses,
         insertWithBetweenOptionalMatchAndMatch,

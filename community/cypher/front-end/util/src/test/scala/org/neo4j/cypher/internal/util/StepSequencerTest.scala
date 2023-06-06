@@ -18,11 +18,9 @@ package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
+import org.neo4j.cypher.internal.util.StepSequencer.RepeatedSteps
 import org.neo4j.cypher.internal.util.StepSequencer.Step
-import org.neo4j.cypher.internal.util.StepSequencer.StepAccumulator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-
-import scala.collection.immutable.Set
 
 //noinspection ZeroIndexToHead
 class StepSequencerTest extends CypherFunSuite {
@@ -45,12 +43,7 @@ class StepSequencerTest extends CypherFunSuite {
     override def toString: String = s"TestStep($name)"
   }
 
-  private val stepAccumulator = new StepAccumulator[Step, Seq[Step]] {
-    override def empty: Seq[Step] = Seq.empty
-    override def addNext(acc: Seq[Step], step: Step): Seq[Step] = acc :+ step
-  }
-
-  private val sequencer = StepSequencer(stepAccumulator)
+  private val sequencer = StepSequencer[Step]()
 
   test("fails if a step depends on itself") {
     val steps = Seq(
@@ -189,6 +182,18 @@ class StepSequencerTest extends CypherFunSuite {
       steps(1)
     ))
     postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
+  test("refuses to duplicate single step if forbidden") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set()),
+      new TestStep("1", Set(condA), Set(condB), Set()),
+      new TestStep("2", Set(condB), Set(condC), Set(condB))
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(
+      steps.toSet,
+      repeatedSteps = RepeatedSteps.Forbidden
+    )
   }
 
   test("should not produce illegal sequence if a not yet enabled condition gets invalidated") {

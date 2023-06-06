@@ -21,21 +21,20 @@ import org.neo4j.cypher.internal.util.StepSequencer.ByInitialCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.MutableDirectedGraph
 import org.neo4j.cypher.internal.util.StepSequencer.NegatedCondition
+import org.neo4j.cypher.internal.util.StepSequencer.RepeatedSteps
 import org.neo4j.cypher.internal.util.StepSequencer.Step
-import org.neo4j.cypher.internal.util.StepSequencer.StepAccumulator
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 /**
- * This class allows to order steps with dependencies and combine them given a [[StepAccumulator]]
- *
+ * This class allows to order steps with dependencies and combine them into a list
  */
-case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC]) {
+case class StepSequencer[S <: Step]() {
 
   /**
-   * Order a set of steps and combine them using the classes stepAccumulator.
+   * Order a set of steps.
    *
    * The order guarantees that each step is run at least once,
    * and that all post-conditions of any steps are given at the end of the step sequence.
@@ -53,8 +52,9 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     steps: Set[S],
     initialConditions: Set[Condition] = Set.empty,
     printGraph: Boolean = false,
-    fixedSeed: Option[Long] = None
-  ): AccumulatedSteps[ACC] = {
+    fixedSeed: Option[Long] = None,
+    repeatedSteps: RepeatedSteps = RepeatedSteps.Permitted
+  ): AccumulatedSteps[S] = {
     // Abort if there is a negated initial condition
     initialConditions.foreach {
       case n: NegatedCondition => throw new IllegalArgumentException(s"Initial conditions cannot be negated: $n.")
@@ -128,8 +128,15 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     val graph = new MutableDirectedGraph[S]
     steps.foreach(graph.add)
     steps.foreach { step =>
+      // A step might get scheduled twice if it is invalidated; to force unique steps we can encode invalidations
+      // as inverted preconditions
+      val preconditions = repeatedSteps match {
+        case RepeatedSteps.Permitted => step.preConditions
+        case RepeatedSteps.Forbidden => step.preConditions ++ step.invalidatedConditions.map(!_)
+      }
+
       // (a)-->(b) means a needs to happen before b
-      step.preConditions.foreach {
+      preconditions.foreach {
         case n @ NegatedCondition(inner) =>
           // For a negated precondition it is OK if there is no step that introduces it.
           introducingSteps.get(inner).foreach {
@@ -167,19 +174,25 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     }
 
     // Sort steps topologically
-    val AccumulatedSteps(sortedSteps, postConditions) =
+    val result =
       StepSequencer.sort(graph, introducingStepsNotByInitial, steps.toSeq, initialConditions, fixedSeed)
 
     if (printGraph) {
-      println(sortedSteps.mkString("\n---\n", "\n", "\n---\n"))
+      println(result.steps.mkString("\n---\n", "\n", "\n---\n"))
     }
 
-    // Put steps together
-    AccumulatedSteps(sortedSteps.foldLeft(stepAccumulator.empty)(stepAccumulator.addNext), postConditions)
+    result
   }
 }
 
 object StepSequencer {
+
+  sealed trait RepeatedSteps
+
+  object RepeatedSteps {
+    object Permitted extends RepeatedSteps
+    object Forbidden extends RepeatedSteps
+  }
 
   private case object ByInitialCondition
 
@@ -211,17 +224,7 @@ object StepSequencer {
     def invalidatedConditions: Set[Condition]
   }
 
-  /**
-   * This is used to accumulate the final sequence of steps with a foldLeft.
-   * @tparam S the Step type
-   * @tparam ACC the accumulator type
-   */
-  trait StepAccumulator[S <: Step, ACC] {
-    def empty: ACC
-    def addNext(acc: ACC, step: S): ACC
-  }
-
-  case class AccumulatedSteps[ACC](steps: ACC, postConditions: Set[Condition])
+  case class AccumulatedSteps[S](steps: Seq[S], postConditions: Set[Condition])
 
   private case class AdjacencyList[S](outgoing: mutable.Set[S], incoming: mutable.Set[S])
 
@@ -355,7 +358,7 @@ object StepSequencer {
     allSteps: Seq[S],
     initialConditions: Set[Condition],
     fixedSeed: Option[Long]
-  ): AccumulatedSteps[Seq[S]] = {
+  ): AccumulatedSteps[S] = {
     val allPostConditions: Set[Condition] = allSteps.iterator.flatMap(_.postConditions).to(Set)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
@@ -489,7 +492,7 @@ object StepSequencer {
 
     // If any edges remain, there was a cycle
     if (graph.allNodes.map(graph.outgoing).exists(_.nonEmpty)) {
-      throw new IllegalArgumentException("There was a cycle in the graph.")
+      throw new IllegalArgumentException(s"There was a cycle in the graph: $graph")
     }
 
     result

@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.steps
 import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
-import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -225,7 +224,7 @@ object CNFNormalizerTest {
 
   def getTransformer(semanticFeatures: List[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = {
     val orderedSteps: Seq[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step] =
-      StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
+      StepSequencer[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]()
         .orderSteps(
           Set[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step](
             transitiveEqualities,
