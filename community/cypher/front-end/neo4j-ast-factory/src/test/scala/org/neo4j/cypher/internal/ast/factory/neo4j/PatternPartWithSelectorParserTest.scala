@@ -314,10 +314,13 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
     }
   }
 
+  // The tests below use `failsToParseOnlyJavaCC` because selectors in QPPs, PPPs, and update clauses are allowed by the grammar.
+  // They are rejected by the AST factory later, but ANTLR doesn't go that far yet.
+
   test("MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") {
     selectors.foreach { case selector -> _ =>
       withClue(s"selector = $selector") {
-        failsToParse(s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())")
+        failsToParseOnlyJavaCC(s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())")
       }
     }
   }
@@ -325,7 +328,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("CREATE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
       withClue(s"selector = $selector") {
-        failsToParse(s"CREATE $selector (a)-[r]->(b)")
+        failsToParseOnlyJavaCC(s"CREATE $selector (a)-[r]->(b)")
       }
     }
   }
@@ -333,7 +336,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("MERGE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
       withClue(s"selector = $selector") {
-        failsToParse(s"MERGE $selector (a)-[r]->(b)")
+        failsToParseOnlyJavaCC(s"MERGE $selector (a)-[r]->(b)")
       }
     }
   }
@@ -344,7 +347,8 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
       val q = s"$clause $testName"
       assertFailsWithMessage(
         q,
-        s"Path selectors such as `ANY 1 PATHS` cannot be used in a $clause clause, but only in a MATCH clause. ($pos)"
+        s"Path selectors such as `ANY 1 PATHS` cannot be used in a $clause clause, but only in a MATCH clause. ($pos)",
+        failsOnlyJavaCC = true
       )
     }
   }
@@ -356,7 +360,8 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
         assertFailsWithMessageStart(
           testName,
-          s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns."
+          s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns.",
+          failsOnlyJavaCC = true
         )
       }
 
@@ -364,7 +369,8 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
         test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--())") {
           assertFailsWithMessageStart(
             testName,
-            s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns."
+            s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns.",
+            failsOnlyJavaCC = true
           )
         }
       }

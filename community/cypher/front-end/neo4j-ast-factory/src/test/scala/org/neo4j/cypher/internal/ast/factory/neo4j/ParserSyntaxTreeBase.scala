@@ -54,6 +54,9 @@ trait ParserSyntaxTreeBase[CST <: ParserRuleContext, AST <: ASTNode] extends Par
 
   final def failsToParse(implicit parser: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit = assertFails(testName)
 
+  final def failsToParseOnlyJavaCC(query: String)(implicit parser: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit =
+    assertFailsOnlyJavaCC(query)
+
   final def failsToParseOnlyJavaCC(implicit parser: JavaccRule[AST], antlrRule: AntlrRule[CST]): Unit =
     assertFailsOnlyJavaCC(testName)
 

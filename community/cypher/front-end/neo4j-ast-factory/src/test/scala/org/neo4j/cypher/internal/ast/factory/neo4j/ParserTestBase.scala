@@ -113,10 +113,11 @@ trait ParserTestBase[S <: ParserRuleContext, T, J] extends CypherFunSuite {
 
   def assertFailsWithMessage(
     s: String,
-    expectedMessage: String
+    expectedMessage: String,
+    failsOnlyJavaCC: Boolean = false
   )(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
     // We currently do not check the exact error message for ANTLR, just that it fails
-    parseWithAntlrRule(s, expectSucceeds = false)
+    parseWithAntlrRule(s, expectSucceeds = failsOnlyJavaCC)
 
     parseWithJavaccRule(s) match {
       case Failure(exception) =>
@@ -127,10 +128,11 @@ trait ParserTestBase[S <: ParserRuleContext, T, J] extends CypherFunSuite {
 
   def assertFailsWithMessageStart(
     s: String,
-    expectedMessage: String
+    expectedMessage: String,
+    failsOnlyJavaCC: Boolean = false
   )(implicit javaccRule: JavaccRule[T], antlrRule: AntlrRule[S]): Unit = {
     // We currently do not check the exact error message for ANTLR, just that it fails
-    parseWithAntlrRule(s, expectSucceeds = false)
+    parseWithAntlrRule(s, expectSucceeds = failsOnlyJavaCC)
 
     parseWithJavaccRule(s) match {
       case Failure(exception) =>

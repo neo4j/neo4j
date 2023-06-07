@@ -155,24 +155,21 @@ patternList:
    pattern (COMMA pattern)*;
 
 pattern:
-   (variable EQ anonymousPattern | anonymousPattern);
+   (variable EQ selector? | selector?) anonymousPattern;
 
 quantifier:
    (LCURLY UNSIGNED_DECIMAL_INTEGER RCURLY | LCURLY UNSIGNED_DECIMAL_INTEGER? COMMA UNSIGNED_DECIMAL_INTEGER? RCURLY | PLUS | TIMES);
 
 anonymousPattern:
-   (shortestPathPattern | pathPatternWithSelector);
+   (shortestPathPattern | patternElement);
 
 shortestPathPattern:
-   (SHORTEST_PATH LPAREN pathPattern RPAREN | ALL_SHORTEST_PATH LPAREN pathPattern RPAREN);
+   (SHORTEST_PATH LPAREN patternElement RPAREN | ALL_SHORTEST_PATH LPAREN patternElement RPAREN);
 
 maybeQuantifiedRelationshipPattern:
    relationshipPattern quantifier?;
 
-pathPatternWithSelector:
-   selector? pathPatternAtoms;
-
-pathPattern:
+patternElement:
    pathPatternAtoms;
 
 pathPatternAtoms:
