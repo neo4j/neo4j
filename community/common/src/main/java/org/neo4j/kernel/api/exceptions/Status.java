@@ -191,8 +191,7 @@ public interface Status {
         Interrupted(TransientError, "Interrupted while waiting."),
         LeaderSwitch(TransientError, "The request could not be completed due to cluster leader switch"),
         QueryExecutionFailedOnTransaction(
-                TransientError,
-                "The transaction was marked as failed because a query failed.");
+                TransientError, "The transaction was marked as failed because a query failed.");
 
         private final Code code;
 
