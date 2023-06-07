@@ -769,16 +769,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     }
   }
 
-  test("Should fail when terminating the current transaction") {
+  test("Should not fail when terminating the current transaction") {
     val sequence =
       graph.getDependencyResolver.resolveDependency(classOf[KernelTransactions]).get().currentSequenceNumber() + 1
-    // WHEN
-    val exception = the[TransactionStatusFailureException] thrownBy {
-      execute(s"TERMINATE TRANSACTIONS 'neo4j-transaction-$sequence'").toList
-    }
 
-    // THEN
-    exception.getMessage should startWith("Unable to complete transaction.: Explicitly terminated by the user.")
+    execute(s"TERMINATE TRANSACTIONS 'neo4j-transaction-$sequence'").toList
   }
 
   test("Should only terminate given transactions once") {
