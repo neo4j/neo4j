@@ -24,20 +24,17 @@ import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 import java.io.IOException;
+import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile.LogFileEventListener;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -57,18 +54,21 @@ class LogPruningIT {
     @Inject
     private Config config;
 
-    @Inject
-    private FileSystemAbstraction fs;
-
     @Test
     void pruningStrategyShouldBeDynamic() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(
-                        db.databaseLayout(), fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
-                .withLogVersionRepository(new SimpleLogVersionRepository())
-                .withLastCommittedTransactionIdSupplier(() -> 1)
-                .withStorageEngineFactory(db.getDependencyResolver().resolveDependency(StorageEngineFactory.class))
-                .withTransactionIdStore(new SimpleTransactionIdStore())
-                .build();
+        final var deletions = LongLists.mutable.empty();
+        final var rotations = LongLists.mutable.empty();
+        logFiles.getLogFile().addLogFileEventListener(new LogFileEventListener() {
+            @Override
+            public void onDeletion(long version) {
+                deletions.add(version);
+            }
+
+            @Override
+            public void onRotation(LogPosition endLogPosition) {
+                rotations.add(endLogPosition.getLogVersion());
+            }
+        });
 
         // Force transaction log rotation
         writeTransactionsAndRotateTwice();
@@ -76,8 +76,8 @@ class LogPruningIT {
         // Checkpoint to make sure strategy is evaluated
         checkPointer.forceCheckPoint(triggerInfo);
 
-        // Make sure file is still there since we have disable pruning. 2 transaction logs and 1 separate checkpoint
-        // file.
+        // Make sure file is still there since we have disabled pruning.
+        // 2 transaction logs and 1 separate checkpoint file.
         assertThat(countTransactionLogs(logFiles)).isEqualTo(4);
 
         // Change pruning to true
@@ -88,6 +88,12 @@ class LogPruningIT {
 
         // Make sure file is removed
         assertThat(countTransactionLogs(logFiles)).isEqualTo(2);
+        assertThat(rotations.toArray())
+                .as("should have tracked the 2 log rotations")
+                .containsExactly(0L, 1L);
+        assertThat(deletions.toArray())
+                .as("should have tracked the 2 log prunes")
+                .containsExactly(0L, 1L);
     }
 
     private void writeTransactionsAndRotateTwice() throws IOException {

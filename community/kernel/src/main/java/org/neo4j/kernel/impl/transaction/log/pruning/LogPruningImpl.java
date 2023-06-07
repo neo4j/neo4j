@@ -88,7 +88,7 @@ public class LogPruningImpl implements LogPruning {
             LogFile logFile = logFiles.getLogFile();
             LogPruneStrategy strategy = this.pruneStrategy;
 
-            CountingDeleter deleter = new CountingDeleter(logFile, fs);
+            CountingDeleter deleter = new CountingDeleter(logFile);
             LogPruneStrategy.VersionRange versionsToDelete = strategy.findLogVersionsToDelete(upToVersion);
             // make sure to do the arithmetics only for non-empty ranges
             if (versionsToDelete.isNotEmpty()) {
@@ -134,13 +134,11 @@ public class LogPruningImpl implements LogPruning {
     private static class CountingDeleter implements LongConsumer {
         private static final int NO_VERSION = -1;
         private final LogFile logFile;
-        private final FileSystemAbstraction fs;
         private long fromVersion;
         private long toVersion;
 
-        private CountingDeleter(LogFile logFile, FileSystemAbstraction fs) {
+        private CountingDeleter(LogFile logFile) {
             this.logFile = logFile;
-            this.fs = fs;
             fromVersion = NO_VERSION;
             toVersion = NO_VERSION;
         }
@@ -149,9 +147,8 @@ public class LogPruningImpl implements LogPruning {
         public void accept(long version) {
             fromVersion = fromVersion == NO_VERSION ? version : Math.min(fromVersion, version);
             toVersion = toVersion == NO_VERSION ? version : Math.max(toVersion, version);
-            Path logFilePath = logFile.getLogFileForVersion(version);
             try {
-                fs.deleteFile(logFilePath);
+                logFile.delete(version);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

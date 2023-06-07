@@ -102,6 +102,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private final LogHeaderCache logHeaderCache;
     private final FileSystemAbstraction fileSystem;
     private final ConcurrentMap<Long, List<StoreChannel>> externalFileReaders = new ConcurrentHashMap<>();
+    private final List<LogFileEventListener> eventListeners = new CopyOnWriteArrayList<>();
     private TransactionLogWriter transactionLogWriter;
 
     TransactionLogFile(LogFiles logFiles, TransactionLogFilesContext context, String baseName) {
@@ -492,6 +493,22 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     }
 
     @Override
+    public void delete(Long version) throws IOException {
+        fileSystem.delete(getLogFileForVersion(version));
+        eventListeners.forEach(listener -> listener.onDeletion(version));
+    }
+
+    @Override
+    public void addLogFileEventListener(LogFileEventListener listener) {
+        eventListeners.add(listener);
+    }
+
+    @Override
+    public void removeLogFileEventListener(LogFileEventListener listener) {
+        eventListeners.remove(listener);
+    }
+
+    @Override
     public void registerExternalReaders(LongObjectMap<StoreChannel> internalChannels) {
         internalChannels.forEachKeyValue((LongObjectProcedure<StoreChannel>) (version, channel) -> externalFileReaders
                 .computeIfAbsent(version, any -> new CopyOnWriteArrayList<>())
@@ -588,7 +605,10 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
          * transaction complete in the log we're rotating away. Awesome.
          */
         writer.prepareForFlush().flush();
-        currentLog.truncate(currentLog.position());
+
+        final var logVersion = currentLog.getLogVersion();
+        final var endSize = currentLog.position();
+        currentLog.truncate(endSize);
 
         /*
          * The log version is now in the store, flushed and persistent. If we crash
@@ -601,6 +621,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
          */
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(newLogVersion, lastTransactionIdSupplier);
         currentLog.close();
+
+        final var endPosition = new LogPosition(logVersion, endSize);
+        eventListeners.forEach(listener -> listener.onRotation(endPosition));
         return newLog;
     }
 

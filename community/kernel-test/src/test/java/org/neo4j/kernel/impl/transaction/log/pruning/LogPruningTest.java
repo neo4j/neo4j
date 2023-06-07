@@ -27,10 +27,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -56,15 +57,19 @@ class LogPruningTest {
     private final Config config = Config.defaults();
     private FileSystemAbstraction fs;
     private LogFiles logFiles;
+    private LogFile logFile;
     private AssertableLogProvider logProvider;
     private SystemNanoClock clock;
     private LogPruneStrategyFactory factory;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         fs = mock(FileSystemAbstraction.class);
+
+        logFile = mock(LogFile.class);
+        doNothing().when(logFile).delete(anyLong());
+
         logFiles = mock(LogFiles.class);
-        LogFile logFile = mock(LogFile.class);
         when(logFiles.getLogFile()).thenReturn(logFile);
         when(logFiles.getCheckpointFile()).thenReturn(mock(CheckpointFile.class));
         doAnswer(inv -> Path.of(String.valueOf(inv.getArguments()[0])))
@@ -81,11 +86,11 @@ class LogPruningTest {
                 .thenReturn(upTo -> new LogPruneStrategy.VersionRange(3, upTo));
         LogPruning pruning = new LogPruningImpl(fs, logFiles, logProvider, factory, clock, config, new ReentrantLock());
         pruning.pruneLogs(5);
-        InOrder order = inOrder(fs);
-        order.verify(fs).deleteFile(Path.of("3"));
-        order.verify(fs).deleteFile(Path.of("4"));
-        // Log file 5 is not deleted; it's the lowest version expected to remain after pruning.
-        verifyNoMoreInteractions(fs);
+
+        verify(logFile, times(2)).delete(anyLong());
+        InOrder order = inOrder(logFile);
+        order.verify(logFile).delete(3L);
+        order.verify(logFile).delete(4L);
     }
 
     @Test

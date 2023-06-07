@@ -40,6 +40,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +79,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile.LogFileEventListener;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -658,6 +661,95 @@ class TransactionLogFileTest {
 
         logFile.unregisterExternalReader(2, channel2);
         assertThat(externalFileReaders).isEmpty();
+    }
+
+    @Test
+    void delete() throws IOException {
+        final var deletions = LongLists.mutable.empty();
+        final var listener = new LogFileEventListener() {
+            @Override
+            public void onDeletion(long version) {
+                deletions.add(version);
+            }
+
+            @Override
+            public void onRotation(LogPosition endLogPosition) {}
+        };
+
+        final var logFiles = buildLogFiles();
+        life.start();
+        life.add(logFiles);
+
+        final var logFile = logFiles.getLogFile();
+        logFile.rotate();
+        logFile.rotate();
+        logFile.rotate();
+
+        final var lowestBeforeDelete = logFile.getLowestLogVersion();
+        assertThat(lowestBeforeDelete).isLessThan(logFile.getHighestLogVersion());
+
+        logFile.addLogFileEventListener(listener);
+
+        logFile.delete(lowestBeforeDelete);
+        assertThat(deletions.toArray()).containsExactly(lowestBeforeDelete);
+
+        final var lowestAfterDelete = logFile.getLowestLogVersion();
+        assertThat(lowestBeforeDelete).isLessThan(lowestAfterDelete);
+
+        logFile.delete(lowestAfterDelete);
+        assertThat(deletions.toArray()).containsExactly(lowestBeforeDelete, lowestAfterDelete);
+
+        logFile.removeLogFileEventListener(listener);
+        logFile.delete(logFile.getLowestLogVersion());
+        assertThat(deletions.toArray())
+                .as("should not have updated deletions after listener removed")
+                .containsExactly(lowestBeforeDelete, lowestAfterDelete);
+
+        assertThat(logFile.getLowestLogVersion())
+                .as("Should have removed all the files except the last log file")
+                .isEqualTo(logFile.getHighestLogVersion());
+    }
+
+    @Test
+    void rotate() throws IOException {
+        final var logFiles = buildLogFiles();
+        life.start();
+        life.add(logFiles);
+
+        final var logFile = logFiles.getLogFile();
+
+        final var rotations = LongLists.mutable.empty();
+        final var listener = new LogFileEventListener() {
+            @Override
+            public void onDeletion(long version) {}
+
+            @Override
+            public void onRotation(LogPosition endLogPosition) {
+                final var logVersion = endLogPosition.getLogVersion();
+                try {
+                    final var size = fileSystem.getFileSize(logFile.getLogFileForVersion(logVersion));
+                    assertThat(endLogPosition.getByteOffset()).isEqualTo(size);
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+                rotations.add(logVersion);
+            }
+        };
+
+        final var lowestLogVersion = logFile.getLowestLogVersion();
+
+        logFile.addLogFileEventListener(listener);
+        logFile.rotate();
+        assertThat(rotations.toArray()).containsExactly(lowestLogVersion);
+
+        logFile.rotate();
+        assertThat(rotations.toArray()).containsExactly(lowestLogVersion, lowestLogVersion + 1);
+
+        logFile.removeLogFileEventListener(listener);
+        logFile.rotate();
+        assertThat(rotations.toArray())
+                .as("should not have updated rotations after listener removed")
+                .containsExactly(lowestLogVersion, lowestLogVersion + 1);
     }
 
     private static byte[] readBytes(ReadableChannel reader, int length) throws IOException {
