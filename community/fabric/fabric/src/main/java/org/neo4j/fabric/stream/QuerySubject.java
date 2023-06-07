@@ -153,19 +153,12 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
                     maybeSendCachedEvents();
                     try {
                         queryExecution.request(size);
-
-                        // If 'await' is called after an error has been received, it will throw with the same error.
-                        // Reactor operators don't like when 'onError' is called more than once. Typically, the second
-                        // call throws an exception,
-                        // which can have a disastrous effect on the RX pipeline
-                        if (!errorReceived) {
-                            var hasMore = queryExecution.await();
-                            // Workaround for some queryExecution:s where there are no results but onResultCompleted is
-                            // never called.
-                            if (!hasMore) {
-                                cachedCompleted = true;
-                                maybeSendCachedEvents();
-                            }
+                        var hasMore = queryExecution.await();
+                        // Workaround for some queryExecution:s where there are no results but onResultCompleted is
+                        // never called.
+                        if (!hasMore) {
+                            cachedCompleted = true;
+                            maybeSendCachedEvents();
                         }
                     } catch (Exception e) {
                         subscriber.onError(e);

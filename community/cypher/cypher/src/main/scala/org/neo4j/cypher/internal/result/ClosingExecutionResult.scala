@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.Notification
+import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -52,7 +53,7 @@ class ClosingExecutionResult private (
 ) extends InternalExecutionResult {
 
   self =>
-  private var error: Throwable = _
+  private var errorDeliveredToSubscriber: Throwable = _
 
   private val monitor = OnlyOnceQueryExecutionMonitor(innerMonitor)
 
@@ -118,8 +119,8 @@ class ClosingExecutionResult private (
   private def closeAndCallOnError(t: Throwable): Unit = {
     try {
       QuerySubscriber.safelyOnError(subscriber, t)
+      this.errorDeliveredToSubscriber = t
       close(Error(t))
-      this.error = t
     } catch {
       case _: Throwable =>
       // ignore
@@ -130,7 +131,7 @@ class ClosingExecutionResult private (
     closeReason match {
       case Error(thrownBeforeClose) =>
         try {
-          thrownBeforeClose.addSuppressed(thrownDuringClose)
+          Exceptions.chain(thrownBeforeClose, thrownDuringClose)
         } catch {
           case _: Throwable => // Ignore
         }
@@ -148,7 +149,8 @@ class ClosingExecutionResult private (
     try {
       inner.request(numberOfRows)
     } catch {
-      case NonFatalCypherError(e) => closeAndCallOnError(e)
+      case NonFatalCypherError(e) =>
+        closeAndCallOnError(e)
     }
 
   override def cancel(): Unit =
@@ -160,8 +162,8 @@ class ClosingExecutionResult private (
     }
 
   override def await(): Boolean = {
-    if (error != null) {
-      throw error
+    if (errorDeliveredToSubscriber != null) {
+      return false
     }
     val hasMore =
       try {
@@ -169,7 +171,7 @@ class ClosingExecutionResult private (
       } catch {
         case NonFatalCypherError(e) =>
           closeAndCallOnError(e)
-          false
+          return false
       }
 
     if (!hasMore) {
