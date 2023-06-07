@@ -80,7 +80,7 @@
             <dependencies>
                 <dependency>
                     <groupId>com.neo4j</groupId>
-                    <artifactId>neo4j-freki-storage-engine</artifactId>
+                    <artifactId>neo4j-block-storage-engine</artifactId>
                     <version>${project.version}</version>
                     <scope>runtime</scope>
                 </dependency>
