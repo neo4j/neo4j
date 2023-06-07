@@ -26,9 +26,7 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.MatchClause, ast.Clause]
@@ -184,13 +182,12 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
         matchMode = MatchMode.RepeatableElements()(pos),
         hints = List(),
         where = None,
-        pattern = Pattern(Seq(NamedPatternPart(
+        pattern = patternForMatch(NamedPatternPart(
           varFor("path"),
-          PatternPartWithSelector(
-            relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-            allPathsSelector()
+          PathPatternPart(
+            relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b")))
           )
-        )(pos)))(pos)
+        )(pos))
       )(pos)
     }
   }
@@ -202,13 +199,12 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
         matchMode = MatchMode.default(pos),
         hints = List(),
         where = None,
-        pattern = Pattern(Seq(NamedPatternPart(
+        pattern = patternForMatch(NamedPatternPart(
           varFor("REPEATABLE"),
-          PatternPartWithSelector(
-            relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-            allPathsSelector()
+          PathPatternPart(
+            relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b")))
           )
-        )(pos)))(pos)
+        )(pos))
       )(pos)
     }
   }
@@ -220,13 +216,12 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
         matchMode = MatchMode.DifferentRelationships()(pos),
         hints = List(),
         where = None,
-        pattern = Pattern(Seq(NamedPatternPart(
+        pattern = patternForMatch(NamedPatternPart(
           varFor("path"),
-          PatternPartWithSelector(
-            relationshipChain(nodePat(Some("x")), relPat(Some("p")), nodePat(Some("y"))),
-            allPathsSelector()
+          PathPatternPart(
+            relationshipChain(nodePat(Some("x")), relPat(Some("p")), nodePat(Some("y")))
           )
-        )(pos)))(pos)
+        )(pos))
       )(pos)
     }
   }
@@ -238,13 +233,12 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
         matchMode = MatchMode.default(pos),
         hints = List(),
         where = None,
-        pattern = Pattern(Seq(NamedPatternPart(
+        pattern = patternForMatch(NamedPatternPart(
           varFor("DIFFERENT"),
-          PatternPartWithSelector(
-            relationshipChain(nodePat(Some("x")), relPat(Some("p")), nodePat(Some("y"))),
-            allPathsSelector()
+          PathPatternPart(
+            relationshipChain(nodePat(Some("x")), relPat(Some("p")), nodePat(Some("y")))
           )
-        )(pos)))(pos)
+        )(pos))
       )(pos)
     }
   }

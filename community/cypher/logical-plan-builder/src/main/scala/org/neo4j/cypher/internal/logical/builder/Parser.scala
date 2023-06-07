@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -105,9 +105,9 @@ object Parser {
     Parser.cleanup(expression)
   }
 
-  def parsePathPattern(text: String): PatternPart = {
-    val patternPart = JavaccRule.PathPattern.apply(text)
-    Parser.cleanup(patternPart)
+  def parsePatternElement(text: String): PatternElement = {
+    val patternElement = JavaccRule.PatternElement.apply(text)
+    Parser.cleanup(patternElement)
   }
 
   def parseProcedureCall(text: String): UnresolvedCall = {

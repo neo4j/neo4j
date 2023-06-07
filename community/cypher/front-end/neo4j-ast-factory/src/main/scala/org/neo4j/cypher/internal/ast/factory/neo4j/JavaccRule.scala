@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PatternAtom
+import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
@@ -71,8 +72,8 @@ object JavaccRule {
   def PatternComprehension: JavaccRule[Expression] = fromParser(_.PatternComprehension())
   def Quantifier: JavaccRule[GraphPatternQuantifier] = fromParser(_.Quantifier())
   def RelationshipPattern: JavaccRule[RelationshipPattern] = fromParser(_.RelationshipPattern())
+  def PatternElement: JavaccRule[PatternElement] = fromParser(_.PatternElement())
   def PatternPart: JavaccRule[PatternPart] = fromParser(_.Pattern())
-  def PathPattern: JavaccRule[PatternPart] = fromParser(_.PathPattern())
   def Statement: JavaccRule[Statement] = fromParser(_.Statement())
   def UseClause: JavaccRule[UseGraph] = fromParser(_.UseClause())
 

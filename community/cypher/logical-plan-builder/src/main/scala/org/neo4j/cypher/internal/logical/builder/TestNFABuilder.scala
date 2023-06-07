@@ -83,7 +83,7 @@ class TestNFABuilder(startStateId: Int, startStateName: String, groupVar: Boolea
       }
     }
 
-    val parsedPattern = Parser.parsePathPattern(pattern).element
+    val parsedPattern = Parser.parsePatternElement(pattern)
     parsedPattern match {
       case RelationshipChain(
           NodePattern(Some(LogicalVariable(fromName)), None, None, None),
