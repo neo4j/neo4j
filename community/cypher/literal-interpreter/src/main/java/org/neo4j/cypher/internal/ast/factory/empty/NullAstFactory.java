@@ -667,7 +667,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL patternWithSelector(NULL selector, NULL pattern) {
+    public NULL patternWithSelector(NULL selector, NULL patternPart) {
         return null;
     }
 

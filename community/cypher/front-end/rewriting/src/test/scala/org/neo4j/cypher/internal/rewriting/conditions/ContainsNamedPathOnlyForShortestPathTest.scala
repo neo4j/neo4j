@@ -63,7 +63,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        patternForMatch(Seq(namedPattern)),
+        patternForMatch(namedPattern),
         Seq.empty,
         None
       )(
@@ -89,10 +89,10 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        patternForMatch(Seq(NamedPatternPart(
+        patternForMatch(NamedPatternPart(
           varFor("p"),
           ShortestPathsPatternPart(NodePattern(Some(varFor("n")), None, None, None)(pos), single = true)(pos)
-        )(pos))),
+        )(pos)),
         Seq.empty,
         None
       )(pos),

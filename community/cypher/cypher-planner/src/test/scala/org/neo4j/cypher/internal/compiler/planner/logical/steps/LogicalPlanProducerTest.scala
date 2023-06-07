@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.Collect
@@ -969,7 +968,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithUpdate,
         simpleExistsExpression(
-          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
+          patternForMatch(nodePat(Some("x"))),
           None,
           introducedVariables = Set(varFor("x"))
         ),
@@ -984,7 +983,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithoutUpdate,
         simpleExistsExpression(
-          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
+          patternForMatch(nodePat(Some("x"))),
           None,
           introducedVariables = Set(varFor("x"))
         ),
@@ -999,7 +998,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithUpdate,
         simpleExistsExpression(
-          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
+          patternForMatch(nodePat(Some("x"))),
           None,
           introducedVariables = Set(varFor("x"))
         ),
@@ -1014,7 +1013,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithoutUpdate,
         simpleExistsExpression(
-          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
+          patternForMatch(nodePat(Some("x"))),
           None,
           introducedVariables = Set(varFor("x"))
         ),

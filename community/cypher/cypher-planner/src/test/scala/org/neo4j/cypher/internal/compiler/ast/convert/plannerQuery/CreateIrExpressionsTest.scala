@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -1284,7 +1283,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) }") {
-    val p = patternForMatch(Seq(PatternPart(n_r_m.element)))
+    val p = patternForMatch(n_r_m.element)
     val countExpr = simpleCountExpression(p, None, MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
@@ -1312,7 +1311,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5}") {
-    val p = patternForMatch(Seq(PatternPart(n_r_m.element)))
+    val p = patternForMatch(n_r_m.element)
     val countExpr = simpleCountExpression(p, Some(where(rPred)), MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
@@ -1341,7 +1340,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite count expression with longer pattern and inlined predicates") {
-    val p = patternForMatch(Seq(PatternPart(n_r_m_withPreds.element)))
+    val p = patternForMatch(n_r_m_withPreds.element)
     val countExpr = simpleCountExpression(p, None, MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
@@ -1387,7 +1386,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (m) } and add a type check") {
-    val p = patternForMatch(Seq(PatternPart(n_r_m.element.rightNode)))
+    val p = patternForMatch(n_r_m.element.rightNode)
     val countExpr = simpleCountExpression(p, None, MatchMode.default(pos), Set(n, r), Set(m))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
@@ -1414,7 +1413,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 } and group predicates") {
-    val p = patternForMatch(Seq(PatternPart(n_r_m.element)))
+    val p = patternForMatch(n_r_m.element)
     val countExpr =
       simpleCountExpression(p, Some(where(and(rPred, rLessPred))), MatchMode.default(pos), Set(m, r), Set(n))
 

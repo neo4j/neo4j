@@ -781,12 +781,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def match_(patterns: Seq[PatternElement], where: Option[Where]): Match =
     Match(optional = false, MatchMode.default(pos), patternForMatch(patterns: _*), Seq(), where)(pos)
 
-  def patternForMatch(parts: Seq[NonPrefixedPatternPart]): Pattern.ForMatch = {
+  def patternForMatch(parts: NonPrefixedPatternPart*): Pattern.ForMatch = {
     Pattern.ForMatch(parts.map(_.withAllPathsSelector))(pos)
   }
 
   def patternForMatch(elements: PatternElement*)(implicit dummy: DummyImplicit): Pattern.ForMatch = {
-    patternForMatch(elements.map(e => PatternPart(e)))
+    patternForMatch(elements.map(e => PatternPart(e)): _*)
   }
 
   def with_(items: ReturnItem*): With =

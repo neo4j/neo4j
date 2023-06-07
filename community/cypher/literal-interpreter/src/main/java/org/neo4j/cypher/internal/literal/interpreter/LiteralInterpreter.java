@@ -304,7 +304,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL patternWithSelector(NULL patternPart, NULL aNull) {
+    public NULL patternWithSelector(NULL selector, NULL patternPart) {
         throw new UnsupportedOperationException("patternWithSelector is not a literal");
     }
 

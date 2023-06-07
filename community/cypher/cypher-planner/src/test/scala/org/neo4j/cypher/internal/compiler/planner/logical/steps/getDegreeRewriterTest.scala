@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -156,7 +155,7 @@ class GetDegreeRewriterExistsExpressionTest extends GetDegreeRewriterExistsLikeT
   ): Expression = {
     val maybeWhere: Option[Where] = predicate.map(p => Where(p)(p.position))
     simpleExistsExpression(
-      patternForMatch(Seq(PatternPart(relPattern(from, to, relationships).element))),
+      patternForMatch(relPattern(from, to, relationships).element),
       maybeWhere = maybeWhere,
       introducedVariables = introducedVariables,
       scopeDependencies = scopeDependencies
@@ -288,7 +287,7 @@ class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTes
   ): Expression = {
     val maybeWhere: Option[Where] = predicate.map(p => Where(p)(p.position))
     simpleCountExpression(
-      patternForMatch(Seq(PatternPart(relPattern(from, to, relationships).element))),
+      patternForMatch(relPattern(from, to, relationships).element),
       maybeWhere = maybeWhere,
       introducedVariables = introducedVariables,
       scopeDependencies = scopeDependencies
