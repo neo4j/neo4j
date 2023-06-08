@@ -974,6 +974,17 @@
         <scala.plugin.recompileMode>incremental</scala.plugin.recompileMode>
       </properties>
     </profile>
+    <profile>
+      <id>build-service</id>
+      <activation>
+        <property>
+          <name>build.service.target.dir</name>
+        </property>
+      </activation>
+      <build>
+        <directory>${build.service.target.dir}</directory>
+      </build>
+    </profile>
   </profiles>
 
   <dependencyManagement>
