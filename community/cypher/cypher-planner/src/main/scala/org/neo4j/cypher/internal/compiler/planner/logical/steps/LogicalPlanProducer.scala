@@ -257,7 +257,6 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
@@ -296,8 +295,7 @@ case class LogicalPlanProducer(
     }
 
     def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-      // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-      val providedOrder = providedOrders.get(left.id).fromLeft
+      val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
       // The RHS is the leaf plan we are wrapping under an apply in order to solve the pattern expression.
       // It has the correct solved
       val solved = solveds.get(right.id)
@@ -328,7 +326,12 @@ case class LogicalPlanProducer(
       context: LogicalPlanningContext
     ): LogicalPlan = {
       val solved = solveds.get(lhs.id)
-      annotate(Apply(lhs, rhs), solved, providedOrders.get(lhs.id).fromLeft, context)
+      annotate(
+        Apply(lhs, rhs),
+        solved,
+        providedOrderOfApply(lhs, rhs, context.settings.executionModel),
+        context
+      )
     }
   }
 
@@ -357,6 +360,7 @@ case class LogicalPlanProducer(
   def planAllNodesScan(idName: String, argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved =
       RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
+
     annotate(AllNodesScan(varFor(idName), argumentIds.map(varFor)), solved, ProvidedOrder.empty, context)
   }
 
@@ -972,8 +976,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(right.id).asSinglePlannerQuery.withInput(symbols)
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(left.id).fromLeft
+    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
@@ -1000,24 +1003,6 @@ case class LogicalPlanProducer(
       solved,
       providedOrder,
       context
-    )
-  }
-
-  /**
-   * Assumes that qpp.isSimple is true
-   * @param qpp A simple QuantifiedPathPattern
-   * @return a PatternRelationship that represents the qpp
-   */
-  def simpleQuantifiedPathPatternToPatternRelationship(qpp: QuantifiedPathPattern): PatternRelationship = {
-    val max = qpp.repetition.max match {
-      case UpperBound.Unlimited  => None
-      case UpperBound.Limited(n) => Some(n.toInt)
-    }
-
-    qpp.patternRelationships.head.copy(
-      nodes = (qpp.leftBinding.outer, qpp.rightBinding.outer),
-      name = qpp.relationshipVariableGroupings.head.groupName,
-      length = VarPatternLength(qpp.repetition.min.toInt, max)
     )
   }
 
@@ -1843,6 +1828,7 @@ case class LogicalPlanProducer(
     val solved = reported.fold(innerSolved) { reported =>
       innerSolved.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     }
+
     planRegularProjectionHelper(inner, discardSymbols, expressions, context, solved)
   }
 
@@ -2457,7 +2443,6 @@ case class LogicalPlanProducer(
   }
 
   /**
-   *
    * @param expressions must be solved by the ListSubqueryExpressionSolver. This is not done here since that can influence how we plan distinct,
    *                    thus this logic is put into [[distinct]] instead.
    */

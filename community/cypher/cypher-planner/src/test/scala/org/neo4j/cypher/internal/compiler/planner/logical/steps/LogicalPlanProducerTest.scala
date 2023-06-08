@@ -741,7 +741,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("ForListSubqueryExpressionSolver.planApply fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.ForSubqueryExpressionSolver.planApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
     )
   }
@@ -831,7 +831,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("InputApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
+    shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithUpdate, Seq(varFor("x")), ctx.context)
     )
   }
