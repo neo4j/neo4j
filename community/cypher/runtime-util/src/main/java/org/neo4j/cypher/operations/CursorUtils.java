@@ -760,9 +760,23 @@ public final class CursorUtils {
                 cursor.type());
     }
 
+    /**
+     * Helper class for efficient reading of data from a VirtualRelationshipValue.
+     * <p>
+     * This class should only be short-lived and should not be part of any long-lived state and
+     * should only be used to invoke a single method, e.g.,
+     *
+     * <pre>{@code
+     *  new VirtualRelationshipReader(read, cursor, rel).property(propCursor, prop);
+     * }
+     * </pre>
+     */
     static class VirtualRelationshipReader implements Consumer<RelationshipVisitor> {
 
         private final Read read;
+
+        // NOTE: storing RelationshipScanCursor as state can be dangerous and this is one reason why we shouldn't keep
+        // instances of this class around. The cursor needs to be kept as a field in order to implement `accept`.
         private final RelationshipScanCursor cursor;
         private final VirtualRelationshipValue relationship;
         private final boolean throwOnDeleted;
