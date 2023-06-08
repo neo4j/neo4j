@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +28,8 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 
@@ -51,14 +54,21 @@ class StoreIdTest {
         assertFalse(storeId.isSameOrUpgradeSuccessor(new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_2, 3, 7)));
     }
 
-    @Test
-    void testSerialization() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testSerialization(boolean betaVersion) throws IOException {
         var buffer = new ChannelBuffer(100);
-        var storeId = new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, 3, 7);
+        var storeId = new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, betaVersion ? -3 : 3, 7);
         storeId.serialize(buffer);
         buffer.flip();
         var deserializedStoreId = StoreId.deserialize(buffer);
         assertEquals(storeId, deserializedStoreId);
+    }
+
+    @Test
+    void betaVersionShouldGiveUserStringIndicatingBeta() {
+        var storeId = new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, -3, 7);
+        assertThat(storeId.getStoreVersionUserString()).isEqualTo(ENGINE_1 + "-" + FORMAT_FAMILY_1 + "-3b.7");
     }
 
     private static class ChannelBuffer implements WritableChannel, ReadableChannel {

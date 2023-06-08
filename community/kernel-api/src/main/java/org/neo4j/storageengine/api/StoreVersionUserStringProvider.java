@@ -33,6 +33,15 @@ public interface StoreVersionUserStringProvider {
     String getStoreVersionUserString();
 
     static String formatVersion(String storageEngineName, String formatFamilyName, int majorVersion, int minorVersion) {
-        return storageEngineName + "-" + formatFamilyName + "-" + majorVersion + "." + minorVersion;
+        String majorVersionAddition = "";
+
+        // Allow beta versions
+        if (majorVersion < 0) {
+            majorVersion = -majorVersion;
+            majorVersionAddition = "b";
+        }
+
+        return storageEngineName + "-" + formatFamilyName + "-" + majorVersion + majorVersionAddition + "."
+                + minorVersion;
     }
 }

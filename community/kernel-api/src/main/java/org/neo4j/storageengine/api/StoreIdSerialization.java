@@ -161,8 +161,10 @@ public class StoreIdSerialization {
         byte[] formatFamily = storeId.getFormatName().getBytes(StandardCharsets.UTF_8);
         Preconditions.requireBetween(storageEngine.length, 0, 256);
         Preconditions.requireBetween(formatFamily.length, 0, 256);
+        // The store id allows beta versions - represented by a negative major version
+        Preconditions.requireBetween(storeId.getMajorVersion(), -128, 128);
+        // For minor version we can do more restrictive checks
         // Unfortunately, there are some test formats using NO_GENERATION = -1
-        Preconditions.requireBetween(storeId.getMajorVersion(), -1, 128);
         Preconditions.requireBetween(storeId.getMinorVersion(), -1, 128);
 
         writer.writeByte(VERSION);
