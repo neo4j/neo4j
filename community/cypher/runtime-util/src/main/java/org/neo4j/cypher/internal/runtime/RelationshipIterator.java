@@ -23,11 +23,10 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 
-public interface RelationshipIterator extends RelationshipVisitor.Home, LongIterator {
+public interface RelationshipIterator extends LongIterator {
     /**
      * Can be called to visit the data about the most recent id returned from {@link #next()}.
      */
-    @Override
     <EXCEPTION extends Exception> boolean relationshipVisit(long relationshipId, RelationshipVisitor<EXCEPTION> visitor)
             throws EXCEPTION;
 

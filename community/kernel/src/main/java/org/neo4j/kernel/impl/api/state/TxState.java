@@ -88,7 +88,7 @@ import org.neo4j.values.storable.ValueTuple;
  * into one component. Now that that work is done, this class should be refactored to increase transparency in how it
  * works.
  */
-public class TxState implements TransactionState, RelationshipVisitor.Home {
+public class TxState implements TransactionState {
     private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TxState.class);
     /**
      * This factory must be used only for creating collections representing internal state that doesn't leak outside this class.

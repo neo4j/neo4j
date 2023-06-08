@@ -24,15 +24,8 @@ package org.neo4j.storageengine.api;
  *
  * @param <EXCEPTION> exception thrown from the {@link #visit(long, int, long, long)} method.
  */
+@FunctionalInterface
 public interface RelationshipVisitor<EXCEPTION extends Exception> {
-    /**
-     * Objects which can accept these {@link RelationshipVisitor visitors} should implement this interface.
-     */
-    interface Home {
-        <EXCEPTION extends Exception> boolean relationshipVisit(long relId, RelationshipVisitor<EXCEPTION> visitor)
-                throws EXCEPTION;
-    }
-
     /**
      * Visits data about a relationship.
      *
