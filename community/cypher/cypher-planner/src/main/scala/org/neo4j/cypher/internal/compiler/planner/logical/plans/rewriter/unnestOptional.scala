@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -37,7 +36,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 
 case object unnestOptional extends Rewriter {
 
-  override def apply(input: AnyRef) = if (isSafe(input)) instance.apply(input) else input
+  override def apply(input: AnyRef): AnyRef = if (isSafe(input)) instance.apply(input) else input
 
   /*
    * It is not safe to unnest an optional expand with when we have
@@ -49,9 +48,6 @@ case object unnestOptional extends Rewriter {
   }
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-
-    case apply: AntiConditionalApply => apply
-
     case apply @ Apply(
         lhs,
         Optional(
