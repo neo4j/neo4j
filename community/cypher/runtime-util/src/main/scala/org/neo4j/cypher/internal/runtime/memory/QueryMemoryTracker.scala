@@ -30,7 +30,7 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.ExecutionContextMemoryTrackerProvider
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
-import org.neo4j.memory.IsClosedScopedMemoryTracker
+import org.neo4j.memory.IsScopedMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 
@@ -231,7 +231,7 @@ class WorkerThreadDelegatingMemoryTracker(val transactionMemoryTracker: MemoryTr
   }
 }
 
-class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends IsClosedScopedMemoryTracker {
+class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends IsScopedMemoryTracker {
   private[this] val trackedNative: LongAdder = new LongAdder
   private[this] val trackedHeap: LongAdder = new LongAdder
   private[this] val _isClosed: AtomicBoolean = new AtomicBoolean(false)
@@ -284,8 +284,8 @@ class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends IsClosedSco
   override def close(): Unit = {
     // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
     if (
-      !delegate.isInstanceOf[IsClosedScopedMemoryTracker] || !(delegate.asInstanceOf[
-        IsClosedScopedMemoryTracker
+      !delegate.isInstanceOf[IsScopedMemoryTracker] || !(delegate.asInstanceOf[
+        IsScopedMemoryTracker
       ]).isClosed
     ) {
       reset()

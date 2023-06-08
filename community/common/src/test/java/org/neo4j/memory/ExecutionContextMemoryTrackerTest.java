@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -149,7 +150,7 @@ class ExecutionContextMemoryTrackerTest {
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = initialCredit + (2 * 20 + 32 + 64 + 9 * 100) - expectedTotalAllocationSize;
+        long expectedLocalHeapPool = (2 * 20 + 32 + 64 + 9 * 100) - expectedTotalAllocationSize;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -183,7 +184,7 @@ class ExecutionContextMemoryTrackerTest {
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = initialCredit + (2 * 20 + 32 + 64 + 9 * 100) - expectedTotalAllocationSize;
+        long expectedLocalHeapPool = (2 * 20 + 32 + 64 + 9 * 100) - expectedTotalAllocationSize;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -216,9 +217,10 @@ class ExecutionContextMemoryTrackerTest {
         long expectedTotalAllocationSize = nAllocations * allocationSize;
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
+        memoryTracker.allocateHeap(1); // Just to make the final release different from the release calls above
         memoryTracker.reset();
 
-        long expectedLocalHeapPool = initialCredit + (2 * 16 + 32 + 64 + 9 * 100) - expectedTotalAllocationSize;
+        long expectedLocalHeapPool = (2 * 16 + 32 + 64 + 9 * 100) - expectedTotalAllocationSize - 1;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -248,8 +250,8 @@ class ExecutionContextMemoryTrackerTest {
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = initialCredit + expectedNumberOfGrabs * grabSize - expectedTotalAllocationSize;
-        verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
+        long expectedLocalHeapPool = expectedNumberOfGrabs * grabSize - expectedTotalAllocationSize;
+        verify(pool, never()).releaseHeap(expectedLocalHeapPool);
     }
 
     @Test
@@ -282,9 +284,10 @@ class ExecutionContextMemoryTrackerTest {
         long expectedTotalReleaseSize = nAllocations * allocationSize;
         assertEquals(-expectedTotalReleaseSize, memoryTracker.estimatedHeapMemory());
 
+        memoryTracker.allocateHeap(1); // Just to make the final release different from the release calls above
         memoryTracker.reset();
 
-        long expectedLocalHeapPool = initialCredit + expectedTotalReleaseSize - (2 * 20 + 32 + 2 * 64 + 7 * 100);
+        long expectedLocalHeapPool = expectedTotalReleaseSize - (2 * 20 + 32 + 2 * 64 + 7 * 100) - 1;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -319,7 +322,7 @@ class ExecutionContextMemoryTrackerTest {
 
         memoryTracker.reset();
 
-        long expectedLocalHeapPool = initialCredit + expectedTotalReleaseSize - (2 * 20 + 32 + 64 + 7 * 100);
+        long expectedLocalHeapPool = expectedTotalReleaseSize - (2 * 20 + 32 + 64 + 7 * 100);
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -355,7 +358,7 @@ class ExecutionContextMemoryTrackerTest {
 
         memoryTracker.reset();
 
-        long expectedLocalHeapPool = initialCredit + expectedTotalReleaseSize - (2 * 16 + 32 + 2 * 64 + 7 * 100);
+        long expectedLocalHeapPool = expectedTotalReleaseSize - (2 * 16 + 32 + 2 * 64 + 7 * 100);
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -384,8 +387,10 @@ class ExecutionContextMemoryTrackerTest {
 
         assertEquals(-expectedTotalReleaseSize, memoryTracker.estimatedHeapMemory());
 
+        memoryTracker.allocateHeap(1); // Just to make the final release different from the release calls above
         memoryTracker.reset();
-        long expectedLocalHeapPool = initialCredit + expectedTotalReleaseSize - expectedNumberOfPoolReleases * grabSize;
+
+        long expectedLocalHeapPool = expectedTotalReleaseSize - expectedNumberOfPoolReleases * grabSize - 1;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -413,7 +418,7 @@ class ExecutionContextMemoryTrackerTest {
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = initialCredit + grabSize - expectedTotalAllocationSize;
+        long expectedLocalHeapPool = grabSize - expectedTotalAllocationSize;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -442,7 +447,7 @@ class ExecutionContextMemoryTrackerTest {
         // When
         memoryTracker.reset();
 
-        verify(pool, times(1)).releaseHeap(initialCredit);
+        verify(pool, never()).releaseHeap(initialCredit);
     }
 
     @Test
@@ -471,7 +476,7 @@ class ExecutionContextMemoryTrackerTest {
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = initialCredit + 1000 + 20 + 32 - expectedTotalAllocationSize;
+        long expectedLocalHeapPool = 1000 + 20 + 32 - expectedTotalAllocationSize;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -503,7 +508,28 @@ class ExecutionContextMemoryTrackerTest {
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = 20 + 32 - 4 * 10;
+        long expectedLocalHeapPool = 20 + 32 - 4 * 10 - initialCredit;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
+    }
+
+    @Test
+    void usedUpInitialCreditShouldBeReservedOnResetIfThereWereNoGrabs() {
+        // Given
+        long grabSize = 20;
+        long maxGrabSize = 100;
+        long initialCredit = 20;
+        MemoryPool pool = mock(MemoryPool.class);
+        ExecutionContextMemoryTracker memoryTracker =
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+
+        // When
+        memoryTracker.allocateHeap(10);
+
+        // Then
+        verify(pool, never()).reserveHeap(grabSize);
+        verifyNoMoreInteractions(pool);
+
+        memoryTracker.reset();
+        verify(pool, times(1)).reserveHeap(10);
     }
 }

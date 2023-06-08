@@ -56,6 +56,14 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     private static final long DEFAULT_INITIAL_CREDIT = 0;
 
     /**
+     * If an allocation call triggers a reservation from the memory pool,
+     * and the number of allocation calls since the last reservation is less
+     * than this threshold, we will increase the grab size in an attempt to
+     * reduce the number of reservation calls made to the memory pool.
+     */
+    private static final int CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD = 10;
+
+    /**
      * Imposes limits on a {@link MemoryGroup} level, e.g. global maximum transactions size
      */
     private final MemoryPool memoryPool;
@@ -71,17 +79,16 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     private final long maxGrabSize;
 
     /**
+     * An initial credit of heap bytes that can be used to serve allocations before the memory tracker needs
+     * to reserve memory from the memory pool.
+     * Used up credit will be accounted for on reset().
+     */
+    private final long initialCredit;
+
+    /**
      * The number of allocation or release calls since the last interaction with the memory pool
      */
     private int clientCallsSinceLastPoolInteraction;
-
-    /**
-     * If an allocation call triggers a reservation from the memory pool,
-     * and the number of allocation calls since the last reservation is less
-     * than this threshold, we will increase the grab size in an attempt to
-     * reduce the number of reservation calls made to the memory pool.
-     */
-    private static final int CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD = 10;
 
     /**
      * Name of the setting that imposes the limit.
@@ -148,6 +155,7 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
         this.localBytesLimit = validateLimit(localBytesLimit);
         this.grabSize = requireNonNegative(grabSize);
         this.maxGrabSize = requireNonNegative(maxGrabSize);
+        this.initialCredit = requireNonNegative(initialCredit);
 
         this.limitSettingName = limitSettingName;
         this.openCheck = openCheck;
@@ -161,11 +169,11 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public void allocateNative(long bytes) {
+        assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
         if (bytes == 0) {
             return;
         }
         requirePositive(bytes);
-        assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
 
         allocatedBytesNative += bytes;
 
@@ -265,7 +273,12 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public void reset() {
-        memoryPool.releaseHeap(localHeapPool);
+        long localHeapToRelease = localHeapPool - initialCredit;
+        if (localHeapToRelease > 0L) {
+            memoryPool.releaseHeap(localHeapToRelease);
+        } else if (localHeapToRelease < 0L) {
+            memoryPool.reserveHeap(-localHeapToRelease);
+        }
         localHeapPool = 0;
         allocatedBytesHeap = 0;
         allocatedBytesNative = 0;

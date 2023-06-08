@@ -149,7 +149,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between eager") {
-    // assume(!isParallel)
     // given
     val logicalQuery1 = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -166,7 +165,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val nRows = 20 // sizeHint
+    val nRows = sizeHint
 
     // then
     compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, 0.035) // Pipelined is not exact

@@ -19,6 +19,9 @@
  */
 package org.neo4j.memory;
 
-public interface IsClosedScopedMemoryTracker extends MemoryTracker {
+/**
+ * A memory tracker where every tracked sub-allocation can be closed in a single call.
+ */
+public interface IsScopedMemoryTracker extends MemoryTracker {
     boolean isClosed();
 }

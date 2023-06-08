@@ -118,11 +118,11 @@ public class LocalMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public void allocateNative(long bytes) {
+        assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
         if (bytes == 0) {
             return;
         }
         requirePositive(bytes);
-        assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
 
         this.allocatedBytesNative += bytes;
 
