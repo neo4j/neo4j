@@ -180,7 +180,7 @@ public class EntityUpdates {
         Iterable<INDEX_KEY> potentiallyRelevant =
                 Iterables.filter(indexKey -> atLeastOneRelevantChange(indexKey.schema()), indexKeys);
 
-        return gatherUpdatesForPotentials(potentiallyRelevant);
+        return gatherUpdatesForPotentials(potentiallyRelevant, true);
     }
 
     /**
@@ -219,12 +219,13 @@ public class EntityUpdates {
             loadProperties(reader, additionalPropertiesToLoad, type, cursorContext, storeCursors, memoryTracker);
         }
 
-        return gatherUpdatesForPotentials(potentiallyRelevant);
+        return gatherUpdatesForPotentials(potentiallyRelevant, false);
     }
 
     @SuppressWarnings("ConstantConditions")
     private <INDEX_KEY extends SchemaDescriptorSupplier>
-            Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(Iterable<INDEX_KEY> potentiallyRelevant) {
+            Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
+                    Iterable<INDEX_KEY> potentiallyRelevant, boolean defaultToNoValue) {
         List<IndexEntryUpdate<INDEX_KEY>> indexUpdates = new ArrayList<>();
         for (INDEX_KEY indexKey : potentiallyRelevant) {
             SchemaDescriptor schema = indexKey.schema();
@@ -232,13 +233,14 @@ public class EntityUpdates {
             boolean relevantAfter = relevantAfter(schema);
             int[] propertyIds = schema.getPropertyIds();
             if (relevantBefore && !relevantAfter) {
-                indexUpdates.add(IndexEntryUpdate.remove(entityId, indexKey, valuesBefore(propertyIds)));
+                indexUpdates.add(
+                        IndexEntryUpdate.remove(entityId, indexKey, valuesBefore(propertyIds, defaultToNoValue)));
             } else if (!relevantBefore && relevantAfter) {
                 indexUpdates.add(IndexEntryUpdate.add(entityId, indexKey, valuesAfter(propertyIds)));
             } else if (relevantBefore && relevantAfter) {
-                if (valuesChanged(propertyIds, schema.propertySchemaType())) {
+                if (valuesChanged(propertyIds, schema.propertySchemaType(), defaultToNoValue)) {
                     indexUpdates.add(IndexEntryUpdate.change(
-                            entityId, indexKey, valuesBefore(propertyIds), valuesAfter(propertyIds)));
+                            entityId, indexKey, valuesBefore(propertyIds, defaultToNoValue), valuesAfter(propertyIds)));
                 }
             }
         }
@@ -369,10 +371,10 @@ public class EntityUpdates {
         return found;
     }
 
-    private Value[] valuesBefore(int[] propertyIds) {
+    private Value[] valuesBefore(int[] propertyIds, boolean defaultToNoValue) {
         Value[] values = new Value[propertyIds.length];
         for (int i = 0; i < propertyIds.length; i++) {
-            values[i] = knownProperties.get(propertyIds[i]).before;
+            values[i] = knownProperty(propertyIds[i], defaultToNoValue).before;
         }
         return values;
     }
@@ -389,7 +391,7 @@ public class EntityUpdates {
     /**
      * This method should only be called in a context where you know that your entity is relevant both before and after
      */
-    private boolean valuesChanged(int[] propertyIds, PropertySchemaType propertySchemaType) {
+    private boolean valuesChanged(int[] propertyIds, PropertySchemaType propertySchemaType, boolean defaultToNoValue) {
         if (propertySchemaType == COMPLETE_ALL_TOKENS) {
             // In the case of indexes were all entries must have all indexed tokens, one of the properties must have
             // changed for us to generate a change.
@@ -403,13 +405,21 @@ public class EntityUpdates {
             // In the case of indexes were we index incomplete index entries, we need to update as long as _anything_
             // happened to one of the indexed properties.
             for (int propertyId : propertyIds) {
-                PropertyValueType type = knownProperties.get(propertyId).type;
+                var type = knownProperty(propertyId, defaultToNoValue).type;
                 if (type != UnChanged && type != NoValue) {
                     return true;
                 }
             }
             return false;
         }
+    }
+
+    private PropertyValue knownProperty(int propertyId, boolean defaultToNoValue) {
+        var value = knownProperties.get(propertyId);
+        if (value == null && defaultToNoValue) {
+            value = NO_VALUE;
+        }
+        return value;
     }
 
     @Override
