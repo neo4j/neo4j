@@ -21,6 +21,8 @@ package org.neo4j.storageengine.api;
 
 @FunctionalInterface
 public interface StoreVersionUserStringProvider {
+    String BETA_SUFFIX = "b";
+
     /**
      * Provides store version in the form presented to the end user.
      * <p>
@@ -38,7 +40,7 @@ public interface StoreVersionUserStringProvider {
         // Allow beta versions
         if (majorVersion < 0) {
             majorVersion = -majorVersion;
-            majorVersionAddition = "b";
+            majorVersionAddition = BETA_SUFFIX;
         }
 
         return storageEngineName + "-" + formatFamilyName + "-" + majorVersion + majorVersionAddition + "."
