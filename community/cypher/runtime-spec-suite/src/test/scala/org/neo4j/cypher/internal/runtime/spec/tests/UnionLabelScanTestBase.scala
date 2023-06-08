@@ -54,6 +54,26 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(nodes))
   }
 
+  test("should scan all nodes of a label and not produce duplicates if nodes have multiple labels") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint, "Butter", "Almond") ++
+        nodeGraph(sizeHint, "Almond") ++
+        nodeGraph(sizeHint, "Butter")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .unionNodeByLabelsScan("x", Seq("Almond", "Butter"), IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
+  }
+
   test("should scan all nodes of a label in ascending order") {
     // given
     val nodes = given {

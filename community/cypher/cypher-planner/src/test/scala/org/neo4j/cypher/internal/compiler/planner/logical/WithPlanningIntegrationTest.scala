@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite
@@ -133,7 +134,6 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         .produceResults("n1")
         .filter("rand() < p")
         .limit(10)
-        .distinct("n1 AS n1", "p AS p")
         .projection("0.1 AS p")
         .allNodeScan("n1")
         .build()
@@ -463,13 +463,13 @@ class WithPlanningIntegrationTest extends CypherFunSuite
 
   test("should not discard variables in sub query 2") {
     val query =
-      """WITH 1 AS x, 2 AS y 
-        |CALL { 
+      """WITH 1 AS x, 2 AS y
+        |CALL {
         |  WITH x
-        |  MATCH (y) 
+        |  MATCH (y)
         |  WHERE y.value > x
         |  WITH y AS y2
-        |  RETURN sum(y2.prop) AS sum 
+        |  RETURN sum(y2.prop) AS sum
         |} RETURN sum""".stripMargin
 
     planner.plan(query) should equal(
@@ -528,7 +528,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         |  }
         |  RETURN dd, f, aa, d
         |}
-        |WITH a, b, dd, f, aa, d, 2*c AS cc 
+        |WITH a, b, dd, f, aa, d, 2*c AS cc
         |RETURN a, b, dd, f, aa, d, cc""".stripMargin
     )
 
@@ -570,4 +570,407 @@ class WithPlanningIntegrationTest extends CypherFunSuite
     )
   }
 
+  test("DISTINCT on an already distinct column should get planned without a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |RETURN DISTINCT n""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("DISTINCT on an already distinct column with renaming should get planned without a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |RETURN DISTINCT n AS foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("foo")
+        .projection(project = Seq("n AS foo"), discard = Set("n"))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("DISTINCT on an already distinct column that has been renamed should get planned without a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH n AS n2
+        |RETURN DISTINCT n2 AS foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("foo")
+        .projection(project = Seq("n2 AS foo"), discard = Set("n2"))
+        .projection(Seq("n AS n2"), discard = Set("n"))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("DISTINCT on two already distinct columns should get planned without a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH DISTINCT n.prop AS prop, n.foo AS foo
+        |RETURN DISTINCT prop, foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("prop", "foo")
+        .distinct("cacheN[n.prop] AS prop", "cacheN[n.foo] AS foo")
+        .cacheProperties("cacheNFromStore[n.foo]", "cacheNFromStore[n.prop]")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("DISTINCT on an already distinct column and one more column should get planned without a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |RETURN DISTINCT n, n.prop AS prop""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "prop")
+        .projection("n.prop AS prop")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("DISTINCT on an non-distinct column after an AllNodeScan should get planned with a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |RETURN DISTINCT n.prop AS prop""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("prop")
+        .distinct("n.prop AS prop")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("2nd DISTINCT on an already distinct column (because of 1st DISTINCT) should get planned without a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH DISTINCT n.prop AS prop
+        |RETURN DISTINCT prop
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("prop")
+        .distinct("n.prop AS prop")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "DISTINCT on an already distinct column and one more column should propagate distinctness of the already distinct column"
+  ) {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH DISTINCT n, n.prop AS prop
+        |RETURN DISTINCT n
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .projection("n.prop AS prop")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "Projection planned instead of Distinct should discard symbols"
+  ) {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH 0.1 AS foo, n
+        |WITH DISTINCT n, n.prop AS prop
+        |RETURN DISTINCT n
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .projection(Seq("n.prop AS prop"), discard = Set("foo"))
+        .projection("0.1 AS foo")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Cartesian product of distinct columns is distinct") {
+    val plan = planner.plan(
+      """MATCH (n), (m)
+        |RETURN DISTINCT n, m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "m")
+        .cartesianProduct()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Subquery Apply of distinct columns is distinct") {
+    val plan = planner.plan(
+      """MATCH (n) 
+        |CALL { 
+        |  WITH n 
+        |  MATCH (m) 
+        |  RETURN m 
+        |} 
+        |RETURN DISTINCT n, m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "m")
+        .apply()
+        .|.allNodeScan("m", "n")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Subquery Apply with one row from the left is distinct on right columns") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH n LIMIT 1
+        |CALL {
+        |  WITH n
+        |  MATCH (m)
+        |  RETURN m
+        |}
+        |RETURN DISTINCT m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("m")
+        .apply()
+        .|.allNodeScan("m", "n")
+        .limit(1)
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Subquery Apply with one row from the right is distinct on left columns") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  MATCH (m)
+        |  RETURN m LIMIT 1
+        |}
+        |RETURN DISTINCT n
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .apply()
+        .|.limit(1)
+        .|.allNodeScan("m", "n")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Subquery Apply with one row from both sides is distinct on any columns") {
+    val plan = planner.plan(
+      """MATCH (n)--(x)
+        |WITH n, x LIMIT 1
+        |CALL {
+        |  WITH n
+        |  MATCH (m)--(y)
+        |  RETURN m, y LIMIT 1
+        |}
+        |RETURN DISTINCT x, y
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("x", "y")
+        .apply()
+        .|.limit(1)
+        .|.allRelationshipsScan("(m)-[anon_1]-(y)", "n")
+        .limit(1)
+        .allRelationshipsScan("(n)-[anon_0]-(x)")
+        .build()
+    )
+  }
+
+  test("Subquery Apply of non-distinct columns is not distinct") {
+    val plan = planner.plan(
+      """MATCH (n)--(x)
+        |CALL {
+        |  WITH n
+        |  MATCH (m)--(y)
+        |  RETURN m, y
+        |}
+        |RETURN DISTINCT x, y
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("x", "y")
+        .distinct("x AS x", "y AS y")
+        .apply()
+        .|.allRelationshipsScan("(m)-[anon_1]-(y)", "n")
+        .allRelationshipsScan("(n)-[anon_0]-(x)")
+        .build()
+    )
+  }
+
+  test("Apply - where lhs is not distinct and rhs is distinct - is not distinct") {
+    val plan = planner.plan(
+      """MATCH (n) 
+        |UNWIND [1,2,1] AS i
+        |MATCH (m)
+        |RETURN DISTINCT n, m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "m")
+        .distinct("n AS n", "m AS m")
+        .apply()
+        .|.allNodeScan("m", "n", "i")
+        .unwind("[1,2,1] AS i")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("DISTINCT after a LIMIT 1 gets planned without a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)--(m)
+        |WITH * LIMIT 1
+        |RETURN DISTINCT n, m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "m")
+        .limit(1)
+        .allRelationshipsScan("(n)-[anon_0]-(m)")
+        .build()
+    )
+  }
+
+  test("DISTINCT after a LIMIT 2 gets planned with a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)--(m)
+        |WITH * LIMIT 2
+        |RETURN DISTINCT n, m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "m")
+        .distinct("n AS n", "m AS m")
+        .limit(2)
+        .allRelationshipsScan("(n)-[anon_0]-(m)")
+        .build()
+    )
+  }
+
+  test("DISTINCT after a LIMIT $param gets planned with a Distinct") {
+    val plan = planner.plan(
+      """MATCH (n)--(m)
+        |WITH * LIMIT $param
+        |RETURN DISTINCT n, m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "m")
+        .distinct("n AS n", "m AS m")
+        .limit(parameter("param", CTAny))
+        .allRelationshipsScan("(n)-[anon_0]-(m)")
+        .build()
+    )
+  }
+
+  test("2 distinct columns - 1 gets discarded - is not distinct") {
+    val plan = planner.plan(
+      """MATCH (n), (m)
+        |WITH n, 1 AS foo
+        |RETURN DISTINCT n
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .projection(Seq("1 AS foo"), discard = Set("m"))
+        .cartesianProduct()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("2 distinct columns - unrelated column gets discarded - is distinct") {
+    val plan = planner.plan(
+      """WITH 5 AS bar
+        |MATCH (n), (m) WHERE n.prop + m.prop = bar
+        |WITH n, m, 1 AS foo
+        |RETURN DISTINCT n, m
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n", "m")
+        .projection(Seq("1 AS foo"), discard = Set("bar"))
+        .filter("cacheN[n.prop] + cacheN[m.prop] = bar")
+        .apply()
+        .|.cartesianProduct()
+        .|.|.cacheProperties("cacheNFromStore[m.prop]")
+        .|.|.allNodeScan("m", "bar")
+        .|.cacheProperties("cacheNFromStore[n.prop]")
+        .|.allNodeScan("n", "bar")
+        .projection("5 AS bar")
+        .argument()
+        .build()
+    )
+  }
 }

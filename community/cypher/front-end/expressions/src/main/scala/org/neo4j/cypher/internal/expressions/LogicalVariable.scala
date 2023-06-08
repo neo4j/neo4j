@@ -35,5 +35,5 @@ abstract class LogicalVariable extends Expression {
 }
 
 object LogicalVariable {
-  def unapply(arg: LogicalVariable): Option[String] = Some(arg.name)
+  def unapply(arg: LogicalVariable): Some[String] = Some(arg.name)
 }

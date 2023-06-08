@@ -194,7 +194,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
         assumeTrue(runningAtLeast("4.1"));
 
         // when
-        shell.execute(CypherStatement.complete("CYPHER RUNTIME=INTERPRETED PROFILE WITH 1 AS x RETURN DISTINCT x"));
+        shell.execute(CypherStatement.complete("CYPHER RUNTIME=INTERPRETED PROFILE UNWIND [1,1,2] AS x RETURN DISTINCT x"));
 
         // then
         String actual = linePrinter.output();

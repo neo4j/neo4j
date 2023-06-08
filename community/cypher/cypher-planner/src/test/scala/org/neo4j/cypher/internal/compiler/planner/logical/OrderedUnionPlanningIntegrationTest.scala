@@ -194,11 +194,9 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("n"), "n AS n")
       .unionNodeByLabelsScan("n", Seq("A", "B"), IndexOrderAscending)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-        .orderedDistinct(Seq("n"), "n AS n")
         .unionNodeByLabelsScan("n", Seq("B", "A"), IndexOrderAscending)
         .build()))
   }

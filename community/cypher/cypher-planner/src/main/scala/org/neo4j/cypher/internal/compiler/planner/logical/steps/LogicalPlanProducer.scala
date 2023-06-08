@@ -1829,7 +1829,7 @@ case class LogicalPlanProducer(
       innerSolved.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     }
 
-    planRegularProjectionHelper(inner, discardSymbols, expressions, context, solved)
+    planRegularProjectionHelper(inner, discardSymbols.map(varFor), expressions, context, solved)
   }
 
   /**
@@ -2467,6 +2467,59 @@ case class LogicalPlanProducer(
   }
 
   /**
+   * Keep the left plan, but mark DISTINCT as solved.
+   * Used when DISTINCT is used but we can determine it is not really needed.
+   */
+  def planEmptyDistinct(
+    left: LogicalPlan,
+    reported: Map[String, Expression],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+
+    val solved: SinglePlannerQuery =
+      solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_ =>
+        DistinctQueryProjection(reported)
+      ))
+
+    val cardinality = cardinalityModel(
+      solved,
+      context.plannerState.input.labelInfo,
+      context.plannerState.input.relTypeInfo,
+      context.semanticTable,
+      context.plannerState.indexCompatiblePredicatesProviderContext
+    )
+    // Change solved and cardinality
+    val keptAttributes = Attributes(idGen, providedOrders, leveragedOrders, labelAndRelTypeInfos)
+    val newPlan = left.copyPlanWithIdGen(keptAttributes.copy(left.id))
+    solveds.set(newPlan.id, solved)
+    cardinalities.set(newPlan.id, cardinality)
+    newPlan
+  }
+
+  /**
+   * Plan a Projection, but mark DISTINCT as solved.
+   * Used when DISTINCT is used but we can determine it is not really needed.
+   *
+   * @param expressions must be solved by the ListSubqueryExpressionSolver. This is not done here since that can influence how we plan distinct,
+   *                    thus this logic is put into [[distinct]] instead.
+   */
+  def planProjectionForDistinct(
+    left: LogicalPlan,
+    expressions: Map[String, Expression],
+    reported: Map[String, Expression],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val solved: SinglePlannerQuery =
+      solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_ =>
+        DistinctQueryProjection(reported)
+      ))
+
+    val discardSymbols = left.availableSymbols -- reported.keySet.map(varFor)
+
+    planRegularProjectionHelper(left, discardSymbols, expressions, context, solved)
+  }
+
+  /**
    *
    * @param expressions must be solved by the ListSubqueryExpressionSolver. This is not done here since that can influence how we plan distinct,
    *                    thus this logic is put into [[distinct]] instead.
@@ -3092,7 +3145,7 @@ case class LogicalPlanProducer(
 
   private def planRegularProjectionHelper(
     inner: LogicalPlan,
-    discardSymbols: Set[String],
+    discardSymbols: Set[LogicalVariable],
     expressions: Map[String, Expression],
     context: LogicalPlanningContext,
     solved: SinglePlannerQuery
@@ -3100,7 +3153,7 @@ case class LogicalPlanProducer(
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
     val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     annotate(
-      Projection(inner, discardSymbols.map(varFor), expressions.map { case (key, value) => varFor(key) -> value }),
+      Projection(inner, discardSymbols, expressions.map { case (key, value) => varFor(key) -> value }),
       solved,
       providedOrder,
       context

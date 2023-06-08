@@ -130,7 +130,7 @@ object Parser {
         if ("ASC".equalsIgnoreCase(direction)) Ascending(varFor(variable))
         else if ("DESC".equalsIgnoreCase(direction)) Descending(varFor(variable))
         else throw new IllegalArgumentException(s"Invalid direction $direction")
-      case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
+      case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a sort item")
     }
   }
 

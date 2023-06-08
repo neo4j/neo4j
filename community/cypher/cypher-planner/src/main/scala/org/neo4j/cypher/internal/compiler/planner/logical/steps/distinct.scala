@@ -26,6 +26,10 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object distinct {
 
+  /**
+   * Given a so-far planned `plan` and a `distinctQueryProjection` to plan,
+   * return a new plan on top of `plan` that also solves `distinctQueryProjection`.
+   */
   def apply(
     plan: LogicalPlan,
     distinctQueryProjection: DistinctQueryProjection,
@@ -42,7 +46,29 @@ object distinct {
     val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
       leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols.map(_.name))
 
-    if (orderToLeverage.isEmpty) {
+    val previousDistinctness = rewrittenPlan.distinctness
+
+    // If the already distinct columns cover the columns to distinctify,
+    // then we do not need to plan a Distinct.
+    if (previousDistinctness.covers(newGroupingExpressionsMap.values)) {
+      val projections =
+        projection.filterOutEmptyProjections(newGroupingExpressionsMap, rewrittenPlan.availableSymbols.map(_.name))
+
+      if (projections.isEmpty) {
+        context.staticComponents.logicalPlanProducer.planEmptyDistinct(
+          rewrittenPlan,
+          distinctQueryProjection.groupingExpressions,
+          context
+        )
+      } else {
+        context.staticComponents.logicalPlanProducer.planProjectionForDistinct(
+          rewrittenPlan,
+          projections,
+          distinctQueryProjection.groupingExpressions,
+          context
+        )
+      }
+    } else if (orderToLeverage.isEmpty) {
       context.staticComponents.logicalPlanProducer.planDistinct(
         rewrittenPlan,
         newGroupingExpressionsMap,

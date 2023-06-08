@@ -148,6 +148,8 @@ sealed abstract class LogicalPlan(idGen: IdGen)
   def rhs: Option[LogicalPlan]
   def availableSymbols: Set[LogicalVariable]
 
+  val distinctness: Distinctness
+
   override val id: Id = idGen.id()
 
   override val hashCode: Int = MurmurHash3.productHash(self)
@@ -311,6 +313,8 @@ sealed trait AggregatingPlan extends LogicalPlan {
 // Marker interface for all plans that performs updates
 sealed trait UpdatingPlan extends LogicalUnaryPlan {
   override def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
+
+  final override val distinctness: Distinctness = source.distinctness
 }
 
 // Marker trait for relationship type scans
@@ -361,6 +365,7 @@ sealed abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
 sealed abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
   def idName: LogicalVariable
+  final override val distinctness: Distinctness = DistinctColumns(idName)
 }
 
 sealed abstract class RelationshipLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
@@ -368,6 +373,8 @@ sealed abstract class RelationshipLogicalLeafPlan(idGen: IdGen) extends LogicalL
   def leftNode: LogicalVariable
   def rightNode: LogicalVariable
   def directed: Boolean
+
+  override val distinctness: Distinctness = if (directed) DistinctColumns(idName) else NotDistinct
 }
 
 sealed trait MultiEntityLogicalLeafPlan extends PhysicalPlanningPlan {
@@ -473,11 +480,13 @@ sealed trait ExhaustiveLogicalPlan extends LogicalPlan
 sealed trait EagerLogicalPlan extends ExhaustiveLogicalPlan
 
 /**
- * A plan that consumes only a single row from RHS for every row in LHS
+ * A plan that consumes only a single row from RHS for every row in LHS.
+ * It yields a subset of the LHS rows.
  */
 sealed trait SingleFromRightLogicalPlan extends LogicalBinaryPlan {
   final def source: LogicalPlan = left
   final def inner: LogicalPlan = right
+  final override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -514,6 +523,8 @@ sealed abstract class AbstractVarExpand(
     newNodePredicates: Seq[VariablePredicate],
     newRelationshipPredicates: Seq[VariablePredicate]
   )(idGen: IdGen): AbstractVarExpand
+
+  final override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -570,6 +581,8 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
   override def argumentIds: Set[LogicalVariable] = Set.empty
 
   override def availableSymbols: Set[LogicalVariable] = defaultColumns.map(_.variable).toSet
+
+  final override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -586,12 +599,16 @@ sealed trait TestOnlyPlan extends LogicalPlan
 /**
  * Allows non-sealed sub-hierarchies of logical plans.
  */
-abstract class LogicalPlanExtension(idGen: IdGen) extends LogicalPlan(idGen)
+abstract class LogicalPlanExtension(idGen: IdGen) extends LogicalPlan(idGen) {
+  override val distinctness: Distinctness = NotDistinct
+}
 
 /**
  * Allows non-sealed sub-hierarchies of logical leaf plans.
  */
-abstract class LogicalLeafPlanExtension(idGen: IdGen) extends LogicalLeafPlan(idGen)
+abstract class LogicalLeafPlanExtension(idGen: IdGen) extends LogicalLeafPlan(idGen) {
+  override val distinctness: Distinctness = NotDistinct
+}
 
 // ----------------
 // CONCRETE CLASSES
@@ -619,6 +636,8 @@ case class Aggregation(
   val groupingKeys: Set[LogicalVariable] = groupingExpressions.keySet
 
   override val availableSymbols: Set[LogicalVariable] = groupingKeys ++ aggregationExpressions.keySet
+
+  override val distinctness: Distinctness = DistinctColumns(groupingKeys)
 
 }
 
@@ -648,6 +667,8 @@ case class Anti(override val source: LogicalPlan)(implicit idGen: IdGen) extends
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -677,6 +698,7 @@ case class AntiConditionalApply(
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols ++ items
 
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -699,6 +721,8 @@ case class Apply(override val left: LogicalPlan, override val right: LogicalPlan
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -713,6 +737,8 @@ case class Argument(argumentIds: Set[LogicalVariable] = Set.empty)(implicit idGe
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): Argument =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -725,6 +751,8 @@ case class ArgumentTracker(override val source: LogicalPlan)(implicit idGen: IdG
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -766,6 +794,8 @@ idGen: IdGen)
 
   override def idNames: Set[LogicalVariable] =
     nodeIndexSeeks.map(_.idName).toSet
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -823,6 +853,8 @@ case class AssertingMultiRelationshipIndexSeek(
     relIndexSeeks.map(_.idName).toSet
 
   override def idName: LogicalVariable = relationship
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -844,6 +876,8 @@ case class AssertSameNode(node: LogicalVariable, override val left: LogicalPlan,
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols + node
+
+  override val distinctness: Distinctness = left.distinctness
 }
 
 /**
@@ -869,6 +903,8 @@ case class AssertSameRelationship(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols + idName
+
+  override val distinctness: Distinctness = left.distinctness
 }
 
 /**
@@ -922,6 +958,8 @@ case class BidirectionalRepeatTrail(
     left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
       _.groupName
     )
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -939,6 +977,8 @@ case class RepeatOptions(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override def availableSymbols: Set[LogicalVariable] = left.availableSymbols
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -949,6 +989,8 @@ case class CacheProperties(override val source: LogicalPlan, properties: Set[Log
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -969,6 +1011,8 @@ case class CartesianProduct(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -997,6 +1041,8 @@ case class ConditionalApply(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols ++ items
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -1136,6 +1182,8 @@ case class DirectedAllRelationshipsScan(
   override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
+
+  override val distinctness: Distinctness = DistinctColumns(idName)
 }
 
 /**
@@ -1457,6 +1505,8 @@ case class DirectedRelationshipUniqueIndexSeek(
   ): RelationshipIndexSeekLeafPlan =
     copy(startNode = leftNode, endNode = rightNode)
 
+  override val distinctness: Distinctness = AtMostOneRow
+
 }
 
 /**
@@ -1504,6 +1554,8 @@ case class Distinct(
   override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
   override val availableSymbols: Set[LogicalVariable] = groupingExpressions.keySet
 
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfDistinct(source, groupingExpressions)
+
   override def aggregationExpressions: Map[LogicalVariable, Expression] = Map.empty
 }
 
@@ -1518,6 +1570,8 @@ case class Eager(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /*
@@ -1529,6 +1583,8 @@ case class EmptyResult(override val source: LogicalPlan)(implicit idGen: IdGen) 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -1540,6 +1596,8 @@ case class ErrorPlan(override val source: LogicalPlan, exception: Exception)(imp
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /*
@@ -1551,6 +1609,8 @@ case class ExhaustiveLimit(override val source: LogicalPlan, count: Expression)(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfLimit(count, source)
 }
 
 object Expand {
@@ -1586,6 +1646,7 @@ case class Expand(
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + relName + to
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -1607,6 +1668,7 @@ case class OptionalExpand(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + relName + to
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -1724,6 +1786,8 @@ case class PathPropagatingBFS(
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols + relName + to ++ right.availableSymbols
 
+  override val distinctness: Distinctness = NotDistinct
+
   def withNewPredicates(
     newNodePredicates: Seq[VariablePredicate],
     newRelationshipPredicates: Seq[VariablePredicate]
@@ -1749,6 +1813,8 @@ case class FindShortestPaths(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ pattern.availableSymbols
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 object StatefulShortestPath {
@@ -1790,6 +1856,8 @@ case class StatefulShortestPath(
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ nfa.availableSymbols ++
     nodeVariableGroupings.map(_.groupName) ++
     relationshipVariableGroupings.map(_.groupName)
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -1838,6 +1906,8 @@ case class ForeachApply(
 
   override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
+
+  override val distinctness: Distinctness = left.distinctness
 }
 
 /**
@@ -1856,6 +1926,7 @@ case class Input(
   override def argumentIds: Set[LogicalVariable] = Set.empty
   override def usedVariables: Set[LogicalVariable] = Set.empty
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): Input = this
+  override val distinctness: Distinctness = NotDistinct
 }
 
 object Input {
@@ -1902,6 +1973,8 @@ case class LeftOuterHashJoin(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -1920,6 +1993,8 @@ case class LegacyFindShortestPaths(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ pattern.availableSymbols
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -2016,6 +2091,8 @@ case class Limit(override val source: LogicalPlan, count: Expression)(implicit i
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfLimit(count, source)
 }
 
 /**
@@ -2038,6 +2115,8 @@ case class LoadCSV(
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + variableName
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -2096,6 +2175,8 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implic
 
   override def idNames: Set[LogicalVariable] =
     nodeIndexSeeks.map(_.idName).toSet
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -2170,6 +2251,8 @@ case class NodeCountFromCountStore(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeCountFromCountStore =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -2194,6 +2277,8 @@ case class NodeHashJoin(nodes: Set[LogicalVariable], override val left: LogicalP
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -2363,6 +2448,8 @@ case class NonFuseable(override val source: LogicalPlan)(implicit idGen: IdGen) 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -2373,6 +2460,8 @@ case class InjectCompilationError(override val source: LogicalPlan)(implicit idG
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -2384,6 +2473,8 @@ case class NonPipelined(override val source: LogicalPlan)(implicit idGen: IdGen)
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 case class NullifyMetadata(override val source: LogicalPlan, key: String, planId: Int)(implicit idGen: IdGen)
@@ -2392,6 +2483,8 @@ case class NullifyMetadata(override val source: LogicalPlan, key: String, planId
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override def availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -2406,6 +2499,8 @@ case class Optional(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -2436,6 +2531,8 @@ case class OrderedAggregation(
        |   """.stripMargin
   )
 
+  override val distinctness: Distinctness = DistinctColumns(groupingKeys)
+
 }
 
 /**
@@ -2450,6 +2547,8 @@ case class OrderedDistinct(
 
   override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
   override val availableSymbols: Set[LogicalVariable] = groupingExpressions.keySet
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfDistinct(source, groupingExpressions)
 
   override def aggregationExpressions: Map[LogicalVariable, Expression] = Map.empty
 
@@ -2476,6 +2575,7 @@ case class OrderedUnion(left: LogicalPlan, right: LogicalPlan, sortedColumns: Se
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols intersect right.availableSymbols
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -2493,6 +2593,7 @@ case class PartialSort(
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /*
@@ -2510,6 +2611,8 @@ case class PartialTop(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfLimit(limit, source)
 }
 
 /**
@@ -2521,6 +2624,8 @@ case class PreserveOrder(override val source: LogicalPlan)(implicit idGen: IdGen
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -2534,6 +2639,8 @@ case class Prober(override val source: LogicalPlan, probe: Probe)(implicit idGen
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 object Prober {
@@ -2578,6 +2685,8 @@ case class ProcedureCall(override val source: LogicalPlan, call: ResolvedCall)(i
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ call.callResults.map(_.variable)
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -2590,6 +2699,8 @@ case class ProduceResult(override val source: LogicalPlan, columns: Seq[LogicalV
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -2687,6 +2798,8 @@ case class ProjectEndpoints(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + rels + start + end
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -2715,6 +2828,10 @@ case class Projection(
 
   override val availableSymbols: Set[LogicalVariable] =
     (source.availableSymbols -- discardSymbols) ++ projectExpressions.keySet
+
+  override val distinctness: Distinctness = source.distinctness
+    .renameColumns(projectExpressions)
+    .withDiscardedColumns(discardSymbols)
 
   /**
    * Custom copy method to make rewriting work.
@@ -2755,6 +2872,8 @@ case class RelationshipCountFromCountStore(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): RelationshipCountFromCountStore =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
@@ -2790,6 +2909,7 @@ case class RightOuterHashJoin(
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
 
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -2814,6 +2934,8 @@ case class RollUpApply(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols + collectionName
+
+  override val distinctness: Distinctness = left.distinctness
 }
 
 /**
@@ -2825,9 +2947,9 @@ case class Selection(predicate: Ands, override val source: LogicalPlan)(implicit
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  def numPredicates: Int = predicate.exprs.size
-
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 object Selection {
@@ -3108,6 +3230,8 @@ case class Skip(override val source: LogicalPlan, count: Expression)(implicit id
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -3119,6 +3243,8 @@ case class Sort(override val source: LogicalPlan, sortItems: Seq[ColumnOrder])(i
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -3141,6 +3267,8 @@ case class SubqueryForeach(override val left: LogicalPlan, override val right: L
 
   override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols // NOTE: right.availableSymbols are not available outside
+
+  override val distinctness: Distinctness = left.distinctness
 }
 
 /*
@@ -3151,6 +3279,7 @@ case class Top(override val source: LogicalPlan, sortItems: Seq[ColumnOrder], li
     extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfLimit(limit, source)
 }
 
 /**
@@ -3161,6 +3290,8 @@ case class Top1WithTies(override val source: LogicalPlan, sortItems: Seq[ColumnO
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -3207,6 +3338,7 @@ case class Trail(
     left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
       _.groupName
     )
+  override val distinctness: Distinctness = NotDistinct
 }
 
 object Trail {
@@ -3262,6 +3394,8 @@ case class TransactionApply(
 
   override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols ++ right.availableSymbols ++ maybeReportAs.toList
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -3274,6 +3408,8 @@ case class TransactionCommit(override val source: LogicalPlan, batchSize: Expres
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -3318,6 +3454,8 @@ case class TransactionForeach(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionForeach = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ maybeReportAs.toList
+
+  override val distinctness: Distinctness = left.distinctness
 }
 
 object TransactionForeach {
@@ -3375,6 +3513,8 @@ case class TriadicSelection(
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -3393,6 +3533,8 @@ case class TriadicBuild(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override def availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 case class TriadicFilter(
@@ -3406,6 +3548,7 @@ case class TriadicFilter(
     extends LogicalUnaryPlan(idGen) with PhysicalPlanningPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override def availableSymbols: Set[LogicalVariable] = source.availableSymbols
+  override val distinctness: Distinctness = source.distinctness
 }
 
 /**
@@ -3764,6 +3907,7 @@ case class Union(override val left: LogicalPlan, override val right: LogicalPlan
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols intersect right.availableSymbols
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -3798,6 +3942,8 @@ case class UnwindCollection(override val source: LogicalPlan, variable: LogicalV
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + variable
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -3810,6 +3956,8 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = left.availableSymbols ++ right.availableSymbols
+
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
 
 /**
@@ -3849,6 +3997,8 @@ case class SimulatedExpand(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + relName + toNode
+
+  override val distinctness: Distinctness = NotDistinct
 }
 
 /**
@@ -3861,4 +4011,6 @@ case class SimulatedSelection(override val source: LogicalPlan, selectivity: Dou
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }

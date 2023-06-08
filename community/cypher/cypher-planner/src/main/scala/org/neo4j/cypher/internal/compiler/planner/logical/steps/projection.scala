@@ -42,14 +42,9 @@ object projection {
     val plan = solver.rewrittenPlan()
 
     val ids = plan.availableSymbols.map(_.name)
-    val projections: Seq[(String, Expression)] = projectionsMap.toIndexedSeq
 
     // The projections that are not covered yet
-    val projectionsDiff =
-      projections.filter({
-        case (x, Variable(y)) if x == y => !ids.contains(x)
-        case _                          => true
-      }).toMap
+    val projectionsDiff = filterOutEmptyProjections(projectionsMap, ids)
 
     if (projectionsDiff.isEmpty) {
       // Note, if keepAllColumns == false there might be some cases when runtime would benefit from planning a projection anyway to get rid of unused columns
@@ -68,6 +63,20 @@ object projection {
         context
       )
     }
+  }
+
+  /**
+   * Given a list of `projections`, and the `availableSymbols` of a plan,
+   * filter out projections that simple project an available symbol without renaming it.
+   */
+  def filterOutEmptyProjections(
+    projections: Map[String, Expression],
+    availableSymbols: Set[String]
+  ): Map[String, Expression] = {
+    projections.filter({
+      case (x, Variable(y)) if x == y => !availableSymbols.contains(x)
+      case _                          => true
+    })
   }
 
   /**

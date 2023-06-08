@@ -310,19 +310,21 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY column that isn't referenced in WITH DISTINCT") {
-    val plan =
-      new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name")._1
+    val query = "MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name"
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderAscending)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("a", "name")
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .build()
 
-    val distinct =
-      OrderedDistinct(labelScan, Map(varFor("name") -> nameProperty, varFor("a") -> varFor("a")), Seq(varFor("a")))
-    val projection = Projection(distinct, Set.empty, Map(varFor("a.age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age"))))
-
-    plan should equal(sort)
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .sort("`a.age` ASC")
+        .projection("a.age AS `a.age`")
+        .projection("a.name AS name")
+        .nodeByLabelScan("a", "A", IndexOrderAscending)
+        .build()
+    )
   }
 
   test("ORDER BY previously unprojected AGGREGATING column in WITH and project and return it") {
@@ -1585,7 +1587,6 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .expandAll("(a)-[r1]->(b)")
       .sort("`a.prop` ASC")
       .projection("cacheN[a.prop] AS `a.prop`")
-      .distinct("a AS a")
       .eager()
       .create(createNode("newNode"))
       .filter("cacheNFromStore[a.prop] IS NOT NULL")
@@ -1977,14 +1978,22 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test(s"Should use OrderedDistinct on node variable") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN DISTINCT a")._1
-
-    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("a"), "a AS a")
-      .nodeByLabelScan("a", "A", indexOrder = IndexOrderAscending)
+    val query = "MATCH (a:A)--() RETURN DISTINCT a"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("()-[]->(:A)", 10)
       .build()
 
-    plan shouldEqual expectedPlan
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .orderedDistinct(Seq("a"), "a AS a")
+        .expandAll("(a)-[anon_0]-(anon_1)")
+        .nodeByLabelScan("a", "A", indexOrder = IndexOrderAscending)
+        .build()
+    )
   }
 
   test(s"Should use OrderedAggregation on node variable") {
