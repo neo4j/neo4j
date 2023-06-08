@@ -124,7 +124,8 @@ public class SnapshotExecutionEngine extends ExecutionEngine {
             // we always allow indexes/constraints to be created since their population/verification should see the
             // latest data and uniqueness of those schema
             // objects is guaranteed by schema and not by execution engine
-            if (context.transaction().kernelTransaction().isSchemaTransaction()) {
+            if (context.transaction().terminationReason().isEmpty()
+                    && context.transaction().kernelTransaction().isSchemaTransaction()) {
                 return materialisedResult;
             }
             dirtySnapshot = versionContext.isDirty();

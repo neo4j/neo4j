@@ -88,17 +88,18 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   }
 
   test("should close on exploding request") {
-    assertCloseOnExplodingMethod(x => { x.request(1); x.await() }, "request")
+    assertCloseOnExplodingMethod(x => { x.request(1); x.await() }, "request", expectExceptionToBeRethrown = false)
   }
 
   test("should close on exploding cancel") {
-    assertCloseOnExplodingMethod(x => { x.cancel(); x.await() }, "cancel")
+    assertCloseOnExplodingMethod(x => { x.cancel(); x.await() }, "cancel", expectExceptionToBeRethrown = false)
   }
 
   private def assertCloseOnExplodingMethod(
     f: ClosingExecutionResult => Unit,
     errorMsg: String,
-    iteratorMode: IteratorMode = DIRECT_EXPLODE
+    iteratorMode: IteratorMode = DIRECT_EXPLODE,
+    expectExceptionToBeRethrown: Boolean = true
   ): Unit = {
     // given
     val inner = new ExplodingInner(iteratorMode = iteratorMode)
@@ -106,7 +107,11 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     val x = ClosingExecutionResult.wrapAndInitiate(query, inner, monitor, throwingSubscriber)
 
     // when
-    intercept[TestClosingException] { f(x) }
+    if (expectExceptionToBeRethrown) {
+      intercept[TestClosingException] { f(x) }
+    } else {
+      f(x)
+    }
 
     // then
     val expectedException = TestClosingException(errorMsg)

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.Result
-import org.neo4j.graphdb.TransactionStatusFailureException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.internal.kernel.api.security.LoginContext
