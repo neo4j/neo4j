@@ -954,17 +954,17 @@
       </properties>
     </profile>
     <profile>
-      <id>test-freki</id>
+      <id>test-block</id>
       <activation>
         <activeByDefault>false</activeByDefault>
         <property>
           <name>NEO4J_OVERRIDE_STORE_FORMAT</name>
-          <value>freki</value>
+          <value>block</value>
         </property>
       </activation>
       <properties>
         <test.runner.jvm.settings.db.format>
-          -DNEO4J_OVERRIDE_STORE_FORMAT=freki
+          -DNEO4J_OVERRIDE_STORE_FORMAT=block
         </test.runner.jvm.settings.db.format>
       </properties>
     </profile>

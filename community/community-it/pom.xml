@@ -69,12 +69,12 @@
             </modules>
         </profile>
         <profile>
-            <id>test-freki</id>
+            <id>test-block</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
                 <property>
                     <name>NEO4J_OVERRIDE_STORE_FORMAT</name>
-                    <value>freki</value>
+                    <value>block</value>
                 </property>
             </activation>
             <dependencies>
