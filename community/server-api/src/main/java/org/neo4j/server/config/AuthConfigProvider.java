@@ -27,6 +27,6 @@ public interface AuthConfigProvider
 
     default byte[] getRepresentationAsBytes()
     {
-        return null;
+        return new byte[0];
     }
 }
