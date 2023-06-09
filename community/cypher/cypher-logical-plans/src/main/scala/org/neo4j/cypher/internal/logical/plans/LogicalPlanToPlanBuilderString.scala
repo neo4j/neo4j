@@ -469,7 +469,7 @@ object LogicalPlanToPlanBuilderString {
       case ProcedureCall(
           _,
           ResolvedCall(
-            ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _),
+            ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _, _),
             callArguments,
             callResults,
             _,

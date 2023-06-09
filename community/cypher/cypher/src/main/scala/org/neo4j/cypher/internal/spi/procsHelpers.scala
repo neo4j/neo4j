@@ -128,6 +128,7 @@ object procsHelpers {
     val mode = asCypherProcMode(signature.mode())
     val description = asOption(signature.description())
     val warning = asOption(signature.warning())
+    val threadSafe = signature.threadSafe()
 
     ProcedureSignature(
       name,
@@ -140,7 +141,8 @@ object procsHelpers {
       signature.eager(),
       id,
       signature.systemProcedure(),
-      signature.allowedExpiredCredentials()
+      signature.allowedExpiredCredentials(),
+      threadSafe
     )
   }
 }

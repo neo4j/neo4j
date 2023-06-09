@@ -49,8 +49,8 @@ import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.NotThreadSafe;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.ThreadSafe;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -242,6 +242,7 @@ class ProcedureCompiler {
         boolean allowExpiredCredentials =
                 systemProcedure && method.getAnnotation(SystemProcedure.class).allowExpiredCredentials();
         boolean internal = method.isAnnotationPresent(Internal.class);
+        boolean threadSafe = !method.isAnnotationPresent(NotThreadSafe.class);
         String deprecated = deprecated(
                 method, procedure::deprecatedBy, "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName);
 
@@ -264,7 +265,8 @@ class ProcedureCompiler {
                         false,
                         systemProcedure,
                         internal,
-                        allowExpiredCredentials);
+                        allowExpiredCredentials,
+                        threadSafe);
                 return new FailedLoadProcedure(signature);
             }
         }
@@ -282,7 +284,8 @@ class ProcedureCompiler {
                 false,
                 systemProcedure,
                 internal,
-                allowExpiredCredentials);
+                allowExpiredCredentials,
+                threadSafe);
 
         return ProcedureCompilation.compileProcedure(signature, setters, method, parentClassLoader);
     }
@@ -321,7 +324,7 @@ class ProcedureCompiler {
         String description = description(method);
         UserFunction function = method.getAnnotation(UserFunction.class);
         boolean internal = method.isAnnotationPresent(Internal.class);
-        boolean threadSafe = method.isAnnotationPresent(ThreadSafe.class);
+        boolean threadSafe = !method.isAnnotationPresent(NotThreadSafe.class);
         String deprecated = deprecated(
                 method,
                 function::deprecatedBy,
@@ -450,7 +453,7 @@ class ProcedureCompiler {
                 "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName);
 
         boolean internal = create.isAnnotationPresent(Internal.class);
-        boolean threadSafe = create.isAnnotationPresent(ThreadSafe.class);
+        boolean threadSafe = !create.isAnnotationPresent(NotThreadSafe.class);
 
         List<FieldSetter> setters = allFieldInjections.setters(definition);
         if (!config.fullAccessFor(funcName.toString())) {

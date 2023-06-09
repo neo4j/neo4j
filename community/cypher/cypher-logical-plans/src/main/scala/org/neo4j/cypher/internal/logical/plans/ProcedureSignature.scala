@@ -36,7 +36,8 @@ case class ProcedureSignature(
   eager: Boolean = false,
   id: Int,
   systemProcedure: Boolean = false,
-  allowExpiredCredentials: Boolean = false
+  allowExpiredCredentials: Boolean = false,
+  threadSafe: Boolean = true
 ) {
 
   def outputFields: Seq[FieldSignature] = outputSignature.getOrElse(Seq.empty)

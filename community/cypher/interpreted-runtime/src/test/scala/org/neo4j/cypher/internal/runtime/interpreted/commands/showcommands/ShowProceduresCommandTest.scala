@@ -70,6 +70,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     true,
     false,
     false,
+    false,
     false
   )
 
@@ -89,6 +90,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     true,
     false,
     false,
+    false,
     false
   )
 
@@ -104,6 +106,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     false,
     true,
     true,
+    false,
     false,
     false
   )
@@ -405,6 +408,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       true,
       false,
       true,
+      false,
       false
     )
     when(procedures.proceduresGetAll()).thenReturn(Set(proc1, internalProc).asJava)
@@ -431,6 +435,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       null,
       false,
       true,
+      false,
       false,
       false,
       false

@@ -25,14 +25,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation marks a {@link Procedure}, {@link UserFunction}, or {@link UserAggregationFunction} as thread-safe,
- * i.e. that its implementation is guaranteed safe to be called concurrently by different worker threads during query
+ * This annotation marks a {@link Procedure}, {@link UserFunction}, or {@link UserAggregationFunction} as NOT thread-safe,
+ * i.e. that its implementation is not guaranteed safe to be called concurrently by different worker threads during query
  * execution.
- * Providing this guarantee is a necessary requirement for allowing it to be executed in parallel within a query.
- * <p>
- * NOTE: Even when this annotation is present, there is currently no guarantee that executing a
- * procedure or function in parallel within a query will actually be supported.
+ * This will prevent it from being executed in parallel within a query.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ThreadSafe {}
+public @interface NotThreadSafe {}
