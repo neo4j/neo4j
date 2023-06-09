@@ -38,6 +38,12 @@ trait MemoryTrackerForOperatorProvider {
    * @param operatorId the id of the operator
    */
   def memoryTrackerForOperator(operatorId: Int): MemoryTracker
+
+  def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit = {
+    throw new UnsupportedOperationException(
+      s"${getClass.getSimpleName} does not support setting an initialization memory tracker"
+    )
+  }
 }
 
 object MemoryTrackerForOperatorProvider {

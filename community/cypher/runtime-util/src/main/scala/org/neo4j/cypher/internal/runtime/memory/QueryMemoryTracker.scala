@@ -169,15 +169,21 @@ class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
   override def releaseHeap(bytes: Long): Unit = ???
 
   override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
-    : MemoryTrackerForOperatorProvider = new WorkerThreadDelegatingMemoryTracker(transactionMemoryTracker)
+    : MemoryTrackerForOperatorProvider = new WorkerThreadDelegatingMemoryTracker
 
   override def heapHighWaterMarkOfOperator(operatorId: Int): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker = ???
 }
 
-class WorkerThreadDelegatingMemoryTracker(val transactionMemoryTracker: MemoryTracker)
-    extends MemoryTracker with MemoryTrackerForOperatorProvider {
+/**
+ * A memory tracker and MemoryTrackerForOperatorProvider that delegates all calls to the
+ * thread local execution context memory tracker if the current thread is a Cypher worker thread,
+ * or otherwise to a dedicated execution context memory tracker used for query intialization.
+ */
+class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrackerForOperatorProvider {
+
+  private[this] var _initializationMemoryTracker: MemoryTracker = _
 
   override def usedNativeMemory(): Long = {
     delegateMemoryTracker.usedNativeMemory()
@@ -211,6 +217,9 @@ class WorkerThreadDelegatingMemoryTracker(val transactionMemoryTracker: MemoryTr
     delegateMemoryTracker.reset()
   }
 
+  // NOTE: We assume that getting a scoped memory tracker from WorkerThreadDelegatingMemoryTracker
+  //       needs to be able to support a concurrent use-case,
+  //       e.g. by a heap tracking concurrent collection used for hash join or aggregation.
   override def getScopedMemoryTracker: MemoryTracker = {
     new ConcurrentScopedMemoryTracker(this)
   }
@@ -220,8 +229,18 @@ class WorkerThreadDelegatingMemoryTracker(val transactionMemoryTracker: MemoryTr
       case workerThread: ExecutionContextMemoryTrackerProvider =>
         workerThread.executionContextMemoryTracker()
       case _ =>
-        require(transactionMemoryTracker != null, "transactionMemoryTracker should not be null")
-        transactionMemoryTracker
+        // NOTE: Here we assume that the thread is the calling thread that owns the transaction and started
+        //       the query execution. Usually this happens before any workers are started,
+        //       but this owner thread will be able to use a dedicated ExecutionContextMemoryTracker
+        //       from the initialization query state, which should also be safe to use concurrently with worker threads.
+        //       If any other threads than the owner thread or the worker threads are interacting
+        //       with this memory tracker concurrently, that would not be safe from race conditions,
+        //       but that is generally not supported with the execution state in the parallel runtime and not expected.
+        require(
+          _initializationMemoryTracker != null,
+          s"An initialization memory tracker needs to be set on ${getClass.getSimpleName} before first use"
+        )
+        _initializationMemoryTracker
     }
   }
 
@@ -229,8 +248,19 @@ class WorkerThreadDelegatingMemoryTracker(val transactionMemoryTracker: MemoryTr
     // NOTE: We currently do not support tracking query heap usage high water mark per operator
     this
   }
+
+  override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit = {
+    _initializationMemoryTracker = memoryTracker
+  }
 }
 
+/**
+ * This is used by concurrent heap tracking collections (that are shared between workers),
+ * that also need a scoped memory tracker to be able to release all the tracked memory at once on close.
+ * Since we do not know which worker will call close we track the scoped allocations using LongAdders.
+ *
+ * @param delegate The delegate needs to be thread-safe, typically an instance of WorkerThreadDelegatingMemoryTracker
+ */
 class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends IsScopedMemoryTracker {
   private[this] val trackedNative: LongAdder = new LongAdder
   private[this] val trackedHeap: LongAdder = new LongAdder
