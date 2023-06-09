@@ -87,7 +87,7 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
             var node = tx.createNode(LABEL, label2);
             nodeId = node.getId();
             node.setProperty(PROP, "b");
-            // This has to be done for Freki because otherwise it wouldn't need to move from the page (see below)
+            // This has to be done for Block because otherwise it wouldn't need to move from the page (see below)
             for (int i = 0; i < 1000; i++) {
                 higherNodeId = tx.createNode().getId();
             }

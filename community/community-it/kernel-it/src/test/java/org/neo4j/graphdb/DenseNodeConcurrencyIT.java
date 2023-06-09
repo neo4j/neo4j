@@ -314,7 +314,7 @@ class DenseNodeConcurrencyIT {
         AtomicInteger numDeadlocks = new AtomicInteger();
 
         // This is needed to make sure that local relationship ids are not reused when
-        // running on Freki. As long as we track relationships by id the test will be
+        // running on Block. As long as we track relationships by id the test will be
         // very confused on id reuse.
         var outerTx = database.beginTx();
         race.addContestants(

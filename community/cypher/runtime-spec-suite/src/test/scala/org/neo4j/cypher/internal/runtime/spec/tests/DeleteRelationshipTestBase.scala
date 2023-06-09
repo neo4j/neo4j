@@ -143,7 +143,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // Same tx deletion of a relationship before reading its type isn't well defined and currently heavily implementation
-    // dependant. No runtime throws with Freki, and Legacy never throws. Here we ensure that we throw the correct
+    // dependant. No runtime throws with Block, and Legacy never throws. Here we ensure that we throw the correct
     // type of exception if we do throw.
 
     val expectedException = new EntityNotFoundException("Relationship with id 0 has been deleted in this transaction")

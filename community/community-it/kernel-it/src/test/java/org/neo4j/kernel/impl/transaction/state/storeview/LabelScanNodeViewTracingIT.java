@@ -100,7 +100,7 @@ class LabelScanNodeViewTracingIT {
 
         assertThatTracing(database)
                 .record(pins(102).noFaults())
-                .freki(pins(113).noFaults())
+                .block(pins(113).noFaults())
                 .matches(cacheTracer);
     }
 

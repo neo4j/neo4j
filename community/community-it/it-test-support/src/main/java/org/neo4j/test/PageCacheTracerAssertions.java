@@ -60,7 +60,7 @@ public class PageCacheTracerAssertions {
             return storageEngine("record", storageEngineNumbers);
         }
 
-        public TracingBuilder freki(PerStorageEngine storageEngineNumbers) {
+        public TracingBuilder block(PerStorageEngine storageEngineNumbers) {
             return storageEngine("block", storageEngineNumbers);
         }
 

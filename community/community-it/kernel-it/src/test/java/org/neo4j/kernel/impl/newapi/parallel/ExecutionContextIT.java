@@ -207,7 +207,7 @@ public class ExecutionContextIT {
         }
         int nodeSize = databaseAPI.databaseLayout() instanceof RecordDatabaseLayout
                 ? NodeRecordFormat.RECORD_SIZE
-                : 128; // 128B per node in freki
+                : 128; // 128B per node in block
         int nodesPerPage = PageCache.PAGE_SIZE / nodeSize;
         int numPages = (int) Math.ceil((double) numberOfNodes / nodesPerPage);
         int numPins = numPages * NUMBER_OF_WORKERS;

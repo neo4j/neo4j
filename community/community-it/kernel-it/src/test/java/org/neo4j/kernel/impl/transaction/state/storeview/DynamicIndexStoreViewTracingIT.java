@@ -98,7 +98,7 @@ class DynamicIndexStoreViewTracingIT {
 
         assertThatTracing(database)
                 .record(pins(104).noFaults())
-                .freki(pins(115).noFaults())
+                .block(pins(115).noFaults())
                 .matches(pageCacheTracer);
     }
 }

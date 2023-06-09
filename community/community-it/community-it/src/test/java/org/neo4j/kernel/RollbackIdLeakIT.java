@@ -252,7 +252,7 @@ class RollbackIdLeakIT {
 
     private static void assertAllocateIds(GraphDatabaseAPI db, MutableLongSet nodeIds, MutableLongSet relationshipIds) {
         // Relationship IDs in record storage are just like node IDs, or any of its other stores,
-        // but in Freki relationship IDs can not be compared the same way since they are co-located with nodes.
+        // but in Block relationship IDs can not be compared the same way since they are co-located with nodes.
         boolean checkRelationshipIds = db.getDependencyResolver()
                 .resolveDependency(StorageEngineFactory.class)
                 .name()

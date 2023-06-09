@@ -2686,7 +2686,7 @@ class ImportCommandTest {
 
     private GraphDatabaseAPI assumeAlignedFormat(GraphDatabaseAPI db) {
         assumeThat(getStoreVersion(db).formatName())
-                .as("cannot migrate from freki to record format variant")
+                .as("cannot migrate from block to record format variant")
                 .isEqualTo("aligned");
         return db;
     }
