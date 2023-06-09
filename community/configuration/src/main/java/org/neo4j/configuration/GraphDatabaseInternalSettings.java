@@ -1047,17 +1047,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.cypher.use_parameter_size", BOOL, true).build();
 
     @Internal
-    @Description(
-            "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). "
-                    + "Default is true. In clustering environments no automatic upgrade will happen (dbms.mode=CORE or dbms.mode=READ_REPLICA). "
-                    + "If set to false, or when in a clustering environment, it is necessary to call the procedure `dbms.upgrade()` to "
-                    + "complete the upgrade.")
-    public static final Setting<Boolean> allow_single_automatic_upgrade = newBuilder(
-                    "internal.dbms.allow_single_automatic_upgrade", BOOL, true)
-            .dynamic()
-            .build();
-
-    @Internal
     @Description("Multi versioned store transaction chunk size.")
     public static final Setting<Long> multi_version_transaction_chunk_size = newBuilder(
                     "internal.db.multiversion.transaction.chunk.size", BYTES, mebiBytes(10))
@@ -1124,8 +1113,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Should the DBMS upgrade automatically when possible (and the procedures becomes no-ops), or should "
-            + "upgrades be done via procedures. Only applicable in Enterprise Edition.")
+    @Description(
+            "Whether to allow a system graph upgrade to happen automatically (and the procedures becomes no-ops), or should "
+                    + "upgrades be done via procedures. Default is true for both editions and all DBMS layouts.")
     public static final Setting<Boolean> automatic_upgrade_enabled =
             newBuilder("internal.dbms.automatic_upgrade.enabled", BOOL, true).build();
 

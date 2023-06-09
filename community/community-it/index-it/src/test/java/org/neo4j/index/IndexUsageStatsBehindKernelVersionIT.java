@@ -168,7 +168,7 @@ public class IndexUsageStatsBehindKernelVersionIT {
 
     private GraphDatabaseAPI database() {
         dbms = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                .setConfig(GraphDatabaseInternalSettings.allow_single_automatic_upgrade, false)
+                .setConfig(GraphDatabaseInternalSettings.automatic_upgrade_enabled, false)
                 .build();
         return (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
     }

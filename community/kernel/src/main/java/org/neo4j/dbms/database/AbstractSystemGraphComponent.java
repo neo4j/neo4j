@@ -68,7 +68,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
 
     @Override
     public void initializeSystemGraph(GraphDatabaseService system, boolean firstInitialization) throws Exception {
-        boolean mayUpgrade = config.get(GraphDatabaseInternalSettings.allow_single_automatic_upgrade);
+        boolean mayUpgrade = config.get(GraphDatabaseInternalSettings.automatic_upgrade_enabled);
 
         Preconditions.checkState(
                 system.databaseName().equals(SYSTEM_DATABASE_NAME),

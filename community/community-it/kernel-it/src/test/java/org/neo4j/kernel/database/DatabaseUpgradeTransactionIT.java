@@ -23,7 +23,7 @@ import static java.lang.Integer.max;
 import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.test.Race.throwing;
@@ -126,7 +126,7 @@ public class DatabaseUpgradeTransactionIT {
     protected TestDatabaseManagementServiceBuilder configure(TestDatabaseManagementServiceBuilder builder) {
         return builder.setDatabaseRootDirectory(testDirectory.homePath())
                 .setInternalLogProvider(logProvider)
-                .setConfig(allow_single_automatic_upgrade, false);
+                .setConfig(automatic_upgrade_enabled, false);
     }
 
     @Test

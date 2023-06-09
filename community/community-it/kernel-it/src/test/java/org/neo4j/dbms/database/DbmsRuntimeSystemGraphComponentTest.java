@@ -160,7 +160,7 @@ class DbmsRuntimeSystemGraphComponentTest {
     private void initDbmsComponent(
             SystemGraphComponents.Builder systemGraphComponentsBuilder, boolean automaticUpgrade) {
         var config = Config.newBuilder()
-                .set(GraphDatabaseInternalSettings.allow_single_automatic_upgrade, automaticUpgrade)
+                .set(GraphDatabaseInternalSettings.automatic_upgrade_enabled, automaticUpgrade)
                 .build();
         dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(config);
         systemGraphComponentsBuilder.register(dbmsRuntimeSystemGraphComponent);

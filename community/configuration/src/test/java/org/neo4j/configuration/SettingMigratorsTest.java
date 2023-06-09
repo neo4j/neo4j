@@ -33,6 +33,7 @@ import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel.INFO;
 import static org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel.VERBOSE;
@@ -126,6 +127,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -768,5 +770,43 @@ class SettingMigratorsTest {
 
         assertEquals(mebiBytes(512), config.get(max_heap_size));
         assertEquals(mebiBytes(511), config.get(initial_heap_size));
+    }
+
+    @Test
+    void autoUpgradeMigrationWithBothSet() {
+        var logProvider = new AssertableLogProvider();
+        Config config = Config.newBuilder()
+                .setRaw(Map.of(
+                        "internal.dbms.allow_single_automatic_upgrade",
+                        "true",
+                        automatic_upgrade_enabled.name(),
+                        "false"))
+                .build();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(config.get(automatic_upgrade_enabled)).isFalse();
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessages(
+                        "Use of deprecated setting 'internal.dbms.allow_single_automatic_upgrade'. It is replaced by");
+    }
+
+    @Test
+    void autoUpgradeMigration() {
+        var logProvider = new AssertableLogProvider();
+        Config config = Config.newBuilder()
+                .setRaw(Map.of("internal.dbms.allow_single_automatic_upgrade", "false"))
+                .build();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(config.get(automatic_upgrade_enabled)).isFalse();
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessages(
+                        "Use of deprecated setting 'internal.dbms.allow_single_automatic_upgrade'. It is replaced by");
     }
 }

@@ -21,7 +21,7 @@ package org.neo4j.storemigration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.util.Iterables.count;
@@ -166,7 +166,7 @@ public abstract class DatabaseMigrationITBase {
 
         var initialIndexStateMonitor = new InitialIndexStateMonitor(SYSTEM_DATABASE_NAME);
         DatabaseManagementService dbms = newDbmsBuilder(targetDirectory)
-                .setConfig(allow_single_automatic_upgrade, false)
+                .setConfig(automatic_upgrade_enabled, false)
                 .setMonitors(initialIndexStateMonitor.monitors())
                 .build();
 

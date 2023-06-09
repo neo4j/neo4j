@@ -30,6 +30,7 @@ import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.bookmark_ready_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
@@ -618,6 +619,7 @@ public final class SettingMigrators {
             migrateJvmAdditional(values, defaultValues, log);
             migrateSamplingSettings(values, defaultValues, log);
             migratePageCacheAndMemorySettings(values, defaultValues, log);
+            migrateAutoUpgrade(values, defaultValues, log);
         }
 
         private void migratePageCacheAndMemorySettings(
@@ -948,6 +950,12 @@ public final class SettingMigrators {
         private static void migrateCypherQueryCacheSize(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             migrateSettingNameChange(values, log, "server.db.query_cache_size", query_cache_size);
+        }
+
+        private void migrateAutoUpgrade(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(
+                    values, log, "internal.dbms.allow_single_automatic_upgrade", automatic_upgrade_enabled);
         }
     }
 

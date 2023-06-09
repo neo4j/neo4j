@@ -23,7 +23,7 @@ import static java.lang.Integer.max;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -325,7 +325,7 @@ class UpgradeToFutureVersionIT {
                 .configure(new TestDatabaseManagementServiceBuilder()
                         .setDatabaseRootDirectory(testDirectory.homePath())
                         .setInternalLogProvider(logProvider)
-                        .setConfig(allow_single_automatic_upgrade, allowAutomaticUpgrade))
+                        .setConfig(automatic_upgrade_enabled, allowAutomaticUpgrade))
                 .build();
         db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         systemDb = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);

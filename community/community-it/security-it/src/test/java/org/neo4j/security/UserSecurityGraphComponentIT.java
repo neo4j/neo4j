@@ -23,7 +23,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.dbms.database.ComponentVersion.COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
@@ -107,7 +107,7 @@ class UserSecurityGraphComponentIT {
     static void setup() {
         Config cfg = Config.newBuilder()
                 .set(auth_enabled, TRUE)
-                .set(allow_single_automatic_upgrade, FALSE)
+                .set(automatic_upgrade_enabled, FALSE)
                 .build();
 
         var injectedDependencies = new Dependencies();

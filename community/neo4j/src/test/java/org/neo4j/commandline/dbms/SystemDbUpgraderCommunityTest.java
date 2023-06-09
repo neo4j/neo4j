@@ -19,19 +19,41 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.nio.file.Path;
 import java.util.Map;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.edition.migration.CommunityMigrationEditionModuleFactory;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
 
 public class SystemDbUpgraderCommunityTest extends SystemDbUpgraderAbstractTestBase {
     @Override
+    protected Map<Setting<?>, Object> baseConfig() {
+        return Map.of();
+    }
+
+    @Override
     protected MigrationEditionModuleFactory migrationEditionModuleFactory() {
         return new CommunityMigrationEditionModuleFactory();
     }
 
+    /**
+     * This store is created by the following steps:
+     * - Start a 4.4.0 Community DBMS
+     * - Create an additional user
+     * - Stop DBMS
+     * - Rename the system store to something else in order that the StoreMigrate command does not treat is as system, so no upgrade will be performed right away
+     * - Perform store migration with the StoreMigrate command, use the admin tool of 5.1.0
+     * - Rename it back (enough to keep system, the default databases can be removed)
+     */
     @Override
-    protected Map<Setting<?>, Object> baseConfig() {
-        return Map.of();
+    protected String previousMajorsSystemDatabase() {
+        return "44components5storeCommunitySystem.zip";
+    }
+
+    @Override
+    protected Neo4jDatabaseManagementServiceBuilder dbmsBuilder(Path homePath) {
+        return new DatabaseManagementServiceBuilder(homePath);
     }
 }

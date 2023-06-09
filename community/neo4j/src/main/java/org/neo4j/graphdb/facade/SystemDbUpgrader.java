@@ -116,12 +116,6 @@ public class SystemDbUpgrader {
         var systemDb = systemContext.databaseFacade();
         bootstrapProgress.completed();
 
-        // Upgrade system graph components
-        var systemGraphComponentsProgress = progressMonitor.startSection("System graph components");
-
-        edition.getSystemGraphComponents().upgradeToCurrent(systemDb);
-        systemGraphComponentsProgress.completed();
-
         // Wait for indexes to come online
         var indexPopulationProgress = progressMonitor.startSection("Index population");
         try (var tx = systemDb.beginTx()) {

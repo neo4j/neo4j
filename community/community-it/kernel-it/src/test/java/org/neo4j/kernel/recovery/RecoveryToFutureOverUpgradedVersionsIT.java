@@ -21,7 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
@@ -233,7 +233,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
                 .configure(new TestDatabaseManagementServiceBuilder(neo4jLayout)
                         .setConfig(preallocate_logical_logs, false)
                         .setConfig(GraphDatabaseSettings.keep_logical_logs, "keep_all")
-                        .setConfig(allow_single_automatic_upgrade, allowAutomaticUpgrade))
+                        .setConfig(automatic_upgrade_enabled, allowAutomaticUpgrade))
                 .build();
         systemDb = (GraphDatabaseAPI) managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
     }

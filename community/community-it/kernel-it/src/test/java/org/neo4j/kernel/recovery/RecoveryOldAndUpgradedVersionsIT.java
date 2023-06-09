@@ -229,7 +229,7 @@ class RecoveryOldAndUpgradedVersionsIT {
             builder = new TestDatabaseManagementServiceBuilder(neo4jLayout)
                     .setConfig(preallocate_logical_logs, false)
                     .setConfig(GraphDatabaseSettings.keep_logical_logs, "keep_all")
-                    .setConfig(GraphDatabaseInternalSettings.allow_single_automatic_upgrade, false);
+                    .setConfig(GraphDatabaseInternalSettings.automatic_upgrade_enabled, false);
         }
     }
 }
