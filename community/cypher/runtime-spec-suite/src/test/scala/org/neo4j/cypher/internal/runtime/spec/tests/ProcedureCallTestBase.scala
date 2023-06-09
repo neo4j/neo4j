@@ -39,13 +39,15 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
 
+import java.util.concurrent.atomic.AtomicInteger
+
 abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  private var testVar = 0
+  private val testVar = new AtomicInteger()
 
   private val procedures = Seq(
     new BasicProcedure(
@@ -57,7 +59,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
-        testVar += 1
+        testVar.addAndGet(1)
         RawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     },
@@ -98,8 +100,8 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
-        testVar += 1
-        RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(testVar)), Array(Values.of(testVar)))
+        val testVarInt = testVar.addAndGet(1)
+        RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(testVarInt)), Array(Values.of(testVarInt)))
       }
     },
     new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntIntProc").mode(Mode.READ).in(
@@ -149,7 +151,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
   )
 
   override protected def initTest(): Unit = {
-    testVar = 0
+    testVar.set(0)
     procedures.foreach(registerProcedure)
   }
 
@@ -170,7 +172,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(nodes))
-    testVar should be(sizeHint)
+    testVar.get() should be(sizeHint)
   }
 
   test("should call read int procedure") {
@@ -181,7 +183,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "i")
+      .produceResults("i")
       .procedureCall("readIntProc() YIELD i AS i")
       .allNodeScan("x")
       .build()
@@ -189,9 +191,9 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.flatMap { case (n, i) => Seq(Array[Any](n, i + 1), Array[Any](n, i + 1)) }
-    runtimeResult should beColumns("x", "i").withRows(expected)
-    testVar should be(sizeHint)
+    val expected = (1 to sizeHint).flatMap(i => Seq.fill(2)(Array[Any](i)))
+    runtimeResult should beColumns("i").withRows(expected)
+    testVar.get() should be(sizeHint)
   }
 
   test("should call read int->int procedure") {
@@ -391,6 +393,8 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should call write void procedure") {
+    assume(!isParallel)
+
     // given
     val nodes = given {
       nodeGraph(sizeHint, "OUTPROC")
@@ -421,6 +425,8 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should call write non-void procedure") {
+    assume(!isParallel)
+
     // given
     given {
       nodeGraph(sizeHint, "OUTPROC")
