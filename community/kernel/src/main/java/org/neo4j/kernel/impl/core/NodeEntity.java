@@ -248,11 +248,6 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         return hasProperty(key, nodes, transaction.ambientPropertyCursor());
     }
 
-    public int compareTo(Object node) {
-        Node n = (Node) node;
-        return Long.compare(this.getId(), n.getId());
-    }
-
     @Override
     public boolean equals(Object o) {
         return o instanceof Node && this.getId() == ((Node) o).getId();

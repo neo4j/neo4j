@@ -438,11 +438,6 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         return internalTransaction.getRelationshipTypeById(typeId()).name().equals(type.name());
     }
 
-    public int compareTo(Object rel) {
-        Relationship r = (Relationship) rel;
-        return Long.compare(this.getId(), r.getId());
-    }
-
     @Override
     public boolean equals(Object o) {
         return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
