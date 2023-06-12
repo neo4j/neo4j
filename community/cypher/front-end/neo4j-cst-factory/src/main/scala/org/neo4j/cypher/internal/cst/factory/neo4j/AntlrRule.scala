@@ -37,7 +37,7 @@ case class SyntaxError(
   charPositionInLine: Int,
   message: String,
   e: RecognitionException
-) extends Exception
+) extends Exception(message)
 
 class SyntaxErrorListener extends BaseErrorListener {
   private var syntaxErrors: mutable.Seq[SyntaxError] = mutable.Seq.empty
