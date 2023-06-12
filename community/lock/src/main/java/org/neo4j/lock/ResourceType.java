@@ -66,6 +66,9 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  *
  *     <dt>{@link #NODE_RELATIONSHIPS} - Node id</dt>
  *     <dd>Lock the relationships side of a node to prevent concurrent updates. Block-format only</dd>
+ *
+ *     <dt>{@link #NODE_LOCAL_IDS} - Node id</dt>
+ *     <dd>Lock the node-local relationship ids of a node to prevent concurrent updates. Block-format only</dd>
  * </dl>
  */
 public enum ResourceType {
@@ -80,7 +83,8 @@ public enum ResourceType {
     DEGREES(8),
     RELATIONSHIP_GROUP(9),
     PAGE(10),
-    NODE_RELATIONSHIPS(11);
+    NODE_RELATIONSHIPS(11),
+    NODE_LOCAL_IDS(12);
 
     private static final ImmutableIntObjectMap<ResourceType> idToType;
 
