@@ -311,6 +311,11 @@ public abstract class ProcedureCaller {
                 public void assertOpen() {
                     ktx.assertOpen();
                 }
+
+                @Override
+                public KernelTransaction actualKernelTransaction() {
+                    return ktx;
+                }
             };
         }
     }

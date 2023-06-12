@@ -647,6 +647,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         return details;
                     }
 
+                    @Override
+                    public KernelTransaction actualKernelTransaction() {
+                        throw new UnsupportedOperationException(
+                                "A Procedure or user-defined function called from parallel runtime cannot access the KernelTransaction");
+                    }
+
                     // Since TX object is reused, let's check if this is still the same TX
                     private boolean isOriginalTx() {
                         return transactionSequenceNumberWhenCreated == transactionSequenceNumber;

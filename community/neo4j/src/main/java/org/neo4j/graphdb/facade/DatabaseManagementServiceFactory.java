@@ -354,7 +354,7 @@ public class DatabaseManagementServiceFactory {
             //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
             globalProcedures.registerComponent(DependencyResolver.class, Context::dependencyResolver, false);
             globalProcedures.registerComponent(
-                    KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false);
+                    KernelTransaction.class, ctx -> ctx.kernelTransactionView().actualKernelTransaction(), false);
             globalProcedures.registerComponent(GraphDatabaseAPI.class, Context::graphDatabaseAPI, false);
             globalProcedures.registerComponent(
                     SystemGraphComponents.class, ctx -> editionModule.getSystemGraphComponents(), false);

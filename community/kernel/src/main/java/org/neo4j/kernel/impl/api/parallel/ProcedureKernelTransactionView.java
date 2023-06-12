@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.parallel;
 
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.kernel.api.KernelTransaction;
 
 public interface ProcedureKernelTransactionView extends AssertOpen {
 
@@ -31,4 +32,6 @@ public interface ProcedureKernelTransactionView extends AssertOpen {
     void setStatusDetails(String details);
 
     String statusDetails();
+
+    KernelTransaction actualKernelTransaction();
 }
