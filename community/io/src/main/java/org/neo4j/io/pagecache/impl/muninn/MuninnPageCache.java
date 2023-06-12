@@ -393,7 +393,7 @@ public class MuninnPageCache implements PageCache
         this.printExceptionsOnClose = true;
         this.bufferFactory = configuration.bufferFactory;
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize, configuration.memoryTracker );
-        this.pages = new PageList( maxPages, cachePageSize, configuration.memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
+        this.pages = new PageList( maxPages, cachePageSize, configuration.memoryAllocator, new SwapperSet(), victimPage, getBufferAlignment( cachePageSize ) );
         this.scheduler = jobScheduler;
         this.clock = configuration.clock;
         this.faultLockStriping = configuration.faultLockStriping;
@@ -403,6 +403,11 @@ public class MuninnPageCache implements PageCache
 
         // Expose the total number of pages
         pageCacheTracer.maxPages( maxPages, cachePageSize);
+    }
+
+    private static int getBufferAlignment( int cachePageSize )
+    {
+        return Math.min( UnsafeUtil.pageSize(), cachePageSize );
     }
 
     private static int calculatePagesToKeepFree( int maxPages )
