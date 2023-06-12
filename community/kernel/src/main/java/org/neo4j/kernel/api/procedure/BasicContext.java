@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
+import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
@@ -43,6 +44,7 @@ public class BasicContext implements Context {
     private final ValueMapper<Object> valueMapper;
     private final Thread thread;
     private final ProcedureCallContext procedureCallContext;
+    private final ProcedureKernelTransactionView kernelTransactionView;
 
     private BasicContext(
             DependencyResolver resolver,
@@ -52,7 +54,8 @@ public class BasicContext implements Context {
             ClockContext clockContext,
             ValueMapper<Object> valueMapper,
             Thread thread,
-            ProcedureCallContext procedureCallContext) {
+            ProcedureCallContext procedureCallContext,
+            ProcedureKernelTransactionView kernelTransactionView) {
         this.resolver = resolver;
         this.procedureTransaction = procedureTransaction;
         this.internalTransaction = internalTransaction;
@@ -61,6 +64,7 @@ public class BasicContext implements Context {
         this.valueMapper = valueMapper;
         this.thread = thread;
         this.procedureCallContext = procedureCallContext;
+        this.kernelTransactionView = kernelTransactionView;
     }
 
     @Override
@@ -123,6 +127,11 @@ public class BasicContext implements Context {
         return procedureCallContext;
     }
 
+    @Override
+    public ProcedureKernelTransactionView kernelTransactionView() throws ProcedureException {
+        return kernelTransactionView;
+    }
+
     public static ContextBuilder buildContext(DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper) {
         return new ContextBuilder(dependencyResolver, valueMapper);
     }
@@ -152,6 +161,8 @@ public class BasicContext implements Context {
         private ClockContext clockContext;
         private ProcedureCallContext procedureCallContext;
 
+        private ProcedureKernelTransactionView kernelTransactionView;
+
         private ContextBuilder(DependencyResolver resolver, ValueMapper<Object> valueMapper) {
             this.resolver = resolver;
             this.valueMapper = valueMapper;
@@ -159,6 +170,11 @@ public class BasicContext implements Context {
 
         public ContextBuilder withProcedureTransaction(Transaction procedureTransaction) {
             this.procedureTransaction = procedureTransaction;
+            return this;
+        }
+
+        public ContextBuilder withKernelTransactionView(ProcedureKernelTransactionView kernelTransactionView) {
+            this.kernelTransactionView = kernelTransactionView;
             return this;
         }
 
@@ -195,7 +211,8 @@ public class BasicContext implements Context {
                     clockContext,
                     valueMapper,
                     thread,
-                    procedureCallContext);
+                    procedureCallContext,
+                    kernelTransactionView);
         }
     }
 }

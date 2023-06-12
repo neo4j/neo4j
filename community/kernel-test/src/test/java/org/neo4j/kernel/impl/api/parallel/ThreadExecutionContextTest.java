@@ -76,7 +76,7 @@ class ThreadExecutionContextTest {
                 mock(LockManager.Client.class),
                 mock(LockTracer.class),
                 mock(ElementIdMapper.class),
-                mock(ExtendedAssertOpen.class),
+                mock(ProcedureKernelTransactionView.class),
                 mock(Supplier.class),
                 List.of(storageReader, lockClient),
                 mock(ProcedureView.class))) {

@@ -21,27 +21,26 @@ package org.neo4j.procedure.impl;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.procedure.TerminationGuard;
 
 public class TerminationGuardProvider implements ThrowingFunction<Context, TerminationGuard, ProcedureException> {
     @Override
     public TerminationGuard apply(Context ctx) throws ProcedureException {
-        KernelTransaction ktx = ctx.internalTransaction().kernelTransaction();
-        return new TransactionTerminationGuard(ktx);
+        return new TransactionTerminationGuard(ctx.kernelTransactionView());
     }
 
     private static class TransactionTerminationGuard implements TerminationGuard {
-        private final KernelTransaction ktx;
+        private final AssertOpen assertOpen;
 
-        TransactionTerminationGuard(KernelTransaction ktx) {
-            this.ktx = ktx;
+        TransactionTerminationGuard(AssertOpen ktx) {
+            this.assertOpen = ktx;
         }
 
         @Override
         public void check() {
-            ktx.assertOpen();
+            assertOpen.assertOpen();
         }
     }
 }

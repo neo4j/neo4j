@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
@@ -149,4 +150,6 @@ public interface Context {
      * @return the procedure call context of this context
      */
     ProcedureCallContext procedureCallContext();
+
+    ProcedureKernelTransactionView kernelTransactionView() throws ProcedureException;
 }

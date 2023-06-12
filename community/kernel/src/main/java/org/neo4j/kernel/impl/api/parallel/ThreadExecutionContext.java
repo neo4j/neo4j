@@ -69,7 +69,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final ElementIdMapper elementIdMapper;
     private final List<AutoCloseable> otherResources;
-    private final ExtendedAssertOpen assertOpen;
+    private final ProcedureKernelTransactionView assertOpen;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -91,7 +91,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             Client lockClient,
             LockTracer lockTracer,
             ElementIdMapper elementIdMapper,
-            ExtendedAssertOpen assertOpen,
+            ProcedureKernelTransactionView assertOpen,
             Supplier<ClockContext> clockContextSupplier,
             List<AutoCloseable> otherResources,
             ProcedureView procedureView) {

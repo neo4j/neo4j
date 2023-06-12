@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.Context;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureTransaction;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper;
+import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -148,6 +148,7 @@ public abstract class ProcedureCaller {
     Context prepareContext(SecurityContext securityContext, ProcedureCallContext procedureContext) {
         return buildContext(databaseDependencies, createValueMapper())
                 .withProcedureTransaction(procedureTransaction())
+                .withKernelTransactionView(kernelTransactionView())
                 .withInternalTransaction(maybeInternalTransaction())
                 .withSecurityContext(securityContext)
                 .withProcedureCallContext(procedureContext)
@@ -205,6 +206,8 @@ public abstract class ProcedureCaller {
     abstract OverridableSecurityContext.Revertable overrideSecurityContext(SecurityContext context);
 
     abstract Transaction procedureTransaction();
+
+    abstract ProcedureKernelTransactionView kernelTransactionView();
 
     abstract InternalTransaction maybeInternalTransaction();
 
@@ -285,13 +288,38 @@ public abstract class ProcedureCaller {
         InternalTransaction maybeInternalTransaction() {
             return ktx.internalTransaction();
         }
+
+        @Override
+        ProcedureKernelTransactionView kernelTransactionView() {
+            return new ProcedureKernelTransactionView() {
+                @Override
+                public boolean isOpen() {
+                    return ktx.isOpen();
+                }
+
+                @Override
+                public void setStatusDetails(String details) {
+                    ktx.setStatusDetails(details);
+                }
+
+                @Override
+                public String statusDetails() {
+                    return ktx.statusDetails();
+                }
+
+                @Override
+                public void assertOpen() {
+                    ktx.assertOpen();
+                }
+            };
+        }
     }
 
     public static class ForThreadExecutionContextScope extends ProcedureCaller {
 
         private final ExecutionContext executionContext;
         private final OverridableSecurityContext overridableSecurityContext;
-        private final AssertOpen assertOpen;
+        private final ProcedureKernelTransactionView kernelTransactionView;
         private final SecurityAuthorizationHandler securityAuthorizationHandler;
         private final Supplier<ClockContext> clockContextSupplier;
 
@@ -299,7 +327,7 @@ public abstract class ProcedureCaller {
                 ExecutionContext executionContext,
                 DependencyResolver databaseDependencies,
                 OverridableSecurityContext overridableSecurityContext,
-                AssertOpen assertOpen,
+                ProcedureKernelTransactionView kernelTransactionView,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
                 Supplier<ClockContext> clockContextSupplier,
                 ProcedureView procedureView) {
@@ -307,7 +335,7 @@ public abstract class ProcedureCaller {
 
             this.executionContext = executionContext;
             this.overridableSecurityContext = overridableSecurityContext;
-            this.assertOpen = assertOpen;
+            this.kernelTransactionView = kernelTransactionView;
             this.securityAuthorizationHandler = securityAuthorizationHandler;
             this.clockContextSupplier = clockContextSupplier;
         }
@@ -360,7 +388,7 @@ public abstract class ProcedureCaller {
 
         @Override
         void performCheckBeforeOperation() {
-            assertOpen.assertOpen();
+            kernelTransactionView.assertOpen();
         }
 
         @Override
@@ -376,6 +404,11 @@ public abstract class ProcedureCaller {
         @Override
         ValueMapper<Object> createValueMapper() {
             return new ExecutionContextValueMapper(executionContext);
+        }
+
+        @Override
+        ProcedureKernelTransactionView kernelTransactionView() {
+            return kernelTransactionView;
         }
     }
 }

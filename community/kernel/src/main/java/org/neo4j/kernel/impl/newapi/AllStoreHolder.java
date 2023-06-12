@@ -70,7 +70,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -84,6 +83,7 @@ import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
+import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.LockManager.Client;
@@ -1082,7 +1082,7 @@ public abstract class AllStoreHolder extends Read {
         private final OverridableSecurityContext overridableSecurityContext;
         private final CursorContext cursorContext;
         private final LockManager.Client lockClient;
-        private final AssertOpen assertOpen;
+        private final ProcedureKernelTransactionView kernelTransactionView;
         private final ProcedureCaller.ForThreadExecutionContextScope procedureCaller;
 
         public ForThreadExecutionContextScope(
@@ -1099,7 +1099,7 @@ public abstract class AllStoreHolder extends Read {
                 Client lockClient,
                 LockTracer lockTracer,
                 OverridableSecurityContext overridableSecurityContext,
-                AssertOpen assertOpen,
+                ProcedureKernelTransactionView kernelTransactionView,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
                 Supplier<ClockContext> clockContextSupplier,
                 ProcedureView procedureView) {
@@ -1117,12 +1117,12 @@ public abstract class AllStoreHolder extends Read {
             this.overridableSecurityContext = overridableSecurityContext;
             this.cursorContext = cursorContext;
             this.lockClient = lockClient;
-            this.assertOpen = assertOpen;
+            this.kernelTransactionView = kernelTransactionView;
             this.procedureCaller = new ProcedureCaller.ForThreadExecutionContextScope(
                     executionContext,
                     databaseDependencies,
                     overridableSecurityContext,
-                    assertOpen,
+                    kernelTransactionView,
                     securityAuthorizationHandler,
                     clockContextSupplier,
                     procedureView);
@@ -1174,7 +1174,7 @@ public abstract class AllStoreHolder extends Read {
 
         @Override
         void performCheckBeforeOperation() {
-            assertOpen.assertOpen();
+            kernelTransactionView.assertOpen();
         }
 
         @Override

@@ -21,10 +21,14 @@ package org.neo4j.kernel.impl.api.parallel;
 
 import org.neo4j.kernel.api.AssertOpen;
 
-public interface ExtendedAssertOpen extends AssertOpen {
+public interface ProcedureKernelTransactionView extends AssertOpen {
 
     /**
      * Return {@code true} if the source tied to instance is open.
      */
     boolean isOpen();
+
+    void setStatusDetails(String details);
+
+    String statusDetails();
 }

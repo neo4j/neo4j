@@ -113,8 +113,8 @@ import org.neo4j.kernel.impl.api.commit.TransactionCommitter;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextCursorTracer;
-import org.neo4j.kernel.impl.api.parallel.ExtendedAssertOpen;
 import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
+import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -481,7 +481,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionId,
                 transactionCursorContext,
                 clockContextSupplier,
-                assertOpen,
+                kernelTransactionView,
                 procedureView) -> {
             var executionContextCursorTracer = new ExecutionContextCursorTracer(
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
@@ -500,7 +500,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     leaseService.newClient(), transactionId, executionContextMemoryTracker, config);
             var overridableSecurityContext = new OverridableSecurityContext(securityContext);
             var executionContextTokenRead = new KernelTokenRead.ForThreadExecutionContextScope(
-                    executionContextStorageReader, tokenHolders, overridableSecurityContext, assertOpen);
+                    executionContextStorageReader, tokenHolders, overridableSecurityContext, kernelTransactionView);
 
             return new ThreadExecutionContext(
                     executionContextPooledCursors,
@@ -522,7 +522,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     executionContextLockClient,
                     tracers.getLockTracer(),
                     elementIdMapper,
-                    assertOpen,
+                    kernelTransactionView,
                     clockContextSupplier,
                     List.of(executionContextStorageReader, executionContextLockClient),
                     procedureView);
@@ -622,7 +622,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionSequenceNumber,
                 cursorContext,
                 () -> statementClock,
-                new ExtendedAssertOpen() {
+                new ProcedureKernelTransactionView() {
                     @Override
                     public boolean isOpen() {
                         return !closed && !isTerminated() && isOriginalTx();
@@ -631,14 +631,31 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     @Override
                     public void assertOpen() {
                         KernelTransactionImplementation.this.assertOpen();
-                        if (!isOriginalTx()) {
-                            throw new IllegalStateException("Execution context used after transaction close");
-                        }
+                        assertIsOriginalTx();
+                    }
+
+                    @Override
+                    public void setStatusDetails(String details) {
+                        KernelTransactionImplementation.this.setStatusDetails(details);
+                        assertIsOriginalTx();
+                    }
+
+                    @Override
+                    public String statusDetails() {
+                        String details = KernelTransactionImplementation.this.statusDetails();
+                        assertIsOriginalTx();
+                        return details;
                     }
 
                     // Since TX object is reused, let's check if this is still the same TX
                     private boolean isOriginalTx() {
                         return transactionSequenceNumberWhenCreated == transactionSequenceNumber;
+                    }
+
+                    private void assertIsOriginalTx() {
+                        if (!isOriginalTx()) {
+                            throw new IllegalStateException("Execution context used after transaction close");
+                        }
                     }
                 },
                 this.procedureView);
@@ -1683,7 +1700,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 long transactionId,
                 CursorContext transactionCursorContext,
                 Supplier<ClockContext> clockContextSupplier,
-                ExtendedAssertOpen assertOpen,
+                ProcedureKernelTransactionView assertOpen,
                 ProcedureView procedureView);
     }
 

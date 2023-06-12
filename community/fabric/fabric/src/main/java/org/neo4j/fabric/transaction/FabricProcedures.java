@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.ProcedureView;
+import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.AnyValue;
@@ -200,6 +201,11 @@ public class FabricProcedures implements Procedures {
 
         @Override
         public ProcedureCallContext procedureCallContext() {
+            return notAvailable();
+        }
+
+        @Override
+        public ProcedureKernelTransactionView kernelTransactionView() {
             return notAvailable();
         }
     }
