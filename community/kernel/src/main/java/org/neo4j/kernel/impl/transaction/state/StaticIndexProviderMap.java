@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
@@ -52,6 +53,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final IndexProvider rangeIndexProvider;
     private final IndexProvider pointIndexProvider;
     private final IndexProvider trigramIndexProvider;
+    private final IndexProvider vectorIndexProvider;
     private final DependencyResolver dependencies;
 
     public StaticIndexProviderMap(
@@ -61,6 +63,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
             RangeIndexProvider rangeIndexProvider,
             PointIndexProvider pointIndexProvider,
             TrigramIndexProvider trigramIndexProvider,
+            VectorIndexProvider vectorIndexProvider,
             DependencyResolver dependencies) {
         this.tokenIndexProvider = tokenIndexProvider;
         this.textIndexProvider = textIndexProvider;
@@ -68,6 +71,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         this.rangeIndexProvider = rangeIndexProvider;
         this.pointIndexProvider = pointIndexProvider;
         this.trigramIndexProvider = trigramIndexProvider;
+        this.vectorIndexProvider = vectorIndexProvider;
         this.dependencies = dependencies;
     }
 
@@ -79,6 +83,9 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         add(rangeIndexProvider);
         add(pointIndexProvider);
         add(trigramIndexProvider);
+        if (vectorIndexProvider != null) {
+            add(vectorIndexProvider);
+        }
         dependencies.resolveTypeDependencies(IndexProvider.class).forEach(this::add);
     }
 
@@ -105,6 +112,11 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     @Override
     public IndexProvider getPointIndexProvider() {
         return pointIndexProvider;
+    }
+
+    @Override
+    public IndexProvider getVectorIndexProvider() {
+        return vectorIndexProvider;
     }
 
     @Override

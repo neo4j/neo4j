@@ -104,6 +104,11 @@ public interface IndexingProvidersService {
     IndexProviderDescriptor getPointIndexProvider();
 
     /**
+     * @return the vector index provider instance.
+     */
+    IndexProviderDescriptor getVectorIndexProvider();
+
+    /**
      * Get all registered index providers
      */
     Collection<IndexProvider> getIndexProviders();

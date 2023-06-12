@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TrigramIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.VectorIndexProviderFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -195,6 +196,23 @@ public class StaticIndexProviderMapFactory {
                         pageCacheTracer,
                         dependencies));
 
+        var vectorIndexProvider = life.add(new VectorIndexProviderFactory()
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        mode,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory,
+                        pageCacheTracer,
+                        dependencies));
+
         return new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
@@ -202,6 +220,7 @@ public class StaticIndexProviderMapFactory {
                 rangeIndexProvider,
                 pointIndexProvider,
                 trigramIndexProvider,
+                vectorIndexProvider,
                 dependencies);
     }
 }

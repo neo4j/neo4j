@@ -94,6 +94,11 @@ public interface IndexProviderMap extends IndexConfigCompleter {
     IndexProvider getPointIndexProvider();
 
     /**
+     * The preferred {@link IndexProvider} for handling vector indexes.
+     */
+    IndexProvider getVectorIndexProvider();
+
+    /**
      * Visits all the {@link IndexProvider} with the visitor.
      *
      * @param visitor {@link Consumer} visiting all the {@link IndexProvider index providers} in this map.
@@ -144,6 +149,11 @@ public interface IndexProviderMap extends IndexConfigCompleter {
 
         @Override
         public IndexProvider getPointIndexProvider() {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public IndexProvider getVectorIndexProvider() {
             return IndexProvider.EMPTY;
         }
 

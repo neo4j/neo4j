@@ -499,6 +499,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
+    public IndexProviderDescriptor getVectorIndexProvider() {
+        return providerMap.getVectorIndexProvider().getProviderDescriptor();
+    }
+
+    @Override
     public IndexDescriptor completeConfiguration(IndexDescriptor index) {
         return providerMap.completeConfiguration(index, storageEngineIndexingBehaviour);
     }
