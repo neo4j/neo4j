@@ -25,6 +25,6 @@ public interface AuthConfigProvider {
     MappingRepresentation getRepresentation();
 
     default byte[] getRepresentationAsBytes() {
-        return null;
+        return new byte[0];
     }
 }
