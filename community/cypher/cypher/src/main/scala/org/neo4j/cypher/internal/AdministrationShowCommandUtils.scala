@@ -43,7 +43,7 @@ object AdministrationShowCommandUtils {
 
   private def genDefaultOrderBy(columns: List[String], defaultOrder: Seq[String]): Option[OrderBy] =
     defaultOrder.filter(columns.contains) match {
-      case Nil => None
+      case Seq() => None
       case columns => Some(OrderBy(columns.zipWithIndex.map {
           case (col, i) =>
             val pos = new InputPosition(i, 1, 0)

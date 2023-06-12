@@ -46,10 +46,10 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
 
     // then
     res("section") should be("GRAPH COUNTS")
-    list(res("data"), "nodes") should contain only Map("count" -> 0)
-    list(res("data"), "relationships") should contain only Map("count" -> 0)
-    list(res("data"), "indexes") should be(Nil)
-    list(res("data"), "constraints") should be(Nil)
+    seq(res("data"), "nodes") should contain only Map("count" -> 0)
+    seq(res("data"), "relationships") should contain only Map("count" -> 0)
+    seq(res("data"), "indexes") should be(Seq())
+    seq(res("data"), "constraints") should be(Seq())
   }
 
   test("retrieve all index types") {
@@ -72,7 +72,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     // when
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
-    list(res("data"), "indexes") should contain.only(
+    seq(res("data"), "indexes") should contain.only(
       Map(
         "totalSize" -> 0,
         "indexType" -> IndexType.LOOKUP.name,
@@ -159,7 +159,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
     // then
-    list(res("data"), "nodes") should contain.only(
+    seq(res("data"), "nodes") should contain.only(
       Map("count" -> 4),
       Map("count" -> 2, "label" -> "User"),
       Map("count" -> 1, "label" -> "Donkey")
@@ -179,7 +179,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
     // then
-    list(res("data"), "relationships") should contain.only(
+    seq(res("data"), "relationships") should contain.only(
       Map("count" -> 4),
       Map("count" -> 3, "relationshipType" -> "R"),
       Map("count" -> 1, "relationshipType" -> "R", "startLabel" -> "User"),
@@ -247,13 +247,13 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
   private def assertSteelfaceGraphCounts(res: Map[String, AnyRef], tokenNames: TokenNames): Unit = {
 
     res("section") should be("GRAPH COUNTS")
-    list(res("data"), "nodes") should contain.only(
+    seq(res("data"), "nodes") should contain.only(
       Map("count" -> 1278),
       Map("label" -> tokenNames.User, "count" -> 1000),
       Map("label" -> tokenNames.Car, "count" -> 128),
       Map("label" -> tokenNames.Room, "count" -> 150)
     )
-    list(res("data"), "relationships") should contain.only(
+    seq(res("data"), "relationships") should contain.only(
       Map("count" -> 320),
       Map("relationshipType" -> tokenNames.OWNS, "count" -> 170),
       Map("relationshipType" -> tokenNames.OWNS, "startLabel" -> tokenNames.User, "count" -> 170),
@@ -263,7 +263,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
       Map("relationshipType" -> tokenNames.STAYS_IN, "startLabel" -> tokenNames.User, "count" -> 150),
       Map("relationshipType" -> tokenNames.STAYS_IN, "endLabel" -> tokenNames.Room, "count" -> 150)
     )
-    list(res("data"), "indexes") should contain.only(
+    seq(res("data"), "indexes") should contain.only(
       Map(
         "labels" -> List(tokenNames.User),
         "properties" -> List(tokenNames.email),
@@ -310,10 +310,10 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "indexProvider" -> "range-1.0"
       )
     )
-    list(res("data"), "constraints") should contain only
+    seq(res("data"), "constraints") should contain only
       Map("label" -> tokenNames.User, "properties" -> List(tokenNames.email), "type" -> "Uniqueness constraint")
   }
 
-  private def list(map: AnyRef, key: String): IndexedSeq[AnyRef] =
+  private def seq(map: AnyRef, key: String): IndexedSeq[AnyRef] =
     map.asInstanceOf[Map[String, AnyRef]](key).asInstanceOf[IndexedSeq[AnyRef]]
 }

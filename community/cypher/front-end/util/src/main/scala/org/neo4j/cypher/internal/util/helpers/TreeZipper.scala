@@ -45,8 +45,8 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def isRoot: Boolean = context == Top
 
     def isLeaf: Boolean = self match {
-      case Location(Children(Nil), _) => true
-      case _                          => false
+      case Location(Children(Seq()), _) => true
+      case _                            => false
     }
 
     @tailrec
@@ -123,7 +123,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     }
 
     def down: Option[Location] = self match {
-      case Location(Children(Nil), _) =>
+      case Location(Children(Seq()), _) =>
         None
 
       case Location(Children(Seq(head, tail @ _*)), _) =>

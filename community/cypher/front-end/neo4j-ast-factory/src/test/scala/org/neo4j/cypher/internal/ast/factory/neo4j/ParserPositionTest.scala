@@ -106,7 +106,7 @@ class ParserPositionTest extends CypherFunSuite with TestName {
   test("MATCH (n) WHERE exists { MATCH (m) WHERE exists { (n)-[]->(m) } }") {
     val existsExpressions = javaCcAST(testName).folder.findAllByClass[ExistsExpression]
     existsExpressions match {
-      case exists :: existsNested :: Nil =>
+      case Seq(exists, existsNested) =>
         exists.position shouldBe InputPosition(16, 1, 17)
         exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
         existsNested.position shouldBe InputPosition(41, 1, 42)

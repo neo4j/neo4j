@@ -217,8 +217,8 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
       Seq.empty
 
   private def leftPredicatesAcceptable(leftId: String, leftPredicates: Seq[Expression]) = leftPredicates.forall {
-    case HasLabels(Variable(id), List(_)) if id == leftId => true
-    case a                                                => false
+    case HasLabels(Variable(id), Seq(_)) if id == leftId => true
+    case a                                               => false
   }
 
   private def matchingLabels(positivePredicate: Boolean, node1: String, node2: String, qg: QueryGraph): Boolean = {

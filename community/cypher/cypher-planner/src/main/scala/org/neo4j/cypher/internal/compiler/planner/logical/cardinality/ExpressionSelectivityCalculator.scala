@@ -151,7 +151,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     cardinalityModel: CardinalityModel
   ): Selectivity = exp match {
     // WHERE a:Label
-    case HasLabels(_, label :: Nil) =>
+    case HasLabels(_, Seq(label)) =>
       calculateSelectivityForLabel(semanticTable.id(label))
 
     // WHERE true

@@ -213,7 +213,7 @@ class SimplifyPredicatesTest extends CypherFunSuite {
   }
 
   test("Simplify AND of lists") {
-    assertRewrittenMatches("[] AND [] AND []", { case CoerceToPredicate(ListLiteral(List())) => () })
+    assertRewrittenMatches("[] AND [] AND []", { case CoerceToPredicate(ListLiteral(Seq())) => () })
   }
 
   test("Simplify AND of different data types") {
