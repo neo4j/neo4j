@@ -41,5 +41,6 @@ public interface IndexQuery {
         STRING_SUFFIX,
         STRING_CONTAINS,
         FULLTEXT_SEARCH,
+        NEAREST_NEIGHBORS
     }
 }

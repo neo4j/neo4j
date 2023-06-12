@@ -191,6 +191,10 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         return new FulltextSearchPredicate(query, queryAnalyzer);
     }
 
+    public static PropertyIndexQuery nearestNeighbors(int k, float[] query) {
+        return new NearestNeighborsPredicate(k, query);
+    }
+
     public static ValueTuple asValueTuple(PropertyIndexQuery.ExactPredicate... query) {
         Value[] values = new Value[query.length];
         for (int i = 0; i < query.length; i++) {
@@ -658,6 +662,41 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         public String queryAnalyzer() {
             return queryAnalyzer;
+        }
+    }
+
+    public static final class NearestNeighborsPredicate extends PropertyIndexQuery {
+        private final int k;
+        private final float[] query;
+
+        private NearestNeighborsPredicate(int k, float... query) {
+            super(TokenRead.NO_TOKEN);
+            this.k = k;
+            this.query = query;
+        }
+
+        @Override
+        public boolean acceptsValue(Value value) {
+            throw new UnsupportedOperationException(
+                    "Nearest neighbour predicates do not know how to evaluate themselves.");
+        }
+
+        @Override
+        public ValueGroup valueGroup() {
+            return ValueGroup.NUMBER_ARRAY;
+        }
+
+        @Override
+        public IndexQueryType type() {
+            return IndexQueryType.NEAREST_NEIGHBORS;
+        }
+
+        public int numberOfNeighbors() {
+            return k;
+        }
+
+        public float[] query() {
+            return query;
         }
     }
 }
