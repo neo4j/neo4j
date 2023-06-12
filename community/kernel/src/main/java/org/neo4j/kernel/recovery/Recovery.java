@@ -803,10 +803,10 @@ public final class Recovery {
             PageCache pageCache,
             StorageEngineFactory storageEngineFactory) {
         StorageFilesState state = storageEngineFactory.checkStoreFileState(fs, databaseLayout, pageCache);
-        if (state.getRecoveryState() == RecoveryState.UNRECOVERABLE) {
+        if (state.recoveryState() == RecoveryState.UNRECOVERABLE) {
             throw new RuntimeException(format(
                     "Store files %s is(are) missing and recovery is not possible. Please restore from a consistent backup.",
-                    state.getMissingFiles()));
+                    state.missingFiles()));
         }
     }
 

@@ -62,7 +62,7 @@ class RecoveryRequiredChecker {
             return false;
         }
         StorageFilesState filesRecoveryState = storageEngineFactory.checkStoreFileState(fs, databaseLayout, pageCache);
-        if (filesRecoveryState.getRecoveryState() != RecoveryState.RECOVERED) {
+        if (filesRecoveryState.recoveryState() != RecoveryState.RECOVERED) {
             return true;
         }
         return logTailMetadata.isRecoveryRequired();

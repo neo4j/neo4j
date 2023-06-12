@@ -19,38 +19,24 @@
  */
 package org.neo4j.storageengine.api;
 
+import static java.util.Collections.emptyList;
+
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Holds information about storage files for a specific store. Either a store is doing well where e.g. {@link RecoveryState#RECOVERED}
  * or {@link RecoveryState#RECOVERABLE} is used, or some store files are missing or broken and {@link RecoveryState#UNRECOVERABLE} together
  * with a list of missing or broken files can be specified in {@link #unrecoverableState(Collection)}.
  */
-public class StorageFilesState {
-    private final RecoveryState recoveryState;
-    private final Collection<Path> missingFiles;
-
-    private StorageFilesState(RecoveryState recoveryState, Collection<Path> missingFiles) {
-        this.recoveryState = recoveryState;
-        this.missingFiles = missingFiles;
-    }
-
-    public RecoveryState getRecoveryState() {
-        return recoveryState;
-    }
-
-    public Collection<Path> getMissingFiles() {
-        return missingFiles;
-    }
+public record StorageFilesState(RecoveryState recoveryState, Collection<Path> missingFiles) {
 
     public static StorageFilesState recoverableState() {
-        return new StorageFilesState(RecoveryState.RECOVERABLE, Collections.emptyList());
+        return new StorageFilesState(RecoveryState.RECOVERABLE, emptyList());
     }
 
     public static StorageFilesState recoveredState() {
-        return new StorageFilesState(RecoveryState.RECOVERED, Collections.emptyList());
+        return new StorageFilesState(RecoveryState.RECOVERED, emptyList());
     }
 
     public static StorageFilesState unrecoverableState(Collection<Path> missingFiles) {

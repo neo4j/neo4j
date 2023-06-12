@@ -21,35 +21,10 @@ package org.neo4j.storageengine.api;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Objects;
 import java.util.UUID;
 
-public class ExternalStoreId {
-    private final UUID id;
-
-    public ExternalStoreId(UUID id) {
+public record ExternalStoreId(UUID id) {
+    public ExternalStoreId {
         requireNonNull(id);
-        this.id = id;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ExternalStoreId that = (ExternalStoreId) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 }

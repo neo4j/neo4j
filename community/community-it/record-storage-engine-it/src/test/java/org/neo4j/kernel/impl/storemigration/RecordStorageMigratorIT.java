@@ -200,7 +200,7 @@ class RecordStorageMigratorIT {
             assertEquals(
                     new UUID(1, 2),
                     metaDataStore.getDatabaseIdUuid(NULL_CONTEXT).orElseThrow());
-            assertEquals(new UUID(3, 4), metaDataStore.getExternalStoreId().getId());
+            assertEquals(new UUID(3, 4), metaDataStore.getExternalStoreId().id());
         }
     }
 

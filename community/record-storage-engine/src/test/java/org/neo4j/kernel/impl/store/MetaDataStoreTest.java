@@ -402,7 +402,7 @@ public class MetaDataStoreTest {
     void generateExternalStoreUUIDOnCreation() {
         try (MetaDataStore metaDataStore = newMetaDataStore()) {
             var externalStoreId = metaDataStore.getExternalStoreId();
-            var externalUUID = externalStoreId.getId();
+            var externalUUID = externalStoreId.id();
             assertThat(externalUUID.getLeastSignificantBits()).isNotZero();
             assertThat(externalUUID.getMostSignificantBits()).isNotZero();
         }
@@ -468,7 +468,7 @@ public class MetaDataStoreTest {
 
         try (MetaDataStore store = newMetaDataStore()) {
             var retrievedExternalStoreId = store.getExternalStoreId();
-            assertEquals(externalStoreId, retrievedExternalStoreId.getId());
+            assertEquals(externalStoreId, retrievedExternalStoreId.id());
         }
     }
 
@@ -523,7 +523,7 @@ public class MetaDataStoreTest {
         try (var metaDataStore = newMetaDataStore()) {
             var storeId = StoreId.generateNew("engine-1", "format-1", 1, 1);
             metaDataStore.regenerateMetadata(
-                    storeId, metaDataStore.getExternalStoreId().getId(), cursorContext);
+                    storeId, metaDataStore.getExternalStoreId().id(), cursorContext);
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isEqualTo(2);
             assertThat(cursorTracer.unpins()).isEqualTo(2);

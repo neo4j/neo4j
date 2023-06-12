@@ -149,7 +149,7 @@ public interface SchemaRule44 {
         EXISTS(false, ConstraintType.EXISTS),
         UNIQUE_EXISTS(true, ConstraintType.UNIQUE_EXISTS);
 
-        private boolean isIndexBacked;
+        private final boolean isIndexBacked;
         private final ConstraintType constraintType;
 
         ConstraintRuleType(boolean isIndexBacked, ConstraintType constraintType) {

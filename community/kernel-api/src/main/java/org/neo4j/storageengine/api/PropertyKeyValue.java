@@ -27,50 +27,14 @@ import org.neo4j.values.storable.Values;
 /**
  * Default implementation of {@link StorageProperty} where the {@link Value} has already been materialized.
  */
-public class PropertyKeyValue implements StorageProperty {
-    private final int propertyKeyId;
-    private final Value value;
-
-    public PropertyKeyValue(int propertyKeyId, Value value) {
+public record PropertyKeyValue(int propertyKeyId, Value value) implements StorageProperty {
+    public PropertyKeyValue {
         assert value != null;
-        this.propertyKeyId = propertyKeyId;
-        this.value = value;
-    }
-
-    @Override
-    public int propertyKeyId() {
-        return propertyKeyId;
-    }
-
-    @Override
-    public Value value() {
-        return value;
     }
 
     @Override
     public boolean isDefined() {
         return value != Values.NO_VALUE;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        PropertyKeyValue that = (PropertyKeyValue) o;
-
-        return propertyKeyId == that.propertyKeyId && value.equals(that.value);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = propertyKeyId;
-        result = 31 * result + value.hashCode();
-        return result;
     }
 
     @Override
