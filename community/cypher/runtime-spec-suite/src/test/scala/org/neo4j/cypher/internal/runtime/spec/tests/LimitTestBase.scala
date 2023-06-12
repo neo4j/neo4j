@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.concurrent.ThreadLocalRandom
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -32,6 +31,8 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.values.virtual.VirtualNodeValue
+
+import scala.collection.immutable.Seq
 
 abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                         runtime: CypherRuntime[CONTEXT],
@@ -1281,5 +1282,25 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1)))
     runtimeResult should beColumns("c").withNoRows()
+  }
+
+  test("should handle limit + distinct on the RHS of an apply") {
+    given(linkedChainGraph(3, 4))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y", "x")
+      .apply()
+      .|.limit(5)
+      .|.orderedDistinct(Seq.empty, "x as x")
+      .|.expandAll("(x)-[]->()")
+      .|.allNodeScan("x")
+      .input(variables = Seq("y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 5).map(i => Array[Any](i)): _*))
+
+    // then
+    runtimeResult should beColumns("y", "x").withRows(rowCount(25))
   }
 }
