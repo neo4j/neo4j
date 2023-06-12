@@ -370,8 +370,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def skip(count: Long): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Skip(lp, literalInt(count))(_)))
+  def skip(count: Long): IMPL =
+    skip(literalInt(count))
+
+  def skip(countExpr: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Skip(lp, countExpr)(_)))
     self
   }
 

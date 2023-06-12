@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -37,13 +38,15 @@ import scala.annotation.tailrec
 
 object skipAndLimit extends PlanTransformer {
 
-    @tailrec
-    def shouldPlanExhaustiveLimit(plan: LogicalPlan, limit: Option[Long]): Boolean = plan match {
-      case _: UpdatingPlan => true
-      case _: ExhaustiveLogicalPlan if limit.exists(_ > 0) => false
-      case p: LogicalBinaryPlan => p.right.folder.treeExists{case _: UpdatingPlan => true} || shouldPlanExhaustiveLimit(p.left, limit)
-      case p: LogicalPlan => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get, limit) else false
-    }
+  @tailrec
+  def shouldPlanExhaustiveLimit(plan: LogicalPlan, limit: Option[Long]): Boolean = plan match {
+    case _: UpdatingPlan                                 => true
+    case _: ExhaustiveLogicalPlan if limit.exists(_ > 0) => false
+    case p: LogicalBinaryPlan => p.right.folder.treeExists { case _: UpdatingPlan =>
+        true
+      } || shouldPlanExhaustiveLimit(p.left, limit)
+    case p: LogicalPlan => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get, limit) else false
+  }
 
   def planLimitOnTopOf(plan: LogicalPlan, count: Expression)(implicit idGen: IdGen): LogicalPlan =
     if (shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(count)))
@@ -55,15 +58,34 @@ object skipAndLimit extends PlanTransformer {
       case p: QueryProjection =>
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
+          case (Some(skipExpr), Some(limitExpr)) if skipExpr.isDeterministic =>
+            context.logicalPlanProducer.planSkipAndLimit(
+              plan,
+              skipExpr,
+              limitExpr,
+              query.interestingOrder,
+              context,
+              shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr))
+            )
+
           case (Some(skipExpr), Some(limitExpr)) =>
-            context.logicalPlanProducer.planSkipAndLimit(plan, skipExpr, limitExpr, query.interestingOrder, context, shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr)))
+            val skipped =
+              context.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
+            // Recurse and remove skip from horizon to get limit planned as well
+            apply(skipped, query.withHorizon(p.withPagination(QueryPagination(None, Some(limitExpr)))), context)
 
           case (Some(skipExpr), _) =>
             context.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
 
           case (_, Some(limitExpr))
             if shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr)) =>
-            context.logicalPlanProducer.planExhaustiveLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)
+            context.logicalPlanProducer.planExhaustiveLimit(
+              plan,
+              limitExpr,
+              limitExpr,
+              query.interestingOrder,
+              context = context
+            )
 
           case (_, Some(limitExpr)) =>
             context.logicalPlanProducer.planLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)
