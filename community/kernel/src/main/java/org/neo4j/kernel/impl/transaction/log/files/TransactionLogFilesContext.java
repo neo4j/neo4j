@@ -46,6 +46,7 @@ public class TransactionLogFilesContext {
     private final LongSupplier committingTransactionIdSupplier;
     private final LastClosedPositionProvider lastClosedPositionProvider;
     private final LogVersionRepositoryProvider logVersionRepositoryProvider;
+    private final LogFileVersionTracker versionTracker;
     private final FileSystemAbstraction fileSystem;
     private final InternalLogProvider logProvider;
     private final DatabaseTracers databaseTracers;
@@ -70,6 +71,7 @@ public class TransactionLogFilesContext {
             LongSupplier committingTransactionIdSupplier,
             LastClosedPositionProvider lastClosedPositionProvider,
             LogVersionRepositoryProvider logVersionRepositoryProvider,
+            LogFileVersionTracker versionTracker,
             FileSystemAbstraction fileSystem,
             InternalLogProvider logProvider,
             DatabaseTracers databaseTracers,
@@ -92,6 +94,7 @@ public class TransactionLogFilesContext {
         this.committingTransactionIdSupplier = committingTransactionIdSupplier;
         this.lastClosedPositionProvider = lastClosedPositionProvider;
         this.logVersionRepositoryProvider = logVersionRepositoryProvider;
+        this.versionTracker = versionTracker;
         this.fileSystem = fileSystem;
         this.logProvider = logProvider;
         this.databaseTracers = databaseTracers;
@@ -119,6 +122,10 @@ public class TransactionLogFilesContext {
 
     public LogVersionRepositoryProvider getLogVersionRepositoryProvider() {
         return logVersionRepositoryProvider;
+    }
+
+    public LogFileVersionTracker getLogFileVersionTracker() {
+        return versionTracker;
     }
 
     public LastCommittedTransactionIdProvider getLastCommittedTransactionIdProvider() {

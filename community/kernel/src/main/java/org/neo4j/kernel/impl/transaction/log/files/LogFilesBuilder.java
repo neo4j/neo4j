@@ -84,6 +84,7 @@ public class LogFilesBuilder {
     private DependencyResolver dependencies;
     private FileSystemAbstraction fileSystem;
     private LogVersionRepository logVersionRepository;
+    private LogFileVersionTracker logFileVersionTracker;
     private TransactionIdStore transactionIdStore;
     private LongSupplier lastCommittedTransactionIdSupplier;
     private Supplier<LogPosition> lastClosedPositionSupplier;
@@ -167,6 +168,11 @@ public class LogFilesBuilder {
 
     public LogFilesBuilder withLogVersionRepository(LogVersionRepository logVersionRepository) {
         this.logVersionRepository = logVersionRepository;
+        return this;
+    }
+
+    public LogFilesBuilder withLogFileVersionTracker(LogFileVersionTracker logFileVersionTracker) {
+        this.logFileVersionTracker = logFileVersionTracker;
         return this;
     }
 
@@ -273,6 +279,7 @@ public class LogFilesBuilder {
         requireNonNull(fileSystem);
         Supplier<StoreId> storeIdSupplier = getStoreId();
         LogVersionRepositoryProvider logVersionRepositorySupplier = getLogVersionRepositoryProvider();
+        LogFileVersionTracker versionTracker = getLogFileVersionTracker();
         LastCommittedTransactionIdProvider lastCommittedIdSupplier = lastCommittedIdProvider();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
         LastClosedPositionProvider lastClosedTransactionPositionProvider = closePositionProvider();
@@ -293,6 +300,7 @@ public class LogFilesBuilder {
                 committingTransactionIdSupplier,
                 lastClosedTransactionPositionProvider,
                 logVersionRepositorySupplier,
+                versionTracker,
                 fileSystem,
                 logProvider,
                 databaseTracers,
@@ -409,6 +417,18 @@ public class LogFilesBuilder {
                             + "Please provide an instance or a dependencies where it can be found.");
             return new SupplierLogVersionRepositoryProvider(dependencies.provideDependency(LogVersionRepository.class));
         }
+    }
+
+    private LogFileVersionTracker getLogFileVersionTracker() {
+        if (logFileVersionTracker != null) {
+            return logFileVersionTracker;
+        }
+
+        if (dependencies != null && dependencies.containsDependency(LogFileVersionTracker.class)) {
+            return resolveDependency(LogFileVersionTracker.class);
+        }
+
+        return LogFileVersionTracker.NO_OP;
     }
 
     private LastCommittedTransactionIdProvider lastCommittedIdProvider() {

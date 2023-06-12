@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -101,8 +102,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private LogVersionRepository logVersionRepository;
     private final LogHeaderCache logHeaderCache;
     private final FileSystemAbstraction fileSystem;
+    private final LogFileVersionTracker versionTracker;
+    private final InternalLog logger;
     private final ConcurrentMap<Long, List<StoreChannel>> externalFileReaders = new ConcurrentHashMap<>();
-    private final List<LogFileEventListener> eventListeners = new CopyOnWriteArrayList<>();
     private TransactionLogWriter transactionLogWriter;
 
     TransactionLogFile(LogFiles logFiles, TransactionLogFilesContext context, String baseName) {
@@ -112,6 +114,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         this.rotateAtSize = context.getRotationThreshold();
         this.fileSystem = context.getFileSystem();
         this.databaseHealth = context.getDatabaseHealth();
+        this.versionTracker = context.getLogFileVersionTracker();
         this.fileHelper = new TransactionLogFilesHelper(fileSystem, logFiles.logFilesDirectory(), baseName);
         this.logHeaderCache = new LogHeaderCache(1000);
         this.logFileInformation = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
@@ -121,6 +124,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         this.logRotation = transactionLogRotation(
                 this, context.getClock(), databaseHealth, context.getMonitors().newMonitor(LogRotationMonitor.class));
         this.memoryTracker = context.getMemoryTracker();
+        this.logger = context.getLogProvider().getLog(TransactionLogFile.class);
     }
 
     @Override
@@ -222,7 +226,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
             // delete newer files
             for (long i = currentVersion; i > targetVersion; i--) {
-                fileSystem.deleteFile(fileHelper.getLogFileForVersion(i));
+                delete(i);
             }
         }
 
@@ -494,18 +498,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
     @Override
     public void delete(Long version) throws IOException {
-        fileSystem.delete(getLogFileForVersion(version));
-        eventListeners.forEach(listener -> listener.onDeletion(version));
-    }
-
-    @Override
-    public void addLogFileEventListener(LogFileEventListener listener) {
-        eventListeners.add(listener);
-    }
-
-    @Override
-    public void removeLogFileEventListener(LogFileEventListener listener) {
-        eventListeners.remove(listener);
+        fileSystem.deleteFile(getLogFileForVersion(version));
+        try {
+            versionTracker.logDeleted(version);
+        } catch (Throwable throwable) {
+            logger.error("Error occurred whilst calling logDeleted in the LogFileVersionTracker", throwable);
+        }
     }
 
     @Override
@@ -622,8 +620,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(newLogVersion, lastTransactionIdSupplier);
         currentLog.close();
 
-        final var endPosition = new LogPosition(logVersion, endSize);
-        eventListeners.forEach(listener -> listener.onRotation(endPosition));
+        try {
+            versionTracker.logCompleted(new LogPosition(logVersion, endSize));
+        } catch (Throwable throwable) {
+            logger.error("Error occurred whilst calling logCompleted in the LogFileVersionTracker", throwable);
+        }
+
         return newLog;
     }
 

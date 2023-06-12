@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.activeFilesBuilder;
@@ -41,6 +44,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
@@ -195,6 +199,40 @@ class LogFilesBuilderTest {
                 customLogDirectory.resolve(databaseLayout.getDatabaseName()),
                 logFiles.getLogFile().getHighestLogFile().getParent());
         logFiles.shutdown();
+    }
+
+    @Test
+    void buildWithCustomLogFileVersionTracker() throws Throwable {
+        final var tracker = mock(LogFileVersionTracker.class);
+
+        final var logDirectory = testDirectory.directory("logs");
+        final var config = Config.newBuilder()
+                .set(neo4j_home, testDirectory.homePath())
+                .set(transaction_logs_root_path, logDirectory.toAbsolutePath())
+                .build();
+
+        final var logFiles = builder(
+                        DatabaseLayout.of(config), fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+                .withLogVersionRepository(new SimpleLogVersionRepository())
+                .withLogFileVersionTracker(tracker)
+                .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
+                .withStoreId(new StoreId(1, 2, "engine-1", "format-1", 3, 4))
+                .build();
+
+        logFiles.init();
+        logFiles.start();
+
+        final var logFile = logFiles.getLogFile();
+        logFile.rotate();
+
+        final var lowestLogVersion = logFile.getLowestLogVersion();
+        final var logPosition = new LogPosition(
+                lowestLogVersion, fileSystem.getFileSize(logFile.getLogFileForVersion(lowestLogVersion)));
+        logFile.delete(lowestLogVersion);
+
+        verify(tracker).logDeleted(eq(lowestLogVersion));
+        verify(tracker).logCompleted(eq(logPosition));
     }
 
     @Test

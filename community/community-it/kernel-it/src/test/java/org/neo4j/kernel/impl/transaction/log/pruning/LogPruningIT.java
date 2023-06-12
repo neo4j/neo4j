@@ -25,20 +25,28 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 import java.io.IOException;
 import org.eclipse.collections.api.factory.primitive.LongLists;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionType;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile.LogFileEventListener;
+import org.neo4j.kernel.impl.transaction.log.files.LogFileVersionTracker;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "addVersionTracker")
 class LogPruningIT {
     private static final SimpleTriggerInfo triggerInfo = new SimpleTriggerInfo("forced trigger");
 
@@ -54,22 +62,15 @@ class LogPruningIT {
     @Inject
     private Config config;
 
+    private final TestVersionTracker versionTracker = TestVersionTracker.create();
+
+    @ExtensionCallback
+    void addVersionTracker(TestDatabaseManagementServiceBuilder builder) {
+        builder.addExtension(new TestVersionTrackerExtensionFactory(versionTracker));
+    }
+
     @Test
     void pruningStrategyShouldBeDynamic() throws IOException {
-        final var deletions = LongLists.mutable.empty();
-        final var rotations = LongLists.mutable.empty();
-        logFiles.getLogFile().addLogFileEventListener(new LogFileEventListener() {
-            @Override
-            public void onDeletion(long version) {
-                deletions.add(version);
-            }
-
-            @Override
-            public void onRotation(LogPosition endLogPosition) {
-                rotations.add(endLogPosition.getLogVersion());
-            }
-        });
-
         // Force transaction log rotation
         writeTransactionsAndRotateTwice();
 
@@ -88,10 +89,11 @@ class LogPruningIT {
 
         // Make sure file is removed
         assertThat(countTransactionLogs(logFiles)).isEqualTo(2);
-        assertThat(rotations.toArray())
+
+        assertThat(versionTracker.rotations.toArray())
                 .as("should have tracked the 2 log rotations")
                 .containsExactly(0L, 1L);
-        assertThat(deletions.toArray())
+        assertThat(versionTracker.deletions.toArray())
                 .as("should have tracked the 2 log prunes")
                 .containsExactly(0L, 1L);
     }
@@ -120,5 +122,42 @@ class LogPruningIT {
 
     private static int countTransactionLogs(LogFiles logFiles) throws IOException {
         return logFiles.logFiles().length;
+    }
+
+    private static class TestVersionTrackerExtensionFactory
+            extends ExtensionFactory<TestVersionTrackerExtensionFactory.Dependencies> {
+        private final TestVersionTracker versionTracker;
+
+        interface Dependencies {}
+
+        TestVersionTrackerExtensionFactory(TestVersionTracker versionTracker) {
+            super(ExtensionType.DATABASE, "versionTrackerExtension");
+            this.versionTracker = versionTracker;
+        }
+
+        @Override
+        public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+            context.dependencySatisfier().satisfyDependency(versionTracker);
+            return new LifeSupport();
+        }
+    }
+
+    private record TestVersionTracker(MutableLongList deletions, MutableLongList rotations)
+            implements LogFileVersionTracker {
+        static TestVersionTracker create() {
+            return new TestVersionTracker(
+                    LongLists.mutable.empty().asSynchronized(),
+                    LongLists.mutable.empty().asSynchronized());
+        }
+
+        @Override
+        public void logDeleted(long version) {
+            deletions.add(version);
+        }
+
+        @Override
+        public void logCompleted(LogPosition endLogPosition) {
+            rotations.add(endLogPosition.getLogVersion());
+        }
     }
 }

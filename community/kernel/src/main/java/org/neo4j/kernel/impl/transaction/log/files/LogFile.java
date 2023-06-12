@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.EventListener;
 import java.util.OptionalLong;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
@@ -45,23 +44,6 @@ public interface LogFile extends RotatableFile {
     @FunctionalInterface
     interface LogFileVisitor {
         boolean visit(ReadableLogPositionAwareChannel channel) throws IOException;
-    }
-
-    /**
-     * Event listener for tracking changes to specific versions of the log files
-     */
-    interface LogFileEventListener extends EventListener {
-        /**
-         * @param version the version of the log file deleted, e.g. during a log pruning event
-         */
-        void onDeletion(long version);
-
-        /**
-         * @param endLogPosition the log position at the end of the log file when it was rotated.
-         *                       Note that this event is fired <strong>AFTER</strong> the new channel is created
-         *                       during the rotation event.
-         */
-        void onRotation(LogPosition endLogPosition);
     }
 
     /**
@@ -182,14 +164,4 @@ public interface LogFile extends RotatableFile {
      * @throws IOException on I/O error.
      */
     void delete(Long version) throws IOException;
-
-    /**
-     * @param listener the listener that will be notified on log file change events
-     */
-    void addLogFileEventListener(LogFileEventListener listener);
-
-    /**
-     * @param listener the listener to be removed from receiving notifications of log file change events
-     */
-    void removeLogFileEventListener(LogFileEventListener listener);
 }

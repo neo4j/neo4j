@@ -237,6 +237,7 @@ class TransactionLogChannelAllocatorIT {
                 () -> 1L,
                 any -> new LogPosition(0, 1),
                 any -> new SimpleLogVersionRepository(),
+                LogFileVersionTracker.NO_OP,
                 fileSystem,
                 logProvider,
                 DatabaseTracers.EMPTY,

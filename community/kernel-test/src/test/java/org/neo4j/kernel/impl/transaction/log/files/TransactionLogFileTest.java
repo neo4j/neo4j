@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,7 +54,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.LongLists;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,7 +83,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile.LogFileEventListener;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -111,6 +114,8 @@ class TransactionLogFileTest {
     private LifeSupport life;
 
     private CapturingChannelFileSystem wrappingFileSystem;
+
+    private LogFileVersionTracker logFileVersionTracker;
 
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
@@ -666,14 +671,14 @@ class TransactionLogFileTest {
     @Test
     void delete() throws IOException {
         final var deletions = LongLists.mutable.empty();
-        final var listener = new LogFileEventListener() {
+        logFileVersionTracker = new LogFileVersionTracker() {
             @Override
-            public void onDeletion(long version) {
+            public void logDeleted(long version) {
                 deletions.add(version);
             }
 
             @Override
-            public void onRotation(LogPosition endLogPosition) {}
+            public void logCompleted(LogPosition endLogPosition) {}
         };
 
         final var logFiles = buildLogFiles();
@@ -688,8 +693,6 @@ class TransactionLogFileTest {
         final var lowestBeforeDelete = logFile.getLowestLogVersion();
         assertThat(lowestBeforeDelete).isLessThan(logFile.getHighestLogVersion());
 
-        logFile.addLogFileEventListener(listener);
-
         logFile.delete(lowestBeforeDelete);
         assertThat(deletions.toArray()).containsExactly(lowestBeforeDelete);
 
@@ -698,58 +701,74 @@ class TransactionLogFileTest {
 
         logFile.delete(lowestAfterDelete);
         assertThat(deletions.toArray()).containsExactly(lowestBeforeDelete, lowestAfterDelete);
-
-        logFile.removeLogFileEventListener(listener);
-        logFile.delete(logFile.getLowestLogVersion());
-        assertThat(deletions.toArray())
-                .as("should not have updated deletions after listener removed")
-                .containsExactly(lowestBeforeDelete, lowestAfterDelete);
-
-        assertThat(logFile.getLowestLogVersion())
-                .as("Should have removed all the files except the last log file")
-                .isEqualTo(logFile.getHighestLogVersion());
     }
 
     @Test
     void rotate() throws IOException {
+        final var rotations = Lists.mutable.empty();
+        logFileVersionTracker = new LogFileVersionTracker() {
+            @Override
+            public void logDeleted(long version) {}
+
+            @Override
+            public void logCompleted(LogPosition endLogPosition) {
+                rotations.add(endLogPosition);
+            }
+        };
+
         final var logFiles = buildLogFiles();
         life.start();
         life.add(logFiles);
 
         final var logFile = logFiles.getLogFile();
 
-        final var rotations = LongLists.mutable.empty();
-        final var listener = new LogFileEventListener() {
+        final var lowestLogVersion = logFile.getLowestLogVersion();
+        logFile.rotate();
+        logFile.rotate();
+
+        final var listAssert = assertThat(rotations).hasSize(2);
+        listAssert.element(0).satisfies(pos -> {
+            assertEndLogPosition(logFile, lowestLogVersion, (LogPosition) pos);
+        });
+        listAssert.element(1).satisfies(pos -> {
+            assertEndLogPosition(logFile, lowestLogVersion + 1, (LogPosition) pos);
+        });
+    }
+
+    @Test
+    void ensureErrorsInLogFileVersionTrackerDontEscapeIntoLogFile() throws IOException {
+        logFileVersionTracker = new LogFileVersionTracker() {
             @Override
-            public void onDeletion(long version) {}
+            public void logDeleted(long version) {
+                throw new IllegalStateException("logDeleted");
+            }
 
             @Override
-            public void onRotation(LogPosition endLogPosition) {
-                final var logVersion = endLogPosition.getLogVersion();
-                try {
-                    final var size = fileSystem.getFileSize(logFile.getLogFileForVersion(logVersion));
-                    assertThat(endLogPosition.getByteOffset()).isEqualTo(size);
-                } catch (IOException ex) {
-                    throw new UncheckedIOException(ex);
-                }
-                rotations.add(logVersion);
+            public void logCompleted(LogPosition endLogPosition) {
+                throw new IllegalStateException("logCompleted");
             }
         };
 
-        final var lowestLogVersion = logFile.getLowestLogVersion();
+        final var logFiles = buildLogFiles();
+        life.start();
+        life.add(logFiles);
 
-        logFile.addLogFileEventListener(listener);
-        logFile.rotate();
-        assertThat(rotations.toArray()).containsExactly(lowestLogVersion);
+        final var logFile = logFiles.getLogFile();
+        assertDoesNotThrow(() -> {
+            logFile.rotate();
+            logFile.rotate();
+            logFile.delete(logFile.getLowestLogVersion());
+        });
+    }
 
-        logFile.rotate();
-        assertThat(rotations.toArray()).containsExactly(lowestLogVersion, lowestLogVersion + 1);
-
-        logFile.removeLogFileEventListener(listener);
-        logFile.rotate();
-        assertThat(rotations.toArray())
-                .as("should not have updated rotations after listener removed")
-                .containsExactly(lowestLogVersion, lowestLogVersion + 1);
+    private void assertEndLogPosition(LogFile logFile, long expectedVersion, LogPosition endLogPosition) {
+        assertThat(endLogPosition.getLogVersion()).isEqualTo(expectedVersion);
+        try {
+            final var size = fileSystem.getFileSize(logFile.getLogFileForVersion(endLogPosition.getLogVersion()));
+            assertThat(endLogPosition.getByteOffset()).isEqualTo(size);
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     private static byte[] readBytes(ReadableChannel reader, int length) throws IOException {
@@ -764,6 +783,7 @@ class TransactionLogFileTest {
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
+                .withLogFileVersionTracker(logFileVersionTracker)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .build();
@@ -939,6 +959,19 @@ class TransactionLogFileTest {
 
         public AtomicInteger getFlushCounter() {
             return flushCounter;
+        }
+    }
+
+    private record TestVersionTracker(MutableLongList deletions, MutableList<LogPosition> rotations)
+            implements LogFileVersionTracker {
+        @Override
+        public void logDeleted(long version) {
+            deletions.add(version);
+        }
+
+        @Override
+        public void logCompleted(LogPosition endLogPosition) {
+            rotations.add(endLogPosition);
         }
     }
 }
