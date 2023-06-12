@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -55,7 +56,7 @@ object skipAndLimit extends PlanTransformer {
       case p: QueryProjection =>
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
-          case (Some(skipExpr), Some(limitExpr)) =>
+          case (Some(skipExpr), Some(limitExpr)) if skipExpr.isConstantForQuery =>
             context.staticComponents.logicalPlanProducer.planSkipAndLimit(
               plan,
               skipExpr,
@@ -64,6 +65,12 @@ object skipAndLimit extends PlanTransformer {
               context,
               shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr))
             )
+
+          case (Some(skipExpr), Some(limitExpr)) =>
+            val skipped =
+              context.staticComponents.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
+            // Recurse and remove skip from horizon to get limit planned as well
+            apply(skipped, query.withHorizon(p.withPagination(QueryPagination(None, Some(limitExpr)))), context)
 
           case (Some(skipExpr), _) =>
             context.staticComponents.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)

@@ -228,6 +228,23 @@ class WithPlanningIntegrationTest extends CypherFunSuite
     )
   }
 
+  test("SKIP and LIMIT with rand() should get planned correctly") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH n SKIP toInteger(rand() * 10) LIMIT 1
+        |RETURN n
+        |  """.stripMargin
+    ).stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .limit(1)
+        .skip(function("toInteger", multiply(function("rand"), literalInt(10))))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test("Complex star pattern with WITH in front should not trip up joinSolver") {
     // created after https://github.com/neo4j/neo4j/issues/12212
     val planner = plannerBuilder()
