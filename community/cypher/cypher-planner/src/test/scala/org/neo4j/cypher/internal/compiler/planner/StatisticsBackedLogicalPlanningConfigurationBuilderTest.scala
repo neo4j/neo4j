@@ -49,7 +49,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
   /**
    * These index types are currently handled differently from all the other property indexes.
    */
-  val unsupportedIndexTypes: Set[IndexType] = Set(IndexType.LOOKUP, IndexType.FULLTEXT)
+  val unsupportedIndexTypes: Set[IndexType] = Set(IndexType.LOOKUP, IndexType.FULLTEXT, IndexType.VECTOR)
 
   private def indexCapability(indexProviderDescriptor: IndexProviderDescriptor): IndexCapability =
     indexProviderDescriptor match {

@@ -101,5 +101,22 @@ public enum IndexType {
      *     <li>They do not support ordering.</li>
      * </ul>
      */
-    POINT
+    POINT,
+
+    /**
+     * Vector indexes only index float- and double-arrays with finite-float elements of a specified dimensionality.
+     * They are designed to answer approximate nearest neighbor queries.
+     * <p>
+     * It is required that both the {@link IndexSetting#vector_Dimensions() dimensionality} and the
+     * {@link IndexSetting#vector_Similarity_Function() similarity function} are set. This is done automatically
+     * when using the procedure {@code db.index.vector.createNodeIndex}.
+     * <p>
+     * {@link #VECTOR} indexes have the following limitations:
+     * <ul>
+     *     <li>They cannot be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
+     *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
+     *     <li>They can only be created on {@link Schema#indexFor(Label) labels}.</li>
+     * </ul>
+     */
+    VECTOR
 }

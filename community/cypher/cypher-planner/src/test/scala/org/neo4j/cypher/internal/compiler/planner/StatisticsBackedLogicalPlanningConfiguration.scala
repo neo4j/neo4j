@@ -86,6 +86,7 @@ import org.neo4j.internal.schema.IndexType.LOOKUP
 import org.neo4j.internal.schema.IndexType.POINT
 import org.neo4j.internal.schema.IndexType.RANGE
 import org.neo4j.internal.schema.IndexType.TEXT
+import org.neo4j.internal.schema.IndexType.VECTOR
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
 trait StatisticsBackedLogicalPlanningSupport {
@@ -232,6 +233,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     case TEXT     => IndexOrderCapability.NONE
     case RANGE    => IndexOrderCapability.BOTH
     case POINT    => IndexOrderCapability.NONE
+    case VECTOR   => IndexOrderCapability.NONE
   }
 
   def getWithValues(indexType: IndexType): Boolean = indexType match {
@@ -240,6 +242,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     case TEXT     => false
     case RANGE    => true
     case POINT    => true
+    case VECTOR   => false
   }
 
   object IndexCapabilities {
@@ -401,7 +404,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             throw new IllegalArgumentException("Please provide a maybeIsQuerySupported for LOOKUP index")
           case graphdb.schema.IndexType.FULLTEXT =>
             throw new IllegalArgumentException("Please provide a maybeIsQuerySupported for FULLTEXT index")
+          case graphdb.schema.IndexType.VECTOR =>
+            throw new IllegalArgumentException("Please provide a maybeIsQuerySupported for VECTOR index")
         }
+
     }
   }
 

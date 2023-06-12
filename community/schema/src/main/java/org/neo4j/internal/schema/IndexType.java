@@ -44,7 +44,11 @@ public enum IndexType {
     /**
      * @see org.neo4j.graphdb.schema.IndexType#POINT
      */
-    POINT(5);
+    POINT(5),
+    /**
+     * @see org.neo4j.graphdb.schema.IndexType#VECTOR
+     */
+    VECTOR(6);
 
     private final int typeNumber;
 
@@ -63,6 +67,7 @@ public enum IndexType {
             case TEXT -> TEXT;
             case RANGE -> RANGE;
             case POINT -> POINT;
+            case VECTOR -> VECTOR;
         };
     }
 
@@ -73,6 +78,7 @@ public enum IndexType {
             case TEXT -> org.neo4j.graphdb.schema.IndexType.TEXT;
             case RANGE -> org.neo4j.graphdb.schema.IndexType.RANGE;
             case POINT -> org.neo4j.graphdb.schema.IndexType.POINT;
+            case VECTOR -> org.neo4j.graphdb.schema.IndexType.VECTOR;
         };
     }
 

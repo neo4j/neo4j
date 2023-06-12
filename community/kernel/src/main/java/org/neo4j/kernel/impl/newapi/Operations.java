@@ -1534,6 +1534,7 @@ public class Operations implements Write, SchemaWrite {
                             case TEXT -> indexProviders.getTextIndexProvider();
                             case RANGE -> indexProviders.getDefaultProvider();
                             case POINT -> indexProviders.getPointIndexProvider();
+                            case VECTOR -> null;
                         })
                 : prototype;
     }

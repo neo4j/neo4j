@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -55,7 +56,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
         super(
-                null,
+                IndexType.VECTOR,
                 DESCRIPTOR,
                 fileSystem,
                 directoryFactory,
