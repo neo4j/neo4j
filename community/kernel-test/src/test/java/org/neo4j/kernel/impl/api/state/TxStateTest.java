@@ -278,7 +278,7 @@ abstract class TxStateTest {
         state.relationshipDoCreate(3, 2, 1, 1);
 
         // WHEN
-        state.relationshipDoDeleteAddedInThisTx(2);
+        state.relationshipDoDeleteAddedInThisBatch(2);
         LongSet addedRelationshipsWithType =
                 state.relationshipsWithTypeChanged(1).getAdded();
 
@@ -551,7 +551,7 @@ abstract class TxStateTest {
 
         // Then
         assertTrue(state.hasChanges());
-        assertTrue(state.relationshipIsAddedInThisTx(relId));
+        assertTrue(state.relationshipIsAddedInThisBatch(relId));
     }
 
     @Test
@@ -600,7 +600,7 @@ abstract class TxStateTest {
         state.nodeDoDelete(nodeId);
 
         // Then
-        assertTrue(state.nodeIsDeletedInThisTx(nodeId));
+        assertTrue(state.nodeIsDeletedInThisBatch(nodeId));
     }
 
     @Test
@@ -612,7 +612,7 @@ abstract class TxStateTest {
         state.nodeDoCreate(nodeId);
 
         // Then
-        assertFalse(state.nodeIsDeletedInThisTx(nodeId));
+        assertFalse(state.nodeIsDeletedInThisBatch(nodeId));
     }
 
     @Test
@@ -714,7 +714,7 @@ abstract class TxStateTest {
         state.relationshipDoDelete(relationshipId, relationshipType, startNodeId, endNodeId);
 
         // Then
-        assertTrue(state.relationshipIsDeletedInThisTx(relationshipId));
+        assertTrue(state.relationshipIsDeletedInThisBatch(relationshipId));
     }
 
     @Test
@@ -729,7 +729,7 @@ abstract class TxStateTest {
         state.relationshipDoCreate(relationshipId, relationshipType, startNodeId, endNodeId);
 
         // Then
-        assertFalse(state.relationshipIsDeletedInThisTx(relationshipId));
+        assertFalse(state.relationshipIsDeletedInThisBatch(relationshipId));
     }
 
     @RepeatedTest(100)
@@ -920,7 +920,7 @@ abstract class TxStateTest {
         assertTrue(observedRevisions.add(state.getDataRevision()));
         assertTrue(state.hasDataChanges());
 
-        state.relationshipDoDeleteAddedInThisTx(0);
+        state.relationshipDoDeleteAddedInThisBatch(0);
         assertTrue(observedRevisions.add(state.getDataRevision()));
         assertTrue(state.hasDataChanges());
 

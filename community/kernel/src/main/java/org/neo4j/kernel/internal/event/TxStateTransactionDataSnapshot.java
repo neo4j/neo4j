@@ -122,12 +122,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     @Override
     public boolean isDeleted(Node node) {
-        return state.nodeIsDeletedInThisTx(node.getId());
+        return state.nodeIsDeletedInThisBatch(node.getId());
     }
 
     @Override
     public boolean isDeleted(Relationship relationship) {
-        return state.relationshipIsDeletedInThisTx(relationship.getId());
+        return state.relationshipIsDeletedInThisBatch(relationship.getId());
     }
 
     @Override
@@ -414,7 +414,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private Value committedValue(
             NodeState nodeState, int property, StorageNodeCursor node, StoragePropertyCursor properties) {
-        if (state.nodeIsAddedInThisTx(nodeState.getId())) {
+        if (state.nodeIsAddedInThisBatch(nodeState.getId())) {
             return NO_VALUE;
         }
 
@@ -436,7 +436,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             int property,
             StorageRelationshipScanCursor relationship,
             StoragePropertyCursor properties) {
-        if (state.relationshipIsAddedInThisTx(relState.getId())) {
+        if (state.relationshipIsAddedInThisBatch(relState.getId())) {
             return NO_VALUE;
         }
 

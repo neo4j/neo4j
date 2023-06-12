@@ -91,11 +91,11 @@ public interface CommandLockVerification {
         private void verifyPropertySufficientlyLocked(Command.PropertyCommand command) {
             PropertyRecord record = command.after.inUse() ? command.after : command.before;
             if (record.isNodeSet()) {
-                if (!txState.nodeIsAddedInThisTx(record.getNodeId())) {
+                if (!txState.nodeIsAddedInThisBatch(record.getNodeId())) {
                     assertLocked(record.getNodeId(), NODE, EXCLUSIVE, record);
                 }
             } else if (record.isRelSet()) {
-                if (!txState.relationshipIsAddedInThisTx(record.getRelId())) {
+                if (!txState.relationshipIsAddedInThisBatch(record.getRelId())) {
                     assertLocked(record.getRelId(), RELATIONSHIP, EXCLUSIVE, record);
                 }
             } else if (record.isSchemaSet()) {
@@ -108,10 +108,10 @@ public interface CommandLockVerification {
 
         private void verifyNodeSufficientlyLocked(Command.NodeCommand command) {
             long id = command.getKey();
-            if (!txState.nodeIsAddedInThisTx(id)) {
+            if (!txState.nodeIsAddedInThisBatch(id)) {
                 assertLocked(id, NODE, EXCLUSIVE, command.after);
             }
-            if (txState.nodeIsDeletedInThisTx(id)) {
+            if (txState.nodeIsDeletedInThisBatch(id)) {
                 assertLocked(id, NODE_RELATIONSHIP_GROUP_DELETE, EXCLUSIVE, command.after);
             }
         }
@@ -126,7 +126,7 @@ public interface CommandLockVerification {
 
         private void verifyRelationshipGroupSufficientlyLocked(Command.RelationshipGroupCommand command) {
             long node = command.after.getOwningNode();
-            if (!txState.nodeIsAddedInThisTx(node)) {
+            if (!txState.nodeIsAddedInThisBatch(node)) {
                 assertLocked(node, RELATIONSHIP_GROUP, EXCLUSIVE, command.after);
             }
 

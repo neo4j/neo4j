@@ -45,7 +45,7 @@ public interface TransactionState extends ReadableTransactionState {
 
     void relationshipDoDelete(long relationshipId, int type, long startNode, long endNode);
 
-    void relationshipDoDeleteAddedInThisTx(long relationshipId);
+    void relationshipDoDeleteAddedInThisBatch(long relationshipId);
 
     void nodeDoDelete(long nodeId);
 

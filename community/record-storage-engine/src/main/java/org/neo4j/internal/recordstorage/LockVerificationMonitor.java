@@ -104,11 +104,11 @@ public class LockVerificationMonitor implements LoadMonitor {
         });
 
         if (before.isNodeSet()) {
-            if (!txState.nodeIsAddedInThisTx(before.getNodeId())) {
+            if (!txState.nodeIsAddedInThisBatch(before.getNodeId())) {
                 assertLocked(before.getNodeId(), NODE, before);
             }
         } else if (before.isRelSet()) {
-            if (!txState.relationshipIsAddedInThisTx(before.getRelId())) {
+            if (!txState.relationshipIsAddedInThisBatch(before.getRelId())) {
                 assertLocked(before.getRelId(), RELATIONSHIP, before);
             }
         } else if (before.isSchemaSet()) {
@@ -119,10 +119,10 @@ public class LockVerificationMonitor implements LoadMonitor {
     private void verifyNodeSufficientlyLocked(NodeRecord before) {
         assertRecordsEquals(before, loader::loadNode);
         long id = before.getId();
-        if (!txState.nodeIsAddedInThisTx(id)) {
+        if (!txState.nodeIsAddedInThisBatch(id)) {
             assertLocked(id, NODE, before);
         }
-        if (txState.nodeIsDeletedInThisTx(id)) {
+        if (txState.nodeIsDeletedInThisBatch(id)) {
             assertLocked(id, NODE_RELATIONSHIP_GROUP_DELETE, before);
         }
     }
@@ -130,13 +130,13 @@ public class LockVerificationMonitor implements LoadMonitor {
     private void verifyRelationshipSufficientlyLocked(RelationshipRecord before) {
         assertRecordsEquals(before, loader::loadRelationship);
         long id = before.getId();
-        boolean addedInThisTx = txState.relationshipIsAddedInThisTx(id);
+        boolean addedInThisBatch = txState.relationshipIsAddedInThisBatch(id);
         checkState(
-                before.inUse() == !addedInThisTx,
+                before.inUse() == !addedInThisBatch,
                 "Relationship[%d] inUse:%b, but txState.relationshipIsAddedInThisTx:%b",
                 id,
                 before.inUse(),
-                addedInThisTx);
+                addedInThisBatch);
         checkRelationship(txState, locks, loader, before);
     }
 
@@ -144,7 +144,7 @@ public class LockVerificationMonitor implements LoadMonitor {
         assertRecordsEquals(before, loader::loadRelationshipGroup);
 
         long node = before.getOwningNode();
-        if (!txState.nodeIsAddedInThisTx(node)) {
+        if (!txState.nodeIsAddedInThisBatch(node)) {
             assertLocked(node, RELATIONSHIP_GROUP, before);
         }
     }
@@ -156,11 +156,11 @@ public class LockVerificationMonitor implements LoadMonitor {
     static void checkRelationship(
             ReadableTransactionState txState, ResourceLocker locks, StoreLoader loader, RelationshipRecord record) {
         long id = record.getId();
-        if (!txState.relationshipIsAddedInThisTx(id) && !txState.relationshipIsDeletedInThisTx(id)) {
+        if (!txState.relationshipIsAddedInThisBatch(id) && !txState.relationshipIsDeletedInThisBatch(id)) {
             // relationship only modified
             assertLocked(locks, id, RELATIONSHIP, EXCLUSIVE, record);
         } else {
-            if (txState.relationshipIsDeletedInThisTx(id)) {
+            if (txState.relationshipIsDeletedInThisBatch(id)) {
                 assertLocked(locks, id, RELATIONSHIP, EXCLUSIVE, record);
             } else {
                 checkRelationshipNode(txState, locks, loader, record.getFirstNode());
@@ -171,7 +171,7 @@ public class LockVerificationMonitor implements LoadMonitor {
 
     private static void checkRelationshipNode(
             ReadableTransactionState txState, ResourceLocker locks, StoreLoader loader, long nodeId) {
-        if (!txState.nodeIsAddedInThisTx(nodeId)) {
+        if (!txState.nodeIsAddedInThisBatch(nodeId)) {
             NodeRecord node = loader.loadNode(nodeId);
             if (node.inUse() && node.isDense()) {
                 assertLocked(locks, nodeId, NODE_RELATIONSHIP_GROUP_DELETE, SHARED, node);

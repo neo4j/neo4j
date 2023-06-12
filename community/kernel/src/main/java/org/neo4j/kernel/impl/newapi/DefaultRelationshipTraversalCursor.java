@@ -166,7 +166,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         }
 
         while (storeCursor.next()) {
-            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx(storeCursor.entityReference());
+            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
             if (!skip && allowed()) {
                 return true;
             }

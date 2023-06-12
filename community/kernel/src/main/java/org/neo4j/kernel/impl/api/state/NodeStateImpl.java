@@ -126,7 +126,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
             return IntSets.immutable.empty();
         }
     };
-    private final boolean addedInThisTx;
+    private final boolean addedInThisBatch;
 
     private MutableLongDiffSets labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
@@ -134,15 +134,15 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
     private boolean deleted;
 
     static NodeStateImpl createNodeState(
-            long id, boolean addedInThisTx, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
+            long id, boolean addedInThisBatch, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
         memoryTracker.allocateHeap(SHALLOW_SIZE);
-        return new NodeStateImpl(id, addedInThisTx, collectionsFactory, memoryTracker);
+        return new NodeStateImpl(id, addedInThisBatch, collectionsFactory, memoryTracker);
     }
 
     private NodeStateImpl(
-            long id, boolean addedInThisTx, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
+            long id, boolean addedInThisBatch, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
         super(id, collectionsFactory, memoryTracker);
-        this.addedInThisTx = addedInThisTx;
+        this.addedInThisBatch = addedInThisBatch;
     }
 
     @Override
@@ -299,8 +299,8 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
         return deleted;
     }
 
-    boolean isAddedInThisTx() {
-        return addedInThisTx;
+    boolean isAddedInThisBatch() {
+        return addedInThisBatch;
     }
 
     void markAsDeleted() {

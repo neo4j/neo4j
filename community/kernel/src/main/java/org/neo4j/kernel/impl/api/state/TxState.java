@@ -159,7 +159,7 @@ public class TxState implements TransactionState {
             try (HeapTrackingArrayList<NodeRelationshipIds> sortedNodeRelState =
                     HeapTrackingArrayList.newArrayList(nodeStatesMap.size(), stateMemoryTracker)) {
                 nodeStatesMap.forEachValue(nodeState -> {
-                    if (nodeState.isDeleted() && nodeState.isAddedInThisTx()) {
+                    if (nodeState.isDeleted() && nodeState.isAddedInThisBatch()) {
                         return;
                     }
                     if (nodeState.hasAddedRelationships() || nodeState.hasRemovedRelationships()) {
@@ -337,12 +337,12 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public boolean nodeIsAddedInThisTx(long nodeId) {
+    public boolean nodeIsAddedInThisBatch(long nodeId) {
         return nodes != null && nodes.isAdded(nodeId);
     }
 
     @Override
-    public boolean relationshipIsAddedInThisTx(long relationshipId) {
+    public boolean relationshipIsAddedInThisBatch(long relationshipId) {
         return relationships != null && relationships.isAdded(relationshipId);
     }
 
@@ -405,14 +405,14 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public boolean nodeIsDeletedInThisTx(long nodeId) {
+    public boolean nodeIsDeletedInThisBatch(long nodeId) {
         return nodes != null && nodes.wasRemoved(nodeId);
     }
 
     @Override
     public void relationshipDoDelete(long id, int type, long startNodeId, long endNodeId) {
         RemovalsCountingDiffSets relationships = relationships();
-        boolean wasAddedInThisTx = relationships.isAdded(id);
+        boolean wasAddedInThisBatch = relationships.isAdded(id);
         relationships.remove(id);
 
         if (startNodeId == endNodeId) {
@@ -422,7 +422,7 @@ public class TxState implements TransactionState {
             getOrCreateNodeState(endNodeId).removeRelationship(id, type, RelationshipDirection.INCOMING);
         }
 
-        if (wasAddedInThisTx || !behaviour.keepMetaDataForDeletedRelationship()) {
+        if (wasAddedInThisBatch || !behaviour.keepMetaDataForDeletedRelationship()) {
             if (relationshipStatesMap != null) {
                 RelationshipStateImpl removed = relationshipStatesMap.remove(id);
                 if (removed != null) {
@@ -438,12 +438,12 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public void relationshipDoDeleteAddedInThisTx(long relationshipId) {
+    public void relationshipDoDeleteAddedInThisBatch(long relationshipId) {
         getRelationshipState(relationshipId).accept(this::relationshipDoDelete);
     }
 
     @Override
-    public boolean relationshipIsDeletedInThisTx(long relationshipId) {
+    public boolean relationshipIsDeletedInThisBatch(long relationshipId) {
         return relationships != null && relationships.wasRemoved(relationshipId);
     }
 
@@ -836,7 +836,7 @@ public class TxState implements TransactionState {
 
     private NodeStateImpl newNodeState(long nodeId) {
         return NodeStateImpl.createNodeState(
-                nodeId, nodeIsAddedInThisTx(nodeId), collectionsFactory, stateMemoryTracker);
+                nodeId, nodeIsAddedInThisBatch(nodeId), collectionsFactory, stateMemoryTracker);
     }
 
     private RelationshipStateImpl newRelationshipState(long relationshipId, int type, long startNode, long endNode) {

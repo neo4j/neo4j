@@ -151,9 +151,9 @@ public abstract class AllStoreHolder extends Read {
 
         if (hasTxStateWithChanges()) {
             TransactionState txState = txState();
-            if (txState.nodeIsDeletedInThisTx(reference)) {
+            if (txState.nodeIsDeletedInThisBatch(reference)) {
                 return false;
-            } else if (txState.nodeIsAddedInThisTx(reference)) {
+            } else if (txState.nodeIsAddedInThisBatch(reference)) {
                 return true;
             }
         }
@@ -175,13 +175,13 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public boolean nodeDeletedInTransaction(long node) {
         performCheckBeforeOperation();
-        return hasTxStateWithChanges() && txState().nodeIsDeletedInThisTx(node);
+        return hasTxStateWithChanges() && txState().nodeIsDeletedInThisBatch(node);
     }
 
     @Override
     public boolean relationshipDeletedInTransaction(long relationship) {
         performCheckBeforeOperation();
-        return hasTxStateWithChanges() && txState().relationshipIsDeletedInThisTx(relationship);
+        return hasTxStateWithChanges() && txState().relationshipIsDeletedInThisBatch(relationship);
     }
 
     @Override
@@ -393,9 +393,9 @@ public abstract class AllStoreHolder extends Read {
 
         if (hasTxStateWithChanges()) {
             TransactionState txState = txState();
-            if (txState.relationshipIsDeletedInThisTx(reference)) {
+            if (txState.relationshipIsDeletedInThisBatch(reference)) {
                 return false;
-            } else if (txState.relationshipIsAddedInThisTx(reference)) {
+            } else if (txState.relationshipIsAddedInThisBatch(reference)) {
                 return true;
             }
         }

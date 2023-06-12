@@ -149,7 +149,7 @@ class RecordStorageLocks implements StorageLocks {
 
     @Override
     public void acquireNodeDeletionLock(ReadableTransactionState txState, LockTracer lockTracer, long node) {
-        if (!txState.nodeIsAddedInThisTx(node)) {
+        if (!txState.nodeIsAddedInThisBatch(node)) {
             locker.acquireExclusive(lockTracer, ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, node);
             locker.acquireExclusive(lockTracer, ResourceType.NODE, node);
             locker.acquireExclusive(lockTracer, ResourceType.DEGREES, node);

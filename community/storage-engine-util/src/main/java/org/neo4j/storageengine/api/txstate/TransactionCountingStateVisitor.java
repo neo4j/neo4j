@@ -164,11 +164,11 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
     private void visitLabels(long nodeId, LongConsumer visitor) {
         // This transaction state visitor doesn't have access to higher level cursors that combine store- and tx-state,
         // but however has access to the two individually, and so does this combining here directly.
-        if (txState.nodeIsDeletedInThisTx(nodeId)) {
+        if (txState.nodeIsDeletedInThisBatch(nodeId)) {
             return;
         }
 
-        if (txState.nodeIsAddedInThisTx(nodeId)) {
+        if (txState.nodeIsAddedInThisBatch(nodeId)) {
             txState.getNodeState(nodeId).labelDiffSets().getAdded().forEach(visitor::accept);
         } else {
             nodeCursor.single(nodeId);

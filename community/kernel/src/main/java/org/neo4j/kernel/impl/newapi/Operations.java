@@ -323,12 +323,12 @@ public class Operations implements Write, SchemaWrite {
         sharedSchemaLock(ResourceType.RELATIONSHIP_TYPE, relationshipType);
         sharedTokenSchemaLock(ResourceType.RELATIONSHIP_TYPE);
         TransactionState txState = ktx.txState();
-        var sourceNodeAddedInTx = txState.nodeIsAddedInThisTx(sourceNode);
+        var sourceNodeAddedInThisBatch = txState.nodeIsAddedInThisBatch(sourceNode);
         var targetNodeAddedInTx =
-                sourceNode == targetNode ? sourceNodeAddedInTx : txState.nodeIsAddedInThisTx(targetNode);
+                sourceNode == targetNode ? sourceNodeAddedInThisBatch : txState.nodeIsAddedInThisBatch(targetNode);
         storageLocks.acquireRelationshipCreationLock(
-                ktx.lockTracer(), sourceNode, targetNode, sourceNodeAddedInTx, targetNodeAddedInTx);
-        if (!sourceNodeAddedInTx) {
+                ktx.lockTracer(), sourceNode, targetNode, sourceNodeAddedInThisBatch, targetNodeAddedInTx);
+        if (!sourceNodeAddedInThisBatch) {
             assertNodeExists(sourceNode);
         }
         if (targetNode != sourceNode && !targetNodeAddedInTx) {
@@ -336,7 +336,7 @@ public class Operations implements Write, SchemaWrite {
         }
 
         long id = commandCreationContext.reserveRelationship(
-                sourceNode, targetNode, relationshipType, sourceNodeAddedInTx, targetNodeAddedInTx);
+                sourceNode, targetNode, relationshipType, sourceNodeAddedInThisBatch, targetNodeAddedInTx);
         storageLocks.acquireExclusiveRelationshipLock(ktx.lockTracer(), id);
 
         txState.relationshipDoCreate(id, relationshipType, sourceNode, targetNode);
@@ -347,8 +347,8 @@ public class Operations implements Write, SchemaWrite {
     public boolean relationshipDelete(long relationship) {
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
-        var relationshipIsAddedInThisTx = txState.relationshipIsAddedInThisTx(relationship);
-        if (relationshipIsAddedInThisTx) {
+        var relationshipIsAddedInThisBatch = txState.relationshipIsAddedInThisBatch(relationship);
+        if (relationshipIsAddedInThisBatch) {
             try {
                 singleRelationship(relationship);
             } catch (EntityNotFoundException e) {
@@ -356,7 +356,7 @@ public class Operations implements Write, SchemaWrite {
                         + " was created in this transaction, but was not found when deleting it");
             }
             updater.onDeleteUncreated(relationshipCursor, propertyCursor);
-            txState.relationshipDoDeleteAddedInThisTx(relationship);
+            txState.relationshipDoDeleteAddedInThisBatch(relationship);
             return true;
         }
 
@@ -369,16 +369,16 @@ public class Operations implements Write, SchemaWrite {
         sharedTokenSchemaLock(ResourceType.RELATIONSHIP_TYPE);
         var sourceNode = relationshipCursor.sourceNodeReference();
         var targetNode = relationshipCursor.targetNodeReference();
-        boolean sourceNodeAddedInTx = txState.nodeIsAddedInThisTx(sourceNode);
-        boolean targetNodeAddedInTx = txState.nodeIsAddedInThisTx(targetNode);
+        boolean sourceNodeAddedInBatch = txState.nodeIsAddedInThisBatch(sourceNode);
+        boolean targetNodeAddedInBatch = txState.nodeIsAddedInThisBatch(targetNode);
         storageLocks.acquireRelationshipDeletionLock(
                 ktx.lockTracer(),
                 sourceNode,
                 targetNode,
                 relationship,
-                relationshipIsAddedInThisTx,
-                sourceNodeAddedInTx,
-                targetNodeAddedInTx);
+                relationshipIsAddedInThisBatch,
+                sourceNodeAddedInBatch,
+                targetNodeAddedInBatch);
 
         if (!allStoreHolder.relationshipExists(relationship)) {
             return false;
@@ -501,7 +501,7 @@ public class Operations implements Write, SchemaWrite {
 
         if (ktx.hasTxStateWithChanges()) {
             TransactionState state = ktx.txState();
-            if (state.nodeIsAddedInThisTx(node)) {
+            if (state.nodeIsAddedInThisBatch(node)) {
                 try {
                     singleNode(node);
                 } catch (EntityNotFoundException e) {
@@ -512,7 +512,7 @@ public class Operations implements Write, SchemaWrite {
                 state.nodeDoDelete(node);
                 return true;
             }
-            if (state.nodeIsDeletedInThisTx(node)) {
+            if (state.nodeIsDeletedInThisBatch(node)) {
                 // already deleted
                 return false;
             }
@@ -2103,13 +2103,13 @@ public class Operations implements Write, SchemaWrite {
     }
 
     private void acquireExclusiveNodeLock(long node) {
-        if (!ktx.hasTxStateWithChanges() || !ktx.txState().nodeIsAddedInThisTx(node)) {
+        if (!ktx.hasTxStateWithChanges() || !ktx.txState().nodeIsAddedInThisBatch(node)) {
             ktx.lockClient().acquireExclusive(ktx.lockTracer(), ResourceType.NODE, node);
         }
     }
 
     private void acquireExclusiveRelationshipLock(long relationshipId) {
-        if (!ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx(relationshipId)) {
+        if (!ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisBatch(relationshipId)) {
             ktx.lockClient().acquireExclusive(ktx.lockTracer(), ResourceType.RELATIONSHIP, relationshipId);
         }
     }

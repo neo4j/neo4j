@@ -106,7 +106,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         }
 
         while (storeCursor.next()) {
-            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx(storeCursor.entityReference());
+            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
             if (!skip && allowed()) {
                 if (tracer != null) {
                     tracer.onRelationship(relationshipReference());
@@ -162,7 +162,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     @Override
     protected void collectAddedTxStateSnapshot() {
         if (isSingle) {
-            addedRelationships = read.txState().relationshipIsAddedInThisTx(single)
+            addedRelationships = read.txState().relationshipIsAddedInThisBatch(single)
                     ? LongHashSet.newSetWith(single).longIterator()
                     : ImmutableEmptyLongIterator.INSTANCE;
         } else {

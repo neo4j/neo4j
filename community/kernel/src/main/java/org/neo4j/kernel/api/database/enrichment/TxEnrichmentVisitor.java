@@ -215,8 +215,8 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         captureNodeState(id, DeltaType.MODIFIED, true);
 
         final var position = changesChannel.position();
-        final var addedInThisTx = txState.nodeIsAddedInThisTx(id);
-        if (addedInThisTx) {
+        final var addedInThisBatch = txState.nodeIsAddedInThisBatch(id);
+        if (addedInThisBatch) {
             final var labels = toIntArray(added);
             addLabels(labels);
             captureLabelConstraints(id, labels);
@@ -225,7 +225,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             addLabels(toIntArray(removed));
         }
 
-        setNodeChangeDelta(id, addedInThisTx ? ChangeType.LABELS_STATE : ChangeType.LABELS_CHANGE, position);
+        setNodeChangeDelta(id, addedInThisBatch ? ChangeType.LABELS_STATE : ChangeType.LABELS_CHANGE, position);
     }
 
     @Override
@@ -235,7 +235,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         super.visitNodePropertyChanges(id, added, changed, removed);
         captureNodeState(id, DeltaType.MODIFIED, true);
 
-        if (txState.nodeIsAddedInThisTx(id)) {
+        if (txState.nodeIsAddedInThisBatch(id)) {
             setNodeChangeDelta(id, ChangeType.PROPERTIES_STATE, addNewNodeProperties(added));
         } else {
             final var position = changesChannel.position();
@@ -426,7 +426,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
     }
 
     private int captureNodeState(long id, DeltaType deltaType, boolean asPartOfNodeChange) {
-        if (setNodeChangeType(id, deltaType) && !txState.nodeIsAddedInThisTx(id)) {
+        if (setNodeChangeType(id, deltaType) && !txState.nodeIsAddedInThisBatch(id)) {
             nodeCursor.single(id);
             if (nodeCursor.next()) {
                 final var labels = toIntArray(nodeCursor.labels());
@@ -434,7 +434,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
                 setNodeChangeDelta(id, ChangeType.LABELS_STATE, addLabels(labels));
 
                 final PropertySelection selection;
-                if (txState.nodeIsDeletedInThisTx(id) || (asPartOfNodeChange && captureMode == CaptureMode.FULL)) {
+                if (txState.nodeIsDeletedInThisBatch(id) || (asPartOfNodeChange && captureMode == CaptureMode.FULL)) {
                     selection = PropertySelection.ALL_PROPERTIES;
                 } else {
                     selection = selection(constraintProps);

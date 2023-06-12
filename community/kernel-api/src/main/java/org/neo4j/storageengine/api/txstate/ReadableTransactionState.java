@@ -78,15 +78,15 @@ public interface ReadableTransactionState {
      */
     Iterable<RelationshipState> modifiedRelationships();
 
-    boolean relationshipIsAddedInThisTx(long relationshipId);
+    boolean relationshipIsAddedInThisBatch(long relationshipId);
 
-    boolean relationshipIsDeletedInThisTx(long relationshipId);
+    boolean relationshipIsDeletedInThisBatch(long relationshipId);
 
     LongDiffSets nodeStateLabelDiffSets(long nodeId);
 
-    boolean nodeIsAddedInThisTx(long nodeId);
+    boolean nodeIsAddedInThisBatch(long nodeId);
 
-    boolean nodeIsDeletedInThisTx(long nodeId);
+    boolean nodeIsDeletedInThisBatch(long nodeId);
 
     /**
      * @return {@code true} if the relationship was visited in this state, i.e. if it was created

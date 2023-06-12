@@ -344,7 +344,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         }
 
         while (storeCursor.next()) {
-            boolean skip = hasChanges && read.txState().nodeIsDeletedInThisTx(storeCursor.entityReference());
+            boolean skip = hasChanges && read.txState().nodeIsDeletedInThisBatch(storeCursor.entityReference());
             if (!skip && allowsTraverse()) {
                 if (tracer != null) {
                     tracer.onNode(nodeReference());
@@ -403,7 +403,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         checkHasChanges = false;
         if (hasChanges = read.hasTxStateWithChanges()) {
             if (this.isSingle) {
-                addedNodes = read.txState().nodeIsAddedInThisTx(single)
+                addedNodes = read.txState().nodeIsAddedInThisBatch(single)
                         ? PrimitiveLongCollections.single(single)
                         : ImmutableEmptyLongIterator.INSTANCE;
             } else {
