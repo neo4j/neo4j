@@ -22,10 +22,12 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.apache.lucene.document.Field.Store.YES;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.FloatingPointArray;
@@ -40,13 +42,14 @@ class VectorDocumentStructure {
 
     static Document createLuceneDocument(
             long id, FloatingPointArray value, VectorSimilarityFunction similarityFunction) {
-        final float[] vector = vectorFrom(value);
+        final var vector = vectorFrom(value);
         final var document = new Document();
         final var idField = new StringField(ENTITY_ID_KEY, Long.toString(id), YES);
         final var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, id);
         document.add(idField);
         document.add(idValueField);
-        final var valueField = new KnnFloatVectorField(VECTOR_VALUE_KEY, vector, similarityFunction);
+        final var fieldType = new VectorFieldType(vector.length, similarityFunction);
+        final var valueField = new KnnFloatVectorField(VECTOR_VALUE_KEY, vector, fieldType);
         document.add(valueField);
         return document;
     }
@@ -65,5 +68,38 @@ class VectorDocumentStructure {
             vector[i] = (float) value.doubleValue(i);
         }
         return vector;
+    }
+
+    /** Lucene's {@link FieldType#setVectorAttributes} enforces a max dimensionality,
+     * but otherwise just sets {@link FieldType#vectorDimension}, {@link FieldType#vectorSimilarityFunction}, and
+     * {@link FieldType#vectorEncoding}.
+     * <p>
+     * We can just extend {@link FieldType} with our own implementation that supplies
+     * those values without any such max dimensionality check to circumvent that.
+     */
+    private static class VectorFieldType extends FieldType {
+        private final int vectorDimension;
+        private final VectorSimilarityFunction similarityFunction;
+
+        private VectorFieldType(int dimension, VectorSimilarityFunction similarityFunction) {
+            this.vectorDimension = dimension;
+            this.similarityFunction = similarityFunction;
+            freeze();
+        }
+
+        @Override
+        public int vectorDimension() {
+            return vectorDimension;
+        }
+
+        @Override
+        public VectorSimilarityFunction vectorSimilarityFunction() {
+            return similarityFunction;
+        }
+
+        @Override
+        public VectorEncoding vectorEncoding() {
+            return VectorEncoding.FLOAT32;
+        }
     }
 }
