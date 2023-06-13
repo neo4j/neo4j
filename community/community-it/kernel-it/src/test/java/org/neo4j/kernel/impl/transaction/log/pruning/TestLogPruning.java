@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +46,8 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,6 +62,7 @@ class TestLogPruning
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
     private LogFiles logFiles;
+    private FakeClock fakeClock = Clocks.fakeClock();
     private int rotateEveryNTransactions;
     private int performedTransactions;
 
@@ -168,13 +172,61 @@ class TestLogPruning
         assertThat( transactionCount() ).isGreaterThanOrEqualTo( 1 );
     }
 
+    @Test
+    void pruneByTime() throws Exception
+    {
+        var transactionsPerLog = 3;
+        newDb( "1 hours", transactionsPerLog );
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            doTransaction();
+        }
+
+        fakeClock.forward( Duration.ofMinutes( 61 ) );
+
+        for ( int i = 0; i < transactionsPerLog; i++ )
+        {
+            doTransaction();
+        }
+
+        assertThat( transactionCount() ).isLessThanOrEqualTo( transactionsPerLog * 2 );
+    }
+
+    @Test
+    void pruneByTimeKeepsTransactionsWithinTimespan() throws Exception
+    {
+        var transactionsPerLog = 10;
+        newDb( "1 hours", transactionsPerLog );
+
+        // create some transactions
+        for ( int i = 0; i < transactionsPerLog; i++ )
+        {
+            doTransaction();
+        }
+        // new log started here
+        rotate();
+        // the first transaction in log has old timestamp
+        doTransaction();
+        fakeClock.forward( Duration.ofMinutes( 61 ) );
+
+        // more new transactions, they all should be kept
+        for ( int i = 0; i < transactionsPerLog * 10; i++ )
+        {
+            doTransaction();
+        }
+
+        assertThat( transactionCount() ).isGreaterThanOrEqualTo( transactionsPerLog * 10 );
+    }
+
     private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
     {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
         managementService = new TestDatabaseManagementServiceBuilder()
-                                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) ).impermanent()
-                                .setConfig( keep_logical_logs, logPruning ).build();
+                .setClock( fakeClock )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) ).impermanent()
+                .setConfig( keep_logical_logs, logPruning ).build();
         this.db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         logFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
         return db;

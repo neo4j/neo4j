@@ -123,17 +123,20 @@ public class TransactionLogFileInformation implements LogFileInformation
                 return cachedTimeStamp;
             }
             var logFile = logFiles.getLogFile();
-            LogPosition position = logFile.extractHeader( version ).getStartPosition();
-            try ( ReadableLogChannel channel = logFile.getRawReader( position ) )
+            if ( logFile.versionExists( version ) )
             {
-                LogEntry entry;
-                while ( (entry = logEntryReader.readLogEntry( channel )) != null )
+                LogPosition position = logFile.extractHeader( version ).getStartPosition();
+                try ( ReadableLogChannel channel = logFile.getRawReader( position ) )
                 {
-                    if ( entry instanceof LogEntryStart )
+                    LogEntry entry;
+                    while ( (entry = logEntryReader.readLogEntry( channel )) != null )
                     {
-                        long timeWritten = ((LogEntryStart) entry).getTimeWritten();
-                        logFileTimeStamp.put( version, timeWritten );
-                        return timeWritten;
+                        if ( entry instanceof LogEntryStart )
+                        {
+                            long timeWritten = ((LogEntryStart) entry).getTimeWritten();
+                            logFileTimeStamp.put( version, timeWritten );
+                            return timeWritten;
+                        }
                     }
                 }
             }

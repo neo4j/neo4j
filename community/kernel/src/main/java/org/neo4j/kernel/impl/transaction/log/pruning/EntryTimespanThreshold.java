@@ -56,12 +56,13 @@ public final class EntryTimespanThreshold implements Threshold
     {
         try
         {
-            long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp( version );
+            // look for the first timestamp in the next version, because last transaction in the requested version can be far ahead after the first one
+            long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp( version + 1 );
             return firstStartRecordTimestamp >= 0 && firstStartRecordTimestamp < lowerLimit;
         }
         catch ( IOException e )
         {
-            log.warn( "Fail to get timestamp info from transaction log file " + version, e );
+            log.warn( "Fail to get timestamp info from transaction log file " + (version + 1), e );
             return false;
         }
     }
