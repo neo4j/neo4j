@@ -7,7 +7,7 @@
   <artifactId>parent</artifactId>
   <version>5.10.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Neo4j</name>
+  <name>Neo4j - Parent</name>
   <description>Neo4j Graph Database</description>
   <inceptionYear>2002</inceptionYear>
   <url>http://neo4j.com/</url>

@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-graph-counts</artifactId>
     <packaging>jar</packaging>
-    <name>Neo4j - Cypher</name>
+    <name>Neo4j - Cypher Graph Counts</name>
     <description>Graph counts are used in tests and to debug support cases and Github issues</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
