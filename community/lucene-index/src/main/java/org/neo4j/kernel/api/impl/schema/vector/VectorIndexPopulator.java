@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
@@ -27,19 +28,28 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueIndexReader>> {
-    VectorIndexPopulator(DatabaseIndex<ValueIndexReader> luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy) {
+    private final VectorSimilarityFunction similarityFunction;
+
+    VectorIndexPopulator(
+            DatabaseIndex<ValueIndexReader> luceneIndex,
+            IndexUpdateIgnoreStrategy ignoreStrategy,
+            VectorSimilarityFunction similarityFunction) {
         super(luceneIndex, ignoreStrategy);
+        this.similarityFunction = similarityFunction;
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
-        return new VectorIndexPopulatingUpdater();
+        return new VectorIndexPopulatingUpdater(writer, ignoreStrategy, similarityFunction);
     }
 
     @Override
     protected Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
-        return null;
+        final var entityId = update.getEntityId();
+        final var value = (FloatingPointArray) update.values()[0];
+        return VectorDocumentStructure.createLuceneDocument(entityId, value, similarityFunction);
     }
 }

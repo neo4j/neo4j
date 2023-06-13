@@ -63,7 +63,7 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
 
     @Override
     protected String entityIdFieldKey() {
-        return null;
+        return VectorDocumentStructure.ENTITY_ID_KEY;
     }
 
     @Override

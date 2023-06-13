@@ -51,6 +51,10 @@ class VectorDocumentStructure {
         return document;
     }
 
+    static long entityIdFrom(Document from) {
+        return Long.parseLong(from.get(ENTITY_ID_KEY));
+    }
+
     private static float[] vectorFrom(FloatingPointArray value) {
         if (value instanceof final FloatArray floatArray) {
             return floatArray.asObjectCopy();
