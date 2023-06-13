@@ -39,6 +39,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LA
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_PRIMARIES_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEEDING_SERVERS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CONFIG_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_IV_PROPERTY;
@@ -50,6 +51,8 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UPDATE_
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_VIRTUAL_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_DUMP_DATA_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_KEEP_DATA_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseStatus.OFFLINE;
@@ -355,6 +358,26 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         public DatabaseNodeBuilder withDesignatedSeeder(ServerId designatedSeeder) {
             node.setProperty(
                     DATABASE_DESIGNATED_SEEDER_PROPERTY, designatedSeeder.uuid().toString());
+            return this;
+        }
+
+        public DatabaseNodeBuilder withSeedingServers(Set<ServerId> seedingServers) {
+            String[] servers = seedingServers.stream()
+                    .map(serverId -> serverId.uuid().toString())
+                    .toArray(String[]::new);
+            node.setProperty(DATABASE_SEEDING_SERVERS_PROPERTY, servers);
+            return this;
+        }
+
+        public DatabaseNodeBuilder withDeletedDatabaseKeepProperty(Set<ServerId> serversKeepingData) {
+            node.setProperty(
+                    DELETED_DATABASE_KEEP_DATA_PROPERTY,
+                    serversKeepingData.stream().map(id -> id.uuid().toString()).toArray(String[]::new));
+            return this;
+        }
+
+        public DatabaseNodeBuilder withDumpDatabaseProperty() {
+            node.setProperty(DELETED_DATABASE_DUMP_DATA_PROPERTY, true);
             return this;
         }
 

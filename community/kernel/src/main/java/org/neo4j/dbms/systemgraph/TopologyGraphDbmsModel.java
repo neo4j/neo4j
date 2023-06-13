@@ -123,12 +123,6 @@ public interface TopologyGraphDbmsModel {
             return code;
         }
 
-        public static Optional<DatabaseAccess> findByValue(String value) {
-            return Arrays.stream(values())
-                    .filter(v -> v.stringRepr.equals(value))
-                    .findFirst();
-        }
-
         public static DatabaseAccess toDatabaseAccess(boolean readOnly) {
             if (values().length != 2) {
                 throw new IllegalStateException("Can't identify database access");
@@ -163,7 +157,11 @@ public interface TopologyGraphDbmsModel {
     String DATABASE_VIRTUAL_PROPERTY = "virtual";
     String DATABASE_UPDATE_ID_PROPERTY = "update_id";
     String DATABASE_STORE_RANDOM_ID_PROPERTY = "store_random_id";
+
+    @Deprecated
     String DATABASE_DESIGNATED_SEEDER_PROPERTY = "designated_seeder";
+
+    String DATABASE_SEEDING_SERVERS_PROPERTY = "seeding_servers";
     String DATABASE_STORE_FORMAT_NEW_DB_PROPERTY = "creation_store_format";
     String DATABASE_PRIMARIES_PROPERTY = "primaries";
     String DATABASE_SECONDARIES_PROPERTY = "secondaries";
@@ -177,6 +175,7 @@ public interface TopologyGraphDbmsModel {
     String DATABASE_STOPPED_AT_PROPERTY = "stopped_at";
     String DELETED_DATABASE_DUMP_DATA_PROPERTY = "dump_data";
     String DELETED_DATABASE_DELETED_AT_PROPERTY = "deleted_at";
+    String DELETED_DATABASE_KEEP_DATA_PROPERTY = "keep_data";
     String DATABASE_LOG_ENRICHMENT_PROPERTY = "txLogEnrichment";
     String DATABASE_BOOTSTRAP_KERNEL_VERSION_PROPERTY = "bootstrapKernelVersion";
 
@@ -240,7 +239,7 @@ public interface TopologyGraphDbmsModel {
     String HOSTED_ON_RAFT_MEMBER_ID_PROPERTY = "raftMemberId";
     String HOSTED_ON_MODE_PROPERTY = "mode";
     String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
-
+    String WAS_HOSTED_ON_BOOTSTRAPPER_PROPERTY = "was_bootstrapper";
     Label TOPOLOGY_GRAPH_CONFIG_LABEL = Label.label("TopologyGraphSettings");
     String TOPOLOGY_GRAPH_CONFIG_ALLOCATOR_PROPERTY = "allocator";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY = "default_number_of_primaries";
