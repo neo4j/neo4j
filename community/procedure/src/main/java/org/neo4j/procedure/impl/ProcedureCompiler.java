@@ -51,6 +51,7 @@ import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.NotThreadSafe;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.ThreadSafe;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -453,7 +454,7 @@ class ProcedureCompiler {
                 "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName);
 
         boolean internal = create.isAnnotationPresent(Internal.class);
-        boolean threadSafe = !create.isAnnotationPresent(NotThreadSafe.class);
+        boolean threadSafe = create.isAnnotationPresent(ThreadSafe.class);
 
         List<FieldSetter> setters = allFieldInjections.setters(definition);
         if (!config.fullAccessFor(funcName.toString())) {
