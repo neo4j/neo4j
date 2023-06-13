@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import RemoveUnusedGroupVariablesRewriterTest.`(a) ((n)-[r]-(m))+ (b)`
-import RemoveUnusedGroupVariablesRewriterTest.preserves
-import RemoveUnusedGroupVariablesRewriterTest.rewrites
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.RemoveUnusedGroupVariablesRewriterTest.`(a) ((n)-[r]-(m))+ (b)`
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.RemoveUnusedGroupVariablesRewriterTest.preserves
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.RemoveUnusedGroupVariablesRewriterTest.rewrites
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -45,8 +44,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .produceResults("r")
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -94,12 +93,12 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .produceResults("n", "x")
         .trail(xtoyParams)
         .|.filterExpression(isRepeatTrailUnique("rr"))
-        .|.expandAll("(x)-[rr]->(y)")
-        .|.argument("x")
+        .|.expandAll("(x_i)-[rr]->(y_i)")
+        .|.argument("x_i")
         .trail(atocParams)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -109,9 +108,9 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         max = Unlimited,
         start = "b",
         end = "c",
-        innerStart = "x",
-        innerEnd = "y",
-        groupNodes = Set(("x", "x"), ("y", "y")),
+        innerStart = "x_i",
+        innerEnd = "y_i",
+        groupNodes = Set(("x_i", "x"), ("y_i", "y")),
         groupRelationships = Set(("rr", "rr")),
         innerRelationships = Set("rr"),
         previouslyBoundRelationships = Set.empty,
@@ -119,7 +118,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         reverseGroupVariableProjections = false
       )
 
-      val yless = full.copy(groupNodes = Set(("x", "x")))
+      val yless = full.copy(groupNodes = Set(("x_i", "x")))
     }
 
     val origin = plan(`(a) ((n)-[r]-(m))+ (b)`.full, `(b) ((x)-[rr]-(y)) (c)`.full)
@@ -136,8 +135,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .filter("(n[0]).p = 0")
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -155,8 +154,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .filter("all(x IN n WHERE x.p = 0)")
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -173,9 +172,9 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .projection(project = Seq("1 AS s"), discard = projectionDiscard)
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
+        .|.expandAll("(n_i)-[r]->(m_i)")
         .|.filter("n.p = 0")
-        .|.argument("n")
+        .|.argument("n_i")
         .filter("a.p = 0")
         .allNodeScan("a")
         .build()
@@ -197,8 +196,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .filter("size(r) >= 1")
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -217,7 +216,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .|.allNodeScan("x")
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
+        .|.expandAll("(n_i)-[r]->(m_i)")
         .|.argument("n")
         .allNodeScan("a")
         .build()
@@ -235,8 +234,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .projection(project = Seq("n[0] AS x"), discard = projectionDiscard)
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -254,8 +253,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .projection(project = Map("p" -> pathExpression), discard = projectionDiscard)
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
     }
@@ -274,8 +273,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .projection(project = Seq("1 AS s"), discard = projectionDiscard)
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -293,8 +292,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .|.projection("1 AS s")
         .|.trail(params)
         .|.|.filterExpression(isRepeatTrailUnique("r"))
-        .|.|.expandAll("(n)-[r]->(m)")
-        .|.|.argument("n")
+        .|.|.expandAll("(n_i)-[r]->(m_i)")
+        .|.|.argument("n_i")
         .|.allNodeScan("a")
         .allNodeScan("x")
         .build()
@@ -310,11 +309,11 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
       new LogicalPlanBuilder()
         .produceResults("s")
         .projection(project = Seq("1 AS s"), discard = projectionDiscard)
-        .sort(Seq(Ascending("n")))
+        .sort("n ASC")
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -332,8 +331,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .unwind("n AS x")
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -350,8 +349,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .projection(project = Seq("abs((n[0]).p) AS `abs(n[0].p)`"), discard = projectionDiscard)
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -370,8 +369,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .eager(ListSet(EagernessReason.Unknown))
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
-        .|.argument("n")
+        .|.expandAll("(n_i)-[r]->(m_i)")
+        .|.argument("n_i")
         .allNodeScan("a")
         .build()
 
@@ -389,7 +388,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .foreach("x", "n", Seq(setNodeProperty("x", "p", "0")))
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
+        .|.expandAll("(n_i)-[r]->(m_i)")
         .|.argument("n")
         .allNodeScan("a")
         .build()
@@ -407,7 +406,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .projection(project = Seq("[i IN n WHERE i.p = 0] AS s"), projectionDiscard)
         .trail(params)
         .|.filterExpression(isRepeatTrailUnique("r"))
-        .|.expandAll("(n)-[r]->(m)")
+        .|.expandAll("(n_i)-[r]->(m_i)")
         .|.argument("n")
         .allNodeScan("a")
         .build()
@@ -427,9 +426,9 @@ object RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite {
       max = Unlimited,
       start = "a",
       end = "b",
-      innerStart = "n",
-      innerEnd = "m",
-      groupNodes = Set(("n", "n"), ("m", "m")),
+      innerStart = "n_i",
+      innerEnd = "m_i",
+      groupNodes = Set(("n_i", "n"), ("m_i", "m")),
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set.empty,
@@ -437,11 +436,11 @@ object RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite {
       reverseGroupVariableProjections = false
     )
 
-    val nless: TrailParameters = full.copy(groupNodes = Set(("m", "m")))
+    val nless: TrailParameters = full.copy(groupNodes = Set(("m_i", "m")))
 
     val rless: TrailParameters = full.copy(groupRelationships = Set.empty)
 
-    val mless: TrailParameters = full.copy(groupNodes = Set(("n", "n")))
+    val mless: TrailParameters = full.copy(groupNodes = Set(("n_i", "n")))
 
     val nodeless: TrailParameters = full.copy(groupNodes = Set.empty)
 

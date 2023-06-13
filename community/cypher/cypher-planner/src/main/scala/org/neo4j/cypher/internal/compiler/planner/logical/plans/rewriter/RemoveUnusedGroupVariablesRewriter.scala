@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.logical.plans.ColumnOrder
-import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.Trail
-import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -62,7 +60,7 @@ import org.neo4j.cypher.internal.util.topDown
 case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
 
   override def apply(plan: AnyRef): AnyRef = {
-    val allVariableReferences = findAllVariableUsages(plan)
+    val allVariableReferences = findAllVariableReferences(plan)
     val allGroupVariableDeclarations = findGroupVariableDeclarations(plan)
     val unusedGroupVariableDeclarations = allGroupVariableDeclarations.diff(allVariableReferences)
     instance(unusedGroupVariableDeclarations)(plan)
@@ -70,34 +68,37 @@ case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
 
   def instance(unusedGroupVariables: Set[String]): Rewriter = topDown(Rewriter.lift {
     case t: Trail =>
-      val usedNodeVariables = t.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
+      val usedNodeVariables = t.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName.name))
       t.copy(nodeVariableGroupings = usedNodeVariables)(SameId(t.id))
   })
 
   def findGroupVariableDeclarations(plan: AnyRef): Set[String] = {
     plan.folder.treeFold(Set.empty[String]) {
       case Trail(_, _, _, _, _, _, _, nodeGroupVariables, relationshipGroupVariables, _, _, _, _) =>
-        acc =>
-          TraverseChildren(acc ++ nodeGroupVariables.map(_.groupName) ++ relationshipGroupVariables.map(_.groupName))
+        val groupVars = nodeGroupVariables.map(_.groupName.name) ++ relationshipGroupVariables.map(_.groupName.name)
+        acc => TraverseChildren(acc ++ groupVars)
     }
   }
 
-  def findAllVariableUsages(plan: AnyRef): Set[String] =
-    plan.folder.treeFold(Set.empty[String]) {
-      case LogicalVariable(name) =>
-        acc =>
-          SkipChildren(acc + name)
-      case Trail(_, _, _, _, _, _, _, _, _, _, previouslyBoundRelationships, previouslyBoundRelationshipGroups, _) =>
-        acc =>
-          TraverseChildren(acc ++ previouslyBoundRelationships ++ previouslyBoundRelationshipGroups)
-      case VarExpand(_, _, _, _, _, _, relName, _, _, _, _) =>
-        acc =>
-          TraverseChildren(acc + relName)
-      case ProduceResult(_, columns) =>
-        acc =>
-          TraverseChildren(acc ++ columns)
-      case order: ColumnOrder =>
-        acc =>
-          TraverseChildren(acc + order.id)
-    }
+  // variables references = total variable count - variable declarations - variable discard (if exists)
+  def findAllVariableReferences(plan: AnyRef): Set[String] = {
+    plan.folder
+      .treeFold(Map.empty[String, Int]) {
+        case plan: ProjectingPlan => acc =>
+            TraverseChildren(
+              plan.discardSymbols.foldLeft(acc) {
+                case (acc, variable) => acc + (variable.name -> -1)
+              }
+            )
+        case LogicalVariable(name) => acc =>
+            SkipChildren(
+              acc.updatedWith(name) {
+                case Some(existingCount) => Some(existingCount + 1)
+                case None                => Some(1)
+              }
+            )
+      }
+      .filterNot { case (_, count) => count == 1 }
+      .keySet
+  }
 }
