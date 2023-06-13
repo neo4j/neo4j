@@ -20,6 +20,10 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransitions
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransitions
 import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName
 import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
 import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.SingletonVarName
@@ -142,7 +146,20 @@ class NFABuilder protected (_startState: State) {
 
     val finalStates = this.finalStates.toSet.map(stateToNFAState.apply)
 
-    NFA(states, transitions, startState, finalStates)
+    val checkedTransitions = transitions.map {
+      case (from, set) =>
+        if (set.forall(_.predicate.isInstanceOf[NodeJuxtapositionPredicate])) {
+          from -> NodeJuxtapositionTransitions(set.asInstanceOf[Set[NFA.Transition[NodeJuxtapositionPredicate]]])
+        } else if (set.forall(_.predicate.isInstanceOf[RelationshipExpansionPredicate])) {
+          from -> RelationshipExpansionTransitions(
+            set.asInstanceOf[Set[NFA.Transition[RelationshipExpansionPredicate]]]
+          )
+        } else {
+          throw new IllegalStateException(s"Transitions of $from were of mixed type. That is not allowed.")
+        }
+    }
+
+    NFA(states, checkedTransitions, startState, finalStates)
   }
 
   def getStartState: State = startState

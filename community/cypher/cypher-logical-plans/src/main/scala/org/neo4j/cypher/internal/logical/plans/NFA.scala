@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicat
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
+import org.neo4j.cypher.internal.logical.plans.NFA.Transitions
 
 object NFA {
 
@@ -124,7 +125,25 @@ object NFA {
    * @param predicate the condition under which the transition may be applied.
    * @param end the end state of this transition.
    */
-  case class Transition(predicate: Predicate, end: State)
+  final case class Transition[+P <: Predicate](predicate: P, end: State)
+
+  /**
+   * The outgoing transitions of a state can either all have NodeJuxtapositionPredicates 
+   * or all have RelationshipExpansionPredicates. This trait is here to guarantee this in a type-safe way. 
+   */
+  sealed trait Transitions {
+    def transitions: Set[_ <: Transition[Predicate]]
+  }
+
+  object Transitions {
+    def unapply(v: Transitions): Some[Set[_ <: Transition[Predicate]]] = Some(v.transitions)
+  }
+
+  case class NodeJuxtapositionTransitions(transitions: Set[Transition[NodeJuxtapositionPredicate]])
+      extends Transitions
+
+  case class RelationshipExpansionTransitions(transitions: Set[Transition[RelationshipExpansionPredicate]])
+      extends Transitions
 }
 
 /**
@@ -137,7 +156,7 @@ object NFA {
  */
 case class NFA(
   states: Set[State],
-  transitions: Map[State, Set[Transition]],
+  transitions: Map[State, Transitions],
   startState: State,
   finalStates: Set[State]
 ) {
@@ -145,7 +164,7 @@ case class NFA(
   def nodeNames: Set[String] = states.map(_.varName.name)
 
   def relationshipNames: Set[String] =
-    transitions.flatMap(_._2).map(_.predicate).collect {
+    transitions.flatMap(_._2.transitions).map(_.predicate).collect {
       case RelationshipExpansionPredicate(relVarName, _, _, _, _) =>
         relVarName.name
     }.toSet
@@ -166,7 +185,7 @@ case class NFA(
       }.mkString("\n")
     val edges =
       transitions.toSeq
-        .flatMap { case (start, transitions) => transitions.map(start -> _) }
+        .flatMap { case (start, Transitions(transitions)) => transitions.map(start -> _) }
         .map {
           case (start, Transition(p, end)) => s"""  ${start.id} -> ${end.id} [label="${p.toDotString}"];"""
         }

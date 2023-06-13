@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
+import org.neo4j.cypher.internal.logical.plans.NFA.Transitions
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -1189,7 +1190,7 @@ object LogicalPlanToPlanBuilderString {
     val constructor =
       s"new TestNFABuilder(${start.id}, ${wrapInQuotations(start.varName.name)}, groupVar = ${start.varName.isInstanceOf[GroupVarName]})"
     val transitions = nfa.transitions.flatMap {
-      case (from, transitions) => transitions.map(t => transitionString(from, t.predicate, t.end))
+      case (from, Transitions(transitions)) => transitions.map(t => transitionString(from, t.predicate, t.end))
     }
     val finalStates = nfa.finalStates.map(fs => s".addFinalState(${fs.id})")
     val build = ".build()"
