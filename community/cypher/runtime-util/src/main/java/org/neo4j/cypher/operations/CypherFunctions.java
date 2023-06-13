@@ -714,16 +714,19 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue split(AnyValue original, AnyValue separator) {
-        assert original != NO_VALUE && separator != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-
-        if (original instanceof TextValue asText) {
+    public static AnyValue split(AnyValue original, AnyValue separator) {
+        if (original == NO_VALUE || separator == NO_VALUE) {
+            return NO_VALUE;
+        } else if (original instanceof TextValue asText) {
             if (asText.length() == 0) {
                 return VirtualValues.list(EMPTY_STRING);
             }
-            if (separator instanceof ListValue) {
+            if (separator instanceof ListValue separatorList) {
                 var separators = new ArrayList<String>();
-                for (var s : (ListValue) separator) {
+                for (var s : separatorList) {
+                    if (s == NO_VALUE) {
+                        return NO_VALUE;
+                    }
                     separators.add(asString(s));
                 }
                 return asText.split(separators);

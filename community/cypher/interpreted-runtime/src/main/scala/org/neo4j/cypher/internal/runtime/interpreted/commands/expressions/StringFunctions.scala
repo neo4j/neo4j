@@ -153,11 +153,10 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 }
 
 case class SplitFunction(orig: Expression, separator: Expression)
-    extends NullInNullOutExpression(orig) {
+    extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
-    val sep = separator(ctx, state)
-    if (sep eq NO_VALUE) NO_VALUE else CypherFunctions.split(value, sep)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    CypherFunctions.split(orig(row, state), separator(row, state))
   }
 
   override def arguments: Seq[Expression] = Seq(orig, separator)
