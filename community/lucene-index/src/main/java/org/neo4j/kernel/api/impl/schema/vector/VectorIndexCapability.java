@@ -19,12 +19,25 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
+import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.maybeToValidVector;
+
+import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.util.Preconditions;
+import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
 class VectorIndexCapability implements IndexCapability {
+    private final int dimensions;
+
+    VectorIndexCapability(IndexConfig config) {
+        this.dimensions = VectorUtils.vectorDimensionsFrom(config);
+    }
+
     @Override
     public boolean supportsOrdering() {
         return false;
@@ -36,22 +49,50 @@ class VectorIndexCapability implements IndexCapability {
     }
 
     @Override
+    public boolean areValuesAccepted(Value... values) {
+        Preconditions.requireNonEmpty(values);
+        Preconditions.requireNoNullElements(values);
+        return values.length == 1
+                && values[0] instanceof final FloatingPointArray array
+                && array.length() == dimensions
+                && maybeToValidVector(array) != null;
+    }
+
+    @Override
     public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
-        return false;
+        Preconditions.requireNonEmpty(valueCategories);
+        Preconditions.requireNoNullElements(valueCategories);
+        return valueCategories.length == 1 && valueCategories[0] == ValueCategory.NUMBER_ARRAY;
     }
 
     @Override
     public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
-        return false;
+        if (queryType == IndexQueryType.ALL_ENTRIES) {
+            return true;
+        }
+
+        if (!areValueCategoriesAccepted(valueCategory)) {
+            return false;
+        }
+
+        return queryType == IndexQueryType.NEAREST_NEIGHBORS;
     }
 
     @Override
     public double getCostMultiplier(IndexQueryType... queryTypes) {
-        return 0;
+        return COST_MULTIPLIER_STANDARD;
     }
 
     @Override
     public boolean supportPartitionedScan(IndexQuery... queries) {
+        Preconditions.requireNonEmpty(queries);
+        Preconditions.requireNoNullElements(queries);
         return false;
+    }
+
+    @Override
+    public IndexBehaviour[] behaviours() {
+        // TODO VECTOR: eventual consistency?
+        return BEHAVIOURS_NONE;
     }
 }

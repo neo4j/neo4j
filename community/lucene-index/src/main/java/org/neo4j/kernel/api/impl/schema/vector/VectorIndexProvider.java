@@ -30,6 +30,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -52,7 +53,6 @@ import org.neo4j.values.storable.Value;
 
 public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("vector", "1.0");
-    public static final IndexCapability CAPABILITY = new VectorIndexCapability();
 
     private final FileSystemAbstraction fileSystem;
 
@@ -143,7 +143,13 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     @Override
     public IndexDescriptor completeConfiguration(
             IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
-        return index.getCapability().equals(NO_CAPABILITY) ? index.withIndexCapability(CAPABILITY) : index;
+        return index.getCapability().equals(NO_CAPABILITY)
+                ? index.withIndexCapability(capability(index.getIndexConfig()))
+                : index;
+    }
+
+    public static IndexCapability capability(IndexConfig config) {
+        return new VectorIndexCapability(config);
     }
 
     private record IgnoreStrategy(int dimensions) implements IndexUpdateIgnoreStrategy {

@@ -25,6 +25,7 @@ import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.BOUNDING_BOX;
 import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXACT;
 import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXISTS;
 import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.FULLTEXT_SEARCH;
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.NEAREST_NEIGHBORS;
 import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_CONTAINS;
 import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_PREFIX;
 import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_SUFFIX;
@@ -50,10 +51,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexCapability;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
@@ -64,10 +68,12 @@ class IndexCapabilityTest {
     private static final IndexCapability POINT = PointIndexProvider.CAPABILITY;
     private static final IndexCapability TEXT = TextIndexProvider.CAPABILITY;
     private static final IndexCapability TRIGRAM = TrigramIndexProvider.CAPABILITY;
+    private static final IndexCapability VECTOR =
+            VectorIndexProvider.capability(IndexSettingUtil.defaultConfigForTest(IndexType.VECTOR));
     private static final IndexCapability TOKEN = TokenIndexProvider.capability(true);
     private static final IndexCapability BLOCK_REL_TOKEN = TokenIndexProvider.capability(false);
     private static final IndexCapability FULLTEXT = new FulltextIndexCapability(false);
-    private static final IndexCapability[] ALL = of(RANGE, POINT, TEXT, TRIGRAM, TOKEN, FULLTEXT);
+    private static final IndexCapability[] ALL = of(RANGE, POINT, TEXT, TRIGRAM, VECTOR, TOKEN, FULLTEXT);
     private static final IndexCapability[] NONE = of();
 
     @Test
@@ -76,6 +82,7 @@ class IndexCapabilityTest {
         assertThat(POINT.supportsOrdering()).isFalse();
         assertThat(TEXT.supportsOrdering()).isFalse();
         assertThat(TRIGRAM.supportsOrdering()).isFalse();
+        assertThat(VECTOR.supportsOrdering()).isFalse();
         assertThat(TOKEN.supportsOrdering()).isTrue();
         assertThat(BLOCK_REL_TOKEN.supportsOrdering()).isFalse();
         assertThat(FULLTEXT.supportsOrdering()).isFalse();
@@ -87,6 +94,7 @@ class IndexCapabilityTest {
         assertThat(POINT.supportsReturningValues()).isTrue();
         assertThat(TEXT.supportsReturningValues()).isFalse();
         assertThat(TRIGRAM.supportsReturningValues()).isFalse();
+        assertThat(VECTOR.supportsReturningValues()).isFalse();
         assertThat(TOKEN.supportsReturningValues()).isTrue();
         assertThat(FULLTEXT.supportsReturningValues()).isFalse();
     }
@@ -158,19 +166,19 @@ class IndexCapabilityTest {
                 Arguments.of(TOKEN_LOOKUP, NO_CATEGORY, of(TOKEN)),
                 Arguments.of(TOKEN_LOOKUP, ANYTHING, NONE),
                 // ALL_ENTRIES
-                Arguments.of(ALL_ENTRIES, NUMBER, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, NUMBER_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, ValueCategory.TEXT, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, TEXT_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, GEOMETRY, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, GEOMETRY_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, TEMPORAL, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, TEMPORAL_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, BOOLEAN, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, BOOLEAN_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, UNKNOWN, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, NO_CATEGORY, of(RANGE, POINT, TEXT, TRIGRAM)),
-                Arguments.of(ALL_ENTRIES, ANYTHING, of(RANGE, POINT, TEXT, TRIGRAM)),
+                Arguments.of(ALL_ENTRIES, NUMBER, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, NUMBER_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, ValueCategory.TEXT, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, TEXT_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, GEOMETRY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, GEOMETRY_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, TEMPORAL, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, TEMPORAL_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, BOOLEAN, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, BOOLEAN_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, UNKNOWN, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, NO_CATEGORY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
+                Arguments.of(ALL_ENTRIES, ANYTHING, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
                 // EXISTS
                 Arguments.of(EXISTS, NUMBER, of(RANGE)),
                 Arguments.of(EXISTS, NUMBER_ARRAY, of(RANGE)),
@@ -282,7 +290,21 @@ class IndexCapabilityTest {
                 Arguments.of(FULLTEXT_SEARCH, BOOLEAN_ARRAY, NONE),
                 Arguments.of(FULLTEXT_SEARCH, UNKNOWN, NONE),
                 Arguments.of(FULLTEXT_SEARCH, NO_CATEGORY, NONE),
-                Arguments.of(FULLTEXT_SEARCH, ANYTHING, NONE));
+                Arguments.of(FULLTEXT_SEARCH, ANYTHING, NONE),
+                // NEAREST_NEIGHBORS
+                Arguments.of(NEAREST_NEIGHBORS, NUMBER, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, NUMBER_ARRAY, of(VECTOR)),
+                Arguments.of(NEAREST_NEIGHBORS, ValueCategory.TEXT, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, TEXT_ARRAY, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, GEOMETRY, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, GEOMETRY_ARRAY, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, TEMPORAL, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, TEMPORAL_ARRAY, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, BOOLEAN, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, BOOLEAN_ARRAY, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, UNKNOWN, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, NO_CATEGORY, NONE),
+                Arguments.of(NEAREST_NEIGHBORS, ANYTHING, NONE));
     }
 
     private static Stream<Arguments> supportedValueCategories() {
@@ -291,6 +313,7 @@ class IndexCapabilityTest {
                 Arguments.of(POINT, new ValueCategory[] {GEOMETRY}),
                 Arguments.of(TEXT, new ValueCategory[] {ValueCategory.TEXT}),
                 Arguments.of(TRIGRAM, new ValueCategory[] {ValueCategory.TEXT}),
+                Arguments.of(VECTOR, new ValueCategory[] {NUMBER_ARRAY}),
                 Arguments.of(TOKEN, new ValueCategory[] {}),
                 Arguments.of(FULLTEXT, new ValueCategory[] {ValueCategory.TEXT, TEXT_ARRAY}));
     }

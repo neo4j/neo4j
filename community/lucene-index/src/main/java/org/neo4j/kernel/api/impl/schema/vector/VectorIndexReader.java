@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
+import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
+
 import org.apache.lucene.search.Query;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexReader;
@@ -32,6 +36,7 @@ import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.values.storable.Value;
 
 class VectorIndexReader extends AbstractLuceneIndexReader {
+    private final int vectorDimensionality;
 
     VectorIndexReader(
             IndexDescriptor descriptor,
@@ -39,12 +44,15 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator,
             IndexUsageTracker usageTracker) {
+        // TODO VECTOR: should this actually keep scores? Do we care?
         super(descriptor, searcherReference, samplingConfig, taskCoordinator, usageTracker, true);
+        this.vectorDimensionality = vectorDimensionsFrom(descriptor.getIndexConfig());
     }
 
     @Override
     public long countIndexedEntities(
             long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
+        // TODO VECTOR: count indexed entities
         return 0;
     }
 
@@ -54,11 +62,35 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     }
 
     @Override
-    protected void validateQuery(PropertyIndexQuery... predicates) {}
+    protected void validateQuery(PropertyIndexQuery... predicates) {
+        if (predicates.length > 1) {
+            throw invalidCompositeQuery(predicates);
+        }
+
+        final var predicate = predicates[0];
+        if (predicate.type() != IndexQueryType.NEAREST_NEIGHBORS) {
+            throw invalidQuery(predicate);
+        }
+
+        final var queryVector = ((NearestNeighborsPredicate) predicate).query();
+        if (queryVector.length != vectorDimensionality) {
+            throw new IllegalArgumentException(
+                    "Index query vector has a dimensionality of %d, but indexed vectors have %d."
+                            .formatted(queryVector.length, vectorDimensionality));
+        }
+    }
 
     @Override
     protected Query toLuceneQuery(PropertyIndexQuery predicate) {
-        return null;
+        return switch (predicate.type()) {
+            case ALL_ENTRIES -> VectorQueryFactory.allValues();
+            case NEAREST_NEIGHBORS -> {
+                final var nearestNeighborsPredicate = (NearestNeighborsPredicate) predicate;
+                yield VectorQueryFactory.approximateNearestNeighbors(
+                        nearestNeighborsPredicate.query(), nearestNeighborsPredicate.numberOfNeighbors());
+            }
+            default -> throw invalidQuery(predicate);
+        };
     }
 
     @Override
@@ -68,6 +100,8 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
 
     @Override
     protected boolean needStoreFilter(PropertyIndexQuery predicate) {
+        // We can't do filtering of false positives after the fact because we would
+        // need to know which neighbors we missed to do so. We don't know what we don't know.
         return false;
     }
 }
