@@ -118,9 +118,4 @@ public class PageAlignedV5_0 extends BaseRecordFormats {
     public String name() {
         return NAME;
     }
-
-    @Override
-    public RecordFormats[] compatibleVersionsForRollingUpgrade() {
-        return new RecordFormats[0];
-    }
 }

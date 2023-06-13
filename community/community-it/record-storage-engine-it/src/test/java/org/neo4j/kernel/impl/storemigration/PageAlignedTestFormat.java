@@ -124,11 +124,6 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats {
     }
 
     @Override
-    public RecordFormats[] compatibleVersionsForRollingUpgrade() {
-        return new RecordFormats[0];
-    }
-
-    @Override
     public boolean formatUnderDevelopment() {
         return true;
     }

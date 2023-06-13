@@ -119,11 +119,4 @@ public class PageAlignedV4_3 extends BaseRecordFormats {
     public String name() {
         return NAME;
     }
-
-    @Override
-    public RecordFormats[] compatibleVersionsForRollingUpgrade() {
-        // Technically this format is compatible with older formats in the same family.
-        // But we will never roll to it in this version, an older version of the binaries is needed for that.
-        return new RecordFormats[0];
-    }
 }

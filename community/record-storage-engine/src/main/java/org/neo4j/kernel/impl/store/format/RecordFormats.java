@@ -129,14 +129,6 @@ public interface RecordFormats {
     String name();
 
     /**
-     * Other (older) record formats that are compatible with this one, for rolling upgrade into this version
-     * @return a list of compatible older record formats. Empty list if none
-     */
-    default RecordFormats[] compatibleVersionsForRollingUpgrade() {
-        return new RecordFormats[0];
-    }
-
-    /**
      * Can be used while developing a new format make sure it has a higher generation than the real formats and that
      * {@link GraphDatabaseInternalSettings#include_versions_under_development} is set.
      */
