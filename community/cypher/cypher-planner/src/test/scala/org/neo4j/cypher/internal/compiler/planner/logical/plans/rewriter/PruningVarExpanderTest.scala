@@ -65,6 +65,16 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
+  test("should not rewrite simplest possible VarExpandInto plan") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expandInto("(from)-[*1..3]->(to)")
+      .allNodeScan("from")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
   test("do use BFSPruningVarExpand for undirected search when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
@@ -159,6 +169,16 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .build()
 
     rewrite(before) should equal(after)
+  }
+
+  test("should not rewrite expand into query with distinct aggregation") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
+      .expandInto("(from)<-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
+
+    assertNotRewritten(before)
   }
 
   test("ordered grouping aggregation") {

@@ -264,7 +264,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
           (DistinctHorizon(groupingDependencies, AggregatingHorizonPlan(aggPlan)), DistinctHorizon.empty)
 
-        case expand: VarExpand =>
+        case expand: VarExpand if expand.mode == ExpandAll =>
           distinctHorizon.getRewrite(expand) match {
             case RewriteToPruning =>
               pruningExpands += Ref(expand)
@@ -372,7 +372,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
                 toId,
                 _,
                 length,
-                ExpandAll,
+                _,
                 nodePredicate,
                 relationshipPredicate
               ) =>
