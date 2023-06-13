@@ -68,10 +68,10 @@ public final class EntryTimespanThreshold implements Threshold {
             if (fileSizeThreshold != null && fileSizeThreshold.reached(file, version, source)) {
                 return true;
             }
-            long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp(version);
+            long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp(version + 1);
             return firstStartRecordTimestamp >= 0 && firstStartRecordTimestamp < lowerLimit;
         } catch (IOException e) {
-            log.warn("Fail to get timestamp info from transaction log file " + version, e);
+            log.warn("Fail to get timestamp info from transaction log file " + (version + 1), e);
             return false;
         }
     }

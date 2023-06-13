@@ -168,6 +168,7 @@ class TransactionLogFileInformationTest {
                 new LogHeader((byte) 1, new LogPosition(2, 4), 3, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
+        when(logFile.versionExists(anyLong())).thenReturn(true);
 
         assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
         assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
@@ -189,6 +190,7 @@ class TransactionLogFileInformationTest {
                 new LogHeader((byte) 1, new LogPosition(2, 4), 3, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
+        when(logFile.versionExists(anyLong())).thenReturn(true);
 
         fileInfo.getFirstStartRecordTimestamp(1);
         fileInfo.getFirstStartRecordTimestamp(1);
@@ -197,5 +199,15 @@ class TransactionLogFileInformationTest {
         fileInfo.getFirstStartRecordTimestamp(1);
 
         verify(logFile, times(1)).getRawReader(any());
+    }
+
+    @Test
+    void doNotFailRecordTimestampIfVersionDoesNotExist() throws IOException {
+        long version = 321;
+        when(logFile.versionExists(version)).thenReturn(false);
+
+        var fileInfo = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
+
+        assertEquals(-1, fileInfo.getFirstStartRecordTimestamp(version));
     }
 }

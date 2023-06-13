@@ -48,7 +48,7 @@ class EntryTimespanThresholdTest {
         // given
         final EntryTimespanThreshold threshold = new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 200);
 
-        when(source.getFirstStartRecordTimestamp(version)).thenReturn(800L);
+        when(source.getFirstStartRecordTimestamp(version + 1)).thenReturn(800L);
 
         // when
         threshold.init();
@@ -63,7 +63,7 @@ class EntryTimespanThresholdTest {
         // given
         final EntryTimespanThreshold threshold = new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 100);
 
-        when(source.getFirstStartRecordTimestamp(version)).thenReturn(800L);
+        when(source.getFirstStartRecordTimestamp(version + 1)).thenReturn(800L);
 
         // when
         threshold.init();
@@ -79,7 +79,7 @@ class EntryTimespanThresholdTest {
         final EntryTimespanThreshold threshold = new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 100);
 
         final IOException ex = new IOException();
-        when(source.getFirstStartRecordTimestamp(version)).thenThrow(ex);
+        when(source.getFirstStartRecordTimestamp(version + 1)).thenThrow(ex);
 
         // when
         threshold.init();
@@ -91,7 +91,7 @@ class EntryTimespanThresholdTest {
     void thresholdReachedWhenFileRestrictionIsReached() throws IOException {
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 200, new FileSizeThreshold(fs, 128));
-        when(source.getFirstStartRecordTimestamp(version)).thenReturn(800L);
+        when(source.getFirstStartRecordTimestamp(version + 1)).thenReturn(800L);
         when(fs.getFileSize(file)).thenReturn(129L);
 
         // when
