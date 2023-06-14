@@ -58,6 +58,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
+import org.neo4j.procedure.NotThreadSafe;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
@@ -83,6 +84,7 @@ public class BuiltInProcedures {
     public ProcedureCallContext callContext;
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("Provides information regarding the database.")
     @Procedure(name = "db.info", mode = READ)
     public Stream<DatabaseInfo> databaseInfo() throws NoSuchAlgorithmException {
@@ -92,6 +94,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("List all available labels in the database.")
     @Procedure(name = "db.labels", mode = READ)
     public Stream<LabelResult> listLabels() {
@@ -118,6 +121,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("List all property keys in the database.")
     @Procedure(name = "db.propertyKeys", mode = READ)
     public Stream<PropertyKeyResult> listPropertyKeys() {
@@ -132,6 +136,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("List all available relationship types in the database.")
     @Procedure(name = "db.relationshipTypes", mode = READ)
     public Stream<RelationshipTypeResult> listRelationshipTypes() {
@@ -157,6 +162,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("Wait for an index to come online (for example: CALL db.awaitIndex(\"MyIndex\", 300)).")
     @Procedure(name = "db.awaitIndex", mode = READ)
     public void awaitIndex(
@@ -170,6 +176,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("Wait for all indexes to come online (for example: CALL db.awaitIndexes(300)).")
     @Procedure(name = "db.awaitIndexes", mode = READ)
     public void awaitIndexes(@Name(value = "timeOutSeconds", defaultValue = "300") long timeout) {
@@ -181,6 +188,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("Schedule resampling of an index (for example: CALL db.resampleIndex(\"MyIndex\")).")
     @Procedure(name = "db.resampleIndex", mode = READ)
     public void resampleIndex(@Name("indexName") String indexName) throws ProcedureException {
@@ -193,6 +201,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("Schedule resampling of all outdated indexes.")
     @Procedure(name = "db.resampleOutdatedIndexes", mode = READ)
     public void resampleOutdatedIndexes() {
@@ -206,6 +215,7 @@ public class BuiltInProcedures {
 
     @Admin
     @SystemProcedure
+    @NotThreadSafe
     @Description(
             "Triggers an index resample and waits for it to complete, and after that clears query caches. After this "
                     + "procedure has finished queries will be planned using the latest database statistics.")
@@ -228,6 +238,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Procedure(name = "db.schema.nodeTypeProperties", mode = Mode.READ)
     @Description("Show the derived property schema of the nodes in tabular form.")
     public Stream<NodePropertySchemaInfoResult> nodePropertySchema() {
@@ -239,6 +250,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Procedure(name = "db.schema.relTypeProperties", mode = Mode.READ)
     @Description("Show the derived property schema of the relationships in tabular form.")
     public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema() {
@@ -250,6 +262,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
+    @NotThreadSafe
     @Description("Visualizes the schema of the data based on available statistics. "
             + "A new node is returned for each label. The properties represented on the node include: "
             + "`name` (label name), `indexes` (list of indexes), and `constraints` (list of constraints). "
@@ -266,6 +279,7 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure(allowExpiredCredentials = true)
+    @NotThreadSafe
     @Procedure(name = "db.ping", mode = READ)
     @Description(
             "This procedure can be used by client side tooling to test whether they are correctly connected to a database. "
