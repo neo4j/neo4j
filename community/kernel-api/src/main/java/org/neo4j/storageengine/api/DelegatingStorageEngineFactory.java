@@ -110,7 +110,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public Optional<StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
+    public Optional<? extends StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
         return delegate.versionInformation(storeVersionIdentifier);
     }
 

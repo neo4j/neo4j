@@ -126,7 +126,7 @@ public interface StorageEngineFactory {
      * This can generally happen in cluster-related operations when store version identifiers are sent
      * between cluster members that can be on different versions of the binaries.
      */
-    Optional<StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier);
+    Optional<? extends StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier);
 
     /**
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.

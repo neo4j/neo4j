@@ -200,7 +200,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public Optional<StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
+    public Optional<? extends StoreVersion> versionInformation(StoreVersionIdentifier storeVersionIdentifier) {
         var maybeRecordFormat = RecordFormatSelector.selectForStoreVersionIdentifier(storeVersionIdentifier);
         return maybeRecordFormat.map(RecordStoreVersion::new);
     }
