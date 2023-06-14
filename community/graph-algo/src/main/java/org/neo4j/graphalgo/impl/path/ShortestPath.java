@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
 /**
@@ -139,7 +139,7 @@ public class ShortestPath implements PathFinder<Path> {
         this.maxDepth = maxDepth;
         this.expander = expander;
         this.maxResultCount = maxResultCount;
-        this.memoryTracker = new ScopedMemoryTracker(memoryTracker);
+        this.memoryTracker = new DefaultScopedMemoryTracker(memoryTracker);
     }
 
     @Override

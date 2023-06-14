@@ -57,7 +57,7 @@ import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -1125,7 +1125,7 @@ public class ForsetiClient implements LockManager.Client {
      * causing race condition with the passed in memory tracker. This object is intended to be owned by the client,
      * where we have control over the allocations.
      */
-    private static class DeferredScopedMemoryTracker extends ScopedMemoryTracker {
+    private static class DeferredScopedMemoryTracker extends DefaultScopedMemoryTracker {
         private boolean stopped;
 
         DeferredScopedMemoryTracker(MemoryTracker delegate) {

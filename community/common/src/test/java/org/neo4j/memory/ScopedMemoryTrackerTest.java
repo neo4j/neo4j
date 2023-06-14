@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 class ScopedMemoryTrackerTest {
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
-    private final ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker(memoryTracker);
+    private final DefaultScopedMemoryTracker scopedMemoryTracker = new DefaultScopedMemoryTracker(memoryTracker);
 
     @Test
     void delegatesToParent() {
@@ -67,7 +67,7 @@ class ScopedMemoryTrackerTest {
         scopedMemoryTracker.allocateNative(10);
         scopedMemoryTracker.allocateHeap(10);
 
-        ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
+        DefaultScopedMemoryTracker child = new DefaultScopedMemoryTracker(scopedMemoryTracker);
 
         child.allocateNative(5);
         child.allocateHeap(5);
@@ -91,7 +91,7 @@ class ScopedMemoryTrackerTest {
         scopedMemoryTracker.allocateNative(10);
         scopedMemoryTracker.allocateHeap(10);
 
-        ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
+        DefaultScopedMemoryTracker child = new DefaultScopedMemoryTracker(scopedMemoryTracker);
 
         child.allocateNative(5);
         child.allocateHeap(5);

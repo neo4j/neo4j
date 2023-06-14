@@ -38,7 +38,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
@@ -158,13 +158,13 @@ abstract class FileSystemUtilsTest {
         String data = RandomStringUtils.random((int) ByteUnit.kibiBytes(117));
 
         var writePeakTracker = new ThreadSafePeakMemoryTracker();
-        var writeMemoryTracker = new ScopedMemoryTracker(writePeakTracker);
+        var writeMemoryTracker = new DefaultScopedMemoryTracker(writePeakTracker);
         writeString(fs, file, data, writeMemoryTracker);
         assertEquals(0, writeMemoryTracker.usedNativeMemory());
         assertEquals(data.getBytes(UTF_8).length, writePeakTracker.peakMemoryUsage());
 
         var readPeakTracker = new ThreadSafePeakMemoryTracker();
-        var readMemoryTracker = new ScopedMemoryTracker(readPeakTracker);
+        var readMemoryTracker = new DefaultScopedMemoryTracker(readPeakTracker);
         assertEquals(data, readString(fs, file, readMemoryTracker));
         assertEquals(0, readMemoryTracker.usedNativeMemory());
         assertEquals(data.getBytes(UTF_8).length, readPeakTracker.peakMemoryUsage());

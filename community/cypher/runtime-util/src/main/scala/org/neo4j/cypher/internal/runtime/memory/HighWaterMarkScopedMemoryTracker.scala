@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.memory
 
+import org.neo4j.memory.DefaultScopedMemoryTracker
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.memory.ScopedMemoryTracker
 
 /**
- * A [[ScopedMemoryTracker]] that keeps its own highWaterMark for heap memory.
+ * A [[DefaultScopedMemoryTracker]] that keeps its own highWaterMark for heap memory.
  * It also forwards all calls to a delegate.
  */
-class HighWaterMarkScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemoryTracker(delegate) {
+class HighWaterMarkScopedMemoryTracker(delegate: MemoryTracker) extends DefaultScopedMemoryTracker(delegate) {
   private var _heapHighWaterMark = 0L
 
   override def allocateHeap(bytes: Long): Unit = {

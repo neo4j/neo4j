@@ -119,7 +119,7 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.test.Race;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
@@ -130,7 +130,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Override
     protected Fixture<MuninnPageCache> createFixture() {
         ConfigurableIOBufferFactory bufferFactory = new ConfigurableIOBufferFactory(
-                Config.defaults(pagecache_buffered_flush_enabled, true), new ScopedMemoryTracker(INSTANCE));
+                Config.defaults(pagecache_buffered_flush_enabled, true), new DefaultScopedMemoryTracker(INSTANCE));
         fixture = new MuninnPageCacheFixture();
         fixture.withBufferFactory(bufferFactory);
         return fixture;

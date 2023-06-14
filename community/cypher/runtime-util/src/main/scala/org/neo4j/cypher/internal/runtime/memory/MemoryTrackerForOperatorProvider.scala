@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.memory
 
 import org.neo4j.cypher.internal.runtime.memory.TransactionBoundMemoryTrackerForOperatorProvider.TransactionBoundMemoryTracker
 import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.memory.DefaultScopedMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.memory.ScopedMemoryTracker
 
 /**
  * Gives the ability to track memory per operator.
@@ -78,7 +78,7 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
   class TransactionBoundMemoryTracker(
     transactionMemoryTracker: MemoryTracker,
     queryGlobalMemoryTracker: HeapMemoryTracker
-  ) extends ScopedMemoryTracker(transactionMemoryTracker) {
+  ) extends DefaultScopedMemoryTracker(transactionMemoryTracker) {
 
     override def allocateHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker

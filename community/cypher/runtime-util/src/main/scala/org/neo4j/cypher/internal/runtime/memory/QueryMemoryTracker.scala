@@ -30,9 +30,9 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.ExecutionContextMemoryTrackerProvider
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
-import org.neo4j.memory.IsScopedMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.memory.ScopedMemoryTracker
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.LongAdder
@@ -259,9 +259,13 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
  * that also need a scoped memory tracker to be able to release all the tracked memory at once on close.
  * Since we do not know which worker will call close we track the scoped allocations using LongAdders.
  *
+ * NOTE: The worker that calls close need to have exclusive access to the tracker guaranteed by
+ *       external mechanisms, as the sums could otherwise be incorrect if it was allowed to race with
+ *       other allocate/release calls.
+ *
  * @param delegate The delegate needs to be thread-safe, typically an instance of WorkerThreadDelegatingMemoryTracker
  */
-class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends IsScopedMemoryTracker {
+class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemoryTracker {
   private[this] val trackedNative: LongAdder = new LongAdder
   private[this] val trackedHeap: LongAdder = new LongAdder
   private[this] val _isClosed: AtomicBoolean = new AtomicBoolean(false)
@@ -314,8 +318,8 @@ class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends IsScopedMem
   override def close(): Unit = {
     // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
     if (
-      !delegate.isInstanceOf[IsScopedMemoryTracker] || !(delegate.asInstanceOf[
-        IsScopedMemoryTracker
+      !delegate.isInstanceOf[ScopedMemoryTracker] || !(delegate.asInstanceOf[
+        ScopedMemoryTracker
       ]).isClosed
     ) {
       reset()

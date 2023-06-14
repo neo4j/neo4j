@@ -137,7 +137,7 @@ public final class HeapEstimator {
         ZONED_DATE_TIME_SIZE = shallowSizeOfInstance(ZonedDateTime.class)
                 + LOCAL_DATE_TIME_SIZE; // We ignore ZoneOffset since it's cached
 
-        SCOPED_MEMORY_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance(ScopedMemoryTracker.class);
+        SCOPED_MEMORY_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance(DefaultScopedMemoryTracker.class);
     }
 
     /**

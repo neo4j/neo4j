@@ -29,7 +29,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 
 class ConfigurableIOBufferTest {
     @Test
@@ -51,7 +51,7 @@ class ConfigurableIOBufferTest {
     @Test
     void bufferPoolMemoryRegisteredInMemoryPool() {
         var config = Config.defaults();
-        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
             assertThat(memoryTracker.usedNativeMemory())
                     .isEqualTo(PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE);
@@ -62,7 +62,7 @@ class ConfigurableIOBufferTest {
     @Test
     void canTryToCloseBufferSeveralTimes() {
         var config = Config.defaults();
-        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker);
         assertThat(memoryTracker.usedNativeMemory())
                 .isEqualTo(PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE);
@@ -81,7 +81,7 @@ class ConfigurableIOBufferTest {
     void bufferSizeCanBeConfigured() {
         int customPageSize = 2;
         var config = Config.defaults(pagecache_flush_buffer_size_in_pages, customPageSize);
-        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
             assertThat(memoryTracker.usedNativeMemory()).isEqualTo(PAGE_SIZE * customPageSize + PAGE_SIZE);
         }
@@ -91,7 +91,7 @@ class ConfigurableIOBufferTest {
     void bufferCapacityLimit() {
         int customPageSize = 5;
         var config = Config.defaults(pagecache_flush_buffer_size_in_pages, customPageSize);
-        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
             assertThat(memoryTracker.usedNativeMemory()).isEqualTo(PAGE_SIZE * customPageSize + PAGE_SIZE);
 

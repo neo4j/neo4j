@@ -22,7 +22,7 @@ package org.neo4j.memory;
 import org.neo4j.util.VisibleForTesting;
 
 /**
- * A {@link ScopedMemoryTracker} with a mutable inner delegate memory tracker.
+ * A {@link DefaultScopedMemoryTracker} with a mutable inner delegate memory tracker.
  * When the inner delegate memory tracker is null (the default), all allocation and release calls go to the
  * outer scoped memory tracker, but when an inner delegate is set with {@link #setInnerDelegate(MemoryTracker)},
  * all allocation and release calls gets routed to the inner delegate memory tracker instead.
@@ -31,7 +31,7 @@ import org.neo4j.util.VisibleForTesting;
  * <p>
  * This class is intended to simplify the management of recording allocations over inner transactions.
  */
-public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
+public class RebindableDualScopedMemoryTracker extends DefaultScopedMemoryTracker {
     // This is always scoped
     private MemoryTracker innerDelegate;
 
@@ -146,7 +146,7 @@ public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
 
     @Override
     public MemoryTracker getScopedMemoryTracker() {
-        return new ScopedMemoryTracker(this);
+        return new DefaultScopedMemoryTracker(this);
     }
 
     @VisibleForTesting

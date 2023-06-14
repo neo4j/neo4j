@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.packstream.codec.transport.ChunkFrameDecoder;
 
 class ReadLimitConnectionListenerTest {
@@ -39,7 +39,7 @@ class ReadLimitConnectionListenerTest {
 
     private Connection connection;
     private MemoryTracker memoryTracker;
-    private ScopedMemoryTracker scopedMemoryTracker;
+    private DefaultScopedMemoryTracker scopedMemoryTracker;
     private Channel channel;
     private ChannelPipeline pipeline;
     private AssertableLogProvider logProvider;
@@ -51,7 +51,7 @@ class ReadLimitConnectionListenerTest {
     void prepareListener() {
         this.connection = Mockito.mock(Connection.class, Mockito.RETURNS_MOCKS);
         this.memoryTracker = Mockito.mock(MemoryTracker.class);
-        this.scopedMemoryTracker = Mockito.mock(ScopedMemoryTracker.class);
+        this.scopedMemoryTracker = Mockito.mock(DefaultScopedMemoryTracker.class);
         this.channel = Mockito.mock(Channel.class);
         this.pipeline = Mockito.mock(ChannelPipeline.class, Mockito.RETURNS_SELF);
         this.logProvider = new AssertableLogProvider();

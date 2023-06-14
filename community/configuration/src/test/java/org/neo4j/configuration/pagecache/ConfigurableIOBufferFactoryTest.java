@@ -26,7 +26,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 
 class ConfigurableIOBufferFactoryTest {
     @Test
@@ -41,7 +41,7 @@ class ConfigurableIOBufferFactoryTest {
     @Test
     void disabledBufferDoesNotConsumeMemory() {
         var config = Config.defaults(pagecache_buffered_flush_enabled, false);
-        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         var bufferFactory = new ConfigurableIOBufferFactory(config, INSTANCE);
         try (var ioBuffer = bufferFactory.createBuffer()) {
             assertFalse(ioBuffer.isEnabled());
@@ -52,7 +52,7 @@ class ConfigurableIOBufferFactoryTest {
     @Test
     void defaultBufferCreation() {
         var config = Config.defaults();
-        var memoryTracker = new ScopedMemoryTracker(INSTANCE);
+        var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         var bufferFactory = new ConfigurableIOBufferFactory(config, memoryTracker);
         try (var ioBuffer = bufferFactory.createBuffer()) {
             assertFalse(ioBuffer.isEnabled());

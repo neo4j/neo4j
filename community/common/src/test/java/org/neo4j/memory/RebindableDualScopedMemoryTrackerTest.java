@@ -114,7 +114,7 @@ class RebindableDualScopedMemoryTrackerTest {
         inner.allocateNative(7);
         inner.allocateHeap(7);
 
-        ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
+        DefaultScopedMemoryTracker child = new DefaultScopedMemoryTracker(scopedMemoryTracker);
 
         child.allocateNative(5);
         child.releaseNative(5);
@@ -146,7 +146,7 @@ class RebindableDualScopedMemoryTrackerTest {
         inner.allocateNative(7);
         inner.allocateHeap(7);
 
-        ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
+        DefaultScopedMemoryTracker child = new DefaultScopedMemoryTracker(scopedMemoryTracker);
 
         child.allocateNative(5);
         child.releaseNative(5);

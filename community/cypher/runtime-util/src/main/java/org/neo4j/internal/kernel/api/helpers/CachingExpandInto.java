@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -467,7 +468,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
             this.firstNode = firstNode;
             this.secondNode = secondNode;
             this.expandDirection = expandDirection;
-            this.innerMemoryTracker = new ScopedMemoryTracker(outerMemoryTracker);
+            this.innerMemoryTracker = new DefaultScopedMemoryTracker(outerMemoryTracker);
             this.connections = HeapTrackingArrayList.newArrayListWithInitialTrackedSize(
                     innerMemoryTracker, EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
         }

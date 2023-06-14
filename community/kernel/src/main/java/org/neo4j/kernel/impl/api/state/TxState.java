@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -143,7 +144,7 @@ public class TxState implements TransactionState {
         transactionTracker.allocateHeap(SHALLOW_SIZE);
         this.chunkWriter = chunkWriter;
         this.collectionsFactory = collectionsFactory;
-        this.stateMemoryTracker = new ScopedMemoryTracker(transactionTracker);
+        this.stateMemoryTracker = new DefaultScopedMemoryTracker(transactionTracker);
         this.behaviour = behaviour;
         this.enrichmentStrategy = enrichmentStrategy;
         this.transactionEvent = transactionEvent;

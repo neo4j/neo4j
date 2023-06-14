@@ -66,6 +66,6 @@ class MemoryPoolTracker implements MemoryTracker {
 
     @Override
     public MemoryTracker getScopedMemoryTracker() {
-        return new ScopedMemoryTracker(this);
+        return new DefaultScopedMemoryTracker(this);
     }
 }
