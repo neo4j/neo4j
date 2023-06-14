@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
+import org.neo4j.procedure.NotThreadSafe;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -239,7 +240,8 @@ class ExecutionContextFunctionIT {
             assertThatThrownBy(() -> invokeUserFunction(
                             executionContext, "doSomethingWithKernelTransaction", Values.intValue(1)))
                     .hasRootCauseInstanceOf(ProcedureException.class)
-                    .hasMessageContaining("There is no `Transaction` in the current procedure call context.");
+                    .hasMessageContaining(
+                            "A Procedure or user-defined function called from parallel runtime cannot access the KernelTransaction");
         });
     }
 
@@ -536,6 +538,7 @@ class ExecutionContextFunctionIT {
         @Context
         public KernelTransaction kernelTransaction;
 
+        @NotThreadSafe
         @UserFunction("execution.context.test.function.doSomethingWithKernelTransaction")
         public Object doSomethingWithKernelTransaction(@Name("value") Object value) {
             return value;

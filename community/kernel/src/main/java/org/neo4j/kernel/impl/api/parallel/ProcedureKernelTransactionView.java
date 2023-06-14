@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 
@@ -33,5 +34,5 @@ public interface ProcedureKernelTransactionView extends AssertOpen {
 
     String statusDetails();
 
-    KernelTransaction actualKernelTransaction();
+    KernelTransaction actualKernelTransaction() throws ProcedureException;
 }

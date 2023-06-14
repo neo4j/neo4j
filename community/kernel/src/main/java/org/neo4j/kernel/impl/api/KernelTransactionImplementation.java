@@ -76,6 +76,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -648,8 +649,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
 
                     @Override
-                    public KernelTransaction actualKernelTransaction() {
-                        throw new UnsupportedOperationException(
+                    public KernelTransaction actualKernelTransaction() throws ProcedureException {
+                        throw new ProcedureException(
+                                Status.Procedure.ProcedureCallFailed,
                                 "A Procedure or user-defined function called from parallel runtime cannot access the KernelTransaction");
                     }
 
