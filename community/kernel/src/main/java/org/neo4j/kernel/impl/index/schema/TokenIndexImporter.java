@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.EMPTY_STORAGE;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.batchimport.IndexImporter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
@@ -115,8 +117,11 @@ public class TokenIndexImporter implements IndexImporter {
             PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
+        var dependencyResolver = new Dependencies();
+        dependencyResolver.satisfyDependency(EMPTY_STORAGE);
         var context = DatabaseIndexContext.builder(
                         pageCache, fs, contextFactory, pageCacheTracer, layout.getDatabaseName())
+                .withDependencyResolver(dependencyResolver)
                 .build();
         IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider(
                         layout.databaseDirectory())

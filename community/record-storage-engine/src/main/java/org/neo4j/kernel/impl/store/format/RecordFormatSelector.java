@@ -233,9 +233,9 @@ public class RecordFormatSelector {
      * Formats under development can be included in the search depending on the corresponding setting in the supplied config.
      */
     public static RecordFormats findLatestFormatInFamily(String formatFamily, Config config) {
-        RecordFormats formats = loadRecordFormat(formatFamily, false);
-
         boolean includeDevFormats = config.get(GraphDatabaseInternalSettings.include_versions_under_development);
+        RecordFormats formats = loadRecordFormat(formatFamily, includeDevFormats);
+
         if (includeDevFormats && formats != null) {
             Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily(formats, true);
             formats = newestFormatInFamily.orElse(formats);
