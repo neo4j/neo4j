@@ -551,7 +551,7 @@ case class QueryGraph(
     shortestRelationshipPatterns.nonEmpty ||
     optionalMatches.nonEmpty ||
     containsMergeRecursive ||
-    containsPropertyReadsInUpdates
+    containsReadsInUpdates
   }
 
   def writeOnly: Boolean = !containsReads && containsUpdates
