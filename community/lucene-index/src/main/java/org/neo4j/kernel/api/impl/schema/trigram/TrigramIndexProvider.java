@@ -86,7 +86,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
-        var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
+        final var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
@@ -96,7 +96,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         if (luceneIndex.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
-        var validator = valueValidator(descriptor, tokenNameLookup);
+        final var validator = valueValidator(descriptor, tokenNameLookup);
         return new TrigramIndexPopulator(luceneIndex, UPDATE_IGNORE_STRATEGY, validator);
     }
 
@@ -113,9 +113,9 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
         }
-        var luceneIndex = builder.build();
+        final var luceneIndex = builder.build();
         luceneIndex.open();
-        var validator = valueValidator(descriptor, tokenNameLookup);
+        final var validator = valueValidator(descriptor, tokenNameLookup);
         return new TrigramIndexAccessor(luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY, validator);
     }
 
@@ -123,11 +123,6 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         return TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
-    }
-
-    @Override
-    public IndexType getIndexType() {
-        return IndexType.TEXT;
     }
 
     private LuceneIndexValueValidator valueValidator(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {

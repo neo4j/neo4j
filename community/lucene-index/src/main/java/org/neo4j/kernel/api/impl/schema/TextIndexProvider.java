@@ -76,11 +76,6 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
     }
 
     @Override
-    public IndexType getIndexType() {
-        return IndexType.TEXT;
-    }
-
-    @Override
     public IndexPopulator getPopulator(
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
@@ -89,7 +84,7 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
-        var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config)
+        final var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
@@ -115,7 +110,7 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
         }
-        var index = builder.build();
+        final var index = builder.build();
         index.open();
         return new TextIndexAccessor(index, descriptor, tokenNameLookup, UPDATE_IGNORE_STRATEGY);
     }

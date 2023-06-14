@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.function.ToLongFunction;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.neo4j.common.TokenNameLookup;
@@ -30,7 +29,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
@@ -59,11 +57,6 @@ public class TextIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexRea
     public BoundedIterable<Long> newAllEntriesValueReader(
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
         return super.newAllEntriesReader(TextDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive);
-    }
-
-    @Override
-    public IndexEntriesReader[] newAllEntriesValueReader(ToLongFunction<Document> entityIdReader, int numPartitions) {
-        return super.newAllEntriesValueReader(TextDocumentStructure::getNodeId, numPartitions);
     }
 
     @Override

@@ -19,17 +19,20 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
-import static java.lang.String.format;
 import static org.neo4j.kernel.api.impl.schema.TextDocumentStructure.NODE_ID_KEY;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringContainsPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringSuffixPredicate;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -64,24 +67,23 @@ public class TextIndexReader extends AbstractTextIndexReader {
 
     @Override
     protected Query toLuceneQuery(PropertyIndexQuery predicate) {
-        switch (predicate.type()) {
-            case ALL_ENTRIES:
-                return TextDocumentStructure.newScanQuery();
-            case EXACT:
-                return TextDocumentStructure.newSeekQuery(((PropertyIndexQuery.ExactPredicate) predicate).value());
-            case STRING_PREFIX:
-                PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
-                return CypherStringQueryFactory.stringPrefix(spp.prefix().stringValue());
-            case STRING_CONTAINS:
-                PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
-                return CypherStringQueryFactory.stringContains(scp.contains().stringValue());
-            case STRING_SUFFIX:
-                PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
-                return CypherStringQueryFactory.stringSuffix(ssp.suffix().stringValue());
-            default:
-                throw new IllegalArgumentException(
-                        format("Index query not supported for %s index. Query: %s", IndexType.TEXT, predicate));
-        }
+        return switch (predicate.type()) {
+            case ALL_ENTRIES -> TextDocumentStructure.newScanQuery();
+            case EXACT -> TextDocumentStructure.newSeekQuery(((ExactPredicate) predicate).value());
+            case STRING_PREFIX -> {
+                final var spp = (StringPrefixPredicate) predicate;
+                yield CypherStringQueryFactory.stringPrefix(spp.prefix().stringValue());
+            }
+            case STRING_CONTAINS -> {
+                final var scp = (StringContainsPredicate) predicate;
+                yield CypherStringQueryFactory.stringContains(scp.contains().stringValue());
+            }
+            case STRING_SUFFIX -> {
+                final var ssp = (StringSuffixPredicate) predicate;
+                yield CypherStringQueryFactory.stringSuffix(ssp.suffix().stringValue());
+            }
+            default -> throw invalidQuery(predicate);
+        };
     }
 
     @Override
@@ -97,18 +99,18 @@ public class TextIndexReader extends AbstractTextIndexReader {
     @Override
     public long countIndexedEntities(
             long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
-        Query entityIdQuery = new TermQuery(TextDocumentStructure.newTermForChangeOrRemove(entityId));
-        Query valueQuery = TextDocumentStructure.newSeekQuery(propertyValues);
-        BooleanQuery.Builder entityIdAndValueQuery = new BooleanQuery.Builder();
+        final var entityIdQuery = new TermQuery(TextDocumentStructure.newTermForChangeOrRemove(entityId));
+        final var valueQuery = TextDocumentStructure.newSeekQuery(propertyValues);
+        final var entityIdAndValueQuery = new BooleanQuery.Builder();
         entityIdAndValueQuery.add(entityIdQuery, BooleanClause.Occur.MUST);
         entityIdAndValueQuery.add(valueQuery, BooleanClause.Occur.MUST);
         try {
-            TotalHitCountCollector collector = new TotalHitCountCollector();
+            final var collector = new TotalHitCountCollector();
             getIndexSearcher().search(entityIdAndValueQuery.build(), collector);
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
             return collector.getTotalHits();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 }

@@ -185,7 +185,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
         }
     }
 
-    public BoundedIterable<Long> newAllEntriesReader(
+    protected BoundedIterable<Long> newAllEntriesReader(
             ToLongFunction<Document> entityIdReader, long fromIdInclusive, long toIdExclusive) {
         return new LuceneAllEntriesIndexAccessorReader(
                 luceneIndex.allDocumentsReader(), entityIdReader, fromIdInclusive, toIdExclusive);

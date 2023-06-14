@@ -60,7 +60,7 @@ import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider;
+import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -193,7 +193,7 @@ public class FulltextIndexProvider extends IndexProvider {
         }
 
         try {
-            return AbstractTextIndexProvider.indexIsOnline(indexStorage, index, config)
+            return AbstractLuceneIndexProvider.indexIsOnline(indexStorage, index, config)
                     ? InternalIndexState.ONLINE
                     : InternalIndexState.POPULATING;
         } catch (IOException e) {

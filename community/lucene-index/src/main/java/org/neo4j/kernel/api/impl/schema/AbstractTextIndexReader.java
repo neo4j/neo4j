@@ -19,37 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import static java.lang.String.format;
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 
-import java.io.IOException;
-import java.util.Arrays;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
-import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
-import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
-import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
-import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.ValueGroup;
 
-public abstract class AbstractTextIndexReader implements ValueIndexReader {
-    protected final IndexDescriptor descriptor;
-    protected final SearcherReference searcherReference;
-    protected final IndexSamplingConfig samplingConfig;
-    protected final TaskCoordinator taskCoordinator;
-    protected final IndexUsageTracker usageTracker;
+public abstract class AbstractTextIndexReader extends AbstractLuceneIndexReader {
 
     protected AbstractTextIndexReader(
             IndexDescriptor descriptor,
@@ -57,80 +36,18 @@ public abstract class AbstractTextIndexReader implements ValueIndexReader {
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator,
             IndexUsageTracker usageTracker) {
-        this.descriptor = descriptor;
-        this.searcherReference = searcherReference;
-        this.samplingConfig = samplingConfig;
-        this.taskCoordinator = taskCoordinator;
-        this.usageTracker = usageTracker;
+        super(descriptor, searcherReference, samplingConfig, taskCoordinator, usageTracker, false);
     }
 
     @Override
-    public void query(
-            IndexProgressor.EntityValueClient client,
-            QueryContext context,
-            AccessMode accessMode,
-            IndexQueryConstraints constraints,
-            PropertyIndexQuery... predicates)
-            throws IndexNotApplicableKernelException {
-        validateQuery(predicates);
-        context.monitor().queried(descriptor);
-        usageTracker.queried();
-
-        PropertyIndexQuery predicate = predicates[0];
-        Query query = toLuceneQuery(predicate);
-        IndexProgressor progressor = search(query).getIndexProgressor(entityIdFieldKey(), client);
-        var needStoreFilter = needStoreFilter(predicate);
-        client.initialize(descriptor, progressor, accessMode, false, needStoreFilter, constraints, predicate);
-    }
-
-    protected abstract Query toLuceneQuery(PropertyIndexQuery predicate);
-
-    protected abstract String entityIdFieldKey();
-
-    protected abstract boolean needStoreFilter(PropertyIndexQuery predicate);
-
-    @Override
-    public PartitionedValueSeek valueSeek(
-            int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void close() {
-        try {
-            IOUtils.closeAll(searcherReference, usageTracker);
-        } catch (IOException e) {
-            throw new IndexReaderCloseException(e);
-        }
-    }
-
-    protected IndexSearcher getIndexSearcher() {
-        return searcherReference.getIndexSearcher();
-    }
-
-    private DocValuesCollector search(Query query) {
-        try {
-            DocValuesCollector docValuesCollector = new DocValuesCollector();
-            getIndexSearcher().search(query, docValuesCollector);
-            return docValuesCollector;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void validateQuery(PropertyIndexQuery... predicates) {
-        IndexType key = IndexType.TEXT;
+    protected void validateQuery(PropertyIndexQuery... predicates) {
         if (predicates.length > 1) {
-            throw new IllegalArgumentException(format(
-                    "Tried to query a %s index with a composite query. Composite queries are not supported by a %s index. Query was: %s ",
-                    key, key, Arrays.toString(predicates)));
+            throw invalidCompositeQuery(predicates);
         }
 
-        PropertyIndexQuery predicate = predicates[0];
-        // expression
+        final var predicate = predicates[0];
         if (!(predicate.valueGroup() == ValueGroup.TEXT || predicate.type() == IndexQueryType.ALL_ENTRIES)) {
-            throw new IllegalArgumentException(
-                    format("Index query not supported for %s index. Query: %s", key, predicate));
+            throw invalidQuery(predicate);
         }
     }
 }
