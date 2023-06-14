@@ -133,7 +133,7 @@ public class StoreInfoCommand extends AbstractAdminCommand {
                 var collector = structuredFormat
                         ? Collectors.joining(",", "[", "]")
                         : Collectors.joining(System.lineSeparator() + System.lineSeparator());
-                var result = Arrays.stream(fs.listFiles(path))
+                var result = Arrays.stream(fs.listFiles(neo4jLayout.databasesDirectory()))
                         .sorted(comparing(Path::getFileName))
                         .map(dbPath ->
                                 neo4jLayout.databaseLayout(dbPath.getFileName().toString()))
