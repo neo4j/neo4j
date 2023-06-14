@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorSimilarityFunctionFrom;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -35,12 +36,14 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
@@ -48,10 +51,12 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("vector", "1.0");
     public static final IndexCapability CAPABILITY = new VectorIndexCapability();
 
+    private final FileSystemAbstraction fileSystem;
+
     public VectorIndexProvider(
             FileSystemAbstraction fileSystem,
             DirectoryFactory directoryFactory,
-            Factory directoryStructureFactory,
+            IndexDirectoryStructure.Factory directoryStructureFactory,
             Monitors monitors,
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
@@ -64,6 +69,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 monitors,
                 config,
                 readOnlyChecker);
+        this.fileSystem = fileSystem;
     }
 
     @Override
@@ -90,7 +96,21 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
-        return null;
+        var luceneIndex = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
+                .withFileSystem(fileSystem)
+                .withSamplingConfig(samplingConfig)
+                .withIndexStorage(getIndexStorage(descriptor.getId()))
+                .withWriterConfig(() -> IndexWriterConfigs.population(config))
+                .build();
+
+        if (luceneIndex.isReadOnly()) {
+            throw new UnsupportedOperationException("Can't create populator for read only index");
+        }
+
+        final var indexConfig = descriptor.getIndexConfig();
+        final var ignoreStrategy = IndexUpdateIgnoreStrategy.NO_IGNORE;
+        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig).toLucene();
+        return new VectorIndexPopulator(luceneIndex, ignoreStrategy, similarityFunction);
     }
 
     @Override
@@ -102,7 +122,19 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        return null;
+        var builder = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
+                .withSamplingConfig(samplingConfig)
+                .withIndexStorage(getIndexStorage(descriptor.getId()));
+        if (readOnly) {
+            builder = builder.permanentlyReadOnly();
+        }
+        final var luceneIndex = builder.build();
+        luceneIndex.open();
+
+        final var indexConfig = descriptor.getIndexConfig();
+        final var ignoreStrategy = IndexUpdateIgnoreStrategy.NO_IGNORE;
+        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig).toLucene();
+        return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, similarityFunction);
     }
 
     @Override

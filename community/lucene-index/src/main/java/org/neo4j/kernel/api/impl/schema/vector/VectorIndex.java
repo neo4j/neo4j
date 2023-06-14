@@ -27,28 +27,52 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 class VectorIndex extends AbstractLuceneIndex<ValueIndexReader> {
+    private final IndexSamplingConfig samplingConfig;
+    private final TaskCoordinator taskCoordinator = new TaskCoordinator();
+
     VectorIndex(
             PartitionedIndexStorage indexStorage,
             IndexPartitionFactory partitionFactory,
             IndexDescriptor descriptor,
-            Config config) {
+            Config config,
+            IndexSamplingConfig samplingConfig) {
         super(indexStorage, partitionFactory, descriptor, config);
+        this.samplingConfig = samplingConfig;
+    }
+
+    @Override
+    public void drop() {
+        taskCoordinator.cancel();
+        try {
+            taskCoordinator.awaitCompletion();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while waiting for concurrent tasks to complete.", e);
+        }
+        super.drop();
     }
 
     @Override
     protected ValueIndexReader createSimpleReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
-        return null;
+        final var searcher = getFirstPartition(partitions);
+        return new VectorIndexReader(
+                descriptor, searcher.acquireSearcher(), samplingConfig, taskCoordinator, usageTracker);
     }
 
     @Override
     protected PartitionedValueIndexReader createPartitionedReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
-        return null;
+        final var readers = acquireSearchers(partitions).stream()
+                .map(partitionSearcher -> (ValueIndexReader) new VectorIndexReader(
+                        descriptor, partitionSearcher, samplingConfig, taskCoordinator, usageTracker))
+                .toList();
+        return new PartitionedValueIndexReader(descriptor, readers, usageTracker);
     }
 }
