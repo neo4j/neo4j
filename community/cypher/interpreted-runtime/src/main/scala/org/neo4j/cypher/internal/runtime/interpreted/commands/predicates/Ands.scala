@@ -19,11 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.SelectivityTracker
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.VariableCommand
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   override def shouldExitWhen = IsFalse
@@ -72,4 +79,49 @@ case class AndedPropertyComparablePredicates(
   override def shouldExitWhen: IsMatchResult = IsFalse
 
   override def children: Seq[AstNode[_]] = Seq(ident, prop) ++ predicates.toIndexedSeq
+}
+
+case class AndsWithSelectivityTracking(predicates: Vector[Predicate]) extends Predicate {
+
+  private val selectivityTracker: SelectivityTracker = new SelectivityTracker(predicates.size)
+
+  def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    val result = selectivityTracker.getOrder().foldLeft(Try[IsMatchResult](IsTrue)) {
+      (previousValue, predicateIndex) =>
+        previousValue match {
+          case Success(IsFalse) => previousValue
+          case _ =>
+            Try(predicates(predicateIndex).isMatch(ctx, state)) match {
+              case result @ Success(IsFalse) =>
+                selectivityTracker.onPredicateResult(predicateIndex, isTrue = false)
+                result
+
+              case result =>
+                selectivityTracker.onPredicateResult(predicateIndex, isTrue = true)
+                result match {
+                  case Success(IsUnknown) if previousValue.isSuccess => result
+                  case Failure(_) if previousValue.isSuccess         => result
+                  case _                                             => previousValue
+                }
+            }
+        }
+    }
+
+    selectivityTracker.onRowFinished()
+
+    result match {
+      case Failure(e)      => throw e
+      case Success(option) => option
+    }
+  }
+
+  override def children: Seq[AstNode[_]] = predicates
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(AndsWithSelectivityTracking(predicates.map(_.rewriteAsPredicate(f))))
+
+  override def toString: String =
+    predicates.mkString(" ~AND ~")
+
+  override def arguments: Seq[Expression] = predicates
 }
