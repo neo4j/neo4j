@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Condition
 
@@ -55,7 +57,7 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
       def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
       def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
       def isNodeOrRelationship(variable: Expression) =
-        table.isNodeNoFail(variable) || table.isRelationshipNoFail(variable)
+        table.typeFor(variable).isAnyOf(CTNode, CTRelationship)
 
       val notifications = value.statement().folder.treeFold(Seq.empty[InternalNotification]) {
         case label @ LabelName(name) if isEmptyLabel(name) =>

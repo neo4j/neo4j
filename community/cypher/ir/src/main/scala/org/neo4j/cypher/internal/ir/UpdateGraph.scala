@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -46,6 +47,10 @@ import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 import scala.annotation.tailrec
 import scala.collection.immutable.ListSet
@@ -503,10 +508,10 @@ trait UpdateGraph {
       case ContainerIndex(_, index) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
-        !semanticTable.isIntegerNoFail(index)
+        !semanticTable.typeFor(index).is(CTInteger)
     }
     lazy val hasPropertyFunctionRead = this != qgWithInfo.queryGraph && qgWithInfo.queryGraph.folder.treeExists {
-      case Properties(expr) if !semanticTable.isMapNoFail(expr) =>
+      case Properties(expr) if !semanticTable.typeFor(expr).is(CTMap) =>
         true
     }
 
@@ -528,10 +533,10 @@ trait UpdateGraph {
       // Don't do this when comparing against self, to avoid finding overlap for e.g. SET n.prop = n.prop + 1
       if (this != qgWithInfo.queryGraph) {
         val readProps = qgWithInfo.queryGraph.mutatingPatterns.folder.findAllByClass[Property]
-        val (readNodeProps, readRelOrOtherProps) = readProps.partition(p => semanticTable.isNodeNoFail(p.map))
+        val (readNodeProps, readRelOrOtherProps) = readProps.partition(p => semanticTable.typeFor(p.map).is(CTNode))
         val (readRelProps, readOtherProps) =
-          readRelOrOtherProps.partition(p => semanticTable.isRelationshipNoFail(p.map))
-        val filteredOtherProps = readOtherProps.filterNot(p => semanticTable.isMapNoFail(p.map))
+          readRelOrOtherProps.partition(p => semanticTable.typeFor(p.map).is(CTRelationship))
+        val filteredOtherProps = readOtherProps.filterNot(p => semanticTable.typeFor(p.map).is(CTMap))
 
         (readNodeProps.map(_.propertyKey), readRelProps.map(_.propertyKey), filteredOtherProps.map(_.propertyKey))
       } else {
@@ -810,15 +815,31 @@ trait UpdateGraph {
     case _                                  => false
   }
 
-  private def isReturningNode(qgWithInfo: QgWithLeafInfo, semanticTable: SemanticTable): Boolean =
-    qgWithInfo.isTerminatingProjection && qgWithInfo.queryGraph.selections.predicates.map(_.expr).exists(expr =>
-      semanticTable.isNodeNoFail(expr)
-    )
+  private def isReturningNode(qgWithInfo: QgWithLeafInfo, semanticTable: SemanticTable): Boolean = {
+    // Note: We are confusingly checking the selections, since
+    // QueryHorizon.getQueryGraphFromDependingExpressions stores all depending expressions in there.
+    // We don't have access to the horizon itself in here, so this is a hack to get this information from the query graph instead.
+    qgWithInfo.isTerminatingProjection && qgWithInfo.queryGraph.selections.predicates.map(_.expr).exists {
+      // Since IR construction does some rewriting, we don't have type information on all expressions, including
+      // AndedPropertyInequalities, which is a subtype of BooleanExpression, which can never be a Node.
+      // This extra case avoids some unnecessary Eagers.
+      case _: BooleanExpression => false
+      case expr                 => semanticTable.typeFor(expr).couldBe(CTNode)
+    }
+  }
 
-  private def isReturningRel(qgWithInfo: QgWithLeafInfo, semanticTable: SemanticTable): Boolean =
-    qgWithInfo.isTerminatingProjection && qgWithInfo.queryGraph.selections.predicates.map(_.expr).exists(expr =>
-      semanticTable.isRelationshipNoFail(expr)
-    )
+  private def isReturningRel(qgWithInfo: QgWithLeafInfo, semanticTable: SemanticTable): Boolean = {
+    // Note: We are confusingly checking the selections, since
+    // QueryHorizon.getQueryGraphFromDependingExpressions stores all depending expressions in there.
+    // We don't have access to the horizon itself in here, so this is a hack to get this information from the query graph instead.
+    qgWithInfo.isTerminatingProjection && qgWithInfo.queryGraph.selections.predicates.map(_.expr).exists {
+      // Since IR construction does some rewriting, we don't have type information on all expressions, including
+      // AndedPropertyInequalities, which is a subtype of BooleanExpression, which can never be a Relationship.
+      // This extra case avoids some unnecessary Eagers.
+      case _: BooleanExpression => false
+      case expr                 => semanticTable.typeFor(expr).couldBe(CTRelationship)
+    }
+  }
 
   def mergeQueryGraph: Option[QueryGraph] = mutatingPatterns.collectFirst {
     case c: MergePattern => c.matchGraph

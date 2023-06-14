@@ -580,7 +580,8 @@ object ReadsAndWritesFinder {
         relationshipFilterExpressions =
           this.relationshipFilterExpressions.fuse(other.relationshipFilterExpressions)(_.mergeWith(_, mergePlan)),
         possibleRelDeleteConflictPlans =
-          this.possibleRelDeleteConflictPlans.fuse(other.possibleRelDeleteConflictPlans)(_ ++ _)
+          this.possibleRelDeleteConflictPlans.fuse(other.possibleRelDeleteConflictPlans)(_ ++ _),
+        callInTxPlans = this.callInTxPlans ++ other.callInTxPlans
       )
     }
   }

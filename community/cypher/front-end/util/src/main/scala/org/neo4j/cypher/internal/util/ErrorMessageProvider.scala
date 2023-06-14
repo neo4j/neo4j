@@ -31,6 +31,8 @@ trait ErrorMessageProvider {
     additionalInfo: String
   ): String
 
+  def createSelfReferenceError(name: String): String
+
   def createSelfReferenceError(name: String, variableType: String): String
 
   def createUseClauseUnsupportedError(): String
@@ -51,6 +53,8 @@ object NotImplementedErrorMessageProvider extends ErrorMessageProvider {
     entityName: String,
     additionalInfo: String
   ): String = ???
+
+  override def createSelfReferenceError(name: String): String = ???
 
   override def createSelfReferenceError(name: String, variableType: String): String = ???
 

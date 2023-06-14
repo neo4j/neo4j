@@ -52,6 +52,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.HintException
@@ -128,18 +130,20 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   private def getSemanticTable: SemanticTable = {
     val semanticTable = newMockedSemanticTable
-    when(semanticTable.isNodeNoFail("a")).thenReturn(true)
-    when(semanticTable.isNodeNoFail(varFor("a"))).thenReturn(true)
+    val nodeTypeGetter = SemanticTable.TypeGetter(Some(CTNode.invariant))
+    val relTypeGetter = SemanticTable.TypeGetter(Some(CTRelationship.invariant))
+    val stringTypeGetter = SemanticTable.TypeGetter(Some(CTString.invariant))
 
-    when(semanticTable.isNodeNoFail("b")).thenReturn(true)
-    when(semanticTable.isNodeNoFail(varFor("b"))).thenReturn(true)
+    when(semanticTable.typeFor("a")).thenReturn(nodeTypeGetter)
+    when(semanticTable.typeFor(varFor("a"))).thenReturn(nodeTypeGetter)
 
-    when(semanticTable.isRelationshipNoFail("r")).thenReturn(true)
-    when(semanticTable.isRelationshipNoFail(varFor("r"))).thenReturn(true)
+    when(semanticTable.typeFor("b")).thenReturn(nodeTypeGetter)
+    when(semanticTable.typeFor(varFor("b"))).thenReturn(nodeTypeGetter)
 
-    when(semanticTable.getOptionalActualTypeFor(StringLiteral("test")(InputPosition.NONE))).thenReturn(Some(
-      CTString.invariant
-    ))
+    when(semanticTable.typeFor("r")).thenReturn(relTypeGetter)
+    when(semanticTable.typeFor(varFor("r"))).thenReturn(relTypeGetter)
+
+    when(semanticTable.typeFor(StringLiteral("test")(InputPosition.NONE))).thenReturn(stringTypeGetter)
 
     semanticTable
   }
@@ -191,7 +195,10 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should throw when finding plan that contains unfulfillable node index hint") {
     val context =
-      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
+      newMockedLogicalPlanningContext(
+        planContext = getPlanContext(hasIndex = false),
+        useErrorsOverWarnings = true
+      )
 
     the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)

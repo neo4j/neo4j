@@ -249,6 +249,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.schema.IndexType
@@ -2305,9 +2307,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {
-    override def isNode(expr: Expression): Boolean = semanticTable.isNodeNoFail(expr)
+    override def isNode(expr: Expression): Boolean = semanticTable.typeFor(expr).is(CTNode)
 
-    override def isRelationship(expr: Expression): Boolean = semanticTable.isRelationshipNoFail(expr)
+    override def isRelationship(expr: Expression): Boolean = semanticTable.typeFor(expr).is(CTRelationship)
   }
 
   protected def expressionRewriter: Rewriter =

@@ -130,6 +130,8 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
@@ -574,16 +576,18 @@ object ClauseConverters {
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
     case SetLabelItem(id, labels) => SetLabelPattern(id.name, labels)
 
-    case SetPropertyItem(LogicalProperty(node: Variable, propertyKey), expr) if semanticTable.isNode(node) =>
+    case SetPropertyItem(LogicalProperty(node: Variable, propertyKey), expr)
+      if semanticTable.typeFor(node).is(CTNode) =>
       SetNodePropertyPattern(node.name, propertyKey, expr)
 
-    case SetPropertyItems(node: Variable, items) if semanticTable.isNode(node) =>
+    case SetPropertyItems(node: Variable, items) if semanticTable.typeFor(node).is(CTNode) =>
       SetNodePropertiesPattern(node.name, items)
 
-    case SetPropertyItem(LogicalProperty(rel: Variable, propertyKey), expr) if semanticTable.isRelationship(rel) =>
+    case SetPropertyItem(LogicalProperty(rel: Variable, propertyKey), expr)
+      if semanticTable.typeFor(rel).is(CTRelationship) =>
       SetRelationshipPropertyPattern(rel.name, propertyKey, expr)
 
-    case SetPropertyItems(rel: Variable, items) if semanticTable.isRelationship(rel) =>
+    case SetPropertyItems(rel: Variable, items) if semanticTable.typeFor(rel).is(CTRelationship) =>
       SetRelationshipPropertiesPattern(rel.name, items)
 
     case SetPropertyItem(LogicalProperty(entityExpr, propertyKey), expr) =>
@@ -592,19 +596,19 @@ object ClauseConverters {
     case SetPropertyItems(entityExpr, items) =>
       SetPropertiesPattern(entityExpr, items)
 
-    case SetExactPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
+    case SetExactPropertiesFromMapItem(node, expression) if semanticTable.typeFor(node).is(CTNode) =>
       SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = true)
 
-    case SetExactPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
+    case SetExactPropertiesFromMapItem(rel, expression) if semanticTable.typeFor(rel).is(CTRelationship) =>
       SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = true)
 
     case SetExactPropertiesFromMapItem(vr, expression) =>
       SetPropertiesFromMapPattern(vr, expression, removeOtherProps = true)
 
-    case SetIncludingPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
+    case SetIncludingPropertiesFromMapItem(node, expression) if semanticTable.typeFor(node).is(CTNode) =>
       SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = false)
 
-    case SetIncludingPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
+    case SetIncludingPropertiesFromMapItem(rel, expression) if semanticTable.typeFor(rel).is(CTRelationship) =>
       SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = false)
 
     case SetIncludingPropertiesFromMapItem(vr, expression) =>
@@ -872,14 +876,14 @@ object ClauseConverters {
 
       // REMOVE n.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey)))
-        if acc.semanticTable.isNode(variable) =>
+        if acc.semanticTable.typeFor(variable).is(CTNode) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
           SetNodePropertyPattern(variable.name, propertyKey, Null()(propertyKey.position))
         ))
 
       // REMOVE rel.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey)))
-        if acc.semanticTable.isRelationship(variable) =>
+        if acc.semanticTable.typeFor(variable).is(CTRelationship) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
           SetRelationshipPropertyPattern(variable.name, propertyKey, Null()(propertyKey.position))
         ))

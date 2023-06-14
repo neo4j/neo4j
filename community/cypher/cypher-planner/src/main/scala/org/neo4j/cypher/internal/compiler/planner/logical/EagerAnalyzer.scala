@@ -38,6 +38,8 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
@@ -474,13 +476,13 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
 
   private def deletedRelationshipsOverlap(deleted: Set[String], to: QueryGraph): Boolean = {
     val relsToRead = to.allPatternRelationshipsRead
-    val relsDeleted = deleted.filter(id => semanticTable.isRelationshipNoFail(id))
+    val relsDeleted = deleted.filter(id => semanticTable.typeFor(id).is(CTRelationship))
     relsToRead.nonEmpty && relsDeleted.nonEmpty
   }
 
   private def deletedNodesOverlap(deleted: Set[String], to: QueryGraph): Boolean = {
     val nodesToRead = to.allPatternNodesRead
-    val nodesDeleted = deleted.filter(id => semanticTable.isNodeNoFail(id))
+    val nodesDeleted = deleted.filter(id => semanticTable.typeFor(id).is(CTNode))
     nodesToRead.nonEmpty && nodesDeleted.nonEmpty
   }
 

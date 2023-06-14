@@ -92,8 +92,7 @@ case object PushdownPropertyReads {
   ): LogicalPlan = {
 
     def isNodeOrRel(variable: LogicalVariable): Boolean =
-      semanticTable.types.get(variable)
-        .exists(t => t.actual == CTNode.invariant || t.actual == CTRelationship.invariant)
+      semanticTable.typeFor(variable).isAnyOf(CTNode, CTRelationship)
 
     case class CardinalityOptimum(cardinality: EffectiveCardinality, logicalPlanId: Id, variableName: String)
     case class Acc(

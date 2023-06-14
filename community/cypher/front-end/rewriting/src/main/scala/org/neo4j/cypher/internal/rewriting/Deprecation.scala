@@ -152,11 +152,6 @@ object Deprecations {
     )(s.position)
   }
 
-  private def isNodeOrRelationship(v: Variable, semanticTable: SemanticTable): Boolean = {
-    val actualType = semanticTable.getActualTypeFor(v)
-    actualType.equals(CTNode.invariant) || actualType.equals(CTRelationship.invariant)
-  }
-
   private def unionReturnItemsInDifferentOrder(lhs: Query, rhs: SingleQuery): Boolean = {
     rhs.returnColumns.nonEmpty && lhs.returnColumns.nonEmpty &&
     !rhs.returnColumns.map(v => v.name).equals(lhs.returnColumns.map(v => v.name))
@@ -187,12 +182,14 @@ object Deprecations {
     }
 
     override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = Function.unlift {
-      case s @ SetExactPropertiesFromMapItem(_, e: Variable) if isNodeOrRelationship(e, semanticTable) =>
+      case s @ SetExactPropertiesFromMapItem(_, e: Variable)
+        if semanticTable.typeFor(e).isAnyOf(CTNode, CTRelationship) =>
         Some(Deprecation(
           Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, e))(s.position)),
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
         ))
-      case s @ SetIncludingPropertiesFromMapItem(_, e: Variable) if isNodeOrRelationship(e, semanticTable) =>
+      case s @ SetIncludingPropertiesFromMapItem(_, e: Variable)
+        if semanticTable.typeFor(e).isAnyOf(CTNode, CTRelationship) =>
         Some(Deprecation(
           Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, e))(s.position)),
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))

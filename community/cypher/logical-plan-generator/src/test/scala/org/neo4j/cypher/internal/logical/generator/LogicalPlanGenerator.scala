@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
@@ -359,9 +360,10 @@ class LogicalPlanGenerator(
 
   def expand(state: State): Gen[WithState[Expand]] = for {
     WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, state) =>
-      plan.availableSymbols.exists(v => state.semanticTable.isNode(v))
+      plan.availableSymbols.exists(v => state.semanticTable.typeFor(v).is(CTNode))
     }
-    from <- Gen.oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.isNode(varFor(name)))
+    from <-
+      Gen.oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.typeFor(varFor(name)).is(CTNode))
     dir <- semanticDirection
     relTypes <- relTypeNames
     WithState(to, state) <- newVariable(state)

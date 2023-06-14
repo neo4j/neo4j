@@ -47,7 +47,7 @@ case class normalizeSargablePredicatesRewriter(semanticTable: SemanticTable) ext
   })
 
   private def couldContainNumber(expression: Expression): Boolean = {
-    semanticTable.getActualTypeFor(expression).containsAny(CTNumber)
+    semanticTable.typeFor(expression).couldBe(CTNumber)
   }
 
   /**
@@ -60,7 +60,7 @@ case class normalizeSargablePredicatesRewriter(semanticTable: SemanticTable) ext
       case e: DoubleLiteral =>
         e.value.isNaN
       case e =>
-        semanticTable.getActualTypeFor(e).contains(CTFloat)
+        semanticTable.typeFor(e).couldBe(CTFloat)
     }
   }
 

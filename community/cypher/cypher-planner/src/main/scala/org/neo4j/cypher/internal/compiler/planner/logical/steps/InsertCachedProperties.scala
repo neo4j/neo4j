@@ -100,6 +100,8 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 import scala.collection.mutable
 
@@ -134,8 +136,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         from.logicalPlan
       }
 
-    def isNode(variable: Variable) = from.semanticTable().isNodeNoFail(variable.name)
-    def isRel(variable: Variable) = from.semanticTable().isRelationshipNoFail(variable.name)
+    def isNode(variable: Variable) = from.semanticTable().typeFor(variable.name).is(CTNode)
+    def isRel(variable: Variable) = from.semanticTable().typeFor(variable.name).is(CTRelationship)
 
     /**
      * A summary of all usages of a property

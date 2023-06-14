@@ -55,6 +55,8 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.symbols
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -94,7 +96,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("n"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTNode.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
@@ -132,7 +136,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("n"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTNode.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set("n"))(qg, InterestingOrderConfig.empty, context)
@@ -169,7 +175,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("n"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTNode.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
@@ -208,7 +216,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("n"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTNode.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
@@ -245,7 +255,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("n"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTNode.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
@@ -285,7 +297,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("r"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTRelationship.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
@@ -327,7 +341,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("r"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTRelationship.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
@@ -497,7 +513,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isRelationship(rel)).thenReturn(true)
+    when(context.semanticTable.typeFor(rel)).thenReturn(
+      SemanticTable.TypeGetter(Some(CTRelationship.invariant))
+    )
 
     // when
     val resultPlans =
@@ -548,7 +566,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isRelationship(rel)).thenReturn(true)
+    when(context.semanticTable.typeFor(rel)).thenReturn(
+      SemanticTable.TypeGetter(Some(CTRelationship.invariant))
+    )
 
     // when
     val resultPlans =
@@ -596,7 +616,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("r"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTRelationship.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
@@ -645,7 +667,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ): CostModel)
     val context =
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = newMockedMetrics(factory))
-    when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
+    when(context.semanticTable.typeFor(varFor("r"))).thenReturn(
+      SemanticTable.TypeGetter(Some(CTRelationship.invariant))
+    )
 
     // when
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)

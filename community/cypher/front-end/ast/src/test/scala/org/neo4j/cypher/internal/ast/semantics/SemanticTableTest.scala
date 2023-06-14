@@ -2,27 +2,22 @@
  * Copyright (c) "Neo4j"
  * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package org.neo4j.cypher.internal.compiler.planner
+package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -40,15 +35,15 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
   test("can add nodes to a SemanticTable") {
     val table = SemanticTable().addNode(varFor("x"))
 
-    table.isNode("x") should be(true)
-    table.isRelationship("x") should be(false)
+    table.typeFor("x").is(CTNode) should be(true)
+    table.typeFor("x").is(CTRelationship) should be(false)
   }
 
   test("can add rels to a SemanticTable") {
     val table = SemanticTable().addRelationship(varFor("r"))
 
-    table.isRelationship("r") should be(true)
-    table.isNode("r") should be(false)
+    table.typeFor("r").is(CTRelationship) should be(true)
+    table.typeFor("r").is(CTNode) should be(false)
   }
 
   test("doesn't share mutable references after being copied") {
@@ -63,8 +58,8 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
   test("should be able to tell the type of an variable") {
     val table = SemanticTable().addNode(varFor("a", position123)).addRelationship(varFor("b", position123))
 
-    table.getTypeFor("a") should be(CTNode.invariant)
-    table.getTypeFor("b") should be(CTRelationship.invariant)
+    table.typeFor("a").typeInfo should be(Some(CTNode.invariant))
+    table.typeFor("b").typeInfo should be(Some(CTRelationship.invariant))
   }
 
   test("should be able to tell the type of an variable if there is an unknown type involved") {
@@ -73,7 +68,7 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
       ExpressionTypeInfo(TypeSpec.all, None)
     )).addNode(varFor("a", position123))
 
-    table.getTypeFor("a") should be(CTNode.invariant)
+    table.typeFor("a").typeInfo should be(Some(CTNode.invariant))
   }
 
   test("should be able to tell the type of an variable if there is an unknown type involved other order") {
@@ -82,32 +77,32 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
       ExpressionTypeInfo(CTNode.invariant, None)
     ).updated(varFor("a", position000), ExpressionTypeInfo(TypeSpec.all, None)))
 
-    table.getTypeFor("a") should be(CTNode.invariant)
+    table.typeFor("a").typeInfo should be(Some(CTNode.invariant))
   }
 
-  test("should fail when asking for an unknown variable") {
+  test("should return None when asking for an unknown variable") {
     val table = SemanticTable()
 
-    intercept[IllegalStateException](table.getTypeFor("a"))
+    table.typeFor("a").typeInfo should be(None)
   }
 
-  test("should fail if the semantic table is confusing") {
+  test("should return None if the semantic table has conflicting type information") {
     val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].updated(
       varFor("a", position123),
       ExpressionTypeInfo(CTNode.invariant, None)
     ).updated(varFor("a", position000), ExpressionTypeInfo(CTRelationship.invariant, None)))
 
-    intercept[IllegalStateException](table.getTypeFor("a"))
+    table.typeFor("a").typeInfo should be(None)
   }
 
-  test("isInteger should only be true if we are certain it is an integer") {
+  test("is(CTInteger) should only be true if we are certain it is an integer") {
     val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
       .updated(varFor("a", position000), ExpressionTypeInfo(CTInteger.invariant, None))
       .updated(varFor("b", position000), ExpressionTypeInfo(TypeSpec.all, None))
       .updated(varFor("c", position000), ExpressionTypeInfo(CTInteger.invariant | CTString.invariant, None)))
 
-    table.isIntegerNoFail(varFor("a", position000)) should be(true)
-    table.isIntegerNoFail(varFor("b", position000)) should be(false)
-    table.isIntegerNoFail(varFor("c", position000)) should be(false)
+    table.typeFor(varFor("a", position000)).is(CTInteger) should be(true)
+    table.typeFor(varFor("b", position000)).is(CTInteger) should be(false)
+    table.typeFor(varFor("c", position000)).is(CTInteger) should be(false)
   }
 }

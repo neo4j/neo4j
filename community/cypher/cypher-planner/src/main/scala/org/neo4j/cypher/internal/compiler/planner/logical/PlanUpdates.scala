@@ -53,6 +53,9 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
 
 /*
@@ -248,11 +251,11 @@ case object PlanUpdates extends UpdatesPlanner {
       case p: DeleteExpression =>
         val delete = p.expression match {
           // DELETE node
-          case expression if context.semanticTable.isNodeNoFail(expression) =>
+          case expression if context.semanticTable.typeFor(expression).is(CTNode) =>
             context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
           // DELETE rel
-          case expression if context.semanticTable.isRelationshipNoFail(expression) =>
+          case expression if context.semanticTable.typeFor(expression).is(CTRelationship) =>
             context.staticComponents.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           // DELETE path
@@ -262,11 +265,11 @@ case object PlanUpdates extends UpdatesPlanner {
           // These 2 cases are not really needed, but sometimes we have semantic info for the variable
           // But not the ContainerIndex, so they don't hurt either.
           // DELETE nodes[{i}]
-          case ContainerIndex(Variable(n), _) if context.semanticTable.isNodeCollectionNoFail(n) =>
+          case ContainerIndex(Variable(n), _) if context.semanticTable.typeFor(n).is(CTList(CTNode)) =>
             context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
           // DELETE rels[{i}]
-          case ContainerIndex(Variable(r), _) if context.semanticTable.isRelationshipCollectionNoFail(r) =>
+          case ContainerIndex(Variable(r), _) if context.semanticTable.typeFor(r).is(CTList(CTRelationship)) =>
             context.staticComponents.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           // DELETE expr

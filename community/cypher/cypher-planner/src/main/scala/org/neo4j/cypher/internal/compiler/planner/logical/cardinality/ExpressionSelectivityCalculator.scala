@@ -101,6 +101,7 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.WithSizeHint
+import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -632,7 +633,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   private def calculateSelectivityForIdSeekable(seekable: IdSeekable)(implicit
   semanticTable: SemanticTable): Selectivity = {
     val lookups = seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS)
-    if (semanticTable.isNodeNoFail(seekable.ident)) {
+    if (semanticTable.typeFor(seekable.ident).is(CTNode)) {
       (lookups / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
     } else {
       (lookups / stats.patternStepCardinality(None, None, None)) getOrElse Selectivity.ONE

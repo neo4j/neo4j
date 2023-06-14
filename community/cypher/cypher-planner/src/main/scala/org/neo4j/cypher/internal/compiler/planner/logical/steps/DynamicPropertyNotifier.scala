@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
 import org.neo4j.cypher.internal.logical.plans.AsValueRangeNonSeekable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 object DynamicPropertyNotifier {
 
@@ -76,8 +78,8 @@ object DynamicPropertyNotifier {
     context: LogicalPlanningContext
   ): Set[Variable] = {
     val isExpectedEntity = expectedType match {
-      case NODE_TYPE         => (variable: Variable) => context.semanticTable.isNodeNoFail(variable)
-      case RELATIONSHIP_TYPE => (variable: Variable) => context.semanticTable.isRelationshipNoFail(variable)
+      case NODE_TYPE         => (variable: Variable) => context.semanticTable.typeFor(variable).is(CTNode)
+      case RELATIONSHIP_TYPE => (variable: Variable) => context.semanticTable.typeFor(variable).is(CTRelationship)
     }
 
     predicates.flatMap {

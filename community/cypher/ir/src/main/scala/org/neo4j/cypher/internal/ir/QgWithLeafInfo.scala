@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -103,17 +102,16 @@ case class QgWithLeafInfo(
     }
   }
 
-  val entityArguments: (SemanticTable => Set[String]) with CachedFunction = CachedFunction(
-    (semanticTable: SemanticTable) => {
+  val entityArguments: (SemanticTable => Set[String]) with CachedFunction =
+    CachedFunction((semanticTable: SemanticTable) => {
       val nonEntityArguments = queryGraph.selections.predicates
         .flatMap(_.expr.dependencies)
         // find expressions that we know for certain are not entities
-        .filterNot(couldBeEntity(semanticTable, _)).map(_.name)
+        .filterNot(semanticTable.typeFor(_).couldBe(CTNode, CTRelationship)).map(_.name)
 
       // Remove nonEntityArguments from argumentIds to avoid being eager on simple projections like `WITH a.prop AS prop`,
       queryGraph.argumentIds -- nonEntityArguments
-    }
-  )
+    })
 
   val nonArgumentPatternNodes: (SemanticTable => Set[Identifier]) with CachedFunction =
     CachedFunction((semanticTable: SemanticTable) => {
@@ -179,17 +177,4 @@ case class QgWithLeafInfo(
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =
     solvedQg.allPossibleLabelsOnNode(node)
 
-  /**
-   * Checks whether the given expression could be of type `CTNode` or `CTRelationship`.
-   */
-  private def couldBeEntity(semanticTable: SemanticTable, exp: Expression): Boolean =
-    semanticTable.types.get(exp) match {
-      case Some(expressionTypeInfo) =>
-        val actualType = expressionTypeInfo.actual
-        actualType.contains(CTNode) || actualType.contains(CTRelationship)
-
-      case None =>
-        // No type information available, we have to be conservative
-        true
-    }
 }

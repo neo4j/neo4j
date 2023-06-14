@@ -130,6 +130,8 @@ import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.WorkReduction
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 case class CardinalityCostModel(executionModel: ExecutionModel) extends CostModel {
 
@@ -374,7 +376,7 @@ object CardinalityCostModel {
       case AndedPropertyInequalities(_: LogicalVariable, _: LogicalProperty, _: NonEmptyList[InequalityExpression]) =>
         count =>
           TraverseChildren(count - PROPERTY_ACCESS_DB_HITS) // Ignore the `property` grouping key in `AndedPropertyInequalities`, only count properties inside `properties`.
-      case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) =>
+      case x: Property if semanticTable.typeFor(x.map).isAnyOf(CTNode, CTRelationship) =>
         count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case cp: CachedProperty if cp.knownToAccessStore    => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case cp: CachedHasProperty if cp.knownToAccessStore => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)

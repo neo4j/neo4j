@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
@@ -74,8 +73,7 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
 
   def newVar(name: String, inputPosition: InputPosition, typ: CypherType): LogicalPlanBuilder = {
     val variable = Variable(name)(inputPosition)
-    semanticTable =
-      semanticTable.copy(types = semanticTable.types.updated(variable, ExpressionTypeInfo(typ.invariant, None)))
+    newVariable(variable, typ)
     this
   }
 

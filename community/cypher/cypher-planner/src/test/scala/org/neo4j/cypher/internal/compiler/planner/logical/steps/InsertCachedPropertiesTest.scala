@@ -936,7 +936,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .projection("n2 AS n3").withEffectiveCardinality(200)
       .apply().withEffectiveCardinality(200)
       .|.nodeByLabelScan("m", "B").withEffectiveCardinality(200)
-      // Note, push down properties don't keep track of input position in all cases and can produce output like the following
+      // Note, push down properties doesn't keep track of input position in all cases and can produce output like the following
       .cacheProperties(Set[LogicalProperty](Property(
         Variable("n2")(InputPosition.NONE),
         PropertyKeyName("prop")(InputPosition.NONE)

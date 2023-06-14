@@ -71,6 +71,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
@@ -706,7 +707,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between label set and negated label read") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("labels")
+      .produceResults()
       .setLabels("m", "A")
       .expand("(n)-[r]->(m)").withCardinality(100)
       .cartesianProduct().withCardinality(10)
@@ -718,7 +719,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("labels")
+        .produceResults()
         .setLabels("m", "A")
         .expand("(n)-[r]->(m)")
         .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(1), Id(4))))))
@@ -2048,7 +2049,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .apply()
       .|.nodeByLabelScan("m", "M")
       .create(createNodeWithProperties("n", Seq("N"), "{prop: 5}"))
-      .unwind("[1,2] AS x")
+      .unwind("[1,2] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
     val result = eagerizePlan(planBuilder, plan)
@@ -2144,7 +2145,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts no eager between Merge with ON MATCH and IndexScan if no property overlap") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("o")
+      .produceResults()
       .merge(nodes = Seq(createNode("m")), onMatch = Seq(setNodeProperty("m", "foo", "42")))
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
@@ -6503,7 +6504,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .partialSort(Seq(Ascending("x")), Seq(Descending("n")))
       .apply()
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
@@ -6601,7 +6602,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .partialTop(Seq(Ascending("x")), Seq(Descending("n")), 1)
       .apply()
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 

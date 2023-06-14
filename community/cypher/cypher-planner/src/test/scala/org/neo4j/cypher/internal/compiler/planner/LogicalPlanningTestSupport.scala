@@ -204,7 +204,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     when(m.id(any[LabelName])).thenReturn(None)
     when(m.id(any[RelTypeName])).thenReturn(None)
     when(m.types).thenReturn(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo])
-    when(m.getOptionalActualTypeFor(any[Expression])).thenReturn(None)
+    when(m.typeFor(any[Expression])).thenReturn(SemanticTable.TypeGetter(None))
+    when(m.typeFor(any[String])).thenReturn(SemanticTable.TypeGetter(None))
     m
   }
 

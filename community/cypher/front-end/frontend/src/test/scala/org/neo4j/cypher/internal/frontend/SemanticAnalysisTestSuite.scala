@@ -157,6 +157,8 @@ trait ErrorMessageProviderAdapter extends ErrorMessageProvider {
     additionalInfo: String
   ): String = ???
 
+  override def createSelfReferenceError(name: String): String = ???
+
   override def createSelfReferenceError(name: String, variableType: String): String = ???
 
   override def createUseClauseUnsupportedError(): String = ???

@@ -46,6 +46,8 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.IndexHintException
@@ -263,12 +265,16 @@ object VerifyBestPlan {
     val hintsWithoutIndex = query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(v, labelOrRelType, properties, _, indexHintType)
-        if semanticTable.isNodeNoFail(v.name) && nodeIndexHintFulfillable(labelOrRelType, properties, indexHintType) =>
+        if semanticTable.typeFor(v.name).is(CTNode) && nodeIndexHintFulfillable(
+          labelOrRelType,
+          properties,
+          indexHintType
+        ) =>
         None
 
       // using index name:relType(property1,property2)
       case UsingIndexHint(v, labelOrRelType, properties, _, indexHintType)
-        if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(
+        if semanticTable.typeFor(v.name).is(CTRelationship) && relIndexHintFulfillable(
           labelOrRelType,
           properties,
           indexHintType
@@ -279,7 +285,7 @@ object VerifyBestPlan {
       case hint: UsingIndexHint =>
         // Let's assume node type by default, in case we have no type information.
         val entityType =
-          if (semanticTable.isRelationshipNoFail(hint.variable)) EntityType.RELATIONSHIP else EntityType.NODE
+          if (semanticTable.typeFor(hint.variable).is(CTRelationship)) EntityType.RELATIONSHIP else EntityType.NODE
         Some(MissingIndexHint(hint, entityType))
       // don't care about other hints
       case _ => None

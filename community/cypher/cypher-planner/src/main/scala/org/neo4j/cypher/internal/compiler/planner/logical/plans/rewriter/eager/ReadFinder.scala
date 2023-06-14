@@ -195,6 +195,8 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
@@ -220,8 +222,6 @@ object ReadFinder {
    * @param referencedNodeVariables         all referenced node variables
    * @param readRelProperties               the read Relationship properties
    * @param readsUnknownRelProperties       `true` if the plan reads Relationship unknown properties, e.g. by calling the `properties` function.
-   * @param readTypes                       the read types
-   * @param readsUnknownTypes               `true` if the plan reads unknown types, e.g. by calling the `types` function.
    * @param relationshipFilterExpressions   All type expressions that filter the rows, in a map with the dependency as key.
    *                                        This also tracks if a variable is introduced by this plan.
    *                                        If a variable is introduced by this plan, and no predicates are applied on that variable,
@@ -235,8 +235,6 @@ object ReadFinder {
     readsUnknownLabels: Boolean = false,
     nodeFilterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
     readRelProperties: Seq[PropertyKeyName] = Seq.empty,
-    readTypes: Seq[RelTypeName] = Seq.empty,
-    readsUnknownTypes: Boolean = false,
     readsUnknownRelProperties: Boolean = false,
     relationshipFilterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
     referencedNodeVariables: Set[LogicalVariable] = Set.empty,
@@ -314,9 +312,6 @@ object ReadFinder {
 
     def withUnknownLabelsRead(): PlanReads =
       copy(readsUnknownLabels = true)
-
-    def withUnknownTypesRead(): PlanReads =
-      copy(readsUnknownTypes = true)
 
     def withReferencedNodeVariable(variable: LogicalVariable): PlanReads =
       copy(referencedNodeVariables = referencedNodeVariables + variable)
@@ -467,10 +462,10 @@ object ReadFinder {
           rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
           vars.foldLeft(_) { (acc, col) =>
             var res = acc
-            if (semanticTable.containsNode(col)) {
+            if (semanticTable.typeFor(col).couldBe(CTNode)) {
               res = res.withIntroducedNodeVariable(col)
             }
-            if (semanticTable.containsRelationship(col)) {
+            if (semanticTable.typeFor(col).couldBe(CTRelationship)) {
               res = res.withIntroducedRelationshipVariable(col)
             }
             res
@@ -638,8 +633,13 @@ object ReadFinder {
       case Selection(Ands(expressions), _) =>
         expressions.foldLeft(PlanReads()) {
           case (acc, expression) =>
-            val nodeExpr = expression.dependencies.filter(semanticTable.isNodeNoFail)
-            val relExpr = expression.dependencies.filter(semanticTable.isRelationshipNoFail)
+            // Using `.is(CTNode) we can get unnecessary Eagers if we lack type information for a node
+            // and adding the predicate would have allowed to disqualify a conflict.
+            // But if we were to use `.couldBe(CTNode)`, we would get unnecessary Eagers for many
+            // cases where type information is missing from the selection, but not from the actual introduction of a variable,
+            // e.g. AssertIsNode(var)
+            val nodeExpr = expression.dependencies.filter(semanticTable.typeFor(_).is(CTNode))
+            val relExpr = expression.dependencies.filter(semanticTable.typeFor(_).is(CTRelationship))
 
             Function.chain[PlanReads](Seq(
               nodeExpr.foldLeft(_)(_.withAddedNodeFilterExpression(_, expression)),
@@ -698,17 +698,16 @@ object ReadFinder {
         // Since, there can be no Deletes after a ProduceResult, this information is currently not used.
         columns.foldLeft(PlanReads()) { (acc, col) =>
           var res = acc
-          if (semanticTable.containsNode(col)) {
+          if (semanticTable.typeFor(col).couldBe(CTNode)) {
             res = res
               .withReferencedNodeVariable(col)
               .withUnknownNodePropertiesRead()
               .withUnknownLabelsRead()
           }
-          if (semanticTable.containsRelationship(col)) {
+          if (semanticTable.typeFor(col).couldBe(CTRelationship)) {
             res = res
               .withReferencedRelationshipVariable(col)
               .withUnknownRelPropertiesRead()
-              .withUnknownTypesRead()
           }
           res
         }
@@ -763,7 +762,8 @@ object ReadFinder {
           if (startInScope) _.withReferencedNodeVariable(start) else _.withIntroducedNodeVariable(start),
           if (endInScope) _.withReferencedNodeVariable(end) else _.withIntroducedNodeVariable(end),
           // rel could even be a List[Relationship]
-          if (semanticTable.containsRelationship(rel)) _.withReferencedRelationshipVariable(rel) else identity,
+          if (semanticTable.typeFor(rel).couldBe(CTRelationship)) _.withReferencedRelationshipVariable(rel)
+          else identity,
           if (types.nonEmpty) {
             val relVar = Variable(rel)(InputPosition.NONE)
             _.withAddedRelationshipFilterExpression(relVar, relTypeNamesToOrs(relVar, types))
@@ -927,27 +927,25 @@ object ReadFinder {
 
       case v: Variable
         // If v could be a node
-        if semanticTable.types.get(v).fold(true)(_.specified contains CTNode) =>
+        if semanticTable.typeFor(v).couldBe(CTNode) =>
         acc => SkipChildren(acc.withReferencedNodeVariable(v))
 
       case v: Variable
         // If v could be a relationship
-        if semanticTable.types.get(v).fold(true)(_.specified contains CTRelationship) =>
+        if semanticTable.typeFor(v).couldBe(CTRelationship) =>
         acc => SkipChildren(acc.withReferencedRelationshipVariable(v))
 
       case Property(expr, propertyName) =>
         acc =>
-          TraverseChildren(
-            if (!semanticTable.isMapNoFail(expr)) {
-              if (semanticTable.isRelationshipNoFail(expr))
-                acc.withRelPropertyRead(propertyName)
-              else if (semanticTable.isNodeNoFail(expr))
-                acc.withNodePropertyRead(propertyName)
-              else
-                acc.withNodePropertyRead(propertyName).withRelPropertyRead(propertyName)
-            } else
-              acc
-          )
+          var result = acc
+          val typeGetter = semanticTable.typeFor(expr)
+          if (typeGetter.couldBe(CTRelationship)) {
+            result = result.withRelPropertyRead(propertyName)
+          }
+          if (typeGetter.couldBe(CTNode)) {
+            result = result.withNodePropertyRead(propertyName)
+          }
+          TraverseChildren(result)
 
       case GetDegree(_, relType, _) => acc =>
           TraverseChildren(processDegreeRead(relType, acc))
@@ -972,16 +970,15 @@ object ReadFinder {
 
       case f: FunctionInvocation if f.function == Properties =>
         acc =>
-          TraverseChildren(
-            if (semanticTable.isRelationshipNoFail(f.args(0)))
-              acc.withUnknownRelPropertiesRead()
-            else if (semanticTable.isNodeNoFail(f.args(0)))
-              acc.withUnknownNodePropertiesRead()
-            else if (!semanticTable.isMapNoFail(f.args(0)))
-              acc.withUnknownNodePropertiesRead().withUnknownRelPropertiesRead()
-            else
-              acc
-          )
+          var result = acc
+          val typeGetter = semanticTable.typeFor(f.args(0))
+          if (typeGetter.couldBe(CTRelationship)) {
+            result = result.withUnknownRelPropertiesRead()
+          }
+          if (typeGetter.couldBe(CTNode)) {
+            result = result.withUnknownNodePropertiesRead()
+          }
+          TraverseChildren(result)
 
       case HasLabels(_, labels) =>
         acc => TraverseChildren(labels.foldLeft(acc)((acc, label) => acc.withLabelRead(label)))
@@ -993,7 +990,8 @@ object ReadFinder {
         acc =>
           TraverseChildren(labelsOrRels.foldLeft(acc)((acc, labelOrType) => acc.withLabelRead(labelOrType.asLabelName)))
 
-      case ContainerIndex(expr, index) if !semanticTable.isIntegerNoFail(index) && !semanticTable.isMapNoFail(expr) =>
+      case ContainerIndex(expr, index)
+        if !semanticTable.typeFor(index).is(CTInteger) && !semanticTable.typeFor(expr).is(CTMap) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         acc =>
@@ -1070,10 +1068,10 @@ object ReadFinder {
   private def processPotentialEntityReferences(columns: Iterable[String], semanticTable: SemanticTable): PlanReads = {
     columns.foldLeft(PlanReads()) { (acc, col) =>
       var res = acc
-      if (semanticTable.containsNode(col)) {
+      if (semanticTable.typeFor(col).couldBe(CTNode)) {
         res = res.withReferencedNodeVariable(col)
       }
-      if (semanticTable.containsRelationship(col)) {
+      if (semanticTable.typeFor(col).couldBe(CTRelationship)) {
         res = res.withReferencedRelationshipVariable(col)
       }
       res

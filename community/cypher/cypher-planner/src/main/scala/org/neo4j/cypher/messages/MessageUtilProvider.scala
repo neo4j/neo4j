@@ -43,6 +43,10 @@ object MessageUtilProvider extends ErrorMessageProvider {
       additionalInfo
     )
 
+  override def createSelfReferenceError(name: String): String = {
+    MessageUtil.createSelfReferenceError(name)
+  }
+
   override def createSelfReferenceError(name: String, variableType: String): String = {
     MessageUtil.createSelfReferenceError(name, variableType)
   }

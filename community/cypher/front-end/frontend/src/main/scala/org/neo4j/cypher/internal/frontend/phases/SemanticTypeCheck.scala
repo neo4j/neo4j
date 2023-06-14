@@ -170,10 +170,11 @@ object CreatePatternSelfReferenceCheck {
     semanticTable: SemanticTable,
     errorMessageProvider: ErrorMessageProvider
   ): SemanticError = {
-    val msg = errorMessageProvider.createSelfReferenceError(
-      variable.name,
-      semanticTable.getActualTypeFor(variable).toShortString
-    )
+    val msg = semanticTable.typeFor(variable).typeInfo.map(_.toShortString) match {
+      case Some(typ) => errorMessageProvider.createSelfReferenceError(variable.name, typ)
+      case None      => errorMessageProvider.createSelfReferenceError(variable.name)
+    }
+
     SemanticError(msg, variable.position)
   }
 }
