@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -2195,7 +2196,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def filterExpression(predicateExpressions: Expression*): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Selection(predicateExpressions, lp)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      Selection(predicateExpressions.map(_.endoRewrite(expressionRewriter)), lp)(_)
+    ))
   }
 
   def filterExpressionOrString(predicateExpressionsOrStrings: AnyRef*): IMPL = {
@@ -2667,4 +2670,15 @@ object AbstractLogicalPlanBuilder {
 
   def delete(entity: String, forced: Boolean = false): org.neo4j.cypher.internal.logical.plans.set.DeleteExpression =
     org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(Parser.parseExpression(entity), forced)
+
+  def andsReorderable(predicateExpressionsOrStrings: AnyRef*): AndsReorderable = {
+    val predicates = predicateExpressionsOrStrings.map {
+      case s: String     => Parser.parseExpression(s)
+      case e: Expression => e
+      case other => throw new IllegalArgumentException(
+          s"Expected Expression or String, got [${other.getClass.getSimpleName}] $other}"
+        )
+    }
+    AndsReorderable(ListSet.from(predicates))(pos)
+  }
 }

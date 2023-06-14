@@ -51,9 +51,6 @@ object Ands {
 
 /**
  * Conjunction of multiple expressions.
- * The order of expressions is retained as a Seq (was previously a Set),
- * but equals and hashCode are overridden to get set semantics for comparison
- * (we assume set semantics when tracking solved expressions during planing)
  */
 case class Ands(exprs: ListSet[Expression])(val position: InputPosition) extends BooleanExpression
     with MultiOperatorExpression {
@@ -62,15 +59,13 @@ case class Ands(exprs: ListSet[Expression])(val position: InputPosition) extends
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector.fill(exprs.size)(CTBoolean), outputType = CTBoolean)
   )
+}
 
-  override def equals(other: Any): Boolean =
-    other match {
-      case that: Ands => (that canEqual this) && (exprs == that.exprs)
-      case _          => false
-    }
-
-  override def hashCode(): Int =
-    31 * exprs.hashCode()
+/**
+ * Only used after planning to mark predicates that can be reordered at runtime.
+ */
+case class AndsReorderable(exprs: ListSet[Expression])(override val position: InputPosition) extends BooleanExpression {
+  override def isConstantForQuery: Boolean = exprs.forall(_.isConstantForQuery)
 }
 
 case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression

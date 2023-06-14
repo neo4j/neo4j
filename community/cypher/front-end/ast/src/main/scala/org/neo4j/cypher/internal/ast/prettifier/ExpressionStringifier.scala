@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.BinaryOperatorExpression
@@ -321,6 +322,25 @@ private class DefaultExpressionStringifier(
             (head :: tail).mkString(" ")
           case None =>
             expressions.map(x => inner(ast)(x)).mkString(" AND ")
+        }
+
+      case AndsReorderable(expressions) =>
+        type ChainOp = Expression with ChainableBinaryOperatorExpression
+
+        def findChain: Option[List[ChainOp]] = {
+          val chainable = expressions.collect { case e: ChainableBinaryOperatorExpression => e }
+          def allChainable = chainable.size == expressions.size
+          def formsChain = chainable.sliding(2).forall(p => p.head.rhs == p.last.lhs)
+          if (allChainable && formsChain) Some(chainable.toList) else None
+        }
+
+        findChain match {
+          case Some(chain) =>
+            val head = apply(chain.head)
+            val tail = chain.tail.flatMap(o => List(o.canonicalOperatorSymbol, inner(ast)(o.rhs)))
+            (head :: tail).mkString(" ")
+          case None =>
+            expressions.map(x => inner(ast)(x)).mkString("  [[ ", " ~AND~ ", " ]]  ")
         }
 
       case AndedPropertyInequalities(_, _, exprs) =>

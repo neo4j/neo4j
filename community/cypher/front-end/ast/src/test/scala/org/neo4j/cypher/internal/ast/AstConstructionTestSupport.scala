@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
@@ -171,6 +172,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import java.nio.charset.StandardCharsets
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListSet
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
@@ -194,6 +196,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def hasLabels(v: String, label: String): HasLabels =
     hasLabels(varFor(v), label)
+
+  def andsReorderableAst(exprs: Expression*): AndsReorderable = {
+    AndsReorderable(ListSet.from(exprs))(pos)
+  }
 
   def hasTypes(v: String, types: String*): HasTypes =
     HasTypes(varFor(v), types.map(relTypeName(_)))(pos)
