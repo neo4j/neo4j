@@ -182,10 +182,11 @@ case class LeftFunction(orig: Expression, length: Expression)
 }
 
 case class RightFunction(orig: Expression, length: Expression)
-    extends NullInNullOutExpression(orig) {
+    extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.right(value, length(ctx, state))
+  override def apply(row: ReadableRow,
+                     state: QueryState): AnyValue =
+    CypherFunctions.right(orig(row, state), length(row, state))
 
   override def arguments: Seq[Expression] = Seq(orig, length)
 

@@ -687,9 +687,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue right(AnyValue original, AnyValue length) {
-        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (original instanceof TextValue asText) {
+    public static AnyValue right(AnyValue original, AnyValue length) {
+        if (original == NO_VALUE || length == NO_VALUE) {
+            return NO_VALUE;
+        } else if (original instanceof TextValue asText) {
             final long len = asLong(length, () -> "Invalid input for length value in function 'right()'");
             if (len < 0) {
                 throw new IndexOutOfBoundsException("negative length");
