@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -3309,7 +3310,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .produceResults("`person.name`")
         .projection(project = Seq("cacheN[person.name] AS `person.name`"), discard = Set("person"))
         .semiApply()
-        .|.filter("dog:Dog", "dog.name = 'Bosse'", "dog.lastname = 'Bosse'")
+        .|.filterExpressionOrString("dog:Dog", andsReorderable("dog.name = 'Bosse'", "dog.lastname = 'Bosse'"))
         .|.expandAll("(person)-[anon_0:HAS_DOG]->(dog)")
         .|.filter("cacheNFromStore[person.name] = 'Bosse'")
         .|.argument("person")
@@ -3448,7 +3449,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .filter("single(x IN anon_9 WHERE true)")
       .rollUpApply("anon_9", "anon_8")
       .|.projection("1 AS anon_8")
-      .|.filter("anon_3.title = 'V for Vendetta'", "anon_3.released = 2006", "anon_3:Movie")
+      .|.filterExpressionOrString(
+        andsReorderable("anon_3.title = 'V for Vendetta'", "anon_3.released = 2006"),
+        "anon_3:Movie"
+      )
       .|.expandAll("(person)-[anon_2:ACTED_IN]->(anon_3)")
       .|.argument("person")
       .filter("single(x IN anon_7 WHERE true)")

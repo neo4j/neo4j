@@ -372,7 +372,15 @@ object CardinalityCostModel {
    * The cost of evaluating an expression, per row.
    */
   def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
-    val noOfStoreAccesses = expression.folder.treeFold(0) {
+    val noOfStoreAccesses = calculateNumberOfStoreAccesses(expression, semanticTable)
+    if (noOfStoreAccesses > 0)
+      CostPerRow(noOfStoreAccesses)
+    else
+      DEFAULT_COST_PER_ROW
+  }
+
+  def calculateNumberOfStoreAccesses(expression: Expression, semanticTable: SemanticTable): Int =
+    expression.folder.treeFold(0) {
       case AndedPropertyInequalities(_: LogicalVariable, _: LogicalProperty, _: NonEmptyList[InequalityExpression]) =>
         count =>
           TraverseChildren(count - PROPERTY_ACCESS_DB_HITS) // Ignore the `property` grouping key in `AndedPropertyInequalities`, only count properties inside `properties`.
@@ -385,11 +393,6 @@ object CardinalityCostModel {
         _: HasLabelsOrTypes => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
       case _ => count => TraverseChildren(count)
     }
-    if (noOfStoreAccesses > 0)
-      CostPerRow(noOfStoreAccesses)
-    else
-      DEFAULT_COST_PER_ROW
-  }
 
   def hackyRelTypeScanCost(
     propertyAccess: Set[PropertyAccess],

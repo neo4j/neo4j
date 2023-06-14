@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
@@ -746,9 +747,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       planner.subPlanBuilder()
         .filter("anon_9 = a")
         .trail(`((n)-[r]->(m))+`)
-        .|.filterExpressionOrString(
-          "cacheNFromStore[n.prop] > cacheN[a.prop]",
-          "cacheNFromStore[n.prop] > cacheN[b.prop]",
+        .|.filterExpression(
+          andsReorderable("cacheNFromStore[n.prop] > cacheN[a.prop]", " cacheNFromStore[n.prop] > cacheN[b.prop]"),
           isRepeatTrailUnique("r")
         )
         .|.expandAll("(m)<-[r]-(n)")

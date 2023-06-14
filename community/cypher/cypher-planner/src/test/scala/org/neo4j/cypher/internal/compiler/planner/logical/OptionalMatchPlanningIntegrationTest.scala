@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -531,7 +532,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         .aggregation(Seq(), Seq("count(a) AS `count(a)`"))
         .apply()
         .|.optional("a", "anon_1", "anon_0").withCardinality(1)
-        .|.filter("anon_7:C", "anon_6.bool = false", "anon_7.some = 'prop'")
+        .|.filterExpressionOrString("anon_7:C", andsReorderable("anon_6.bool = false", "anon_7.some = 'prop'"))
         .|.expandAll("(anon_5)-[anon_6:R3]->(anon_7)")
         .|.filter("anon_5:B")
         .|.expandAll("(anon_3)-[anon_4:R2]->(anon_5)")

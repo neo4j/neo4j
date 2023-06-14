@@ -207,16 +207,25 @@ object AsStringRangeSeekable {
 
 object AsValueRangeSeekable {
 
+  object AsVariableProperty {
+
+    def unapply(v: Any): Option[(LogicalVariable, LogicalProperty)] = v match {
+      case property @ Property(v: LogicalVariable, _) => Some(v -> property)
+      case cachedProperty: CachedProperty             => Some(cachedProperty.entityVariable -> cachedProperty)
+      case _                                          => None
+    }
+  }
+
   def unapply(v: Any): Option[InequalityRangeSeekable] = v match {
     case inequalities @ AndedPropertyInequalities(ident, prop, _) =>
       Some(InequalityRangeSeekable(ident, prop, inequalities))
-    case inequality @ LessThan(property @ Property(variable: Variable, _), _) =>
+    case inequality @ LessThan(AsVariableProperty(variable, property), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality @ LessThanOrEqual(property @ Property(variable: Variable, _), _) =>
+    case inequality @ LessThanOrEqual(AsVariableProperty(variable, property), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality @ GreaterThan(property @ Property(variable: Variable, _), _) =>
+    case inequality @ GreaterThan(AsVariableProperty(variable, property), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality @ GreaterThanOrEqual(property @ Property(variable: Variable, _), _) =>
+    case inequality @ GreaterThanOrEqual(AsVariableProperty(variable, property), _) =>
       Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
     case _ =>
       None

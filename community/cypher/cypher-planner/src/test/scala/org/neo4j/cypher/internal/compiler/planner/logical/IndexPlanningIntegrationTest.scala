@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities.text_2_0
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
@@ -1818,7 +1819,10 @@ class IndexPlanningIntegrationTest
     val planState = cfg.planState(query)
     val expected = cfg.planBuilder()
       .produceResults("a")
-      .filter("cacheNFromStore[a.prop] CONTAINS 'hello'", "cacheNFromStore[a.prop] CONTAINS 'world'")
+      .filterExpression(andsReorderable(
+        "cacheNFromStore[a.prop] CONTAINS 'hello'",
+        "cacheNFromStore[a.prop] CONTAINS 'world'"
+      ))
       .nodeIndexOperator("a:A(prop)").withCardinality(500)
 
     planState should
@@ -1841,7 +1845,10 @@ class IndexPlanningIntegrationTest
     val planState = cfg.planState(query)
     val expected = cfg.planBuilder()
       .produceResults("r")
-      .filter("cacheRFromStore[r.prop] CONTAINS 'hello'", "cacheRFromStore[r.prop] CONTAINS 'world'")
+      .filterExpression(andsReorderable(
+        "cacheRFromStore[r.prop] CONTAINS 'hello'",
+        "cacheRFromStore[r.prop] CONTAINS 'world'"
+      ))
       .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)").withCardinality(500)
 
     planState should

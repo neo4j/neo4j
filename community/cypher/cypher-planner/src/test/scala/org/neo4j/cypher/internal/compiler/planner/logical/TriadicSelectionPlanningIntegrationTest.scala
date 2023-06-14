@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -255,7 +256,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)-[r2]->(c)")
       .|.argument("b", "r1")
-      .filter("b:Y", "b:Z")
+      .filterExpression(andsReorderable("b:Y", "b:Z"))
       .expandAll("(a)-[r1]->(b)")
       .nodeByLabelScan("a", "X")
       .build())

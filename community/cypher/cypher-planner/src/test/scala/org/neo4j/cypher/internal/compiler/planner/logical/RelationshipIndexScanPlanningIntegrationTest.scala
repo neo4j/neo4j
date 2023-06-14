@@ -511,7 +511,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .produceResults("r", "r2")
         .filterExpression(hasLabels("c", "C"), isNotNull(prop("r2", "prop")))
         .expandAll("(b)<-[r2:REL2]-(c)")
-        .filterExpression(hasLabels("b", "B"), hasLabels("a", "A"))
+        .filterExpression(andsReorderableAst(hasLabels("b", "B"), hasLabels("a", "A")))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]->(b)",
           indexOrder = IndexOrderNone,
@@ -560,7 +560,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
           getValue = _ => DoNotGetValue,
           indexType = IndexType.RANGE
         )
-        .filterExpression(hasLabels("b", "B"), hasLabels("a", "A"))
+        .filterExpression(andsReorderableAst(hasLabels("b", "B"), hasLabels("a", "A")))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]->(b)",
           indexOrder = IndexOrderNone,

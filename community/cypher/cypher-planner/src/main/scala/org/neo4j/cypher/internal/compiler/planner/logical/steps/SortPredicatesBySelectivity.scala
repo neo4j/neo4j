@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanRewritten
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
@@ -46,6 +47,8 @@ import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
+
+import scala.collection.immutable.ListSet
 
 /**
  * Sorts the predicates in [[Selection]] plans according to their selectivity and cost.
@@ -74,7 +77,7 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val rewriter = {
       bottomUp(Rewriter.lift {
-        case s: Selection =>
+        case s: Selection if s.predicate.exprs.size > 1 =>
           val newPredicates = sortSelectionPredicates(from, context, s)
           s.copy(predicate = Ands(newPredicates)(s.predicate.position))(SameId(s.id))
       })
@@ -98,7 +101,7 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
         LabelAndRelTypeInfo(Map.empty, Map.empty)
     }
 
-    if (s.predicate.exprs.toSeq.size < 2) {
+    if (s.predicate.exprs.size < 2) {
       s.predicate.exprs.toSeq
     } else {
       val incomingCardinality = from.planningAttributes.cardinalities.get(s.source.id)
@@ -125,7 +128,34 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
         (costPerRow, selectivity)
       }
 
-      s.predicate.exprs.toSeq.map(p => (p, sortCriteria(p))).sortBy(_._2)(PredicateOrdering).map(_._1)
+      val sortedPredicates = s.predicate.exprs.toSeq
+        .map(p => (p, sortCriteria(p)))
+        .sortBy(_._2)(PredicateOrdering)
+
+      // gather consecutive predicates with the same cost
+      val groupedByCost: Seq[Seq[Expression]] =
+        sortedPredicates.foldLeft(List.empty[((CostPerRow, Selectivity), Seq[Expression])]) {
+          case (groups, (expr, exprCost)) =>
+            groups match {
+              case (groupCost, exprs) :: groupsTail if PredicateOrdering.equiv(groupCost, exprCost) =>
+                (groupCost, (exprs :+ expr)) :: groupsTail
+              case _ =>
+                (exprCost, Seq(expr)) :: groups
+            }
+        }.map(_._2).reverse
+
+      /** ungroup predicates without store access and wrap remaining grouped predicates into [[AndsReorderable]] */
+      groupedByCost
+        .flatMap { group =>
+          val (hasStoreAccess, noStoreAccess) =
+            group.partition(expr => CardinalityCostModel.calculateNumberOfStoreAccesses(expr, from.semanticTable()) > 0)
+          noStoreAccess.map(e => Seq(e)) :+ hasStoreAccess
+        }
+        .flatMap { exprs =>
+          if (exprs.size == 1) exprs
+          else if (exprs.size > 1) Seq(AndsReorderable(ListSet.from(exprs))(exprs.head.position))
+          else Seq.empty
+        }
     }
   }
 

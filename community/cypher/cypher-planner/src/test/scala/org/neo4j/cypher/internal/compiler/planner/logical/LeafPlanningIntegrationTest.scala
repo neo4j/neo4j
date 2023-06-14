@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -1755,7 +1756,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan should (equal(
       cfg.planBuilder()
         .produceResults("end")
-        .filter("end:B", "end:C")
+        .filterExpression(andsReorderable("end:B", "end:C"))
         .expandAll("(start)-[r]->(end)")
         .nodeByLabelScan("start", "A")
         .build()

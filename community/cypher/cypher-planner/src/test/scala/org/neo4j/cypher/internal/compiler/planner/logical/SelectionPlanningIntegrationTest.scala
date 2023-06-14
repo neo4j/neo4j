@@ -23,10 +23,12 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -228,9 +230,10 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .stripProduceResults
 
     inside(plan) {
-      case Selection(Ands(predicates), _) =>
-        predicates.size shouldBe 5
-        predicates.last shouldBe lessThan(
+      case Selection(Ands(SetExtractor(AndsReorderable(ltGt), AndsReorderable(lteGte), lastPredicate)), _) =>
+        ltGt.size shouldBe 2
+        lteGte.size shouldBe 2
+        lastPredicate shouldBe lessThan(
           prop("n", "otherProp"),
           prop("n", "yetAnotherProp")
         )
@@ -269,7 +272,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         .|.filter("b:C")
         .|.expandAll("(a)-[r]->(b)")
         .|.argument("a")
-        .filter("a:A", "a:B")
+        .filterExpression(andsReorderable("a:A", " a:B"))
         .allNodeScan("a")
         .build()
     )
