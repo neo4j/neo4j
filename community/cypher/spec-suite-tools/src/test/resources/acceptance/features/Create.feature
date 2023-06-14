@@ -55,7 +55,7 @@ Feature: Create
       | result |
       | null   |
     And the side effects should be:
-      | +nodes         | 1 |
+      | +nodes | 1 |
 
   Scenario: Dependencies between nodes and relationships single clause
     Given an empty graph
@@ -67,10 +67,10 @@ Feature: Create
       | m                 | c                         |
       | [:R {p: 'hello'}] | (:C {t: 'R', p: 'hello'}) |
     And the side effects should be:
-      | +nodes            | 3 |
-      | +relationships    | 1 |
-      | +properties       | 3 |
-      | +labels           | 3 |
+      | +nodes         | 3 |
+      | +relationships | 1 |
+      | +properties    | 3 |
+      | +labels        | 3 |
 
   Scenario: Dependencies between nodes and relationships separate clauses
     Given an empty graph
@@ -82,10 +82,10 @@ Feature: Create
       | m                 | c                         |
       | [:R {p: 'hello'}] | (:C {t: 'R', p: 'hello'}) |
     And the side effects should be:
-      | +nodes            | 3 |
-      | +relationships    | 1 |
-      | +properties       | 3 |
-      | +labels           | 3 |
+      | +nodes         | 3 |
+      | +relationships | 1 |
+      | +properties    | 3 |
+      | +labels        | 3 |
 
   Scenario: Dependencies between nodes and relationships two clauses with count single clause
     Given an empty graph
@@ -98,9 +98,9 @@ Feature: Create
       | n |
       | 2 |
     And the side effects should be:
-      | +nodes            | 3 |
-      | +relationships    | 1 |
-      | +properties       | 2 |
+      | +nodes         | 3 |
+      | +relationships | 1 |
+      | +properties    | 2 |
 
   Scenario: Dependencies between nodes and relationships two clauses with count separate clauses
     Given an empty graph
@@ -113,9 +113,9 @@ Feature: Create
       | n |
       | 2 |
     And the side effects should be:
-      | +nodes            | 3 |
-      | +relationships    | 1 |
-      | +properties       | 2 |
+      | +nodes         | 3 |
+      | +relationships | 1 |
+      | +properties    | 2 |
 
 
   Scenario: Dependencies between nodes and relationships longer pattern
@@ -131,6 +131,83 @@ Feature: Create
       | r2                                                          | n3                                                        |
       | [:R {np1: 'node1', np2: 'node2', rp1: 'rel1', rp2: 'rel2'}] | ({np1: 'node1', np2: 'node2', rp1: 'rel1', np3: 'node3'}) |
     And the side effects should be:
-      | +nodes            | 3  |
-      | +relationships    | 2  |
-      | +properties       | 12 |
+      | +nodes         | 3  |
+      | +relationships | 2  |
+      | +properties    | 12 |
+
+  Scenario Outline: Creating patterns first evaluates all contained count expressions
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2] as i
+      CREATE (n {id: i, count: <countExpression>})
+      RETURN n
+      """
+    Then the result should be, in order:
+      | n                   |
+      | ({count: 0, id: 1}) |
+      | ({count: 0, id: 2}) |
+    Examples:
+      | countExpression    |
+      | COUNT { MATCH () } |
+      | CASE WHEN true THEN COUNT {  MATCH () } END |
+
+  Scenario: Creating patterns first evaluates all contained count expressions on all inputs
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2] as i
+      CREATE (:A)
+      CREATE (n:B {id: i, count: COUNT { MATCH (:A) } })
+      RETURN n
+      """
+    Then the result should be, in order:
+      | n                   |
+      | ({count: 2, id: 1}) |
+      | ({count: 2, id: 2}) |
+
+  Scenario Outline: Creating patterns first evaluates all contained exists expressions
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2] as i
+      CREATE (n:N {id: i, prop: <existsExpression>})
+      RETURN n
+      """
+    Then the result should be, in order:
+      | n                      |
+      | ({prop: false, id: 1}) |
+      | ({prop: false, id: 2}) |
+    Examples:
+      | existsExpression                                                    |
+      | EXISTS { MATCH () }                                                 |
+      | CASE WHEN true THEN EXISTS {  MATCH () } END                        |
+      | CASE WHEN true THEN EXISTS {  MATCH (:N) } END                      |
+      | CASE WHEN true THEN EXISTS {  MATCH (m WHERE m.i IS NOT NULL) } END |
+
+  Scenario: Creating patterns first evaluates all contained pattern expressions
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2] as i
+      CREATE ()-[r:REL { prop : exists(()--())}]->()
+      RETURN r
+      """
+    Then the result should be, in order:
+      | r                    |
+      | [:REL {prop: false}] |
+      | [:REL {prop: false}] |
+
+
+  Scenario: Creating patterns first evaluates all contained pattern comprehensions
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2] as i
+      CREATE (n:N { p: size([ (m:N)-->() WHERE m.p IS NOT NULL | m ]) })-[:R]->()
+      RETURN n
+      """
+    Then the result should be, in order:
+      | n           |
+      | (:N {p: 0}) |
+      | (:N {p: 0}) |
