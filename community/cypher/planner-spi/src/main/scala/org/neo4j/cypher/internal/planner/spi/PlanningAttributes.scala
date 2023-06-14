@@ -97,6 +97,11 @@ case class PlanningAttributes(
   }
 }
 
+/**
+ * This case class captures all PlanningAttributes needed for computing an ExecutionPlan.
+ * This class is also used in place of the original PlanningAttributes in `computeExecutionPlan` so that we by type
+ * checking know that the key includes all PlanningAttributes that are needed for computing an execution plan.
+ */
 case class PlanningAttributesCacheKey(
   cardinalities: Cardinalities,
   effectiveCardinalities: EffectiveCardinalities,

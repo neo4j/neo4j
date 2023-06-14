@@ -197,8 +197,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       planState.anonymousVariableNameGenerator
     )
 
-    // Make copy, so per-runtime logical plan rewriting does not mutate cached attributes
-    val planningAttributesCopy = planState.planningAttributes.createCopy()
+    val planningAttributesCopy = planState.planningAttributes
+      // Make copy, so per-runtime logical plan rewriting does not mutate cached attributes.
+      .createCopy()
+      // Reduce to PlanningAttributesCacheKey so that we (by type checking) know that all attributes needed for
+      // computing an execution plan is also part of the cache key.
+      .cacheKey
 
     val logicalQuery = LogicalQuery(
       logicalPlan,
