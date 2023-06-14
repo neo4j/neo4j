@@ -1046,7 +1046,7 @@ final case class AlterDatabase(
   waitUntilComplete: WaitUntilComplete
 )(
   val position: InputPosition
-) extends WriteAdministrationCommand {
+) extends WaitableAdministrationCommand {
 
   override def name = "ALTER DATABASE"
 
