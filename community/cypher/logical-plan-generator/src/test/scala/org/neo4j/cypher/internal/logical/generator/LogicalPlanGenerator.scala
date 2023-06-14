@@ -365,7 +365,7 @@ class LogicalPlanGenerator(
       plan.availableSymbols.exists(v => state.semanticTable.typeFor(v).is(CTNode))
     }
     from <-
-      Gen.oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.typeFor(varFor(name)).is(CTNode))
+      Gen.oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.typeFor(name).is(CTNode))
     dir <- semanticDirection
     relTypes <- relTypeNames
     WithState(to, state) <- newVariable(state)
