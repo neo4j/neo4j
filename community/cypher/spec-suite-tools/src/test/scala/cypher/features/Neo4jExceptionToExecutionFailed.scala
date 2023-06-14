@@ -266,7 +266,13 @@ object Neo4jExceptionToExecutionFailed {
     )
       INVALID_AGGREGATION
     else if (
-      msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT)|(OF \\.\\.\\. ROWS))"))
+      msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT)|(OF \\.\\.\\. ROWS)).*"))
+    )
+      NON_CONSTANT_EXPRESSION
+    else if (
+      msg.matches(
+        semanticError("It is not allowed to use patterns in the expression for ((SKIP)|(LIMIT)|(OF \\.\\.\\. ROWS)).*")
+      )
     )
       NON_CONSTANT_EXPRESSION
     else if (

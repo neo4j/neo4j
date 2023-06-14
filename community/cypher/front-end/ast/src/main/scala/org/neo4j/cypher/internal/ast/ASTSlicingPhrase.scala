@@ -68,7 +68,10 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
     val deps = expression.dependencies
     if (deps.nonEmpty) {
       val id = deps.toSeq.minBy(_.position)
-      error(s"It is not allowed to refer to variables in $name", id.position)
+      error(
+        s"It is not allowed to refer to variables in $name, so that the value for $name can be statically calculated.",
+        id.position
+      )
     } else SemanticCheck.success
   }
 
@@ -79,7 +82,10 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
         true
     }
     when(badExpressionFound) {
-      error(s"It is not allowed to refer to variables in $name", expression.position)
+      error(
+        s"It is not allowed to use patterns in the expression for $name, so that the value for $name can be statically calculated.",
+        expression.position
+      )
     }
   }
 

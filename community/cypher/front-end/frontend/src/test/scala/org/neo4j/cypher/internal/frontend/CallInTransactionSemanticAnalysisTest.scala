@@ -306,7 +306,27 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectErrorsFrom(
       query,
       Set(
-        SemanticError("It is not allowed to refer to variables in OF ... ROWS", InputPosition(52, 4, 22))
+        SemanticError(
+          "It is not allowed to refer to variables in OF ... ROWS, so that the value for OF ... ROWS can be statically calculated.",
+          InputPosition(52, 4, 22)
+        )
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize with a PatternExpression") {
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN TRANSACTIONS OF size(()--()) ROWS
+         |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "It is not allowed to use patterns in the expression for OF ... ROWS, so that the value for OF ... ROWS can be statically calculated.",
+          InputPosition(40, 3, 22)
+        )
       )
     )
   }
@@ -320,8 +340,28 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectErrorsFrom(
       query,
       Set(
-        SemanticError("It is not allowed to refer to variables in OF ... ROWS", InputPosition(40, 3, 22)),
+        SemanticError(
+          "It is not allowed to use patterns in the expression for OF ... ROWS, so that the value for OF ... ROWS can be statically calculated.",
+          InputPosition(40, 3, 22)
+        ),
         SemanticError("Type mismatch: expected Integer but was List<Integer>", InputPosition(40, 3, 22))
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize with a CountExpression") {
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN TRANSACTIONS OF COUNT { ()--() } ROWS
+         |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "It is not allowed to use patterns in the expression for OF ... ROWS, so that the value for OF ... ROWS can be statically calculated.",
+          InputPosition(40, 3, 22)
+        )
       )
     )
   }

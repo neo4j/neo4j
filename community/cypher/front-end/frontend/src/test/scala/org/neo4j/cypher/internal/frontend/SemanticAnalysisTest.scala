@@ -1371,44 +1371,64 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
-  test("Skip with PatternComprehension should complain") {
-    val query = "RETURN 1 SKIP size([(a)-->(b) | a.prop])"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("It is not allowed to refer to variables in SKIP", InputPosition(14, 1, 15))
+  Seq("SKIP", "LIMIT").foreach { phrase =>
+    test(s"$phrase with variables should complain") {
+      val query = s"MATCH (a) RETURN * $phrase a.prop"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            s"It is not allowed to refer to variables in $phrase, so that the value for $phrase can be statically calculated.",
+            InputPosition(20 + phrase.length, 1, 21 + phrase.length)
+          ),
+          // this is a wrong error: As we do not expect any variables in $phrase, we assume it should not be able to see previous scopes.
+          // The error message 'Variable ... not defined' is then translated in this very specific error message that is wrong in this case.
+          // However, we will only show the first error, which is the one above.
+          SemanticError(
+            s"In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: a",
+            InputPosition(20 + phrase.length, 1, 21 + phrase.length)
+          )
+        )
       )
-    )
-  }
+    }
+    test(s"$phrase with PatternComprehension should complain") {
+      val query = s"RETURN 1 $phrase size([(a)-->(b) | a.prop])"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            s"It is not allowed to use patterns in the expression for $phrase, so that the value for $phrase can be statically calculated.",
+            InputPosition(10 + phrase.length, 1, 11 + phrase.length)
+          )
+        )
+      )
+    }
 
-  test("Skip with PatternExpression should complain") {
-    val query = "RETURN 1 SKIP size(()-->())"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("It is not allowed to refer to variables in SKIP", InputPosition(14, 1, 15))
+    test(s"$phrase with PatternExpression should complain") {
+      val query = s"RETURN 1 $phrase size(()-->())"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            s"It is not allowed to use patterns in the expression for $phrase, so that the value for $phrase can be statically calculated.",
+            InputPosition(10 + phrase.length, 1, 11 + phrase.length)
+          )
+        )
       )
-    )
-  }
+    }
 
-  test("Limit with PatternComprehension should complain") {
-    val query = "RETURN 1 LIMIT size([(a)-->(b) | a.prop])"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("It is not allowed to refer to variables in LIMIT", InputPosition(15, 1, 16))
+    test(s"$phrase with CountExpression should complain") {
+      val query = s"RETURN 1 $phrase COUNT { ()--() }"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            s"It is not allowed to use patterns in the expression for $phrase, so that the value for $phrase can be statically calculated.",
+            InputPosition(10 + phrase.length, 1, 11 + phrase.length)
+          )
+        )
       )
-    )
-  }
-
-  test("Limit with PatternExpression should complain") {
-    val query = "RETURN 1 LIMIT size(()-->())"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("It is not allowed to refer to variables in LIMIT", InputPosition(15, 1, 16))
-      )
-    )
+    }
   }
 
   test("UNION with incomplete first part") {
