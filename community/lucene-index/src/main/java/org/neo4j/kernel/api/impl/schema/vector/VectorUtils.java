@@ -86,5 +86,23 @@ public class VectorUtils {
         return vector;
     }
 
+    public static float[] maybeToValidVector(List<Double> candidate) {
+        if (candidate == null || candidate.isEmpty()) {
+            return null;
+        }
+
+        final var dimensions = candidate.size();
+        final var vector = new float[dimensions];
+        for (int i = 0; i < dimensions; i++) {
+            final var rawElement = candidate.get(i);
+            final float element;
+            if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
+                return null;
+            }
+            vector[i] = element;
+        }
+        return vector;
+    }
+
     private VectorUtils() {}
 }

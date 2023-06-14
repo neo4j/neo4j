@@ -70,6 +70,7 @@ import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
+import org.neo4j.procedure.builtin.VectorIndexProcedures;
 import org.neo4j.procedure.builtin.graphschema.Introspect;
 import org.neo4j.procedure.builtin.routing.RoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
@@ -96,6 +97,7 @@ public abstract class AbstractEditionModule {
         globalProcedures.registerProcedure(TokenProcedures.class);
         globalProcedures.registerProcedure(BuiltInDbmsProcedures.class);
         globalProcedures.registerProcedure(FulltextProcedures.class);
+        globalProcedures.registerProcedure(VectorIndexProcedures.class);
         globalProcedures.registerProcedure(DataCollectorProcedures.class);
         if (FeatureToggles.flag(Introspect.class, "enabled", false)) {
             globalProcedures.registerProcedure(Introspect.class);

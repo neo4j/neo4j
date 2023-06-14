@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.values.storable.Value;
@@ -38,6 +39,22 @@ class VectorTestUtilsTest {
     @ParameterizedTest
     @MethodSource("org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils#invalidVectorsFromValue")
     final void invalidVectorCandidate(Value candidate) {
+        assertThat(VectorUtils.maybeToValidVector(candidate))
+                .as("invalid vector candidate should return null")
+                .isNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils#validVectorsFromDoubleList")
+    final void validVectorCandidate(List<Double> candidate) {
+        assertThat(VectorUtils.maybeToValidVector(candidate))
+                .as("valid vector candidate should return value")
+                .isNotNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils#invalidVectorsFromDoubleList")
+    final void invalidVectorCandidate(List<Double> candidate) {
         assertThat(VectorUtils.maybeToValidVector(candidate))
                 .as("invalid vector candidate should return null")
                 .isNull();

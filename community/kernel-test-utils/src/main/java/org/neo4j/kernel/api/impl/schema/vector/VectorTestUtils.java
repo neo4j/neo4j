@@ -21,12 +21,13 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.DoubleLists;
 import org.eclipse.collections.api.factory.primitive.FloatLists;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.eclipse.collections.api.list.ImmutableList;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.impl.index.LuceneSettings;
 import org.neo4j.values.storable.Value;
@@ -38,8 +39,18 @@ public class VectorTestUtils {
     public static final Map<Setting<?>, Object> SUGGESTED_SETTINGS =
             Map.of(LuceneSettings.lucene_merge_factor, 1000, LuceneSettings.lucene_population_ram_buffer_size, 1.0);
 
+    public static final Iterable<List<Double>> VALID_VECTORS_FROM_DOUBLE_LIST;
+    public static final Iterable<List<Double>> INVALID_VECTORS_FROM_DOUBLE_LIST;
     public static final Iterable<Value> VALID_VECTORS_FROM_VALUE;
     public static final Iterable<Value> INVALID_VECTORS_FROM_VALUE;
+
+    public static Iterable<List<Double>> validVectorsFromDoubleList() {
+        return VALID_VECTORS_FROM_DOUBLE_LIST;
+    }
+
+    public static Iterable<List<Double>> invalidVectorsFromDoubleList() {
+        return INVALID_VECTORS_FROM_DOUBLE_LIST;
+    }
 
     public static Iterable<Value> validVectorsFromValue() {
         return VALID_VECTORS_FROM_VALUE;
@@ -106,6 +117,20 @@ public class VectorTestUtils {
 
         final var validBoxedDoubleArrays = validPrimitiveDoubleArrays.collect(ArrayUtils::toObject);
         final var invalidBoxedDoubleArrays = invalidPrimitiveDoubleArrays.collect(ArrayUtils::toObject);
+
+        VALID_VECTORS_FROM_DOUBLE_LIST = validBoxedDoubleArrays
+                .asLazy()
+                .collect(Lists.immutable::of)
+                .collect(ImmutableList::castToList)
+                .toImmutableList();
+
+        INVALID_VECTORS_FROM_DOUBLE_LIST = Lists.mutable
+                .withAll(invalidBoxedDoubleArrays
+                        .asLazy()
+                        .collect(Lists.immutable::of)
+                        .collect(ImmutableList::castToList))
+                .with(null)
+                .toImmutableList();
 
         final var validDoubleArrays = Lists.mutable
                 .withAll(validPrimitiveDoubleArrays.asLazy().collect(Values::of))
