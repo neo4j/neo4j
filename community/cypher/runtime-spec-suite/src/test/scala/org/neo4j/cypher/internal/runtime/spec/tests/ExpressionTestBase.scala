@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.HasALabelOrType
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.SelectivityTracker
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -745,6 +747,78 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
 
     an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
+  }
+
+  test("Reorderable AND: should fail if all predicates fail for some input") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection(Map("y" -> andsReorderable("1/x > 1", "1/x > 1", "1/x > 1")))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
+  }
+
+  test("Reorderable AND: should return FALSE if at least one predicate is FALSE") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection(Map("y" -> andsReorderable("1/x > 1", "TRUE", "FALSE")))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    runtimeResult should beColumns("y").withRows(singleColumn(List(false, false, false)))
+  }
+
+  test("Reorderable AND: should fail if one predicate fails and no other is FALSE") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection(Map("y" -> andsReorderable("1/x > 1", "TRUE", "TRUE")))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
+  }
+
+  test("should filter with reorderable ANDS") {
+    // given
+    val size = 10 * SelectivityTracker.MIN_ROWS_BEFORE_SORT.toInt
+    val nodes = given {
+      for (i <- 0 until size) yield {
+        val n = tx.createNode()
+        n.setProperty("prop", i % 100)
+        n
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("result")
+      .aggregation(Seq.empty, Seq("count(*) AS result"))
+      .filterExpressionOrString(andsReorderable("n.prop > 25", "n.prop < 75"), "n.prop <> 42")
+      .allNodeScan("n")
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.count { n =>
+      val prop = n.getProperty("prop").asInstanceOf[Integer]
+      prop > 25 && prop < 75 && prop != 42
+    }
+
+    result should beColumns("result").withSingleRow(expected)
   }
 
   test("OR: should fail if all predicates fail for some input") {
