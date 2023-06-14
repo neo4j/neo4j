@@ -385,7 +385,7 @@ object VariableRefRewriter extends Rewriter {
           p.copy(variable = varRef(variable))(SameId(p.id))
         case p @ ForeachApply(_, _, variable, _) =>
           p.copy(variable = varRef(variable))(SameId(p.id))
-        case p @ StatefulShortestPath(_, source, target, _, _, _, _) =>
+        case p @ StatefulShortestPath(_, source, target, _, _, _, _, _) =>
           p.copy(sourceNode = varRef(source), targetNode = varRef(target))(SameId(p.id))
         case p @ Input(nodes, relationships, variables, nullable) =>
           Input(nodes.map(varRef), relationships.map(varRef), variables.map(varRef), nullable)(SameId(p.id))
