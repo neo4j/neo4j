@@ -35,6 +35,8 @@ import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,7 +64,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.description.Description;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -126,49 +127,36 @@ class DenseNodeConcurrencyIT {
     GraphDatabaseAPI database;
 
     @Inject
-    FileSystemAbstraction fs; // this is the actual ephemeral file system, we close it ourselves
+    FileSystemAbstraction fs;
 
     @Inject
     RandomSupport random;
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
+        // Actual FS will be closed by the FileSystemExtension
         builder.setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs));
-    }
-
-    @BeforeEach
-    void setUp() {
-        try (Transaction tx =
-                database.beginTx()) // Since all tests share the same database we create a separator tx, for easier test
-        // separation in tx-log
-        {
-            tx.createNode().setProperty("Test separator", "separator");
-            tx.commit();
-        }
+        builder.setConfig(GraphDatabaseSettings.keep_logical_logs, "keep_all");
     }
 
     @AfterEach
-    void consistencyCheck() throws ConsistencyCheckIncompleteException, IOException {
-        try {
-            DependencyResolver deps = database.getDependencyResolver();
-            Config config = deps.resolveDependency(Config.class);
-            DatabaseLayout layout = database.databaseLayout();
-            dbms.shutdown();
-            ConsistencyCheckService.Result result = new ConsistencyCheckService(layout)
-                    .with(config)
-                    .with(deps.resolveDependency(FileSystemAbstraction.class))
-                    .runFullConsistencyCheck();
-            assertThat(result.isSuccessful())
-                    .as(new Description() {
-                        @Override
-                        public String value() {
-                            return consistencyCheckReportAsString(result);
-                        }
-                    })
-                    .isTrue();
-        } finally {
-            fs.close();
-        }
+    void consistencyCheck() throws ConsistencyCheckIncompleteException {
+        DependencyResolver deps = database.getDependencyResolver();
+        Config config = deps.resolveDependency(Config.class);
+        DatabaseLayout layout = database.databaseLayout();
+        dbms.shutdown();
+        ConsistencyCheckService.Result result = new ConsistencyCheckService(layout)
+                .with(config)
+                .with(deps.resolveDependency(FileSystemAbstraction.class))
+                .runFullConsistencyCheck();
+        assertThat(result.isSuccessful())
+                .as(new Description() {
+                    @Override
+                    public String value() {
+                        return consistencyCheckReportAsString(result);
+                    }
+                })
+                .isTrue();
     }
 
     @Test
@@ -906,7 +894,16 @@ class DenseNodeConcurrencyIT {
     private String consistencyCheckReportAsString(ConsistencyCheckService.Result result) {
         try {
             StringBuilder builder = new StringBuilder();
-            var lines = FileSystemUtils.readLines(fs, result.reportFile(), EmptyMemoryTracker.INSTANCE);
+            List<String> lines;
+            Path file = result.reportFile();
+            if (fs.fileExists(file)) {
+                lines = FileSystemUtils.readLines(fs, file, EmptyMemoryTracker.INSTANCE);
+            } else if (Files.exists(file)) {
+                // Log4j can't log to EFS, check real FS
+                lines = Files.readAllLines(file);
+            } else {
+                return file + " does not exist.";
+            }
             for (String line : lines) {
                 builder.append(format("%s%n", line));
             }

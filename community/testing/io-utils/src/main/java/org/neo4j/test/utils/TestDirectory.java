@@ -20,6 +20,7 @@
 package org.neo4j.test.utils;
 
 import static java.lang.String.format;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -203,15 +204,14 @@ public class TestDirectory {
             this.directory = null;
             if (success && !keepDirectoryAfterSuccessfulTest) {
                 fileSystem.deleteRecursively(directory);
-            } else if (!Files.exists(directory)) {
+            } else if (!fileSystem.isPersistent()) {
                 // We want to keep the files, make sure they actually exist on disk, not only in memory (like in
                 // EphemeralFileSystem)
                 for (FileHandle fh : fileSystem.streamFilesRecursive(directory).toArray(FileHandle[]::new)) {
                     Path path = fh.getPath();
-                    assert !Files.exists(path);
                     Files.createDirectories(path.getParent());
                     try (InputStream inputStream = fileSystem.openAsInputStream(path)) {
-                        Files.copy(inputStream, path);
+                        Files.copy(inputStream, path, REPLACE_EXISTING);
                     }
                 }
             }
