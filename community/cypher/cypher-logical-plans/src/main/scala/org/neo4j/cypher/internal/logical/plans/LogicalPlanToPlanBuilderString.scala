@@ -382,7 +382,8 @@ object LogicalPlanToPlanBuilderString {
           nfa,
           nonInlinablePreFilters,
           nodeVariableGroupings,
-          relationshipVariableGroupings
+          relationshipVariableGroupings,
+          selector
         ) =>
         Seq(
           wrapInQuotations(from),
@@ -390,6 +391,7 @@ object LogicalPlanToPlanBuilderString {
           nonInlinablePreFilters.map(e => wrapInQuotations(expressionStringifier(e))),
           s"Set(${groupEntitiesString(nodeVariableGroupings)})",
           s"Set(${groupEntitiesString(relationshipVariableGroupings)})",
+          objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
           nfaString(nfa)
         ).mkString(", ")
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicates, relationshipPredicates) =>

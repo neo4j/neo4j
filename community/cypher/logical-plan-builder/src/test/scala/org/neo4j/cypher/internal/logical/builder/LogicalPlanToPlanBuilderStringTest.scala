@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Prober
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -90,6 +91,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         None,
         Set.empty,
         Set.empty,
+        StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a", groupVar = false)
           .addTransition(0, 1, "(a)-[r]->(b)")
           .addFinalState(1)
@@ -109,6 +111,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         Some("a.prop + c.prop = 5"),
         Set(("b_in", "b_in"), ("c_in", "c_in")),
         Set(("r2", "r2")),
+        StatefulShortestPath.Selector.ShortestGroups(5),
         new TestNFABuilder(0, "a", groupVar = false)
           .addTransition(0, 1, "(a)-[r WHERE r.prop > 5]->(b:A&B WHERE b.prop = 10)")
           .addTransition(1, 2, "(b) (b_in WHERE b_in.prop = 10)", groupVars = Set("b_in"))

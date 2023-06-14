@@ -100,18 +100,18 @@ object SelectivePathPattern {
     /**
      * Finds up to k paths arbitrarily.
      */
-    case class Any(k: Int) extends Selector
+    case class Any(k: Long) extends Selector
 
     /**
      * Returns the shortest, second-shortest, etc. up to k paths.
      * If there are multiple paths of same length, picks arbitrarily.
      */
-    case class Shortest(k: Int) extends Selector
+    case class Shortest(k: Long) extends Selector
 
     /**
      * Finds all shortest paths, all second shortest paths, etc. up to all Kth shortest paths.
      */
-    case class ShortestGroups(k: Int) extends Selector
+    case class ShortestGroups(k: Long) extends Selector
   }
 }
 

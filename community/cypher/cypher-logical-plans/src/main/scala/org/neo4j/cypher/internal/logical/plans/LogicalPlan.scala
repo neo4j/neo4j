@@ -1731,6 +1731,29 @@ case class FindShortestPaths(
   override val availableSymbols: Set[String] = source.availableSymbols ++ shortestRelationship.availableSymbols
 }
 
+object StatefulShortestPath {
+
+  /**
+   * Defines the paths to find for each combination of start and end nodes.
+   */
+  sealed trait Selector
+
+  object Selector {
+
+    /**
+     * Returns the shortest, second-shortest, etc. up to k paths.
+     * If there are multiple paths of same length, picks arbitrarily.
+     */
+    case class Shortest(k: Long) extends Selector
+
+    /**
+     * Finds all shortest paths, all second shortest paths, etc. up to all Kth shortest paths.
+     * ALL SHORTEST is represented as SHORTEST 1 GROUPS.
+     */
+    case class ShortestGroups(k: Long) extends Selector
+  }
+}
+
 case class StatefulShortestPath(
   override val source: LogicalPlan,
   sourceNode: String,
@@ -1738,7 +1761,8 @@ case class StatefulShortestPath(
   nfa: NFA,
   nonInlinablePreFilters: Option[Expression],
   nodeVariableGroupings: Set[VariableGrouping],
-  relationshipVariableGroupings: Set[VariableGrouping]
+  relationshipVariableGroupings: Set[VariableGrouping],
+  selector: StatefulShortestPath.Selector
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)

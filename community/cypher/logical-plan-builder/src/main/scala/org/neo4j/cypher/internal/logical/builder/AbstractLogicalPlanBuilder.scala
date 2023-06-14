@@ -553,6 +553,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nonInlinablePreFilters: Option[String],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
+    selector: StatefulShortestPath.Selector,
     nfa: NFA
   ): IMPL = {
     val predicates = nonInlinablePreFilters.map(parseExpression)
@@ -570,7 +571,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         nfa.endoRewrite(expressionRewriter),
         predicates,
         nodeVariableGroupings,
-        relationshipVariableGroupings
+        relationshipVariableGroupings,
+        selector
       )(_)
     ))
     self

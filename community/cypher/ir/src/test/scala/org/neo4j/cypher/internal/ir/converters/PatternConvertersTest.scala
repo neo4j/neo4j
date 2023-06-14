@@ -389,9 +389,13 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       selector = PatternPart.AnyPath(literalUnsignedInt(2))(pos)
     )
 
-    the[IllegalArgumentException] thrownBy {
-      convertPatternParts(ast)
-    } should have message "Path selector ANY 2 PATHS is not supported"
+    val ir = SelectivePathPattern(
+      pathPattern = longPathPattern,
+      selections = Selections.from(predicate),
+      selector = SelectivePathPattern.Selector.Any(2)
+    )
+
+    convertPatternParts(ast) shouldEqual List(ir)
   }
 
   test("Any shortest path with selection") {
@@ -425,12 +429,16 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       selector = PatternPart.AnyShortestPath(literalUnsignedInt(2))(pos)
     )
 
-    the[IllegalArgumentException] thrownBy {
-      convertPatternParts(ast)
-    } should have message "Path selector SHORTEST 2 PATHS is not supported"
+    val ir = SelectivePathPattern(
+      pathPattern = longPathPattern,
+      selections = Selections.from(predicate),
+      selector = SelectivePathPattern.Selector.Shortest(2)
+    )
+
+    convertPatternParts(ast) shouldEqual List(ir)
   }
 
-  // Note that SHORTEST 1 GROUP gets mapped to ALL SHORTEST
+  // Note that SHORTEST 1 GROUP is the same as ALL SHORTEST
   test("Shortest 1 group with selection") {
     val predicate = hasLabels("start", "Start")
 
@@ -462,9 +470,13 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       selector = PatternPart.ShortestGroups(literalUnsignedInt(2))(pos)
     )
 
-    the[IllegalArgumentException] thrownBy {
-      convertPatternParts(ast)
-    } should have message "Path selector SHORTEST 2 PATH GROUPS is not supported"
+    val ir = SelectivePathPattern(
+      pathPattern = longPathPattern,
+      selections = Selections.from(predicate),
+      selector = SelectivePathPattern.Selector.ShortestGroups(2)
+    )
+
+    convertPatternParts(ast) shouldEqual List(ir)
   }
 
   test("shortest relationship pattern") {

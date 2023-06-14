@@ -680,7 +680,7 @@ object ReadFinder {
         ) =>
         processShortestPaths(name, nodes, types)
 
-      case StatefulShortestPath(_, _, _, _, _, _, _) => ???
+      case StatefulShortestPath(_, _, _, _, _, _, _, _) => ???
 
       case LegacyFindShortestPaths(
           _,

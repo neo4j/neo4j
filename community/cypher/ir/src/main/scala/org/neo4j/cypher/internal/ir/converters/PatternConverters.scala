@@ -72,16 +72,14 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
         selector match {
           case PatternPart.AllPaths() =>
             convertPatternElement(element)
-          case PatternPart.AnyPath(count) if count.value == 1 =>
-            convertShortestPathPatternElement(element, Selector.Any(1))
-          case PatternPart.AnyShortestPath(count) if count.value == 1 =>
-            convertShortestPathPatternElement(element, Selector.Shortest(1))
+          case PatternPart.AnyPath(count) =>
+            convertShortestPathPatternElement(element, Selector.Any(count.value))
+          case PatternPart.AnyShortestPath(count) =>
+            convertShortestPathPatternElement(element, Selector.Shortest(count.value))
           case PatternPart.AllShortestPaths() =>
             convertShortestPathPatternElement(element, Selector.ShortestGroups(1))
-          case PatternPart.ShortestGroups(count) if count.value == 1 =>
-            convertShortestPathPatternElement(element, Selector.ShortestGroups(1))
-          case other =>
-            throw new IllegalArgumentException(s"Path selector ${other.prettified} is not supported")
+          case PatternPart.ShortestGroups(count) =>
+            convertShortestPathPatternElement(element, Selector.ShortestGroups(count.value))
         }
       case part @ ShortestPathsPatternPart(element, single) =>
         element match {
