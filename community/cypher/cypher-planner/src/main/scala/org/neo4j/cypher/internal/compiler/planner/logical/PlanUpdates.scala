@@ -90,7 +90,7 @@ case object PlanUpdates extends UpdatesPlanner {
           ))
         )
 
-        val eagerizedNextUpdatePlan = eagerAnalyzer.tailWriteReadEagerize(
+        val eagerizedNextUpdatePlan = eagerAnalyzer.writeReadEagerize(
           eagerAnalyzer.tailReadWriteEagerizeRecursive(nextUpdatePlan, queryToCheckForConflicts),
           queryToCheckForConflicts
         )
@@ -117,9 +117,9 @@ case object PlanUpdates extends UpdatesPlanner {
     val updatePlan = computePlan(plan, query, eagerAnalyzer, context)
 
     if (firstPlannerQuery)
-      eagerAnalyzer.headWriteReadEagerize(updatePlan, query)
+      eagerAnalyzer.writeReadEagerize(updatePlan, query)
     else {
-      eagerAnalyzer.tailWriteReadEagerize(eagerAnalyzer.tailReadWriteEagerizeRecursive(updatePlan, query), query)
+      eagerAnalyzer.writeReadEagerize(eagerAnalyzer.tailReadWriteEagerizeRecursive(updatePlan, query), query)
     }
   }
 

@@ -843,6 +843,7 @@ class IndexPlanningIntegrationTest
       .apply()
       .|.nodeByLabelScan("n", "Label", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
+      .eager()
       .create(createNode("a", "Label"))
       .argument()
       .build()
@@ -883,6 +884,7 @@ class IndexPlanningIntegrationTest
       .|.limit(1)
       .|.argument("c")
       .aggregation(Seq(), Seq("count(*) AS c"))
+      .eager()
       .create(createNode("a", "Label"))
       .argument()
       .build()
@@ -976,6 +978,7 @@ class IndexPlanningIntegrationTest
       .apply()
       .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
+      .eager()
       .create(
         createNode("a"),
         createNode("b"),
@@ -1016,6 +1019,7 @@ class IndexPlanningIntegrationTest
       .|.filter("r.prop IS NULL")
       .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
+      .eager()
       .create(
         createNode("a"),
         createNode("b"),

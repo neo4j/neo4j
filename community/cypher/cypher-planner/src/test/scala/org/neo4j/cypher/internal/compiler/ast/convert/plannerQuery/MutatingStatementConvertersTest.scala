@@ -127,7 +127,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       )
     ))
 
-    query.queryGraph.containsReads should be(false)
+    query.queryGraph.readOnly should be(false)
   }
 
   test("Read write and read again") {

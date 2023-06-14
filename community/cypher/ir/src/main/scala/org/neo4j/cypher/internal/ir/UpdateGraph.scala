@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver.LeafPlansWithSolvedPredicates
 import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
-import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -100,12 +99,6 @@ trait UpdateGraph {
 
   def containsMergeRecursive: Boolean = hasMergeNodePatterns || hasMergeRelationshipPatterns ||
     foreachPatterns.exists(_.innerUpdates.allQGsWithLeafInfo.map(_.queryGraph).exists(_.containsMergeRecursive))
-
-  def containsReadsInUpdates: Boolean = mutatingPatterns.folder.treeExists {
-    case _: Property       => true
-    case _: ContainerIndex => true
-    case _: IRExpression   => true
-  }
 
   private def getMaybeQueryGraph: Option[QueryGraph] =
     this match {

@@ -83,6 +83,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .apply()
       .|.merge(nodes = Seq(createNode("b")))
       .|.allNodeScan("b")
+      .eager()
       .create(createNode("a"))
       .argument()
       .build()

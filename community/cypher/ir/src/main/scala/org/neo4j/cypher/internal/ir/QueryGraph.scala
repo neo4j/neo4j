@@ -544,18 +544,6 @@ case class QueryGraph(
     dependencies(node) && (dependencies intersect argumentIds).nonEmpty
   }
 
-  def containsReads: Boolean = {
-    (patternNodes.nonEmpty && (patternNodes -- argumentIds).nonEmpty) ||
-    nodeConnections.nonEmpty ||
-    selections.nonEmpty ||
-    shortestRelationshipPatterns.nonEmpty ||
-    optionalMatches.nonEmpty ||
-    containsMergeRecursive ||
-    containsReadsInUpdates
-  }
-
-  def writeOnly: Boolean = !containsReads && containsUpdates
-
   def addMutatingPatterns(pattern: MutatingPattern): QueryGraph = {
     val copyPatterns = new mutable.ArrayBuffer[MutatingPattern](mutatingPatterns.size + 1)
     copyPatterns.appendAll(mutatingPatterns)
