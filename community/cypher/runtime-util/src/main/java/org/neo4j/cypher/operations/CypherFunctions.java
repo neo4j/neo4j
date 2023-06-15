@@ -647,9 +647,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue left(AnyValue in, AnyValue endPos) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue text) {
+    public static AnyValue left(AnyValue in, AnyValue endPos) {
+        if (in == NO_VALUE || endPos == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof TextValue text) {
             final long len = asLong(endPos, () -> "Invalid input for length value in function 'left()'");
             return text.substring(0, (int) Math.min(len, Integer.MAX_VALUE));
         } else {

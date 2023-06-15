@@ -167,10 +167,10 @@ case class SplitFunction(orig: Expression, separator: Expression)
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
-    extends NullInNullOutExpression(orig) {
+    extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.left(value, length(ctx, state))
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.left(orig(ctx, state), length(ctx, state))
 
   override def arguments: Seq[Expression] = Seq(orig, length)
 
