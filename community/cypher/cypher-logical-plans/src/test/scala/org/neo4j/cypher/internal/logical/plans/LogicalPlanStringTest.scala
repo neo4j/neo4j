@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
@@ -89,6 +90,17 @@ class LogicalPlanStringTest extends CypherFunSuite {
     subTypes(classOf[LogicalPlan]).foreach { planClass =>
       if (!Modifier.isAbstract(planClass.getModifiers)) {
         checkStringFields(planClass, planClass.getName, seen)
+      }
+    }
+  }
+
+  test("accessor white list is correct") {
+    WhiteList.whiteListedAccessors.foreach { case (cls, accessor) =>
+      withClue(s"${cls.getName} do not have accessor $accessor\n") {
+        def hasField(cls: Class[_]) = cls.getFields.exists(f => f.getName == accessor)
+        def hasMethod(cls: Class[_]) = cls.getMethods.exists(f => f.getName == accessor)
+        def subTypeHasFieldOrMethod = subTypes(cls).exists(c => hasField(c) || hasMethod(c))
+        assert(hasField(cls) || hasMethod(cls) || subTypeHasFieldOrMethod)
       }
     }
   }
@@ -193,7 +205,6 @@ object LogicalPlanStringTest {
     val whiteListedAccessors: Set[(Class[_], String)] = Set[(Class[_], String)](
       classOf[AndedPropertyInequalities] -> "inequalities",
       classOf[PatternRelationship] -> "nodes",
-      classOf[OrderedDistinct] -> "nodes",
       classOf[MultiNodeIndexSeek] -> "copyWithoutGettingValues",
       classOf[AssertingMultiNodeIndexSeek] -> "copyWithoutGettingValues",
       classOf[ProjectingPlan] -> "projectExpressions",
@@ -203,19 +214,22 @@ object LogicalPlanStringTest {
       classOf[FilteringExpression] -> "name",
       classOf[ShortestPathsPatternPart] -> "name",
       classOf[CopyRolePrivileges] -> "grantDeny",
-      classOf[AdministrationCommandLogicalPlan] -> "operation",
+      classOf[DoNothingIfDatabaseNotExists] -> "operation",
+      classOf[DoNothingIfNotExists] -> "operation",
       classOf[AdministrationCommandLogicalPlan] -> "command",
       classOf[SecurityAdministrationLogicalPlan] -> "label",
       classOf[SecurityAdministrationLogicalPlan] -> "valueMapper",
       classOf[AdministrationCommandLogicalPlan] -> "action",
-      classOf[SecurityAdministrationLogicalPlan] -> "extraFilter",
+      classOf[EnsureNodeExists] -> "extraFilter",
       classOf[EnsureNodeExists] -> "labelDescription",
+      classOf[EnsureDatabaseNodeExists] -> "extraFilter",
       classOf[AllowedNonAdministrationCommands] -> "statement",
       classOf[AdministrationCommandLogicalPlan] -> "revokeType",
       classOf[Expression] -> "dependencies",
       classOf[PathStep] -> "dependencies",
       classOf[TriadicBuild] -> "triadicSelectionId",
-      classOf[NullifyMetadata] -> "key"
+      classOf[NullifyMetadata] -> "key",
+      classOf[CollectExpression] -> "query"
     )
 
     val whiteListedClasses: Set[Class[_]] = Set[Class[_]](
@@ -265,7 +279,8 @@ object LogicalPlanStringTest {
       classOf[AssertNotCurrentUser],
       classOf[IsTyped],
       classOf[IsNotTyped],
-      classOf[NFA]
+      classOf[NFA],
+      classOf[Exception]
     )
 
     val whiteListedMethodNames: Set[String] = Set(
