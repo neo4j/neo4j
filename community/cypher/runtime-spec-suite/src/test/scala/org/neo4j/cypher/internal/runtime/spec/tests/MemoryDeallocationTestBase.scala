@@ -78,7 +78,9 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](
       edition.copyWith(
         GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory),
-        GraphDatabaseInternalSettings.initial_transaction_heap_grab_size -> Long.box(MemoryManagementTestBase.grabSize)
+        GraphDatabaseInternalSettings.initial_transaction_heap_grab_size_per_worker -> Long.box(
+          MemoryManagementTestBase.perWorkerGrabSize
+        )
       ),
       runtime,
       testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)

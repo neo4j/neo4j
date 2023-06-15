@@ -45,7 +45,7 @@ import java.util.Locale
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
   val maxMemory: Long = ByteUnit.mebiBytes(32)
-  val grabSize: Long = ByteUnit.kibiBytes(8)
+  val perWorkerGrabSize: Long = ByteUnit.kibiBytes(8)
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -204,7 +204,9 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](
       edition.copyWith(
         GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory),
-        GraphDatabaseInternalSettings.initial_transaction_heap_grab_size -> Long.box(MemoryManagementTestBase.grabSize),
+        GraphDatabaseInternalSettings.initial_transaction_heap_grab_size_per_worker -> Long.box(
+          MemoryManagementTestBase.perWorkerGrabSize
+        ),
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(6),
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(6)
       ),

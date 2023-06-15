@@ -419,7 +419,7 @@ class ExecutionContextMemoryTrackerTest {
 
         memoryTracker.reset();
         long expectedLocalHeapPool = grabSize - expectedTotalAllocationSize;
-        verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
+        verify(pool, times(1)).reserveHeap(-expectedLocalHeapPool);
     }
 
     @Test
