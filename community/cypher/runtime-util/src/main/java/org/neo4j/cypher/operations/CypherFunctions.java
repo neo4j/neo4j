@@ -19,6 +19,22 @@
  */
 package org.neo4j.cypher.operations;
 
+import static java.lang.Double.parseDouble;
+import static java.lang.Long.parseLong;
+import static java.lang.String.format;
+import static org.neo4j.cypher.operations.CursorUtils.propertyKeys;
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+import static org.neo4j.values.storable.Values.EMPTY_STRING;
+import static org.neo4j.values.storable.Values.FALSE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.booleanValue;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
+import static org.neo4j.values.virtual.VirtualValues.asList;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -28,7 +44,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import org.neo4j.cypher.internal.expressions.BooleanTypeName;
 import org.neo4j.cypher.internal.expressions.CypherTypeName;
 import org.neo4j.cypher.internal.expressions.DateTypeName;
@@ -89,22 +104,6 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
-
-import static java.lang.Double.parseDouble;
-import static java.lang.Long.parseLong;
-import static java.lang.String.format;
-import static org.neo4j.cypher.operations.CursorUtils.propertyKeys;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-import static org.neo4j.values.storable.Values.EMPTY_STRING;
-import static org.neo4j.values.storable.Values.FALSE;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.TRUE;
-import static org.neo4j.values.storable.Values.booleanValue;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
-import static org.neo4j.values.virtual.VirtualValues.asList;
 
 /**
  * This class contains static helper methods for the set of Cypher functions
@@ -1619,9 +1618,10 @@ public final class CypherFunctions {
         return Values.booleanValue(result);
     }
 
-    public static BooleanValue assertIsNode(AnyValue item) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof VirtualNodeValue) {
+    public static AnyValue assertIsNode(AnyValue item) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof VirtualNodeValue) {
             return TRUE;
         } else {
             throw new CypherTypeException("Expected a Node, got: " + item);
@@ -1633,7 +1633,6 @@ public final class CypherFunctions {
     }
 
     private static CypherTypeException notAString(String method, AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return new CypherTypeException(format(
                 "Expected a string value for `%s`, but got: %s; consider converting it to a string with "
                         + "toString().",
@@ -1641,7 +1640,6 @@ public final class CypherFunctions {
     }
 
     private static CypherTypeException notAModeString(String method, AnyValue mode) {
-        assert mode != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return new CypherTypeException(format("Expected a string value for `%s`, but got: %s.", method, mode));
     }
 

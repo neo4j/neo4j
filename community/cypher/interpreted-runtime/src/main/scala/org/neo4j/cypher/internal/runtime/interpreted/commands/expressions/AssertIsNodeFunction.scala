@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
-case class AssertIsNodeFunction(inner: Expression) extends NullInNullOutExpression(inner) {
+case class AssertIsNodeFunction(inner: Expression) extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.assertIsNode(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.assertIsNode(inner(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(AssertIsNodeFunction(inner.rewrite(f)))
   override def arguments: Seq[Expression] = Seq(inner)
