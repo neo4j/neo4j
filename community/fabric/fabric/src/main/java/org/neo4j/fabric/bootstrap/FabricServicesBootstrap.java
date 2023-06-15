@@ -160,7 +160,13 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
 
         Executor fabricWorkerExecutor = jobScheduler.executor(FABRIC_WORKER);
         var fabricExecutor = new FabricExecutor(
-                fabricConfig, planner, useEvaluation, internalLogProvider, statementLifecycles, fabricWorkerExecutor);
+                fabricConfig,
+                planner,
+                useEvaluation,
+                internalLogProvider,
+                statementLifecycles,
+                fabricWorkerExecutor,
+                monitors);
         register(fabricExecutor, FabricExecutor.class);
         return createBoltDatabaseManagementServiceProvider();
     }

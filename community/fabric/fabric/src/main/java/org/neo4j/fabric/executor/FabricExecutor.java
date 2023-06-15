@@ -69,8 +69,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
+import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -90,6 +92,7 @@ public class FabricExecutor {
     private final InternalLog log;
     private final FabricStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
+    private final QueryRoutingMonitor queryRoutingMonitor;
 
     public FabricExecutor(
             FabricConfig config,
@@ -97,13 +100,15 @@ public class FabricExecutor {
             UseEvaluation useEvaluation,
             InternalLogProvider internalLog,
             FabricStatementLifecycles statementLifecycles,
-            Executor fabricWorkerExecutor) {
+            Executor fabricWorkerExecutor,
+            Monitors monitors) {
         this.dataStreamConfig = config.getDataStream();
         this.planner = planner;
         this.useEvaluation = useEvaluation;
         this.log = internalLog.getLog(getClass());
         this.statementLifecycles = statementLifecycles;
         this.fabricWorkerExecutor = fabricWorkerExecutor;
+        this.queryRoutingMonitor = monitors.newMonitor(QueryRoutingMonitor.class);
     }
 
     public StatementResult run(FabricTransaction fabricTransaction, String statement, MapValue parameters) {
@@ -437,6 +442,9 @@ public class FabricExecutor {
                     .summary()
                     .map(Summary::executionPlanDescription)
                     .map(pd -> new TaggingPlanDescriptionWrapper(pd, location.getDatabaseName()));
+
+            queryRoutingMonitor.queryRoutedLocal();
+
             return new FragmentResult(records, planDescription, localStatementResult.executionType());
         }
 
@@ -470,6 +478,12 @@ public class FabricExecutor {
             // TODO: We currently need to override here since we can't get it from remote properly
             // but our result here is not as accurate as what the remote might report.
             Mono<QueryExecutionType> executionType = Mono.just(EffectiveQueryType.queryExecutionType(plan, accessMode));
+
+            if (location instanceof Location.Remote.Internal) {
+                queryRoutingMonitor.queryRoutedRemoteInternal();
+            } else if (location instanceof Location.Remote.External) {
+                queryRoutingMonitor.queryRoutedRemoteExternal();
+            }
 
             return new FragmentResult(prefetchedRecords, planDescription, executionType);
         }
