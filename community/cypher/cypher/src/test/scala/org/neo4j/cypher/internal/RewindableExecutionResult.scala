@@ -168,7 +168,10 @@ object RewindableExecutionResult {
       planDescription(),
       QueryStatistics(subscriber.queryStatistics()),
       notifications ++ internalNotifications,
-      closeable = () => subscription.cancel()
+      closeable = () => {
+        subscription.cancel()
+        subscription.awaitCleanup()
+      }
     )
   }
 

@@ -66,6 +66,7 @@ sealed class ParallelTransactionBoundQueryContext(
     }
     try {
       super.close()
+      resources.close()
     } finally {
       transactionalContext.close()
     }

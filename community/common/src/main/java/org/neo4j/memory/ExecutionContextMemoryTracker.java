@@ -55,10 +55,6 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     private static final long DEFAULT_GRAB_SIZE = 8192;
     private static final long DEFAULT_INITIAL_CREDIT = 0;
 
-    // TODO: FOR DEBUGGING
-    private static AtomicInteger counter = new AtomicInteger();
-    private final int trackerNumber;
-
     /**
      * If an allocation call triggers a reservation from the memory pool,
      * and the number of allocation calls since the last reservation is less
@@ -169,8 +165,6 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
         // Assign the credit to delay the first grab to the local heap pool
         this.localHeapPool = initialCredit;
-
-        this.trackerNumber = counter.incrementAndGet(); // TODO: DEBUGGING
     }
 
     @Override
@@ -212,14 +206,11 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
         if (bytes == 0) {
             return;
         }
-
         requirePositive(bytes);
         assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
 
         allocatedBytesHeap += bytes;
         clientCallsSinceLastPoolInteraction++;
-
-        System.out.printf("+ [ExecutionContextMemoryTracker%02d] %s Allocate %s (allocated heap %s)\n", trackerNumber, Thread.currentThread().getName(), bytes, allocatedBytesHeap);
 
         if (allocatedBytesHeap + allocatedBytesNative > localBytesLimit) {
             allocatedBytesHeap -= bytes;
@@ -254,14 +245,10 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
         localHeapPool += bytes;
         clientCallsSinceLastPoolInteraction++;
 
-        System.out.printf("- [ExecutionContextMemoryTracker%02d] %s Release %s (allocated heap %s)\n", trackerNumber, Thread.currentThread().getName(), bytes, allocatedBytesHeap);
-
         // If the localHeapPool has reserved a lot more memory than is being used release part of it again.
         // The threshold for releasing memory back to the pool is double that of the current grab size
         if (localHeapPool > grabSize << 1) {
-            //long memoryToRelease = max(grabSize, localHeapPool - (grabSize << 1));
-            //long memoryToRelease = max(grabSize, localHeapPool - (grabSize << 1) - initialCredit); // TODO: TESTING
-            long memoryToRelease = max(grabSize, localHeapPool - (grabSize << 1)); // TODO: TESTING
+            long memoryToRelease = max(grabSize, localHeapPool - (grabSize << 1));
             releaseHeapToPool(memoryToRelease);
         }
     }
