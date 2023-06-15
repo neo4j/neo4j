@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.util.Rewritable
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
-// We can probably unified them.
+// We can probably unify them.
 case class ShortestRelationshipPattern(
   name: Option[LogicalVariable],
   rel: PatternRelationship,
@@ -58,7 +58,7 @@ object ShortestRelationshipPattern {
 }
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.PatternRelationship
-// We can probably unified them.
+// We can probably unify them.
 case class PatternRelationship(
   name: LogicalVariable,
   nodes: (LogicalVariable, LogicalVariable),

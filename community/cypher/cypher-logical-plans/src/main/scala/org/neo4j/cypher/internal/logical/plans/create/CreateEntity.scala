@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreateCommand
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.CreateCommand
-// We can probably unified them.
+// We can probably unify them.
 sealed trait CreateEntity {
   def variable: LogicalVariable
   def dependencies: Set[LogicalVariable]
@@ -44,7 +44,7 @@ object CreateEntity {
 }
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.CreateNode
-// We can probably unified them.
+// We can probably unify them.
 case class CreateNode(
   variable: LogicalVariable,
   labels: Set[LabelName],
@@ -58,7 +58,7 @@ object CreateNode {
 }
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.CreateRelationship
-// We can probably unified them.
+// We can probably unify them.
 case class CreateRelationship(
   variable: LogicalVariable,
   leftNode: LogicalVariable,

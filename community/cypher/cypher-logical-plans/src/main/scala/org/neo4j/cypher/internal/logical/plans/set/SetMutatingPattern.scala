@@ -30,13 +30,13 @@ import org.neo4j.cypher.internal.logical.plans.create.CreateNode
 import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.MutatingPattern
-// We can probably unified them.
+// We can probably unify them.
 sealed trait MutatingPattern extends Product {
   def dependencies: Set[LogicalVariable]
 }
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.MutatingPattern
-// We can probably unified them.
+// We can probably unify them.
 sealed trait SimpleMutatingPattern extends MutatingPattern
 
 object SimpleMutatingPattern {
@@ -49,7 +49,7 @@ object SimpleMutatingPattern {
 }
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.SetMutatingPattern
-// We can probably unified them.
+// We can probably unify them.
 sealed trait SetMutatingPattern extends SimpleMutatingPattern
 
 object SetMutatingPattern {
@@ -81,7 +81,7 @@ object SetMutatingPattern {
 }
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.DeleteMutatingPattern
-// We can probably unified them.
+// We can probably unify them.
 sealed trait DeleteMutatingPattern extends SimpleMutatingPattern
 
 object DeleteMutatingPattern {
