@@ -221,7 +221,7 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
   //       needs to be able to support a concurrent use-case,
   //       e.g. by a heap tracking concurrent collection used for hash join or aggregation.
   override def getScopedMemoryTracker: MemoryTracker = {
-    new ConcurrentScopedMemoryTracker(this)
+    new ParallelScopedMemoryTracker(this)
   }
 
   private def delegateMemoryTracker: MemoryTracker = {
@@ -255,7 +255,7 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
 }
 
 /**
- * This is used by concurrent heap tracking collections (that are shared between workers),
+ * This is used by concurrent heap tracking collections (that are shared between workers) in the parallel runtime,
  * that also need a scoped memory tracker to be able to release all the tracked memory at once on close.
  * Since we do not know which worker will call close we track the scoped allocations using LongAdders.
  *
@@ -265,7 +265,7 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
  *
  * @param delegate The delegate needs to be thread-safe, typically an instance of WorkerThreadDelegatingMemoryTracker
  */
-class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemoryTracker {
+private class ParallelScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemoryTracker {
   private[this] val trackedNative: LongAdder = new LongAdder
   private[this] val trackedHeap: LongAdder = new LongAdder
   private[this] val _isClosed: AtomicBoolean = new AtomicBoolean(false)
@@ -328,7 +328,7 @@ class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemor
   }
 
   override def getScopedMemoryTracker: MemoryTracker = {
-    new ConcurrentScopedMemoryTracker(this)
+    new ParallelScopedMemoryTracker(this)
   }
 
   override def isClosed: Boolean = _isClosed.get()
