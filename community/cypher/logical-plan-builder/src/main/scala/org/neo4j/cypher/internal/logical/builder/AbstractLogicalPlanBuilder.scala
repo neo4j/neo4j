@@ -858,7 +858,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  // TODO Replace with partialSortStrings
   def partialSortColumns(
     alreadySortedPrefix: Seq[ColumnOrder],
     stillToSortSuffix: Seq[ColumnOrder],
