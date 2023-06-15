@@ -91,6 +91,7 @@ class NFABuilder protected (_startState: State) {
   private val finalStates: mutable.Set[State] = mutable.Set.empty
   private val transitions: mutable.MultiDict[State, Transition] = mutable.MultiDict.empty
   private var nextId: Int = 0
+  private var lastState: State = _startState
 
   /**
    * @param _startState the varName of the initial node of the start state of the NFA.
@@ -119,7 +120,9 @@ class NFABuilder protected (_startState: State) {
    * To support TestNFABuilder.
    */
   protected def getOrCreateState(id: Int, variable: LogicalVariable): State = {
-    StateImpl(id, states.getOrElseUpdate(id, variable))
+    val state = StateImpl(id, states.getOrElseUpdate(id, variable))
+    lastState = state
+    state
   }
 
   def build(): NFA = {
@@ -162,8 +165,11 @@ class NFABuilder protected (_startState: State) {
     val newState = StateImpl(this.nextId, variable)
     this.states += (newState.id -> newState.variable)
     this.nextId = nextId + 1
+    lastState = newState
     newState
   }
+
+  def getLastState: State = lastState
 
   def setStartState(startState: State): NFABuilder = {
     this.startState = startState

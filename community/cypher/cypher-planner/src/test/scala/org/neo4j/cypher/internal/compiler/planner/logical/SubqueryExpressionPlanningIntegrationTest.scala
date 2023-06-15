@@ -2119,7 +2119,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
             Head(listOf(
               NestedPlanExistsExpression(
                 expectedNestedPlan,
-                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE not `anon_2` = `anon_0` }"
+                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE NOT `anon_2` = `anon_0` }"
               )(pos)
             ))(pos)),
           discard = Set("n")

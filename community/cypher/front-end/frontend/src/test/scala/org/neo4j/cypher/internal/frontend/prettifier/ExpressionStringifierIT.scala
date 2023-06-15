@@ -61,12 +61,12 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "(:Label)<-[var]-({id:43})-->(v:X)" -> "(:Label)<-[var]-({id: 43})-->(v:X)",
       "n{.*,.bar,baz:42,variable}" -> "n{.*, .bar, baz: 42, variable}",
       "n:A:B" -> "n:A:B",
-      "not(true)" -> "not true",
+      "not(true)" -> "NOT true",
       "case when 1 = n.prop then 1 when 2 = n.prop then 2 else 4 end" ->
         "CASE WHEN 1 = n.prop THEN 1 WHEN 2 = n.prop THEN 2 ELSE 4 END",
       "case n.prop when 1 then '1' when 2 then '2' else '4' end" ->
         "CASE n.prop WHEN 1 THEN \"1\" WHEN 2 THEN \"2\" ELSE \"4\" END",
-      "not(((1) = (2)) and ((3) = (4)))" -> "not (1 = 2 AND 3 = 4)",
+      "not(((1) = (2)) and ((3) = (4)))" -> "NOT (1 = 2 AND 3 = 4)",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age)" ->
         "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age)",
       "$param1+$param2" -> "$param1 + $param2",

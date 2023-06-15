@@ -27,10 +27,12 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder.NodePredicate
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
@@ -72,6 +74,13 @@ object TestNFABuilder {
  */
 class TestNFABuilder(startStateId: Int, startStateName: String)
     extends NFABuilder(startStateId, startStateName) {
+
+  def addTransition(from: (Int, String), to: (Int, String), nfaPredicate: NFA.Predicate): TestNFABuilder = {
+    val fromState = getOrCreateState(from._1, varFor(from._2))
+    val toState = getOrCreateState(to._1, varFor(to._2))
+    addTransition(fromState, toState, nfaPredicate)
+    this
+  }
 
   def addTransition(fromId: Int, toId: Int, pattern: String): TestNFABuilder = {
 

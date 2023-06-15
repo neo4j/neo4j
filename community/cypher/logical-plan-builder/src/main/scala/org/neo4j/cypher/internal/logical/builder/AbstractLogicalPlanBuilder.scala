@@ -536,18 +536,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       disallowSameNode
     )
 
-  def statefulShortestPath(
+  def statefulShortestPathExpr(
     sourceNode: String,
     targetNode: String,
     solvedExpressionString: String,
-    nonInlinablePreFilters: Option[String],
+    nonInlinablePreFilters: Option[Expression],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
     singletonVariables: Set[String],
     selector: StatefulShortestPath.Selector,
     nfa: NFA
   ): IMPL = {
-    val predicates = nonInlinablePreFilters.map(parseExpression)
     val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
     val relationshipVariableGroupings = groupRelationships.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
 
@@ -560,7 +559,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         varFor(sourceNode),
         varFor(targetNode),
         nfa.endoRewrite(expressionRewriter),
-        predicates,
+        nonInlinablePreFilters,
         nodeVariableGroupings,
         relationshipVariableGroupings,
         singletonVariables.map(varFor),
@@ -569,6 +568,31 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       )(_)
     ))
     self
+  }
+
+  def statefulShortestPath(
+    sourceNode: String,
+    targetNode: String,
+    solvedExpressionString: String,
+    nonInlinablePreFilters: Option[String],
+    groupNodes: Set[(String, String)],
+    groupRelationships: Set[(String, String)],
+    singletonVariables: Set[String],
+    selector: StatefulShortestPath.Selector,
+    nfa: NFA
+  ): IMPL = {
+    val predicates = nonInlinablePreFilters.map(parseExpression)
+    statefulShortestPathExpr(
+      sourceNode,
+      targetNode,
+      solvedExpressionString,
+      predicates,
+      groupNodes,
+      groupRelationships,
+      singletonVariables,
+      selector,
+      nfa
+    )
   }
 
   private def shortestPathSolver(

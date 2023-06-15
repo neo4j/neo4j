@@ -42,13 +42,24 @@ sealed trait NodeConnection {
   val right: String
 
   /**
-   * The nodes connected by this node connection. That is, the outer-most nodes in thist part of the parttern.
+   * The nodes connected by this node connection. That is, the outer-most nodes in this part of the pattern.
    */
   val boundaryNodes: (String, String)
 
   lazy val boundaryNodesSet: Set[String] = Set(left, right)
 
-  def coveredIds: Set[String]
+  def withLeft(left: String): NodeConnection
+  def withRight(right: String): NodeConnection
+
+  /**
+   * All node/relationship/group variables along the path of this node connection, from left to right.
+   */
+  def pathVariables: Seq[String]
+
+  /**
+   * Same as [[pathVariables]], as a Set.
+   */
+  final lazy val coveredIds: Set[String] = pathVariables.toSet
 
   def otherSide(node: String): String =
     if (node == left) {
@@ -76,6 +87,9 @@ sealed trait ExhaustiveNodeConnection extends NodeConnection {
    * @return same as solvedString, but omitting the left node of the node connection
    */
   def solvedStringSuffix: String
+
+  override def withLeft(left: String): ExhaustiveNodeConnection
+  override def withRight(right: String): ExhaustiveNodeConnection
 }
 
 object ExhaustiveNodeConnection {
@@ -98,10 +112,14 @@ final case class PatternRelationship(
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
-  override lazy val coveredIds: Set[String] = Set(name, left, right)
+  override def pathVariables: Seq[String] = Seq(left, name, right)
 
   override val left: String = boundaryNodes._1
   override val right: String = boundaryNodes._2
+
+  override def withLeft(left: String): PatternRelationship = copy(boundaryNodes = (left, right))
+
+  override def withRight(right: String): PatternRelationship = copy(boundaryNodes = (left, right))
 
   def inOrder: (String, String) = dir match {
     case SemanticDirection.INCOMING => (right, left)
@@ -198,12 +216,28 @@ final case class QuantifiedPathPattern(
   relationshipVariableGroupings: Set[VariableGrouping]
 ) extends ExhaustiveNodeConnection {
 
+  private def singletonToGroup(groupings: Set[VariableGrouping], singleton: String): Option[String] =
+    groupings.find(_.singletonName == singleton).map(_.groupName)
+
   override val left: String = leftBinding.outer
   override val right: String = rightBinding.outer
 
   override val boundaryNodes: (String, String) = (left, right)
 
-  override lazy val coveredIds: Set[String] = boundaryNodesSet ++ groupings
+  override def withLeft(left: String): QuantifiedPathPattern = copy(leftBinding = leftBinding.copy(outer = left))
+
+  override def withRight(right: String): QuantifiedPathPattern = copy(rightBinding = rightBinding.copy(outer = right))
+
+  override def pathVariables: Seq[String] = {
+    val rightTail = singletonToGroup(nodeVariableGroupings, patternRelationships.last.right) ++: Seq(right)
+
+    left +: patternRelationships.foldRight(rightTail) {
+      case (rel, acc) =>
+        singletonToGroup(nodeVariableGroupings, rel.left) ++:
+          singletonToGroup(relationshipVariableGroupings, rel.name) ++:
+          acc
+    }
+  }
 
   override def toString: String =
     s"QPP($leftBinding, $rightBinding, $asQueryGraph, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
@@ -307,7 +341,21 @@ final case class SelectivePathPattern(
   override val right: String = pathPattern.connections.last.right
   override val boundaryNodes: (String, String) = (left, right)
 
-  override def coveredIds: Set[String] = pathPattern.connections.toSet[NodeConnection].flatMap(_.coveredIds)
+  override def withLeft(left: String): SelectivePathPattern = copy(
+    pathPattern = pathPattern.copy(
+      connections = pathPattern.connections.head.withLeft(left) +: pathPattern.connections.tailOption
+    )
+  )
+
+  override def withRight(right: String): SelectivePathPattern = copy(
+    pathPattern = pathPattern.copy(
+      connections = pathPattern.connections.initOption :+ pathPattern.connections.last.withRight(right)
+    )
+  )
+
+  override def pathVariables: Seq[String] = pathPattern.connections.foldLeft(Seq(left)) {
+    case (acc, nc) => acc ++ nc.pathVariables.tail
+  }
 
   val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies)
 

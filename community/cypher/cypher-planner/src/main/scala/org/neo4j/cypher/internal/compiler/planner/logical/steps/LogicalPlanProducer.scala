@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -94,6 +95,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -151,6 +153,7 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.compiler.planner.logical.irExpressionRewriter
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
@@ -173,6 +176,7 @@ import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Merge
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -224,6 +228,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -379,6 +384,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     require(patternForLeafPlan.types.isEmpty)
+
     def planLeaf: LogicalPlan = {
       val (firstNode, secondNode) = patternForLeafPlan.inOrder
       val solved =
@@ -866,10 +872,11 @@ case class LogicalPlanProducer(
 
   /**
    * Plan a selection on `hiddenSelections` but, in the solveds, pretend to solve only the predicates of the leaf plan and `originalPattern` instead of the leaf plan's pattern.
-   * @param source the source leaf plan
+   *
+   * @param source           the source leaf plan
    * @param hiddenSelections the selections to test in this operator
-   * @param context planning context
-   * @param solvedPattern the pattern we will claim to have solved
+   * @param context          planning context
+   * @param solvedPattern    the pattern we will claim to have solved
    * @return hidden selection on top of source plan
    */
   def planHiddenSelectionIfNeeded(
@@ -2290,6 +2297,67 @@ case class LogicalPlanProducer(
       providedOrders.get(rewrittenSource.id).fromLeft,
       context
     )
+  }
+
+  def planStatefulShortest(
+    inner: LogicalPlan,
+    startNode: String,
+    endNode: String,
+    nfa: NFA,
+    nonInlinablePreFilters: Option[Expression],
+    nodeVariableGroupings: Set[Trail.VariableGrouping],
+    relationshipVariableGroupings: Set[Trail.VariableGrouping],
+    singletonVariables: Set[LogicalVariable],
+    selector: StatefulShortestPath.Selector,
+    maybeHiddenFilter: Option[Expression],
+    solvedExpressionAsString: String,
+    solvedSpp: SelectivePathPattern,
+    solvedPredicates: Seq[Expression],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
+      _.addSelectivePathPattern(solvedSpp)
+        .addPredicates(solvedPredicates: _*)
+    )
+    val (rewrittenNFA, rewrittenNonInlinablePreFilters) = {
+      // We do not use the SubqueryExpressionSolver, since all expressions for StatefulShortest
+      // must be planned with NestedPlanExpressions.
+      val rewriter = irExpressionRewriter(inner, context)
+      val rewrittenNFA = nfa.endoRewrite(rewriter)
+      val rewrittenNonInlinablePreFilters = nonInlinablePreFilters.endoRewrite(rewriter)
+      (rewrittenNFA, rewrittenNonInlinablePreFilters)
+    }
+
+    val plan = StatefulShortestPath(
+      inner,
+      varFor(startNode),
+      varFor(endNode),
+      rewrittenNFA,
+      nonInlinedPreFilters = rewrittenNonInlinablePreFilters,
+      nodeVariableGroupings,
+      relationshipVariableGroupings,
+      singletonVariables,
+      selector,
+      solvedExpressionAsString
+    )
+    val providedOrder = providedOrders.get(inner.id).fromLeft
+    val ssp = annotate(
+      plan,
+      solved,
+      providedOrder,
+      context
+    )
+
+    maybeHiddenFilter match {
+      case Some(hiddenFilter) =>
+        annotateSelection(
+          Selection(Seq(hiddenFilter), ssp),
+          solved,
+          providedOrder,
+          context
+        )
+      case None => ssp
+    }
   }
 
   def planProjectEndpoints(

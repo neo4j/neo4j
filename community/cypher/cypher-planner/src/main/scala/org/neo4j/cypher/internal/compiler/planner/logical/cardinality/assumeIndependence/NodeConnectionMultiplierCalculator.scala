@@ -150,7 +150,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             relationshipsWithUniquePredicate(qpp.relationshipVariableGroupings.map(_.groupName)),
             uniquenessPredicatesWithin(qpp)
           )
-        case spp: SelectivePathPattern => ??? // TODO
+        case spp: SelectivePathPattern => Multiplier.ONE // TODO
       }
     }
   }

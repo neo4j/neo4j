@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -113,6 +114,41 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         "c",
         "",
         Some("a.prop + c.prop = 5"),
+        Set(("b_in", "b_in"), ("c_in", "c_in")),
+        Set(("r2", "r2")),
+        Set("a", "b", "c", "d"),
+        StatefulShortestPath.Selector.ShortestGroups(5),
+        new TestNFABuilder(0, "a")
+          .addTransition(0, 1, "(a)-[r WHERE r.prop > 5]->(b:A&B WHERE b.prop = 10)")
+          .addTransition(1, 2, "(b) (b_in WHERE b_in.prop = 10)")
+          .addTransition(2, 3, "(b_in)<-[r2:R2 WHERE r2 < 7]-(c_in)")
+          .addTransition(3, 2, "(c_in) (b_in: A|C)")
+          .addTransition(3, 4, "(c_in) (c:C&D WHERE c.prop = 5)")
+          .addTransition(1, 4, "(b) (c)")
+          .addTransition(4, 5, "(c)-[r3]-(d)")
+          .addFinalState(4)
+          .addFinalState(5)
+          .build()
+      )
+      .allNodeScan("a")
+      .build()
+  )
+
+  testPlan(
+    "statefulShortestPathExpr",
+    new TestPlanBuilder()
+      .produceResults("a", "b", "c")
+      .statefulShortestPathExpr(
+        "a",
+        "c",
+        "",
+        Some(
+          // a.prop = c.prop
+          AstConstructionTestSupport.equals(
+            AstConstructionTestSupport.prop("a", "prop"),
+            AstConstructionTestSupport.prop("c", "prop")
+          )
+        ),
         Set(("b_in", "b_in"), ("c_in", "c_in")),
         Set(("r2", "r2")),
         Set("a", "b", "c", "d"),

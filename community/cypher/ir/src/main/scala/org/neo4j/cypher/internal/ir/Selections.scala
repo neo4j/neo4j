@@ -158,6 +158,10 @@ case class Selections private (predicates: Set[Predicate]) {
 
   def ++(expressions: Iterable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 
+  def --(other: Selections): Selections = Selections(predicates -- other.predicates)
+
+  def --(expressions: Iterable[Expression]): Selections = Selections(predicates -- expressions.flatMap(_.asPredicates))
+
   def nonEmpty: Boolean = !isEmpty
 }
 

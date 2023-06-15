@@ -453,7 +453,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         variableToCollectName,
         collectionName,
-        s"[(n)-[r:R|P]->(m)<-[r2]-(o) WHERE r.prop = 5 AND o.prop = 5 AND not o:% AND r.foo > 5 AND o.foo > 5 | 5]"
+        s"[(n)-[r:R|P]->(m)<-[r2]-(o) WHERE r.prop = 5 AND o.prop = 5 AND NOT o:% AND r.foo > 5 AND o.foo > 5 | 5]"
       )(pos, Some(Set(m, r)), Some(Set(n)))
     )
   }
@@ -490,7 +490,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
     existsIRExpression.solvedExpressionAsString should equal(
-      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE NOT r = r3 AND NOT r = r2 AND NOT r3 = r2 }"
     )
   }
 
@@ -532,7 +532,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
     existsIRExpression.solvedExpressionAsString should equal(
-      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2 }"
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND NOT r = r3 AND NOT r = r2 AND NOT r3 = r2 }"
     )
   }
 
@@ -577,7 +577,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
     existsIRExpression.solvedExpressionAsString should equal(
-      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n }"
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE NOT r = r3 AND NOT r = r2 AND NOT r3 = r2\nRETURN n AS n }"
     )
   }
 
@@ -933,7 +933,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
-      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n }"
+      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE NOT r = r3 AND NOT r = r2 AND NOT r3 = r2\nRETURN n AS n }"
     )
   }
 
@@ -1381,7 +1381,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
-      "COUNT { MATCH (n)-[r:R|P]->(m)<-[r2]-(o)\n  WHERE r.prop = 5 AND o.prop = 5 AND not o:% AND r.foo > 5 AND o.foo > 5 AND not r2 = r }"
+      "COUNT { MATCH (n)-[r:R|P]->(m)<-[r2]-(o)\n  WHERE r.prop = 5 AND o.prop = 5 AND NOT o:% AND r.foo > 5 AND o.foo > 5 AND NOT r2 = r }"
     )
   }
 
@@ -1478,7 +1478,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
-      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE NOT r = r3 AND NOT r = r2 AND NOT r3 = r2 }"
     )
   }
 
@@ -1606,7 +1606,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.collectionName shouldBe collectVariableName
     collectIRExpression.variableToCollectName shouldBe n.name
     collectIRExpression.solvedExpressionAsString should equal(
-      "COLLECT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n\n  ORDER BY n ASCENDING }"
+      "COLLECT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND NOT r = r3 AND NOT r = r2 AND NOT r3 = r2\nRETURN n AS n\n  ORDER BY n ASCENDING }"
     )
   }
 

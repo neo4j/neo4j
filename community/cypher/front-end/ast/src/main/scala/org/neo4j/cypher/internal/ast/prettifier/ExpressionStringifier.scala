@@ -235,7 +235,7 @@ private class DefaultExpressionStringifier(
         s"any${prettyScope(scope, expression)}"
 
       case Not(arg) =>
-        s"not ${inner(ast)(arg)}"
+        s"NOT ${inner(ast)(arg)}"
 
       case ListComprehension(s, expression) =>
         val v = apply(s.variable)
@@ -396,9 +396,9 @@ private class DefaultExpressionStringifier(
         }
         s"$prefix(${apply(elementIdExpr)})"
 
-      case NoneOfRelationships(rel, relList) => s"not ${apply(rel)} in ${apply(relList)}"
+      case NoneOfRelationships(rel, relList) => s"NOT ${apply(rel)} IN ${apply(relList)}"
 
-      case DifferentRelationships(rel1, rel2) => s"not ${apply(rel1)} = ${apply(rel2)}"
+      case DifferentRelationships(rel1, rel2) => s"NOT ${apply(rel1)} = ${apply(rel2)}"
 
       case Disjoint(rel1, rel2) => s"disjoint(${apply(rel1)}, ${apply(rel2)})"
 

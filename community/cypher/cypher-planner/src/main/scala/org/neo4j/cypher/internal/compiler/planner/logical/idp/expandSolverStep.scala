@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.ConvertToNFA
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
@@ -26,9 +27,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.p
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
@@ -37,14 +40,22 @@ import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.exceptions.InternalException
 
 import scala.collection.immutable.ListSet
 
@@ -106,6 +117,7 @@ object expandSolverStep {
 
     /**
      * Get the precomputed RHS plan for a [[QuantifiedPathPattern]].
+     *
      * @param trailOption the [[QuantifiedPathPattern]] and also whether we are "expanding" from left or from right.
      * @return the RHS plan.
      */
@@ -236,11 +248,11 @@ object expandSolverStep {
   /**
    * On top of the given source plan, plan  the given [[NodeConnection]], if `nodeId` has been solved already.
    *
-   * @param qg the [[QueryGraph]] that is currently being planned.
+   * @param qg             the [[QueryGraph]] that is currently being planned.
    * @param nodeConnection the [[NodeConnection]] to plan
-   * @param sourcePlan the plan to plan on top of
-   * @param nodeId the node to start the expansion from.
-   * @param qppInnerPlans the precomputed inner plans of [[QuantifiedPathPattern]]s
+   * @param sourcePlan     the plan to plan on top of
+   * @param nodeId         the node to start the expansion from.
+   * @param qppInnerPlans  the precomputed inner plans of [[QuantifiedPathPattern]]s
    */
   def planSinglePatternSide(
     qg: QueryGraph,
@@ -289,17 +301,18 @@ object expandSolverStep {
           qppInnerPlans,
           qg.selections.flatPredicates
         )
-      case spp: SelectivePathPattern => ??? // TODO
+      case spp: SelectivePathPattern =>
+        produceStatefulShortestLogicalPlan(spp, sourcePlan, nodeId, availableSymbols, qg.selections, context)
     }
   }
 
   /**
    * On top of the given source plan, plan the given [[PatternRelationship]].
    *
-   * @param qg             the [[QueryGraph]] that is currently being planned.
-   * @param patternRel     the [[PatternRelationship]] to plan
-   * @param sourcePlan     the plan to plan on top of
-   * @param nodeId         the node to start the expansion from.
+   * @param qg                  the [[QueryGraph]] that is currently being planned.
+   * @param patternRelationship the [[PatternRelationship]] to plan
+   * @param sourcePlan          the plan to plan on top of
+   * @param nodeId              the node to start the expansion from.
    */
   def produceExpandLogicalPlan(
     qg: QueryGraph,
@@ -386,7 +399,7 @@ object expandSolverStep {
     val endBinding = if (fromLeft) updatedQpp.rightBinding else updatedQpp.leftBinding
     val originalEndBinding = if (fromLeft) quantifiedPathPattern.rightBinding else quantifiedPathPattern.leftBinding
 
-    // If we both the start and the end are already bound, we need to plan an extra filter to verify that we expanded to the right end nodes.
+    // If both the start and the end are already bound, we need to plan an extra filter to verify that we expanded to the right end nodes.
     val maybeHiddenFilter =
       if (originalEndBinding.outer != endBinding.outer) {
         Some(equalsPredicate(endBinding.outer, originalEndBinding.outer))
@@ -447,4 +460,142 @@ object expandSolverStep {
       reverseGroupVariableProjections = !fromLeft
     )
   }
+
+  private def produceStatefulShortestLogicalPlan(
+    spp: SelectivePathPattern,
+    sourcePlan: LogicalPlan,
+    startNode: String,
+    availableSymbols: Set[String],
+    queryGraphSelections: Selections,
+    context: LogicalPlanningContext
+  ) = {
+    val fromLeft = startNode == spp.left
+    val endNode = if (fromLeft) spp.right else spp.left
+
+    // Check unsupported cases
+    val strictInteriorVariables = spp.pathVariables.init.tail
+    val overlap = (availableSymbols + endNode).intersect(strictInteriorVariables.toSet)
+    if (overlap.nonEmpty) {
+      throw new InternalException(
+        s"The selective path pattern overlaps in interior variables with previously bound symbols or end node: $overlap"
+      )
+    }
+    val duplicateVariables = strictInteriorVariables
+      .groupBy(identity)
+      .filter(_._2.length > 1)
+      .keys
+    if (duplicateVariables.nonEmpty) {
+      throw new InternalException(
+        s"Repeating variables $duplicateVariables inside a selective path pattern is currently not supported."
+      )
+    }
+
+    val unsolvedPredicatesOnEndNode = queryGraphSelections
+      .predicatesGiven(availableSymbols + endNode)
+      .filterNot(predicate =>
+        context.staticComponents.planningAttributes.solveds
+          .get(sourcePlan.id)
+          .asSinglePlannerQuery
+          .exists(_.queryGraph.selections.contains(predicate))
+      )
+
+    if (availableSymbols.contains(endNode)) {
+      // If both the start and the end are already bound, we need to plan an extra filter to verify that we expanded to the right end nodes.
+      val newEndNode = context.staticComponents.anonymousVariableNameGenerator.nextName
+      val hiddenFilter = equalsPredicate(newEndNode, endNode)
+      val rewriter = topDown(Rewriter.lift {
+        case v @ Variable(`endNode`) => Variable(newEndNode)(v.position)
+      })
+
+      val newSpp = (if (fromLeft) spp.withRight(newEndNode) else spp.withLeft(newEndNode)).copy(
+        selections = Selections.from(spp.selections.flatPredicatesSet.endoRewrite(rewriter))
+      )
+      val newUnsolvedPredicatesOnEndNode = unsolvedPredicatesOnEndNode.endoRewrite(rewriter)
+
+      convertToNFAAndPlan(
+        newSpp,
+        sourcePlan,
+        startNode,
+        fromLeft,
+        newEndNode,
+        availableSymbols + newEndNode,
+        spp,
+        newUnsolvedPredicatesOnEndNode,
+        Some(hiddenFilter),
+        context
+      )
+    } else {
+      convertToNFAAndPlan(
+        spp,
+        sourcePlan,
+        startNode,
+        fromLeft,
+        endNode,
+        availableSymbols,
+        spp,
+        unsolvedPredicatesOnEndNode,
+        None,
+        context
+      )
+    }
+  }
+
+  private def convertToNFAAndPlan(
+    spp: SelectivePathPattern,
+    sourcePlan: LogicalPlan,
+    startNode: String,
+    fromLeft: Boolean,
+    newEndNode: String,
+    availableSymbols: Set[String],
+    solvedSpp: SelectivePathPattern,
+    unsolvedPredicatesOnTargetNode: Seq[Expression],
+    maybeHiddenFilter: Option[Expression],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val (nfa, nonInlinedSelections) =
+      ConvertToNFA.convertToNfa(spp, fromLeft, availableSymbols, unsolvedPredicatesOnTargetNode)
+    val solvedExpressionAsString =
+      spp.copy(selections = spp.selections ++ unsolvedPredicatesOnTargetNode)
+        .solvedString
+
+    val selector = convertFromIr(spp.selector)
+    val nodeVariableGroupings = spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings.map(convertFromIr))
+    val relationshipVariableGroupings =
+      spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings.map(convertFromIr))
+    val nonInlinablePreFilters =
+      Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
+
+    val singletonVariables =
+      (spp.coveredIds -- spp.allQuantifiedPathPatterns.flatMap(_.groupings) - startNode).map(varFor)
+        .toSet[LogicalVariable]
+
+    context.staticComponents.logicalPlanProducer.planStatefulShortest(
+      sourcePlan,
+      startNode,
+      newEndNode,
+      nfa,
+      nonInlinablePreFilters,
+      nodeVariableGroupings,
+      relationshipVariableGroupings,
+      singletonVariables,
+      selector,
+      maybeHiddenFilter,
+      solvedExpressionAsString,
+      solvedSpp,
+      unsolvedPredicatesOnTargetNode,
+      context
+    )
+  }
+
+  private def convertFromIr: SelectivePathPattern.Selector => StatefulShortestPath.Selector = {
+    // for now we will implement ANY via SHORTEST.
+    case SelectivePathPattern.Selector.Any(k)            => StatefulShortestPath.Selector.Shortest(k)
+    case SelectivePathPattern.Selector.ShortestGroups(k) => StatefulShortestPath.Selector.ShortestGroups(k)
+    case SelectivePathPattern.Selector.Shortest(k)       => StatefulShortestPath.Selector.Shortest(k)
+  }
+
+  // this should go eventually when we have Variables instead of Strings in IR
+  private def convertFromIr(variableGrouping: VariableGrouping) =
+    Trail.VariableGrouping(varFor(variableGrouping.singletonName), varFor(variableGrouping.groupName))
+
 }
