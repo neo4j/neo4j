@@ -51,9 +51,14 @@ object AdministrationShowCommandUtils {
         })(InputPosition.NONE))
     }
 
-  private def calcOrderBy(r: ProjectionClause, symbols: List[String], defaultOrder: Seq[String]): Option[OrderBy] = {
+  private def calcOrderBy(
+    r: ProjectionClause,
+    symbols: List[String],
+    defaultOrder: Seq[String],
+    explicitlyOrdered: Boolean = false
+  ): Option[OrderBy] = {
     r.orderBy match {
-      case None => genDefaultOrderBy(symbols, defaultOrder)
+      case None => if (explicitlyOrdered) None else genDefaultOrderBy(symbols, defaultOrder)
       case _    => r.orderBy
     }
   }
@@ -89,8 +94,9 @@ object AdministrationShowCommandUtils {
 
     val yieldColumns: Option[Yield] =
       yields.map(y => y.copy(orderBy = calcOrderBy(y, yieldScope, defaultOrder))(y.position))
+    val explicitSort = yieldColumns.flatMap(y => y.orderBy.map(o => o.sortItems)).nonEmpty
     val returnColumns: Option[Return] =
-      returns.map(r => r.copy(orderBy = calcOrderBy(r, returnScope, defaultOrder))(r.position))
+      returns.map(r => r.copy(orderBy = calcOrderBy(r, returnScope, defaultOrder, explicitSort))(r.position))
 
     def symbolsToReturnItems(symbols: List[String]): List[ReturnItem] =
       symbols.map(s => UnaliasedReturnItem(Variable(s)(InputPosition.NONE), s)(InputPosition.NONE))

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowServers
+import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SortItem
@@ -89,6 +90,10 @@ case class normalizeWithAndReturnClauses(
         .withGraph(s.useGraph)
 
     case s @ ShowPrivilegeCommands(_, _, Some(Left((yields, returns))), _) =>
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
+        .withGraph(s.useGraph)
+
+    case s @ ShowSupportedPrivilegeCommand(Some(Left((yields, returns))), _) =>
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 

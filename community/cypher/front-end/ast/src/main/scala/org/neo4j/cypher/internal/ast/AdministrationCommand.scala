@@ -493,15 +493,14 @@ object ShowSupportedPrivilegeCommand {
   val DESCRIPTION: String = "description"
 
   def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowSupportedPrivilegeCommand = {
-    val allColumns =
+    val columns =
       List(
-        (ShowColumn(ACTION)(position), true),
-        (ShowColumn(QUALIFIER)(position), true),
-        (ShowColumn(TARGET)(position), true),
-        (ShowColumn(SCOPE, CTList(CTString))(position), true),
-        (ShowColumn(DESCRIPTION)(position), true)
+        ShowColumn(ACTION)(position),
+        ShowColumn(QUALIFIER)(position),
+        ShowColumn(TARGET)(position),
+        ShowColumn(SCOPE, CTList(CTString))(position),
+        ShowColumn(DESCRIPTION)(position)
       )
-    val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
     ShowSupportedPrivilegeCommand(yieldOrWhere, columns)(position)
   }
 }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowServers
+import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
@@ -59,6 +60,8 @@ case object expandShowWhere extends Step with PreparatoryRewritingRewriterFactor
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowPrivilegeCommands(_, _, Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
+    case s @ ShowSupportedPrivilegeCommand(Some(Right(where)), _) =>
+      s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowUsers(Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowCurrentUser(Some(Right(where)), _) =>
@@ -79,6 +82,9 @@ case object expandShowWhere extends Step with PreparatoryRewritingRewriterFactor
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
     case s @ ShowPrivilegeCommands(_, _, Some(Left((yieldClause, returnClause))), _)
+      if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
+    case s @ ShowSupportedPrivilegeCommand(Some(Left((yieldClause, returnClause))), _)
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
     case s @ ShowUsers(Some(Left((yieldClause, returnClause))), _)
