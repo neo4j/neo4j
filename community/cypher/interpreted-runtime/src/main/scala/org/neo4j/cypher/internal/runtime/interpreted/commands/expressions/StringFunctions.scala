@@ -132,13 +132,10 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 }
 
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
-    extends NullInNullOutExpression(orig) {
+    extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
-    val searchVal = search(ctx, state)
-    val replaceWithVal = replaceWith(ctx, state)
-    if ((searchVal eq NO_VALUE) || (replaceWithVal eq NO_VALUE)) NO_VALUE
-    else CypherFunctions.replace(value, searchVal, replaceWithVal)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
+    CypherFunctions.replace(orig(ctx, state), search(ctx, state), replaceWith(ctx, state))
   }
 
   override def arguments: Seq[Expression] = Seq(orig, search, replaceWith)

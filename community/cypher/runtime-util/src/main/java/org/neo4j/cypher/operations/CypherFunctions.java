@@ -688,11 +688,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue replace(AnyValue original, AnyValue search, AnyValue replaceWith) {
-        assert original != NO_VALUE && search != NO_VALUE && replaceWith != NO_VALUE
-                : "NO_VALUE checks need to happen outside this call";
-
-        if (original instanceof TextValue) {
+    public static AnyValue replace(AnyValue original, AnyValue search, AnyValue replaceWith) {
+        if (original == NO_VALUE || search == NO_VALUE || replaceWith == NO_VALUE) {
+            return NO_VALUE;
+        } else if (original instanceof TextValue) {
             return ((TextValue) original).replace(asString(search), asString(replaceWith));
         } else {
             throw notAString("replace", original);
