@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage.validation;
 
+import static java.lang.System.lineSeparator;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_dump_transaction_validation_page_locks;
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
 import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
 import static org.neo4j.lock.ResourceType.PAGE;
@@ -45,31 +47,45 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
 public class TransactionCommandValidator implements CommandVisitor, TransactionValidator {
 
     private static final int PAGE_ID_BITS = 54;
+    private static final long PAGE_ID_MASK = 1L << PAGE_ID_BITS - 1;
     private final NeoStores neoStores;
     private final LockManager.Client validationLockClient;
     private final MemoryTracker memoryTracker;
     private final Config config;
+    private final DatabaseHealth databaseHealth;
     private final PageCursor[] validationCursors;
+    private final Log log;
     private EnumMap<StoreType, MutableLongSet> checkedPages;
     private LockTracer lockTracer;
     private CursorContext cursorContext;
 
     public TransactionCommandValidator(
-            NeoStores neoStores, LockManager lockManager, MemoryTracker memoryTracker, Config config) {
+            NeoStores neoStores,
+            LockManager lockManager,
+            MemoryTracker memoryTracker,
+            Config config,
+            LogProvider logProvider,
+            DatabaseHealth databaseHealth) {
         this.neoStores = neoStores;
         this.validationLockClient = lockManager.newClient();
         this.memoryTracker = memoryTracker;
         this.config = config;
+        this.databaseHealth = databaseHealth;
         this.validationCursors = new PageCursor[STORE_TYPES.length];
         this.checkedPages = new EnumMap<>(StoreType.class);
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
@@ -89,7 +105,11 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
             for (StorageCommand command : commands) {
                 ((Command) command).handle(this);
             }
-            return validationLockClient::close;
+
+            Resource closeLocksResult = validationLockClient::close;
+            return config.get(multi_version_dump_transaction_validation_page_locks)
+                    ? new DumpStateResourceWrapper(closeLocksResult, validationLockClient, log, databaseHealth)
+                    : closeLocksResult;
         } catch (TransactionConflictException tce) {
             validationLockClient.close();
             throw tce;
@@ -246,5 +266,52 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
             }
         }
         checkedStorePages.add(pageId);
+    }
+
+    private static class DumpStateResourceWrapper implements Resource {
+
+        private final Resource delegate;
+        private final LockManager.Client lockClient;
+        private final Log log;
+        private final DatabaseHealth databaseHealth;
+
+        private DumpStateResourceWrapper(
+                Resource delegate, LockManager.Client lockClient, Log log, DatabaseHealth databaseHealth) {
+            this.delegate = delegate;
+            this.lockClient = lockClient;
+            this.log = log;
+            this.databaseHealth = databaseHealth;
+        }
+
+        @Override
+        public void close() {
+            if (!databaseHealth.hasNoPanic()) {
+                describeStateOnFailure();
+            }
+            delegate.close();
+        }
+
+        private void describeStateOnFailure() {
+            StringBuilder locksDumpBuilder = new StringBuilder();
+            locksDumpBuilder.append("Transaction ").append(lockClient.getTransactionId());
+            var locks = lockClient.activeLocks();
+            if (locks.isEmpty()) {
+                locksDumpBuilder.append(" does not have any validation locks.");
+            } else {
+                locksDumpBuilder.append(" locked page(s):").append(lineSeparator());
+                for (ActiveLock activeLock : locks) {
+                    long resourceId = activeLock.resourceId();
+                    var storeType = StoreType.values()[(int) (resourceId >> PAGE_ID_BITS)];
+                    long pageId = resourceId & PAGE_ID_MASK;
+                    locksDumpBuilder
+                            .append(pageId)
+                            .append(" of ")
+                            .append(storeType)
+                            .append(" store")
+                            .append(lineSeparator());
+                }
+            }
+            log.error(locksDumpBuilder.toString());
+        }
     }
 }

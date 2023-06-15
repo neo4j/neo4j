@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -144,7 +144,7 @@ public interface KernelTransactionHandle {
     /**
      * @return the lock requests granted for this transaction.
      */
-    Stream<ActiveLock> activeLocks();
+    Collection<ActiveLock> activeLocks();
 
     /**
      * Provide underlying transaction execution statistics. For example: elapsed time, allocated bytes etc

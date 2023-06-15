@@ -28,13 +28,13 @@ import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongIntHashMap;
@@ -614,10 +614,10 @@ public class ForsetiClient implements LockManager.Client {
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks() {
+    public Collection<ActiveLock> activeLocks() {
         // We're iterating the global map instead of the client local maps because this can be called from separate
         // threads
-        List<ActiveLock> locks = new ArrayList<>();
+        var locks = new ArrayList<ActiveLock>();
         for (int typeId = 0; typeId < lockMaps.length; typeId++) {
             ResourceType resourceType = ResourceType.fromId(typeId);
             ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[typeId];
@@ -629,7 +629,7 @@ public class ForsetiClient implements LockManager.Client {
                 });
             }
         }
-        return locks.stream();
+        return locks;
     }
 
     @Override

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,8 +27,6 @@ import static org.neo4j.lock.ResourceType.LABEL;
 import static org.neo4j.lock.ResourceType.NODE;
 import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 
-import java.util.HashSet;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
@@ -51,7 +48,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         clientA.acquireExclusive(LockTracer.NONE, NODE, 1);
 
         assertEquals(1, clientA.activeLockCount());
-        var lock = clientA.activeLocks().findFirst().get();
+        var lock = clientA.activeLocks().iterator().next();
         assertEquals(15, lock.transactionId());
     }
 
@@ -143,17 +140,17 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         clientA.acquireShared(LockTracer.NONE, NODE, 3, 4, 5);
 
         // when
-        Stream<ActiveLock> locks = clientA.activeLocks();
+        var locks = clientA.activeLocks();
 
         // then
         assertEquals(
-                new HashSet<>(asList(
+                asList(
                         new ActiveLock(NODE, LockType.EXCLUSIVE, 1, 1),
                         new ActiveLock(NODE, LockType.EXCLUSIVE, 1, 2),
                         new ActiveLock(NODE, LockType.EXCLUSIVE, 1, 3),
                         new ActiveLock(NODE, LockType.SHARED, 1, 4),
-                        new ActiveLock(NODE, LockType.SHARED, 1, 5))),
-                locks.collect(toSet()));
+                        new ActiveLock(NODE, LockType.SHARED, 1, 5)),
+                locks);
     }
 
     @Test

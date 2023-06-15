@@ -27,13 +27,11 @@ import static org.neo4j.test.Race.throwing;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +42,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
@@ -306,7 +303,7 @@ class ForsetiLockManagerTest {
                     .withAll(exclusiveLocks.keySet())
                     .withAll(sharedLocks.keySet())
                     .size();
-            List<ActiveLock> activeLocks = client.activeLocks().collect(Collectors.toList());
+            var activeLocks = client.activeLocks();
 
             assertThat(client.activeLockCount()).isEqualTo(totalLocks);
             assertThat(activeLocks.size()).isEqualTo(client.activeLockCount());

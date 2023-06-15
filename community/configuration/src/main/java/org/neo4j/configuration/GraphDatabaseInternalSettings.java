@@ -1053,6 +1053,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Dump transaction validation page locks on multi versioned transaction failure.")
+    public static final Setting<Boolean> multi_version_dump_transaction_validation_page_locks = newBuilder(
+                    "internal.db.multiversion.transaction.validation.locks.dump", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Page Cache Warmer blocks database start until it's completed")
     public static final Setting<Boolean> pagecache_warmup_blocking = newBuilder(
                     "internal.db.memory.pagecache.warmup.blocking_enabled", BOOL, false)

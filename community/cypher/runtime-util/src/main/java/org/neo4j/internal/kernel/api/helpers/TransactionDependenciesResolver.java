@@ -20,12 +20,11 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 import java.util.ArrayDeque;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -75,15 +74,10 @@ public class TransactionDependenciesResolver {
         return describe(allBlockers);
     }
 
-    public Map<String, Object> describeBlockingLocks(KernelTransactionHandle handle) {
-        Optional<QuerySnapshot> snapshot = handleSnapshotsMap.get(handle);
-        return snapshot.map(QuerySnapshot::resourceInformation).orElse(Collections.emptyMap());
-    }
-
     private Map<KernelTransactionHandle, Set<KernelTransactionHandle>> initDirectDependencies() {
         Map<KernelTransactionHandle, Set<KernelTransactionHandle>> directDependencies = new HashMap<>();
 
-        Map<KernelTransactionHandle, List<ActiveLock>> transactionLocksMap =
+        Map<KernelTransactionHandle, Collection<ActiveLock>> transactionLocksMap =
                 handleSnapshotsMap.keySet().stream().collect(toMap(identity(), getTransactionLocks()));
 
         for (Map.Entry<KernelTransactionHandle, Optional<QuerySnapshot>> entry : handleSnapshotsMap.entrySet()) {
@@ -96,18 +90,19 @@ public class TransactionDependenciesResolver {
         return directDependencies;
     }
 
-    private static Function<KernelTransactionHandle, List<ActiveLock>> getTransactionLocks() {
-        return transactionHandle -> transactionHandle.activeLocks().collect(toList());
+    private static Function<KernelTransactionHandle, Collection<ActiveLock>> getTransactionLocks() {
+        return KernelTransactionHandle::activeLocks;
     }
 
     private static void evaluateDirectDependencies(
             Map<KernelTransactionHandle, Set<KernelTransactionHandle>> directDependencies,
-            Map<KernelTransactionHandle, List<ActiveLock>> handleLocksMap,
+            Map<KernelTransactionHandle, Collection<ActiveLock>> handleLocksMap,
             KernelTransactionHandle txHandle,
             QuerySnapshot querySnapshot) {
         List<ActiveLock> waitingOnLocks = querySnapshot.waitingLocks();
         for (ActiveLock activeLock : waitingOnLocks) {
-            for (Map.Entry<KernelTransactionHandle, List<ActiveLock>> handleListEntry : handleLocksMap.entrySet()) {
+            for (Map.Entry<KernelTransactionHandle, Collection<ActiveLock>> handleListEntry :
+                    handleLocksMap.entrySet()) {
                 KernelTransactionHandle kernelTransactionHandle = handleListEntry.getKey();
                 if (!kernelTransactionHandle.equals(txHandle)) {
                     if (isBlocked(activeLock, handleListEntry.getValue())) {
@@ -120,17 +115,18 @@ public class TransactionDependenciesResolver {
         }
     }
 
-    private static boolean isBlocked(ActiveLock activeLock, List<ActiveLock> activeLocks) {
+    private static boolean isBlocked(ActiveLock activeLock, Collection<ActiveLock> activeLocks) {
         return EXCLUSIVE == activeLock.lockType()
                 ? haveAnyLocking(activeLocks, activeLock.resourceType(), activeLock.resourceId())
                 : haveExclusiveLocking(activeLocks, activeLock.resourceType(), activeLock.resourceId());
     }
 
-    private static boolean haveAnyLocking(List<ActiveLock> locks, ResourceType resourceType, long resourceId) {
+    private static boolean haveAnyLocking(Collection<ActiveLock> locks, ResourceType resourceType, long resourceId) {
         return locks.stream().anyMatch(lock -> lock.resourceId() == resourceId && lock.resourceType() == resourceType);
     }
 
-    private static boolean haveExclusiveLocking(List<ActiveLock> locks, ResourceType resourceType, long resourceId) {
+    private static boolean haveExclusiveLocking(
+            Collection<ActiveLock> locks, ResourceType resourceType, long resourceId) {
         return locks.stream()
                 .anyMatch(lock -> EXCLUSIVE == lock.lockType()
                         && lock.resourceId() == resourceId

@@ -416,7 +416,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         if (!"multiversion".equals(config.get(db_format))) {
             return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
-        return new TransactionCommandValidatorFactory(neoStores, storageEngineFactory, config, clock);
+        return new TransactionCommandValidatorFactory(
+                neoStores, storageEngineFactory, config, clock, internalLogProvider, databaseHealth);
     }
 
     @Override

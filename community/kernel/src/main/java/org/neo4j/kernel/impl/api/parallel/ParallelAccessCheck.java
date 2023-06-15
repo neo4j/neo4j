@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.parallel;
 import static org.neo4j.scheduler.Group.CYPHER_WORKER;
 import static org.neo4j.util.FeatureToggles.flag;
 
-import java.util.stream.Stream;
+import java.util.Collection;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockManager;
@@ -92,7 +92,7 @@ public class ParallelAccessCheck {
         }
 
         @Override
-        public Stream<ActiveLock> activeLocks() {
+        public Collection<ActiveLock> activeLocks() {
             checkNotCypherWorkerThread();
             return wrappedLockClient.activeLocks();
         }

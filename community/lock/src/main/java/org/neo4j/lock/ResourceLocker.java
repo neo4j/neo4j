@@ -20,7 +20,8 @@
 package org.neo4j.lock;
 
 import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * A {@link ResourceLocker} can acquire and release both exclusive and shared locks.
@@ -73,7 +74,7 @@ public interface ResourceLocker {
     /**
      * @return all locks that are "active", i.e. either locked or being awaited to be locked.
      */
-    Stream<ActiveLock> activeLocks();
+    Collection<ActiveLock> activeLocks();
 
     /**
      * Checks whether or not this client currently owns the given lock.
@@ -118,8 +119,8 @@ public interface ResourceLocker {
         }
 
         @Override
-        public Stream<ActiveLock> activeLocks() {
-            return Stream.empty();
+        public Collection<ActiveLock> activeLocks() {
+            return Collections.emptyList();
         }
 
         @Override
@@ -147,8 +148,8 @@ public interface ResourceLocker {
         public void releaseShared(ResourceType resourceType, long... resourceIds) {}
 
         @Override
-        public Stream<ActiveLock> activeLocks() {
-            return Stream.empty();
+        public Collection<ActiveLock> activeLocks() {
+            return Collections.emptyList();
         }
 
         @Override

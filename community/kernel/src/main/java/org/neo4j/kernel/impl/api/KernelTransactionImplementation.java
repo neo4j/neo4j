@@ -34,6 +34,8 @@ import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.g
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 
 import java.time.Clock;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +45,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.collection.pool.Pool;
@@ -1393,9 +1394,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *
      * @return the locks held by this transaction.
      */
-    public Stream<ActiveLock> activeLocks() {
+    public Collection<ActiveLock> activeLocks() {
         LockManager.Client locks = this.lockClient;
-        return locks == null ? Stream.empty() : locks.activeLocks();
+        return locks == null ? Collections.emptyList() : locks.activeLocks();
     }
 
     @Override

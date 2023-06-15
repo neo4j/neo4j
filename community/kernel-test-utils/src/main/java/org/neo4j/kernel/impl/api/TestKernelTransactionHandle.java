@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import static java.util.Optional.ofNullable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -125,8 +125,8 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks() {
-        return Stream.empty();
+    public Collection<ActiveLock> activeLocks() {
+        return Collections.emptyList();
     }
 
     @Override

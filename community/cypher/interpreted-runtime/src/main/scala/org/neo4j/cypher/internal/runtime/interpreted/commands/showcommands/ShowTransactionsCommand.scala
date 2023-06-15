@@ -260,7 +260,7 @@ case class ShowTransactionsCommand(
           val resourceInformation = getMapValue(
             querySnapshot.map[util.Map[String, AnyRef]](_.resourceInformation()).orElse(util.Collections.emptyMap())
           )
-          val activeLockCount = transaction.activeLocks.count
+          val activeLockCount = transaction.activeLocks.size()
           val cpuTime = getDurationOrNullFromMillis(statistic.getCpuTimeMillis)
           val waitTime = Values.durationValue(Duration.ofMillis(statistic.getWaitTimeMillis))
           val idleTime = getDurationOrNullFromMillis(statistic.getIdleTimeMillis)

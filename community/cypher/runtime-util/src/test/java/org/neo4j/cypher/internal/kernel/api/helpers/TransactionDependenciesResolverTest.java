@@ -30,12 +30,12 @@ import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
@@ -197,8 +197,8 @@ class TransactionDependenciesResolverTest {
         }
 
         @Override
-        public Stream<ActiveLock> activeLocks() {
-            return locks.stream();
+        public Collection<ActiveLock> activeLocks() {
+            return locks;
         }
 
         @Override

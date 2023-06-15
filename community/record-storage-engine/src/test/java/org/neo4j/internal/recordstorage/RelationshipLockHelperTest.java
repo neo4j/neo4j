@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.eclipse.collections.api.bag.primitive.MutableLongBag;
 import org.eclipse.collections.api.factory.SortedSets;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -208,7 +207,7 @@ class RelationshipLockHelperTest {
         RelationshipLockHelper.lockRelationshipsInOrder(
                 idsAsBatch(idsToDelete), 2, relRecords, locks, EmptyMemoryTracker.INSTANCE);
 
-        List<ActiveLock> activeLocks = locks.activeLocks().collect(Collectors.toList());
+        var activeLocks = locks.activeLocks();
         assertThat(activeLocks)
                 .hasSize(4)
                 .contains(new ActiveLock(ResourceType.RELATIONSHIP, LockType.EXCLUSIVE, -1, 1))

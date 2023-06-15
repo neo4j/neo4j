@@ -25,11 +25,11 @@ import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.bag.sorted.MutableSortedBag;
 import org.eclipse.collections.api.factory.SortedBags;
@@ -139,11 +139,11 @@ class TrackingResourceLocker implements ResourceLocker {
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks() {
+    public Collection<ActiveLock> activeLocks() {
         List<ActiveLock> locks = new ArrayList<>();
         gatherActiveLocks(locks, exclusiveLocks, EXCLUSIVE);
         gatherActiveLocks(locks, sharedLocks, LockType.SHARED);
-        return locks.stream();
+        return locks;
     }
 
     @Override
@@ -234,7 +234,7 @@ class TrackingResourceLocker implements ResourceLocker {
             public void releaseShared(ResourceType resourceType, long... resourceIds) {}
 
             @Override
-            public Stream<ActiveLock> activeLocks() {
+            public Collection<ActiveLock> activeLocks() {
                 return actual.activeLocks();
             }
 
