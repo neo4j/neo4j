@@ -28,7 +28,7 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 
-abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
+abstract class StringFunction(arg: Expression) extends Expression {
 
   def innerExpectedType: CypherType = CTString
 
@@ -38,8 +38,8 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
 
 case class ToStringFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toString(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toString(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
 
@@ -48,8 +48,8 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
 
 case class ToStringOrNullFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toStringOrNull(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toStringOrNull(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(ToStringOrNullFunction(argument.rewrite(f)))
 
@@ -58,8 +58,8 @@ case class ToStringOrNullFunction(argument: Expression) extends StringFunction(a
 
 case class ToStringListFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toStringList(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toStringList(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(ToStringListFunction(argument.rewrite(f)))
 
@@ -68,7 +68,7 @@ case class ToStringListFunction(argument: Expression) extends StringFunction(arg
 
 case class ToLowerFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toLower(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toLower(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(ToLowerFunction(argument.rewrite(f)))
 
@@ -77,7 +77,7 @@ case class ToLowerFunction(argument: Expression) extends StringFunction(argument
 
 case class ToUpperFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toUpper(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.toUpper(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(ToUpperFunction(argument.rewrite(f)))
 
@@ -86,8 +86,8 @@ case class ToUpperFunction(argument: Expression) extends StringFunction(argument
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.ltrim(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.ltrim(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(LTrimFunction(argument.rewrite(f)))
 
@@ -96,8 +96,8 @@ case class LTrimFunction(argument: Expression) extends StringFunction(argument) 
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.rtrim(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.rtrim(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(RTrimFunction(argument.rewrite(f)))
 
@@ -106,8 +106,8 @@ case class RTrimFunction(argument: Expression) extends StringFunction(argument) 
 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.trim(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.trim(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(TrimFunction(argument.rewrite(f)))
 

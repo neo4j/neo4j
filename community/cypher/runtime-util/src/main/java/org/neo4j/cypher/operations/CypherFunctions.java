@@ -636,27 +636,30 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue ltrim(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue) {
+    public static AnyValue ltrim(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof TextValue) {
             return ((TextValue) in).ltrim();
         } else {
             throw notAString("ltrim", in);
         }
     }
 
-    public static TextValue rtrim(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue) {
+    public static AnyValue rtrim(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof TextValue) {
             return ((TextValue) in).rtrim();
         } else {
             throw notAString("rtrim", in);
         }
     }
 
-    public static TextValue trim(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue) {
+    public static AnyValue trim(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof TextValue) {
             return ((TextValue) in).trim();
         } else {
             throw notAString("trim", in);
@@ -748,18 +751,20 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue toLower(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue) {
+    public static AnyValue toLower(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof TextValue) {
             return ((TextValue) in).toLower();
         } else {
             throw notAString("toLower", in);
         }
     }
 
-    public static TextValue toUpper(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue) {
+    public static AnyValue toUpper(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof TextValue) {
             return ((TextValue) in).toUpper();
         } else {
             throw notAString("toUpper", in);
