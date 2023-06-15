@@ -491,6 +491,66 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("periodic commit with lucene+native index reads") {
+    val url = multipleColumnCsvFile(withHeaders = true)
+
+    given {
+      nodeIndexWithProvider("lucene+native-3.0", "L", "prop")
+      nodePropertyGraph(sizeHint / 2, { case i => Map("prop" -> (testValueOffset + i).toString) }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this,
+      hasLoadCsv = true,
+      periodicCommitBatchSize = Some(2))
+      .produceResults("a")
+      .apply()
+      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .loadCSV(url, "row", HasHeaders)
+      .argument()
+      .build(readOnly = false)
+
+    val executablePlan = buildPlan(logicalQuery, runtime)
+
+    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("a")
+      .withRows(RowCount(testRange.size))
+      .withStatistics(
+        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(testRange.size / 2)
+      )
+  }
+
+  test("periodic commit with lucene+native index reads 2") {
+    val url = multipleColumnCsvFile(withHeaders = true)
+
+    given {
+      nodeIndexWithProvider("lucene+native-3.0", "L", "prop")
+      nodePropertyGraph(sizeHint / 2, { case i => Map("prop" -> (testValueOffset + i).toString) }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this,
+      hasLoadCsv = true,
+      periodicCommitBatchSize = Some(2))
+      .produceResults("a")
+      .apply()
+      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .filter("rand() < 0.5")
+      .loadCSV(url, "row", HasHeaders)
+      .argument()
+      .build(readOnly = false)
+
+    val executablePlan = buildPlan(logicalQuery, runtime)
+
+    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+
+    // Should consume without exceptions
+    consume(runtimeResult)
+  }
+
   /**
    * We currently only support to count transactions for interpreted and slotted runtime. To account for that, this method switches accordingly.
    */

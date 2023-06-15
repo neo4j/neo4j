@@ -31,13 +31,21 @@ trait ExternalCSVResource {
                      legacyCsvQuoteEscaping: Boolean,
                      bufferSize: Int,
                      headers: Boolean = false): LoadCsvIterator
+  def subscribeCommitted(onCommit: () => Unit): Unit = {}
 }
 
 object ExternalCSVResource {
 
-  def empty: ExternalCSVResource =
-    (_: URL, _: List[IPAddressString], _: Option[String], _: Boolean,
-                                    _: Int, _: Boolean) => LoadCsvIterator.empty
+  def empty: ExternalCSVResource = new ExternalCSVResource {
+    override def getCsvIterator(
+      url: URL,
+      ipBlocklist: List[IPAddressString],
+      fieldTerminator: Option[String],
+      legacyCsvQuoteEscaping: Boolean,
+      bufferSize: Int,
+      headers: Boolean
+    ): LoadCsvIterator = LoadCsvIterator.empty
+  }
 }
 
 trait LoadCsvIterator extends ClosingIterator[Array[Value]] {

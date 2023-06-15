@@ -61,6 +61,10 @@ class QueryState(
   val input: InputDataStream = NoInput
 ) extends AutoCloseable {
 
+  if (resources != null) {
+    resources.subscribeCommitted(() => initialiseIndexReadSessions())
+  }
+
   private var _pathValueBuilder: PathValueBuilder = _
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
@@ -167,6 +171,14 @@ class QueryState(
       query.close()
     }
     _closed = true
+  }
+
+  private def initialiseIndexReadSessions(): Unit = {
+    var i = 0
+    while (i < queryIndexes.length) {
+      queryIndexes(i) = query.transactionalContext.dataRead.indexReadSession(queryIndexes(i).reference())
+      i += 1
+    }
   }
 }
 

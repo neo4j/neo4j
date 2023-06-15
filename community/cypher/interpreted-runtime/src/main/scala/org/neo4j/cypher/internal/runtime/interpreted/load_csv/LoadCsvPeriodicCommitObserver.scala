@@ -98,5 +98,12 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
     // Add back
     trackedResources.foreach(queryContext.resources.trace)
     outerLoadCSVIterator.foreach(_.notifyCommit())
+    onCommitHandlers.foreach(_.apply())
+  }
+
+  private var onCommitHandlers = Seq.empty[() => Unit]
+
+  override def subscribeCommitted(onCommit: () => Unit): Unit = {
+    onCommitHandlers = onCommit +: onCommitHandlers
   }
 }

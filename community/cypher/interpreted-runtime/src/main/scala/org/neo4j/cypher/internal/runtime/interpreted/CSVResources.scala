@@ -77,7 +77,7 @@ case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseLi
 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {
 
-  def getCsvIterator(url: URL,
+  override def getCsvIterator(url: URL,
                      ipBlocklist: List[IPAddressString],
                      fieldTerminator: Option[String],
                      legacyCsvQuoteEscaping: Boolean,
