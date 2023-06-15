@@ -24,15 +24,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.NO_VALUE
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
 
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = relExpression(row, state) match {
-    case x if x eq NO_VALUE => NO_VALUE
-    case value =>
-      if (start) CypherFunctions.startNode(value, state.query, state.cursors.relationshipScanCursor)
-      else CypherFunctions.endNode(value, state.query, state.cursors.relationshipScanCursor)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    if (start) CypherFunctions.startNode(relExpression(row, state), state.query, state.cursors.relationshipScanCursor)
+    else CypherFunctions.endNode(relExpression(row, state), state.query, state.cursors.relationshipScanCursor)
   }
 
   override def arguments: Seq[Expression] = Seq(relExpression)

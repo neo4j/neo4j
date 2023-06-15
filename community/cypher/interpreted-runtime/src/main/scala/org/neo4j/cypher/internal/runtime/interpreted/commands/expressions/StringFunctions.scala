@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.NO_VALUE
 
 abstract class StringFunction(arg: Expression) extends Expression {
 
@@ -184,8 +183,7 @@ case class LeftFunction(orig: Expression, length: Expression)
 case class RightFunction(orig: Expression, length: Expression)
     extends Expression {
 
-  override def apply(row: ReadableRow,
-                     state: QueryState): AnyValue =
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
     CypherFunctions.right(orig(row, state), length(row, state))
 
   override def arguments: Seq[Expression] = Seq(orig, length)

@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
-case class ElementIdListToNodeIdListFunction(rhs: Expression) extends NullInNullOutExpression(rhs) {
+case class ElementIdListToNodeIdListFunction(rhs: Expression) extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
-    CypherFunctions.elementIdListToNodeIdList(value, state.query.elementIdMapper())
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
+    CypherFunctions.elementIdListToNodeIdList(rhs(ctx, state), state.query.elementIdMapper())
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(ElementIdListToNodeIdListFunction(rhs.rewrite(f)))

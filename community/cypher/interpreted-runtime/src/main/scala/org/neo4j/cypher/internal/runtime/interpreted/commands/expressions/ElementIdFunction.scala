@@ -19,20 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 
 case class ElementIdFunction(inner: Expression) extends Expression {
 
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = inner(row, state) match {
-    case IsNoValue() => Values.NO_VALUE
-    case entity      => CypherFunctions.elementId(entity, state.query.elementIdMapper())
-  }
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.elementId(inner(row, state), state.query.elementIdMapper())
 
   override def rewrite(f: Expression => Expression): Expression = f(ElementIdFunction(inner.rewrite(f)))
 

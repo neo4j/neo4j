@@ -24,13 +24,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.ListValue
 
-case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
+case class KeysFunction(expr: Expression) extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): ListValue =
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
     CypherFunctions.keys(
-      value,
+      expr(ctx, state),
       state.query,
       state.cursors.nodeCursor,
       state.cursors.relationshipScanCursor,

@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
-case class NodesFunction(path: Expression) extends NullInNullOutExpression(path) {
+case class NodesFunction(path: Expression) extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.nodes(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.nodes(path(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(NodesFunction(path.rewrite(f)))
 

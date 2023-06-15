@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
-case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inner) {
+case class LengthFunction(inner: Expression) extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.length(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.length(inner(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(LengthFunction(inner.rewrite(f)))
 

@@ -26,9 +26,9 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
 case class SizeFunction(inner: Expression)
-    extends NullInNullOutExpression(inner) {
+    extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.size(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.size(inner(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(SizeFunction(inner.rewrite(f)))
 

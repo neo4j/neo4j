@@ -83,7 +83,6 @@ import org.neo4j.values.storable.IntegralArray;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
-import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -120,125 +119,134 @@ public final class CypherFunctions {
         throw new UnsupportedOperationException("Do not instantiate");
     }
 
-    public static DoubleValue sin(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
+    public static AnyValue sin(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue) {
             return doubleValue(Math.sin(((NumberValue) in).doubleValue()));
         } else {
             throw needsNumbers("sin()");
         }
     }
 
-    public static DoubleValue asin(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.asin(((NumberValue) in).doubleValue()));
+    public static AnyValue asin(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.asin(number.doubleValue()));
         } else {
             throw needsNumbers("asin()");
         }
     }
 
-    public static DoubleValue haversin(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue((1.0 - Math.cos(((NumberValue) in).doubleValue())) / 2);
+    public static AnyValue haversin(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue((1.0 - Math.cos(number.doubleValue())) / 2);
         } else {
             throw needsNumbers("haversin()");
         }
     }
 
-    public static DoubleValue cos(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.cos(((NumberValue) in).doubleValue()));
+    public static AnyValue cos(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.cos(number.doubleValue()));
         } else {
             throw needsNumbers("cos()");
         }
     }
 
-    public static DoubleValue cot(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(1.0 / Math.tan(((NumberValue) in).doubleValue()));
+    public static AnyValue cot(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(1.0 / Math.tan(number.doubleValue()));
         } else {
             throw needsNumbers("cot()");
         }
     }
 
-    public static DoubleValue acos(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.acos(((NumberValue) in).doubleValue()));
+    public static AnyValue acos(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.acos(number.doubleValue()));
         } else {
             throw needsNumbers("acos()");
         }
     }
 
-    public static DoubleValue tan(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.tan(((NumberValue) in).doubleValue()));
+    public static AnyValue tan(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.tan(number.doubleValue()));
         } else {
             throw needsNumbers("tan()");
         }
     }
 
-    public static DoubleValue atan(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.atan(((NumberValue) in).doubleValue()));
+    public static AnyValue atan(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.atan(number.doubleValue()));
         } else {
             throw needsNumbers("atan()");
         }
     }
 
-    public static DoubleValue atan2(AnyValue y, AnyValue x) {
-        assert y != NO_VALUE && x != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (y instanceof NumberValue && x instanceof NumberValue) {
-            return doubleValue(Math.atan2(((NumberValue) y).doubleValue(), ((NumberValue) x).doubleValue()));
+    public static AnyValue atan2(AnyValue y, AnyValue x) {
+        if (y == NO_VALUE || x == NO_VALUE) {
+            return NO_VALUE;
+        } else if (y instanceof NumberValue yNumber && x instanceof NumberValue xNumber) {
+            return doubleValue(Math.atan2(yNumber.doubleValue(), xNumber.doubleValue()));
         } else {
             throw needsNumbers("atan2()");
         }
     }
 
-    public static DoubleValue ceil(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.ceil(((NumberValue) in).doubleValue()));
+    public static AnyValue ceil(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.ceil(number.doubleValue()));
         } else {
             throw needsNumbers("ceil()");
         }
     }
 
-    public static DoubleValue floor(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.floor(((NumberValue) in).doubleValue()));
+    public static AnyValue floor(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.floor(number.doubleValue()));
         } else {
             throw needsNumbers("floor()");
         }
     }
 
     @CalledFromGeneratedCode
-    public static DoubleValue round(AnyValue in) {
+    public static AnyValue round(AnyValue in) {
         return round(in, Values.ZERO_INT, Values.stringValue("HALF_UP"), Values.booleanValue(false));
     }
 
     @CalledFromGeneratedCode
-    public static DoubleValue round(AnyValue in, AnyValue precision) {
+    public static AnyValue round(AnyValue in, AnyValue precision) {
         return round(in, precision, Values.stringValue("HALF_UP"), Values.booleanValue(false));
     }
 
-    public static DoubleValue round(AnyValue in, AnyValue precisionValue, AnyValue modeValue) {
+    public static AnyValue round(AnyValue in, AnyValue precisionValue, AnyValue modeValue) {
         return round(in, precisionValue, modeValue, Values.booleanValue(true));
     }
 
-    public static DoubleValue round(
-            AnyValue in, AnyValue precisionValue, AnyValue modeValue, AnyValue explicitModeValue) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        assert precisionValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-
-        if (!(modeValue instanceof StringValue)) {
+    public static AnyValue round(AnyValue in, AnyValue precisionValue, AnyValue modeValue, AnyValue explicitModeValue) {
+        if (in == NO_VALUE || precisionValue == NO_VALUE || modeValue == NO_VALUE) {
+            return NO_VALUE;
+        } else if (!(modeValue instanceof StringValue)) {
             throw notAModeString("round", modeValue);
         }
 
@@ -250,14 +258,14 @@ public final class CypherFunctions {
                     "Unknown rounding mode. Valid values are: CEILING, FLOOR, UP, DOWN, HALF_EVEN, HALF_UP, HALF_DOWN, UNNECESSARY.");
         }
 
-        if (in instanceof NumberValue && precisionValue instanceof NumberValue) {
+        if (in instanceof NumberValue inNumber && precisionValue instanceof NumberValue) {
             int precision = asIntExact(precisionValue, () -> "Invalid input for precision value in function 'round()'");
             boolean explicitMode = ((BooleanValue) explicitModeValue).booleanValue();
 
             if (precision < 0) {
                 throw new InvalidArgumentException("Precision argument to 'round()' cannot be negative");
             } else {
-                double value = ((NumberValue) in).doubleValue();
+                double value = inNumber.doubleValue();
                 if (Double.isInfinite(value) || Double.isNaN(value)) {
                     return doubleValue(value);
                 }
@@ -279,22 +287,24 @@ public final class CypherFunctions {
         }
     }
 
-    public static NumberValue abs(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
+    public static AnyValue abs(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
             if (in instanceof IntegralValue) {
-                return longValue(Math.abs(((NumberValue) in).longValue()));
+                return longValue(Math.abs(number.longValue()));
             } else {
-                return doubleValue(Math.abs(((NumberValue) in).doubleValue()));
+                return doubleValue(Math.abs(number.doubleValue()));
             }
         } else {
             throw needsNumbers("abs()");
         }
     }
 
-    public static BooleanValue isNaN(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof FloatingPointValue f) {
+    public static AnyValue isNaN(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof FloatingPointValue f) {
             return booleanValue(f.isNaN());
         } else if (in instanceof NumberValue) {
             return BooleanValue.FALSE;
@@ -303,46 +313,51 @@ public final class CypherFunctions {
         }
     }
 
-    public static DoubleValue toDegrees(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.toDegrees(((NumberValue) in).doubleValue()));
+    public static AnyValue toDegrees(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.toDegrees(number.doubleValue()));
         } else {
             throw needsNumbers("toDegrees()");
         }
     }
 
-    public static DoubleValue exp(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.exp(((NumberValue) in).doubleValue()));
+    public static AnyValue exp(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.exp(number.doubleValue()));
         } else {
             throw needsNumbers("exp()");
         }
     }
 
-    public static DoubleValue log(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.log(((NumberValue) in).doubleValue()));
+    public static AnyValue log(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.log(number.doubleValue()));
         } else {
             throw needsNumbers("log()");
         }
     }
 
-    public static DoubleValue log10(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.log10(((NumberValue) in).doubleValue()));
+    public static AnyValue log10(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.log10(number.doubleValue()));
         } else {
             throw needsNumbers("log10()");
         }
     }
 
-    public static DoubleValue toRadians(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.toRadians(((NumberValue) in).doubleValue()));
+    public static AnyValue toRadians(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.toRadians(number.doubleValue()));
         } else {
             throw needsNumbers("toRadians()");
         }
@@ -369,19 +384,21 @@ public final class CypherFunctions {
     }
 
     @CalledFromGeneratedCode
-    public static LongValue signum(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return longValue((long) Math.signum(((NumberValue) in).doubleValue()));
+    public static AnyValue signum(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return longValue((long) Math.signum(number.doubleValue()));
         } else {
             throw needsNumbers("signum()");
         }
     }
 
-    public static DoubleValue sqrt(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof NumberValue) {
-            return doubleValue(Math.sqrt(((NumberValue) in).doubleValue()));
+    public static AnyValue sqrt(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(Math.sqrt(number.doubleValue()));
         } else {
             throw needsNumbers("sqrt()");
         }
@@ -423,9 +440,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static VirtualNodeValue startNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {
-        assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (anyValue instanceof RelationshipValue rel) {
+    public static AnyValue startNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {
+        if (anyValue == NO_VALUE) {
+            return NO_VALUE;
+        } else if (anyValue instanceof RelationshipValue rel) {
             return rel.startNode();
         } else if (anyValue instanceof VirtualRelationshipValue rel) {
             return startNode(rel, access, cursor);
@@ -440,10 +458,9 @@ public final class CypherFunctions {
         return VirtualValues.node(relationship.startNodeId(consumer(access, cursor)));
     }
 
-    public static VirtualNodeValue endNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {
-        assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (anyValue instanceof RelationshipValue rel) {
-            return rel.endNode();
+    public static AnyValue endNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {
+        if (anyValue == NO_VALUE) {
+            return NO_VALUE;
         } else if (anyValue instanceof VirtualRelationshipValue rel) {
             return endNode(rel, access, cursor);
         } else {
@@ -585,8 +602,9 @@ public final class CypherFunctions {
 
     @CalledFromGeneratedCode
     public static AnyValue head(AnyValue container) {
-        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (container instanceof SequenceValue sequence) {
+        if (container == NO_VALUE) {
+            return NO_VALUE;
+        } else if (container instanceof SequenceValue sequence) {
             if (sequence.length() == 0) {
                 return NO_VALUE;
             }
@@ -599,9 +617,10 @@ public final class CypherFunctions {
     }
 
     @CalledFromGeneratedCode
-    public static ListValue tail(AnyValue container) {
-        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (container instanceof ListValue) {
+    public static AnyValue tail(AnyValue container) {
+        if (container == NO_VALUE) {
+            return NO_VALUE;
+        } else if (container instanceof ListValue) {
             return ((ListValue) container).tail();
         } else if (container instanceof ArrayValue) {
             return VirtualValues.fromArray((ArrayValue) container).tail();
@@ -612,7 +631,9 @@ public final class CypherFunctions {
 
     @CalledFromGeneratedCode
     public static AnyValue last(AnyValue container) {
-        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (container == NO_VALUE) {
+            return NO_VALUE;
+        }
         if (container instanceof SequenceValue sequence) {
             int length = sequence.length();
             if (length == 0) {
@@ -678,11 +699,12 @@ public final class CypherFunctions {
     }
 
     public static AnyValue reverse(AnyValue original) {
-        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (original instanceof TextValue) {
-            return ((TextValue) original).reverse();
-        } else if (original instanceof ListValue) {
-            return ((ListValue) original).reverse();
+        if (original == NO_VALUE) {
+            return NO_VALUE;
+        } else if (original instanceof TextValue text) {
+            return text.reverse();
+        } else if (original instanceof ListValue list) {
+            return list.reverse();
         } else {
             throw new CypherTypeException(
                     "Invalid input for function 'reverse()': "
@@ -785,10 +807,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue elementId(AnyValue entity, ElementIdMapper idMapper) {
-        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-
-        if (entity instanceof NodeValue node) {
+    public static AnyValue elementId(AnyValue entity, ElementIdMapper idMapper) {
+        if (entity == NO_VALUE) {
+            return NO_VALUE;
+        } else if (entity instanceof NodeValue node) {
             // Needed to get correct ids in certain fabric queries.
             return stringValue(node.elementId());
         } else if (entity instanceof VirtualNodeValue node) {
@@ -806,8 +828,9 @@ public final class CypherFunctions {
     }
 
     public static AnyValue elementIdToNodeId(AnyValue elementId, ElementIdMapper idMapper) {
-        assert elementId != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (elementId instanceof TextValue str) {
+        if (elementId == NO_VALUE) {
+            return NO_VALUE;
+        } else if (elementId instanceof TextValue str) {
             try {
                 return longValue(idMapper.nodeId(str.stringValue()));
             } catch (IllegalArgumentException e) {
@@ -818,8 +841,9 @@ public final class CypherFunctions {
     }
 
     public static AnyValue elementIdToRelationshipId(AnyValue elementId, ElementIdMapper idMapper) {
-        assert elementId != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (elementId instanceof TextValue str) {
+        if (elementId == NO_VALUE) {
+            return NO_VALUE;
+        } else if (elementId instanceof TextValue str) {
             try {
                 return longValue(idMapper.relationshipId(str.stringValue()));
             } catch (IllegalArgumentException e) {
@@ -830,11 +854,12 @@ public final class CypherFunctions {
     }
 
     public static AnyValue elementIdListToNodeIdList(AnyValue collection, ElementIdMapper idMapper) {
-        assert collection != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (collection instanceof SequenceValue elementIds) {
+        if (collection == NO_VALUE) {
+            return NO_VALUE;
+        } else if (collection instanceof SequenceValue elementIds) {
             var builder = ListValueBuilder.newListBuilder(elementIds.length());
             for (var elementId : elementIds) {
-                AnyValue value = (elementId == NO_VALUE) ? NO_VALUE : elementIdToNodeId(elementId, idMapper);
+                AnyValue value = elementIdToNodeId(elementId, idMapper);
                 builder.add(value);
             }
             return builder.build();
@@ -843,11 +868,12 @@ public final class CypherFunctions {
     }
 
     public static AnyValue elementIdListToRelationshipIdList(AnyValue collection, ElementIdMapper idMapper) {
-        assert collection != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (collection instanceof SequenceValue elementIds) {
+        if (collection == NO_VALUE) {
+            return NO_VALUE;
+        } else if (collection instanceof SequenceValue elementIds) {
             var builder = ListValueBuilder.newListBuilder(elementIds.length());
             for (var elementId : elementIds) {
-                AnyValue value = (elementId == NO_VALUE) ? NO_VALUE : elementIdToRelationshipId(elementId, idMapper);
+                AnyValue value = elementIdToRelationshipId(elementId, idMapper);
                 builder.add(value);
             }
             return builder.build();
@@ -950,8 +976,9 @@ public final class CypherFunctions {
     }
 
     public static AnyValue type(AnyValue item, DbAccess access, RelationshipScanCursor relCursor, Read read) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof RelationshipValue relationship) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof RelationshipValue relationship) {
             return relationship.type();
         } else if (item instanceof VirtualRelationshipValue relationship) {
 
@@ -1000,9 +1027,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue nodes(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof PathValue) {
+    public static AnyValue nodes(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof PathValue) {
             return VirtualValues.list(((PathValue) in).nodes());
         } else if (in instanceof VirtualPathValue) {
             long[] ids = ((VirtualPathValue) in).nodeIds();
@@ -1016,9 +1044,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue relationships(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof VirtualPathValue path) {
+    public static AnyValue relationships(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof VirtualPathValue path) {
             return path.relationshipsAsList();
         } else {
             throw new CypherTypeException(
@@ -1027,8 +1056,9 @@ public final class CypherFunctions {
     }
 
     public static Value point(AnyValue in, DbAccess access, ExpressionCursors cursors) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof VirtualNodeValue node) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof VirtualNodeValue node) {
             return asPoint(access, node, cursors.nodeCursor(), cursors.propertyCursor());
         } else if (in instanceof VirtualRelationshipValue rel) {
             return asPoint(access, rel, cursors.relationshipScanCursor(), cursors.propertyCursor());
@@ -1043,14 +1073,15 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue keys(
+    public static AnyValue keys(
             AnyValue in,
             DbAccess access,
             NodeCursor nodeCursor,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof VirtualNodeValue node) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof VirtualNodeValue node) {
             return extractKeys(access, access.nodePropertyIds(node.id(), nodeCursor, propertyCursor));
         } else if (in instanceof VirtualRelationshipValue rel) {
             return extractKeys(access, access.relationshipPropertyIds(rel, relationshipScanCursor, propertyCursor));
@@ -1063,19 +1094,20 @@ public final class CypherFunctions {
         }
     }
 
-    public static MapValue properties(
+    public static AnyValue properties(
             AnyValue in,
             DbAccess access,
             NodeCursor nodeCursor,
             RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof VirtualNodeValue node) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof VirtualNodeValue node) {
             return access.nodeAsMap(node.id(), nodeCursor, propertyCursor);
         } else if (in instanceof VirtualRelationshipValue rel) {
             return access.relationshipAsMap(rel, relationshipCursor, propertyCursor);
         } else if (in instanceof MapValue) {
-            return (MapValue) in;
+            return in;
         } else {
             throw new CypherTypeException(format(
                     "Invalid input for function 'properties()': Expected a node, a relationship or a literal map but got %s",
@@ -1083,10 +1115,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static IntegralValue size(AnyValue item) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-
-        if (item instanceof TextValue) {
+    public static AnyValue size(AnyValue item) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof TextValue) {
             return longValue(((TextValue) item).length());
         } else if (item instanceof SequenceValue) {
             return longValue(((SequenceValue) item).length());
@@ -1096,9 +1128,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static BooleanValue isEmpty(AnyValue item) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof SequenceValue) {
+    public static AnyValue isEmpty(AnyValue item) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof SequenceValue) {
             return Values.booleanValue(((SequenceValue) item).isEmpty());
         } else if (item instanceof MapValue) {
             return Values.booleanValue(((MapValue) item).isEmpty());
@@ -1110,9 +1143,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static IntegralValue length(AnyValue item) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof VirtualPathValue) {
+    public static AnyValue length(AnyValue item) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof VirtualPathValue) {
             return longValue(((VirtualPathValue) item).size());
         } else {
             throw new CypherTypeException("Invalid input for function 'length()': Expected a Path, got: " + item);
@@ -1166,8 +1200,8 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (in instanceof DoubleValue) {
             return (DoubleValue) in;
-        } else if (in instanceof NumberValue) {
-            return doubleValue(((NumberValue) in).doubleValue());
+        } else if (in instanceof NumberValue number) {
+            return doubleValue(number.doubleValue());
         } else if (in instanceof TextValue) {
             try {
                 return doubleValue(parseDouble(((TextValue) in).stringValue()));
@@ -1206,8 +1240,8 @@ public final class CypherFunctions {
             return NO_VALUE;
         } else if (in instanceof IntegralValue) {
             return (IntegralValue) in;
-        } else if (in instanceof NumberValue) {
-            return longValue(((NumberValue) in).longValue());
+        } else if (in instanceof NumberValue number) {
+            return longValue(number.longValue());
         } else if (in instanceof TextValue) {
             return stringToLongValue((TextValue) in);
         } else if (in instanceof BooleanValue) {
@@ -1243,8 +1277,8 @@ public final class CypherFunctions {
             return VirtualValues.fromArray(array);
         } else if (in instanceof FloatingPointArray array) {
             return toIntegerList(array);
-        } else if (in instanceof SequenceValue sequenc) {
-            return toIntegerList(sequenc);
+        } else if (in instanceof SequenceValue sequence) {
+            return toIntegerList(sequence);
         } else {
             throw new CypherTypeException(
                     String.format("Invalid input for function 'toIntegerList()': Expected a List, got: %s", in));
@@ -1254,12 +1288,12 @@ public final class CypherFunctions {
     public static Value toString(AnyValue in) {
         if (in == NO_VALUE) {
             return NO_VALUE;
-        } else if (in instanceof TextValue) {
-            return (TextValue) in;
-        } else if (in instanceof NumberValue) {
-            return stringValue(((NumberValue) in).prettyPrint());
-        } else if (in instanceof BooleanValue) {
-            return stringValue(((BooleanValue) in).prettyPrint());
+        } else if (in instanceof TextValue text) {
+            return text;
+        } else if (in instanceof NumberValue number) {
+            return stringValue(number.prettyPrint());
+        } else if (in instanceof BooleanValue b) {
+            return stringValue(b.prettyPrint());
         } else if (in instanceof TemporalValue || in instanceof DurationValue || in instanceof PointValue) {
             return stringValue(in.toString());
         } else {
@@ -1295,8 +1329,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue fromSlice(AnyValue collection, AnyValue fromValue) {
-        assert collection != NO_VALUE && fromValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+    public static AnyValue fromSlice(AnyValue collection, AnyValue fromValue) {
+        if (collection == NO_VALUE || fromValue == NO_VALUE) {
+            return NO_VALUE;
+        }
 
         int from = asIntExact(fromValue);
         ListValue list = asList(collection);
@@ -1307,8 +1343,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue toSlice(AnyValue collection, AnyValue toValue) {
-        assert collection != NO_VALUE && toValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+    public static AnyValue toSlice(AnyValue collection, AnyValue toValue) {
+        if (collection == NO_VALUE || toValue == NO_VALUE) {
+            return NO_VALUE;
+        }
         int from = asIntExact(toValue);
         ListValue list = asList(collection);
         if (from >= 0) {
@@ -1318,10 +1356,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue fullSlice(AnyValue collection, AnyValue fromValue, AnyValue toValue) {
-        assert collection != NO_VALUE && fromValue != NO_VALUE && toValue != NO_VALUE
-                : "NO_VALUE checks need to happen outside this call";
-
+    public static AnyValue fullSlice(AnyValue collection, AnyValue fromValue, AnyValue toValue) {
+        if (collection == NO_VALUE || fromValue == NO_VALUE || toValue == NO_VALUE) {
+            return NO_VALUE;
+        }
         int from = asIntExact(fromValue);
         int to = asIntExact(toValue);
         ListValue list = asList(collection);

@@ -54,7 +54,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.NodeValue
@@ -271,13 +270,13 @@ case class MaterializedEntityHasLabelOrType(entity: commands.expressions.Express
   override def arguments: Seq[commands.expressions.Expression] = Seq(entity)
 }
 
-case class MaterializedEntityKeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
+case class MaterializedEntityKeysFunction(expr: Expression) extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): ListValue =
-    value match {
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    expr(ctx, state) match {
       case n: NodeValue         => n.properties().keys()
       case r: RelationshipValue => r.properties().keys()
-      case _ =>
+      case value =>
         CypherFunctions.keys(
           value,
           state.query,
@@ -312,7 +311,7 @@ case class MaterializedDesugaredMapExpression(
           state.cursors.nodeCursor,
           state.cursors.relationshipScanCursor,
           state.cursors.propertyCursor
-        )
+        ).asInstanceOf[MapValue]
     }
 
     if (entries.nonEmpty) {
@@ -392,7 +391,7 @@ case class MaterializedPropertyProjectionExpression(mapExpression: Expression, e
           state.cursors.nodeCursor,
           state.cursors.relationshipScanCursor,
           state.cursors.propertyCursor
-        )
+        ).asInstanceOf[MapValue]
     }
     val mapBuilder = new MapValueBuilder()
     entries.foreach(e => mapBuilder.add(e.key, allProps.get(e.propertyKeyName.name)))
