@@ -114,11 +114,11 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
-    extends NullInNullOutExpression(orig) {
+    extends Expression {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = length match {
-    case None       => CypherFunctions.substring(value, start(ctx, state))
-    case Some(func) => CypherFunctions.substring(value, start(ctx, state), func(ctx, state))
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = length match {
+    case None       => CypherFunctions.substring(orig(ctx, state), start(ctx, state))
+    case Some(func) => CypherFunctions.substring(orig(ctx, state), start(ctx, state), func(ctx, state))
   }
 
   override def arguments: Seq[Expression] = Seq(orig, start) ++ length

@@ -19,22 +19,6 @@
  */
 package org.neo4j.cypher.operations;
 
-import static java.lang.Double.parseDouble;
-import static java.lang.Long.parseLong;
-import static java.lang.String.format;
-import static org.neo4j.cypher.operations.CursorUtils.propertyKeys;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-import static org.neo4j.values.storable.Values.EMPTY_STRING;
-import static org.neo4j.values.storable.Values.FALSE;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.TRUE;
-import static org.neo4j.values.storable.Values.booleanValue;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
-import static org.neo4j.values.virtual.VirtualValues.asList;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -44,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
 import org.neo4j.cypher.internal.expressions.BooleanTypeName;
 import org.neo4j.cypher.internal.expressions.CypherTypeName;
 import org.neo4j.cypher.internal.expressions.DateTypeName;
@@ -104,6 +89,22 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
+
+import static java.lang.Double.parseDouble;
+import static java.lang.Long.parseLong;
+import static java.lang.String.format;
+import static org.neo4j.cypher.operations.CursorUtils.propertyKeys;
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+import static org.neo4j.values.storable.Values.EMPTY_STRING;
+import static org.neo4j.values.storable.Values.FALSE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.booleanValue;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
+import static org.neo4j.values.virtual.VirtualValues.asList;
 
 /**
  * This class contains static helper methods for the set of Cypher functions
@@ -751,9 +752,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue substring(AnyValue original, AnyValue start) {
-        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (original instanceof TextValue asText) {
+    public static AnyValue substring(AnyValue original, AnyValue start) {
+        if (original == NO_VALUE || start == NO_VALUE) {
+            return NO_VALUE;
+        } else if (original instanceof TextValue asText) {
 
             return asText.substring(asIntExact(start, () -> "Invalid input for start value in function 'substring()'"));
         } else {
@@ -761,9 +763,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue substring(AnyValue original, AnyValue start, AnyValue length) {
-        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (original instanceof TextValue asText) {
+    public static AnyValue substring(AnyValue original, AnyValue start, AnyValue length) {
+        if (original == NO_VALUE || start == NO_VALUE || length == NO_VALUE) {
+            return NO_VALUE;
+        } else if (original instanceof TextValue asText) {
 
             return asText.substring(
                     asIntExact(start, () -> "Invalid input for start value in function 'substring()'"),
