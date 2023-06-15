@@ -130,11 +130,6 @@ public class RecordChangeSet implements RecordAccessSet {
     }
 
     @Override
-    public boolean hasChanges() {
-        return changeCounter.intValue() > 0;
-    }
-
-    @Override
     public int changeSize() {
         return changeCounter.intValue();
     }

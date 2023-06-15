@@ -163,16 +163,6 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable {
     }
 
     @Override
-    public boolean hasChanges() {
-        for (DirectRecordAccess<?, ?> access : all) {
-            if (access.changeSize() > 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
     public int changeSize() {
         int total = 0;
         for (DirectRecordAccess<?, ?> access : all) {

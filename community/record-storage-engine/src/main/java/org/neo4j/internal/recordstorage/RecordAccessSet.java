@@ -47,7 +47,5 @@ public interface RecordAccessSet {
 
     RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
 
-    boolean hasChanges();
-
     int changeSize();
 }
