@@ -123,4 +123,14 @@ public class TransactionVersionContext implements VersionContext {
     public boolean initializedForWrite() {
         return transactionId >= BASE_TX_ID;
     }
+
+    @Override
+    public String toString() {
+        return "TransactionVersionContext{" + "transactionId="
+                + transactionId + ", transactionIds="
+                + transactionIds + ", oldestTransactionId="
+                + oldestTransactionId + ", updatedChainHeadVersion="
+                + updatedChainHeadVersion + ", dirty="
+                + dirty + '}';
+    }
 }
