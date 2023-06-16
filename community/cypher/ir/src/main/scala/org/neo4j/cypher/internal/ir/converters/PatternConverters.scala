@@ -36,7 +36,9 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
+import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PathPattern
 import org.neo4j.cypher.internal.ir.PathPatterns
@@ -104,7 +106,8 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
       case ParenthesizedPath(part, predicate) =>
         convertShortestPathPatternPart(part, predicate, selector)
       case other =>
-        SelectivePathPattern(convertPatternElement(other), Selections.empty, selector)
+        convertUnwrappedShortestPathPatternElement(other, Selections.empty, selector)
+
     }
 
   private def convertShortestPathPatternPart(
@@ -114,7 +117,8 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
   ): SelectivePathPattern = {
     part match {
       case PathPatternPart(element) =>
-        SelectivePathPattern(convertPatternElement(element), Selections.from(predicate), selector)
+        convertUnwrappedShortestPathPatternElement(element, Selections.from(predicate), selector)
+
       case shortest: ShortestPathsPatternPart =>
         throw new IllegalArgumentException(
           s"${shortest.name}() is not allowed inside of a parenthesised path pattern"
@@ -124,7 +128,23 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
     }
   }
 
-  private def convertPatternElement(patternElement: PatternElement): ExhaustivePathPattern[NodeConnection] =
+  /**
+   * Convert the given pattern element that we know to be a node connection. That is, parentheses have been unwrapped before.
+   */
+  private def convertUnwrappedShortestPathPatternElement(
+    element: PatternElement,
+    selections: Selections,
+    selector: Selector
+  ): SelectivePathPattern = {
+    convertPatternElement(element) match {
+      case connections: NodeConnections[ExhaustiveNodeConnection] =>
+        SelectivePathPattern(connections, selections, selector)
+      case _ =>
+        throw new IllegalStateException("Expected only exhaustive node connections as part of shortest path")
+    }
+  }
+
+  private def convertPatternElement(patternElement: PatternElement): ExhaustivePathPattern[ExhaustiveNodeConnection] =
     patternElement match {
       case pattern: SimplePattern     => SimplePatternConverters.convertSimplePattern(pattern)
       case PathConcatenation(factors) => convertPathFactors(factors.toList)
@@ -136,7 +156,7 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
         )
     }
 
-  private def convertPathFactors(factors: List[PathFactor]): ExhaustivePathPattern[NodeConnection] =
+  private def convertPathFactors(factors: List[PathFactor]): ExhaustivePathPattern[ExhaustiveNodeConnection] =
     factors match {
       case (pattern: SimplePattern) :: tail =>
         buildPathPattern(pattern, unfoldPathFactorsTail(tail))
@@ -172,8 +192,8 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
   private def buildPathPattern(
     head: SimplePattern,
     tail: LazyList[(QuantifiedPath, SimplePattern)]
-  ): ExhaustivePathPattern[NodeConnection] =
-    tail.foldLeft[ExhaustivePathPattern[NodeConnection]](SimplePatternConverters.convertSimplePattern(head)) {
+  ): ExhaustivePathPattern[ExhaustiveNodeConnection] =
+    tail.foldLeft[ExhaustivePathPattern[ExhaustiveNodeConnection]](SimplePatternConverters.convertSimplePattern(head)) {
       case (pathPattern, (quantifiedPath, simplePattern)) =>
         val (previousRightMostNode, previousConnections) = pathPattern match {
           case ExhaustivePathPattern.SingleNode(name)             => (name, Nil)
@@ -185,7 +205,7 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
           case ExhaustivePathPattern.NodeConnections(relationships) => (relationships.head.left, relationships)
         }
 
-        val quantifiedPathPattern: NodeConnection =
+        val quantifiedPathPattern =
           QuantifiedPathPatternConverters.convertQuantifiedPath(
             outerLeft = previousRightMostNode,
             quantifiedPath = quantifiedPath,

@@ -21,11 +21,14 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.Rewritable
 
 /**
  * Part of a pattern that is connecting nodes (as in "connected components").
- * This is a generalisation of relationships to be able to plan quantified path patterns using the same algorithm.
+ * This is a generalisation of relationships.
  */
 sealed trait NodeConnection {
 
@@ -50,13 +53,18 @@ sealed trait NodeConnection {
     }
 }
 
+/**
+ * This is a node connection that is not restricted by a selector.
+ */
+sealed trait ExhaustiveNodeConnection extends NodeConnection
+
 final case class PatternRelationship(
   name: String,
   nodes: (String, String),
   dir: SemanticDirection,
   types: Seq[RelTypeName],
   length: PatternLength
-) extends NodeConnection {
+) extends ExhaustiveNodeConnection {
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
@@ -133,7 +141,7 @@ case class NodeBinding(inner: String, outer: String) {
 }
 
 /**
- * Describes a variable that is exposed from a [[QuantifiedPath]].
+ * Describes a variable that is exposed from a [[org.neo4j.cypher.internal.expressions.QuantifiedPath]].
  *
  * @param singletonName the name of the singleton variable inside the QuantifiedPath.
  * @param groupName     the name of the group variable exposed outside of the QuantifiedPath.
@@ -152,7 +160,7 @@ final case class QuantifiedPathPattern(
   repetition: Repetition,
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping]
-) extends NodeConnection {
+) extends ExhaustiveNodeConnection {
 
   override val left: String = leftBinding.outer
   override val right: String = rightBinding.outer
@@ -175,4 +183,131 @@ final case class QuantifiedPathPattern(
       .addPatternNodes(patternNodes.toList: _*)
       .addArgumentIds(argumentIds.toList)
       .addSelections(selections)
+}
+
+sealed trait PathPattern {
+
+  /**
+   * @return all quantified sub-path patterns contained in this path pattern
+   */
+  def allQuantifiedPathPatterns: List[QuantifiedPathPattern]
+}
+
+/**
+ * List of path patterns making up a graph pattern.
+ */
+case class PathPatterns(pathPatterns: List[PathPattern]) extends AnyVal {
+
+  /**
+   * @return all quantified sub-path patterns contained in these path patterns
+   */
+  def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = pathPatterns.flatMap(_.allQuantifiedPathPatterns)
+}
+
+/**
+ * A path pattern made of either a single node or a list of node connections.
+ * It is exhaustive in that it represents all the paths matching this pattern.
+ * Node connections are stored as a list, preserving the order of the pattern as expressed in the query.
+ * Each connection contains a reference to the nodes it connects, effectively allowing us to reconstruct the alternating sequence of node and relationship patterns from this type.
+ * @tparam A In most cases, should be [[NodeConnection]], but can be used to narrow down the type of node connections to [[PatternRelationship]] only.
+ */
+sealed trait ExhaustivePathPattern[+A <: NodeConnection] extends PathPattern
+
+object ExhaustivePathPattern {
+
+  /**
+   * A path pattern of length 0, made of a single node.
+   * @param name name of the variable bound to the node pattern
+   */
+  final case class SingleNode[A <: NodeConnection](name: String) extends ExhaustivePathPattern[A] {
+    override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = Nil
+  }
+
+  /**
+   * A path pattern of length 1 or more, made of at least one node connection.
+   * @param connections the connections making up the path pattern, in the order in which they appear in the original query.
+   * @tparam A In most cases, should be [[NodeConnection]], but can be used to narrow down the type of node connections to [[PatternRelationship]] only.
+   */
+  final case class NodeConnections[+A <: NodeConnection](connections: List[A]) extends ExhaustivePathPattern[A] { // TODO non-empty list?
+
+    override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] =
+      connections.collect {
+        case qpp: QuantifiedPathPattern => qpp
+      }
+  }
+}
+
+/**
+ * A path pattern, its predicates, and a selector limiting the number of paths to find.
+ * @param pathPattern path pattern for which we want to find solutions
+ * @param selections so-called "pre-filters", predicates that are applied to the path pattern as part of the path finding algorithm
+ * @param selector path selector such as ANY k, SHORTEST k, or SHORTEST k GROUPS, defining the type of path finding algorithm as well as the number paths to find
+ */
+final case class SelectivePathPattern(
+  pathPattern: NodeConnections[ExhaustiveNodeConnection],
+  selections: Selections,
+  selector: SelectivePathPattern.Selector
+) extends PathPattern with NodeConnection {
+  override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = pathPattern.allQuantifiedPathPatterns
+
+  override val left: String = pathPattern.connections.head.left
+  override val right: String = pathPattern.connections.last.right
+  override val nodes: (String, String) = (left, right)
+
+  override def coveredIds: Set[String] = pathPattern.connections.flatMap(_.coveredIds).toSet
+
+  val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies)
+}
+
+object SelectivePathPattern {
+
+  /**
+   * Defines the paths to find for each combination of start and end nodes.
+   */
+  sealed trait Selector
+
+  object Selector {
+
+    /**
+     * Finds up to k paths arbitrarily.
+     */
+    case class Any(k: Long) extends Selector
+
+    /**
+     * Returns the shortest, second-shortest, etc. up to k paths.
+     * If there are multiple paths of same length, picks arbitrarily.
+     */
+    case class Shortest(k: Long) extends Selector
+
+    /**
+     * Finds all shortest paths, all second shortest paths, etc. up to all Kth shortest paths.
+     */
+    case class ShortestGroups(k: Long) extends Selector
+  }
+}
+
+//noinspection ZeroIndexToHead
+final case class ShortestRelationshipPattern(name: Option[String], rel: PatternRelationship, single: Boolean)(
+  val expr: ShortestPathsPatternPart
+) extends PathPattern with Rewritable {
+
+  def dup(children: Seq[AnyRef]): this.type =
+    copy(
+      children(0).asInstanceOf[Option[String]],
+      children(1).asInstanceOf[PatternRelationship],
+      children(2).asInstanceOf[Boolean]
+    )(expr).asInstanceOf[this.type]
+
+  def isFindableFrom(symbols: Set[String]): Boolean = symbols.contains(rel.left) && symbols.contains(rel.right)
+
+  def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
+
+  override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = Nil
+}
+
+object ShortestRelationshipPattern {
+
+  implicit val byRelName: Ordering[ShortestRelationshipPattern] = Ordering.by { sp: ShortestRelationshipPattern =>
+    sp.rel
+  }
 }

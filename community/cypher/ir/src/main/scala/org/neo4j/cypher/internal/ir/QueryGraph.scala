@@ -58,7 +58,10 @@ case class QueryGraph(
   // !!! If you change anything here, make sure to update the equals, ++ and hashCode methods at the bottom of this class !!!
 ) extends UpdateGraph {
 
-  val nodeConnections: Set[NodeConnection] = Set.empty[NodeConnection] ++ patternRelationships ++ quantifiedPathPatterns
+  val nodeConnections: Set[NodeConnection] = Set.empty[NodeConnection] ++
+    patternRelationships ++
+    quantifiedPathPatterns ++
+    selectivePathPatterns
 
   /**
    * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
@@ -68,6 +71,7 @@ case class QueryGraph(
       selections.predicates.flatMap(_.dependencies) ++
       mutatingPatterns.flatMap(_.dependencies) ++
       quantifiedPathPatterns.flatMap(_.dependencies) ++
+      selectivePathPatterns.flatMap(_.dependencies) ++
       argumentIds
 
   /**
@@ -118,6 +122,7 @@ case class QueryGraph(
     connection match {
       case patternRelationship: PatternRelationship => addPatternRelationship(patternRelationship)
       case qpp: QuantifiedPathPattern               => addQuantifiedPathPattern(qpp)
+      case spp: SelectivePathPattern                => addSelectivePathPattern(spp)
     }
   }
 
@@ -199,7 +204,10 @@ case class QueryGraph(
    * Note that it does not add the end nodes or arguments or anything else to the query graph.
    */
   def addSelectivePathPattern(selectivePathPattern: SelectivePathPattern): QueryGraph =
-    copy(selectivePathPatterns = selectivePathPatterns.incl(selectivePathPattern))
+    copy(
+      patternNodes = patternNodes + selectivePathPattern.left + selectivePathPattern.right,
+      selectivePathPatterns = selectivePathPatterns.incl(selectivePathPattern)
+    )
 
   def addArgumentId(newId: String): QueryGraph = copy(argumentIds = argumentIds + newId)
 
@@ -347,14 +355,13 @@ case class QueryGraph(
   }
 
   /**
-   * Variables are bound after matching this QG, but before optional
+   * Variables that are bound after matching this QG, but before optional
    * matches and updates have been applied
    */
   def idsWithoutOptionalMatchesOrUpdates: Set[String] =
     coveredIdsForPatterns ++
       argumentIds ++
-      shortestRelationshipPatterns.flatMap(_.name) ++
-      quantifiedPathPatterns.flatMap(_.groupings)
+      shortestRelationshipPatterns.flatMap(_.name)
 
   /**
    * All variables that are bound after this QG has been matched
@@ -540,8 +547,7 @@ case class QueryGraph(
 
   def containsReads: Boolean = {
     (patternNodes.nonEmpty && (patternNodes -- argumentIds).nonEmpty) ||
-    patternRelationships.nonEmpty ||
-    quantifiedPathPatterns.nonEmpty ||
+    nodeConnections.nonEmpty ||
     selections.nonEmpty ||
     shortestRelationshipPatterns.nonEmpty ||
     optionalMatches.nonEmpty ||
@@ -569,9 +575,8 @@ case class QueryGraph(
   def standaloneArgumentPatternNodes: Set[String] = {
     patternNodes
       .intersect(argumentIds)
-      .diff(patternRelationships.flatMap(_.coveredIds))
+      .diff(nodeConnections.flatMap(_.coveredIds))
       .diff(shortestRelationshipPatterns.flatMap(_.rel.coveredIds))
-      .diff(quantifiedPathPatterns.flatMap(_.coveredNodeIds))
   }
 
   override def toString: String = {
