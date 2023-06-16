@@ -28,8 +28,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.DefaultScopedMemoryTracker;
+import org.neo4j.memory.LocalMemoryTracker;
 
 class ConfigurableIOBufferTest {
     @Test

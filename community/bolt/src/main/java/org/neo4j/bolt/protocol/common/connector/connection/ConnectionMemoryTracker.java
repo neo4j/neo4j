@@ -21,9 +21,9 @@ package org.neo4j.bolt.protocol.common.connector.connection;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 /**

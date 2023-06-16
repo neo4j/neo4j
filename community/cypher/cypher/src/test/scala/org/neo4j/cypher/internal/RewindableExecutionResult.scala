@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.impl.query.QueryExecution
-import org.neo4j.kernel.impl.query.QuerySubscription
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 
@@ -138,7 +137,7 @@ object RewindableExecutionResult {
   }
 
   private def apply(
-    subscription: QuerySubscription,
+    subscription: QueryExecution,
     queryContext: QueryContext,
     subscriber: RecordingQuerySubscriber,
     columns: Array[String],

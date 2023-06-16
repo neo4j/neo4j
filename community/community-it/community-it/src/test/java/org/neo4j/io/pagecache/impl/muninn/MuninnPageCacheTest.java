@@ -118,8 +118,8 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.DefaultScopedMemoryTracker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {

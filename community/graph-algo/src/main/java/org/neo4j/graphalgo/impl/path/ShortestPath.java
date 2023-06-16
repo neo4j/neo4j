@@ -61,10 +61,10 @@ import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
 /**

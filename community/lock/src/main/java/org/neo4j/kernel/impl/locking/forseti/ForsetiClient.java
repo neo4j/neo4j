@@ -55,9 +55,9 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 

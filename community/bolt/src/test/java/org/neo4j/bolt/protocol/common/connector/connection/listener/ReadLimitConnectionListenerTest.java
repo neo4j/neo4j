@@ -29,8 +29,8 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.DefaultScopedMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.packstream.codec.transport.ChunkFrameDecoder;
 
 class ReadLimitConnectionListenerTest {
