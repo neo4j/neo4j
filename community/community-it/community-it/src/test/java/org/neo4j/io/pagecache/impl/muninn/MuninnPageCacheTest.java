@@ -2137,6 +2137,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         public long currentInvisibleChainHeadVersion() {
             return Long.MIN_VALUE;
         }
+
+        @Override
+        public boolean initializedForWrite() {
+            return committingTxId > 0;
+        }
     }
 
     private static class InfoTracer extends DefaultPageCacheTracer {

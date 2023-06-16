@@ -87,4 +87,9 @@ public class EmptyVersionContext implements VersionContext {
     public long currentInvisibleChainHeadVersion() {
         return Long.MIN_VALUE;
     }
+
+    @Override
+    public boolean initializedForWrite() {
+        return false;
+    }
 }

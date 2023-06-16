@@ -34,9 +34,9 @@ public class TransactionVersionContext implements VersionContext {
     private static final long UNKNOWN_OBSOLETE_HEAD_VERSION = -1;
     private final TransactionIdSnapshotFactory transactionIdSnapshotFactory;
     private final OldestTransactionIdFactory oldestTransactionIdFactory;
-    private long transactionId = BASE_TX_ID;
+    private long transactionId = BASE_TX_ID - 1;
     private TransactionIdSnapshot transactionIds;
-    private long oldestTransactionId = BASE_TX_ID;
+    private long oldestTransactionId = BASE_TX_ID - 1;
     private long updatedChainHeadVersion;
     private boolean dirty;
 
@@ -117,5 +117,10 @@ public class TransactionVersionContext implements VersionContext {
     @Override
     public boolean isDirty() {
         return dirty;
+    }
+
+    @Override
+    public boolean initializedForWrite() {
+        return transactionId >= BASE_TX_ID;
     }
 }

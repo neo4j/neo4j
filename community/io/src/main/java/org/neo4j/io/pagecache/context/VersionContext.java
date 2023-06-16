@@ -126,4 +126,6 @@ public interface VersionContext {
      * if obsolete version was encountered {@link #obsoleteHeadObserved()} should be used.
      */
     long currentInvisibleChainHeadVersion();
+
+    boolean initializedForWrite();
 }
