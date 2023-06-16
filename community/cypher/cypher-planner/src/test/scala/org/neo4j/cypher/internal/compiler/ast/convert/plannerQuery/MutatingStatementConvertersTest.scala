@@ -19,30 +19,43 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.AppendedClues
 
 class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AppendedClues {
+
+  override val semanticFeatures: List[SemanticFeature] = List(
+    SemanticFeature.GpmShortestPath
+  )
 
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
     val query = buildSinglePlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
@@ -212,6 +225,76 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         )
       )
     )
+  }
+
+  test("Should create a relationship outgoing from a strict interior node of a shortest path pattern") {
+    val query = buildSinglePlannerQuery(
+      """
+        |MATCH ANY SHORTEST (u) ((a)-[r]->(b))+ (v) ((c)-[r2]->(d))+ (w)
+        |CREATE (v)-[r3:R]->(x)
+        |RETURN x
+        |""".stripMargin
+    )
+    val qpp1: QuantifiedPathPattern =
+      QuantifiedPathPattern(
+        leftBinding = NodeBinding("a", "u"),
+        rightBinding = NodeBinding("b", "v"),
+        patternRelationships = List(PatternRelationship(
+          name = "r",
+          nodes = ("a", "b"),
+          dir = SemanticDirection.OUTGOING,
+          types = Nil,
+          length = SimplePatternLength
+        )),
+        patternNodes = Set("a", "b"),
+        argumentIds = Set.empty,
+        selections = Selections.empty,
+        repetition = Repetition(1, Unlimited),
+        nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
+        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+      )
+    val qpp2: QuantifiedPathPattern =
+      QuantifiedPathPattern(
+        leftBinding = NodeBinding("c", "v"),
+        rightBinding = NodeBinding("d", "w"),
+        patternRelationships = List(PatternRelationship(
+          name = "r2",
+          nodes = ("c", "d"),
+          dir = SemanticDirection.OUTGOING,
+          types = Nil,
+          length = SimplePatternLength
+        )),
+        patternNodes = Set("c", "d"),
+        argumentIds = Set.empty,
+        selections = Selections.empty,
+        repetition = Repetition(1, Unlimited),
+        nodeVariableGroupings = Set("c", "d").map(name => VariableGrouping(name, name)),
+        relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
+      )
+
+    val shortestPathPattern =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(List(qpp1, qpp2)),
+        selections = Selections.from(Seq(
+          unique(varFor("r")),
+          unique(varFor("r2")),
+          disjoint(varFor("r"), varFor("r2"))
+        )),
+        selector = SelectivePathPattern.Selector.Shortest(1)
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addSelectivePathPattern(shortestPathPattern)
+        .addMutatingPatterns(CreatePattern(Seq(
+          CreateNode("x", Set.empty, None),
+          CreateRelationship("r3", "v", relTypeName("R"), "x", OUTGOING, None)
+        )))
+
+    val projection = RegularQueryProjection(projections = Map("x" -> varFor("x")), isTerminating = true)
+
+    query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }
 
   private def nodes(names: String*) = {

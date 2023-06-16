@@ -41,8 +41,11 @@ import scala.runtime.ScalaRunTime
  * it contains no more information than the AST, but it contains data in a format that is easier
  * to consume by the planner. If you want to trace this back to the original query - one QueryGraph
  * represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
+ *
  * @param shortestRelationshipPatterns shortest path patterns coming from shortestPath() or allShortestPaths(), made of a single var-length relationship and its endpoints.
- * @param selectivePathPatterns path selector such as ANY k, SHORTEST k, or SHORTEST k GROUPS, applied to a path pattern introduced as part of Graph Pattern Matching.
+ * @param selectivePathPatterns        path selector such as ANY k, SHORTEST k, or SHORTEST k GROUPS, applied to a path pattern introduced as part of Graph Pattern Matching.
+ * @param patternNodes                 unconditional singleton pattern nodes excluding strict interior pattern nodes of selective path patterns.
+ *                                     These can be connected to each other via node connections, creating connected components, and can potentially be used for node leaf plans.
  */
 case class QueryGraph(
   patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -167,7 +170,8 @@ case class QueryGraph(
   }
 
   /**
-   * Includes not only pattern nodes in the read part of the query graph, but also pattern nodes from CREATE and MERGE
+   * All unconditional singleton nodes of this query graph.
+   * This includes not only the MATCH but also pattern nodes from CREATE and MERGE.
    */
   def allPatternNodes: collection.Set[String] = {
     val nodes = mutable.Set[String]()
@@ -177,6 +181,7 @@ case class QueryGraph(
 
   private def collectAllPatternNodes(f: String => Unit): Unit = {
     patternNodes.foreach(f)
+    selectivePathPatterns.foreach(_.pathPattern.connections.foreach(_.coveredNodeIds.foreach(f)))
     optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
     for {
       create <- createPatterns
