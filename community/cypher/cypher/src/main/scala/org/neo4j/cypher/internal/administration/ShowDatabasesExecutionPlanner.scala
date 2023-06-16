@@ -141,7 +141,7 @@ case class ShowDatabasesExecutionPlanner(
     val isCompositeKey = internalKey("isComposite")
     val parameterGenerator: ParameterTransformer = ParameterTransformer((tx, securityContext) =>
       generateShowAccessibleDatabasesParameter(tx, securityContext, yields, verbose)
-    )
+    ).generate(generateUsernameParameter)
 
     val (extraFilter, params, parameterTransformer) = scope match {
       // show default database
@@ -307,12 +307,6 @@ case class ShowDatabasesExecutionPlanner(
           DatabaseIdFactory.from(db.alias().name(), db.id())
       }.toSet
 
-    val username = Option(securityContext.subject().executingUser()) match {
-      case None       => Values.NO_VALUE
-      case Some("")   => Values.NO_VALUE
-      case Some(user) => Values.stringValue(user)
-    }
-
     val dbMetadata =
       if (verbose && maybeYield.isDefined && requiresDetailedLookup(maybeYield.get)) {
         requestDetailedInfo(accessibleDatabases, transaction).asJava
@@ -321,8 +315,21 @@ case class ShowDatabasesExecutionPlanner(
       }
 
     VirtualValues.map(
-      Array(accessibleDbsKey, internalKey("username")),
-      Array(VirtualValues.fromList(dbMetadata), username)
+      Array(accessibleDbsKey),
+      Array(VirtualValues.fromList(dbMetadata))
+    )
+  }
+
+  private def generateUsernameParameter(transaction: Transaction, securityContext: SecurityContext): MapValue = {
+    val username = Option(securityContext.subject().executingUser()) match {
+      case None       => Values.NO_VALUE
+      case Some("")   => Values.NO_VALUE
+      case Some(user) => Values.stringValue(user)
+    }
+
+    VirtualValues.map(
+      Array(internalKey("username")),
+      Array(username)
     )
   }
 

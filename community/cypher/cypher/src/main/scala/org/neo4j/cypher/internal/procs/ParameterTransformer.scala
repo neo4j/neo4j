@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import ParameterTransformer.ParameterConversionFunction
 import ParameterTransformer.ParameterTransformerOutput
+import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterGenerationFunction
 import org.neo4j.cypher.internal.procs.ParameterTransformer.safeMergeParameters
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InvalidArgumentException
@@ -30,12 +31,17 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 case class ParameterTransformer(
-  genFunc: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
+  genFunc: ParameterGenerationFunction = (_, _) => MapValue.EMPTY,
   transformFunc: (Transaction, MapValue) => ParameterTransformerOutput = (_, params) => (params, Set.empty)
 ) {
 
   def convert(convFunc: ParameterConversionFunction): ParameterTransformer = {
     ParameterTransformer(genFunc, (tx, mv) => (convFunc(tx, transformFunc(tx, mv)._1), Set.empty))
+  }
+
+  def generate(generator: ParameterGenerationFunction): ParameterTransformer = {
+    val newGenFunc: ParameterGenerationFunction = (tx, sc) => genFunc(tx, sc).updatedWith(generator(tx, sc))
+    ParameterTransformer(newGenFunc, transformFunc)
   }
 
   def validate(validFunc: (Transaction, MapValue) => ParameterTransformerOutput): ParameterTransformer = {
@@ -62,6 +68,7 @@ case class ParameterTransformer(
 object ParameterTransformer {
   type ParameterTransformerOutput = (MapValue, Set[InternalNotification])
   type ParameterConversionFunction = (Transaction, MapValue) => MapValue
+  type ParameterGenerationFunction = (Transaction, SecurityContext) => MapValue
 
   def apply(genFunc: (Transaction, SecurityContext) => MapValue): ParameterTransformer =
     ParameterTransformer(genFunc, (_, params) => (params, Set.empty))
