@@ -17,6 +17,10 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
+import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathFactor
 import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
 import org.neo4j.cypher.internal.expressions.PatternPart.AllShortestPaths
 import org.neo4j.cypher.internal.expressions.PatternPart.Selector
@@ -55,6 +59,8 @@ case object FixedLengthShortestToAllRewriter extends StepSequencer.Step with AST
   val instance: Rewriter = topDown(Rewriter.lift {
     case p @ PatternPartWithSelector(sel @ AllShortest(), part) if part.isFixedLength =>
       p.copy(selector = AllPaths()(sel.position))
+    case p @ PatternPartWithSelector(sel, SingleNode()) if !sel.isInstanceOf[AllPaths] =>
+      p.copy(selector = AllPaths()(sel.position))
   })
 
   /**
@@ -67,6 +73,19 @@ case object FixedLengthShortestToAllRewriter extends StepSequencer.Step with AST
       case AllShortestPaths() => true
       case ShortestGroups(_)  => true
       case _                  => false
+    }
+  }
+
+  /**
+   * Matcher for a [[NonPrefixedPatternPart]] that contains only a single [[NodePattern]].
+   */
+  private object SingleNode {
+
+    def unapply(nonPrefixedPatternPart: NonPrefixedPatternPart): Boolean = {
+      nonPrefixedPatternPart.element match {
+        case _: NodePattern => true
+        case _              => false
+      }
     }
   }
 

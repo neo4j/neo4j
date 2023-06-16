@@ -24,6 +24,22 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 class FixedLengthShortestToAllRewriterTest extends CypherFunSuite with RewriteTest with TestName {
   override def rewriterUnderTest: Rewriter = FixedLengthShortestToAllRewriter.instance
 
+  test("MATCH ANY SHORTEST (a) RETURN count(*)") {
+    assertRewrite(testName, "MATCH ALL (a) RETURN count(*)")
+  }
+
+  test("MATCH ANY SHORTEST (a:A) RETURN count(*)") {
+    assertRewrite(testName, "MATCH ALL (a:A) RETURN count(*)")
+  }
+
+  test("MATCH ANY SHORTEST (a WHERE a.prop > 0) RETURN count(*)") {
+    assertRewrite(testName, "MATCH ALL (a WHERE a.prop > 0) RETURN count(*)")
+  }
+
+  test("MATCH ANY SHORTEST (a)-->() RETURN count(*)") {
+    assertIsNotRewritten(testName)
+  }
+
   test("MATCH ALL SHORTEST (a)-[r]->(b) RETURN count(*)") {
     assertRewrite(testName, "MATCH ALL (a)-[r]->(b) RETURN count(*)")
   }
