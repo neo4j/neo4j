@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
+import scala.collection.immutable.List;
+
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -32,6 +35,10 @@ import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
@@ -72,6 +79,14 @@ public class BoltV4Messages
     {
         var bookmarkList = new BookmarksParserV4( repository, CustomBookmarkFormatParser.DEFAULT ).parseBookmarks( bookmarks );
         return new BeginMessage( MapValue.EMPTY, bookmarkList, null, AccessMode.WRITE, Map.of(), ABSENT_DB_NAME );
+    }
+
+    public static RequestMessage begin( String database, String impersonatedUser )
+    {
+        var mapValue = ValueUtils.asMapValue( Map.<String,AnyValue>of(
+                "imp_user", Values.stringValue( impersonatedUser ),
+                "db", Values.stringValue( database ) ) );
+        return new BeginMessage( mapValue, Collections.emptyList(), null, AccessMode.WRITE, Map.of(), null );
     }
 
     public static RequestMessage discard( long n ) throws BoltIOException
