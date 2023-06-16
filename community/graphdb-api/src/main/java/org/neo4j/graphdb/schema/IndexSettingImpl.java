@@ -30,6 +30,8 @@ public enum IndexSettingImpl implements IndexSetting {
     SPATIAL_WGS84_MAX("spatial.wgs-84.max", double[].class),
     SPATIAL_WGS84_3D_MIN("spatial.wgs-84-3d.min", double[].class),
     SPATIAL_WGS84_3D_MAX("spatial.wgs-84-3d.max", double[].class),
+    VECTOR_DIMENSIONS("vector.dimensions", Integer.class),
+    VECTOR_SIMILARITY_FUNCTION("vector.similarity_function", String.class),
     ;
 
     private final String settingName;

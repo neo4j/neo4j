@@ -157,4 +157,22 @@ public interface IndexSetting {
     static IndexSetting spatial_Wgs84_3D_Max() {
         return IndexSettingImpl.SPATIAL_WGS84_3D_MAX;
     }
+
+    /**
+     * Configure the dimensionality of the vectors used in vector indexes; indexes of type {@link IndexType#VECTOR}.
+     * This setting is given as an {@link Integer}.
+     */
+    static IndexSetting vector_Dimensions() {
+        return IndexSettingImpl.VECTOR_DIMENSIONS;
+    }
+
+    /**
+     * Configure the similarity function of the vectors used in vector indexes; indexes of type
+     * {@link IndexType#VECTOR}.
+     * This setting is given as a {@link String}.
+     * Possible values are {@code "EUCLIDEAN"} and {@code "COSINE"}.
+     */
+    static IndexSetting vector_Similarity_Function() {
+        return IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION;
+    }
 }
