@@ -69,7 +69,7 @@ import picocli.CommandLine.Parameters;
 @Command(
         name = "import",
         description = "Import a collection of CSV files.",
-        subcommands = {ImportCommand.Full.class, ImportCommand.Incremental.class, CommandLine.HelpCommand.class})
+        subcommands = {ImportCommand.Full.class, CommandLine.HelpCommand.class})
 @SuppressWarnings("FieldMayBeFinal")
 public class ImportCommand {
 

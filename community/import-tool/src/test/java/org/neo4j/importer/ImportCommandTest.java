@@ -54,7 +54,8 @@ class ImportCommandTest {
         final var help = getUsageHelp(command);
         // All non-hidden subcommands
         var subcommands = help.subcommands().keySet();
-        var expectedSubcommands = Set.of("full", "incremental", "help");
+        // Incremental should not be shown in community
+        var expectedSubcommands = Set.of("full", "help");
         assertThat(subcommands).isEqualTo(expectedSubcommands);
     }
 
