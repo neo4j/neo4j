@@ -285,6 +285,7 @@ public class DocValuesCollector extends SimpleCollector {
                 if (matchingDocs.hasNext()) {
                     currentDocs = matchingDocs.next();
                     currentIdIterator = currentDocs.docIdSet;
+                    index = 0;
                     if (currentIdIterator != null) {
                         currentDocValues = currentDocs.readDocValues(field);
                     }

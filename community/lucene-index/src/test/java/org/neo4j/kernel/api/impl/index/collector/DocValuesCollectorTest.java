@@ -184,23 +184,34 @@ final class DocValuesCollectorTest {
         // given
         DocValuesCollector collector = new DocValuesCollector(true);
         IndexReaderStub readerStub = indexReaderWithMaxDocs(42);
-        float score = 13.42f;
+        float score1 = 13.42f;
+        float score2 = 3.14f;
 
         // when
         collector.doSetNextReader(readerStub.getContext());
-        collector.setScorer(constantScorer(score));
+        collector.setScorer(constantScorer(score1));
         collector.collect(1);
+        collector.doSetNextReader(readerStub.getContext());
+        collector.setScorer(constantScorer(score2));
+        collector.collect(2);
 
         // then
         AtomicReference<AcceptedEntity> ref = new AtomicReference<>();
         IndexProgressor.EntityValueClient client = new EntityValueClientWritingToReference(ref);
         IndexProgressor progressor = collector.getIndexProgressor("field", client);
+
         assertTrue(progressor.next());
+        AcceptedEntity entity = ref.getAndSet(null);
+        assertThat(entity.reference).isEqualTo(1L);
+        assertThat(entity.score).isEqualTo(score1);
+
+        assertTrue(progressor.next());
+        entity = ref.get();
+        assertThat(entity.reference).isEqualTo(2L);
+        assertThat(entity.score).isEqualTo(score2);
+
         assertFalse(progressor.next());
         progressor.close();
-        AcceptedEntity entity = ref.get();
-        assertThat(entity.reference).isEqualTo(1L);
-        assertThat(entity.score).isEqualTo(score);
     }
 
     @Test
