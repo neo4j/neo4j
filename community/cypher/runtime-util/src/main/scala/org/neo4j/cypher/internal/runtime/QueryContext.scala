@@ -469,6 +469,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   }
 
   override def elementIdMapper(): ElementIdMapper = transactionalContext.elementIdMapper()
+
+  override def dataRead: Read = transactionalContext.dataRead;
 }
 
 trait WriteQueryContext {

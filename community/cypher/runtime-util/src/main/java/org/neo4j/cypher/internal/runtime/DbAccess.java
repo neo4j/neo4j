@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime;
 import java.util.Optional;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
@@ -203,4 +204,6 @@ public interface DbAccess extends EntityById {
     long relationshipCountByCountStore(int startLabelId, int typeId, int endLabelId);
 
     ElementIdMapper elementIdMapper();
+
+    Read dataRead();
 }
