@@ -107,7 +107,7 @@ trait QueryContext extends ReadQueryContext with WriteQueryContext
 trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
-  def createParallelQueryContext(): QueryContext =
+  def createParallelQueryContext(initialHeapMemory: Long = 0L): QueryContext =
     throw new UnsupportedOperationException("Not supported with parallel runtime.")
 
   def transactionalContext: QueryTransactionalContext

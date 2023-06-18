@@ -49,9 +49,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final Set<LocalMemoryTracker> memoryTrackers = ConcurrentHashMap.newKeySet();
     private final LocalMemoryTracker transactionTracker;
 
-    // NOTE: This should be enough to handle eager initialization of cursor pools.
-    //       If we instead made those initializations lazy we could reduce this number.
-    static final long DEFAULT_EXECUTION_CONTEXT_MEMORY_TRACKER_INITIAL_CREDIT = 8192;
+    static final long DEFAULT_EXECUTION_CONTEXT_MEMORY_TRACKER_INITIAL_CREDIT = 0;
 
     public TransactionMemoryPool(
             ScopedMemoryPool delegate, Config config, BooleanSupplier openCheck, LogProvider logProvider) {

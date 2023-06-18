@@ -558,8 +558,9 @@ private[internal] class TransactionBoundReadQueryContext(
   private[internal] lazy val valueMapper: ValueMapper[java.lang.Object] =
     new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction())
 
-  override def createParallelQueryContext(): QueryContext = {
+  override def createParallelQueryContext(initialHeapMemory: Long): QueryContext = {
     val newTransactionalContext = transactionalContext.createParallelTransactionalContext()
+    newTransactionalContext.memoryTracker.releaseHeap(initialHeapMemory)
 
     // Create a single-threaded copy of ResourceManager and attach it to the thread-safe resource manager
     val newResourceManager = new ResourceManager(resources.monitor, newTransactionalContext.memoryTracker)
