@@ -176,7 +176,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public void report() {
-        mergeBlocked(cursorTracer);
+        mergeBlocked(cursorTracer, contextTracker);
     }
 
     @Override
@@ -224,18 +224,19 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             // this indicates incorrect usage
             throw new IllegalStateException("Execution context closed before it was marked as completed.");
         }
-        mergeBlocked(cursorTracer);
+        mergeBlocked(cursorTracer, contextTracker);
     }
 
-    private void mergeBlocked(ExecutionContextCursorTracer cursorTracer) {
+    private void mergeBlocked(ExecutionContextCursorTracer cursorTracer, MemoryTracker contextTracker) {
         synchronized (ktxContext) {
-            mergeUnblocked(cursorTracer);
+            mergeUnblocked(cursorTracer, contextTracker);
         }
         VarHandle.fullFence();
     }
 
-    private void mergeUnblocked(ExecutionContextCursorTracer cursorTracer) {
+    private void mergeUnblocked(ExecutionContextCursorTracer cursorTracer, MemoryTracker contextTracker) {
         ktxContext.merge(cursorTracer.snapshot());
+        contextTracker.reset();
     }
 
     @Override
