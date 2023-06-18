@@ -244,22 +244,6 @@ public class RecordFormatSelector {
     }
 
     /**
-     * Finds the latest store version (both latest major and minor) for the submitted format family.
-     * <p>
-     * The returned format is not guaranteed to be supported to run a database on ({@link RecordFormats#onlyForMigration()}).
-     * Formats under development are not included in the search.
-     */
-    public static RecordFormats findLatestFormatInFamily(String formatFamily) {
-        RecordFormats recordFormats = loadRecordFormat(formatFamily, false);
-
-        if (recordFormats == null) {
-            throw new IllegalArgumentException("Unknown format family: '" + formatFamily + "'");
-        }
-
-        return recordFormats;
-    }
-
-    /**
      * Finds the latest minor version ({@link RecordFormats#minorVersion()}) for the combination of the format family ({@link RecordFormats#getFormatFamily()})
      * and the major version ({@link RecordFormats#majorVersion()}) of the supplied format.
      * <p>

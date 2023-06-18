@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Optional;
+import org.neo4j.configuration.Config;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -38,7 +39,7 @@ public interface StoreVersion extends StoreVersionUserStringProvider {
     /**
      * @return if this version isn't the latest version, the returned optional will contain the store version superseding this version.
      */
-    Optional<StoreVersion> successorStoreVersion();
+    Optional<StoreVersion> successorStoreVersion(Config config);
 
     String formatName();
 

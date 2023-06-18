@@ -211,7 +211,8 @@ public class StoreInfoCommand extends AbstractAdminCommand {
                     txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be
             // behind
             // if recovery is required.
-            var successorVersion = versionInformation.successorStoreVersion().orElse(null);
+            var successorVersion =
+                    versionInformation.successorStoreVersion(config).orElse(null);
             var storeInfo = StoreInfo.notInUseResult(
                     databaseLayout.getDatabaseName(), versionInformation, successorVersion, lastTxId, recoveryRequired);
 

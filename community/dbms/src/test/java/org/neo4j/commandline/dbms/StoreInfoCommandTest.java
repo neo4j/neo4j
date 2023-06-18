@@ -426,7 +426,7 @@ class StoreInfoCommandTest {
         StoreVersion version = mock(StoreVersion.class);
         when(version.getStoreVersionUserString()).thenReturn(storeVersion);
         when(version.introductionNeo4jVersion()).thenReturn(introducedInVersion);
-        when(version.successorStoreVersion()).thenReturn(Optional.ofNullable(supersededByStoreVersion));
+        when(version.successorStoreVersion(any())).thenReturn(Optional.ofNullable(supersededByStoreVersion));
         return version;
     }
 

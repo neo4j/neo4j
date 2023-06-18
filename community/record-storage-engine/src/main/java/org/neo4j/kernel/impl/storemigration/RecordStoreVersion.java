@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.util.Optional;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -55,9 +56,9 @@ public class RecordStoreVersion implements StoreVersion {
     }
 
     @Override
-    public Optional<StoreVersion> successorStoreVersion() {
+    public Optional<StoreVersion> successorStoreVersion(Config config) {
         RecordFormats latestFormatInFamily = RecordFormatSelector.findLatestFormatInFamily(
-                format.getFormatFamily().name());
+                format.getFormatFamily().name(), config);
         if (latestFormatInFamily != null && !latestFormatInFamily.name().equals(format.name())) {
             return Optional.of(new RecordStoreVersion(latestFormatInFamily));
         }
