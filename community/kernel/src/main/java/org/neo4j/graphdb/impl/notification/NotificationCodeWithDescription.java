@@ -25,7 +25,9 @@ import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 
 /**
- * This bundles a specific description with a (potentially) more generic NotificationCode
+ * This bundles a specific description with a (potentially) more generic NotificationCode.
+ *
+ * If changing or adding a notification, please make sure you follow the guidelines here: <a href="https://github.com/neo4j/docs-status-codes/blob/dev/README.adoc">NOTIFICATION GUIDELINES</a>
  */
 public enum NotificationCodeWithDescription {
     CARTESIAN_PRODUCT(
