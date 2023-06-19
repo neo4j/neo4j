@@ -19,6 +19,8 @@
  */
 package org.neo4j.fabric;
 
+import static java.lang.String.format;
+
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -60,11 +62,11 @@ public class FabricDatabaseManager {
         return databaseContext.databaseFacade();
     }
 
-    private DatabaseContext getDatabaseContext(String databaseNameRaw) {
-        return databaseReferenceRepo
-                .getByAlias(databaseNameRaw)
-                .flatMap(this::getDatabaseContext)
-                .orElseThrow(databaseNotFound(databaseNameRaw));
+    private DatabaseContext getDatabaseContext(String databaseNameRaw) throws UnavailableException {
+        var databaseReference =
+                databaseReferenceRepo.getByAlias(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
+        return getDatabaseContext(databaseReference)
+                .orElseThrow(() -> new UnavailableException(format("Database '%s' is unavailable.", databaseNameRaw)));
     }
 
     private Optional<? extends DatabaseContext> getDatabaseContext(DatabaseReference databaseReference) {
