@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
@@ -35,7 +37,7 @@ import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryGraphConnectedComponentsTest
-    extends CypherFunSuite with LogicalPlanningTestSupport {
+  extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private val A = "a"
   private val B = "b"
@@ -60,6 +62,13 @@ class QueryGraphConnectedComponentsTest
         VariableGrouping("anon_3", s"${to}_inner")
       ),
       relationshipVariableGroupings = Set(VariableGrouping("anon_2", "r"))
+    )
+
+  private def spp(from: String, to: String) =
+    SelectivePathPattern(
+      ExhaustivePathPattern.NodeConnections(List(qpp(from, to))),
+      Selections.empty,
+      SelectivePathPattern.Selector.Any(1)
     )
 
   test("empty query graph returns no connected querygraphs") {
@@ -357,6 +366,124 @@ class QueryGraphConnectedComponentsTest
       patternNodes = Set(A, B),
       quantifiedPathPatterns = Set(qpp(A, B)),
       selections = Selections.from(equals(varFor("a_inner"), varFor(X)))
+    )
+
+    val components = graph.connectedComponents
+    components should equal(Seq(graph))
+  }
+
+  test("nodes connected via shortest path") {
+    val spps = Set(spp(A, B))
+
+    val sppQG =
+      QueryGraph(
+        patternNodes = Set(A, B, C),
+        patternRelationships = Set.empty,
+        selectivePathPatterns = spps
+      )
+
+    val connectedPart =
+      QueryGraph(
+        patternNodes = Set(A, B),
+        patternRelationships = Set.empty,
+        selectivePathPatterns = spps
+      )
+    val otherNode = QueryGraph(patternNodes = Set(C))
+    sppQG.connectedComponents.toSet shouldBe Set(connectedPart, otherNode)
+  }
+
+  test("nodes connected via shortest path (path pattern of length 2)") {
+    val spps = Set(SelectivePathPattern(
+      ExhaustivePathPattern.NodeConnections(List(qpp(A, B), qpp(B, C))),
+      Selections.empty,
+      SelectivePathPattern.Selector.Any(1)
+    ))
+
+    val sppQG =
+      QueryGraph(
+        patternNodes = Set(A, C, D),
+        patternRelationships = Set.empty,
+        selectivePathPatterns = spps
+      )
+
+    val connectedPart =
+      QueryGraph(
+        patternNodes = Set(A, C),
+        patternRelationships = Set.empty,
+        selectivePathPatterns = spps
+      )
+    val otherNode = QueryGraph(patternNodes = Set(D))
+    sppQG.connectedComponents.toSet shouldBe Set(connectedPart, otherNode)
+  }
+
+  test("2 sets of nodes connected via 2 shortest paths") {
+    val sppAB = spp(A, B)
+    val sppCD = spp(C, D)
+    val spps = Set(sppAB, sppCD)
+
+    val sppQG =
+      QueryGraph(
+        patternNodes = Set(A, B, C, D),
+        patternRelationships = Set.empty,
+        selectivePathPatterns = spps
+      )
+
+    val connectedParts = Set(
+      QueryGraph(
+        patternNodes = Set(A, B),
+        patternRelationships = Set.empty,
+        selectivePathPatterns = Set(sppAB)
+      ),
+      QueryGraph(
+        patternNodes = Set(C, D),
+        patternRelationships = Set.empty,
+        selectivePathPatterns = Set(sppCD)
+      )
+    )
+    sppQG.connectedComponents.toSet shouldBe connectedParts
+  }
+
+  test("1 set of nodes connected via 2 shortest paths and a relationship") {
+    val sppAB = spp(A, B)
+    val sppCD = spp(C, D)
+    val spps = Set(sppAB, sppCD)
+
+    val sppQG =
+      QueryGraph(
+        patternNodes = Set(A, B, C, D),
+        patternRelationships = Set(rel(B, C)),
+        selectivePathPatterns = spps
+      )
+
+    sppQG.connectedComponents.toSet shouldBe Set(sppQG)
+  }
+
+  test("should pick the predicates correctly on selective path patterns when they depend on arguments") {
+    val graph = QueryGraph(
+      argumentIds = Set(X),
+      patternNodes = Set(A, C),
+      selectivePathPatterns = Set(SelectivePathPattern(
+        ExhaustivePathPattern.NodeConnections(List(qpp(A, B), qpp(B, C))),
+        Selections.empty,
+        SelectivePathPattern.Selector.Any(1)
+      )),
+      selections = Selections.from(equals(varFor(B), varFor(X)))
+    )
+
+    val components = graph.connectedComponents
+    components should equal(Seq(graph))
+  }
+
+
+  test("selective path pattern should pull in predicates without dependency on arguments") {
+    val graph = QueryGraph(
+      patternNodes = Set(A, C),
+      selectivePathPatterns = Set(SelectivePathPattern(
+        ExhaustivePathPattern.NodeConnections(List(qpp(A, B), qpp(B, C))),
+        Selections.empty,
+        SelectivePathPattern.Selector.Any(1)
+      )),
+      selections = Selections.from(isNotNull(varFor(B)))
     )
 
     val components = graph.connectedComponents

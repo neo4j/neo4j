@@ -129,7 +129,7 @@ case class QueryGraph(
     }
   }
 
-  def addNodeConnections(connections: Seq[NodeConnection]): QueryGraph =
+  def addNodeConnections(connections: Iterable[NodeConnection]): QueryGraph =
     connections.foldLeft(this) {
       case (qg, connection) => qg.addNodeConnection(connection)
     }
@@ -142,9 +142,6 @@ case class QueryGraph(
       patternNodes = patternNodes ++ pattern.coveredNodeIds,
       quantifiedPathPatterns = quantifiedPathPatterns + pattern
     )
-
-  def addQuantifiedPathPatterns(pattern: Set[QuantifiedPathPattern]): QueryGraph =
-    pattern.foldLeft[QueryGraph](this)((qg, rel) => qg.addQuantifiedPathPattern(rel))
 
   def addShortestRelationship(shortestRelationship: ShortestRelationshipPattern): QueryGraph = {
     val rel = shortestRelationship.rel
@@ -487,18 +484,13 @@ case class QueryGraph(
       if (!visited(node)) {
         visited += node
 
-        val (
-          patternRelationshipsInConnectedComponent: Set[PatternRelationship],
-          quantifiedPathPatternsInConnectedComponent: Set[QuantifiedPathPattern],
-          nodes: Set[String]
-        ) = findConnectedEntities(node, connectedComponent)
+        val (nodeConnections, nodes) = findConnectedEntities(node, connectedComponent)
 
         queue.enqueueAll(nodes)
 
         connectedComponent = connectedComponent
           .addPatternNodes(node)
-          .addPatternRelationships(patternRelationshipsInConnectedComponent)
-          .addQuantifiedPathPatterns(quantifiedPathPatternsInConnectedComponent)
+          .addNodeConnections(nodeConnections)
 
         val alreadyHaveArguments = connectedComponent.argumentIds.nonEmpty
 
@@ -519,27 +511,27 @@ case class QueryGraph(
   private def findConnectedEntities(
     node: String,
     connectedComponent: QueryGraph
-  ): (Set[PatternRelationship], Set[QuantifiedPathPattern], Set[String]) = {
+  ): (Set[NodeConnection], Set[String]) = {
 
-    val filteredPatterns = patternRelationships.filter { rel =>
-      rel.coveredNodeIds.contains(node) && !connectedComponent.patternRelationships.contains(rel)
+    // All node connections that either have `node` as the left or the right node.
+    val nodeConnectionsOfNode = nodeConnections.filter { nc =>
+      nc.coveredNodeIds.contains(node) && !connectedComponent.nodeConnections.contains(nc)
     }
-    val filteredQPPatterns = quantifiedPathPatterns.filter { rel =>
-      rel.coveredNodeIds.contains(node) && !connectedComponent.quantifiedPathPatterns.contains(rel)
-    }
+    // All nodes that get connected through `nodeConnectionsOfNode`
+    val nodesConnectedThroughOneConnection = nodeConnectionsOfNode.map(_.otherSide(node))
 
-    val patternsWithSameName =
-      patternRelationships.filterNot(filteredPatterns).filter { r => filteredPatterns.exists(_.name == r.name) }
-
-    val filteredPatternNodes = filteredPatterns.map(_.otherSide(node))
-    val filteredQPPatternNodes = filteredQPPatterns.map(_.otherSide(node))
-
-    val patternsWithSameNameNodes = patternsWithSameName.flatMap(r => Seq(r.left, r.right))
+    // `(a)-[r]->(b), (c)-[r]->(d)` are connected through both relationships being named `r`.
+    val patternRelationshipsWithSameName =
+      patternRelationships.filterNot(nodeConnectionsOfNode).filter { r => nodeConnectionsOfNode.exists {
+        case r2:PatternRelationship if r.name == r2.name => true
+        case _ => false
+      }}
+    // All nodes that get connected through `patternRelationshipsWithSameName`
+    val patternRelationshipsWithSameNameNodes = patternRelationshipsWithSameName.flatMap(r => Seq(r.left, r.right))
 
     (
-      filteredPatterns ++ patternsWithSameName,
-      filteredQPPatterns,
-      filteredPatternNodes ++ filteredQPPatternNodes ++ patternsWithSameNameNodes
+      nodeConnectionsOfNode ++ patternRelationshipsWithSameName,
+      nodesConnectedThroughOneConnection ++ patternRelationshipsWithSameNameNodes
     )
   }
 
