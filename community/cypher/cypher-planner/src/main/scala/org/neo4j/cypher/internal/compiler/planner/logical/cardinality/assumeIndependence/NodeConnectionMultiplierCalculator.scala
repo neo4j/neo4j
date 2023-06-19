@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -149,6 +150,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             relationshipsWithUniquePredicate(qpp.relationshipVariableGroupings.map(_.groupName)),
             uniquenessPredicatesWithin(qpp)
           )
+        case spp: SelectivePathPattern => ??? // TODO
       }
     }
   }

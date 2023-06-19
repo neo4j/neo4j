@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
-import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PathPattern
 import org.neo4j.cypher.internal.ir.PathPatterns
 import org.neo4j.cypher.internal.ir.Selections

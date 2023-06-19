@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -289,6 +290,7 @@ object expandSolverStep {
           qppInnerPlans,
           qg.selections.flatPredicates
         )
+      case spp: SelectivePathPattern => ??? // TODO
     }
   }
 
