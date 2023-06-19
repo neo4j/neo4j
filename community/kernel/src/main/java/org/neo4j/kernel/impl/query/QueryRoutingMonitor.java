@@ -26,16 +26,4 @@ public interface QueryRoutingMonitor {
     void queryRoutedRemoteInternal();
 
     void queryRoutedRemoteExternal();
-
-    //    void localExecutionSuccess();
-    //
-    //    void localExecutionFailed();
-    //
-    //    void remoteInternalExecutionSuccess();
-    //
-    //    void remoteInternalExecutionFailure();
-    //
-    //    void remoteExternalExecutionSuccess();
-    //
-    //    void remoteExternalExecutionFailure();
 }
