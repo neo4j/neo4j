@@ -101,6 +101,7 @@ import org.neo4j.values.utils.TemporalValueWriterAdapter;
  * 11: SHORT STRING
  * 12: SHORT ARRAY
  * 13: GEOMETRY
+ * 14: TEMPORAL
  * </pre>
  * <h2>value formats</h2>
  * <pre>
@@ -124,7 +125,7 @@ import org.neo4j.values.utils.TemporalValueWriterAdapter;
  *                                                                                 0 means 64, other values "normal"
  *            [xxxx,xxxx] [xxxx,xxxx] [xxxx,    ] [    ,    ] payload(+ maybe in next block) (0xFFFF_FF00_0000_0000)
  *                                                            bits are densely packed, bytes torn across blocks
- * POINT:     [    ,    ] [    ,    ] [    ,    ] [    ,    ] [xxxx,type][K][K][K] geometry subtype
+ * POINT:     [    ,    ] [    ,    ] [    ,    ] [    ,    ] [ 01 ,type][K][K][K] geometry subtype
  *            [    ,    ] [    ,    ] [    ,    ] [    ,xxxx] [    ,type][K][K][K] dimension
  *            [    ,    ] [    ,    ] [    ,    ] [xxxx,    ] [    ,type][K][K][K] CRSTable
  *            [    ,    ] [xxxx,xxxx] [xxxx,xxxx] [    ,    ] [    ,type][K][K][K] CRS code
