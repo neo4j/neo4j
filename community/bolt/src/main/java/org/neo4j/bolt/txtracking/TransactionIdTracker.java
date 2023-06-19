@@ -31,6 +31,8 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
@@ -45,10 +47,17 @@ public class TransactionIdTracker {
     private final TransactionIdTrackerMonitor monitor;
     private final SystemNanoClock clock;
 
-    public TransactionIdTracker(DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock) {
+    private final Log log;
+
+    public TransactionIdTracker(
+            DatabaseManagementService managementService,
+            Monitors monitors,
+            SystemNanoClock clock,
+            LogProvider logProvider) {
         this.managementService = managementService;
         this.monitor = monitors.newMonitor(TransactionIdTrackerMonitor.class);
         this.clock = clock;
+        this.log = logProvider.getLog(getClass());
     }
 
     /**
@@ -104,15 +113,23 @@ public class TransactionIdTracker {
         var lastTransactionId = -1L;
         try {
             Stopwatch startTime = clock.startStopWatch();
+            boolean waited = false;
             do {
                 if (isNotAvailable(db)) {
                     throw databaseUnavailable(db);
                 }
                 lastTransactionId = currentTransactionId(db);
                 if (oldestAcceptableTxId <= lastTransactionId) {
+                    log.debug(
+                            "Done waiting for bookmark on database '%s' after % (awaited:%s, reached:%s)",
+                            namedDatabaseId,
+                            waited ? startTime.elapsed() : Duration.ZERO,
+                            oldestAcceptableTxId,
+                            lastTransactionId);
                     return;
                 }
                 waitWhenNotUpToDate();
+                waited = true;
             } while (!startTime.hasTimedOut(timeout));
 
             throw unreachableDatabaseVersion(db, lastTransactionId, oldestAcceptableTxId);

@@ -48,6 +48,7 @@ import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
@@ -80,7 +81,8 @@ class TransactionIdTrackerTest {
         when(resolver.resolveDependency(TransactionIdStore.class)).thenReturn(transactionIdStore);
 
         when(databaseAvailabilityGuard.isAvailable()).thenReturn(true);
-        transactionIdTracker = new TransactionIdTracker(managementService, new Monitors(), Clocks.fakeClock());
+        transactionIdTracker = new TransactionIdTracker(
+                managementService, new Monitors(), Clocks.fakeClock(), NullLogProvider.getInstance());
     }
 
     @Test

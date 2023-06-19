@@ -98,7 +98,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
 
     public BoltGraphDatabaseManagementServiceSPI bootstrapServices(
             DatabaseManagementService databaseManagementService) {
-        super.bootstrapCommonServices(databaseManagementService);
+        super.bootstrapCommonServices(databaseManagementService, logService);
         InternalLogProvider internalLogProvider = logService.getInternalLogProvider();
 
         @SuppressWarnings("unchecked")

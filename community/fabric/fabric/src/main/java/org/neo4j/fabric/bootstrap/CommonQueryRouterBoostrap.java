@@ -28,6 +28,7 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
@@ -46,12 +47,14 @@ public class CommonQueryRouterBoostrap {
         this.databaseProvider = databaseProvider;
     }
 
-    protected void bootstrapCommonServices(DatabaseManagementService databaseManagementService) {
+    protected void bootstrapCommonServices(DatabaseManagementService databaseManagementService, LogService logService) {
         if (!dependencies.containsDependency(LocalGraphTransactionIdTracker.class)) {
             var monitors = resolve(Monitors.class);
             var serverConfig = resolve(Config.class);
             var systemNanoClock = resolve(SystemNanoClock.class);
-            var transactionIdTracker = new TransactionIdTracker(databaseManagementService, monitors, systemNanoClock);
+            var logProvider = logService.getInternalLogProvider();
+            var transactionIdTracker =
+                    new TransactionIdTracker(databaseManagementService, monitors, systemNanoClock, logProvider);
             var databaseIdRepository = databaseProvider.databaseIdRepository();
             register(
                     new LocalGraphTransactionIdTracker(transactionIdTracker, databaseIdRepository, serverConfig),

@@ -92,7 +92,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
 
     public BoltGraphDatabaseManagementServiceSPI bootstrapServices(
             DatabaseManagementService databaseManagementService) {
-        bootstrapCommonServices(databaseManagementService);
+        bootstrapCommonServices(databaseManagementService, logService);
         return createBoltDatabaseManagementServiceProvider();
     }
 
