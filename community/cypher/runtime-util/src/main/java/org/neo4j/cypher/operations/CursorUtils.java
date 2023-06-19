@@ -597,6 +597,7 @@ public final class CursorUtils {
         return propertyCursor.next();
     }
 
+    @CalledFromGeneratedCode
     public static int[] relationshipPropertyIds(
             Read read,
             VirtualRelationshipValue relationship,
@@ -605,6 +606,7 @@ public final class CursorUtils {
         return new VirtualRelationshipReader(read, cursor, relationship).propertyIds(propertyCursor);
     }
 
+    @CalledFromGeneratedCode
     public static MapValue relationshipAsMap(
             Read read,
             TokenRead tokenRead,
@@ -615,6 +617,7 @@ public final class CursorUtils {
         return new VirtualRelationshipReader(read, cursor, relationship).asMap(tokenRead, propertyCursor);
     }
 
+    @CalledFromGeneratedCode
     public static AnyValue propertyGet(
             String key,
             AnyValue container,
@@ -771,7 +774,7 @@ public final class CursorUtils {
      * }
      * </pre>
      */
-    static class VirtualRelationshipReader implements Consumer<RelationshipVisitor> {
+    static final class VirtualRelationshipReader implements Consumer<RelationshipVisitor> {
 
         private final Read read;
 

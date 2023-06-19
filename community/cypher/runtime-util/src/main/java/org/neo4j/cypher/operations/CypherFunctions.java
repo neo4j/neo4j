@@ -443,8 +443,6 @@ public final class CypherFunctions {
     public static AnyValue startNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {
         if (anyValue == NO_VALUE) {
             return NO_VALUE;
-        } else if (anyValue instanceof RelationshipValue rel) {
-            return rel.startNode();
         } else if (anyValue instanceof VirtualRelationshipValue rel) {
             return startNode(rel, access, cursor);
         } else {

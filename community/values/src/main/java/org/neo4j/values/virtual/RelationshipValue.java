@@ -29,8 +29,8 @@ import org.neo4j.values.storable.TextValue;
 
 public abstract class RelationshipValue extends VirtualRelationshipValue implements RelationshipVisitor {
     private final long id;
-    private final long startNodeId;
-    private final long endNodeId;
+    private long startNodeId;
+    private long endNodeId;
     private int type = RelationshipReference.NO_TYPE;
 
     protected RelationshipValue(long id, long startNodeId, long endNodeId) {
@@ -72,6 +72,9 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
 
     @Override
     public long startNodeId(Consumer<RelationshipVisitor> consumer) {
+        if (startNodeId == RelationshipReference.NO_NODE) {
+            consumer.accept(this);
+        }
         return startNodeId;
     }
 
@@ -85,6 +88,9 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
 
     @Override
     public long endNodeId(Consumer<RelationshipVisitor> consumer) {
+        if (endNodeId == RelationshipReference.NO_NODE) {
+            consumer.accept(this);
+        }
         return endNodeId;
     }
 
@@ -127,6 +133,8 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
     @Override
     public void visit(long startNode, long endNode, int type) {
         this.type = type;
+        this.startNodeId = startNode;
+        this.endNodeId = endNode;
     }
 
     private static final long DIRECT_RELATIONSHIP_VALUE_SHALLOW_SIZE =
