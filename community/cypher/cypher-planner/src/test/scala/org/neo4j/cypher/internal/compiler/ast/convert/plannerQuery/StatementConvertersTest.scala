@@ -2257,7 +2257,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should convert query with path selector, path assignment, and predicates") {
     val query = buildSinglePlannerQuery(
-      """MATCH p = ANY SHORTEST ((start:Start)((a)-[r:R]->(b))+(end) WHERE start.prop < end.prop)
+      """MATCH p = ANY SHORTEST ((start:Start)((a)-[r:R]->(b))+(end) WHERE start.prop < size(r))
         |WHERE end.prop > 0
         |RETURN p, start, r""".stripMargin
     )
@@ -2285,8 +2285,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       SelectivePathPattern(
         pathPattern = ExhaustivePathPattern.NodeConnections(List(qpp)),
         selections = Selections.from(List(
-          andedPropertyInequalities(lessThan(prop("start", "prop"), prop("end", "prop"))),
-          hasLabels("start", "Start"),
+          andedPropertyInequalities(lessThan(prop("start", "prop"), function("size", varFor("r")))),
           unique(varFor("r"))
         )),
         selector = SelectivePathPattern.Selector.Shortest(1)
@@ -2296,7 +2295,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       QueryGraph
         .empty
         .addPredicates(
-          andedPropertyInequalities(greaterThan(prop("end", "prop"), literalInt(0)))
+          andedPropertyInequalities(greaterThan(prop("end", "prop"), literalInt(0))),
+          hasLabels("start", "Start")
         )
         .addSelectivePathPattern(shortestPathPattern)
 

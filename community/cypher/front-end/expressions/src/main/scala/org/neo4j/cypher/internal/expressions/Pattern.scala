@@ -162,7 +162,9 @@ object PatternPart {
     val count: UnsignedDecimalIntegerLiteral
   }
 
-  case class AnyPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
+  sealed trait SelectiveSelector extends Selector
+
+  case class AnyPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends SelectiveSelector
       with CountedSelector {
     override def prettified: String = s"ANY ${count.value} PATHS"
 
@@ -174,18 +176,19 @@ object PatternPart {
     override def isBounded: Boolean = false
   }
 
-  case class AnyShortestPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
+  case class AnyShortestPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition)
+      extends SelectiveSelector
       with CountedSelector {
     override def prettified: String = s"SHORTEST ${count.value} PATHS"
     override def isBounded: Boolean = true
   }
 
-  case class AllShortestPaths()(val position: InputPosition) extends Selector {
+  case class AllShortestPaths()(val position: InputPosition) extends SelectiveSelector {
     override def prettified: String = "ALL SHORTEST PATHS"
     override def isBounded: Boolean = true
   }
 
-  case class ShortestGroups(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
+  case class ShortestGroups(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends SelectiveSelector
       with CountedSelector {
     override def prettified: String = s"SHORTEST ${count.value} PATH GROUPS"
     override def isBounded: Boolean = true

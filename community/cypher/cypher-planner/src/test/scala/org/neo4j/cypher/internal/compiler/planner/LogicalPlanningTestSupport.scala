@@ -67,6 +67,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
@@ -438,6 +439,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       rewriteEqualityToInPredicate andThen
       cnfNormalizerTransformer andThen
       collapseMultipleInPredicates andThen
+      MoveBoundaryNodePredicates andThen
       CreatePlannerQuery andThen
       NameDeduplication
 

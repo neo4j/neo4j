@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
+import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
@@ -116,7 +117,8 @@ object CompilationPhases {
           CheckForUnresolvedTokens,
           EagerRewriter,
           SortPredicatesBySelectivity,
-          ParameterToDefaultRewriter
+          ParameterToDefaultRewriter,
+          MoveBoundaryNodePredicates
         ) ++ CNFNormalizer.steps,
         initialConditions =
           Set(BaseContains[Statement])

@@ -40,8 +40,10 @@ trait RewritePhaseTest {
 
   def astRewriteAndAnalyze: Boolean = true
 
+  def semanticFeatures: Seq[SemanticFeature] = Seq.empty
+
   def preProcessPhase(features: SemanticFeature*): Transformer[BaseContext, BaseState, BaseState] =
-    SemanticAnalysis(false, features: _*)
+    SemanticAnalysis(false, semanticFeatures ++ features: _*)
 
   def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] =
     new Transformer[BaseContext, BaseState, BaseState] {
@@ -104,7 +106,7 @@ trait RewritePhaseTest {
     val parsedAst = JavaCCParser.parse(queryText, exceptionFactory)
     val cleanedAst = parsedAst.endoRewrite(normalizeWithAndReturnClauses(exceptionFactory))
     if (astRewriteAndAnalyze) {
-      val semanticState = cleanedAst.semanticState(features: _*)
+      val semanticState = cleanedAst.semanticState(semanticFeatures ++ features: _*)
       ASTRewriter.rewrite(
         cleanedAst.endoRewrite(computeDependenciesForExpressions(semanticState)),
         semanticState,

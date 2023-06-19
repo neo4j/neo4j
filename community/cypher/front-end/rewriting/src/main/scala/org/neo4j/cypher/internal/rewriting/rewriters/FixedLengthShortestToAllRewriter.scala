@@ -19,10 +19,9 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
-import org.neo4j.cypher.internal.expressions.PathConcatenation
-import org.neo4j.cypher.internal.expressions.PathFactor
 import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
 import org.neo4j.cypher.internal.expressions.PatternPart.AllShortestPaths
+import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPart.Selector
 import org.neo4j.cypher.internal.expressions.PatternPart.ShortestGroups
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
@@ -59,7 +58,7 @@ case object FixedLengthShortestToAllRewriter extends StepSequencer.Step with AST
   val instance: Rewriter = topDown(Rewriter.lift {
     case p @ PatternPartWithSelector(sel @ AllShortest(), part) if part.isFixedLength =>
       p.copy(selector = AllPaths()(sel.position))
-    case p @ PatternPartWithSelector(sel, SingleNode()) if !sel.isInstanceOf[AllPaths] =>
+    case p @ PatternPartWithSelector(sel: SelectiveSelector, SingleNode()) =>
       p.copy(selector = AllPaths()(sel.position))
   })
 
