@@ -121,7 +121,8 @@ object SignatureResolver {
       eager = signature.eager(),
       id = handle.id(),
       systemProcedure = signature.systemProcedure(),
-      allowExpiredCredentials = signature.allowedExpiredCredentials()
+      allowExpiredCredentials = signature.allowedExpiredCredentials(),
+      threadSafe = signature.threadSafe()
     )
   }
 
