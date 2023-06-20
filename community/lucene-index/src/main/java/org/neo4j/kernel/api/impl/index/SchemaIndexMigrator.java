@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.neo4j.storageengine.api.format.MultiVersionedIndexesCompatibility.MULTI_VERSION_INDEXES;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import org.neo4j.common.EntityType;
@@ -52,6 +54,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
     private final StorageEngineFactory storageEngineFactory;
     private final CursorContextFactory contextFactory;
     private boolean deleteRelationshipIndexes;
+    private boolean deleteAllIndexes;
 
     public SchemaIndexMigrator(
             String name,
@@ -79,6 +82,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
             StoreVersion toVersion,
             IndexImporterFactory indexImporterFactory,
             LogTailMetadata tailMetadata) {
+        deleteAllIndexes = differentMultiVersionCapabilities(toVersion, fromVersion);
         deleteRelationshipIndexes = !fromVersion.hasCompatibleCapabilities(toVersion, CapabilityType.FORMAT);
     }
 
@@ -91,7 +95,9 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
             throws IOException {
         Path schemaIndexDirectory = indexDirectoryStructure.rootDirectory();
         if (schemaIndexDirectory != null) {
-            if (deleteRelationshipIndexes) {
+            if (deleteAllIndexes) {
+                fileSystem.deleteRecursively(schemaIndexDirectory);
+            } else if (deleteRelationshipIndexes) {
                 deleteRelationshipIndexes(directoryLayout);
             }
         }
@@ -100,6 +106,10 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
     @Override
     public void cleanup(DatabaseLayout migrationLayout) {
         // nop
+    }
+
+    private boolean differentMultiVersionCapabilities(StoreVersion toVersion, StoreVersion fromVersion) {
+        return toVersion.hasCapability(MULTI_VERSION_INDEXES) ^ fromVersion.hasCapability(MULTI_VERSION_INDEXES);
     }
 
     private void deleteRelationshipIndexes(DatabaseLayout databaseLayout) throws IOException {

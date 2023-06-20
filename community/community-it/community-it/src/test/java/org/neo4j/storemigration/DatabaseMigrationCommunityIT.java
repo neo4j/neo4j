@@ -100,7 +100,7 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
     @MethodSource("migrations")
     void shouldMigrateDatabase(ZippedStore zippedStore, String toRecordFormat)
             throws IOException, ConsistencyCheckIncompleteException {
-        doShouldMigrateDatabase(zippedStore, toRecordFormat);
+        doShouldMigrateDatabase(zippedStore, toRecordFormat, false);
     }
 
     @ParameterizedTest

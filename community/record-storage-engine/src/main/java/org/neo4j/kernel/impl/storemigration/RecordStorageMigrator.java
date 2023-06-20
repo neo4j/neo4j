@@ -34,6 +34,7 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.getSchemaStoreMigration;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
+import static org.neo4j.storageengine.api.format.CapabilityType.FORMAT;
 
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -116,7 +117,6 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -148,6 +148,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     private final BatchImporterFactory batchImporterFactory;
     private final MemoryTracker memoryTracker;
     private final boolean forceBtreeIndexesToRange;
+    private boolean formatsHaveDifferentStoreCapabilities;
 
     public RecordStorageMigrator(
             FileSystemAbstraction fileSystem,
@@ -188,7 +189,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         RecordFormats oldFormat = ((RecordStoreVersion) fromVersion).getFormat();
         RecordFormats newFormat = ((RecordStoreVersion) toVersion).getFormat();
 
-        boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals(oldFormat.dynamic());
+        formatsHaveDifferentStoreCapabilities = !oldFormat.hasCompatibleCapabilities(newFormat, FORMAT);
+        boolean requiresDynamicStoreMigration =
+                formatsHaveDifferentStoreCapabilities || !newFormat.dynamic().equals(oldFormat.dynamic());
         boolean requiresPropertyMigration =
                 !newFormat.property().equals(oldFormat.property()) || requiresDynamicStoreMigration;
 
@@ -214,7 +217,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             long checkpointLogVersion = tailMetadata.getCheckpointLogVersion();
 
             // The FORMAT capability also includes the format family so this comparison is enough
-            if (!oldFormat.hasCompatibleCapabilities(newFormat, CapabilityType.FORMAT)) {
+            if (formatsHaveDifferentStoreCapabilities) {
                 // Some form of migration is required (a fallback/catch-all option)
                 migrateWithBatchImporter(
                         directoryLayout,
@@ -432,11 +435,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
 
     private void prepareBatchImportMigration(
             RecordDatabaseLayout sourceDirectoryStructure,
-            RecordDatabaseLayout migrationStrcuture,
+            RecordDatabaseLayout migrationStructure,
             RecordFormats oldFormat,
             RecordFormats newFormat)
             throws IOException {
-        createStore(migrationStrcuture, newFormat);
+        createStore(migrationStructure, newFormat);
 
         // We use the batch importer for migrating the data, and we use it in a special way where we only
         // rewrite the stores that have actually changed format. We know that to be node and relationship
@@ -454,12 +457,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
             RecordDatabaseFile.NODE_LABEL_STORE
         };
-        if (newFormat.dynamic().equals(oldFormat.dynamic())) {
+        if (oldFormat.hasCompatibleCapabilities(newFormat, FORMAT)
+                && newFormat.dynamic().equals(oldFormat.dynamic())) {
             fileOperation(
                     COPY,
                     fileSystem,
                     sourceDirectoryStructure,
-                    migrationStrcuture,
+                    migrationStructure,
                     Arrays.asList(storesFilesToMigrate),
                     true,
                     true,
@@ -482,7 +486,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             migrator.migrate(
                     sourceDirectoryStructure,
                     oldFormat,
-                    migrationStrcuture,
+                    migrationStructure,
                     newFormat,
                     progressReporter,
                     storesToMigrate,
@@ -493,10 +497,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         // IdGeneratorFactory
         // it's easier to just figure out highId and create simple id files of the current format at that highId.
         createStoreFactory(
-                        migrationStrcuture,
+                        migrationStructure,
                         newFormat,
                         new ScanOnOpenOverwritingIdGeneratorFactory(
-                                fileSystem, pageCacheTracer, migrationStrcuture.getDatabaseName()))
+                                fileSystem, pageCacheTracer, migrationStructure.getDatabaseName()))
                 .openAllNeoStores()
                 .close();
     }
@@ -797,6 +801,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 }
                 degreesStore.checkpoint(flushEvent, context);
             }
+        }
+
+        if (formatsHaveDifferentStoreCapabilities) {
+            fileSystem.delete(recordLayout.indexStatisticsStore());
         }
     }
 

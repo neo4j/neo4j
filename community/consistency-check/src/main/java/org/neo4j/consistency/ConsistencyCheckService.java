@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.io.FilenameUtils;
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
@@ -58,6 +59,7 @@ import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -515,6 +517,9 @@ public class ConsistencyCheckService {
                     tokenHolders,
                     pageCacheTracer,
                     readOnly()));
+
+            Dependencies dependencies = new Dependencies(extensions);
+            dependencies.satisfyDependency(VersionStorage.EMPTY_STORAGE);
             final var indexProviders = life.add(StaticIndexProviderMapFactory.create(
                     life,
                     config,
@@ -530,7 +535,7 @@ public class ConsistencyCheckService {
                     jobScheduler,
                     contextFactory,
                     pageCacheTracer,
-                    extensions));
+                    dependencies));
 
             // do the consistency check
             life.start();

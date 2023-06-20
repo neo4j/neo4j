@@ -22,6 +22,7 @@ package org.neo4j.storemigration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.include_versions_under_development;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.util.Iterables.count;
@@ -31,6 +32,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.schema.IndexType.RANGE;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -38,12 +40,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
@@ -101,21 +105,32 @@ public abstract class DatabaseMigrationITBase {
         return StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(neo4jLayout, args);
     }
 
-    protected void doShouldMigrateDatabase(ZippedStore zippedStore, String toRecordFormat)
+    protected void doShouldMigrateDatabase(ZippedStore zippedStore, String toRecordFormat, boolean includeExperimental)
             throws IOException, ConsistencyCheckIncompleteException {
         // given
         Path homeDir = layout.homeDirectory();
         zippedStore.unzip(homeDir);
 
+        String[] args = {"--to-format", toRecordFormat, "--verbose", DEFAULT_DATABASE_NAME};
+        if (includeExperimental) {
+            Path additionalConfig = directory.file("add-config.conf");
+            Files.writeString(additionalConfig, include_versions_under_development.name() + "=true");
+            args = ArrayUtils.addAll(args, "--additional-config", additionalConfig.toString());
+        }
+
         // when
-        StoreMigrationTestUtils.Result result =
-                migrate(layout, "--to-format", toRecordFormat, "--verbose", DEFAULT_DATABASE_NAME);
+        StoreMigrationTestUtils.Result result = migrate(layout, args);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
 
         migrateOrRemoveSystemDatabase(zippedStore, layout);
 
         // then
-        DatabaseManagementService dbms = newDbmsBuilder(homeDir).build();
+        TestDatabaseManagementServiceBuilder builder = newDbmsBuilder(homeDir);
+        if (includeExperimental) {
+            builder.setConfig(include_versions_under_development, true);
+            builder.setConfig(GraphDatabaseSettings.db_format, toRecordFormat);
+        }
+        DatabaseManagementService dbms = builder.build();
 
         try {
             GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
@@ -128,7 +143,8 @@ public abstract class DatabaseMigrationITBase {
         } finally {
             dbms.shutdown();
         }
-        consistencyCheck(homeDir, DEFAULT_DATABASE_NAME);
+        // for now we skip index check for experimental formats (multiversion only atm)
+        consistencyCheck(homeDir, DEFAULT_DATABASE_NAME, includeExperimental);
     }
 
     protected RecordFormats expectedFormat(GraphDatabaseService db, String toRecordFormat) {
@@ -195,7 +211,7 @@ public abstract class DatabaseMigrationITBase {
         } finally {
             dbms.shutdown();
         }
-        consistencyCheck(targetDirectory, SYSTEM_DATABASE_NAME);
+        consistencyCheck(targetDirectory, SYSTEM_DATABASE_NAME, true);
     }
 
     protected void verifyContents(GraphDatabaseService db, DbStatistics statistics) {
@@ -383,7 +399,16 @@ public abstract class DatabaseMigrationITBase {
 
     protected static void consistencyCheck(Path targetDirectory, String databaseName)
             throws ConsistencyCheckIncompleteException {
+        consistencyCheck(targetDirectory, databaseName, false);
+    }
+
+    protected static void consistencyCheck(Path targetDirectory, String databaseName, boolean skipIndexes)
+            throws ConsistencyCheckIncompleteException {
         AssertableLogProvider logProvider = new AssertableLogProvider();
+        ConsistencyFlags consistencyFlags = ConsistencyFlags.DEFAULT;
+        if (skipIndexes) {
+            consistencyFlags = consistencyFlags.withoutCheckIndexes();
+        }
         Config config = Config.newBuilder()
                 .set(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8))
                 .set(GraphDatabaseSettings.logs_directory, targetDirectory.resolve("inconsistency-reports"))
@@ -391,6 +416,7 @@ public abstract class DatabaseMigrationITBase {
         ConsistencyCheckService.Result consistencyCheckResult = new ConsistencyCheckService(
                         RecordDatabaseLayout.of(Neo4jLayout.of(targetDirectory), databaseName))
                 .with(config)
+                .with(consistencyFlags)
                 .with(logProvider)
                 .runFullConsistencyCheck();
         assertThat(consistencyCheckResult.isSuccessful())
