@@ -384,11 +384,13 @@ object LogicalPlanToPlanBuilderString {
           nonInlinablePreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
-          selector
+          selector,
+          solvedExpressionString
         ) =>
         Seq(
           wrapInQuotations(from),
           wrapInQuotations(to),
+          wrapInQuotations(solvedExpressionString),
           nonInlinablePreFilters.map(e => wrapInQuotations(expressionStringifier(e))),
           s"Set(${groupEntitiesString(nodeVariableGroupings)})",
           s"Set(${groupEntitiesString(relationshipVariableGroupings)})",

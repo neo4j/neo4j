@@ -556,6 +556,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def statefulShortestPath(
     sourceNode: String,
     targetNode: String,
+    solvedExpressionString: String,
     nonInlinablePreFilters: Option[String],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
@@ -578,7 +579,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         predicates,
         nodeVariableGroupings,
         relationshipVariableGroupings,
-        selector
+        selector,
+        solvedExpressionString
       )(_)
     ))
     self

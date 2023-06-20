@@ -249,6 +249,7 @@ import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -336,6 +337,8 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StartDatabase
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Selector
 import org.neo4j.cypher.internal.logical.plans.StopDatabase
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -5098,6 +5101,35 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           s"${anonVar("12")} = (a)-[r:R*]-(${anonVar("2")}) WHERE all(r IN relationships(${anonVar("12")}) WHERE r.prop = $$autostring_1)"
         )),
         Set("r", "a", anonVar("2"), anonVar("12"))
+      )
+    )
+  }
+
+  test("StatefulShortestPath") {
+    val solvedExpressionStr = "SHORTEST 5 PATHS (a)-->*(b)"
+    assertGood(
+      attach(
+        StatefulShortestPath(
+          lhsLP,
+          varFor("a"),
+          varFor("b"),
+          new NFABuilder(NFABuilder.asVarName("a", groupVar = false)).build(),
+          None,
+          Set.empty,
+          Set.empty,
+          Selector.Shortest(5),
+          solvedExpressionStr
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "StatefulShortestPath",
+        SingleChild(lhsPD),
+        Seq(details(
+          solvedExpressionStr
+        )),
+        Set("a")
       )
     )
   }

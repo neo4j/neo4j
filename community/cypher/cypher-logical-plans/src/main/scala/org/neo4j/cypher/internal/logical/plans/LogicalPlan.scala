@@ -1848,7 +1848,8 @@ case class StatefulShortestPath(
   nonInlinablePreFilters: Option[Expression],
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping],
-  selector: StatefulShortestPath.Selector
+  selector: StatefulShortestPath.Selector,
+  solvedExpressionAsString: String
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)

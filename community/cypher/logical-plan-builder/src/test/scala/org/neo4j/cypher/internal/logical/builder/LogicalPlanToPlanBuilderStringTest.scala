@@ -89,6 +89,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .statefulShortestPath(
         "a",
         "b",
+        "",
         None,
         Set.empty,
         Set.empty,
@@ -109,6 +110,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .statefulShortestPath(
         "a",
         "c",
+        "",
         Some("a.prop + c.prop = 5"),
         Set(("b_in", "b_in"), ("c_in", "c_in")),
         Set(("r2", "r2")),

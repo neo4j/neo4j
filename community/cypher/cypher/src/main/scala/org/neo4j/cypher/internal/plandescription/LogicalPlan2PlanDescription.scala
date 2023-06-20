@@ -220,6 +220,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
@@ -1439,6 +1440,16 @@ case class LogicalPlan2PlanDescription(
           Seq(Details(asPrettyString(count))),
           variables,
           withRawCardinalities
+        )
+
+      case StatefulShortestPath(_, _, _, _, _, _, _, _, solvedExpressionString) =>
+        PlanDescriptionImpl(
+          id = id,
+          name = "StatefulShortestPath",
+          children = children,
+          arguments = Seq(Details(asPrettyString.raw(solvedExpressionString))),
+          variables = variables,
+          withRawCardinalities = withRawCardinalities
         )
 
       case FindShortestPaths(
