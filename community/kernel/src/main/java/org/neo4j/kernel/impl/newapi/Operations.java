@@ -179,7 +179,6 @@ public class Operations implements Write, SchemaWrite {
     private final IndexingProvidersService indexProviders;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
-    private final boolean relationshipUniquenessConstraintEnabled;
     private final boolean typeConstraintEnabled;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
@@ -218,7 +217,6 @@ public class Operations implements Write, SchemaWrite {
         this.indexProviders = indexProviders;
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
-        this.relationshipUniquenessConstraintEnabled = config.get(GraphDatabaseInternalSettings.rel_unique_constraints);
         this.typeConstraintEnabled = config.get(GraphDatabaseInternalSettings.type_constraints);
     }
 
@@ -1584,13 +1582,9 @@ public class Operations implements Write, SchemaWrite {
         SchemaDescriptor schema = prototype.schema();
 
         if (schema.entityType() == RELATIONSHIP) {
-            if (!relationshipUniquenessConstraintEnabled) {
-                throw new UnsupportedOperationException("Relationship uniqueness constraints are not supported yet");
-            } else {
-                assertSupportedInVersion(
-                        "Failed to create Relationship Uniqueness constraint.",
-                        KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
-            }
+            assertSupportedInVersion(
+                    "Failed to create Relationship Uniqueness constraint.",
+                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
         }
 
         exclusiveSchemaLock(schema);
@@ -1775,13 +1769,9 @@ public class Operations implements Write, SchemaWrite {
         SchemaDescriptor schema = prototype.schema();
 
         if (schema.entityType() == RELATIONSHIP) {
-            if (!relationshipUniquenessConstraintEnabled) {
-                throw new UnsupportedOperationException("Relationship key constraints are not supported yet");
-            } else {
-                assertSupportedInVersion(
-                        "Failed to create Relationship Key constraint.",
-                        KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
-            }
+            assertSupportedInVersion(
+                    "Failed to create Relationship Key constraint.",
+                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
         }
 
         exclusiveSchemaLock(schema);

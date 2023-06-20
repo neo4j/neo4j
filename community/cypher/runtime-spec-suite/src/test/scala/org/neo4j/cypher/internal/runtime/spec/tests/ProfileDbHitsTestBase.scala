@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
@@ -70,10 +69,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   val canReuseAllScanLookup: Boolean, // operator following AllNodesScan or RelationshipScan does not need to lookup node again
   val canFuseOverPipelines: Boolean,
   val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
-) extends RuntimeTestSuite[CONTEXT](
-      edition.copyWith((GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)),
-      runtime
-    ) {
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("HasLabel on top of AllNodesScan") {
     val cost = if (canReuseAllScanLookup) costOfLabelCheck - 1 else costOfLabelCheck

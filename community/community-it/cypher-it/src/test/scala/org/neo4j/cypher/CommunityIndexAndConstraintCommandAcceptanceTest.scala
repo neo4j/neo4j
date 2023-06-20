@@ -51,7 +51,6 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
 
   override def databaseConfig(): Map[Setting[_], Object] =
     super.databaseConfig() ++ Map(
-      GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE,
       GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE
     )
 

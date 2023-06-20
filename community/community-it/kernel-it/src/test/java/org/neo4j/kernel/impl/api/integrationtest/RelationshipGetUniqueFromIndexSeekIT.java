@@ -26,7 +26,6 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -52,13 +50,6 @@ class RelationshipGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
     private int relationshipTypeId;
     private int propertyId1;
     private int propertyId2;
-
-    @Override
-    protected TestDatabaseManagementServiceBuilder configure(
-            TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder) {
-        return super.configure(
-                databaseManagementServiceBuilder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true));
-    }
 
     @BeforeEach
     void createKeys() throws Exception {

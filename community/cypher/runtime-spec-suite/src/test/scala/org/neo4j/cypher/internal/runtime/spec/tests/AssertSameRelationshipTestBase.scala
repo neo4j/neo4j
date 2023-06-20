@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -32,12 +31,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](
-      edition.copyWith(
-        additionalConfigs = (GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)
-      ),
-      runtime
-    ) {
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should verify that two relationships are identical (directed)") {
     val rels = given {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests.stress
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -31,10 +30,7 @@ import scala.util.Random
 abstract class RelationshipIndexLockingUniqueSeekConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT]
-) extends ConcurrencyStressTestBase[CONTEXT](
-      edition.copyWith((GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)),
-      runtime
-    ) {
+) extends ConcurrencyStressTestBase[CONTEXT](edition, runtime) {
 
   test("should not return relationships with null end nodes from directed relationship") {
     seekWithConcurrentDeletes(directed = true)

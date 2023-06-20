@@ -27,7 +27,6 @@ import static org.neo4j.values.storable.Values.intValue;
 
 import java.util.Iterator;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -46,19 +45,13 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.storageengine.api.PropertySelection;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Values;
 
 public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupport> {
 
     @Override
     public WriteTestSupport newTestSupport() {
-        return new WriteTestSupport() {
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure(TestDatabaseManagementServiceBuilder builder) {
-                return super.configure(builder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true));
-            }
-        };
+        return new WriteTestSupport();
     }
 
     @Override
