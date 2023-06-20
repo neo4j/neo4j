@@ -53,11 +53,9 @@ public class LocalVirtualMachine {
         try {
             // Try to attach to instance
             vm = VirtualMachine.attach(String.valueOf(pid));
-
             // Get local jmx address if management agent is already started
             Properties agentProps = vm.getAgentProperties();
             String address = (String) agentProps.get("com.sun.management.jmxremote.localConnectorAddress");
-
             // Failed, we are the first one connecting, start agent
             if (address == null) {
                 address = vm.startLocalManagementAgent();

@@ -40,7 +40,7 @@ public class JMXDumper {
     private final FileSystemAbstraction fs;
     private final PrintStream err;
     private final boolean verbose;
-    private PrintStream out;
+    private final PrintStream out;
 
     public JMXDumper(Config config, FileSystemAbstraction fs, PrintStream out, PrintStream err, boolean verbose) {
         this.config = config;

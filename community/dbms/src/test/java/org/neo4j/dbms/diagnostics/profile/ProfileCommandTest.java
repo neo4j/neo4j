@@ -33,7 +33,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,11 +100,10 @@ class ProfileCommandTest {
                 new PrintStream(new ByteArrayOutputStream()),
                 fs);
 
-        JMXDumper jmxDumper =
-                new JMXDumper(config, fs, NullPrintStream.NULL_PRINT_STREAM, NullPrintStream.NULL_PRINT_STREAM, true);
+        JMXDumper jmxDumper = new JMXDumper(config, fs, NullPrintStream.INSTANCE, NullPrintStream.INSTANCE, true);
         Optional<JmxDump> maybeDump = jmxDumper.getJMXDump();
         assumeThat(maybeDump).isPresent(); // IF not, then no point in running tests
-        maybeDump.get().close();
+        maybeDump.orElseThrow().close();
     }
 
     @Test
@@ -150,8 +152,15 @@ class ProfileCommandTest {
 
     @Test
     void shouldAbortIfProcessDies() throws Exception {
-        Process process = SeparateProcess.startProcess();
+        final var startedPath = dir.homePath().resolve("SeparateProcess.started");
+        Process process = SeparateProcess.startProcess(startedPath);
         assertThat(process.isAlive()).isTrue();
+        assertEventually(
+                "SeparateProcess should start and write marker file",
+                () -> Files.exists(startedPath),
+                exists -> exists,
+                1,
+                MINUTES);
         setPid(process.pid());
 
         Stopwatch start = Stopwatch.start();
@@ -161,8 +170,11 @@ class ProfileCommandTest {
                 try {
                     return execute(Duration.ofMinutes(10));
                 } catch (Exception e) {
+                    // add some extra debug to track down flakiness
+                    System.out.println(ctxOut.toString());
                     if (!process.isAlive()) {
-                        e = Exceptions.chain(e, new IllegalStateException("Process died with " + process.exitValue()));
+                        throw Exceptions.chain(
+                                e, new IllegalStateException("Process died with " + process.exitValue()));
                     }
                     throw e;
                 }
@@ -213,7 +225,7 @@ class ProfileCommandTest {
         assertThat(paths).hasSize(1);
 
         try (TarArchiveInputStream stream =
-                new TarArchiveInputStream(GZIP.decompress(fs.openAsInputStream(paths[0]))); ) {
+                new TarArchiveInputStream(GZIP.decompress(fs.openAsInputStream(paths[0])))) {
             ArchiveEntry entry;
             while ((entry = stream.getNextEntry()) != null) {
                 Path file = output.resolve(entry.getName());
@@ -229,18 +241,24 @@ class ProfileCommandTest {
     }
 
     private static class SeparateProcess {
-        static Process startProcess() throws IOException {
+        static Process startProcess(Path startedPath) throws IOException {
             List<String> command = new ArrayList<>();
             command.add(ProcessUtils.getJavaExecutable().toString());
             command.add("-cp");
             command.add(ProcessUtils.getClassPath());
             command.add(SeparateProcess.class.getName());
+            command.add(startedPath.toAbsolutePath().toString());
             return new ProcessBuilder(command).start();
         }
 
-        public static void main(String[] args) throws InterruptedException {
+        public static void main(String[] args) throws Exception {
+            assert args.length == 1;
+            Files.writeString(
+                    Paths.get(args[0]), "starting...", StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+
             Stopwatch time = Stopwatch.start();
             while (!time.hasTimedOut(10, MINUTES)) {
+                //noinspection BusyWait
                 Thread.sleep(100);
             }
         }
