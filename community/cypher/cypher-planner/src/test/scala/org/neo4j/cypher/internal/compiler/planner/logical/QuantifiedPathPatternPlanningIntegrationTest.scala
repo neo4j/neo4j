@@ -1968,4 +1968,107 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .allNodeScan("`  UNNAMED0`")
       .build()
   }
+
+  test("should plan implicit join with group variable / legacy var-length relationship correctly") {
+    val query = "MATCH (a) ((n)-[r]->(m))+ (b) MATCH (c)-[r*]->(d) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]->(m))+ (b)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+    // A better plan than Expand + ValueHashJoin would be this one:
+    // .projectEndpoints("(c)-[r*]->(d)", startInScope = false, endInScope = false)
+    // We do not plan it because the other approach is simpler and avoids edge cases with IDP compaction.
+    plan shouldEqual planner.subPlanBuilder()
+      .valueHashJoin("r = anon_6")
+      .|.expand("(c)-[anon_6*1..]->(d)")
+      .|.allNodeScan("c")
+      .filter("size(r) >= 1")
+      .trail(`(a) ((n)-[r]->(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expandAll("(n)-[r]->(m)")
+      .|.argument("n")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test(
+    "should plan implicit join with group variable / legacy var-length relationship correctly (start in scope)"
+  ) {
+    val query = "MATCH (a) ((n)-[r]-(m))* (b) MATCH (b)-[r*0..]-(d) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]-(m))+ (b)` = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+    // A better plan than Expand + Filter would be this one:
+    // .projectEndpoints("(b)-[r*0..]-(d)", startInScope = true, endInScope = false)
+    // We do not plan it because the other approach is simpler and avoids edge cases with IDP compaction.
+    plan shouldEqual planner.subPlanBuilder()
+      .filter("r = anon_6")
+      .expand("(b)-[anon_6*0..]-(d)")
+      .filter("size(r) >= 0")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expandAll("(n)-[r]-(m)")
+      .|.argument("n")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test(
+    "should plan implicit join with group variable / legacy var-length relationship correctly (start and end in scope)"
+  ) {
+    val query = "MATCH (a) ((n)-[r]-(m))* (b) MATCH (a)-[r*0..]-(b) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]-(m))+ (b)` = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+    // A better plan than Expand + NodeHashJoin + Filter would be this one:
+    // .projectEndpoints("(a)-[r*0..]-(b)", startInScope = true, endInScope = true)
+    // We do not plan it because the other approach is simpler and avoids edge cases with IDP compaction.
+    plan shouldEqual planner.subPlanBuilder()
+      .filter("r = anon_6")
+      .nodeHashJoin("a", "b")
+      .|.expand("(a)-[anon_6*0..]-(b)")
+      .|.allNodeScan("a")
+      .filter("size(r) >= 0")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expandAll("(n)-[r]-(m)")
+      .|.argument("n")
+      .allNodeScan("a")
+      .build()
+  }
 }

@@ -94,6 +94,38 @@ class EmptyRelationshipListEndpointProjectionTest extends CypherFunSuite with Pl
     assertIsNotRewritten(testName)
   }
 
+  test("MATCH (a)-[r]->{1,5}(b) MATCH (c)-[r*1..5]->(d) RETURN count(*) AS c") {
+    // not zero-length
+    assertRewrite(
+      testName,
+      "MATCH (a)-[r]->{1,5}(b) MATCH (c)-[anon_2*1..5]->(d) WHERE r = anon_2 RETURN count(*) AS c"
+    )
+  }
+
+  test("MATCH (a)-[r]->*(b) MATCH (a)-[r*0..5]->(c) RETURN count(*) AS c") {
+    // start in scope
+    assertRewrite(
+      testName,
+      "MATCH (a)-[r]->*(b) MATCH (a)-[anon_2*0..5]->(c) WHERE r = anon_2 RETURN count(*) AS c"
+    )
+  }
+
+  test("MATCH (a)-[r]->*(b) MATCH (c)-[r*0..5]->(b) RETURN count(*) AS c") {
+    // end in scope
+    assertRewrite(
+      testName,
+      "MATCH (a)-[r]->*(b) MATCH (c)-[anon_2*0..5]->(b) WHERE r = anon_2 RETURN count(*) AS c"
+    )
+  }
+
+  test("MATCH (a)-[r]->*(b) MATCH (a)-[r*0..5]->(b) RETURN count(*) AS c") {
+    // both in scope
+    assertRewrite(
+      testName,
+      "MATCH (a)-[r]->*(b) MATCH (a)-[anon_2*0..5]->(b) WHERE r = anon_2 RETURN count(*) AS c"
+    )
+  }
+
   test("MATCH (a)-[r*0..5]->(b) MATCH (c)-[r*0..5]->(d) RETURN count(*) AS c") {
     assertRewriteMultiple(
       testName,
@@ -107,6 +139,20 @@ class EmptyRelationshipListEndpointProjectionTest extends CypherFunSuite with Pl
       testName,
       "MATCH (a)-[anon_0*0..5]->(b) MATCH (c)-[r*0..5]-(d) WHERE r = anon_0 RETURN count(*) AS c",
       "MATCH (a)-[r*0..5]->(b) MATCH (c)-[anon_0*0..5]-(d) WHERE r = anon_0 RETURN count(*) AS c"
+    )
+  }
+
+  test("MATCH (a)-[r]->*(b) MATCH (c)-[r*0..5]->(d) RETURN count(*) AS c") {
+    assertRewrite(
+      testName,
+      "MATCH (a)-[r]->*(b) MATCH (c)-[anon_2*0..5]->(d) WHERE r = anon_2 RETURN count(*) AS c"
+    )
+  }
+
+  test("MATCH (a) (()-[r]-()--())* (b) MATCH (c)-[r*0..5]->(d) RETURN count(*) AS c") {
+    assertRewrite(
+      testName,
+      "MATCH (a) (()-[r]-()--())* (b) MATCH (c)-[anon_4*0..5]->(d) WHERE r = anon_4 RETURN count(*) AS c"
     )
   }
 
@@ -154,10 +200,37 @@ class EmptyRelationshipListEndpointProjectionTest extends CypherFunSuite with Pl
     assertIsNotRewritten(testName)
   }
 
+  test("MATCH (a)-[r]->*(b) WITH r AS r, a AS a SKIP 0 MATCH (a)-[r*0..5]-(c) RETURN count(*) AS c") {
+    // start in scope
+    assertIsNotRewritten(testName)
+  }
+
+  test("MATCH (a)-[r]->*(b) WITH r AS r, b AS b SKIP 0 MATCH (c)-[r*0..5]-(b) RETURN count(*) AS c") {
+    // end in scope
+    assertIsNotRewritten(testName)
+  }
+
+  test("MATCH (a)-[r]->*(b) WITH r AS r, a AS a SKIP 0 MATCH (a)-[r*0..5]-(b) RETURN count(*) AS c") {
+    // both in scope
+    assertIsNotRewritten(testName)
+  }
+
+  test("MATCH (a)-[r]->+(b) WITH r AS r SKIP 0 MATCH (c)-[r*1..5]-(d) RETURN count(*) AS c") {
+    // not zero-length
+    assertIsNotRewritten(testName)
+  }
+
   test("MATCH (a)-[r*0..5]->(b) WITH r AS r SKIP 0 MATCH (c)-[r*0..5]->(d) RETURN count(*) AS c") {
     assertRewrite(
       testName,
       "MATCH (a)-[r*0..5]->(b) WITH r AS r SKIP 0 MATCH (c)-[anon_0*0..5]->(d) WHERE r = anon_0 RETURN count(*) AS c"
+    )
+  }
+
+  test("MATCH (a)-[r]->*(b) WITH r AS r SKIP 0 MATCH (c)-[r*0..5]->(d) RETURN count(*) AS c") {
+    assertRewrite(
+      testName,
+      "MATCH (a)-[r]->*(b) WITH r AS r SKIP 0 MATCH (c)-[anon_2*0..5]->(d) WHERE r = anon_2 RETURN count(*) AS c"
     )
   }
 

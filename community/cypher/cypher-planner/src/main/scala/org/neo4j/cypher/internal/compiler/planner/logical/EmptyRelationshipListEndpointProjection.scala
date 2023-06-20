@@ -50,6 +50,7 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
       rewriter = Rewriter.lift {
         case qg: QueryGraph =>
           val rels = qg.patternRelationships.toSeq
+          val relGroupNames = qg.quantifiedPathPatterns.flatMap(_.relationshipVariableGroupings).map(_.groupName)
 
           val (newRels, predicates) = rels
             .zipWithIndex.map {
@@ -58,6 +59,11 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
                 if relationshipQualifies(qg, nodes, length) &&
                   // Where the relationship is an argument
                   qg.argumentIds.contains(name) =>
+                copyRelWithPredicate(from, rel, name)
+
+              // Cases where a legacy var-length relationship has the same name as a relationship group variable
+              case (rel @ PatternRelationship(name, _, _, _, _: VarPatternLength), _)
+                if relGroupNames.contains(rel.name) =>
                 copyRelWithPredicate(from, rel, name)
 
               // Cases where the relationship is repeated in the same query graph.

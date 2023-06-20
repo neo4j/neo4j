@@ -2681,7 +2681,7 @@ case class ProjectEndpoints(
 
   Preconditions.checkArgument(
     startInScope || endInScope || length.isSimple || length.asInstanceOf[VarPatternLength].min > 0,
-    "Var length pattern including length 0, with no end node in scope, must not be solved by ProjectEndpoints."
+    "Var length pattern including length 0, with no start or end node in scope, must not be solved by ProjectEndpoints."
   )
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
