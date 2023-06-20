@@ -192,11 +192,12 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
         assertCursorOpenFileMappedAndGetIdOfLastPage();
-        long headVersion = getLongAt(pointer, littleEndian);
-        if (multiVersioned && isOldHead(versionContext, headVersion)) {
-            versionStorage.createPageSnapshot(this, versionContext, headVersion, pinEvent);
-        }
-        if (!multiVersioned) {
+        if (multiVersioned) {
+            long headVersion = getLongAt(pointer, littleEndian);
+            if (isOldHead(versionContext, headVersion)) {
+                versionStorage.createPageSnapshot(this, versionContext, headVersion, pinEvent);
+            }
+        } else {
             PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
         }
     }
