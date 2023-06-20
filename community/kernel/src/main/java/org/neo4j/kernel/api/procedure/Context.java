@@ -68,8 +68,6 @@ public interface Context {
 
     /**
      * Returns the graphdatabase API of this context.
-     * <p>
-     * This method is always safe to call, there should always be a graphdatabase API associated with the context.
      *
      * @return the graphdatabase API of this context
      */
@@ -151,5 +149,5 @@ public interface Context {
      */
     ProcedureCallContext procedureCallContext();
 
-    ProcedureKernelTransactionView kernelTransactionView() throws ProcedureException;
+    ProcedureKernelTransactionView kernelTransactionView();
 }

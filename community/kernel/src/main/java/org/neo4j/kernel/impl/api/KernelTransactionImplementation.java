@@ -655,6 +655,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 "A Procedure or user-defined function called from parallel runtime cannot access the KernelTransaction");
                     }
 
+                    @Override
+                    public String databaseName() {
+                        return KernelTransactionImplementation.this.getDatabaseName();
+                    }
+
                     // Since TX object is reused, let's check if this is still the same TX
                     private boolean isOriginalTx() {
                         return transactionSequenceNumberWhenCreated == transactionSequenceNumber;

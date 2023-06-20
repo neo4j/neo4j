@@ -35,4 +35,6 @@ public interface ProcedureKernelTransactionView extends AssertOpen {
     String statusDetails();
 
     KernelTransaction actualKernelTransaction() throws ProcedureException;
+
+    String databaseName();
 }

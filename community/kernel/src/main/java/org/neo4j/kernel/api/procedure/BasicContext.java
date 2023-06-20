@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.time.Clock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -46,6 +47,8 @@ public class BasicContext implements Context {
     private final ProcedureCallContext procedureCallContext;
     private final ProcedureKernelTransactionView kernelTransactionView;
 
+    private final Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier;
+
     private BasicContext(
             DependencyResolver resolver,
             Transaction procedureTransaction,
@@ -55,7 +58,8 @@ public class BasicContext implements Context {
             ValueMapper<Object> valueMapper,
             Thread thread,
             ProcedureCallContext procedureCallContext,
-            ProcedureKernelTransactionView kernelTransactionView) {
+            ProcedureKernelTransactionView kernelTransactionView,
+            Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier) {
         this.resolver = resolver;
         this.procedureTransaction = procedureTransaction;
         this.internalTransaction = internalTransaction;
@@ -65,6 +69,7 @@ public class BasicContext implements Context {
         this.thread = thread;
         this.procedureCallContext = procedureCallContext;
         this.kernelTransactionView = kernelTransactionView;
+        this.graphDatabaseAPISupplier = graphDatabaseAPISupplier;
     }
 
     @Override
@@ -84,7 +89,7 @@ public class BasicContext implements Context {
 
     @Override
     public GraphDatabaseAPI graphDatabaseAPI() {
-        return resolver.resolveDependency(GraphDatabaseAPI.class);
+        return graphDatabaseAPISupplier.get();
     }
 
     @Override
@@ -128,7 +133,7 @@ public class BasicContext implements Context {
     }
 
     @Override
-    public ProcedureKernelTransactionView kernelTransactionView() throws ProcedureException {
+    public ProcedureKernelTransactionView kernelTransactionView() {
         return kernelTransactionView;
     }
 
@@ -163,6 +168,8 @@ public class BasicContext implements Context {
 
         private ProcedureKernelTransactionView kernelTransactionView;
 
+        private Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier;
+
         private ContextBuilder(DependencyResolver resolver, ValueMapper<Object> valueMapper) {
             this.resolver = resolver;
             this.valueMapper = valueMapper;
@@ -170,6 +177,11 @@ public class BasicContext implements Context {
 
         public ContextBuilder withProcedureTransaction(Transaction procedureTransaction) {
             this.procedureTransaction = procedureTransaction;
+            return this;
+        }
+
+        public ContextBuilder withGraphDatabaseSupplier(Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier) {
+            this.graphDatabaseAPISupplier = graphDatabaseAPISupplier;
             return this;
         }
 
@@ -212,7 +224,8 @@ public class BasicContext implements Context {
                     valueMapper,
                     thread,
                     procedureCallContext,
-                    kernelTransactionView);
+                    kernelTransactionView,
+                    graphDatabaseAPISupplier);
         }
     }
 }
