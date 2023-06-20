@@ -45,7 +45,10 @@ object Distinctness {
     }
   }
 
-  def distinctColumnsOfDistinct(left: LogicalPlan, groupingExpressions: Map[LogicalVariable, Expression]): Distinctness = {
+  def distinctColumnsOfDistinct(
+    left: LogicalPlan,
+    groupingExpressions: Map[LogicalVariable, Expression]
+  ): Distinctness = {
     val distinctColumnsFromDistinct = groupingExpressions.keySet
     left.distinctness match {
       case AtMostOneRow => AtMostOneRow
