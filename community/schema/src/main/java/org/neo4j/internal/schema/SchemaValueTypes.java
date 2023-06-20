@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.internal.schema.constraints.SchemaValueType;
+
 public class SchemaValueTypes {
     static final String DELIMITER = ":";
 

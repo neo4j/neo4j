@@ -17,20 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.schema;
+package org.neo4j.internal.schema.constraints;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public sealed interface TypeRepresentation permits SchemaValueType {
+    String userDescription();
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.internal.schema.constraints.SchemaValueType;
+    Ordering order();
 
-class SchemaValueTypesTest {
-    @ParameterizedTest
-    @EnumSource(SchemaValueType.class)
-    void schemaValueTypeConversions(SchemaValueType canonicalType) {
-        assertThat(SchemaValueTypes.convertToSchemaValueType(
-                        SchemaValueTypes.convertToStringRepresentation(canonicalType)))
-                .isEqualTo(canonicalType);
+    enum Ordering {
+        BOOLEAN_ORDER,
+        STRING_ORDER,
+        INTEGER_ORDER,
+        FLOAT_ORDER,
+        DATE_ORDER,
+        LOCAL_TIME_ORDER,
+        ZONED_TIME_ORDER,
+        LOCAL_DATETIME_ORDER,
+        ZONED_DATETIME_ORDER,
+        DURATION_ORDER,
+        POINT_ORDER;
+    }
+
+    static int compare(TypeRepresentation t1, TypeRepresentation t2) {
+        return t1.order().compareTo(t2.order());
     }
 }

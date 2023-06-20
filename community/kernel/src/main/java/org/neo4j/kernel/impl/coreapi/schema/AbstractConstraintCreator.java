@@ -23,8 +23,8 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.SchemaValueType;
 
 abstract class AbstractConstraintCreator {
     protected final InternalSchemaActions actions;

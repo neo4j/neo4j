@@ -25,8 +25,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.SchemaValueType;
 
 public class NodePropertyTypeConstraintDefinition extends NodeConstraintDefinition {
 

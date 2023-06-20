@@ -31,18 +31,18 @@ import org.neo4j.cypher.internal.expressions.PointTypeName
 import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
-import org.neo4j.internal.schema.SchemaValueType.BOOLEAN
-import org.neo4j.internal.schema.SchemaValueType.DATE
-import org.neo4j.internal.schema.SchemaValueType.DURATION
-import org.neo4j.internal.schema.SchemaValueType.FLOAT
-import org.neo4j.internal.schema.SchemaValueType.INTEGER
-import org.neo4j.internal.schema.SchemaValueType.LOCAL_DATETIME
-import org.neo4j.internal.schema.SchemaValueType.LOCAL_TIME
-import org.neo4j.internal.schema.SchemaValueType.POINT
-import org.neo4j.internal.schema.SchemaValueType.STRING
-import org.neo4j.internal.schema.SchemaValueType.ZONED_DATETIME
-import org.neo4j.internal.schema.SchemaValueType.ZONED_TIME
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.internal.schema.constraints.SchemaValueType.BOOLEAN
+import org.neo4j.internal.schema.constraints.SchemaValueType.DATE
+import org.neo4j.internal.schema.constraints.SchemaValueType.DURATION
+import org.neo4j.internal.schema.constraints.SchemaValueType.FLOAT
+import org.neo4j.internal.schema.constraints.SchemaValueType.INTEGER
+import org.neo4j.internal.schema.constraints.SchemaValueType.LOCAL_DATETIME
+import org.neo4j.internal.schema.constraints.SchemaValueType.LOCAL_TIME
+import org.neo4j.internal.schema.constraints.SchemaValueType.POINT
+import org.neo4j.internal.schema.constraints.SchemaValueType.STRING
+import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_DATETIME
+import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_TIME
 
 object PropertyTypeMapper {
 

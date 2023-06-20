@@ -20,9 +20,12 @@
 package org.neo4j.internal.schema.constraints;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import org.neo4j.internal.schema.SchemaValueType;
+import java.util.stream.Stream;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueRepresentation;
 
@@ -30,26 +33,43 @@ import org.neo4j.values.storable.ValueRepresentation;
  * An ordered set of {@link SchemaValueType}s, used to represent unions of types.
  * The order is defined in CIP-100 and implemented in terms of the natural ordering of {@link SchemaValueType}.
  */
-public class PropertyTypeSet extends TreeSet<SchemaValueType> {
+public class PropertyTypeSet implements Iterable<SchemaValueType> {
+
+    private Set<SchemaValueType> set;
+
+    private PropertyTypeSet(Collection<SchemaValueType> types) {
+        set = new TreeSet<>(TypeRepresentation::compare);
+        set.addAll(types);
+    }
+
+    public static PropertyTypeSet of(Collection<SchemaValueType> types) {
+        return new PropertyTypeSet(types);
+    }
+
+    public static PropertyTypeSet of(SchemaValueType... types) {
+        return of(Arrays.asList(types));
+    }
+
     /**
      * This method return a string version of the normalized type expression as defined by CIP-100.
      * @return A string representation of the normalized type expression
      */
     public String userDescription() {
-        var joiner = size() > 1 ? new StringJoiner(" | ", "ANY<", ">") : new StringJoiner("");
-        this.forEach(schemaValueType -> joiner.add(schemaValueType.userDescription()));
+        var joiner =
+                switch (set.size()) {
+                    case 0 -> new StringJoiner("", "ANY", "");
+                    case 1 -> new StringJoiner("");
+                    default -> new StringJoiner(" | ", "ANY<", ">");
+                };
+        for (var value : set) {
+            joiner.add(value.userDescription());
+        }
         return joiner.toString();
-    }
-
-    public static PropertyTypeSet of(SchemaValueType... types) {
-        var set = new PropertyTypeSet();
-        set.addAll(Arrays.asList(types));
-        return set;
     }
 
     public boolean valueIsOfTypes(Value value) {
         final ValueRepresentation valueRepresentation = value.valueRepresentation();
-        for (SchemaValueType valueType : this) {
+        for (SchemaValueType valueType : set) {
             if (valueType.isAssignable(valueRepresentation)) {
                 return true;
             }
@@ -60,6 +80,54 @@ public class PropertyTypeSet extends TreeSet<SchemaValueType> {
     @Override
     public int hashCode() {
         // Use the types' serialization as basis for hash code to make it stable in the face of changing type ordering
-        return stream().mapToInt(type -> type.serialize().hashCode()).sum();
+        return set.stream().mapToInt(type -> type.serialize().hashCode()).sum();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        PropertyTypeSet that = (PropertyTypeSet) o;
+
+        return set.equals(that.set);
+    }
+
+    public int size() {
+        return set.size();
+    }
+
+    public boolean contains(TypeRepresentation type) {
+        return set.contains(type);
+    }
+
+    public PropertyTypeSet union(PropertyTypeSet other) {
+        return of(Stream.concat(set.stream(), other.stream()).toList());
+    }
+
+    public PropertyTypeSet intersection(PropertyTypeSet other) {
+        return of(set.stream().filter(other.set::contains).toList());
+    }
+
+    public PropertyTypeSet difference(PropertyTypeSet other) {
+        return of(set.stream().filter(v -> !other.set.contains(v)).toList());
+    }
+
+    public Stream<SchemaValueType> stream() {
+        return set.stream();
+    }
+
+    @Override
+    public Iterator<SchemaValueType> iterator() {
+        return set.iterator();
+    }
+
+    public SchemaValueType[] values() {
+        return set.stream().toArray(SchemaValueType[]::new);
     }
 }

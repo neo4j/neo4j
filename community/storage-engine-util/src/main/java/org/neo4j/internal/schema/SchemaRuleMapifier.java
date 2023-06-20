@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import org.eclipse.collections.api.RichIterable;
@@ -30,6 +32,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.LongValue;
@@ -364,10 +367,10 @@ public class SchemaRuleMapifier {
     }
 
     private static PropertyTypeSet getAllowedTypes(String[] allowedTypes) throws MalformedSchemaRuleException {
-        PropertyTypeSet schemaValueTypes = new PropertyTypeSet();
+        List<SchemaValueType> types = new ArrayList<>();
         for (String allowedType : allowedTypes) {
             try {
-                schemaValueTypes.add(SchemaValueTypes.convertToSchemaValueType(allowedType));
+                types.add(SchemaValueTypes.convertToSchemaValueType(allowedType));
             } catch (Exception e) {
                 throw new MalformedSchemaRuleException(
                         "Did not recognize schema value type '%s' in: %s"
@@ -375,6 +378,6 @@ public class SchemaRuleMapifier {
                         e);
             }
         }
-        return schemaValueTypes;
+        return PropertyTypeSet.of(types);
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueGroup;
@@ -198,17 +199,7 @@ public abstract class RandomSchemaBase implements Supplier<SchemaRule> {
     }
 
     private PropertyTypeSet randomAllowedTypes() {
-        var types = rng.nextInt(1, 5);
-        var schemaValueTypes = new PropertyTypeSet();
-        for (int i = 0; i < types; i++) {
-            schemaValueTypes.add(randomAllowedType(rng));
-        }
-        return schemaValueTypes;
-    }
-
-    private SchemaValueType randomAllowedType(SplittableRandom rng) {
-        var randomValues = RandomValues.create(rng);
-        return randomValues.among(SchemaValueType.values());
+        return PropertyTypeSet.of(RandomValues.create(rng).selection(SchemaValueType.values(), 1, 5, false));
     }
 
     public long nextRuleIdForConstraint() {

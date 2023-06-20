@@ -42,9 +42,9 @@ import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
-import org.neo4j.internal.schema.SchemaValueType
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values

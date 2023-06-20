@@ -21,35 +21,33 @@ package org.neo4j.internal.schema.constraints;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.schema.SchemaValueType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class PropertyTypeSetTest {
-    @Test
-    void testOrder() {
-        var set = new PropertyTypeSet();
-        set.add(SchemaValueType.FLOAT);
-        set.add(SchemaValueType.INTEGER);
-        set.add(SchemaValueType.BOOLEAN);
-        set.add(SchemaValueType.BOOLEAN);
-        set.add(SchemaValueType.FLOAT);
 
-        assertThat(set).containsExactly(SchemaValueType.BOOLEAN, SchemaValueType.INTEGER, SchemaValueType.FLOAT);
+    private static Stream<Arguments> descriptions() {
+        return Stream.of(
+                Arguments.of(List.of(), "ANY"),
+                Arguments.of(List.of(SchemaValueType.DURATION), "DURATION"),
+                Arguments.of(
+                        List.of(
+                                SchemaValueType.FLOAT,
+                                SchemaValueType.INTEGER,
+                                SchemaValueType.BOOLEAN,
+                                SchemaValueType.BOOLEAN,
+                                SchemaValueType.FLOAT),
+                        "ANY<BOOLEAN | INTEGER | FLOAT>"));
     }
 
-    @Test
-    void testUserDescription() {
-        var set1 = new PropertyTypeSet();
-        var set2 = new PropertyTypeSet();
-        set1.add(SchemaValueType.FLOAT);
-        set1.add(SchemaValueType.INTEGER);
-        set1.add(SchemaValueType.BOOLEAN);
-        set1.add(SchemaValueType.BOOLEAN);
-        set1.add(SchemaValueType.FLOAT);
-        set2.add(SchemaValueType.DURATION);
-
-        assertThat(set1.userDescription()).isEqualTo("ANY<BOOLEAN | INTEGER | FLOAT>");
-        assertThat(set2.userDescription()).isEqualTo("DURATION");
+    @ParameterizedTest
+    @MethodSource("descriptions")
+    void testUserDescription(List<SchemaValueType> types, String expected) {
+        assertThat(PropertyTypeSet.of(types).userDescription()).isEqualTo(expected);
     }
 
     @Test
@@ -60,5 +58,38 @@ class PropertyTypeSetTest {
 
         var c = PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.STRING);
         assertThat(a).isNotEqualTo(c);
+    }
+
+    @Test
+    void testSetOperations() {
+        var empty = PropertyTypeSet.of();
+        var set1 = PropertyTypeSet.of(SchemaValueType.BOOLEAN);
+        var set2 = PropertyTypeSet.of(SchemaValueType.INTEGER);
+        var union = PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.BOOLEAN);
+
+        // Unions
+        assertThat(set1.union(set2)).isEqualTo(union);
+        assertThat(set2.union(set1)).isEqualTo(union);
+
+        assertThat(union.union(set1)).isEqualTo(union);
+        assertThat(set1.union(union)).isEqualTo(union);
+
+        assertThat(empty.union(union)).isEqualTo(union);
+        assertThat(union.union(empty)).isEqualTo(union);
+
+        // Differences
+        assertThat(union.difference(set1)).isEqualTo(set2);
+        assertThat(union.difference(set2)).isEqualTo(set1);
+
+        assertThat(union.difference(union)).isEqualTo(empty);
+        assertThat(empty.difference(set2)).isEqualTo(empty);
+        assertThat(union.difference(empty)).isEqualTo(union);
+
+        // Intersections
+        assertThat(union.intersection(set1)).isEqualTo(set1);
+        assertThat(union.intersection(set2)).isEqualTo(set2);
+        assertThat(union.intersection(empty)).isEqualTo(empty);
+        assertThat(empty.intersection(union)).isEqualTo(empty);
+        assertThat(union.intersection(union)).isEqualTo(union);
     }
 }

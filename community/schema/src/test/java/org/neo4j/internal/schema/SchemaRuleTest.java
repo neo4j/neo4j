@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.test.InMemoryTokens;
 
 class SchemaRuleTest {
