@@ -65,6 +65,11 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer {
         }
 
         @Override
+        public long flushedBytes() {
+            return 0;
+        }
+
+        @Override
         public LogFileCreateEvent createLogFile() {
             return LogFileCreateEvent.NULL;
         }

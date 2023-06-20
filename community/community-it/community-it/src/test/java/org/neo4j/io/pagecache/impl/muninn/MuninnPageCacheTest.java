@@ -2283,6 +2283,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
             @Override
             public void reportIO(int completedIOs) {}
+
+            @Override
+            public long localBytesWritten() {
+                return 0;
+            }
         }
 
         private class FlushInfoChunk extends FileFlushEvent.ChunkEvent {

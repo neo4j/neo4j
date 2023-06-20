@@ -65,4 +65,11 @@ public interface CheckpointCounters {
      * Number of millis last checkpoint IOs was limited by io controller
      */
     long lastCheckpointIOLimitedMillis();
+
+    /**
+     * Total number of bytes flushed as result of doing checkpoints.
+     * Please note that this is a metric for all checkpoints, including ongoing and not for the last one only.
+     * @return total number of flushed bytes
+     */
+    long flushedBytes();
 }

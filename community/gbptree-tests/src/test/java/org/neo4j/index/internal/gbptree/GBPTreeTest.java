@@ -2559,5 +2559,10 @@ class GBPTreeTest {
         public void reportIO(int completedIOs) {
             currentDelegate.reportIO(completedIOs);
         }
+
+        @Override
+        public long localBytesWritten() {
+            return currentDelegate.localBytesWritten();
+        }
     }
 }

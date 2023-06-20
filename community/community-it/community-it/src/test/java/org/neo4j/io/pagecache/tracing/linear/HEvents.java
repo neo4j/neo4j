@@ -248,6 +248,11 @@ class HEvents {
         public void reportIO(int completedIOs) {}
 
         @Override
+        public long localBytesWritten() {
+            return 0;
+        }
+
+        @Override
         void printBody(PrintStream out, String exceptionLinePrefix) {
             print(out, path);
         }

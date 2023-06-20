@@ -141,6 +141,10 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
         return countingLogRotateEvent;
     }
 
+    public long flushedBytes() {
+        return databaseFlushEvent.getFlushEvent().localBytesWritten();
+    }
+
     private record LastCheckpointInfo(
             long timeMillis, long pagesFlushed, long performedIO, long ioLimit, long timesPaused, long millisPaused) {}
 }

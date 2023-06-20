@@ -82,6 +82,11 @@ public interface FileFlushEvent extends AutoCloseablePageCacheTracerEvent {
         public void reportIO(int completedIOs) {}
 
         @Override
+        public long localBytesWritten() {
+            return 0;
+        }
+
+        @Override
         public void close() {}
     };
 
@@ -150,6 +155,11 @@ public interface FileFlushEvent extends AutoCloseablePageCacheTracerEvent {
      * @param completedIOs number of completed io operations
      */
     void reportIO(int completedIOs);
+
+    /**
+     * Report number of bytes written by this particular flush event.
+     */
+    long localBytesWritten();
 
     /**
      * Event generated during translation table chunk flushing from memory to backing file

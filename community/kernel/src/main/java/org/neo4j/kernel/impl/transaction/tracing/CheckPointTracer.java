@@ -67,6 +67,11 @@ public interface CheckPointTracer extends CheckpointCounters {
         public long lastCheckpointIOLimitedMillis() {
             return 0;
         }
+
+        @Override
+        public long flushedBytes() {
+            return 0;
+        }
     };
 
     /**

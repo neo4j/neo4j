@@ -64,6 +64,10 @@ public class DatabaseFlushEvent implements AutoCloseablePageCacheTracerEvent {
         return flushEvent;
     }
 
+    public FileFlushEvent getFlushEvent() {
+        return flushEvent;
+    }
+
     public long pagesFlushed() {
         return pagesFlushed;
     }

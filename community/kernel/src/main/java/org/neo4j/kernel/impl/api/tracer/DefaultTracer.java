@@ -158,6 +158,11 @@ public class DefaultTracer implements DatabaseTracer {
     }
 
     @Override
+    public long flushedBytes() {
+        return logCheckPointEvent.flushedBytes();
+    }
+
+    @Override
     public LogCheckPointEvent beginCheckPoint() {
         return logCheckPointEvent;
     }

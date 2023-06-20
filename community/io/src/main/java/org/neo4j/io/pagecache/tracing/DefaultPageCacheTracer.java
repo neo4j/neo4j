@@ -405,10 +405,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     private class PageCacheFlushEvent implements FlushEvent {
         private PageFileSwapperTracer swapperTracer;
         private long pagesFlushed;
+        private final LongAdder localBytesWritten = new LongAdder();
 
         @Override
         public void addBytesWritten(long bytes) {
             bytesWritten.add(bytes);
+            localBytesWritten.add(bytes);
             swapperTracer.bytesWritten(bytes);
         }
 
@@ -433,6 +435,10 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
         public void addPagesMerged(int pagesMerged) {
             merges.add(pagesMerged);
             swapperTracer.merges(pagesMerged);
+        }
+
+        public long getLocalBytesWritten() {
+            return localBytesWritten.longValue();
         }
 
         public long getPagesFlushed() {
@@ -507,6 +513,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
         public void reportIO(int completedIOs) {
             ioPerformed += completedIOs;
             iopqPerformed.add(completedIOs);
+        }
+
+        @Override
+        public long localBytesWritten() {
+            return flushEvent.getLocalBytesWritten();
         }
 
         @Override
