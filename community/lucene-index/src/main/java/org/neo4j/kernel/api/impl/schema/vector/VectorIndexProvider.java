@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorSimilarityFunctionFrom;
 
 import java.io.IOException;
@@ -46,6 +47,8 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.values.storable.Value;
 
 public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("vector", "1.0");
@@ -108,7 +111,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
 
         final var indexConfig = descriptor.getIndexConfig();
-        final var ignoreStrategy = IndexUpdateIgnoreStrategy.NO_IGNORE;
+        final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig).toLucene();
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, similarityFunction);
     }
@@ -132,7 +135,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         luceneIndex.open();
 
         final var indexConfig = descriptor.getIndexConfig();
-        final var ignoreStrategy = IndexUpdateIgnoreStrategy.NO_IGNORE;
+        final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig).toLucene();
         return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, similarityFunction);
     }
@@ -141,5 +144,12 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     public IndexDescriptor completeConfiguration(
             IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         return index.getCapability().equals(NO_CAPABILITY) ? index.withIndexCapability(CAPABILITY) : index;
+    }
+
+    private record IgnoreStrategy(int dimensions) implements IndexUpdateIgnoreStrategy {
+        @Override
+        public boolean ignore(Value[] values) {
+            return !(values[0] instanceof final FloatingPointArray vector && vector.length() == dimensions);
+        }
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.apache.lucene.document.Field.Store.YES;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.maybeToValidVector;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
@@ -29,7 +30,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorDocumentStructure {
@@ -42,7 +42,11 @@ class VectorDocumentStructure {
 
     static Document createLuceneDocument(
             long id, FloatingPointArray value, VectorSimilarityFunction similarityFunction) {
-        final var vector = vectorFrom(value);
+        final var vector = maybeToValidVector(value);
+        if (vector == null) {
+            return null;
+        }
+
         final var document = new Document();
         final var idField = new StringField(ENTITY_ID_KEY, Long.toString(id), YES);
         final var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, id);
@@ -56,18 +60,6 @@ class VectorDocumentStructure {
 
     static long entityIdFrom(Document from) {
         return Long.parseLong(from.get(ENTITY_ID_KEY));
-    }
-
-    private static float[] vectorFrom(FloatingPointArray value) {
-        if (value instanceof final FloatArray floatArray) {
-            return floatArray.asObjectCopy();
-        }
-
-        final float[] vector = new float[value.length()];
-        for (int i = 0; i < vector.length; i++) {
-            vector[i] = (float) value.doubleValue(i);
-        }
-        return vector;
     }
 
     /** Lucene's {@link FieldType#setVectorAttributes} enforces a max dimensionality,
