@@ -2225,7 +2225,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         rightBinding = NodeBinding("b", "end"),
         patternRelationships = List(PatternRelationship(
           name = "r",
-          nodes = ("a", "b"),
+          boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength
@@ -2268,7 +2268,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         rightBinding = NodeBinding("b", "end"),
         patternRelationships = List(PatternRelationship(
           name = "r",
-          nodes = ("a", "b"),
+          boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
           types = List(relTypeName("R")),
           length = SimplePatternLength
@@ -2319,6 +2319,179 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
+  }
+
+  // Interior SHORTEST PATH overlap
+
+  test("should keep two query graphs separate with shortest with relationship var followed by exhaustive") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ ()-[r]-() (()--())+
+        |MATCH (a)-[r]-(b)
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with exhaustive followed by shortest with relationship var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)-[r]-(b)
+        |MATCH ANY SHORTEST (()--())+ ()-[r]-() (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with shortest with relationship var followed by shortest with relationship var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (a)-[r]-(b) (()--())+
+        |MATCH ANY SHORTEST (()--())+ ()-[r]-() (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with shortest with interior node var followed by exhaustive") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ (a) (()--())+
+        |MATCH (a)-[r]-(b)
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with exhaustive followed by shortest with interior node var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)-[r]-(b)
+        |MATCH ANY SHORTEST (()--())+ (a) (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with shortest with interior node var followed by shortest with interior node var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ (a) (()--())+
+        |MATCH ANY SHORTEST (()--())+ (a) (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with shortest with interior node var followed by shortest with boundary node var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ (a) (()--())+
+        |MATCH ANY SHORTEST (()--())+ (()--())+ (a)
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with shortest with boundary node var followed by shortest with interior node var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ (()--())+ (a)
+        |MATCH ANY SHORTEST (()--())+ (a) (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should squash two query graphs with shortest with boundary node var followed by shortest with boundary node var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ (()--())+ (a)
+        |MATCH ANY SHORTEST (a) (()--())+ (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 1
+  }
+
+  test("should squash two query graphs with shortest with right boundary node var followed by exhaustive") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ (()--())+ (a)
+        |MATCH (a)-[r]-(b)
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 1
+  }
+
+  test("should squash two query graphs with exhaustive followed by shortest with right boundary node var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)-[r]-(b)
+        |MATCH ANY SHORTEST (()--())+ (()--())+ (a)
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 1
+  }
+
+  test("should squash two query graphs with shortest with left boundary node var followed by exhaustive") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (a) (()--())+ (()--())+
+        |MATCH (a)-[r]-(b)
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 1
+  }
+
+
+  test("should squash two query graphs with exhaustive followed by shortest with left boundary node var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)-[r]-(b)
+        |MATCH ANY SHORTEST (a) (()--())+ (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 1
+  }
+
+  test("should squash two query graphs with shortest followed by exhaustive") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST (()--())+ (()--())+
+        |MATCH (a)-[r]-(b)
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 1
+  }
+
+  test("hould squash two query graphs with exhaustive followed by shortest") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)-[r]-(b)
+        |MATCH ANY SHORTEST (()--())+ (()--())+
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 1
+  }
+
+  test("should keep two query graphs separate with exhaustive with relationship group var followed by shortest with var-length relationship var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ((a)-[r]-(b))+
+        |MATCH ANY SHORTEST ()--()-[r*]-()--()
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
+  }
+
+  test("should keep two query graphs separate with shortest with relationship group var followed by exhaustive with var-length relationship var") {
+    val query = buildSinglePlannerQuery(
+      """MATCH ANY SHORTEST ((a)-[r]-(b))+
+        |MATCH ()--()-[r*]-()--()
+        |RETURN *""".stripMargin
+    )
+
+    query.allPlannerQueries should have size 2
   }
 
   private class TestCountdownCancellationChecker(var count: Int) extends CancellationChecker {

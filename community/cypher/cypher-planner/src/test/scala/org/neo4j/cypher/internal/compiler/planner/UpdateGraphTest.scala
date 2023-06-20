@@ -416,7 +416,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
         rightBinding = NodeBinding("b_n", "end"),
         patternRelationships = List(PatternRelationship(
           name = "r_n",
-          nodes = ("a_n", "b_n"),
+          boundaryNodes = ("a_n", "b_n"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength
@@ -440,7 +440,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
         .addPatternNodes("a_n", "b_n")
         .addPatternRelationship(PatternRelationship(
           name = "r_n",
-          nodes = ("a_n", "b_n"),
+          boundaryNodes = ("a_n", "b_n"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength

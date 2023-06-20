@@ -104,7 +104,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Multiplier = {
     val totalNbrOfNodes = stats.nodesAllCardinality()
-    val (lhs, rhs) = pattern.nodes
+    val (lhs, rhs) = pattern.boundaryNodes
     val labelsOnLhs = mapToLabelTokenSpecs(labels.getOrElse(lhs, Set.empty))
     val labelsOnRhs = mapToLabelTokenSpecs(labels.getOrElse(rhs, Set.empty))
 

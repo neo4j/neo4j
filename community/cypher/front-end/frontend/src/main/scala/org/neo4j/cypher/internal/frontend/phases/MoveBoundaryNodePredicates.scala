@@ -23,12 +23,10 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
-import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
-import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -64,19 +62,9 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
         case patternPart @ PatternPartWithSelector(_: SelectiveSelector, part) =>
           val (newElement: PatternElement, extractedPredicates: ListSet[Expression]) = part.element match {
             case pp @ ParenthesizedPath(part, Some(where)) =>
-              val (left, right) = part.element match {
-                // Either we have a simple pattern
-                case pattern: SimplePattern =>
-                  val allVars = pattern.allVariablesLeftToRight
-                  (allVars.head, allVars.last)
-                // or non-simple patterns (QPPs) have been padded (see QppsHavePaddedNodes)
-                case PathConcatenation(factors) =>
-                  val left = factors.head.asInstanceOf[SimplePattern].allVariablesLeftToRight.head
-                  val right = factors.last.asInstanceOf[SimplePattern].allVariablesLeftToRight.last
-                  (left, right)
-                case _ => throw new IllegalStateException()
-              }
-              val (extractedPredicates, notExtractedPredicates) = extractPredicates(where, Set(left, right))
+              val element = part.element
+              val boundaryNodes = PatternElement.boundaryNodes(element)
+              val (extractedPredicates, notExtractedPredicates) = extractPredicates(where, boundaryNodes)
               (pp.copy(optionalWhereClause = notExtractedPredicates)(pp.position), extractedPredicates)
             case element => (element, ListSet.empty)
           }
@@ -97,6 +85,7 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
 
   /**
    * Extract predicates from an expression that only depend on the given boundary nodes.
+   *
    * @return a tuple of, first all extracted predicates as a ListSet, and then all not-extracted predicates, already combined into one Option[Expression].
    */
   private def extractPredicates(

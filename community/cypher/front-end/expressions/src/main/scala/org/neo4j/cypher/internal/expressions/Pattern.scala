@@ -300,6 +300,29 @@ sealed abstract class PatternElement extends ASTNode {
   def isSingleNode = false
 }
 
+object PatternElement {
+  /**
+   * Returns the boundary nodes of this pattern element. Note, this does not work on QPPs directly.
+   * Therefore, qpps need to have been padded before.
+   */
+  @tailrec
+  def boundaryNodes(element: PatternElement): Set[LogicalVariable] = {
+    element match {
+      // Either we have a simple pattern
+      case pattern: SimplePattern =>
+        val allVars = pattern.allVariablesLeftToRight
+        Set(allVars.head, allVars.last)
+      // or non-simple patterns (QPPs) have been padded (see QppsHavePaddedNodes)
+      case PathConcatenation(factors) =>
+        val left = factors.head.asInstanceOf[SimplePattern].allVariablesLeftToRight.head
+        val right = factors.last.asInstanceOf[SimplePattern].allVariablesLeftToRight.last
+        Set(left, right)
+      case ParenthesizedPath(part, _) => boundaryNodes(part.element)
+      case _ => throw new IllegalStateException()
+    }
+  }
+}
+
 /**
  * A part of the pattern that consists of alternating nodes and relationships, starting and ending in a node.
  */

@@ -85,7 +85,7 @@ object SimplePatternConverters {
   ): PatternRelationship =
     PatternRelationship(
       name = getRelationshipPatternVariableName(relationship),
-      nodes = (getNodePatternVariableName(leftNode), getNodePatternVariableName(rightNode)),
+      boundaryNodes = (getNodePatternVariableName(leftNode), getNodePatternVariableName(rightNode)),
       dir = relationship.direction,
       types = getRelTypes(relationship.labelExpression),
       length = convertRelationshipLength(relationship.length)

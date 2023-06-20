@@ -252,7 +252,7 @@ case object countStorePlanner {
   /**
    * Whether this relationship is not a loop. This is relevant because the counts store counts loops twice.
    */
-  private def notLoop(r: PatternRelationship): Boolean = r.nodes._1 != r.nodes._2
+  private def notLoop(r: PatternRelationship): Boolean = r.left != r.right
 
   private def trySolveRelationshipAggregation(
     query: SinglePlannerQuery,

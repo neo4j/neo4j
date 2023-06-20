@@ -73,7 +73,7 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
                 // We look in the remainder of the sortedRels list to find a copy with the same name.
                 rels.drop(i + 1).find(_.name == name) match {
                   // And where no node is shared between the 2 occurences of the relationships.
-                  case Some(sameRel) if !atLeastOneSharedNode(rel.nodes, sameRel.nodes) =>
+                  case Some(sameRel) if !atLeastOneSharedNode(rel.boundaryNodes, sameRel.boundaryNodes) =>
                     copyRelWithPredicate(from, rel, name)
                   case _ => (rel, None)
                 }

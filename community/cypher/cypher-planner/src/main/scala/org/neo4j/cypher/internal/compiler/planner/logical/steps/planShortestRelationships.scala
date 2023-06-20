@@ -136,7 +136,7 @@ case object planShortestRelationships {
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
-      patternNodes = Set(shortestRelationship.rel.nodes._1, shortestRelationship.rel.nodes._2),
+      patternNodes = shortestRelationship.rel.boundaryNodesSet,
       patternRels = Set.empty,
       other = Set.empty,
       context = context
@@ -157,7 +157,7 @@ case object planShortestRelationships {
     val lhs = lpp.planApply(inner, lhsOption, context)
 
     val rhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
-      patternNodes = Set(shortestRelationship.rel.nodes._1, shortestRelationship.rel.nodes._2),
+      patternNodes = shortestRelationship.rel.boundaryNodesSet,
       patternRels = Set.empty,
       other = Set.empty,
       context = context

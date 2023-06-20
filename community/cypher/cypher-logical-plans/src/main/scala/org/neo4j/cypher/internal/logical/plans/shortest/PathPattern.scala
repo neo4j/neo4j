@@ -74,7 +74,7 @@ object PatternRelationship {
   def from(pattern: org.neo4j.cypher.internal.ir.PatternRelationship): PatternRelationship = {
     PatternRelationship(
       name = varFor(pattern.name),
-      nodes = (varFor(pattern.nodes._1), varFor(pattern.nodes._2)),
+      nodes = (varFor(pattern.left), varFor(pattern.right)),
       dir = pattern.dir,
       types = pattern.types,
       length = pattern.length

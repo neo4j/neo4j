@@ -241,7 +241,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         rightBinding = NodeBinding("b", "v"),
         patternRelationships = List(PatternRelationship(
           name = "r",
-          nodes = ("a", "b"),
+          boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength
@@ -259,7 +259,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         rightBinding = NodeBinding("d", "w"),
         patternRelationships = List(PatternRelationship(
           name = "r2",
-          nodes = ("c", "d"),
+          boundaryNodes = ("c", "d"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength

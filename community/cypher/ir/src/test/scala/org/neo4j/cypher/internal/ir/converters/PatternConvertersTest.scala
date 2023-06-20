@@ -85,7 +85,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
         rightBinding = NodeBinding("b", "c"),
         patternRelationships = List(PatternRelationship(
           name = "r",
-          nodes = ("a", "b"),
+          boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
           types = List(relTypeName("R")),
           length = SimplePatternLength
@@ -99,7 +99,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       ),
       PatternRelationship(
         name = "s",
-        nodes = ("c", "end"),
+        boundaryNodes = ("c", "end"),
         dir = SemanticDirection.BOTH,
         types = Nil,
         length = SimplePatternLength
@@ -135,7 +135,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
     val ir = NodeConnections(List(
       PatternRelationship(
         name = "r",
-        nodes = ("a", "b"),
+        boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = SimplePatternLength
@@ -203,7 +203,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
         rightBinding = NodeBinding("b", "c"),
         patternRelationships = List(PatternRelationship(
           name = "r",
-          nodes = ("a", "b"),
+          boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
           types = List(relTypeName("R")),
           length = SimplePatternLength
@@ -217,7 +217,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       ),
       PatternRelationship(
         name = "s",
-        nodes = ("c", "end"),
+        boundaryNodes = ("c", "end"),
         dir = SemanticDirection.BOTH,
         types = Nil,
         length = SimplePatternLength
@@ -489,7 +489,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       name = Some("p"),
       rel = PatternRelationship(
         name = "r",
-        nodes = ("a", "b"),
+        boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = VarPatternLength(0, Some(3))
@@ -505,7 +505,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       name = Some("  UNNAMED0"),
       rel = PatternRelationship(
         name = "r",
-        nodes = ("a", "b"),
+        boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = VarPatternLength(0, Some(3))
@@ -536,7 +536,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
     val ir1 = NodeConnections(List(
       PatternRelationship(
         name = "r",
-        nodes = ("a", "b"),
+        boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = SimplePatternLength
@@ -563,7 +563,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       name = Some("  UNNAMED0"),
       rel = PatternRelationship(
         name = "r",
-        nodes = ("a", "b"),
+        boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = VarPatternLength(0, Some(3))

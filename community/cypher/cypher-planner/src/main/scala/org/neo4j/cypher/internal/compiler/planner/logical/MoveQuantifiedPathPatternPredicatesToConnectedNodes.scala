@@ -55,7 +55,7 @@ case object MoveQuantifiedPathPatternPredicatesToConnectedNodes extends PlannerQ
           val predicatesForOuterSelections = qg.quantifiedPathPatterns
             .filter(_.repetition.min > 0)
             .flatMap { qpp =>
-              val (left, right) = qpp.nodes
+              val (left, right) = qpp.boundaryNodes
               val start = qpp.leftBinding.inner
               val end = qpp.rightBinding.inner
 

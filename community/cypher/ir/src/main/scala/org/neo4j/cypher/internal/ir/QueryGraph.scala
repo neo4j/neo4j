@@ -117,7 +117,7 @@ case class QueryGraph(
 
   def addPatternRelationship(rel: PatternRelationship): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ rel.coveredNodeIds,
+      patternNodes = patternNodes ++ rel.boundaryNodesSet,
       patternRelationships = patternRelationships + rel
     )
 
@@ -139,14 +139,14 @@ case class QueryGraph(
 
   def addQuantifiedPathPattern(pattern: QuantifiedPathPattern): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ pattern.coveredNodeIds,
+      patternNodes = patternNodes ++ pattern.boundaryNodesSet,
       quantifiedPathPatterns = quantifiedPathPatterns + pattern
     )
 
   def addShortestRelationship(shortestRelationship: ShortestRelationshipPattern): QueryGraph = {
     val rel = shortestRelationship.rel
     copy(
-      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
+      patternNodes = patternNodes ++ rel.boundaryNodesSet,
       shortestRelationshipPatterns = shortestRelationshipPatterns + shortestRelationship
     )
   }
@@ -178,7 +178,7 @@ case class QueryGraph(
 
   private def collectAllPatternNodes(f: String => Unit): Unit = {
     patternNodes.foreach(f)
-    selectivePathPatterns.foreach(_.pathPattern.connections.foreach(_.coveredNodeIds.foreach(f)))
+    selectivePathPatterns.foreach(_.pathPattern.connections.foreach(_.boundaryNodesSet.foreach(f)))
     optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
     for {
       create <- createPatterns
@@ -286,7 +286,7 @@ case class QueryGraph(
    */
   def withPattern(pattern: PatternRelationship): QueryGraph =
     copy(
-      patternNodes = Set(pattern.nodes._1, pattern.nodes._2),
+      patternNodes = pattern.boundaryNodesSet,
       patternRelationships = Set(pattern)
     )
 
@@ -436,7 +436,7 @@ case class QueryGraph(
       val qg = connectedComponentFor(patternNode, visited)
       val coveredIds = qg.idsWithoutOptionalMatchesOrUpdates
       val shortestRelationships = shortestRelationshipPatterns.filter {
-        p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
+        _.rel.boundaryNodesSet.forall(coveredIds.contains)
       }
       val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.name) ++ p.name)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
@@ -515,7 +515,7 @@ case class QueryGraph(
 
     // All node connections that either have `node` as the left or the right node.
     val nodeConnectionsOfNode = nodeConnections.filter { nc =>
-      nc.coveredNodeIds.contains(node) && !connectedComponent.nodeConnections.contains(nc)
+      nc.boundaryNodesSet.contains(node) && !connectedComponent.nodeConnections.contains(nc)
     }
     // All nodes that get connected through `nodeConnectionsOfNode`
     val nodesConnectedThroughOneConnection = nodeConnectionsOfNode.map(_.otherSide(node))

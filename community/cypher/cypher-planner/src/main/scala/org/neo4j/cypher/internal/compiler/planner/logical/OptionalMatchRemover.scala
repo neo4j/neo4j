@@ -312,14 +312,14 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Expression = {
 
-    val innerVars = Set(pattern.nodes._1, pattern.name, pattern.nodes._2)
+    val innerVars = pattern.boundaryNodesSet
     val innerPreds = innerVars.flatMap(predicates.get)
 
     val arguments = innerVars.intersect(elementsToKeep)
     val query = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(
         argumentIds = arguments,
-        patternNodes = Set(pattern.nodes._1, pattern.nodes._2),
+        patternNodes = pattern.boundaryNodesSet,
         patternRelationships = Set(pattern),
         selections = Selections.from(innerPreds)
       ),

@@ -221,7 +221,7 @@ object SingleComponentPlanner {
         case pattern: PatternRelationship if solvedQg.allCoveredIds.contains(pattern.name) =>
           NonExpandSolutions(Some(planSingleProjectEndpoints(pattern, leaf, context)))
         case pattern =>
-          val (start, end) = pattern.nodes
+          val (start, end) = pattern.boundaryNodes
           val leftExpand = planSinglePatternSide(qg, pattern, leaf, start, qppInnerPlans, context)
           val rightExpand = planSinglePatternSide(qg, pattern, leaf, end, qppInnerPlans, context)
           ExpandSolutions(leftExpand, rightExpand)
@@ -230,7 +230,7 @@ object SingleComponentPlanner {
     }.toMap
 
     val cartesianProductsAndJoins = {
-      val (start, end) = patternToSolve.nodes
+      val (start, end) = patternToSolve.boundaryNodes
       if (start == end) {
         // We are not allowed to plan CP or joins with identical LHS and RHS
         Iterable.empty[LogicalPlan]

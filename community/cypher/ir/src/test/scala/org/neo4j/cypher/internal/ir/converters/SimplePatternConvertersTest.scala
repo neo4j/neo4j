@@ -59,7 +59,7 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
 
     val ir = NodeConnections(List(PatternRelationship(
       name = "r",
-      nodes = ("a", "b"),
+      boundaryNodes = ("a", "b"),
       dir = SemanticDirection.OUTGOING,
       types = List(relTypeName("R")),
       length = SimplePatternLength
@@ -83,7 +83,7 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
 
     val ir = NodeConnections(List(PatternRelationship(
       name = "r",
-      nodes = ("a", "b"),
+      boundaryNodes = ("a", "b"),
       dir = SemanticDirection.OUTGOING,
       types = List(relTypeName("R")),
       length = VarPatternLength(0, Some(5))
@@ -151,14 +151,14 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
     val ir = NodeConnections(List(
       PatternRelationship(
         name = "r",
-        nodes = ("a", "b"),
+        boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = SimplePatternLength
       ),
       PatternRelationship(
         name = "s",
-        nodes = ("b", "a"),
+        boundaryNodes = ("b", "a"),
         dir = SemanticDirection.INCOMING,
         types = Nil,
         length = SimplePatternLength

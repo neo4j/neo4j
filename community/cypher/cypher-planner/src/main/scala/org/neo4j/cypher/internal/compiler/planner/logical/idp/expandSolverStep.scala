@@ -219,7 +219,7 @@ object expandSolverStep {
     plan: LogicalPlan,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val (start, end) = patternRel.nodes
+    val (start, end) = patternRel.boundaryNodes
     val isStartInScope = plan.availableSymbols(varFor(start))
     val isEndInScope = plan.availableSymbols(varFor(end))
 

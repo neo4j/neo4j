@@ -73,7 +73,7 @@ object RelationshipLeafPlanner {
       // For a pattern (a)-[r]-(b), nodePredicates will be something like `a = new_a AND b = new_B`,
       // where `new_a` and `new_b` are the newly generated variable names.
       // This case covers the scenario where (a)-[r]-(a), because the nodePredicate `a = new_a1 AND a = new_a2` implies `new_a1 = new_a2`
-      val nodePredicates = buildNodePredicates(relationship.nodes, newRelationship.nodes)
+      val nodePredicates = buildNodePredicates(relationship.boundaryNodes, newRelationship.boundaryNodes)
 
       relationshipLeafPlanProvider.getRelationshipLeafPlan(newRelationship, relationship, nodePredicates)
     } else {
@@ -81,7 +81,7 @@ object RelationshipLeafPlanner {
       // and plan a Selection after the seek so that both sides are the same
       val newRightNode = context.staticComponents.anonymousVariableNameGenerator.nextName
       val nodePredicate = equalsPredicate(relationship.right, newRightNode)
-      val newRelationship = relationship.copy(nodes = (relationship.left, newRightNode))
+      val newRelationship = relationship.copy(boundaryNodes = (relationship.left, newRightNode))
       relationshipLeafPlanProvider.getRelationshipLeafPlan(newRelationship, relationship, Seq(nodePredicate))
     }
   }
@@ -112,7 +112,7 @@ object RelationshipLeafPlanner {
     argumentIds: Set[String],
     context: LogicalPlanningContext
   ): PatternRelationship = {
-    oldRelationship.copy(nodes = generateNewStartEndNodes(oldRelationship.nodes, argumentIds, context))
+    oldRelationship.copy(boundaryNodes = generateNewStartEndNodes(oldRelationship.boundaryNodes, argumentIds, context))
   }
 
   private def buildNodePredicates(oldNodes: (String, String), newNodes: (String, String)): Seq[Equals] = {
