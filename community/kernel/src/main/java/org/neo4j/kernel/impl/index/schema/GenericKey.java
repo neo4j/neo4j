@@ -522,7 +522,7 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     }
 
     String toStringInternal() {
-        return type.toString(this);
+        return type == null ? "<null-type>" : type.toString(this);
     }
 
     String toDetailedString() {
