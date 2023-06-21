@@ -67,12 +67,12 @@ sealed trait NodeConnection {
 sealed trait ExhaustiveNodeConnection extends NodeConnection
 
 final case class PatternRelationship(
-                                      name: String,
-                                      boundaryNodes: (String, String),
-                                      dir: SemanticDirection,
-                                      types: Seq[RelTypeName],
-                                      length: PatternLength
-                                    ) extends ExhaustiveNodeConnection {
+  name: String,
+  boundaryNodes: (String, String),
+  dir: SemanticDirection,
+  types: Seq[RelTypeName],
+  length: PatternLength
+) extends ExhaustiveNodeConnection {
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
@@ -83,7 +83,7 @@ final case class PatternRelationship(
 
   def inOrder: (String, String) = dir match {
     case SemanticDirection.INCOMING => (right, left)
-    case _ => (left, right)
+    case _                          => (left, right)
   }
 
   override def toString: String = {
@@ -96,9 +96,9 @@ final case class PatternRelationship(
         types.map(_.name).mkString(":", "|", "")
       }
     val lengthStr = length match {
-      case SimplePatternLength => ""
-      case VarPatternLength(1, None) => "*"
-      case VarPatternLength(x, None) => s"*$x.."
+      case SimplePatternLength              => ""
+      case VarPatternLength(1, None)        => "*"
+      case VarPatternLength(x, None)        => s"*$x.."
       case VarPatternLength(min, Some(max)) => s"*$min..$max"
     }
     s"(${boundaryNodes._1})$lArrow-[$name$typesStr$lengthStr]-$rArrow(${boundaryNodes._2})"
@@ -160,16 +160,16 @@ case class VariableGrouping(singletonName: String, groupName: String) {
 }
 
 final case class QuantifiedPathPattern(
-                                        leftBinding: NodeBinding,
-                                        rightBinding: NodeBinding,
-                                        patternRelationships: Seq[PatternRelationship],
-                                        patternNodes: Set[String] = Set.empty,
-                                        argumentIds: Set[String] = Set.empty,
-                                        selections: Selections = Selections(),
-                                        repetition: Repetition,
-                                        nodeVariableGroupings: Set[VariableGrouping],
-                                        relationshipVariableGroupings: Set[VariableGrouping]
-                                      ) extends ExhaustiveNodeConnection {
+  leftBinding: NodeBinding,
+  rightBinding: NodeBinding,
+  patternRelationships: Seq[PatternRelationship],
+  patternNodes: Set[String] = Set.empty,
+  argumentIds: Set[String] = Set.empty,
+  selections: Selections = Selections(),
+  repetition: Repetition,
+  nodeVariableGroupings: Set[VariableGrouping],
+  relationshipVariableGroupings: Set[VariableGrouping]
+) extends ExhaustiveNodeConnection {
 
   override val left: String = leftBinding.outer
   override val right: String = rightBinding.outer
@@ -257,10 +257,10 @@ object ExhaustivePathPattern {
  * @param selector    path selector such as ANY k, SHORTEST k, or SHORTEST k GROUPS, defining the type of path finding algorithm as well as the number paths to find
  */
 final case class SelectivePathPattern(
-                                       pathPattern: NodeConnections[ExhaustiveNodeConnection],
-                                       selections: Selections,
-                                       selector: SelectivePathPattern.Selector
-                                     ) extends PathPattern with NodeConnection {
+  pathPattern: NodeConnections[ExhaustiveNodeConnection],
+  selections: Selections,
+  selector: SelectivePathPattern.Selector
+) extends PathPattern with NodeConnection {
   override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = pathPattern.allQuantifiedPathPatterns
 
   override val left: String = pathPattern.connections.head.left

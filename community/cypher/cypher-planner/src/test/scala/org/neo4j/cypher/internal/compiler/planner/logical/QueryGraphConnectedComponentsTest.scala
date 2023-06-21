@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryGraphConnectedComponentsTest
-  extends CypherFunSuite with LogicalPlanningTestSupport {
+    extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private val A = "a"
   private val B = "b"
@@ -473,7 +473,6 @@ class QueryGraphConnectedComponentsTest
     val components = graph.connectedComponents
     components should equal(Seq(graph))
   }
-
 
   test("selective path pattern should pull in predicates without dependency on arguments") {
     val graph = QueryGraph(

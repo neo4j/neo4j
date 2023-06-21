@@ -301,6 +301,7 @@ sealed abstract class PatternElement extends ASTNode {
 }
 
 object PatternElement {
+
   /**
    * Returns the boundary nodes of this pattern element. Note, this does not work on QPPs directly.
    * Therefore, qpps need to have been padded before.
@@ -318,7 +319,7 @@ object PatternElement {
         val right = factors.last.asInstanceOf[SimplePattern].allVariablesLeftToRight.last
         Set(left, right)
       case ParenthesizedPath(part, _) => boundaryNodes(part.element)
-      case _ => throw new IllegalStateException()
+      case _                          => throw new IllegalStateException()
     }
   }
 }

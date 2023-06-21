@@ -522,10 +522,12 @@ case class QueryGraph(
 
     // `(a)-[r]->(b), (c)-[r]->(d)` are connected through both relationships being named `r`.
     val patternRelationshipsWithSameName =
-      patternRelationships.filterNot(nodeConnectionsOfNode).filter { r => nodeConnectionsOfNode.exists {
-        case r2:PatternRelationship if r.name == r2.name => true
-        case _ => false
-      }}
+      patternRelationships.filterNot(nodeConnectionsOfNode).filter { r =>
+        nodeConnectionsOfNode.exists {
+          case r2: PatternRelationship if r.name == r2.name => true
+          case _                                            => false
+        }
+      }
     // All nodes that get connected through `patternRelationshipsWithSameName`
     val patternRelationshipsWithSameNameNodes = patternRelationshipsWithSameName.flatMap(r => Seq(r.left, r.right))
 
