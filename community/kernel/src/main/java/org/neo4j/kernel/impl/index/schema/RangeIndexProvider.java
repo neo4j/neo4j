@@ -105,7 +105,7 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayout> {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("range", "1.0");
-    public static final RangeIndexCapability CAPABILITY = new RangeIndexCapability();
+    public static final IndexCapability CAPABILITY = new RangeIndexCapability();
 
     public RangeIndexProvider(
             DatabaseIndexContext databaseIndexContext,

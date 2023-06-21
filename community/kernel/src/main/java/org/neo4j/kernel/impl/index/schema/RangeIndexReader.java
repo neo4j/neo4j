@@ -23,12 +23,14 @@ import static java.lang.String.format;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.CAPABILITY;
 
 import java.util.Arrays;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.values.storable.Value;
@@ -47,8 +49,8 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey> {
     @Override
     void validateQuery(IndexQueryConstraints constraints, PropertyIndexQuery... predicates) {
         validateNoUnsupportedPredicates(predicates);
-        QueryValidator.validateOrder(RangeIndexProvider.CAPABILITY, constraints.order(), predicates);
-        QueryValidator.validateCompositeQuery(predicates);
+        validateOrder(constraints.order(), predicates);
+        validateCompositeQuery(predicates);
     }
 
     @Override
@@ -138,11 +140,96 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey> {
         for (final var predicate : predicates) {
             final var type = predicate.type();
             switch (type) {
-                case BOUNDING_BOX, STRING_CONTAINS, STRING_SUFFIX -> throw new IllegalArgumentException(format(
+                case TOKEN_LOOKUP,
+                        BOUNDING_BOX,
+                        STRING_CONTAINS,
+                        STRING_SUFFIX,
+                        FULLTEXT_SEARCH -> throw new IllegalArgumentException(format(
                         "Tried to query index with illegal query. A %s predicate is not allowed for a %s index. Query was :%s",
                         type, IndexType.RANGE, Arrays.toString(predicates)));
                 default -> {}
             }
         }
+    }
+
+    static void validateOrder(IndexOrder indexOrder, PropertyIndexQuery... predicates) {
+        if (indexOrder == IndexOrder.NONE) {
+            return;
+        }
+
+        if (!CAPABILITY.supportsOrdering()) {
+            invalidOrder(indexOrder, predicates);
+        }
+    }
+
+    /**
+     * Composite queries are somewhat restricted in what combination of predicates
+     * that are allowed together and in what order.
+     *
+     * 1. Decreasing precision.
+     * Composite queries must have decreasing precision on the slots, meaning
+     * for example that a range predicate can not be followed by an exact
+     * predicate.
+     * The reason for this is that because the index is sorted in lexicographic
+     * order in regard to the slots a predicate with increasing precision
+     * does not narrow down the search space in the index.
+     * It could of course be implemented by scanning the search space and do
+     * post filtering, but this is not how the implementation currently works.
+     * Supported queries in order of precision:
+     * - {@link IndexQueryType#EXACT exact}
+     * - {@link IndexQueryType#RANGE range}, {@link IndexQueryType#STRING_PREFIX prefix}
+     * - {@link IndexQueryType#EXISTS exists}
+     *
+     * 2. AllEntries
+     * The {@link IndexQueryType#ALL_ENTRIES all entries} query is not allowed in composite queries, due to its semantic
+     * meaning to return everything in the index; thus does a full scan of the search
+     * space. This is similar to "exist", but is tied to the index, rather than a
+     * particular property key.
+     *
+     * @param predicates The query for which we want to check the composite validity.
+     */
+    static void validateCompositeQuery(PropertyIndexQuery... predicates) {
+        for (int i = 1; i < predicates.length; i++) {
+            final var type = predicates[i].type();
+            final var prevType = predicates[i - 1].type();
+            if (prevType == IndexQueryType.ALL_ENTRIES) {
+                invalidQueryInComposite(prevType, predicates);
+            }
+
+            switch (type) {
+                case EXISTS -> {
+                    // all predicates that are supported in a composite query, can be followed by an EXISTS, as EXISTS
+                    // has the least precision; thus, if current type is EXISTS, then previous type is allowed to be any
+                    // type that is valid for composite queries
+                }
+                case EXACT, RANGE, STRING_PREFIX -> {
+                    // all other predicates that are supported in a composite query, can _only_ follow an EXACT;
+                    // if the previous type is not an EXACT, then the precision is not decreasing
+                    if (prevType != IndexQueryType.EXACT) {
+                        invalidQueryPrecisionInComposite(predicates);
+                    }
+                }
+
+                default -> invalidQueryInComposite(type, predicates);
+            }
+        }
+    }
+
+    private static void invalidOrder(IndexOrder indexOrder, PropertyIndexQuery... predicates) {
+        throw new UnsupportedOperationException(format(
+                "Tried to query index with unsupported order %s. For query %s supports ascending: false, supports descending: false.",
+                indexOrder, Arrays.toString(predicates)));
+    }
+
+    private static void invalidQueryInComposite(IndexQueryType type, PropertyIndexQuery... predicates) {
+        throw new IllegalArgumentException(format(
+                "Tried to query index with illegal composite query. %s queries are not allowed in composite query. Query was: %s ",
+                type, Arrays.toString(predicates)));
+    }
+
+    private static void invalidQueryPrecisionInComposite(PropertyIndexQuery... predicates) {
+        throw new IllegalArgumentException(format(
+                "Tried to query index with illegal composite query. Composite query must have decreasing precision. Query was: %s ",
+                Arrays.toString(predicates)));
     }
 }
