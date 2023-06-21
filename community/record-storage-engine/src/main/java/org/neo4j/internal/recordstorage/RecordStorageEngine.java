@@ -111,6 +111,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.InternalErrorTracer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -735,6 +736,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public StoreEntityCounters storeEntityCounters() {
         return storeEntityCounters;
+    }
+
+    @Override
+    public InternalErrorTracer internalErrorTracer() {
+        return InternalErrorTracer.NO_TRACER;
     }
 
     @Override

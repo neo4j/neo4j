@@ -65,6 +65,7 @@ import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.InternalErrorTracer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -423,6 +424,11 @@ class ParallelRecoveryVisitorTest {
 
         @Override
         public StoreEntityCounters storeEntityCounters() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public InternalErrorTracer internalErrorTracer() {
             throw new UnsupportedOperationException();
         }
 
