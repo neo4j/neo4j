@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.getRelTypes
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 import scala.annotation.tailrec
 
@@ -49,14 +50,14 @@ object SimplePatternConverters {
   /**
    * Recursively thread relationship patterns together, preserving the order in which they appear.
    */
-  def convertRelationshipChain(relationshipChain: RelationshipChain): List[PatternRelationship] =
-    convertRelationshipChainRec(relationshipChain, Nil)
+  def convertRelationshipChain(relationshipChain: RelationshipChain): NonEmptyList[PatternRelationship] =
+    convertRelationshipChainRec(relationshipChain, None)
 
   @tailrec
   private def convertRelationshipChainRec(
     relationshipChain: RelationshipChain,
-    relationships: List[PatternRelationship]
-  ): List[PatternRelationship] =
+    relationships: Option[NonEmptyList[PatternRelationship]]
+  ): NonEmptyList[PatternRelationship] =
     relationshipChain.element match {
       case node: NodePattern =>
         val relationship = makePatternRelationship(
@@ -64,7 +65,7 @@ object SimplePatternConverters {
           relationship = relationshipChain.relationship,
           rightNode = relationshipChain.rightNode
         )
-        relationship :: relationships
+        relationships.map(list => relationship +: list).getOrElse(NonEmptyList(relationship))
 
       case nested: RelationshipChain =>
         val relationship = makePatternRelationship(
@@ -72,7 +73,8 @@ object SimplePatternConverters {
           relationship = relationshipChain.relationship,
           rightNode = relationshipChain.rightNode
         )
-        convertRelationshipChainRec(nested, relationship :: relationships)
+        val acc = relationships.map(list => relationship +: list).getOrElse(NonEmptyList(relationship))
+        convertRelationshipChainRec(nested, Some(acc))
     }
 
   /**

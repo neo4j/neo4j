@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.VariableGrouping
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 
@@ -53,7 +54,6 @@ object QuantifiedPathPatternConverters {
     val patternRelationships = getPatternRelationships(patternElement)
     val groupings = VariableGroupings.build(quantifiedPath.variableGroupings)
     patternRelationships
-      .view
       .map(relationship => QuantifiedPathPatternBuilder.fromPatternRelationship(groupings, relationship))
       .reduceLeft(_.append(_))
       .build(
@@ -85,7 +85,7 @@ object QuantifiedPathPatternConverters {
         throw new IllegalArgumentException("sub-path assignment is not currently supported")
     }
 
-  private def getPatternRelationships(patternElement: PatternElement): List[PatternRelationship] =
+  private def getPatternRelationships(patternElement: PatternElement): NonEmptyList[PatternRelationship] =
     patternElement match {
       case relationshipChain: RelationshipChain => SimplePatternConverters.convertRelationshipChain(relationshipChain)
       case _: NodePattern =>

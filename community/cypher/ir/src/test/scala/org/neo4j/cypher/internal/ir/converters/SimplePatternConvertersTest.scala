@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.converters.SimplePatternConverters.convertRelationshipLength
 import org.neo4j.cypher.internal.ir.converters.SimplePatternConverters.convertSimplePattern
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -57,7 +58,7 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
       nodePat(Some("b"))
     )
 
-    val ir = NodeConnections(List(PatternRelationship(
+    val ir = NodeConnections(NonEmptyList(PatternRelationship(
       name = "r",
       boundaryNodes = ("a", "b"),
       dir = SemanticDirection.OUTGOING,
@@ -81,7 +82,7 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
       nodePat(Some("b"))
     )
 
-    val ir = NodeConnections(List(PatternRelationship(
+    val ir = NodeConnections(NonEmptyList(PatternRelationship(
       name = "r",
       boundaryNodes = ("a", "b"),
       dir = SemanticDirection.OUTGOING,
@@ -148,7 +149,7 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
       nodePat(Some("a"))
     )
 
-    val ir = NodeConnections(List(
+    val ir = NodeConnections(NonEmptyList(
       PatternRelationship(
         name = "r",
         boundaryNodes = ("a", "b"),

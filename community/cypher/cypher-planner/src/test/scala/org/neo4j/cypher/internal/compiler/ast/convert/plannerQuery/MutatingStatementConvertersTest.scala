@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -274,7 +275,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
     val shortestPathPattern =
       SelectivePathPattern(
-        pathPattern = ExhaustivePathPattern.NodeConnections(List(qpp1, qpp2)),
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp1, qpp2)),
         selections = Selections.from(Seq(
           unique(varFor("r")),
           unique(varFor("r2")),

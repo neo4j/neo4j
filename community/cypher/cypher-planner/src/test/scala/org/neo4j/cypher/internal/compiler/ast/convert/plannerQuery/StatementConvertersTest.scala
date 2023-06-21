@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -2240,7 +2241,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val shortestPathPattern =
       SelectivePathPattern(
-        pathPattern = ExhaustivePathPattern.NodeConnections(List(qpp)),
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp)),
         selections = Selections.from(unique(varFor("r"))),
         selector = SelectivePathPattern.Selector.ShortestGroups(1)
       )
@@ -2283,7 +2284,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val shortestPathPattern =
       SelectivePathPattern(
-        pathPattern = ExhaustivePathPattern.NodeConnections(List(qpp)),
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp)),
         selections = Selections.from(List(
           andedPropertyInequalities(lessThan(prop("start", "prop"), function("size", varFor("r")))),
           unique(varFor("r"))

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Rewritable
 
@@ -199,7 +200,7 @@ sealed trait PathPattern {
   /**
    * @return all quantified sub-path patterns contained in this path pattern
    */
-  def allQuantifiedPathPatterns: List[QuantifiedPathPattern]
+  def allQuantifiedPathPatterns: Set[QuantifiedPathPattern]
 }
 
 /**
@@ -210,7 +211,8 @@ case class PathPatterns(pathPatterns: List[PathPattern]) extends AnyVal {
   /**
    * @return all quantified sub-path patterns contained in these path patterns
    */
-  def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = pathPatterns.flatMap(_.allQuantifiedPathPatterns)
+  def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] =
+    pathPatterns.view.flatMap(_.allQuantifiedPathPatterns).toSet
 }
 
 /**
@@ -231,7 +233,7 @@ object ExhaustivePathPattern {
    * @param name name of the variable bound to the node pattern
    */
   final case class SingleNode[A <: NodeConnection](name: String) extends ExhaustivePathPattern[A] {
-    override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = Nil
+    override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
   }
 
   /**
@@ -240,12 +242,14 @@ object ExhaustivePathPattern {
    * @param connections the connections making up the path pattern, in the order in which they appear in the original query.
    * @tparam A In most cases, should be [[NodeConnection]], but can be used to narrow down the type of node connections to [[PatternRelationship]] only.
    */
-  final case class NodeConnections[+A <: NodeConnection](connections: List[A]) extends ExhaustivePathPattern[A] { // TODO non-empty list?
+  final case class NodeConnections[+A <: NodeConnection](connections: NonEmptyList[A])
+      extends ExhaustivePathPattern[A] {
 
-    override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] =
-      connections.collect {
+    override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = {
+      connections.toSet[NodeConnection].collect {
         case qpp: QuantifiedPathPattern => qpp
       }
+    }
   }
 }
 
@@ -261,13 +265,13 @@ final case class SelectivePathPattern(
   selections: Selections,
   selector: SelectivePathPattern.Selector
 ) extends PathPattern with NodeConnection {
-  override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = pathPattern.allQuantifiedPathPatterns
+  override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = pathPattern.allQuantifiedPathPatterns
 
   override val left: String = pathPattern.connections.head.left
   override val right: String = pathPattern.connections.last.right
   override val boundaryNodes: (String, String) = (left, right)
 
-  override def coveredIds: Set[String] = pathPattern.connections.flatMap(_.coveredIds).toSet
+  override def coveredIds: Set[String] = pathPattern.connections.toSet[NodeConnection].flatMap(_.coveredIds)
 
   val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies)
 }
@@ -315,7 +319,7 @@ final case class ShortestRelationshipPattern(name: Option[String], rel: PatternR
 
   def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
 
-  override def allQuantifiedPathPatterns: List[QuantifiedPathPattern] = Nil
+  override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
 }
 
 object ShortestRelationshipPattern {

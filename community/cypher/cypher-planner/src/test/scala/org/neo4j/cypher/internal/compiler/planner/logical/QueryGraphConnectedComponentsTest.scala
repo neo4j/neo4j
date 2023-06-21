@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -66,7 +67,7 @@ class QueryGraphConnectedComponentsTest
 
   private def spp(from: String, to: String) =
     SelectivePathPattern(
-      ExhaustivePathPattern.NodeConnections(List(qpp(from, to))),
+      ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp(from, to))),
       Selections.empty,
       SelectivePathPattern.Selector.Any(1)
     )
@@ -394,7 +395,7 @@ class QueryGraphConnectedComponentsTest
 
   test("nodes connected via shortest path (path pattern of length 2)") {
     val spps = Set(SelectivePathPattern(
-      ExhaustivePathPattern.NodeConnections(List(qpp(A, B), qpp(B, C))),
+      ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp(A, B), qpp(B, C))),
       Selections.empty,
       SelectivePathPattern.Selector.Any(1)
     ))
@@ -463,7 +464,7 @@ class QueryGraphConnectedComponentsTest
       argumentIds = Set(X),
       patternNodes = Set(A, C),
       selectivePathPatterns = Set(SelectivePathPattern(
-        ExhaustivePathPattern.NodeConnections(List(qpp(A, B), qpp(B, C))),
+        ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp(A, B), qpp(B, C))),
         Selections.empty,
         SelectivePathPattern.Selector.Any(1)
       )),
@@ -478,7 +479,7 @@ class QueryGraphConnectedComponentsTest
     val graph = QueryGraph(
       patternNodes = Set(A, C),
       selectivePathPatterns = Set(SelectivePathPattern(
-        ExhaustivePathPattern.NodeConnections(List(qpp(A, B), qpp(B, C))),
+        ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp(A, B), qpp(B, C))),
         Selections.empty,
         SelectivePathPattern.Selector.Any(1)
       )),

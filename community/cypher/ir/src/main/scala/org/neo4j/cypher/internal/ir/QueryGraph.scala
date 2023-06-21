@@ -109,7 +109,7 @@ case class QueryGraph(
   private def addExhaustivePathPattern(pathPattern: ExhaustivePathPattern[_]): QueryGraph =
     pathPattern match {
       case ExhaustivePathPattern.SingleNode(name)             => addPatternNodes(name)
-      case ExhaustivePathPattern.NodeConnections(connections) => addNodeConnections(connections)
+      case ExhaustivePathPattern.NodeConnections(connections) => addNodeConnections(connections.toIterable)
     }
 
   def addPatternNodes(nodes: String*): QueryGraph =

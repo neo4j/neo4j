@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -79,7 +80,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
   )
 
   private val longPathPattern =
-    NodeConnections(List(
+    NodeConnections(NonEmptyList(
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a", "start"),
         rightBinding = NodeBinding("b", "c"),
@@ -132,7 +133,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       selector = allPathsSelector()
     )
 
-    val ir = NodeConnections(List(
+    val ir = NodeConnections(NonEmptyList(
       PatternRelationship(
         name = "r",
         boundaryNodes = ("a", "b"),
@@ -197,7 +198,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       selector = allPathsSelector()
     )
 
-    val ir = NodeConnections(List(
+    val ir = NodeConnections(NonEmptyList(
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a", "start"),
         rightBinding = NodeBinding("b", "c"),
@@ -533,7 +534,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       selector = allPathsSelector()
     )
 
-    val ir1 = NodeConnections(List(
+    val ir1 = NodeConnections(NonEmptyList(
       PatternRelationship(
         name = "r",
         boundaryNodes = ("a", "b"),

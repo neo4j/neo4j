@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SelectivePathPattern.Selector
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 /**
  * @param anonymousVariableNameGenerator generator used for anonymous shortest var-length relationship patterns
@@ -196,12 +197,13 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
       case (pathPattern, (quantifiedPath, simplePattern)) =>
         val (previousRightMostNode, previousConnections) = pathPattern match {
           case ExhaustivePathPattern.SingleNode(name)             => (name, Nil)
-          case ExhaustivePathPattern.NodeConnections(connections) => (connections.last.right, connections)
+          case ExhaustivePathPattern.NodeConnections(connections) => (connections.last.right, connections.toIterable)
         }
 
         val (nextLeftMostNode, nextConnections) = SimplePatternConverters.convertSimplePattern(simplePattern) match {
-          case ExhaustivePathPattern.SingleNode(name)               => (name, Nil)
-          case ExhaustivePathPattern.NodeConnections(relationships) => (relationships.head.left, relationships)
+          case ExhaustivePathPattern.SingleNode(name) => (name, Nil)
+          case ExhaustivePathPattern.NodeConnections(relationships) =>
+            (relationships.head.left, relationships.toIterable)
         }
 
         val quantifiedPathPattern =
@@ -211,6 +213,8 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
             outerRight = nextLeftMostNode
           )
 
-        ExhaustivePathPattern.NodeConnections(previousConnections ++ (quantifiedPathPattern :: nextConnections))
+        ExhaustivePathPattern.NodeConnections(
+          previousConnections ++: NonEmptyList(quantifiedPathPattern) :++ nextConnections
+        )
     }
 }
