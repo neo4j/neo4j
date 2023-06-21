@@ -28,7 +28,7 @@ import org.neo4j.procedure.TerminationGuard;
 public class TerminationGuardProvider implements ThrowingFunction<Context, TerminationGuard, ProcedureException> {
     @Override
     public TerminationGuard apply(Context ctx) throws ProcedureException {
-        return new TransactionTerminationGuard(ctx.kernelTransactionView());
+        return new TransactionTerminationGuard(ctx.kernelTransaction());
     }
 
     private static class TransactionTerminationGuard implements TerminationGuard {

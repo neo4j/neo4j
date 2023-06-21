@@ -126,11 +126,11 @@ class BuiltInProceduresTest {
 
     @BeforeEach
     void setup() throws Exception {
-        procs.registerComponent(
-                KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false);
+        procs.registerComponent(KernelTransaction.class, Context::kernelTransaction, false);
         procs.registerComponent(DependencyResolver.class, Context::dependencyResolver, false);
         procs.registerComponent(GraphDatabaseAPI.class, Context::graphDatabaseAPI, false);
-        procs.registerComponent(Transaction.class, Context::internalTransaction, true);
+        procs.registerComponent(
+                Transaction.class, ctx -> ctx.kernelTransaction().internalTransaction(), true);
         procs.registerComponent(SecurityContext.class, Context::securityContext, true);
         procs.registerComponent(ProcedureCallContext.class, Context::procedureCallContext, true);
         procs.registerComponent(SystemGraphComponents.class, ctx -> systemGraphComponents, false);
@@ -154,6 +154,7 @@ class BuiltInProceduresTest {
         when(tx.dataRead()).thenReturn(read);
         when(tx.schemaRead()).thenReturn(schemaRead);
         when(tx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
+        when(tx.internalTransaction()).thenReturn(transaction);
         when(callContext.isCalledFromCypher()).thenReturn(false);
         when(schemaRead.snapshot()).thenReturn(schemaReadCore);
 
@@ -600,7 +601,8 @@ class BuiltInProceduresTest {
     private List<Object[]> call(String name, Object... args) throws ProcedureException, IndexNotFoundKernelException {
         DefaultValueMapper valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
         Context ctx = buildContext(resolver, valueMapper)
-                .withInternalTransaction(transaction)
+                .withKernelTransaction(tx)
+                .withGraphDatabaseSupplier(() -> graphDatabaseAPI)
                 .withProcedureCallContext(callContext)
                 .context();
 

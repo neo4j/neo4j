@@ -28,7 +28,7 @@ public class TransactionStatusDetailsProvider
         implements ThrowingFunction<Context, StatusDetailsAccessor, ProcedureException> {
     @Override
     public StatusDetailsAccessor apply(Context context) throws ProcedureException {
-        var ktx = context.kernelTransactionView();
+        var ktx = context.kernelTransaction();
         return new StatusDetailsAccessor() {
             @Override
             public void setStatusDetails(String statusDetails) {

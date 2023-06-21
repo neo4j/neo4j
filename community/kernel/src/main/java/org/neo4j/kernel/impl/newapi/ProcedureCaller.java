@@ -25,7 +25,6 @@ import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import java.util.function.Supplier;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
@@ -41,12 +40,10 @@ import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextGraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureTransaction;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureKernelTransaction;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper;
-import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.AnyValue;
@@ -149,9 +146,7 @@ public abstract class ProcedureCaller {
 
     Context prepareContext(SecurityContext securityContext, ProcedureCallContext procedureContext) {
         return buildContext(databaseDependencies, createValueMapper())
-                .withProcedureTransaction(procedureTransaction())
-                .withKernelTransactionView(kernelTransactionView())
-                .withInternalTransaction(maybeInternalTransaction())
+                .withKernelTransaction(kernelTransaction())
                 .withGraphDatabaseSupplier(graphDatabaseAPISupplier())
                 .withSecurityContext(securityContext)
                 .withProcedureCallContext(procedureContext)
@@ -208,11 +203,7 @@ public abstract class ProcedureCaller {
 
     abstract OverridableSecurityContext.Revertable overrideSecurityContext(SecurityContext context);
 
-    abstract Transaction procedureTransaction();
-
-    abstract ProcedureKernelTransactionView kernelTransactionView();
-
-    abstract InternalTransaction maybeInternalTransaction();
+    abstract KernelTransaction kernelTransaction();
 
     abstract Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier();
 
@@ -285,53 +276,13 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        Transaction procedureTransaction() {
-            return new ProcedureTransactionImpl(ktx.internalTransaction());
-        }
-
-        @Override
-        InternalTransaction maybeInternalTransaction() {
-            return ktx.internalTransaction();
+        KernelTransaction kernelTransaction() {
+            return ktx;
         }
 
         @Override
         Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier() {
             return () -> databaseDependencies.resolveDependency(GraphDatabaseAPI.class);
-        }
-
-        @Override
-        ProcedureKernelTransactionView kernelTransactionView() {
-            return new ProcedureKernelTransactionView() {
-                @Override
-                public boolean isOpen() {
-                    return ktx.isOpen();
-                }
-
-                @Override
-                public void setStatusDetails(String details) {
-                    ktx.setStatusDetails(details);
-                }
-
-                @Override
-                public String statusDetails() {
-                    return ktx.statusDetails();
-                }
-
-                @Override
-                public void assertOpen() {
-                    ktx.assertOpen();
-                }
-
-                @Override
-                public KernelTransaction actualKernelTransaction() {
-                    return ktx;
-                }
-
-                @Override
-                public String databaseName() {
-                    return ktx.getDatabaseName();
-                }
-            };
         }
     }
 
@@ -339,7 +290,7 @@ public abstract class ProcedureCaller {
 
         private final ExecutionContext executionContext;
         private final OverridableSecurityContext overridableSecurityContext;
-        private final ProcedureKernelTransactionView kernelTransactionView;
+        private final ExecutionContextProcedureKernelTransaction ktx;
         private final SecurityAuthorizationHandler securityAuthorizationHandler;
         private final Supplier<ClockContext> clockContextSupplier;
 
@@ -347,7 +298,7 @@ public abstract class ProcedureCaller {
                 ExecutionContext executionContext,
                 DependencyResolver databaseDependencies,
                 OverridableSecurityContext overridableSecurityContext,
-                ProcedureKernelTransactionView kernelTransactionView,
+                ExecutionContextProcedureKernelTransaction ktx,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
                 Supplier<ClockContext> clockContextSupplier,
                 ProcedureView procedureView) {
@@ -355,7 +306,7 @@ public abstract class ProcedureCaller {
 
             this.executionContext = executionContext;
             this.overridableSecurityContext = overridableSecurityContext;
-            this.kernelTransactionView = kernelTransactionView;
+            this.ktx = ktx;
             this.securityAuthorizationHandler = securityAuthorizationHandler;
             this.clockContextSupplier = clockContextSupplier;
         }
@@ -397,23 +348,19 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        Transaction procedureTransaction() {
-            return new ExecutionContextProcedureTransaction(executionContext);
-        }
-
-        @Override
-        InternalTransaction maybeInternalTransaction() {
-            return null;
+        ExecutionContextProcedureKernelTransaction kernelTransaction() {
+            return ktx;
         }
 
         @Override
         Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier() {
-            return ExecutionContextGraphDatabaseAPI::new;
+            return () -> new ExecutionContextGraphDatabaseAPI(
+                    databaseDependencies.resolveDependency(GraphDatabaseAPI.class));
         }
 
         @Override
         void performCheckBeforeOperation() {
-            kernelTransactionView.assertOpen();
+            ktx.assertOpen();
         }
 
         @Override
@@ -429,11 +376,6 @@ public abstract class ProcedureCaller {
         @Override
         ValueMapper<Object> createValueMapper() {
             return new ExecutionContextValueMapper(executionContext);
-        }
-
-        @Override
-        ProcedureKernelTransactionView kernelTransactionView() {
-            return kernelTransactionView;
         }
     }
 }

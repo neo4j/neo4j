@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.matcher.FileSystemAbstractionMatchers
 import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeDebugLoggingTestBase.withDebugLog
 import org.neo4j.logging.LogAssert
 

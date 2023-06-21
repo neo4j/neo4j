@@ -80,6 +80,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
@@ -109,6 +110,7 @@ public class ProcedureCompilationTest {
     private static final AnyValue[] EMPTY = new AnyValue[0];
     private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper(mock(InternalTransaction.class));
     private static final InternalTransaction TRANSACTION = mock(InternalTransaction.class);
+    private static final KernelTransaction KTX = mock(KernelTransaction.class);
     public static final ResourceTracker RESOURCE_TRACKER = mock(ResourceTracker.class);
 
     private static final ClassLoader defaultClassloader = ProcedureCompilationTest.class.getClassLoader();
@@ -117,9 +119,10 @@ public class ProcedureCompilationTest {
 
     @BeforeEach
     void setUp() throws ProcedureException {
+        when(KTX.internalTransaction()).thenReturn(TRANSACTION);
         ctx = mock(Context.class);
         when(ctx.thread()).thenReturn(Thread.currentThread());
-        when(ctx.internalTransaction()).thenReturn(TRANSACTION);
+        when(ctx.kernelTransaction()).thenReturn(KTX);
         when(ctx.valueMapper()).thenReturn(VALUE_MAPPER);
         when(TRANSACTION.toString()).thenReturn("I'm transaction");
     }
@@ -153,7 +156,8 @@ public class ProcedureCompilationTest {
         // Given
         UserFunctionSignature signature =
                 functionSignature("test", "foo").out(NTInteger).build();
-        FieldSetter setter1 = createSetter(InnerClass.class, "transaction", Context::internalTransaction);
+        FieldSetter setter1 = createSetter(
+                InnerClass.class, "transaction", ctx -> ctx.kernelTransaction().internalTransaction());
         FieldSetter setter2 = createSetter(InnerClass.class, "thread", Context::thread);
         Method longMethod = method(InnerClass.class, "stringMethod");
 
@@ -353,7 +357,8 @@ public class ProcedureCompilationTest {
                 .in("in", NTString)
                 .out(singletonList(inputField("name", NTString)))
                 .build();
-        FieldSetter setter1 = createSetter(InnerClass.class, "transaction", Context::internalTransaction);
+        FieldSetter setter1 = createSetter(
+                InnerClass.class, "transaction", ctx -> ctx.kernelTransaction().internalTransaction());
         FieldSetter setter2 = createSetter(InnerClass.class, "thread", Context::thread);
         Method stringStream = method(InnerClass.class, "stringStream");
 
@@ -407,7 +412,8 @@ public class ProcedureCompilationTest {
         ProcedureSignature signature =
                 ProcedureSignature.procedureSignature("test", "foo").build();
         // When
-        FieldSetter setter = createSetter(InnerClass.class, "transaction", Context::internalTransaction);
+        FieldSetter setter = createSetter(
+                InnerClass.class, "transaction", ctx -> ctx.kernelTransaction().internalTransaction());
         CallableProcedure voidMethod =
                 compileProcedure(signature, singletonList(setter), method(InnerClass.class, "voidMethod"));
 

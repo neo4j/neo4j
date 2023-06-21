@@ -260,9 +260,9 @@ class ExecutionContextProcedureIT {
     void testKernelTransactionInjectionIntoProcedure() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             assertThatThrownBy(() -> invokeProcedure(executionContext, "doSomethingWithKernelTransaction"))
-                    .hasRootCauseInstanceOf(ProcedureException.class)
+                    .hasRootCauseInstanceOf(UnsupportedOperationException.class)
                     .hasMessageContaining(
-                            "A Procedure or user-defined function called from parallel runtime cannot access the KernelTransaction");
+                            "`transaction.createExecutionContext' is not supported in procedures when called from parallel runtime. Please retry using another runtime.");
         });
     }
 
@@ -489,7 +489,9 @@ class ExecutionContextProcedureIT {
 
         @NotThreadSafe
         @Procedure("execution.context.test.procedure.doSomethingWithKernelTransaction")
-        public void doSomethingWithKernelTransaction() {}
+        public void doSomethingWithKernelTransaction() {
+            kernelTransaction.createExecutionContext();
+        }
     }
 
     public static class ProcedureInjectingDatabase {

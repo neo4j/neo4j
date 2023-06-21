@@ -239,9 +239,9 @@ class ExecutionContextFunctionIT {
         doWithExecutionContext(executionContext -> {
             assertThatThrownBy(() -> invokeUserFunction(
                             executionContext, "doSomethingWithKernelTransaction", Values.intValue(1)))
-                    .hasRootCauseInstanceOf(ProcedureException.class)
+                    .hasRootCauseInstanceOf(UnsupportedOperationException.class)
                     .hasMessageContaining(
-                            "A Procedure or user-defined function called from parallel runtime cannot access the KernelTransaction");
+                            "`transaction.setMetaData' is not supported in procedures when called from parallel runtime. Please retry using another runtime.");
         });
     }
 
@@ -538,9 +538,9 @@ class ExecutionContextFunctionIT {
         @Context
         public KernelTransaction kernelTransaction;
 
-        @NotThreadSafe
         @UserFunction("execution.context.test.function.doSomethingWithKernelTransaction")
         public Object doSomethingWithKernelTransaction(@Name("value") Object value) {
+            kernelTransaction.setMetaData(null);
             return value;
         }
     }

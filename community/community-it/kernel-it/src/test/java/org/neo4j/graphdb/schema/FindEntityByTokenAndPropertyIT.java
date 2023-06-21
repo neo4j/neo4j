@@ -54,6 +54,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureKernelTransaction;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -767,7 +768,8 @@ public class FindEntityByTokenAndPropertyIT {
             executionContext.complete();
             executionContext.close();
         });
-        return new ExecutionContextProcedureTransaction(executionContext);
+        return new ExecutionContextProcedureTransaction(
+                new ExecutionContextProcedureKernelTransaction(ktx, executionContext));
     }
 
     private enum FindMethod {

@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureKernelTransaction;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -174,6 +175,7 @@ class ExecutionContextProcedureTransactionIT {
             executionContext.complete();
             executionContext.close();
         });
-        return new ExecutionContextProcedureTransaction(executionContext);
+        return new ExecutionContextProcedureTransaction(
+                new ExecutionContextProcedureKernelTransaction(ktx, executionContext));
     }
 }

@@ -59,7 +59,6 @@ import org.neo4j.fabric.util.Rewritten.RewritingOps
 import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NormalizedDatabaseName
-import org.neo4j.kernel.impl.query.NotificationConfiguration
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 

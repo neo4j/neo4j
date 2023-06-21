@@ -474,28 +474,7 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
 
     @Override
     public Entity validateSameDB(Entity entity) {
-        InternalTransaction internalTransaction;
-
-        if (entity instanceof NodeEntity node) {
-            internalTransaction = node.getTransaction();
-        } else if (entity instanceof RelationshipEntity rel) {
-            internalTransaction = rel.getTransaction();
-        } else {
-            return entity;
-        }
-
-        if (!internalTransaction.isOpen()) {
-            throw new NotInTransactionException(
-                    "The transaction of entity " + entity.getElementId() + " has been closed.");
-        }
-
-        if (internalTransaction.getDatabaseId() != this.getDatabaseId()) {
-            throw new CypherExecutionException("Can not use an entity from another database. Entity element id: "
-                    + entity.getElementId() + ", entity database: "
-                    + internalTransaction.getDatabaseName() + ", expected database: "
-                    + this.getDatabaseName() + ".");
-        }
-        return entity;
+        return validateSameDB(this, entity);
     }
 
     @Override
@@ -532,6 +511,31 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
             ktx.dataRead().allNodesScan(cursor);
             return new CursorIterator<>(cursor, NodeCursor::nodeReference, c -> tx.newNodeEntity(c.nodeReference()));
         }
+    }
+
+    public static Entity validateSameDB(InternalTransaction tx, Entity entity) {
+        InternalTransaction internalTransaction;
+
+        if (entity instanceof NodeEntity node) {
+            internalTransaction = node.getTransaction();
+        } else if (entity instanceof RelationshipEntity rel) {
+            internalTransaction = rel.getTransaction();
+        } else {
+            return entity;
+        }
+
+        if (!internalTransaction.isOpen()) {
+            throw new NotInTransactionException(
+                    "The transaction of entity " + entity.getElementId() + " has been closed.");
+        }
+
+        if (internalTransaction.getDatabaseId() != tx.getDatabaseId()) {
+            throw new CypherExecutionException("Can not use an entity from another database. Entity element id: "
+                    + entity.getElementId() + ", entity database: "
+                    + internalTransaction.getDatabaseName() + ", expected database: "
+                    + tx.getDatabaseName() + ".");
+        }
+        return entity;
     }
 
     private static class RelationshipsProvider implements Function<TransactionImpl, ResourceIterator<Relationship>> {

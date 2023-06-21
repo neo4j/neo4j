@@ -353,8 +353,7 @@ public class DatabaseManagementServiceFactory {
             //                              combine lots of small ones)
             //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
             globalProcedures.registerComponent(DependencyResolver.class, Context::dependencyResolver, false);
-            globalProcedures.registerComponent(
-                    KernelTransaction.class, ctx -> ctx.kernelTransactionView().actualKernelTransaction(), false);
+            globalProcedures.registerComponent(KernelTransaction.class, Context::kernelTransaction, false);
             globalProcedures.registerComponent(GraphDatabaseAPI.class, Context::graphDatabaseAPI, false);
             globalProcedures.registerComponent(
                     SystemGraphComponents.class, ctx -> editionModule.getSystemGraphComponents(), false);
@@ -363,7 +362,8 @@ public class DatabaseManagementServiceFactory {
 
             // Register injected public API components
             globalProcedures.registerComponent(Log.class, ctx -> proceduresLog, true);
-            globalProcedures.registerComponent(Transaction.class, Context::transaction, true);
+            globalProcedures.registerComponent(
+                    Transaction.class, ctx -> ctx.kernelTransaction().internalTransaction(), true);
             globalProcedures.registerComponent(
                     org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true);
             globalProcedures.registerComponent(

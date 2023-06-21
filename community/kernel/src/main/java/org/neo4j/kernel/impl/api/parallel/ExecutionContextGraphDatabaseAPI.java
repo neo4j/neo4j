@@ -41,6 +41,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class ExecutionContextGraphDatabaseAPI implements GraphDatabaseAPI {
 
+    private final GraphDatabaseAPI delegate;
+
+    public ExecutionContextGraphDatabaseAPI(GraphDatabaseAPI delegate) {
+        this.delegate = delegate;
+    }
+
     @Override
     public boolean isAvailable() {
         throw failure("isAvailable");
@@ -48,7 +54,7 @@ public class ExecutionContextGraphDatabaseAPI implements GraphDatabaseAPI {
 
     @Override
     public boolean isAvailable(long timeoutMillis) {
-        throw failure("isAvailable");
+        return delegate.isAvailable();
     }
 
     @Override
@@ -87,32 +93,32 @@ public class ExecutionContextGraphDatabaseAPI implements GraphDatabaseAPI {
 
     @Override
     public String databaseName() {
-        throw failure("databaseName");
+        return delegate.databaseName();
     }
 
     @Override
     public DependencyResolver getDependencyResolver() {
-        throw failure("getDependencyResolver");
+        return delegate.getDependencyResolver();
     }
 
     @Override
     public DatabaseLayout databaseLayout() {
-        throw failure("databaseLayout");
+        return delegate.databaseLayout();
     }
 
     @Override
     public NamedDatabaseId databaseId() {
-        throw failure("databaseId");
+        return delegate.databaseId();
     }
 
     @Override
     public DbmsInfo dbmsInfo() {
-        throw failure("dbmsInfo");
+        return delegate.dbmsInfo();
     }
 
     @Override
     public TopologyGraphDbmsModel.HostedOnMode mode() {
-        throw failure("mode");
+        return delegate.mode();
     }
 
     @Override
@@ -150,6 +156,7 @@ public class ExecutionContextGraphDatabaseAPI implements GraphDatabaseAPI {
 
     private UnsupportedOperationException failure(String op) {
         throw new UnsupportedOperationException(
-                op + " is not allowed from parallel runtime, please remove 'runtime=parallel' and try again.");
+                "'graphDatabaseService." + op
+                        + "' is not supported in procedures when called from parallel runtime. Please retry using another runtime.");
     }
 }

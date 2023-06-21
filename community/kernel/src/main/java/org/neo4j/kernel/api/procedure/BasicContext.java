@@ -29,46 +29,41 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.api.parallel.ProcedureKernelTransactionView;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.newapi.ProcedureTransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
 
 public class BasicContext implements Context {
     private final DependencyResolver resolver;
-    private final Transaction procedureTransaction;
-    private final InternalTransaction internalTransaction;
+    private final KernelTransaction kernelTransaction;
     private final SecurityContext securityContext;
     private final ClockContext clockContext;
     private final ValueMapper<Object> valueMapper;
     private final Thread thread;
     private final ProcedureCallContext procedureCallContext;
-    private final ProcedureKernelTransactionView kernelTransactionView;
 
     private final Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier;
 
     private BasicContext(
             DependencyResolver resolver,
-            Transaction procedureTransaction,
-            InternalTransaction internalTransaction,
+            KernelTransaction kernelTransaction,
             SecurityContext securityContext,
             ClockContext clockContext,
             ValueMapper<Object> valueMapper,
             Thread thread,
             ProcedureCallContext procedureCallContext,
-            ProcedureKernelTransactionView kernelTransactionView,
             Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier) {
         this.resolver = resolver;
-        this.procedureTransaction = procedureTransaction;
-        this.internalTransaction = internalTransaction;
+        this.kernelTransaction = kernelTransaction;
         this.securityContext = securityContext;
         this.clockContext = clockContext;
         this.valueMapper = valueMapper;
         this.thread = thread;
         this.procedureCallContext = procedureCallContext;
-        this.kernelTransactionView = kernelTransactionView;
         this.graphDatabaseAPISupplier = graphDatabaseAPISupplier;
     }
 
@@ -99,17 +94,22 @@ public class BasicContext implements Context {
 
     @Override
     public Transaction transaction() throws ProcedureException {
-        return throwIfNull("Transaction", procedureTransaction);
+        return new ProcedureTransactionImpl(internalTransaction());
     }
 
     @Override
     public InternalTransaction internalTransaction() throws ProcedureException {
-        return throwIfNull("Transaction", internalTransaction);
+        return throwIfNull("Transaction", kernelTransaction, KernelTransaction::internalTransaction);
     }
 
     @Override
     public InternalTransaction internalTransactionOrNull() {
-        return internalTransaction;
+        return kernelTransaction == null ? null : kernelTransaction.internalTransaction();
+    }
+
+    @Override
+    public KernelTransaction kernelTransaction() throws ProcedureException {
+        return throwIfNull("KernelTransaction", kernelTransaction);
     }
 
     @Override
@@ -130,11 +130,6 @@ public class BasicContext implements Context {
     @Override
     public ProcedureCallContext procedureCallContext() {
         return procedureCallContext;
-    }
-
-    @Override
-    public ProcedureKernelTransactionView kernelTransactionView() {
-        return kernelTransactionView;
     }
 
     public static ContextBuilder buildContext(DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper) {
@@ -160,13 +155,10 @@ public class BasicContext implements Context {
         private final DependencyResolver resolver;
         private final Thread thread = Thread.currentThread();
         private final ValueMapper<Object> valueMapper;
-        private Transaction procedureTransaction;
-        private InternalTransaction internalTransaction;
+        private KernelTransaction procedureTransaction;
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         private ClockContext clockContext;
         private ProcedureCallContext procedureCallContext;
-
-        private ProcedureKernelTransactionView kernelTransactionView;
 
         private Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier;
 
@@ -175,23 +167,13 @@ public class BasicContext implements Context {
             this.valueMapper = valueMapper;
         }
 
-        public ContextBuilder withProcedureTransaction(Transaction procedureTransaction) {
+        public ContextBuilder withKernelTransaction(KernelTransaction procedureTransaction) {
             this.procedureTransaction = procedureTransaction;
             return this;
         }
 
         public ContextBuilder withGraphDatabaseSupplier(Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier) {
             this.graphDatabaseAPISupplier = graphDatabaseAPISupplier;
-            return this;
-        }
-
-        public ContextBuilder withKernelTransactionView(ProcedureKernelTransactionView kernelTransactionView) {
-            this.kernelTransactionView = kernelTransactionView;
-            return this;
-        }
-
-        public ContextBuilder withInternalTransaction(InternalTransaction internalTransaction) {
-            this.internalTransaction = internalTransaction;
             return this;
         }
 
@@ -218,13 +200,11 @@ public class BasicContext implements Context {
             return new BasicContext(
                     resolver,
                     procedureTransaction,
-                    internalTransaction,
                     securityContext,
                     clockContext,
                     valueMapper,
                     thread,
                     procedureCallContext,
-                    kernelTransactionView,
                     graphDatabaseAPISupplier);
         }
     }

@@ -145,10 +145,7 @@ class ProceduresKernelIT extends KernelIntegrationTest {
             public RawIterator<AnyValue[], ProcedureException> apply(
                     Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
                 return RawIterator.<AnyValue[], ProcedureException>of(new AnyValue[] {
-                    Values.stringValue(ctx.internalTransaction()
-                            .kernelTransaction()
-                            .dataRead()
-                            .toString())
+                    Values.stringValue(ctx.kernelTransaction().dataRead().toString())
                 });
             }
         });

@@ -32,13 +32,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.api.KernelTransaction;
 
 public class ExecutionContextProcedureTransactionTest {
 
     @Test
     void getAllNodesShouldRegisterAndUnregisterAsResource() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
-        var tx = new ExecutionContextProcedureTransaction(executionContext);
+        var tx = new ExecutionContextProcedureTransaction(
+                new ExecutionContextProcedureKernelTransaction(mock(KernelTransaction.class), executionContext));
         ResourceIterable<Node> nodes = tx.getAllNodes();
 
         verify(executionContext, times(1)).registerCloseableResource(eq(nodes));
@@ -54,7 +56,8 @@ public class ExecutionContextProcedureTransactionTest {
     @Test
     void getAllRelationshipsShouldRegisterAndUnregisterAsResource() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
-        var tx = new ExecutionContextProcedureTransaction(executionContext);
+        var tx = new ExecutionContextProcedureTransaction(
+                new ExecutionContextProcedureKernelTransaction(mock(KernelTransaction.class), executionContext));
         ResourceIterable<Relationship> relationships = tx.getAllRelationships();
 
         verify(executionContext, times(1)).registerCloseableResource(eq(relationships));

@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.CloseableResourceManager;
@@ -69,7 +70,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final ElementIdMapper elementIdMapper;
     private final List<AutoCloseable> otherResources;
-    private final ProcedureKernelTransactionView assertOpen;
+    private final ExecutionContextProcedureKernelTransaction ktx;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -91,7 +92,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             Client lockClient,
             LockTracer lockTracer,
             ElementIdMapper elementIdMapper,
-            ProcedureKernelTransactionView assertOpen,
+            KernelTransaction ktx,
             Supplier<ClockContext> clockContextSupplier,
             List<AutoCloseable> otherResources,
             ProcedureView procedureView) {
@@ -107,7 +108,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.securityAuthorizationHandler = securityAuthorizationHandler;
         this.otherResources = otherResources;
         this.elementIdMapper = elementIdMapper;
-        this.assertOpen = assertOpen;
+        this.ktx = new ExecutionContextProcedureKernelTransaction(ktx, this);
         this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
                 this,
                 storageReader,
@@ -122,7 +123,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 lockClient,
                 lockTracer,
                 overridableSecurityContext,
-                assertOpen,
+                this.ktx,
                 securityAuthorizationHandler,
                 clockContextSupplier,
                 procedureView);
@@ -185,12 +186,12 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public void performCheckBeforeOperation() {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
     }
 
     @Override
     public boolean isTransactionOpen() {
-        return assertOpen.isOpen();
+        return ktx.isOpen();
     }
 
     @Override
