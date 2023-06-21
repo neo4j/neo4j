@@ -1763,4 +1763,61 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     ))
   }
 
+  private def plannerForIntersectionScanTests(aLabelCardinality: Double, bLabelCardinality: Double) = {
+    plannerBuilder()
+      .setLabelCardinality("A", aLabelCardinality)
+      .setLabelCardinality("B", bLabelCardinality)
+      .setAllNodesCardinality(aLabelCardinality + bLabelCardinality)
+      .build()
+  }
+
+  test("should prefer node by label scan when one label has much lower cardinality") {
+    val aCardinality = 25_000_000
+    val bCardinality = 10
+    val planner = plannerForIntersectionScanTests(aCardinality, bCardinality)
+
+    val q = "MATCH (n:A&B) RETURN count(n) AS result"
+    val plan = planner.plan(q).stripProduceResults
+
+    plan.leftmostLeaf shouldBe a[NodeByLabelScan]
+  }
+
+  test("should prefer node by label scan when one label has cardinality <20% of the other label") {
+    val aCardinality = 25_000_000
+    val bCardinality = aCardinality * 0.2 - 1
+    val planner = plannerForIntersectionScanTests(aCardinality, bCardinality)
+
+    val q = "MATCH (n:A&B) RETURN count(n) AS result"
+    val plan = planner.plan(q).stripProduceResults
+
+    plan.leftmostLeaf shouldBe a[NodeByLabelScan]
+  }
+
+  test("should prefer intersection scan when one label has cardinality >20% of the other label") {
+    val aCardinality = 25_000_000
+    val bCardinality = aCardinality * 0.2 + 1
+    val planner = plannerForIntersectionScanTests(aCardinality, bCardinality)
+
+    val q = "MATCH (n:A&B) RETURN count(n) AS result"
+    val plan = planner.plan(q).stripProduceResults
+
+    plan.leftmostLeaf shouldBe a[IntersectionNodeByLabelsScan]
+  }
+
+  test("should prefer intersection scan with multiple hints") {
+    val aCardinality = 25_000_000
+    val bCardinality = 10
+    val planner = plannerForIntersectionScanTests(aCardinality, bCardinality)
+
+    val q =
+      """MATCH (n:A&B)
+        |USING SCAN n:A
+        |USING SCAN n:B
+        |RETURN count(n) AS result""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan.leftmostLeaf shouldBe a[IntersectionNodeByLabelsScan]
+  }
+
 }
