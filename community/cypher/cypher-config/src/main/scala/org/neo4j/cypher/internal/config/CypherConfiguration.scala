@@ -65,7 +65,7 @@ class CypherConfiguration private (val config: Config) {
   // static configurations
   val planner: CypherPlannerOption = CypherPlannerOption.fromConfig(config)
   val runtime: CypherRuntimeOption = CypherRuntimeOption.fromConfig(config)
-  val queryCacheSize: Int = config.get(GraphDatabaseSettings.query_cache_size).toInt
+  val queryCacheSize: ObservableSetting[Integer] = new ObservableSetting(config, GraphDatabaseSettings.query_cache_size)
   val executionPlanCacheSize: Int = config.get(GraphDatabaseInternalSettings.query_execution_plan_cache_size).toInt
   val statsDivergenceCalculator: StatsDivergenceCalculatorConfig = statsDivergenceFromConfig(config)
   val useErrorsOverWarnings: Boolean = config.get(GraphDatabaseSettings.cypher_hints_error)

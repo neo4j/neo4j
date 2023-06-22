@@ -85,4 +85,8 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService {
     public void executeTransactionally(String query) throws QueryExecutionException {
         graph.executeTransactionally(query);
     }
+
+    public Config config() {
+        return config;
+    }
 }

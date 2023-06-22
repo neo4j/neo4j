@@ -30,16 +30,19 @@ import java.util.concurrent.ConcurrentMap
  */
 class LFUCache[K <: AnyRef, V <: AnyRef](
   cacheFactory: CaffeineCacheFactory,
-  val size: Int,
+  initialSize: CacheSize,
   tracer: CacheTracer[K]
 ) {
 
-  def this(cacheFactory: CaffeineCacheFactory, size: Int) =
-    this(cacheFactory, size, new CacheTracer[K] {})
+  def this(cacheFactory: CaffeineCacheFactory, initialSize: CacheSize) =
+    this(cacheFactory, initialSize, new CacheTracer[K] {})
+
+  def this(cacheFactory: CaffeineCacheFactory, initialSize: Int) =
+    this(cacheFactory, CacheSize.Static(initialSize), new CacheTracer[K] {})
 
   val removalListener: RemovalListener[K, V] = (key: K, value: V, cause: RemovalCause) => tracer.discard(key, "")
 
-  private val inner: Cache[K, V] = cacheFactory.createCache(size, removalListener)
+  private val inner: Cache[K, V] = cacheFactory.createCache(initialSize, removalListener)
 
   def computeIfAbsent(key: K, f: => V): V = {
     var hit = true

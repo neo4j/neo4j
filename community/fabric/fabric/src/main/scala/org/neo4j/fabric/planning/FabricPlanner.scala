@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.CatalogName
+import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
@@ -51,7 +52,7 @@ case class FabricPlanner(
   cacheFactory: CaffeineCacheFactory
 ) {
 
-  private[planning] val queryCache = new FabricQueryCache(cacheFactory, cypherConfig.queryCacheSize)
+  private[planning] val queryCache = new FabricQueryCache(cacheFactory, CacheSize.Dynamic(cypherConfig.queryCacheSize))
 
   private val frontend = FabricFrontEnd(cypherConfig, monitors, cacheFactory)
 

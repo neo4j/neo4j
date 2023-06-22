@@ -79,7 +79,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     // given
     managementService = new TestDatabaseManagementServiceBuilder()
       .impermanent()
-      .setConfig(GraphDatabaseSettings.query_cache_size, Integer.valueOf(1)).build()
+      .setConfig(GraphDatabaseSettings.query_cache_size, Integer.valueOf(0)).build()
     db = managementService.database(DEFAULT_DATABASE_NAME)
 
     // when

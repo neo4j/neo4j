@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.QueryCacheTest.newCache
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.QueryCacheTest.staleAfterNTimes
+import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.options.CypherReplanOption
@@ -466,7 +467,7 @@ object QueryCacheTest extends MockitoSugar {
     stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(),
     size: Int = 10
   ): QueryCache[CacheKey[String], MyValue] = {
-    new QueryCache[CacheKey[String], MyValue](cacheFactory, size, stalenessCaller, tracer)
+    new QueryCache[CacheKey[String], MyValue](cacheFactory, CacheSize.Static(size), stalenessCaller, tracer)
   }
 
   def newTracer(): Tracer = mock[Tracer]

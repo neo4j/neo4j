@@ -125,12 +125,13 @@ case class CacheCounts(
   misses: Int = 0,
   flushes: Int = 0,
   evicted: Int = 0,
+  discards: Int = 0,
   compilations: Int = 0,
   compilationsWithExpressionCodeGen: Int = 0
 ) {
 
   override def toString =
-    s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
+    s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, discards = $discards, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
 }
 
 class CountingCacheTracer[Key] extends CacheTracer[Key] {
@@ -144,6 +145,9 @@ class CountingCacheTracer[Key] extends CacheTracer[Key] {
 
   override def compute(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(compilations = counts.compilations + 1)
+
+  override def discard(key: Key, metaData: String): Unit =
+    counts = counts.copy(discards = counts.discards + 1)
 
   override def computeWithExpressionCodeGen(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)

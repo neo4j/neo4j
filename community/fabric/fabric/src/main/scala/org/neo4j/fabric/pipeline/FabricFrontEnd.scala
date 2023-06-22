@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
+import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
@@ -54,7 +55,6 @@ import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
 import org.neo4j.fabric.util.Errors
 import org.neo4j.graphdb.Notification
-import org.neo4j.kernel.impl.query.NotificationConfiguration
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 
@@ -74,7 +74,7 @@ case class FabricFrontEnd(
       cypherConfig,
       new PreParserCache.Cache(
         cacheFactory,
-        cypherConfig.queryCacheSize,
+        CacheSize.Dynamic(cypherConfig.queryCacheSize),
         new CacheTracer[CypherQueryCaches.PreParserCache.Key] {}
       )
     )

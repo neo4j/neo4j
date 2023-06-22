@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.SettingImpl
@@ -62,7 +61,7 @@ trait ShowSettingsAcceptanceTestSupport extends GraphDatabaseTestSupport {
   )
 
   protected def allSettings(graph: GraphDatabaseCypherService): Seq[Map[String, Any]] = {
-    val config = graph.getDependencyResolver.resolveDependency(classOf[Config])
+    val config = graph.config
     config
       .getDeclaredSettings.asScala
       .values

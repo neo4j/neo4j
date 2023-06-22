@@ -24,6 +24,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
+import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
@@ -98,7 +99,7 @@ trait PlanStalenessCaller[EXECUTABLE_QUERY] {
  */
 class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   val cacheFactory: CaffeineCacheFactory,
-  val maximumSize: Int,
+  val maximumSize: CacheSize,
   val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
   val tracer: CacheTracer[QUERY_KEY]
 ) {
@@ -159,7 +160,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
     replanStrategy: CypherReplanOption,
     metaData: String = ""
   ): EXECUTABLE_QUERY = {
-    if (maximumSize == 0) {
+    if (maximumSize.currentValue == 0) {
       val result = compiler.compile()
       tracer.compute(queryKey, metaData)
       result

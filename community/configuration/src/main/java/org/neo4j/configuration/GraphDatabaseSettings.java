@@ -284,6 +284,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<Integer> query_cache_size = newBuilder(
                     "server.memory.query_cache.per_db_cache_num_entries", INT, 1000)
             .addConstraint(min(0))
+            .dynamic()
             .build();
 
     @Description("The threshold for statistics above which a plan is considered stale.\n\n"

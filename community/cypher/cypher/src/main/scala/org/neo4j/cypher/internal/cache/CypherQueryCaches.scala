@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardina
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.function.Observable
 import org.neo4j.kernel.impl.query.QueryCacheStatistics
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
@@ -79,14 +80,14 @@ object CypherQueryCaches {
    * @param enableExecutionPlanCacheTracing Enable tracing in the execution plan cache
    */
   case class Config(
-    cacheSize: Int,
+    cacheSize: CacheSize,
     executionPlanCacheSize: ExecutionPlanCacheSize,
     divergenceConfig: StatsDivergenceCalculatorConfig,
     enableExecutionPlanCacheTracing: Boolean
   ) {
 
     // Java helper
-    def this(cypherConfig: CypherConfiguration, cacheSize: Int) = this(
+    def this(cypherConfig: CypherConfiguration, cacheSize: CacheSize) = this(
       cacheSize,
       ExecutionPlanCacheSize.fromInt(cypherConfig.executionPlanCacheSize),
       cypherConfig.statsDivergenceCalculator,
@@ -97,10 +98,10 @@ object CypherQueryCaches {
   object Config {
 
     def fromCypherConfiguration(cypherConfig: CypherConfiguration) =
-      new Config(cypherConfig, cypherConfig.queryCacheSize)
+      new Config(cypherConfig, CacheSize.Dynamic(cypherConfig.queryCacheSize))
 
-    def fromCypherConfiguration(cypherConfig: CypherConfiguration, cacheSize: Int) =
-      new Config(cypherConfig, cacheSize)
+    def fromCypherConfiguration(cypherConfig: CypherConfiguration, cacheSize: Observable[Integer]) =
+      new Config(cypherConfig, CacheSize.Dynamic(cacheSize))
 
     sealed trait ExecutionPlanCacheSize
 
@@ -170,7 +171,7 @@ object CypherQueryCaches {
 
     class Cache(
       cacheFactory: CacheFactory,
-      size: Int,
+      size: CacheSize,
       tracer: CacheTracer[Key]
     ) extends LFUCache[Key, Value](cacheFactory.resolveCacheKind(kind), size, tracer) with CacheCommon {
       override def companion: CacheCompanion = PreParserCache
@@ -188,7 +189,7 @@ object CypherQueryCaches {
 
     class Cache(
       cacheFactory: CacheFactory,
-      size: Int,
+      size: CacheSize,
       tracer: CacheTracer[Key]
     ) extends LFUCache[Key, Value](cacheFactory.resolveCacheKind(kind), size, tracer) with CacheCommon {
 
@@ -209,7 +210,7 @@ object CypherQueryCaches {
 
     class Cache(
       cacheFactory: CacheFactory,
-      maximumSize: Int,
+      maximumSize: CacheSize,
       stalenessCaller: PlanStalenessCaller[Value],
       tracer: CacheTracer[Key]
     ) extends QueryCache[Key, Value](
@@ -252,7 +253,7 @@ object CypherQueryCaches {
 
     class Cache(
       cacheFactory: CacheFactory,
-      maximumSize: Int,
+      maximumSize: CacheSize,
       stalenessCaller: PlanStalenessCaller[Value],
       tracer: CacheTracer[Key]
     ) extends QueryCache[Key, Value](
@@ -334,18 +335,21 @@ class CypherQueryCaches(
     /**
      * Caches logical planning
      */
-    val logicalPlanCache: LogicalPlanCache.Cache = registerCache(new LogicalPlanCache.Cache(
-      cacheFactory = cacheFactory,
-      maximumSize = config.cacheSize,
-      stalenessCaller = new DefaultPlanStalenessCaller[LogicalPlanCache.Value](
-        clock,
-        divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
-        lastCommittedTxIdProvider,
-        (state, _) => state.reusability,
-        log
-      ),
-      tracer = LogicalPlanCache.newMonitor(kernelMonitors)
-    ))
+    val logicalPlanCache: LogicalPlanCache.Cache =
+      registerCache(
+        new LogicalPlanCache.Cache(
+          cacheFactory = cacheFactory,
+          maximumSize = config.cacheSize,
+          stalenessCaller = new DefaultPlanStalenessCaller[LogicalPlanCache.Value](
+            clock,
+            divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
+            lastCommittedTxIdProvider,
+            (state, _) => state.reusability,
+            log
+          ),
+          tracer = LogicalPlanCache.newMonitor(kernelMonitors)
+        )
+      )
   }
 
   /**
@@ -363,9 +367,14 @@ class CypherQueryCaches(
       }
 
     private val maybeCache: Option[InnerCache] = config.executionPlanCacheSize match {
-      case Disabled         => None
-      case Default          => Some(new InnerCache(cacheFactory.resolveCacheKind(kind), config.cacheSize, tracer))
-      case Sized(cacheSize) => Some(new InnerCache(cacheFactory.resolveCacheKind(kind), cacheSize, tracer))
+      case Disabled => None
+      case Default => Some(new InnerCache(
+          cacheFactory.resolveCacheKind(kind),
+          config.cacheSize,
+          tracer
+        ))
+      case Sized(cacheSize) =>
+        Some(new InnerCache(cacheFactory.resolveCacheKind(kind), CacheSize.Static(cacheSize), tracer))
     }
 
     def computeIfAbsent(
@@ -393,18 +402,21 @@ class CypherQueryCaches(
   /**
    * Caches complete query processing
    */
-  val executableQueryCache: ExecutableQueryCache.Cache = registerCache(new ExecutableQueryCache.Cache(
-    cacheFactory = cacheFactory,
-    maximumSize = config.cacheSize,
-    stalenessCaller = new DefaultPlanStalenessCaller[ExecutableQuery](
-      clock = clock,
-      divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
-      lastCommittedTxIdProvider = lastCommittedTxIdProvider,
-      reusabilityInfo = (eq, ctx) => eq.reusabilityState(lastCommittedTxIdProvider, ctx),
-      log = log
-    ),
-    tracer = ExecutableQueryCache.newMonitor(kernelMonitors)
-  ))
+  val executableQueryCache: ExecutableQueryCache.Cache =
+    registerCache(
+      new ExecutableQueryCache.Cache(
+        cacheFactory = cacheFactory,
+        maximumSize = config.cacheSize,
+        stalenessCaller = new DefaultPlanStalenessCaller[ExecutableQuery](
+          clock = clock,
+          divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
+          lastCommittedTxIdProvider = lastCommittedTxIdProvider,
+          reusabilityInfo = (eq, ctx) => eq.reusabilityState(lastCommittedTxIdProvider, ctx),
+          log = log
+        ),
+        tracer = ExecutableQueryCache.newMonitor(kernelMonitors)
+      )
+    )
 
   // Register monitor listeners that do logging
   LogicalPlanCache.addMonitorListener(

@@ -55,7 +55,7 @@ object IdAnonymizer {
     CypherConfiguration.fromConfig(Config.defaults()),
     new LFUCache[String, PreParsedQuery](
       cacheFactory = new ExecutorBasedCaffeineCacheFactory((_: Runnable).run()),
-      size = 0
+      initialSize = 0
     )
   )
 }

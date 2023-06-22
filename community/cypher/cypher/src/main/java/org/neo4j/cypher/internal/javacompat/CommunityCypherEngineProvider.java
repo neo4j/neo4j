@@ -29,12 +29,15 @@ import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider;
 import org.neo4j.cypher.internal.cache.CacheFactory;
+import org.neo4j.cypher.internal.cache.CacheSize;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
+import org.neo4j.cypher.internal.config.ObservableSetting;
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration;
+import org.neo4j.function.Observable;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -61,8 +64,8 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
         return makeNonUnifiedCacheFactory(spi);
     }
 
-    protected int getCacheSize(SPI spi) {
-        return spi.config().get(GraphDatabaseSettings.query_cache_size);
+    protected ObservableSetting<Integer> getCacheSize(SPI spi) {
+        return new ObservableSetting<>(spi.config(), GraphDatabaseSettings.query_cache_size);
     }
 
     @Override
@@ -76,7 +79,8 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
         CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig);
         CacheFactory cacheFactory = getCacheFactory(deps, spi);
         Clock clock = Clock.systemUTC();
-        int cacheSize = getCacheSize(spi);
+        Observable<Integer> cacheSizeSetting = getCacheSize(spi);
+        var cacheSize = new CacheSize.Dynamic(cacheSizeSetting);
 
         CypherQueryCaches queryCaches =
                 makeCypherQueryCaches(spi, queryService, cypherConfig, cacheSize, cacheFactory, clock);
@@ -110,7 +114,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
             SPI spi,
             GraphDatabaseCypherService queryService,
             CypherConfiguration cypherConfig,
-            int cacheSize,
+            CacheSize cacheSize,
             CacheFactory cacheFactory,
             Clock clock) {
         return new CypherQueryCaches(

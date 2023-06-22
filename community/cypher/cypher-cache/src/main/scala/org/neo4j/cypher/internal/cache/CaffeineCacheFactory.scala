@@ -29,6 +29,10 @@ import com.github.benmanes.caffeine.cache.stats.CacheStats
 
 import java.lang
 import java.util
+import java.util.Optional
+import java.util.OptionalInt
+import java.util.OptionalLong
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
@@ -37,52 +41,61 @@ import java.util.function
 import java.util.function.Consumer
 
 import scala.collection.concurrent.TrieMap
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 object ExecutorBasedCaffeineCacheFactory {
 
-  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: Int): Cache[K, V] = {
-    Caffeine
-      .newBuilder()
-      .executor(executor)
-      .maximumSize(size)
-      .build[K, V]()
-  }
+  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: CacheSize): Cache[K, V] =
+    size.withSize[K, V, Cache[K, V]](size =>
+      Caffeine
+        .newBuilder()
+        .executor(executor)
+        .maximumSize(size)
+        .build[K, V]()
+    )
 
   def createCache[K <: AnyRef, V <: AnyRef](
     executor: Executor,
     removalListener: RemovalListener[K, V],
-    size: Int
-  ): Cache[K, V] = {
-    Caffeine
-      .newBuilder()
-      .executor(executor)
-      .maximumSize(size)
-      .evictionListener(removalListener)
-      .build[K, V]()
-  }
+    size: CacheSize
+  ): Cache[K, V] =
+    size.withSize[K, V, Cache[K, V]](size =>
+      Caffeine
+        .newBuilder()
+        .executor(executor)
+        .maximumSize(size)
+        .evictionListener(removalListener)
+        .build[K, V]()
+    )
 
-  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: Int, ttlAfterAccess: Long): Cache[K, V] = {
-    Caffeine
-      .newBuilder()
-      .executor(executor)
-      .maximumSize(size)
-      .expireAfterAccess(ttlAfterAccess, TimeUnit.MILLISECONDS)
-      .build[K, V]()
+  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: CacheSize, ttlAfterAccess: Long): Cache[K, V] = {
+    size.withSize[K, V, Cache[K, V]](size =>
+      Caffeine
+        .newBuilder()
+        .executor(executor)
+        .maximumSize(size)
+        .expireAfterAccess(ttlAfterAccess, TimeUnit.MILLISECONDS)
+        .build[K, V]()
+    )
   }
 
   def createCache[K <: AnyRef, V <: AnyRef](
     executor: Executor,
     ticker: Ticker,
     ttlAfterWrite: Long,
-    size: Int
+    size: CacheSize
   ): Cache[K, V] =
-    Caffeine
-      .newBuilder()
-      .executor(executor)
-      .maximumSize(size)
-      .ticker(ticker)
-      .expireAfterWrite(ttlAfterWrite, TimeUnit.MILLISECONDS)
-      .build[K, V]()
+    size.withSize[K, V, Cache[K, V]](size =>
+      Caffeine
+        .newBuilder()
+        .executor(executor)
+        .maximumSize(size)
+        .ticker(ticker)
+        .expireAfterWrite(ttlAfterWrite, TimeUnit.MILLISECONDS)
+        .build[K, V]()
+    )
+
 }
 
 trait CacheFactory {
@@ -90,27 +103,34 @@ trait CacheFactory {
 }
 
 trait CaffeineCacheFactory extends CacheFactory {
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V]
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V]
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V]
-  def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, removalListener: RemovalListener[K, V]): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, ttlAfterAccess: Long): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: CacheSize): Cache[K, V]
 }
 
 class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCacheFactory {
 
-  override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = {
+  override def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize): Cache[K, V] = {
     ExecutorBasedCaffeineCacheFactory.createCache(executor, size)
   }
 
-  override def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V] = {
+  override def createCache[K <: AnyRef, V <: AnyRef](
+    size: CacheSize,
+    removalListener: RemovalListener[K, V]
+  ): Cache[K, V] = {
     ExecutorBasedCaffeineCacheFactory.createCache(executor, removalListener, size)
   }
 
-  override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] = {
+  override def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, ttlAfterAccess: Long): Cache[K, V] = {
     ExecutorBasedCaffeineCacheFactory.createCache(executor, size, ttlAfterAccess)
   }
 
-  override def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V] =
+  override def createCache[K <: AnyRef, V <: AnyRef](
+    ticker: Ticker,
+    ttlAfterWrite: Long,
+    size: CacheSize
+  ): Cache[K, V] =
     ExecutorBasedCaffeineCacheFactory.createCache(executor, ticker, ttlAfterWrite, size)
 
   override def resolveCacheKind(kind: String): CaffeineCacheFactory = this
@@ -149,7 +169,7 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
     caches.get(kind).foreach(_.cleanUp())
   }
 
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int, cacheKind: String): Cache[K, V] = {
+  def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, cacheKind: String): Cache[K, V] = {
     SharedCacheContainer(
       caches.getOrElseUpdate(
         cacheKind,
@@ -160,7 +180,7 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
   }
 
   def createCache[K <: AnyRef, V <: AnyRef](
-    size: Int,
+    size: CacheSize,
     removalListener: RemovalListener[K, V],
     cacheKind: String
   ): Cache[K, V] = {
@@ -178,7 +198,7 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
     )
   }
 
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long, cacheKind: String): Cache[K, V] = {
+  def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, ttlAfterAccess: Long, cacheKind: String): Cache[K, V] = {
     SharedCacheContainer(
       caches.getOrElseUpdate(
         cacheKind,
@@ -191,7 +211,7 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
   def createCache[K <: AnyRef, V <: AnyRef](
     ticker: Ticker,
     ttlAfterWrite: Long,
-    size: Int,
+    size: CacheSize,
     cacheKind: String
   ): Cache[K, V] = {
     SharedCacheContainer(
@@ -204,15 +224,22 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
   }
 
   override def resolveCacheKind(kind: String): CaffeineCacheFactory = new CaffeineCacheFactory {
-    override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = self.createCache(size, kind)
+    override def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize): Cache[K, V] = self.createCache(size, kind)
 
-    override def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V] =
+    override def createCache[K <: AnyRef, V <: AnyRef](
+      size: CacheSize,
+      removalListener: RemovalListener[K, V]
+    ): Cache[K, V] =
       self.createCache(size, removalListener, kind)
 
-    override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] =
+    override def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, ttlAfterAccess: Long): Cache[K, V] =
       self.createCache(size, ttlAfterAccess, kind)
 
-    override def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V] =
+    override def createCache[K <: AnyRef, V <: AnyRef](
+      ticker: Ticker,
+      ttlAfterWrite: Long,
+      size: CacheSize
+    ): Cache[K, V] =
       self.createCache(ticker, ttlAfterWrite, size, kind)
     override def resolveCacheKind(kind: String): CaffeineCacheFactory = this
   }
@@ -274,5 +301,73 @@ case class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int) extend
   override def putAll(map: util.Map[_ <: K, _ <: V]): Unit = throw new UnsupportedOperationException
   override def invalidateAll(keys: lang.Iterable[_ <: K]): Unit = throw new UnsupportedOperationException
   override def asMap(): ConcurrentMap[K, V] = throw new UnsupportedOperationException
-  override def policy(): Policy[K, V] = throw new UnsupportedOperationException
+  override def policy(): Policy[K, V] = new SharedCacheContainer.Policy(inner.policy(), id)
+}
+
+object SharedCacheContainer {
+  import com.github.benmanes.caffeine.cache.{Policy => CaffeinePolicy}
+
+  private def convertMap[K, V](id: Int, map: util.Map[(Int, K), V]): util.Map[K, V] =
+    map
+      .asScala
+      .collect { case ((i, k), v) if i == id => k -> v }
+      .asJava
+
+  private class Policy[K, V](inner: CaffeinePolicy[(Int, K), V], id: Int) extends CaffeinePolicy[K, V] {
+    def isRecordingStats: Boolean = inner.isRecordingStats
+
+    def getIfPresentQuietly(key: K): V = inner.getIfPresentQuietly((id, key))
+
+    def refreshes(): util.Map[K, CompletableFuture[V]] = convertMap(id, inner.refreshes())
+
+    def eviction(): Optional[Policy.Eviction[K, V]] =
+      inner.eviction().map(new Eviction(_, id))
+
+    def expireAfterAccess(): Optional[Policy.FixedExpiration[K, V]] =
+      inner.expireAfterAccess().map(new FixedExpiration(_, id))
+
+    def expireAfterWrite(): Optional[Policy.FixedExpiration[K, V]] =
+      inner.expireAfterWrite().map(new FixedExpiration(_, id))
+
+    def expireVariably(): Optional[Policy.VarExpiration[K, V]] =
+      inner.expireVariably().map(new VarExpiration(_, id))
+
+    def refreshAfterWrite(): Optional[Policy.FixedRefresh[K, V]] =
+      inner.refreshAfterWrite().map(new FixedRefresh(_, id))
+  }
+
+  private class Eviction[K, V](inner: Policy.Eviction[(Int, K), V], id: Int) extends Policy.Eviction[K, V] {
+    def isWeighted: Boolean = inner.isWeighted
+    def weightOf(key: K): OptionalInt = inner.weightOf((id, key))
+    def weightedSize(): OptionalLong = inner.weightedSize()
+    def getMaximum: Long = inner.getMaximum
+    def setMaximum(maximum: Long): Unit = inner.setMaximum(maximum)
+    def coldest(limit: Int): util.Map[K, V] = convertMap(id, inner.coldest(limit))
+    def hottest(limit: Int): util.Map[K, V] = convertMap(id, inner.hottest(limit))
+  }
+
+  private class FixedExpiration[K, V](inner: Policy.FixedExpiration[(Int, K), V], id: Int)
+      extends Policy.FixedExpiration[K, V] {
+    def ageOf(key: K, unit: TimeUnit): OptionalLong = inner.ageOf((id, key), unit)
+    def getExpiresAfter(unit: TimeUnit): Long = inner.getExpiresAfter(unit)
+    def setExpiresAfter(duration: Long, unit: TimeUnit): Unit = inner.setExpiresAfter(duration, unit)
+    def oldest(limit: Int): util.Map[K, V] = convertMap(id, inner.oldest(limit))
+    def youngest(limit: Int): util.Map[K, V] = convertMap(id, inner.youngest(limit))
+  }
+
+  private class VarExpiration[K, V](inner: Policy.VarExpiration[(Int, K), V], id: Int)
+      extends Policy.VarExpiration[K, V] {
+    def getExpiresAfter(key: K, unit: TimeUnit): OptionalLong = inner.getExpiresAfter((id, key), unit)
+    def setExpiresAfter(key: K, duration: Long, unit: TimeUnit): Unit = inner.setExpiresAfter((id, key), duration, unit)
+    def putIfAbsent(key: K, value: V, dura: Long, unit: TimeUnit): V = inner.putIfAbsent((id, key), value, dura, unit)
+    def put(key: K, value: V, duration: Long, unit: TimeUnit): V = inner.put((id, key), value, duration, unit)
+    def oldest(limit: Int): util.Map[K, V] = convertMap(id, inner.oldest(limit))
+    def youngest(limit: Int): util.Map[K, V] = convertMap(id, inner.youngest(limit))
+  }
+
+  private class FixedRefresh[K, V](inner: Policy.FixedRefresh[(Int, K), V], id: Int) extends Policy.FixedRefresh[K, V] {
+    def ageOf(key: K, unit: TimeUnit): OptionalLong = inner.ageOf((id, key), unit)
+    def getRefreshesAfter(unit: TimeUnit): Long = inner.getRefreshesAfter(unit)
+    def setRefreshesAfter(duration: Long, unit: TimeUnit): Unit = inner.setRefreshesAfter(duration, unit)
+  }
 }

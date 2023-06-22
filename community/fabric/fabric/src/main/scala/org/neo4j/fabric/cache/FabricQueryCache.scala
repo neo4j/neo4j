@@ -22,6 +22,7 @@ package org.neo4j.fabric.cache
 import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.fabric.planning.FabricPlan
@@ -29,7 +30,7 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.jdk.CollectionConverters.MapHasAsScala
 
-class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
+class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: CacheSize) {
 
   type QueryKey = InputQuery.CacheKey
   type Params = MapValue

@@ -130,11 +130,6 @@ object CypherPlannerConfiguration {
  */
 class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val planSystemCommands: Boolean) {
 
-  val queryCacheSize: () => Int = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.query_cache_size.dynamic())
-    () => config.queryCacheSize
-  }
-
   val statsDivergenceCalculator: () => StatsDivergenceCalculator = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(Seq(
       GraphDatabaseSettings.query_statistics_divergence_threshold,
