@@ -34,6 +34,8 @@ class PrettifierPropertyTest extends CypherFunSuite
   implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(minSuccessful = 5000)
 
   test("Prettifier output should parse to the same ast") {
+    // To reproduce test failures, enable the following line with the seed from the TC build
+    // setScalaCheckInitialSeed(seed)
     forAll(astGenerator._statement) { statement =>
       roundTripCheck(statement)
     }

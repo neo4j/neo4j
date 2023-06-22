@@ -438,7 +438,6 @@ import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
-import org.neo4j.cypher.internal.expressions.SignedIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
@@ -557,7 +556,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // HELPERS
   // ==========================================================================
 
-  protected var paramCount = 0
   protected val pos: InputPosition = InputPosition.NONE
 
   def string: Gen[String] =
@@ -634,13 +632,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _signedOctIntLit: Gen[SignedOctalIntegerLiteral] =
     _signedIntString("0o", 8).map(SignedOctalIntegerLiteral(_)(pos))
-
-  def _signedIntLit: Gen[SignedIntegerLiteral] = oneOf(
-    _signedDecIntLit,
-    _signedHexIntLit,
-    _signedOctIntLitOldSyntax,
-    _signedOctIntLit
-  )
 
   def _doubleLit: Gen[DecimalDoubleLiteral] =
     Arbitrary.arbDouble.arbitrary.map(_.toString).map(DecimalDoubleLiteral(_)(pos))
@@ -728,10 +719,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _map: Gen[MapExpression] = for {
     items <- zeroOrMore(tuple(_propertyKeyName, _expression))
   } yield MapExpression(items)(pos)
-
-  def _mapStringKeys: Gen[Map[String, Expression]] = for {
-    items <- zeroOrMore(tuple(_identifier, _expression))
-  } yield items.toMap
 
   def _property: Gen[Property] = for {
     map <- _expression
@@ -1152,17 +1139,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _where: Gen[Where] =
     _expression.map(Where(_)(pos))
-
-  def _returnItems1: Gen[ReturnItems] = for {
-    retItems <- oneOrMore(_returnItem)
-  } yield ReturnItems(includeExisting = false, retItems)(pos)
-
-  def _returnItems2: Gen[ReturnItems] = for {
-    retItems <- zeroOrMore(_returnItem)
-  } yield ReturnItems(includeExisting = true, retItems)(pos)
-
-  def _returnItems: Gen[ReturnItems] =
-    oneOf(_returnItems1, _returnItems2)
 
   def _with: Gen[With] = for {
     distinct <- boolean
@@ -2489,6 +2465,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _serverCommand: Gen[AdministrationCommand] = oneOf(
     _enableServer,
+    _alterServer,
     _renameServer,
     _dropServer,
     _deallocateServer,
