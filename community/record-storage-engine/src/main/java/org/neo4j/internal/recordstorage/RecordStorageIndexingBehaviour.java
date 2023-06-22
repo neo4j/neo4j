@@ -36,11 +36,6 @@ public class RecordStorageIndexingBehaviour implements StorageEngineIndexingBeha
     }
 
     @Override
-    public boolean requireCoordinationLocks() {
-        return true;
-    }
-
-    @Override
     public int nodesPerPage() {
         return nodesPerPage;
     }

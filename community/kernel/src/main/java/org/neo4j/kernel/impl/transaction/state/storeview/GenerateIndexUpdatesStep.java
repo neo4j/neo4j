@@ -101,6 +101,9 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
                 StoragePropertyCursor propertyCursor =
                         reader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker)) {
             for (long entityId : entityIds) {
+                // Currently this lock guards for two things:
+                // - property value read-tearing
+                // - labels vs properties read-tearing
                 try (Lock ignored = lockFunction.apply(entityId)) {
                     entityCursor.single(entityId);
                     while (entityCursor.next()) {

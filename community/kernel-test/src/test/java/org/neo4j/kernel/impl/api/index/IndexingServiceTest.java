@@ -2059,11 +2059,6 @@ class IndexingServiceTest {
         }
 
         @Override
-        public boolean requireCoordinationLocks() {
-            return false;
-        }
-
-        @Override
         public int nodesPerPage() {
             return 0;
         }
