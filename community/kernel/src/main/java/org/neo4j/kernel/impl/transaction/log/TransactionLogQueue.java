@@ -263,7 +263,6 @@ public class TransactionLogQueue extends LifecycleAdapter {
                         }
                         txIds[i] = lastTransactionId;
                     } catch (Exception e) {
-                        txQueueElement.fail(e);
                         throwIfUnchecked(e);
                         throw new RuntimeException(e);
                     }

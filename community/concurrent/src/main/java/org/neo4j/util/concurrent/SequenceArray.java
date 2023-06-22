@@ -136,12 +136,14 @@ public class SequenceArray {
         while (remaining-- > 0) {
             int absIndex = index(queueCursor);
             long number = array[absIndex];
-            if (number != UNSET && number != expected) {
-                for (long missing = expected; missing < number; missing++) {
-                    if (missingItems.length == resultCursor) {
-                        missingItems = Arrays.copyOf(missingItems, missingItems.length << 1);
+            if (number != UNSET) {
+                if (number != expected) {
+                    for (long missing = expected; missing < number; missing++) {
+                        if (missingItems.length == resultCursor) {
+                            missingItems = Arrays.copyOf(missingItems, missingItems.length << 1);
+                        }
+                        missingItems[resultCursor++] = missing;
                     }
-                    missingItems[resultCursor++] = missing;
                 }
                 expected = number + 1;
             }

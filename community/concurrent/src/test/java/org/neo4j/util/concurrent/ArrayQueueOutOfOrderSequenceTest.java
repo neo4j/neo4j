@@ -169,6 +169,31 @@ class ArrayQueueOutOfOrderSequenceTest {
     }
 
     @Test
+    void closedTransactionSnapshotNotMissingOfferedNumbers() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, EMPTY_META);
+        sequence.offer(1, EMPTY_META);
+        sequence.offer(2, EMPTY_META);
+        sequence.offer(3, EMPTY_META);
+        sequence.offer(4, EMPTY_META);
+        sequence.offer(5, EMPTY_META);
+        sequence.offer(6, EMPTY_META);
+        // skipping 7
+        sequence.offer(8, EMPTY_META);
+        sequence.offer(9, EMPTY_META);
+
+        var reverseSnapshot1 = sequence.reverseSnapshot();
+        assertThat(reverseSnapshot1.highestGapFree()).isEqualTo(6);
+        assertThat(reverseSnapshot1.highestEverSeen()).isEqualTo(9);
+        assertThat(reverseSnapshot1.missingIds()).containsExactly(7);
+
+        sequence.offer(10, EMPTY_META);
+        var reverseSnapshot2 = sequence.reverseSnapshot();
+        assertThat(reverseSnapshot2.highestGapFree()).isEqualTo(6);
+        assertThat(reverseSnapshot2.highestEverSeen()).isEqualTo(10);
+        assertThat(reverseSnapshot2.missingIds()).containsExactly(7);
+    }
+
+    @Test
     void closedTransactionSnapshotWithSingleMissingRange() {
         var sequence = new ArrayQueueOutOfOrderSequence(0, 8, new long[] {1, 2});
         sequence.offer(1, new long[] {1, 2});
