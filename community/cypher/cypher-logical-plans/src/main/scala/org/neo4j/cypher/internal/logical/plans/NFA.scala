@@ -159,6 +159,7 @@ case class NFA(
   def toDotString: String = {
     val nodes = states
       .toSeq
+      .sortBy(_.id)
       .map { node =>
         val style = if (node == startState) " style=filled" else ""
         val shape = if (finalStates.contains(node)) " shape=doublecircle" else ""
@@ -167,6 +168,9 @@ case class NFA(
     val edges =
       transitions.toSeq
         .flatMap { case (start, Transitions(transitions)) => transitions.map(start -> _) }
+        .sortBy {
+          case (start, Transition(_, end)) => (start.id, end.id)
+        }
         .map {
           case (start, Transition(p, end)) => s"""  ${start.id} -> ${end.id} [label="${p.toDotString}"];"""
         }

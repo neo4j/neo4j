@@ -1185,8 +1185,9 @@ object LogicalPlanToPlanBuilderString {
     val start = nfa.startState
     val constructor =
       s"new TestNFABuilder(${start.id}, ${wrapInQuotations(start.variable.name)})"
-    val transitions = nfa.transitions.flatMap {
-      case (from, Transitions(transitions)) => transitions.map(t => transitionString(from, t.predicate, t.end))
+    val transitions = nfa.transitions.toSeq.sortBy(_._1.id).flatMap {
+      case (from, Transitions(transitions)) =>
+        transitions.toSeq.sortBy(_.end.id).map(t => transitionString(from, t.predicate, t.end))
     }
     val finalStates = nfa.finalStates.map(fs => s".addFinalState(${fs.id})")
     val build = ".build()"
