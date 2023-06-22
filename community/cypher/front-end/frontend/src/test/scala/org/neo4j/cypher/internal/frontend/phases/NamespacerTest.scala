@@ -255,6 +255,67 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       "MATCH (n) WHERE COUNT { (n)-[r]->(p) } > 1 WITH n as m, 1 as n RETURN m, n",
       "MATCH (`  n@0`) WHERE COUNT { (`  n@0`)-[r]->(p) } > 1 WITH `  n@0` as m, 1 as `  n@1` RETURN m, `  n@1`",
       List(varFor("  n@0"), varFor("  n@1"))
+    ),
+    TestCase(
+      """CREATE (a)-[:T]->(b)
+        |WITH *
+        |UNWIND labels(a) + labels(b) AS label
+        |RETURN 1 ORDER BY reduce(a = 1, b in[] |1)""".stripMargin,
+      """CREATE (`  a@0`)-[:T]->(`  b@1`)
+        |WITH *
+        |UNWIND labels(`  a@0`) + labels(`  b@1`) AS label
+        |RETURN 1 ORDER BY reduce(`  a@2` = 1, `  b@3` in[] |1)""".stripMargin,
+      List(varFor("  a@0"), varFor("  b@1"), varFor("  a@2"), varFor("  b@3"))
+    ),
+    TestCase(
+      """CREATE (a)-[:T]->(b)
+        |WITH *
+        |UNWIND labels(a) + labels(b) AS label
+        |RETURN 1 LIMIT reduce(a = 1, b in[] |1)""".stripMargin,
+      """CREATE (`  a@0`)-[:T]->(`  b@1`)
+        |WITH *
+        |UNWIND labels(`  a@0`) + labels(`  b@1`) AS label
+        |RETURN 1 LIMIT reduce(`  a@2` = 1, `  b@3` in[] |1)""".stripMargin,
+      List(varFor("  a@0"), varFor("  b@1"), varFor("  a@2"), varFor("  b@3"))
+    ),
+    TestCase(
+      """CREATE (a)-[:T]->(b)
+        |WITH *
+        |UNWIND labels(a) + labels(b) AS label
+        |RETURN 1 SKIP reduce(a = 1, b in[] |1)""".stripMargin,
+      """CREATE (`  a@0`)-[:T]->(`  b@1`)
+        |WITH *
+        |UNWIND labels(`  a@0`) + labels(`  b@1`) AS label
+        |RETURN 1 SKIP reduce(`  a@2` = 1, `  b@3` in[] |1)""".stripMargin,
+      List(varFor("  a@0"), varFor("  b@1"), varFor("  a@2"), varFor("  b@3"))
+    ),
+    TestCase(
+      """CREATE (a)-[:T]->(b)
+        |WITH *
+        |UNWIND labels(a) + labels(b) AS label
+        |RETURN 1
+        |ORDER BY reduce(a = 1, b in[] |1)
+        |SKIP reduce(a = 1, b in[] |1)
+        |LIMIT reduce(a = 1, b in[] |1)
+        |""".stripMargin,
+      """CREATE (`  a@0`)-[:T]->(`  b@1`)
+        |WITH *
+        |UNWIND labels(`  a@0`) + labels(`  b@1`) AS label
+        |RETURN 1
+        |ORDER BY reduce(`  a@2` = 1, `  b@3` in[] |1)
+        |SKIP reduce(`  a@4` = 1, `  b@5` in[] |1)
+        |LIMIT reduce(`  a@6` = 1, `  b@7` in[] |1)
+        |""".stripMargin,
+      List(
+        varFor("  a@0"),
+        varFor("  b@1"),
+        varFor("  a@2"),
+        varFor("  b@3"),
+        varFor("  a@4"),
+        varFor("  b@5"),
+        varFor("  a@6"),
+        varFor("  b@7")
+      )
     )
   )
 

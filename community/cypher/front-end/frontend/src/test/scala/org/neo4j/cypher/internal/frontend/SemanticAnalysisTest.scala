@@ -1380,13 +1380,6 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
           SemanticError(
             s"It is not allowed to refer to variables in $phrase, so that the value for $phrase can be statically calculated.",
             InputPosition(20 + phrase.length, 1, 21 + phrase.length)
-          ),
-          // this is a wrong error: As we do not expect any variables in $phrase, we assume it should not be able to see previous scopes.
-          // The error message 'Variable ... not defined' is then translated in this very specific error message that is wrong in this case.
-          // However, we will only show the first error, which is the one above.
-          SemanticError(
-            s"In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: a",
-            InputPosition(20 + phrase.length, 1, 21 + phrase.length)
           )
         )
       )
