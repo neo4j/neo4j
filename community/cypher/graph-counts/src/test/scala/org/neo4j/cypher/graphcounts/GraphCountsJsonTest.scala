@@ -21,12 +21,15 @@ package org.neo4j.cypher.graphcounts
 
 import org.json4s.Formats
 import org.json4s.StringInput
+import org.json4s.native.Json
 import org.json4s.native.JsonMethods
 import org.neo4j.cypher.graphcounts.GraphCountsJson.allFormats
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.constraints.SchemaValueType
+import org.scalatest.prop.TableDrivenPropertyChecks
 
 class GraphCountsJsonTest extends CypherFunSuite {
 
@@ -48,7 +51,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         Some("DeprecatedRelyingParty"),
         None,
         List("relyingPartyId"),
-        ConstraintType.UNIQUE
+        ConstraintType.UNIQUE,
+        Nil
       )
     )
   }
@@ -69,7 +73,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         None,
         Some("Foo"),
         List("relyingPartyId"),
-        ConstraintType.EXISTS
+        ConstraintType.EXISTS,
+        Nil
       )
     )
   }
@@ -248,6 +253,15 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |        "serialNumber"
         |    ],
         |    "type": "Uniqueness constraint"
+        |}, {
+        |    "label": "SSLCertificate",
+        |    "properties": [
+        |      "serialNumber"
+        |    ],
+        |    "type": "Property type constraint",
+        |    "propertyTypes": [
+        |      "STRING"
+        |    ]
         |}],
         |"indexes": [{
         |    "estimatedUniqueSize": 4,
@@ -274,7 +288,22 @@ class GraphCountsJsonTest extends CypherFunSuite {
       """.stripMargin
     )).extract[GraphCountData] should be(
       GraphCountData(
-        Seq(Constraint(Some("SSLCertificate"), None, Seq("serialNumber"), ConstraintType.UNIQUE)),
+        Seq(
+          Constraint(
+            label = Some("SSLCertificate"),
+            relationshipType = None,
+            properties = List("serialNumber"),
+            `type` = ConstraintType.UNIQUE,
+            propertyTypes = Nil
+          ),
+          Constraint(
+            label = Some("SSLCertificate"),
+            relationshipType = None,
+            properties = List("serialNumber"),
+            `type` = ConstraintType.PROPERTY_TYPE,
+            propertyTypes = List(SchemaValueType.STRING)
+          )
+        ),
         Seq(Index(
           Some(Seq("SSLCertificate")),
           None,
@@ -290,4 +319,148 @@ class GraphCountsJsonTest extends CypherFunSuite {
       )
     )
   }
+}
+
+class ConstraintsJsonTest extends CypherFunSuite with TableDrivenPropertyChecks {
+
+  private val constraints: List[(String, Constraint)] =
+    List(
+      """{
+        |    "label": "Label",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Uniqueness constraint"
+        |}""".stripMargin ->
+        Constraint(
+          label = Some("Label"),
+          relationshipType = None,
+          properties = List("prop"),
+          `type` = ConstraintType.UNIQUE,
+          propertyTypes = Nil
+        ),
+      """{
+        |    "relationshipType": "REL",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Uniqueness constraint"
+        |}""".stripMargin ->
+        Constraint(
+          label = None,
+          relationshipType = Some("REL"),
+          properties = List("prop"),
+          `type` = ConstraintType.UNIQUE,
+          propertyTypes = Nil
+        ),
+      """{
+        |    "label": "Label",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Existence constraint"
+        |}""".stripMargin ->
+        Constraint(
+          label = Some("Label"),
+          relationshipType = None,
+          properties = List("prop"),
+          `type` = ConstraintType.EXISTS,
+          propertyTypes = Nil
+        ),
+      """{
+        |    "relationshipType": "REL",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Existence constraint"
+        |}""".stripMargin ->
+        Constraint(
+          label = None,
+          relationshipType = Some("REL"),
+          properties = List("prop"),
+          `type` = ConstraintType.EXISTS,
+          propertyTypes = Nil
+        ),
+      """{
+        |    "label": "Label",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Node Key"
+        |}""".stripMargin ->
+        Constraint(
+          label = Some("Label"),
+          relationshipType = None,
+          properties = List("prop"),
+          `type` = ConstraintType.UNIQUE_EXISTS,
+          propertyTypes = Nil
+        ),
+      """{
+        |    "relationshipType": "REL",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Node Key"
+        |}""".stripMargin ->
+        Constraint(
+          label = None,
+          relationshipType = Some("REL"),
+          properties = List("prop"),
+          `type` = ConstraintType.UNIQUE_EXISTS,
+          propertyTypes = Nil
+        ),
+      """{
+        |    "label": "Label",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Property type constraint",
+        |    "propertyTypes": [
+        |      "INTEGER"
+        |    ]
+        |}""".stripMargin ->
+        Constraint(
+          label = Some("Label"),
+          relationshipType = None,
+          properties = List("prop"),
+          `type` = ConstraintType.PROPERTY_TYPE,
+          propertyTypes = List(SchemaValueType.INTEGER)
+        ),
+      """{
+        |    "relationshipType": "REL",
+        |    "properties": [
+        |      "prop"
+        |    ],
+        |    "type": "Property type constraint",
+        |    "propertyTypes": [
+        |      "INTEGER"
+        |    ]
+        |}""".stripMargin ->
+        Constraint(
+          label = None,
+          relationshipType = Some("REL"),
+          properties = List("prop"),
+          `type` = ConstraintType.PROPERTY_TYPE,
+          propertyTypes = List(SchemaValueType.INTEGER)
+        )
+    )
+
+  private val constraintsTable =
+    Table(("Constraint", "JSON"), constraints: _*)
+
+  /*
+  Ensures that all types of constraints are covered when parsing GraphCounts, while remaining loosely coupled.
+  If this test fails, please ensure that the new constraint gets deserialized properly, and add a test case to the list of constraints above.
+   */
+  test("should cover all constraint types") {
+    val constraintTypes = constraintsTable.view.map(_._2.`type`).toSet
+    ConstraintType.values().toSet.diff(constraintTypes) shouldBe empty
+  }
+
+  test("should deserialize all constraints") {
+    forAll(constraintsTable) { (json: String, constraint: Constraint) =>
+      Json.apply(allFormats).read[Constraint](json) shouldEqual constraint
+    }
+  }
+
 }

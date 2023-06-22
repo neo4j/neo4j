@@ -517,15 +517,15 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
     val withConstraints = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.constraints.foldLeft(builder) {
-        case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS)) =>
+        case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS, Seq())) =>
           builder.addNodeExistenceConstraint(label, property)
-        case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS)) =>
+        case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS, Seq())) =>
           builder.addRelationshipExistenceConstraint(relType, property)
-        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE)) =>
+        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE, Seq())) =>
           builder // Will get found by matchingUniquenessConstraintExists
-        case (builder, Constraint(Some(label), None, properties, ConstraintType.UNIQUE_EXISTS)) =>
+        case (builder, Constraint(Some(label), None, properties, ConstraintType.UNIQUE_EXISTS, Seq())) =>
           properties.foldLeft(builder)(_.addNodeExistenceConstraint(label, _))
-        case (builder, Constraint(None, Some(relType), properties, ConstraintType.UNIQUE_EXISTS)) =>
+        case (builder, Constraint(None, Some(relType), properties, ConstraintType.UNIQUE_EXISTS, Seq())) =>
           properties.foldLeft(builder)(_.addRelationshipExistenceConstraint(relType, _))
         case (_, constraint) => throw new IllegalArgumentException(s"Unsupported constraint: $constraint")
       }

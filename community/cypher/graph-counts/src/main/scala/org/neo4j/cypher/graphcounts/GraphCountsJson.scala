@@ -25,19 +25,21 @@ import org.json4s.FileInput
 import org.json4s.Formats
 import org.json4s.JArray
 import org.json4s.JString
+import org.json4s.JValue
 import org.json4s.StringInput
 import org.json4s.native.JsonMethods
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.IndexType.RANGE
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 import java.io.File
 
 object GraphCountsJson {
 
   val allFormatsExceptRowSerializer: Formats =
-    DefaultFormats + IndexTypeSerializer + IndexProviderSerializer + ConstraintTypeSerializer
+    DefaultFormats + IndexTypeSerializer + IndexProviderSerializer + ConstraintTypeSerializer + SchemaValueTypes.Serializer
   val allFormats: Formats = allFormatsExceptRowSerializer + RowSerializer
 
   /**
@@ -108,14 +110,14 @@ case class GraphCountData(
   def matchingUniquenessConstraintExists(index: Index): Boolean = {
     index match {
       case Index(Some(Seq(label)), None, RANGE, properties, _, _, _, _) => constraints.exists {
-          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE)        => true
-          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE_EXISTS) => true
-          case _                                                                           => false
+          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE, _)        => true
+          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE_EXISTS, _) => true
+          case _                                                                              => false
         }
       case Index(None, Some(Seq(relType)), RANGE, properties, _, _, _, _) => constraints.exists {
-          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE)        => true
-          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE_EXISTS) => true
-          case _                                                                             => false
+          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE, _)        => true
+          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE_EXISTS, _) => true
+          case _                                                                                => false
         }
       case _ => false
     }
@@ -126,7 +128,8 @@ case class Constraint(
   label: Option[String],
   relationshipType: Option[String],
   properties: Seq[String],
-  `type`: ConstraintType
+  `type`: ConstraintType,
+  propertyTypes: Seq[SchemaValueType]
 )
 
 case class Index(
@@ -193,14 +196,30 @@ case object IndexProviderSerializer extends CustomSerializer[IndexProviderDescri
 case object ConstraintTypeSerializer extends CustomSerializer[ConstraintType](format =>
       (
         {
-          case JString("Uniqueness constraint") => ConstraintType.UNIQUE
-          case JString("Existence constraint")  => ConstraintType.EXISTS
-          case JString("Node Key")              => ConstraintType.UNIQUE_EXISTS
+          case JString("Uniqueness constraint")    => ConstraintType.UNIQUE
+          case JString("Existence constraint")     => ConstraintType.EXISTS
+          case JString("Node Key")                 => ConstraintType.UNIQUE_EXISTS
+          case JString("Property type constraint") => ConstraintType.PROPERTY_TYPE
         },
         {
           case ConstraintType.UNIQUE        => JString("Uniqueness constraint")
           case ConstraintType.EXISTS        => JString("Existence constraint")
           case ConstraintType.UNIQUE_EXISTS => JString("Node Key")
+          case ConstraintType.PROPERTY_TYPE => JString("Property type constraint")
         }
       )
     )
+
+object SchemaValueTypes {
+
+  case object Serializer extends CustomSerializer[SchemaValueType](_ => (serializer, deserializer))
+
+  private lazy val serializer: PartialFunction[JValue, SchemaValueType] = Function.unlift {
+    case JString(string) => SchemaValueType.values().find(valueType => valueType.serialize() == string)
+    case _               => None
+  }
+
+  private lazy val deserializer: PartialFunction[Any, JValue] = {
+    case valueType: SchemaValueType => JString(valueType.serialize())
+  }
+}

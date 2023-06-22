@@ -187,30 +187,8 @@ final class GraphCountsSection {
         Iterator<ConstraintDescriptor> iterator = schemaRead.constraintsGetAll();
         while (iterator.hasNext()) {
             ConstraintDescriptor constraint = iterator.next();
-            EntityType entityType = constraint.schema().entityType();
-            Map<String, Object> data = new HashMap<>();
-
-            data.put(
-                    "properties",
-                    map(
-                            constraint.schema().getPropertyIds(),
-                            id -> anonymizer.propertyKey(tokens.propertyKeyGetName(id), id)));
-            data.put("type", constraintType(constraint));
-            int entityTokenId = constraint.schema().getEntityTokenIds()[0];
-
-            switch (entityType) {
-                case NODE:
-                    data.put("label", anonymizer.label(tokens.labelGetName(entityTokenId), entityTokenId));
-                    constraints.add(data);
-                    break;
-                case RELATIONSHIP:
-                    data.put(
-                            "relationshipType",
-                            anonymizer.relationshipType(tokens.relationshipTypeGetName(entityTokenId), entityTokenId));
-                    constraints.add(data);
-                    break;
-                default:
-            }
+            Map<String, Object> data = ConstraintSubSection.constraint(tokens, anonymizer, constraint);
+            constraints.add(data);
         }
 
         return constraints;
@@ -218,18 +196,5 @@ final class GraphCountsSection {
 
     private static List<String> map(int[] ids, IntFunction<String> f) {
         return Arrays.stream(ids).mapToObj(f).collect(Collectors.toList());
-    }
-
-    private static String constraintType(ConstraintDescriptor constraint) {
-        switch (constraint.type()) {
-            case EXISTS:
-                return "Existence constraint";
-            case UNIQUE:
-                return "Uniqueness constraint";
-            case UNIQUE_EXISTS:
-                return "Node Key";
-            default:
-                throw new IllegalArgumentException("Unknown constraint type: " + constraint.type());
-        }
     }
 }
