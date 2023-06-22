@@ -571,7 +571,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "the page cache. If no page cache memory is configured, then a heuristic setting is computed based "
             + "on available system resources.")
     @DocumentedDefaultValue(
-            "By default the size of page cache will be 50% och available RAM minus the max heap size."
+            "By default the size of page cache will be 50% of available RAM minus the max heap size."
                     + "The size of the page cache will also not be larger than 70x the max heap size (due to some overhead of the page cache in the heap.")
     public static final Setting<Long> pagecache_memory =
             newBuilder("server.memory.pagecache.size", BYTES, null).build();
