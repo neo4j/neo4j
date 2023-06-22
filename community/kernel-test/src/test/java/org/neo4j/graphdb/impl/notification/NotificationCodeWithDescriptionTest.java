@@ -637,7 +637,7 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "Creating a pattern (%s) and referencing a property of that pattern in the same CREATE is deprecated.",
+                "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated.",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -693,8 +693,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            104, 96, -109, 22, -85, 10, -55, 21, 26, 88, -1, -7, -94, -81, -82, 89, 26, 67, -15, -31, -120, -47, 7,
-            -120, 127, -8, -26, -37, 74, -89, -23, 63
+            -39, -7, -62, 83, -119, 77, -27, 35, 17, -13, 112, -36, 61, 27, -17, -40, -93, 37, 30, -72, -4, -14, 28,
+            -85, -10, -126, 18, 103, -88, 67, 1, 49
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

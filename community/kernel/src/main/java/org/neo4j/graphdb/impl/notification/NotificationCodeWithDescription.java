@@ -68,7 +68,8 @@ public enum NotificationCodeWithDescription {
 
     DEPRECATED_PROPERTY_REFERENCE_IN_CREATE(
             Status.Statement.FeatureDeprecationWarning,
-            "Creating a pattern (%s) and referencing a property of that pattern in the same CREATE is deprecated."),
+            // referencing that entity in a property definition in the same create clause
+            "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated."),
 
     DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP(
             Status.Statement.FeatureDeprecationWarning,
