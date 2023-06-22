@@ -21,8 +21,12 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
 
-public class LogEntrySerializationSetVGloriousFuture extends LogEntrySerializationSetV5_10 {
-    LogEntrySerializationSetVGloriousFuture() {
-        super(KernelVersion.GLORIOUS_FUTURE);
+class LogEntrySerializationSetV5_10 extends LogEntrySerializationSetV5_9 {
+    LogEntrySerializationSetV5_10() {
+        this(KernelVersion.V5_10);
+    }
+
+    LogEntrySerializationSetV5_10(KernelVersion kernelVersion) {
+        super(kernelVersion);
     }
 }

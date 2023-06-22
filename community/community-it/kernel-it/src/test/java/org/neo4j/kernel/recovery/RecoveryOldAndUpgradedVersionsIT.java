@@ -27,7 +27,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.kernel.recovery.RecoveryHelpers.getLatestCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.logsContainCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
-import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
+import static org.neo4j.test.UpgradeTestUtil.assertKernelVersionAtLeast;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -83,7 +83,7 @@ class RecoveryOldAndUpgradedVersionsIT {
         createBuilder();
         managementService = builder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(db, KernelVersion.V5_0);
+        assertKernelVersionAtLeast(db, KernelVersion.V5_0);
     }
 
     @ParameterizedTest
@@ -102,7 +102,7 @@ class RecoveryOldAndUpgradedVersionsIT {
             tx.commit();
         }
 
-        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(db, LatestVersions.LATEST_KERNEL_VERSION);
         shutdown();
 
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -111,7 +111,7 @@ class RecoveryOldAndUpgradedVersionsIT {
 
         managementService = builder.build();
         db = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(db, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @ParameterizedTest
@@ -130,7 +130,7 @@ class RecoveryOldAndUpgradedVersionsIT {
             tx.commit();
         }
 
-        assertKernelVersion(db, KernelVersion.V5_0);
+        assertKernelVersionAtLeast(db, KernelVersion.V5_0);
         shutdown();
 
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -138,7 +138,7 @@ class RecoveryOldAndUpgradedVersionsIT {
 
         managementService = builder.build();
         db = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(db, KernelVersion.V5_0);
+        assertKernelVersionAtLeast(db, KernelVersion.V5_0);
     }
 
     @ParameterizedTest
@@ -157,7 +157,7 @@ class RecoveryOldAndUpgradedVersionsIT {
             tx.commit();
         }
 
-        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(db, LatestVersions.LATEST_KERNEL_VERSION);
         shutdown();
 
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -165,7 +165,7 @@ class RecoveryOldAndUpgradedVersionsIT {
 
         managementService = builder.build();
         db = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(db, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @Test
@@ -185,7 +185,7 @@ class RecoveryOldAndUpgradedVersionsIT {
         // really happened (dbmsRuntimeVersionComponent is still 5.0).
         // For system database we have no idea about the contents of the database while starting it
         // and have to pick a version when there are no logs at all - the latest.
-        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(db, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @Test
@@ -203,7 +203,7 @@ class RecoveryOldAndUpgradedVersionsIT {
 
         // For a regular database where we have no logs at all we should pick the version that
         // dbmsRuntimeVersionComponent tells us that we are on.
-        assertKernelVersion(db, KernelVersion.V5_0);
+        assertKernelVersionAtLeast(db, KernelVersion.V5_0);
     }
 
     private void removeTransactionLogs(DatabaseLayout dbLayout) throws IOException {

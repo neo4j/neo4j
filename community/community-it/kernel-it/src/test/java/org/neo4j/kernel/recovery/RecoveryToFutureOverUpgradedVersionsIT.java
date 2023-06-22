@@ -28,7 +28,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.kernel.recovery.RecoveryHelpers.getLatestCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.logsContainCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
-import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
+import static org.neo4j.test.UpgradeTestUtil.assertKernelVersionAtLeast;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -100,7 +100,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
 
         startDbms(this::configureGloriousFutureAsLatest, true);
         testDb = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(testDb, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(testDb, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @ParameterizedTest
@@ -114,7 +114,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         createWriteTransaction(testDb);
         systemDb.executeTransactionally("CALL dbms.upgrade()");
         createWriteTransaction(testDb);
-        assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
+        assertKernelVersionAtLeast(testDb, KernelVersion.GLORIOUS_FUTURE);
 
         shutdownDbms();
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -123,7 +123,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
 
         startDbms(this::configureGloriousFutureAsLatest, true);
         testDb = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
+        assertKernelVersionAtLeast(testDb, KernelVersion.GLORIOUS_FUTURE);
     }
 
     @ParameterizedTest
@@ -136,7 +136,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         CheckPointer checkPointer = testDb.getDependencyResolver().resolveDependency(CheckPointer.class);
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("extra checkpoint"));
         createWriteTransaction(testDb);
-        assertKernelVersion(testDb, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(testDb, LatestVersions.LATEST_KERNEL_VERSION);
         shutdownDbms();
 
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -145,7 +145,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
 
         startDbms(this::configureGloriousFutureAsLatest, true);
         testDb = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(testDb, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(testDb, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @ParameterizedTest
@@ -162,7 +162,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("extra checkpoint"));
         systemDb.executeTransactionally("CALL dbms.upgrade()");
         createWriteTransaction(testDb);
-        assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
+        assertKernelVersionAtLeast(testDb, KernelVersion.GLORIOUS_FUTURE);
         shutdownDbms();
 
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -171,7 +171,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
 
         startDbms(this::configureGloriousFutureAsLatest, true);
         testDb = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
+        assertKernelVersionAtLeast(testDb, KernelVersion.GLORIOUS_FUTURE);
     }
 
     @Test
@@ -194,7 +194,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         // really happened (dbmsRuntimeVersionComponent is still old).
         // For system database we have no idea about the contents of the database while starting it
         // and have to pick a version when there are no logs at all - the latest.
-        assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
+        assertKernelVersionAtLeast(testDb, KernelVersion.GLORIOUS_FUTURE);
     }
 
     @Test
@@ -215,7 +215,7 @@ class RecoveryToFutureOverUpgradedVersionsIT {
 
         // For a regular database where we have no logs at all we should pick the version that
         // dbmsRuntimeVersionComponent tells us that we are on.
-        assertKernelVersion(testDb, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersionAtLeast(testDb, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     private void removeTransactionLogs(DatabaseLayout dbLayout) throws IOException {

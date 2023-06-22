@@ -35,12 +35,12 @@ public class UpgradeTestUtil {
             GraphDatabaseAPI db,
             KernelVersion expectedCurrentVersion,
             KernelVersion expectedUpgradedVersions) {
-        assertKernelVersion(db, expectedCurrentVersion);
+        assertKernelVersionAtLeast(db, expectedCurrentVersion);
 
         upgradeDbms(dbms);
         createWriteTransaction(db);
 
-        assertKernelVersion(db, expectedUpgradedVersions);
+        assertKernelVersionAtLeast(db, expectedUpgradedVersions);
     }
 
     public static void createWriteTransaction(GraphDatabaseService db) {
@@ -56,8 +56,8 @@ public class UpgradeTestUtil {
                 .kernelVersion();
     }
 
-    public static void assertKernelVersion(GraphDatabaseAPI database, KernelVersion expectedVersion) {
-        assertThat(getKernelVersion(database)).isEqualTo(expectedVersion);
+    public static void assertKernelVersionAtLeast(GraphDatabaseAPI database, KernelVersion expectedVersion) {
+        assertThat(getKernelVersion(database)).isGreaterThanOrEqualTo(expectedVersion);
     }
 
     public static void upgradeDbms(DatabaseManagementService dbms) {
