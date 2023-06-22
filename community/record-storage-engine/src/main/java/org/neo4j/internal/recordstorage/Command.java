@@ -26,7 +26,7 @@ import static org.neo4j.token.api.TokenIdPrettyPrinter.label;
 import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
 
 import java.io.IOException;
-import java.util.Optional;
+import java.util.Objects;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -51,7 +51,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.enrichment.Enrichment;
 import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
-import org.neo4j.storageengine.api.enrichment.TxMetadata;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -602,20 +601,10 @@ public abstract class Command implements StorageCommand {
     public static class RecordEnrichmentCommand extends Command implements EnrichmentCommand {
 
         private final Enrichment enrichment;
-        private final TxMetadata metadata;
 
         public RecordEnrichmentCommand(LogCommandSerialization serialization, Enrichment enrichment) {
             super(serialization);
-            this.enrichment = enrichment;
-            this.metadata = enrichment.metadata();
-
-            setup();
-        }
-
-        public RecordEnrichmentCommand(LogCommandSerialization serialization, TxMetadata metadata) {
-            super(serialization);
-            this.enrichment = null;
-            this.metadata = metadata;
+            this.enrichment = Objects.requireNonNull(enrichment);
 
             setup();
         }
@@ -626,18 +615,13 @@ public abstract class Command implements StorageCommand {
         }
 
         @Override
-        public TxMetadata metadata() {
-            return metadata;
-        }
-
-        @Override
-        public Optional<Enrichment> enrichment() {
-            return Optional.ofNullable(enrichment);
+        public Enrichment enrichment() {
+            return enrichment;
         }
 
         @Override
         public String toString() {
-            return String.format("RecordEnrichmentCommand(%s)", enrichment == null ? metadata : enrichment);
+            return String.format("RecordEnrichmentCommand(%s)", enrichment);
         }
 
         @Override
@@ -647,7 +631,7 @@ public abstract class Command implements StorageCommand {
         }
 
         private void setup() {
-            setup(metadata.lastCommittedTx(), Mode.CREATE);
+            setup(enrichment.metadata().lastCommittedTx(), Mode.CREATE);
         }
     }
 }

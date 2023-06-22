@@ -24,8 +24,8 @@ import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.enrichment.Enrichment;
-import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 
 class LogCommandSerializationV5_8 extends LogCommandSerializationV5_7 {
     static final LogCommandSerializationV5_8 INSTANCE = new LogCommandSerializationV5_8();
@@ -37,16 +37,13 @@ class LogCommandSerializationV5_8 extends LogCommandSerializationV5_7 {
 
     @Override
     protected Command readEnrichmentCommand(ReadableChannel channel) throws IOException {
-        // create read-only version (i.e. no enrichment data) of the command
-        final var metadata = Enrichment.readMetadataAndPastEnrichmentData(channel);
-        return new RecordEnrichmentCommand(this, metadata);
+        return new RecordEnrichmentCommand(this, Enrichment.Read.deserialize(channel, EmptyMemoryTracker.INSTANCE));
     }
 
     @Override
     public void writeEnrichmentCommand(WritableChannel channel, RecordEnrichmentCommand command) throws IOException {
-        try (var enrichment = EnrichmentCommand.extractForWriting(command)) {
-            channel.put(NeoCommandType.ENRICHMENT_COMMAND);
-            enrichment.serialize(channel);
-        }
+        final var enrichment = command.enrichment();
+        channel.put(NeoCommandType.ENRICHMENT_COMMAND);
+        enrichment.serialize(channel);
     }
 }

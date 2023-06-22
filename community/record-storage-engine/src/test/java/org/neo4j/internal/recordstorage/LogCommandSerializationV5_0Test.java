@@ -23,6 +23,8 @@ import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -58,6 +60,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.enrichment.Enrichment;
 import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -832,9 +835,13 @@ public class LogCommandSerializationV5_0Test {
 
     @Test
     void enrichmentWriteNotSupported() {
+        final var metadata = LogCommandSerializationV5_8Test.metadata();
+        final var enrichment = mock(Enrichment.Write.class);
+        when(enrichment.metadata()).thenReturn(metadata);
+
         try (var channel = new InMemoryClosableChannel()) {
             final var writer = writer();
-            final var command = new RecordEnrichmentCommand(writer, LogCommandSerializationV5_8Test.metadata());
+            final var command = new RecordEnrichmentCommand(writer, enrichment);
 
             assertThatThrownBy(() -> writer.writeEnrichmentCommand(channel, command))
                     .isInstanceOf(IOException.class)

@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -144,7 +143,7 @@ public class EnrichmentCommandReaderFactoryTest {
         final var commandFactory = mock(EnrichmentCommandFactory.class);
         when(commandFactory.create(any(), any())).thenAnswer(answer -> {
             final var enrichment = answer.<Enrichment>getArgument(1);
-            return new TestEnrichmentCommand(enrichment.metadata, Optional.of(enrichment));
+            return new TestEnrichmentCommand(enrichment.metadata, enrichment);
         });
 
         final var readerFactory = new EnrichmentCommandReaderFactory(
@@ -210,8 +209,9 @@ public class EnrichmentCommandReaderFactoryTest {
                     if (commandType == TestCommand.TYPE) {
                         return new TestCommand(channel.getLong());
                     } else if (commandType == EnrichmentCommand.COMMAND_CODE) {
-                        final var metadata = Enrichment.readMetadataAndPastEnrichmentData(channel);
-                        return new TestEnrichmentCommand(metadata, Optional.empty());
+                        final var metadata = TxMetadata.deserialize(channel);
+                        readPastData(channel);
+                        return new TestEnrichmentCommand(metadata, null);
                     }
 
                     throw new IllegalArgumentException("Invalid commandType: " + commandType);
@@ -221,12 +221,18 @@ public class EnrichmentCommandReaderFactoryTest {
                 public KernelVersion kernelVersion() {
                     return version;
                 }
+
+                private void readPastData(ReadableChannel channel) throws IOException {
+                    final var longsCount = channel.getInt() + channel.getInt() + channel.getInt() + channel.getInt();
+                    for (var i = 0; i < longsCount; i++) {
+                        channel.getLong(); // drop the value
+                    }
+                }
             };
         }
     }
 
-    private record TestEnrichmentCommand(TxMetadata metadata, Optional<Enrichment> enrichment)
-            implements EnrichmentCommand {
+    private record TestEnrichmentCommand(TxMetadata metadata, Enrichment enrichment) implements EnrichmentCommand {
 
         @Override
         public KernelVersion kernelVersion() {
@@ -236,11 +242,11 @@ public class EnrichmentCommandReaderFactoryTest {
         @Override
         public void serialize(WritableChannel channel) throws IOException {
             channel.put(COMMAND_CODE);
-            metadata.serialize(channel);
+            enrichment.serialize(channel);
         }
 
         @Override
-        public Optional<Enrichment> enrichment() {
+        public Enrichment enrichment() {
             return enrichment;
         }
     }

@@ -36,14 +36,14 @@ import org.neo4j.memory.MemoryTracker;
  *  <li>when reading, the size of the data will be known so the buffers that contain it can be sized accordingly.</li>
  * </ul>
  */
-public abstract sealed class Enrichment implements AutoCloseable {
+public abstract sealed class Enrichment {
 
     /**
      * A representation of some enrichment data for reading. The object has some {@link TxMetadata} associated with it
      * and 4 data {@link ByteBuffer buffers}, representing the entities that changed, the details around those
      * entities, the changes to those entities and the values that may have changed.
      */
-    public static final class Read extends Enrichment {
+    public static final class Read extends Enrichment implements AutoCloseable {
 
         private final int entityCount;
         // contains pointers to the entity details
@@ -133,7 +133,17 @@ public abstract sealed class Enrichment implements AutoCloseable {
 
         @Override
         public void serialize(WritableChannel channel) throws IOException {
-            throw new IOException("This command is only for reading and contains no enrichment data");
+            metadata.serialize(channel);
+            // write out the sizes making it easy(er) to skip the actual content
+            channel.putInt(entitiesBuffer.capacity())
+                    .putInt(detailsBuffer.capacity())
+                    .putInt(changesBuffer.capacity())
+                    .putInt(valuesBuffer.capacity())
+                    // now write out the content from the start to the limit (capacity)
+                    .putAll(entitiesBuffer.position(0))
+                    .putAll(detailsBuffer.position(0))
+                    .putAll(changesBuffer.position(0))
+                    .putAll(valuesBuffer.position(0));
         }
 
         /**
@@ -157,7 +167,7 @@ public abstract sealed class Enrichment implements AutoCloseable {
      * {@link WriteEnrichmentChannel channels} representing the entities that changed, the details around those
      * entities, the changes to those entities and the values that may have changed.
      */
-    public static final class Write extends Enrichment {
+    public static final class Write extends Enrichment implements AutoCloseable {
 
         private final WriteEnrichmentChannel entities;
         private final WriteEnrichmentChannel details;
@@ -178,9 +188,17 @@ public abstract sealed class Enrichment implements AutoCloseable {
         }
 
         /**
-         * @param channel the channel to write the enrichment data to
-         * @throws IOException if unable to write the enrichment data
+         * @return the expected size (in bytes) that will be written when the enrichment is serialized
          */
+        public long totalSize() {
+            return (Integer.BYTES * 4)
+                    + entities.position()
+                    + details.position()
+                    + changes.position()
+                    + values.position();
+        }
+
+        @Override
         public void serialize(WritableChannel channel) throws IOException {
             metadata.serialize(channel);
             // write out the sizes making it easy(er) to skip the actual content
@@ -193,17 +211,6 @@ public abstract sealed class Enrichment implements AutoCloseable {
             details.serialize(channel);
             changes.serialize(channel);
             values.serialize(channel);
-        }
-
-        /**
-         * @return the expected size (in bytes) that will be written when the enrichment is serialized
-         */
-        public long totalSize() {
-            return (Integer.BYTES * 4)
-                    + entities.position()
-                    + details.position()
-                    + changes.position()
-                    + values.position();
         }
 
         /**
@@ -225,44 +232,14 @@ public abstract sealed class Enrichment implements AutoCloseable {
     }
 
     /**
-     * Reads the {@link TxMetadata} from the channel, and scans past the rest of the enrichment data
-     * @param channel the channel to read from
-     * @return the metadata
-     * @throws IOException if unable to read the channel
-     */
-    public static TxMetadata readMetadataAndPastEnrichmentData(ReadableChannel channel) throws IOException {
-        final var metadata = TxMetadata.deserialize(channel);
-
-        long entitiesSize = channel.getInt();
-        long detailsSize = channel.getInt();
-        long changesSize = channel.getInt();
-        long valuesSize = channel.getInt();
-        long blocksSizes = entitiesSize + detailsSize + changesSize + valuesSize;
-        //
-        // // Skip past data
-        // channel.position(channel.position() + blocksSizes);
-
-        // would be nice to be able to position directly at the end of the chunk rather than read them
-        // not sure how that would work for enveloped logs though that might span across log files
-        final var bytes = new byte[WriteEnrichmentChannel.CHUNK_SIZE];
-        var remaining = (int) blocksSizes;
-        while (remaining > 0) {
-            final var toSkip = Math.min(remaining, bytes.length);
-            channel.get(bytes, toSkip);
-            remaining -= toSkip;
-        }
-
-        return metadata;
-    }
-
-    /**
      * @param channel the channel to write the enrichment data to
      * @throws IOException if unable to write the enrichment data
      */
     public abstract void serialize(WritableChannel channel) throws IOException;
 
-    public abstract void close();
-
+    /**
+     * @return the {@link TxMetadata} associated with the enriched transaction
+     */
     public TxMetadata metadata() {
         return metadata;
     }

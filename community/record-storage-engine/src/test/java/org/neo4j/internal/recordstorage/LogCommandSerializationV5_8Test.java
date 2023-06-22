@@ -54,9 +54,10 @@ public class LogCommandSerializationV5_8Test {
             final var afterEnrichment = writer.getCurrentLogPosition();
             writer.putChecksum();
 
-            final var command = serialization.read(channel.reader());
+            final var command = serialization.read(channel);
             assertThat(command).isInstanceOf(RecordEnrichmentCommand.class);
-            assertMetadata(metadata, ((RecordEnrichmentCommand) command).metadata());
+            assertMetadata(
+                    metadata, ((RecordEnrichmentCommand) command).enrichment().metadata());
             assertThat(channel.reader().getCurrentLogPosition())
                     .as("should have read the metadata and past the dummy data blocks")
                     .isEqualTo(afterEnrichment);

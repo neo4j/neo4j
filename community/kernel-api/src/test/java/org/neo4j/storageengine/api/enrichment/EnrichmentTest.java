@@ -51,62 +51,6 @@ class EnrichmentTest {
     private RandomSupport random;
 
     @Test
-    void readMetadataAndPastEnrichmentData() throws IOException {
-        // given
-        final var metadata = TxMetadata.create(CaptureMode.DIFF, "some.server", securityContext(), 42L);
-
-        // when
-        final var capacity = 1024;
-        final var tailSize = 128;
-        final var tail = random.nextBytes(new byte[tailSize]);
-        final var tailBuffer = ByteBuffer.allocate(tailSize)
-                .order(ByteOrder.LITTLE_ENDIAN)
-                .put(tail)
-                .flip();
-
-        try (var channel = new ChannelBuffer(capacity)) {
-            metadata.serialize(channel);
-
-            final var enrichmentSize = (int) (capacity - channel.position() - tailSize - (Integer.BYTES * 4));
-            final var entitiesSize = random.nextInt(13, enrichmentSize / 4);
-            final var detailsSize = random.nextInt(13, enrichmentSize / 4);
-            final var changesSize = random.nextInt(13, enrichmentSize / 4);
-            final var valuesSize = enrichmentSize - entitiesSize - detailsSize - changesSize;
-            final var enrichmentBuffer = ByteBuffer.allocate(enrichmentSize)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .put(random.nextBytes(new byte[enrichmentSize]))
-                    .flip();
-
-            // mimic the output of enrichment data
-            channel.putInt(entitiesSize)
-                    .putInt(detailsSize)
-                    .putInt(changesSize)
-                    .putInt(valuesSize)
-                    .putAll(enrichmentBuffer)
-                    // now add some extra data AFTER the enrichment
-                    .putAll(tailBuffer)
-                    .flip();
-
-            final var metadata2 = Enrichment.readMetadataAndPastEnrichmentData(channel);
-            assertThat(metadata2.captureMode()).isEqualTo(metadata.captureMode());
-            assertThat(metadata2.serverId()).isEqualTo(metadata.serverId());
-            assertThat(metadata2.subject().executingUser())
-                    .isEqualTo(metadata.subject().executingUser());
-            assertThat(metadata2.connectionInfo().protocol())
-                    .isEqualTo(metadata.connectionInfo().protocol());
-
-            assertThat(channel.position())
-                    .as("should have read all of the enrichment data")
-                    .isEqualTo(capacity - tailSize);
-            final var actualTail = new byte[tailSize];
-            channel.get(actualTail, tailSize);
-            assertThat(actualTail)
-                    .as("should read the rest of the channel OK AFTER the enrichment")
-                    .isEqualTo(tail);
-        }
-    }
-
-    @Test
     void concurrentReadingOfBuffers() throws Throwable {
         // given
         final var metadata = TxMetadata.create(CaptureMode.DIFF, "some.server", securityContext(), 42L);
@@ -211,6 +155,120 @@ class EnrichmentTest {
                     .as("should have deallocated the enrichment data")
                     .isEqualTo(enrichmentSize);
         }
+    }
+
+    @Test
+    void roundTrippingWithWriteEnrichment() throws IOException {
+        // given
+        final var tracker = EmptyMemoryTracker.INSTANCE;
+        final var dataSize = 32;
+        final var metadata = TxMetadata.create(CaptureMode.DIFF, "some.server", securityContext(), 42L);
+
+        final var entitiesData = random.nextBytes(new byte[dataSize]);
+        final var detailsData = random.nextBytes(new byte[dataSize]);
+        final var changesData = random.nextBytes(new byte[dataSize]);
+        final var valuesData = random.nextBytes(new byte[dataSize]);
+
+        try (var entitiesChannel = new WriteEnrichmentChannel(tracker);
+                var detailsChannel = new WriteEnrichmentChannel(tracker);
+                var changesChannel = new WriteEnrichmentChannel(tracker);
+                var valuesChannel = new WriteEnrichmentChannel(tracker)) {
+            entitiesChannel.put(entitiesData);
+            detailsChannel.put(detailsData);
+            changesChannel.put(changesData);
+            valuesChannel.put(valuesData);
+
+            final var enrichment =
+                    new Enrichment.Write(metadata, entitiesChannel, detailsChannel, changesChannel, valuesChannel);
+
+            final var capacity = 4096;
+            try (var channel = new ChannelBuffer(capacity)) {
+                // write it twice - checks that buffer is reset for each round (ex. clustering leader->members)
+                enrichment.serialize(channel);
+                enrichment.serialize(channel);
+                channel.flip();
+
+                final var enrichment1 = Enrichment.Read.deserialize(channel, tracker);
+                assertMetadata(enrichment1.metadata, metadata);
+                assertBuffer(enrichment1.entities(), entitiesData);
+                assertBuffer(enrichment1.entityDetails(), detailsData);
+                assertBuffer(enrichment1.entityChanges(), changesData);
+                assertBuffer(enrichment1.values(), valuesData);
+
+                final var enrichment2 = Enrichment.Read.deserialize(channel, tracker);
+                assertMetadata(enrichment2.metadata, metadata);
+                assertBuffer(enrichment2.entities(), entitiesData);
+                assertBuffer(enrichment2.entityDetails(), detailsData);
+                assertBuffer(enrichment2.entityChanges(), changesData);
+                assertBuffer(enrichment2.values(), valuesData);
+            }
+        }
+    }
+
+    @Test
+    void roundTrippingWithReadEnrichment() throws IOException {
+        // given
+        final var tracker = EmptyMemoryTracker.INSTANCE;
+        final var dataSize = 32;
+        final var metadata = TxMetadata.create(CaptureMode.DIFF, "some.server", securityContext(), 42L);
+
+        final var entitiesData = random.nextBytes(new byte[dataSize]);
+        final var detailsData = random.nextBytes(new byte[dataSize]);
+        final var changesData = random.nextBytes(new byte[dataSize]);
+        final var valuesData = random.nextBytes(new byte[dataSize]);
+
+        final var capacity = 4096;
+        final Enrichment.Read enrichment;
+        try (var channel = new ChannelBuffer(capacity)) {
+            metadata.serialize(channel);
+            channel.putInt(dataSize)
+                    .putInt(dataSize)
+                    .putInt(dataSize)
+                    .putInt(dataSize)
+                    .put(entitiesData, 0, dataSize)
+                    .put(detailsData, 0, dataSize)
+                    .put(changesData, 0, dataSize)
+                    .put(valuesData, 0, dataSize)
+                    .flip();
+
+            enrichment = Enrichment.Read.deserialize(channel, tracker);
+        }
+
+        try (var channel = new ChannelBuffer(capacity)) {
+            // write it twice - checks that buffer is reset for each round (ex. clustering leader->members)
+            enrichment.serialize(channel);
+            enrichment.serialize(channel);
+            channel.flip();
+
+            final var enrichment1 = Enrichment.Read.deserialize(channel, tracker);
+            assertMetadata(enrichment1.metadata, metadata);
+            assertBuffer(enrichment1.entities(), entitiesData);
+            assertBuffer(enrichment1.entityDetails(), detailsData);
+            assertBuffer(enrichment1.entityChanges(), changesData);
+            assertBuffer(enrichment1.values(), valuesData);
+
+            final var enrichment2 = Enrichment.Read.deserialize(channel, tracker);
+            assertMetadata(enrichment2.metadata, metadata);
+            assertBuffer(enrichment2.entities(), entitiesData);
+            assertBuffer(enrichment2.entityDetails(), detailsData);
+            assertBuffer(enrichment2.entityChanges(), changesData);
+            assertBuffer(enrichment2.values(), valuesData);
+        }
+    }
+
+    private static void assertMetadata(TxMetadata actual, TxMetadata expected) {
+        assertThat(actual.captureMode()).isEqualTo(expected.captureMode());
+        assertThat(actual.serverId()).isEqualTo(expected.serverId());
+        assertThat(actual.subject().executingUser())
+                .isEqualTo(expected.subject().executingUser());
+        assertThat(actual.connectionInfo().protocol())
+                .isEqualTo(expected.connectionInfo().protocol());
+    }
+
+    private static void assertBuffer(ByteBuffer actual, byte[] expected) {
+        final var actualBytes = new byte[expected.length];
+        actual.get(actualBytes);
+        assertThat(actualBytes).isEqualTo(expected);
     }
 
     private static SecurityContext securityContext() {

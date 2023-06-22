@@ -20,7 +20,6 @@
 package org.neo4j.storageengine.api.enrichment;
 
 import java.io.IOException;
-import java.util.Optional;
 import org.neo4j.storageengine.api.StorageCommand;
 
 /**
@@ -32,27 +31,23 @@ public interface EnrichmentCommand extends StorageCommand {
     byte COMMAND_CODE = (byte) 30;
 
     /**
-     * @return the metadata describing the enriched transaction
+     * @return the enrichment data captured during a transaction.
      */
-    TxMetadata metadata();
-
-    /**
-     * @return the enrichment data captured during a transaction. The value is optional as the data could potentially
-     * be large and some scans for the transaction log will not require any of this data. For example, a
-     * Change-Data-Capture processor would require this data whereas a processor to find all the start positions of a
-     * transaction would not.
-     */
-    Optional<Enrichment> enrichment();
+    Enrichment enrichment();
 
     static Enrichment.Read extractForReading(EnrichmentCommand command) throws IOException {
-        return (Enrichment.Read) command.enrichment()
-                .filter(Enrichment.Read.class::isInstance)
-                .orElseThrow(() -> new IOException("The enrichment specified is for writing"));
+        if (command.enrichment() instanceof Enrichment.Read read) {
+            return read;
+        }
+
+        throw new IOException("The enrichment specified is not for reading");
     }
 
     static Enrichment.Write extractForWriting(EnrichmentCommand command) throws IOException {
-        return (Enrichment.Write) command.enrichment()
-                .filter(Enrichment.Write.class::isInstance)
-                .orElseThrow(() -> new IOException("The enrichment specified is for reading"));
+        if (command.enrichment() instanceof Enrichment.Write write) {
+            return write;
+        }
+
+        throw new IOException("The enrichment specified is not for writing");
     }
 }
