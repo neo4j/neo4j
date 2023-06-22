@@ -121,7 +121,7 @@ public class TransactionIdTracker {
                 lastTransactionId = currentTransactionId(db);
                 if (oldestAcceptableTxId <= lastTransactionId) {
                     log.debug(
-                            "Done waiting for bookmark on database '%s' after % (awaited:%s, reached:%s)",
+                            "Done waiting for bookmark on database '%s' after %s (awaited:%s, reached:%s)",
                             namedDatabaseId,
                             waited ? startTime.elapsed() : Duration.ZERO,
                             oldestAcceptableTxId,
