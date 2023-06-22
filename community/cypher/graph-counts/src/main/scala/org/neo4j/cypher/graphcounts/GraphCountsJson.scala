@@ -68,6 +68,20 @@ object GraphCountsJson {
     implicit val formats: Formats = allFormats
     JsonMethods.parse(StringInput(str)).extract[DbStatsRetrieveGraphCountsJSON]
   }
+
+  def parseAsGraphCountDataFromCypherMap(file: File): GraphCountData = {
+    val source = scala.io.Source.fromFile(file.getAbsolutePath)
+    val lines =
+      try source.mkString
+      finally source.close()
+    parseAsGraphCountDataFromCypherMapString(lines)
+  }
+
+  def parseAsGraphCountDataFromCypherMapString(string: String): GraphCountData = {
+    implicit val formats: Formats = allFormats
+    val str = string.replaceAll("(\\w+\\s*):", "\"$1\":")
+    JsonMethods.parse(str).extract[GraphCountData]
+  }
 }
 
 /*
