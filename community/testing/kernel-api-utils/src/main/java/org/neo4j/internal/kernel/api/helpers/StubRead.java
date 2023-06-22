@@ -328,12 +328,12 @@ public class StubRead implements Read {
     }
 
     @Override
-    public Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId) {
+    public Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId) {
+    public Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId) {
         throw new UnsupportedOperationException();
     }
 

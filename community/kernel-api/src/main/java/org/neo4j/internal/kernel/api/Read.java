@@ -585,14 +585,18 @@ public interface Read {
      * Checks if a node was deleted in the current transaction
      * @param node the node to check
      * @return <code>true</code> if the node was deleted otherwise <code>false</code>
+     * @deprecated this method is unsafe to use for mvcc, investigation ongoing to be able to remove it completely
      */
+    @Deprecated
     boolean nodeDeletedInTransaction(long node);
 
     /**
      * Checks if a relationship was deleted in the current transaction
      * @param relationship the relationship to check
      * @return <code>true</code> if the relationship was deleted otherwise <code>false</code>
+     * @deprecated this method is unsafe to use for mvcc, investigation ongoing to be able to remove it completely
      */
+    @Deprecated
     boolean relationshipDeletedInTransaction(long relationship);
 
     /**
@@ -602,7 +606,7 @@ public interface Read {
      * @return <code>null</code> if the property has not been changed for the node in this transaction. Otherwise returns
      *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
      */
-    Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId);
+    Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId);
 
     /**
      * Returns the value of a relationship property if set in this transaction.
@@ -611,7 +615,7 @@ public interface Read {
      * @return <code>null</code> if the property has not been changed for the relationship in this transaction. Otherwise returns
      *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
      */
-    Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId);
+    Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId);
 
     /**
      * @return whether there are changes in the transaction state.

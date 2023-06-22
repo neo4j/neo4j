@@ -578,12 +578,12 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId) {
+        public Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId) {
             return null;
         }
 
         @Override
-        public Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId) {
+        public Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId) {
             return null;
         }
 

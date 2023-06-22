@@ -185,13 +185,13 @@ public abstract class AllStoreHolder extends Read {
     }
 
     @Override
-    public Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId) {
+    public Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId) {
         performCheckBeforeOperation();
         return hasTxStateWithChanges() ? txState().getNodeState(node).propertyValue(propertyKeyId) : null;
     }
 
     @Override
-    public Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId) {
+    public Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId) {
         performCheckBeforeOperation();
         return hasTxStateWithChanges()
                 ? txState().getRelationshipState(relationship).propertyValue(propertyKeyId)

@@ -1190,7 +1190,7 @@ private[internal] class TransactionBoundReadQueryContext(
       )
     }
 
-    ops.nodePropertyChangeInTransactionOrNull(nodeId, propertyKey)
+    ops.nodePropertyChangeInBatchOrNull(nodeId, propertyKey)
   }
 
   override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = {
@@ -1201,7 +1201,7 @@ private[internal] class TransactionBoundReadQueryContext(
       )
     }
 
-    ops.relationshipPropertyChangeInTransactionOrNull(relId, propertyKey)
+    ops.relationshipPropertyChangeInBatchOrNull(relId, propertyKey)
   }
 
   class NodeReadOperations
@@ -1286,7 +1286,7 @@ private[internal] class TransactionBoundReadQueryContext(
         // Node deleted in TxState
         Some(false)
       } else {
-        val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
+        val nodePropertyInTx = reads().nodePropertyChangeInBatchOrNull(nodeId, propertyKeyId)
         nodePropertyInTx match {
           case null        => None // no changes in TxState.
           case IsNoValue() => Some(false) // property removed in TxState
@@ -1439,7 +1439,7 @@ private[internal] class TransactionBoundReadQueryContext(
         // Relationship deleted in TxState
         Some(false)
       } else {
-        val relPropertyInTx = reads().relationshipPropertyChangeInTransactionOrNull(relId, propertyKeyId)
+        val relPropertyInTx = reads().relationshipPropertyChangeInBatchOrNull(relId, propertyKeyId)
         relPropertyInTx match {
           case null        => None // no changes in TxState.
           case IsNoValue() => Some(false) // property removed in TxState
