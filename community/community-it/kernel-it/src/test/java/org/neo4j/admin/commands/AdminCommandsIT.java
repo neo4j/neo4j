@@ -23,10 +23,13 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.dbms.archive.Dumper.DUMP_EXTENSION;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +54,7 @@ import org.neo4j.dbms.archive.Loader;
 import org.neo4j.importer.ImportCommand;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -68,50 +72,60 @@ class AdminCommandsIT {
     @Inject
     private FileSystemAbstraction fs;
 
-    private Path confDir;
-    private PrintStream out;
-    private PrintStream err;
     private ExecutionContext context;
-    private Path home;
     private Path dumpFolder;
 
     @BeforeEach
     void setup() throws Exception {
-        out = mock(PrintStream.class);
-        err = mock(PrintStream.class);
-        confDir = testDirectory.directory("test.conf");
-        home = testDirectory.homePath("home");
+        final var out = mock(PrintStream.class);
+        final var err = mock(PrintStream.class);
+        final var confDir = testDirectory.directory("test.conf");
+        final var home = testDirectory.homePath("home");
         dumpFolder = testDirectory.directory("dumpFolder");
         context = new ExecutionContext(home, confDir, out, err, testDirectory.getFileSystem());
         final var configFile = confDir.resolve("neo4j.conf");
         try (var outputStream = fs.openAsOutputStream(configFile, false);
-                var out = new PrintStream(outputStream)) {
-            out.printf("%s=%s%n", BootloaderSettings.initial_heap_size.name(), "$(expr 500)");
+                var printOut = new PrintStream(outputStream)) {
+            printOut.printf("%s=%s%n", BootloaderSettings.initial_heap_size.name(), "$(expr 500)");
         }
         assertThat(fs).isInstanceOf(DefaultFileSystemAbstraction.class);
         Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE));
     }
 
     @Test
-    void shouldExpandCommands() {
-        assertSuccess(new SetInitialPasswordCommand(context), "--expand-commands", "password");
-        assertSuccess(new SetDefaultAdminCommand(context), "--expand-commands", "admin");
-        assertSuccess(new StoreInfoCommand(context), "--expand-commands", "path");
-        assertSuccess(new CheckCommand(context), "--expand-commands", "neo4j");
-        assertSuccess(new DiagnosticsReportCommand(context), "--expand-commands");
-        assertSuccess(
+    void shouldExpandCommands() throws IOException {
+        final var testDb = "test";
+
+        assertExpansionSuccess(new SetInitialPasswordCommand(context), "--expand-commands", "password");
+        assertExpansionSuccess(new SetDefaultAdminCommand(context), "--expand-commands", "admin");
+        assertExpansionSuccess(new StoreInfoCommand(context), "--expand-commands", "path");
+        assertExpansionSuccess(new CheckCommand(context), "--expand-commands", "neo4j");
+        assertExpansionSuccess(new DiagnosticsReportCommand(context), "--expand-commands");
+
+        // ensure that a dump file exists
+        final var dump = testDirectory.directory("dump");
+        testDirectory.getFileSystem().mkdirs(dump);
+        Files.writeString(
+                dump.resolve(testDb + DUMP_EXTENSION),
+                "ignored",
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE);
+        assertExpansionSuccess(
                 new LoadCommand(context, new Loader(fs)),
                 "--expand-commands",
                 "--from-path=" + testDirectory.directory("dump").toAbsolutePath(),
-                "test");
-        assertSuccess(new MemoryRecommendationsCommand(context), "--expand-commands");
-        assertSuccess(
+                testDb);
+        assertExpansionSuccess(new MemoryRecommendationsCommand(context), "--expand-commands");
+        assertExpansionSuccess(
                 new DumpCommand(context, new Dumper(context.err())),
                 "--expand-commands",
-                "test",
+                testDb,
                 "--to-path",
                 dumpFolder.toString());
-        assertSuccess(new UnbindCommand(context), "--expand-commands");
+
+        // actual create the directory rather than rely on the load command to create it by accident
+        fs.mkdirs(Neo4jLayout.of(testDirectory.homePath()).databasesDirectory());
+        assertExpansionSuccess(new UnbindCommand(context), "--expand-commands");
     }
 
     @Test
@@ -138,7 +152,7 @@ class AdminCommandsIT {
         assertExpansionError(new UnbindCommand(context));
     }
 
-    private void assertSuccess(AbstractCommand command, String... args) {
+    private void assertExpansionSuccess(AbstractCommand command, String... args) {
         new CommandLine(command, new ContextInjectingFactory(context)).execute(args);
     }
 

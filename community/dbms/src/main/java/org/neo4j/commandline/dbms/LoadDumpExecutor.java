@@ -30,9 +30,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.Config;
@@ -95,14 +93,6 @@ public class LoadDumpExecutor {
     private void load(DumpInput dumpInput, DatabaseLayout databaseLayout) {
         try {
             loader.load(databaseLayout, dumpInput.streamSupplier, dumpInput.description);
-        } catch (NoSuchFileException e) {
-            if (dumpInput.file.isPresent()
-                    && Paths.get(e.getMessage())
-                            .toAbsolutePath()
-                            .equals(dumpInput.file.get().toAbsolutePath())) {
-                throw new CommandFailedException("Archive does not exist: " + dumpInput.file.get(), e);
-            }
-            wrapIOException(e);
         } catch (FileAlreadyExistsException e) {
             throw new CommandFailedException("Database already exists: " + databaseLayout.getDatabaseName(), e);
         } catch (AccessDeniedException e) {

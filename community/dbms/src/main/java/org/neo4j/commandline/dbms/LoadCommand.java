@@ -194,6 +194,11 @@ public class LoadCommand extends AbstractAdminCommand {
                 var dumpInputDescription = dbName.dumpPath == null ? "reading from stdin" : dbName.dumpPath.toString();
                 var dumpInputStreamSupplier = getArchiveInputStreamSupplier(dbName.dumpPath);
 
+                if (dbName.dumpPath != null && !ctx.fs().fileExists(dbName.dumpPath.toAbsolutePath())) {
+                    // fail early as loadDumpExecutor.execute will create directories
+                    throw new CommandFailedException("Archive does not exist: " + dbName.dumpPath);
+                }
+
                 loadDumpExecutor.execute(
                         new LoadDumpExecutor.DumpInput(
                                 dumpInputStreamSupplier, Optional.ofNullable(dbName.dumpPath), dumpInputDescription),

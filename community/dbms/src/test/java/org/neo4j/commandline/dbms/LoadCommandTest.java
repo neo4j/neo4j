@@ -36,8 +36,10 @@ import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
@@ -149,6 +151,7 @@ class LoadCommandTest {
 
     @Test
     void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat {
+        createDummyDump("foo", archive);
         doThrow(FileAlreadyExistsException.class).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
@@ -158,6 +161,7 @@ class LoadCommandTest {
 
     @Test
     void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable() throws IOException, IncorrectFormat {
+        createDummyDump("foo", archive);
         doThrow(AccessDeniedException.class).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
@@ -170,6 +174,7 @@ class LoadCommandTest {
     @Test
     void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectFormat {
+        createDummyDump("foo", archive);
         doThrow(new FileSystemException("the-message")).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
@@ -181,6 +186,7 @@ class LoadCommandTest {
 
     @Test
     void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectFormat {
+        createDummyDump("foo", archive);
         doThrow(IncorrectFormat.class).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
@@ -210,7 +216,8 @@ class LoadCommandTest {
     }
 
     @Test
-    void shouldPrintWarningIfLoadingSystemDatabase() {
+    void shouldPrintWarningIfLoadingSystemDatabase() throws IOException {
+        createDummyDump(SYSTEM_DATABASE_NAME, archive);
         execute(SYSTEM_DATABASE_NAME, archive);
 
         assertThat(LoadCommand.SYSTEM_ERR_MESSAGE).isEqualToIgnoringNewLines(output.toString());
@@ -227,5 +234,13 @@ class LoadCommandTest {
         PrintStream err = new PrintStream(output);
         FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
         return new LoadCommand(new ExecutionContext(homeDir, configDir, out, err, fileSystem), loader);
+    }
+
+    private static void createDummyDump(String databaseName, Path destinationPath) throws IOException {
+        Files.writeString(
+                destinationPath.resolve(databaseName + ".dump"),
+                "ignored",
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE);
     }
 }
