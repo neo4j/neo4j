@@ -19,32 +19,23 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import java.util.Set;
 import org.neo4j.graphdb.schema.PropertyType;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueRepresentation;
 
 /**
  * Note: ordering and name (user description) is defined by CIP-100.
  */
 public enum SchemaValueType implements TypeRepresentation {
-    BOOLEAN("BOOLEAN", Ordering.BOOLEAN_ORDER, ValueRepresentation.BOOLEAN),
-    STRING("STRING", Ordering.STRING_ORDER, ValueRepresentation.UTF8_TEXT, ValueRepresentation.UTF16_TEXT),
-    INTEGER(
-            "INTEGER",
-            Ordering.INTEGER_ORDER,
-            ValueRepresentation.INT64,
-            ValueRepresentation.INT32,
-            ValueRepresentation.INT16,
-            ValueRepresentation.INT8),
-    FLOAT("FLOAT", Ordering.FLOAT_ORDER, ValueRepresentation.FLOAT64, ValueRepresentation.FLOAT32),
-    DATE("DATE", Ordering.DATE_ORDER, ValueRepresentation.DATE),
-    LOCAL_TIME("LOCAL TIME", Ordering.LOCAL_TIME_ORDER, ValueRepresentation.LOCAL_TIME),
-    ZONED_TIME("ZONED TIME", Ordering.ZONED_TIME_ORDER, ValueRepresentation.ZONED_TIME),
-    LOCAL_DATETIME("LOCAL DATETIME", Ordering.LOCAL_DATETIME_ORDER, ValueRepresentation.LOCAL_DATE_TIME),
-    ZONED_DATETIME("ZONED DATETIME", Ordering.ZONED_DATETIME_ORDER, ValueRepresentation.ZONED_DATE_TIME),
-    DURATION("DURATION", Ordering.DURATION_ORDER, ValueRepresentation.DURATION),
-    POINT("POINT", Ordering.POINT_ORDER, ValueRepresentation.GEOMETRY);
+    BOOLEAN("BOOLEAN", Ordering.BOOLEAN_ORDER),
+    STRING("STRING", Ordering.STRING_ORDER),
+    INTEGER("INTEGER", Ordering.INTEGER_ORDER),
+    FLOAT("FLOAT", Ordering.FLOAT_ORDER),
+    DATE("DATE", Ordering.DATE_ORDER),
+    LOCAL_TIME("LOCAL TIME", Ordering.LOCAL_TIME_ORDER),
+    ZONED_TIME("ZONED TIME", Ordering.ZONED_TIME_ORDER),
+    LOCAL_DATETIME("LOCAL DATETIME", Ordering.LOCAL_DATETIME_ORDER),
+    ZONED_DATETIME("ZONED DATETIME", Ordering.ZONED_DATETIME_ORDER),
+    DURATION("DURATION", Ordering.DURATION_ORDER),
+    POINT("POINT", Ordering.POINT_ORDER);
 
     // Future list types
     // LIST_BOOLEAN("LIST<BOOLEAN>", ValueRepresentation.BOOLEAN_ARRAY),
@@ -65,21 +56,11 @@ public enum SchemaValueType implements TypeRepresentation {
     // LIST_POINT("LIST<POINT>", ValueRepresentation.GEOMETRY_ARRAY);
 
     private final String userDescription;
-    private final Set<ValueRepresentation> valueRepresentations;
     private final Ordering order;
 
-    SchemaValueType(String userDescription, Ordering order, ValueRepresentation... valueRepresentations) {
+    SchemaValueType(String userDescription, Ordering order) {
         this.userDescription = userDescription;
         this.order = order;
-        this.valueRepresentations = Set.of(valueRepresentations);
-    }
-
-    public boolean isAssignable(Value value) {
-        return valueRepresentations.contains(value.valueRepresentation());
-    }
-
-    public boolean isAssignable(ValueRepresentation valueRepresentation) {
-        return valueRepresentations.contains(valueRepresentation);
     }
 
     public String userDescription() {
