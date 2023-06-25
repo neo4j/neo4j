@@ -29,7 +29,7 @@ import org.neo4j.graphdb.spatial.Geometry;
 /**
  * Single instance of one of the storable primitives.
  */
-abstract class ScalarValue extends Value {
+public abstract class ScalarValue extends Value {
     @Override
     public final boolean equals(byte[] x) {
         return false;

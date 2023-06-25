@@ -26,12 +26,10 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Stream;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueRepresentation;
 
 /**
  * An ordered set of {@link SchemaValueType}s, used to represent unions of types.
- * The order is defined in CIP-100 and implemented in terms of the natural ordering of {@link SchemaValueType}.
+ * The order is defined in CIP-100 and implemented in terms of the natural ordering of {@link TypeRepresentation.Ordering}.
  */
 public class PropertyTypeSet implements Iterable<SchemaValueType> {
 
@@ -67,16 +65,6 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
         return joiner.toString();
     }
 
-    public boolean valueIsOfTypes(Value value) {
-        final ValueRepresentation valueRepresentation = value.valueRepresentation();
-        for (SchemaValueType valueType : set) {
-            if (valueType.isAssignable(valueRepresentation)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
     public int hashCode() {
         // Use the types' serialization as basis for hash code to make it stable in the face of changing type ordering
@@ -103,11 +91,15 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
     }
 
     public boolean contains(TypeRepresentation type) {
-        return set.contains(type);
+        if (type instanceof SchemaValueType constrainable) {
+            return set.contains(constrainable);
+        }
+        // We won't allow unions with non-constrainable types
+        return false;
     }
 
     public PropertyTypeSet union(PropertyTypeSet other) {
-        return of(Stream.concat(set.stream(), other.stream()).toList());
+        return of(Stream.concat(set.stream(), other.set.stream()).toList());
     }
 
     public PropertyTypeSet intersection(PropertyTypeSet other) {

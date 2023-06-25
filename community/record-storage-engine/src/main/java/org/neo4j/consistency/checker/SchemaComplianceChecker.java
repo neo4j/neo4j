@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.TypeRepresentation;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
@@ -234,7 +235,7 @@ class SchemaComplianceChecker implements AutoCloseable {
             var allowedTypes = property.getTwo();
             var propertyValue = seenProperties.get(propertyKey);
             if (propertyValue != null
-                    && !allowedTypes.valueIsOfTypes(propertyValue)
+                    && TypeRepresentation.disallows(allowedTypes, propertyValue)
                     && reportedTypeViolationPropertyKeys.add(propertyKey)) {
                 reporter.apply(entity).typeConstraintViolation(propertyKey);
             }
