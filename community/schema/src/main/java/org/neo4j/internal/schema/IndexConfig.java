@@ -22,7 +22,9 @@ package org.neo4j.internal.schema;
 import static java.util.Collections.unmodifiableMap;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.api.tuple.Pair;
@@ -91,6 +93,19 @@ public final class IndexConfig {
     public <T extends Value> T getOrDefault(String key, T defaultValue) {
         T value = get(key);
         return value != null ? value : defaultValue;
+    }
+
+    public <T extends Value> T getOrThrow(String key) {
+        return getOrThrow(key, () -> new NoSuchElementException("'%s' is not set".formatted(key)));
+    }
+
+    public <T extends Value, E extends Throwable> T getOrThrow(String key, Supplier<? extends E> exceptionSupplier)
+            throws E {
+        T value = get(key);
+        if (value == null) {
+            throw exceptionSupplier.get();
+        }
+        return value;
     }
 
     public RichIterable<Pair<String, Value>> entries() {
