@@ -49,6 +49,11 @@ public final class DoubleArray extends FloatingPointArray {
     }
 
     @Override
+    public float floatValue(int index) {
+        return (float) value[index];
+    }
+
+    @Override
     public double doubleValue(int index) {
         return value[index];
     }
