@@ -325,23 +325,8 @@ private class DefaultExpressionStringifier(
         }
 
       case AndsReorderable(expressions) =>
-        type ChainOp = Expression with ChainableBinaryOperatorExpression
-
-        def findChain: Option[List[ChainOp]] = {
-          val chainable = expressions.collect { case e: ChainableBinaryOperatorExpression => e }
-          def allChainable = chainable.size == expressions.size
-          def formsChain = chainable.sliding(2).forall(p => p.head.rhs == p.last.lhs)
-          if (allChainable && formsChain) Some(chainable.toList) else None
-        }
-
-        findChain match {
-          case Some(chain) =>
-            val head = apply(chain.head)
-            val tail = chain.tail.flatMap(o => List(o.canonicalOperatorSymbol, inner(ast)(o.rhs)))
-            (head :: tail).mkString(" ")
-          case None =>
-            expressions.map(x => inner(ast)(x)).mkString("  [[ ", " ~AND~ ", " ]]  ")
-        }
+        val ands = Ands(expressions)(InputPosition.NONE)
+        s"(${apply(ands)})"
 
       case AndedPropertyInequalities(_, _, exprs) =>
         exprs.map(apply).toIndexedSeq.mkString(" AND ")
