@@ -30,8 +30,10 @@ import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.fabric.executor.TaggingPlanDescriptionWrapper;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -153,7 +155,7 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         openExecutionContexts.forEach(TransactionalContext::close);
     }
 
-    private static class TransactionalContextQueryExecution extends DelegatingQueryExecution {
+    private class TransactionalContextQueryExecution extends DelegatingQueryExecution {
 
         private final TransactionalContext transactionalContext;
 
@@ -166,6 +168,11 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         public void cancel() {
             super.cancel();
             transactionalContext.close();
+        }
+
+        @Override
+        public ExecutionPlanDescription executionPlanDescription() {
+            return new TaggingPlanDescriptionWrapper(super.executionPlanDescription(), location.getDatabaseName());
         }
     }
 }

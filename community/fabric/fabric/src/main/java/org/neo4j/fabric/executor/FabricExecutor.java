@@ -470,10 +470,8 @@ public class FabricExecutor {
             Flux<Record> recordsWithCompletionDelegation =
                     new CompletionDelegatingOperator(records, fabricWorkerExecutor);
             Flux<Record> prefetchedRecords = prefetcher.addPrefetch(recordsWithCompletionDelegation);
-            Mono<ExecutionPlanDescription> planDescription = statementResult
-                    .flatMap(StatementResult::summary)
-                    .map(Summary::executionPlanDescription)
-                    .map(remotePlanDescription -> new RemoteExecutionPlanDescription(remotePlanDescription, location));
+            Mono<ExecutionPlanDescription> planDescription =
+                    statementResult.flatMap(StatementResult::summary).map(Summary::executionPlanDescription);
 
             // TODO: We currently need to override here since we can't get it from remote properly
             // but our result here is not as accurate as what the remote might report.
