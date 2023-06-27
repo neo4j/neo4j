@@ -47,6 +47,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.exceptions.InvalidSemanticsException;
+import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bootstrap.CommonQueryRouterBoostrap;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.ErrorReporter;
@@ -152,6 +153,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         DefaultDatabaseReferenceResolver databaseReferenceResolver =
                 new DefaultDatabaseReferenceResolver(databaseReferenceRepo);
 
+        var transactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
         return new QueryRouterBoltSpi.DatabaseManagementService(
                 new QueryRouterImpl(
                         config,
@@ -159,10 +161,11 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                         this::createLocationService,
                         new StandardQueryTargetParser(
                                 targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}),
-                        new LocalDatabaseTransactionFactory(databaseProvider),
+                        new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
                         createRemoteDatabaseTransactionFactory(),
                         new ErrorReporter(this.logService),
-                        resolve(SystemNanoClock.class)),
+                        resolve(SystemNanoClock.class),
+                        transactionIdTracker),
                 databaseReferenceResolver,
                 getCompositeDatabaseStack());
     }

@@ -25,6 +25,7 @@ package org.neo4j.router.impl;
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.bookmark.BookmarkFormat;
+import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManagerImpl;
 import org.neo4j.fabric.executor.Location;
@@ -58,6 +59,7 @@ public class QueryRouterImpl implements QueryRouter {
     private final DatabaseReferenceResolver databaseReferenceResolver;
     private final ErrorReporter errorReporter;
     private final SystemNanoClock systemNanoClock;
+    private final LocalGraphTransactionIdTracker transactionIdTracker;
 
     public QueryRouterImpl(
             Config config,
@@ -67,7 +69,8 @@ public class QueryRouterImpl implements QueryRouter {
             DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory,
             DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory,
             ErrorReporter errorReporter,
-            SystemNanoClock systemNanoClock) {
+            SystemNanoClock systemNanoClock,
+            LocalGraphTransactionIdTracker transactionIdTracker) {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
@@ -76,12 +79,18 @@ public class QueryRouterImpl implements QueryRouter {
         this.remoteDatabaseTransactionFactory = remoteDatabaseTransactionFactory;
         this.errorReporter = errorReporter;
         this.systemNanoClock = systemNanoClock;
+        this.transactionIdTracker = transactionIdTracker;
     }
 
     @Override
     public RouterTransactionContext beginTransaction(TransactionInfo incomingTransactionInfo) {
         var transactionBookmarkManager =
                 new TransactionBookmarkManagerImpl(BookmarkFormat.parse(incomingTransactionInfo.bookmarks()));
+        // regardless of what we do, System graph must be always up to date
+        transactionBookmarkManager
+                .getBookmarkForLocalSystemDatabase()
+                .ifPresent(
+                        localBookmark -> transactionIdTracker.awaitSystemGraphUpToDate(localBookmark.transactionId()));
         var transactionInfo = incomingTransactionInfo.withDefaults(config);
         var sessionDatabaseReference = resolveSessionDatabaseReference(transactionInfo);
         var routingInfo = new RoutingInfo(

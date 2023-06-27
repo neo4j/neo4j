@@ -41,9 +41,12 @@ import org.neo4j.router.transaction.TransactionInfo;
 
 public class LocalDatabaseTransactionFactory implements DatabaseTransactionFactory<Location.Local> {
     private final DatabaseContextProvider<?> databaseContextProvider;
+    private final LocalGraphTransactionIdTracker transactionIdTracker;
 
-    public LocalDatabaseTransactionFactory(DatabaseContextProvider<?> databaseContextProvider) {
+    public LocalDatabaseTransactionFactory(
+            DatabaseContextProvider<?> databaseContextProvider, LocalGraphTransactionIdTracker transactionIdTracker) {
         this.databaseContextProvider = databaseContextProvider;
+        this.transactionIdTracker = transactionIdTracker;
     }
 
     @Override
@@ -55,8 +58,6 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
 
         var databaseApi = databaseContext.databaseFacade();
         var resolver = databaseContext.dependencies();
-        var transactionIdTracker =
-                databaseContext.dependencies().resolveDependency(LocalGraphTransactionIdTracker.class);
 
         var queryExecutionEngine = resolver.resolveDependency(QueryExecutionEngine.class);
 
