@@ -207,7 +207,9 @@ public class StatementImpl implements Statement {
 
             // if the query has no side effects, and we wish to discard all remaining results, we'll
             // simply terminate it
-            if (n == -1 && query.executionType().queryType() == QueryType.READ_ONLY) {
+            if (n == -1
+                    && query.executionMetadataAvailable()
+                    && query.executionType().queryType() == QueryType.READ_ONLY) {
                 responseHandler.onBeginStreaming(this.fieldNames);
 
                 try {

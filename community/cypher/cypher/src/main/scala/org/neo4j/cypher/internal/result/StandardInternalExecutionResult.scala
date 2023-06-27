@@ -122,6 +122,10 @@ class StandardInternalExecutionResult(
 
   override def fieldNames(): Array[String] = runtimeResult.fieldNames()
 
+  override def executionMetadataAvailable(): Boolean = {
+    executionMode != ProfileMode || runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
+  }
+
   override lazy val executionPlanDescription: InternalPlanDescription = {
 
     if (executionMode == ProfileMode) {

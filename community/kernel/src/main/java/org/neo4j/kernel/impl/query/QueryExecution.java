@@ -28,6 +28,17 @@ import org.neo4j.graphdb.QueryExecutionType;
  * query.
  */
 public interface QueryExecution extends QuerySubscription {
+
+    /**
+     * Generally, execution type, plan and notifications are guaranteed to be available
+     * only at the end of query execution when the result stream has been fully consumed.
+     * They might be available sooner for which case this method should be used to check the availability.
+     * Trying to get the metadata when they are not available will raise an exception.
+     * Field names are available always.
+     */
+    default boolean executionMetadataAvailable() {
+        return true;
+    }
     /**
      * The {@link QueryExecutionType} of the query,
      */

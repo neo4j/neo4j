@@ -35,6 +35,11 @@ public class DelegatingQueryExecution implements QueryExecution {
     }
 
     @Override
+    public boolean executionMetadataAvailable() {
+        return queryExecution.executionMetadataAvailable();
+    }
+
+    @Override
     public QueryExecutionType executionType() {
         return queryExecution.executionType();
     }
