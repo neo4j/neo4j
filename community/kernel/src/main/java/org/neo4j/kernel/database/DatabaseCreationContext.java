@@ -150,10 +150,7 @@ public interface DatabaseCreationContext {
 
     static StorageEngineFactory selectStorageEngine(
             FileSystemAbstraction fs, Neo4jLayout neo4jLayout, Configuration config, NamedDatabaseId namedDatabaseId) {
-        return StorageEngineFactory.selectStorageEngine(
-                fs,
-                neo4jLayout.databaseLayout(namedDatabaseId.name()),
-                namedDatabaseId.isSystemDatabase() ? null : config);
+        return StorageEngineFactory.selectStorageEngine(fs, neo4jLayout.databaseLayout(namedDatabaseId.name()), config);
     }
 
     VersionStorageFactory getVersionStorageFactory();

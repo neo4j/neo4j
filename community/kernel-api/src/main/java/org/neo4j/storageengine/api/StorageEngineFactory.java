@@ -501,10 +501,13 @@ public interface StorageEngineFactory {
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, Configuration configuration) {
         // - Does a store exist at this location? -> get the one able to open it
         // - Is there a specific name of a store format to look for? -> get the storage engine that recognizes it
+        // (except for system that should use default)
         // - Use the default one
         return selectStorageEngine(fs, databaseLayout)
-                .orElseGet(() ->
-                        configuration != null ? findEngineForFormatOrThrow(configuration) : defaultStorageEngine());
+                .orElseGet(() -> configuration == null
+                                || GraphDatabaseSettings.SYSTEM_DATABASE_NAME.equals(databaseLayout.getDatabaseName())
+                        ? defaultStorageEngine()
+                        : findEngineForFormatOrThrow(configuration));
     }
 
     /**

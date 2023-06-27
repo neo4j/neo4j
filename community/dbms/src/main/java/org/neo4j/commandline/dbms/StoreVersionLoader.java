@@ -84,8 +84,7 @@ public class StoreVersionLoader implements AutoCloseable {
      * @return the {@link Result} of the store version if the format can be read.
      */
     public Result loadStoreVersionAndCheckDowngrade(DatabaseLayout layout) {
-        StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine(fs, layout)
-                .orElseGet(() -> StorageEngineFactory.selectStorageEngine(config));
+        StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine(fs, layout, config);
         StoreVersionCheck versionCheck =
                 sef.versionCheck(fs, layout, config, pageCache, NullLogService.getInstance(), contextFactory);
         try (CursorContext cursorContext = contextFactory.create("Store version loader")) {
