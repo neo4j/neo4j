@@ -56,6 +56,7 @@ import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -65,6 +66,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.IntValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values
@@ -1449,6 +1451,73 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val expectedRow = Array[Any](false)
     result should beColumns("committed")
       .withRows(inOrder(Range(0, relCount).map(_ => expectedRow)))
+  }
+
+  test("transaction apply with index seeks that are not used in all batches") {
+    val nodes = given {
+      nodeIndex("N")(_.withIndexType(IndexType.FULLTEXT).on("fullText").withName("fullTextIndex"))
+      nodeIndex(IndexType.TEXT, "N", "text")
+      nodeIndex(IndexType.POINT, "N", "point")
+      nodeIndex(IndexType.RANGE, "N", "range")
+      nodeIndex(IndexType.RANGE, "N", "compositeA", "compositeB")
+      nodeIndex(IndexType.FULLTEXT, "N", "fullTextAndRange")
+      nodeIndex(IndexType.RANGE, "N", "fullTextAndRange")
+
+      nodePropertyGraph(
+        nNodes = 1,
+        properties = { case _ =>
+          Map(
+            "fullText" -> "value",
+            "text" -> "value",
+            "point" -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1.0, 2.0),
+            "range" -> 1,
+            "compositeA" -> 1,
+            "compositeB" -> 2,
+            "fullTextAndRange" -> "value"
+          )
+        },
+        labels = "N"
+      )
+    }
+
+    val rowIn = Range.inclusive(0, 99).filter(_ => random.nextDouble() < 0.25)
+    val batchSize = random.nextInt(20) + 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i", "n1", "n2", "n3", "n4", "n5")
+      .transactionApply(batchSize)
+      .|.apply()
+      .|.|.procedureCall("db.index.fulltext.queryNodes('fullTextIndex', 'value') YIELD node AS n5")
+      .|.|.argument()
+      .|.apply()
+      .|.|.nodeIndexOperator("n4:N(text = 'value')", indexType = IndexType.TEXT)
+      .|.apply()
+      .|.|.nodeIndexOperator("n3:N(point = ???)", paramExpr = Some(point(1.0, 2.0)), indexType = IndexType.POINT)
+      .|.apply()
+      .|.|.nodeIndexOperator("n2:N(range = 1)", indexType = IndexType.RANGE)
+      .|.apply()
+      .|.|.nodeIndexOperator("n1:N(compositeA = 1, compositeB = 2)", indexType = IndexType.RANGE)
+      .|.filter(s"i IN ${rowIn.mkString("[", ",", "]")}")
+      .|.argument()
+      .unwind("range(0, 99) AS i")
+      .projection(
+        "'value' AS fullText",
+        "'value' AS text",
+        "point({x:1.0, y:2.0}) AS point",
+        "1 AS range",
+        "1 AS compositeA",
+        "2 AS compositeB",
+        "'value' AS all"
+      )
+      .argument()
+      .build(readOnly = false)
+
+    val expected = rowIn.flatMap(i => nodes.map(n => Array[Any](i, n, n, n, n, n)))
+    withClue(s"batchSize=$batchSize, rowIn=${rowIn.mkString("[", ",", "]")}\n") {
+      execute(buildPlan(logicalQuery, runtime), readOnly = false) should beColumns("i", "n1", "n2", "n3", "n4", "n5")
+        .withRows(inOrder(expected))
+    }
   }
 
   private def executeAndConsume(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]) = {

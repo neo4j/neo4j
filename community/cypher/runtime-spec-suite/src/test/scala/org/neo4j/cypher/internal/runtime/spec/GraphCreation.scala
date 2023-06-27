@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.ConstraintCreator
+import org.neo4j.graphdb.schema.IndexCreator
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 
@@ -680,11 +681,15 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeIndex(indexType: IndexType, label: String, properties: String*): Unit = {
+    nodeIndex(label) { creator =>
+      properties.foldLeft(creator.withIndexType(indexType)) { case (newCreator, prop) => newCreator.on(prop) }
+    }
+  }
+
+  def nodeIndex(label: String)(f: IndexCreator => IndexCreator): Unit = {
     runtimeTestSupport.restartTx()
     try {
-      var creator = runtimeTestSupport.tx.schema().indexFor(Label.label(label)).withIndexType(indexType)
-      properties.foreach(p => creator = creator.on(p))
-      creator.create()
+      f(runtimeTestSupport.tx.schema().indexFor(Label.label(label))).create()
     } finally {
       runtimeTestSupport.restartTx()
     }
