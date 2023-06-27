@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.storageengine.api.StorageEngineFactory
+import org.neo4j.storageengine.api.StorageEngineFactory.allAvailableStorageEngines
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
@@ -270,9 +271,12 @@ object StoreFormatOption extends StringOptionValidator {
       ))
     } catch {
       case _: Exception =>
+        val allFormats = allAvailableStorageEngines().asScala
+          .flatMap(sef => sef.supportedFormats(false).asScala.toSeq.sorted)
+          .toSeq.distinct
+          .mkString("'", "', '", "'")
         throw new InvalidArgumentsException(
-          s"Could not $operation with specified $KEY '$value'. Unknown format, supported formats are "
-            + "'aligned', 'standard' or 'high_limit'"
+          s"Could not $operation with specified $KEY '$value'. Unknown format, supported formats are " + allFormats
         )
     }
   }
