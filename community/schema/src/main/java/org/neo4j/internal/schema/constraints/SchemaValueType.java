@@ -35,25 +35,19 @@ public enum SchemaValueType implements TypeRepresentation {
     LOCAL_DATETIME("LOCAL DATETIME", Ordering.LOCAL_DATETIME_ORDER),
     ZONED_DATETIME("ZONED DATETIME", Ordering.ZONED_DATETIME_ORDER),
     DURATION("DURATION", Ordering.DURATION_ORDER),
-    POINT("POINT", Ordering.POINT_ORDER);
+    POINT("POINT", Ordering.POINT_ORDER),
 
-    // Future list types
-    // LIST_BOOLEAN("LIST<BOOLEAN>", ValueRepresentation.BOOLEAN_ARRAY),
-    // LIST_STRING("LIST<STRING>", ValueRepresentation.TEXT_ARRAY),
-    // LIST_INTEGER(
-    //         "LIST<INTEGER>",
-    //         ValueRepresentation.INT64_ARRAY,
-    //         ValueRepresentation.INT32_ARRAY,
-    //         ValueRepresentation.INT16_ARRAY,
-    //         ValueRepresentation.INT8_ARRAY),
-    // LIST_FLOAT("LIST<FLOAT>", ValueRepresentation.FLOAT64_ARRAY, ValueRepresentation.FLOAT32_ARRAY),
-    // LIST_DATE("LIST<DATE>", ValueRepresentation.DATE_ARRAY),
-    // LIST_LOCAL_TIME("LIST<LOCAL TIME>", ValueRepresentation.LOCAL_TIME_ARRAY),
-    // LIST_ZONED_TIME("LIST<ZONED TIME>", ValueRepresentation.ZONED_TIME_ARRAY),
-    // LIST_LOCAL_DATETIME("LIST<LOCAL DATETIME>", ValueRepresentation.LOCAL_DATE_TIME_ARRAY),
-    // LIST_ZONED_DATETIME("LIST<ZONED DATETIME>", ValueRepresentation.ZONED_DATE_TIME_ARRAY),
-    // LIST_DURATION("LIST<DURATION>", ValueRepresentation.DURATION_ARRAY),
-    // LIST_POINT("LIST<POINT>", ValueRepresentation.GEOMETRY_ARRAY);
+    LIST_BOOLEAN("LIST<BOOLEAN NOT NULL>", Ordering.LIST_BOOLEAN_ORDER),
+    LIST_STRING("LIST<STRING NOT NULL>", Ordering.LIST_STRING_ORDER),
+    LIST_INTEGER("LIST<INTEGER NOT NULL>", Ordering.LIST_INTEGER_ORDER),
+    LIST_FLOAT("LIST<FLOAT NOT NULL>", Ordering.LIST_FLOAT_ORDER),
+    LIST_DATE("LIST<DATE NOT NULL>", Ordering.LIST_DATE_ORDER),
+    LIST_LOCAL_TIME("LIST<LOCAL TIME NOT NULL>", Ordering.LIST_LOCAL_TIME_ORDER),
+    LIST_ZONED_TIME("LIST<ZONED TIME NOT NULL>", Ordering.LIST_ZONED_TIME_ORDER),
+    LIST_LOCAL_DATETIME("LIST<LOCAL DATETIME NOT NULL>", Ordering.LIST_LOCAL_DATETIME_ORDER),
+    LIST_ZONED_DATETIME("LIST<ZONED DATETIME NOT NULL>", Ordering.LIST_ZONED_DATETIME_ORDER),
+    LIST_DURATION("LIST<DURATION NOT NULL>", Ordering.LIST_DURATION_ORDER),
+    LIST_POINT("LIST<POINT NOT NULL>", Ordering.LIST_POINT_ORDER);
 
     private final String userDescription;
     private final Ordering order;

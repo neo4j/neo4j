@@ -39,10 +39,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -86,9 +88,32 @@ class TypeRepresentationTest {
                 // Geometry
                 Arguments.of(Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 2), SchemaValueType.POINT),
 
+                // List of booleans
+                Arguments.of(Values.of(new boolean[] {true, false}), SchemaValueType.LIST_BOOLEAN),
+
+                // List of strings
+                Arguments.of(Values.of(new char[] {'a', 'b', 'c'}), SchemaValueType.LIST_STRING),
+                Arguments.of(Values.of(new String[] {"hello", "world"}), SchemaValueType.LIST_STRING),
+
+                // List of numericals
+                Arguments.of(Values.byteArray(new byte[] {1, 2, 3}), SchemaValueType.LIST_INTEGER),
+                Arguments.of(Values.of(new short[] {1, 2, 3}), SchemaValueType.LIST_INTEGER),
+                Arguments.of(Values.of(new int[] {1, 2, 3}), SchemaValueType.LIST_INTEGER),
+                Arguments.of(Values.of(new long[] {1, 2, 3}), SchemaValueType.LIST_INTEGER),
+                Arguments.of(Values.of(new float[] {1f, 2f}), SchemaValueType.LIST_FLOAT),
+                Arguments.of(Values.of(new double[] {1f, 2f}), SchemaValueType.LIST_FLOAT),
+
+                // List of dates and times
+                Arguments.of(Values.of(new ZonedDateTime[] {ZonedDateTime.now()}), SchemaValueType.LIST_ZONED_DATETIME),
+                Arguments.of(Values.of(new LocalDateTime[] {LocalDateTime.now()}), SchemaValueType.LIST_LOCAL_DATETIME),
+                Arguments.of(Values.of(new LocalTime[] {LocalTime.now()}), SchemaValueType.LIST_LOCAL_TIME),
+                Arguments.of(Values.of(new OffsetTime[] {OffsetTime.now()}), SchemaValueType.LIST_ZONED_TIME),
+                Arguments.of(Values.of(new LocalDate[] {LocalDate.now()}), SchemaValueType.LIST_DATE),
+                Arguments.of(Values.of(new Duration[] {Duration.ofSeconds(10)}), SchemaValueType.LIST_DURATION),
+                Arguments.of(Values.pointArray(new Point[] {PointValue.MAX_VALUE}), SchemaValueType.LIST_POINT),
+
                 // Special cases
                 Arguments.of(Values.byteArray(new byte[] {}), SpecialTypes.LIST_NOTHING),
-                Arguments.of(Values.byteArray(new byte[] {1, 2, 3}), SpecialTypes.LIST_ANY),
                 Arguments.of(Values.NO_VALUE, SpecialTypes.NULL),
                 Arguments.of(null, SpecialTypes.NULL));
     }
@@ -112,13 +137,26 @@ class TypeRepresentationTest {
     private static Stream<Arguments> illegalCombinations() {
         return Stream.of(
                 Arguments.of(PropertyTypeSet.of(SchemaValueType.STRING), Values.of(1l)),
-                Arguments.of(PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.FLOAT), Values.of("hello")));
+                // Note: These are actually an illegal closed dynamic unions, but the implementation of PropertyTypeSet
+                // becomes easier if we allow it. We will provide a shim above PropertyTypeSet that handles these
+                // issues.
+                Arguments.of(
+                        PropertyTypeSet.of(SchemaValueType.LIST_BOOLEAN, SchemaValueType.LIST_INTEGER),
+                        Values.of("hello")),
+                Arguments.of(
+                        PropertyTypeSet.of(SchemaValueType.LIST_BOOLEAN, SchemaValueType.LIST_INTEGER),
+                        Values.of(new float[] {1.0f})),
+                Arguments.of(
+                        PropertyTypeSet.of(SchemaValueType.LIST_BOOLEAN, SchemaValueType.FLOAT), Values.of("hello")));
     }
 
     private static Stream<Arguments> legalCombinations() {
         return Stream.of(
                 Arguments.of(PropertyTypeSet.of(SchemaValueType.STRING), Values.of("Hello")),
                 Arguments.of(PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.FLOAT), Values.of(1.0f)),
+                Arguments.of(PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.FLOAT), Values.NO_VALUE),
+                Arguments.of(PropertyTypeSet.of(SchemaValueType.LIST_INTEGER), Values.of(new short[] {1})),
+                Arguments.of(PropertyTypeSet.of(SchemaValueType.LIST_INTEGER), Values.of(new short[] {})),
                 Arguments.of(PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.FLOAT), Values.NO_VALUE));
     }
 
@@ -160,6 +198,17 @@ class TypeRepresentationTest {
             "DURATION",
             "POINT",
             "LIST<NOTHING>",
+            "LIST<BOOLEAN NOT NULL>",
+            "LIST<STRING NOT NULL>",
+            "LIST<INTEGER NOT NULL>",
+            "LIST<FLOAT NOT NULL>",
+            "LIST<DATE NOT NULL>",
+            "LIST<LOCAL TIME NOT NULL>",
+            "LIST<ZONED TIME NOT NULL>",
+            "LIST<LOCAL DATETIME NOT NULL>",
+            "LIST<ZONED DATETIME NOT NULL>",
+            "LIST<DURATION NOT NULL>",
+            "LIST<POINT NOT NULL>",
             "LIST<ANY>",
             "ANY",
         };

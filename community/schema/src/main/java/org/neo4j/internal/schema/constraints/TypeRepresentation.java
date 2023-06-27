@@ -20,18 +20,30 @@
 package org.neo4j.internal.schema.constraints;
 
 import java.util.Objects;
+import java.util.Set;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BooleanArray;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.DateArray;
+import org.neo4j.values.storable.DateTimeArray;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationArray;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.FloatingPointValue;
+import org.neo4j.values.storable.IntegralArray;
 import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.LocalDateTimeArray;
 import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeArray;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ScalarValue;
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeArray;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -56,9 +68,34 @@ public sealed interface TypeRepresentation permits SchemaValueType, SpecialTypes
         DURATION_ORDER,
         POINT_ORDER,
         LIST_NOTHING_ORDER,
+        LIST_BOOLEAN_ORDER,
+        LIST_STRING_ORDER,
+        LIST_INTEGER_ORDER,
+        LIST_FLOAT_ORDER,
+        LIST_DATE_ORDER,
+        LIST_LOCAL_TIME_ORDER,
+        LIST_ZONED_TIME_ORDER,
+        LIST_LOCAL_DATETIME_ORDER,
+        LIST_ZONED_DATETIME_ORDER,
+        LIST_DURATION_ORDER,
+        LIST_POINT_ORDER,
+
         LIST_ANY_ORDER,
         ANY_ORDER;
     }
+
+    Set<SchemaValueType> CONSTRAINABLE_LIST_TYPES = Set.of(
+            SchemaValueType.LIST_BOOLEAN,
+            SchemaValueType.LIST_STRING,
+            SchemaValueType.LIST_INTEGER,
+            SchemaValueType.LIST_FLOAT,
+            SchemaValueType.LIST_DATE,
+            SchemaValueType.LIST_ZONED_TIME,
+            SchemaValueType.LIST_LOCAL_TIME,
+            SchemaValueType.LIST_LOCAL_DATETIME,
+            SchemaValueType.LIST_ZONED_DATETIME,
+            SchemaValueType.LIST_DURATION,
+            SchemaValueType.LIST_POINT);
 
     static int compare(TypeRepresentation t1, TypeRepresentation t2) {
         return t1.order().compareTo(t2.order());
@@ -101,6 +138,28 @@ public sealed interface TypeRepresentation permits SchemaValueType, SpecialTypes
         } else if (value instanceof ArrayValue array) {
             if (array.isEmpty()) {
                 return SpecialTypes.LIST_NOTHING;
+            } else if (value instanceof BooleanArray) {
+                return SchemaValueType.LIST_BOOLEAN;
+            } else if (value instanceof TextArray) {
+                return SchemaValueType.LIST_STRING;
+            } else if (value instanceof IntegralArray) {
+                return SchemaValueType.LIST_INTEGER;
+            } else if (value instanceof FloatingPointArray) {
+                return SchemaValueType.LIST_FLOAT;
+            } else if (value instanceof DateArray) {
+                return SchemaValueType.LIST_DATE;
+            } else if (value instanceof DurationArray) {
+                return SchemaValueType.LIST_DURATION;
+            } else if (value instanceof LocalDateTimeArray) {
+                return SchemaValueType.LIST_LOCAL_DATETIME;
+            } else if (value instanceof DateTimeArray) {
+                return SchemaValueType.LIST_ZONED_DATETIME;
+            } else if (value instanceof TimeArray) {
+                return SchemaValueType.LIST_ZONED_TIME;
+            } else if (value instanceof LocalTimeArray) {
+                return SchemaValueType.LIST_LOCAL_TIME;
+            } else if (value instanceof PointArray) {
+                return SchemaValueType.LIST_POINT;
             }
 
             return SpecialTypes.LIST_ANY;
@@ -118,13 +177,15 @@ public sealed interface TypeRepresentation permits SchemaValueType, SpecialTypes
      */
     static boolean disallows(PropertyTypeSet set, Value value) {
         Objects.requireNonNull(set);
-        var type = infer(value);
+        return !set.contains(infer(value));
+    }
 
-        if (type == SpecialTypes.NULL) {
-            // All of the type constraints currently permits NULL values
-            return false;
-        }
+    static boolean isList(SchemaValueType type) {
+        return CONSTRAINABLE_LIST_TYPES.contains(type);
+    }
 
-        return !set.contains(type);
+    static boolean isNullable(TypeRepresentation type) {
+        // All of the type constraints currently permits NULL values
+        return true;
     }
 }

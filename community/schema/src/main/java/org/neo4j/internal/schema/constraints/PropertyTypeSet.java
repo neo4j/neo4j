@@ -21,10 +21,10 @@ package org.neo4j.internal.schema.constraints;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
@@ -33,11 +33,12 @@ import java.util.stream.Stream;
  */
 public class PropertyTypeSet implements Iterable<SchemaValueType> {
 
-    private Set<SchemaValueType> set;
+    private final Set<TypeRepresentation> representation;
+    private final int size;
 
     private PropertyTypeSet(Collection<SchemaValueType> types) {
-        set = new TreeSet<>(TypeRepresentation::compare);
-        set.addAll(types);
+        representation = makeRepresentation(types);
+        size = types.size();
     }
 
     public static PropertyTypeSet of(Collection<SchemaValueType> types) {
@@ -45,7 +46,7 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
     }
 
     public static PropertyTypeSet of(SchemaValueType... types) {
-        return of(Arrays.asList(types));
+        return new PropertyTypeSet(Arrays.asList(types));
     }
 
     /**
@@ -54,13 +55,13 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
      */
     public String userDescription() {
         var joiner =
-                switch (set.size()) {
+                switch (size) {
                     case 0 -> new StringJoiner("", "ANY", "");
                     case 1 -> new StringJoiner("");
                     default -> new StringJoiner(" | ", "ANY<", ">");
                 };
-        for (var value : set) {
-            joiner.add(value.userDescription());
+        for (var type : this) {
+            joiner.add(type.userDescription());
         }
         return joiner.toString();
     }
@@ -68,7 +69,7 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
     @Override
     public int hashCode() {
         // Use the types' serialization as basis for hash code to make it stable in the face of changing type ordering
-        return set.stream().mapToInt(type -> type.serialize().hashCode()).sum();
+        return stream().mapToInt(type -> type.serialize().hashCode()).sum();
     }
 
     @Override
@@ -83,43 +84,56 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
 
         PropertyTypeSet that = (PropertyTypeSet) o;
 
-        return set.equals(that.set);
+        return representation.equals(that.representation);
     }
 
     public int size() {
-        return set.size();
+        return size;
     }
 
     public boolean contains(TypeRepresentation type) {
-        if (type instanceof SchemaValueType constrainable) {
-            return set.contains(constrainable);
-        }
-        // We won't allow unions with non-constrainable types
-        return false;
+        return representation.contains(type);
     }
 
     public PropertyTypeSet union(PropertyTypeSet other) {
-        return of(Stream.concat(set.stream(), other.set.stream()).toList());
+        return of(Stream.concat(stream(), other.stream()).toList());
     }
 
     public PropertyTypeSet intersection(PropertyTypeSet other) {
-        return of(set.stream().filter(other.set::contains).toList());
+        return of(stream().filter(other.representation::contains).toList());
     }
 
     public PropertyTypeSet difference(PropertyTypeSet other) {
-        return of(set.stream().filter(v -> !other.set.contains(v)).toList());
+        return of(stream().filter(v -> !other.representation.contains(v)).toList());
     }
 
     public Stream<SchemaValueType> stream() {
-        return set.stream();
+        return representation.stream()
+                .filter(SchemaValueType.class::isInstance)
+                .map(SchemaValueType.class::cast)
+                .sorted(TypeRepresentation::compare);
     }
 
     @Override
     public Iterator<SchemaValueType> iterator() {
-        return set.iterator();
+        return stream().iterator();
     }
 
     public SchemaValueType[] values() {
-        return set.stream().toArray(SchemaValueType[]::new);
+        return stream().toArray(SchemaValueType[]::new);
+    }
+
+    private static Set<TypeRepresentation> makeRepresentation(Collection<SchemaValueType> types) {
+        Set<TypeRepresentation> out = new HashSet<>();
+        for (var type : types) {
+            if (TypeRepresentation.isList(type)) {
+                out.add(SpecialTypes.LIST_NOTHING);
+            }
+            if (TypeRepresentation.isNullable(type)) {
+                out.add(SpecialTypes.NULL);
+            }
+            out.add(type);
+        }
+        return out;
     }
 }
