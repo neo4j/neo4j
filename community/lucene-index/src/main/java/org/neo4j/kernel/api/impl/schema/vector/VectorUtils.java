@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
+import java.util.List;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.values.storable.FloatingPointArray;
@@ -27,6 +28,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 public class VectorUtils {
+
     public static int vectorDimensionsFrom(IndexConfig config) {
         final var setting = IndexSetting.vector_Dimensions();
         final var dimensions =

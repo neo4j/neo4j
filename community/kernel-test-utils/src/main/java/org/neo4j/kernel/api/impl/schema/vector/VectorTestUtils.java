@@ -21,14 +21,22 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.DoubleLists;
 import org.eclipse.collections.api.factory.primitive.FloatLists;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.api.impl.index.LuceneSettings;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class VectorTestUtils {
+
+    // subject to change
+    public static final Map<Setting<?>, Object> SUGGESTED_SETTINGS =
+            Map.of(LuceneSettings.lucene_merge_factor, 1000, LuceneSettings.lucene_population_ram_buffer_size, 1.0);
 
     public static final Iterable<Value> VALID_VECTORS_FROM_VALUE;
     public static final Iterable<Value> INVALID_VECTORS_FROM_VALUE;
