@@ -119,7 +119,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
         LEGACY,
         INTERPRETED,
         SLOTTED,
-        PIPELINED
+        PIPELINED,
+        PARALLEL
     }
 
     @Internal
