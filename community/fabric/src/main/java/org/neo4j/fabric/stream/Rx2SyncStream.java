@@ -40,7 +40,18 @@ public class Rx2SyncStream
     public Rx2SyncStream( Flux<Record> records, int batchSize )
     {
         this.batchSize = batchSize;
-        buffer = new ArrayBlockingQueue<>( batchSize + 1 );
+        // Why +2?
+        // One +1 is because a record denoting an error and a record denoting
+        // the end of the stream are also added to the buffer (They are mutually
+        // exclusive so +1 is enough).
+        // The second +1 is because there is a small race condition here:
+        // pendingRequested.decrementAndGet();
+        // buffer.add(new RecordOrError(record, null));
+        // Since those two operations are not performed atomically another thread
+        // can observe pendingRequested counter already decremented, but the record
+        // yet not added to the buffer. The thread can request another batch which
+        // might result in batch + 1 records in the buffer.
+        buffer = new ArrayBlockingQueue<>( batchSize + 2 );
         this.recordSubscriber = new RecordSubscriber();
         records.subscribeWith( recordSubscriber );
     }
