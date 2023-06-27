@@ -120,6 +120,8 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
                     ? InternalIndexState.ONLINE
                     : InternalIndexState.POPULATING;
         } catch (IOException e) {
+            // TODO VECTOR: IndexProviderTests expects this monitor call if the index doesn't exist so indexIsOnline now
+            //  throws in that case, instead of returning false. Using IOException for this isn't very elegant.
             monitor.failedToOpenIndex(descriptor, "Requesting re-population.", e);
             return InternalIndexState.POPULATING;
         }
@@ -160,7 +162,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
                 index.open();
                 return index.isOnline();
             }
-            return false;
+            throw new IOException("Index does not exist");
         }
     }
 }
