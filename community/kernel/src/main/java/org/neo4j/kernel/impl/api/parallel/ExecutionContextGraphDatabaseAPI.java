@@ -49,7 +49,7 @@ public class ExecutionContextGraphDatabaseAPI implements GraphDatabaseAPI {
 
     @Override
     public boolean isAvailable() {
-        throw failure("isAvailable");
+        return delegate.isAvailable();
     }
 
     @Override
@@ -154,7 +154,7 @@ public class ExecutionContextGraphDatabaseAPI implements GraphDatabaseAPI {
         throw failure("beginTransaction");
     }
 
-    private UnsupportedOperationException failure(String op) {
+    private static UnsupportedOperationException failure(String op) {
         throw new UnsupportedOperationException(
                 "'graphDatabaseService." + op
                         + "' is not supported in procedures when called from parallel runtime. Please retry using another runtime.");

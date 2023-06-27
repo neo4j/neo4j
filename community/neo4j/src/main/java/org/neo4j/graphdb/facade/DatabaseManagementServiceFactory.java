@@ -362,8 +362,7 @@ public class DatabaseManagementServiceFactory {
 
             // Register injected public API components
             globalProcedures.registerComponent(Log.class, ctx -> proceduresLog, true);
-            globalProcedures.registerComponent(
-                    Transaction.class, ctx -> ctx.kernelTransaction().internalTransaction(), true);
+            globalProcedures.registerComponent(Transaction.class, Context::transaction, true);
             globalProcedures.registerComponent(
                     org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true);
             globalProcedures.registerComponent(
