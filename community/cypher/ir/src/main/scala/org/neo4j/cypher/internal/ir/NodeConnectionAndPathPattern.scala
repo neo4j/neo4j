@@ -221,9 +221,9 @@ case class PathPatterns(pathPatterns: List[PathPattern]) extends AnyVal {
  * Node connections are stored as a list, preserving the order of the pattern as expressed in the query.
  * Each connection contains a reference to the nodes it connects, effectively allowing us to reconstruct the alternating sequence of node and relationship patterns from this type.
  *
- * @tparam A In most cases, should be [[NodeConnection]], but can be used to narrow down the type of node connections to [[PatternRelationship]] only.
+ * @tparam A In most cases, should be [[ExhaustiveNodeConnection]], but can be used to narrow down the type of node connections to [[PatternRelationship]] only.
  */
-sealed trait ExhaustivePathPattern[+A <: NodeConnection] extends PathPattern
+sealed trait ExhaustivePathPattern[+A <: ExhaustiveNodeConnection] extends PathPattern
 
 object ExhaustivePathPattern {
 
@@ -232,7 +232,7 @@ object ExhaustivePathPattern {
    *
    * @param name name of the variable bound to the node pattern
    */
-  final case class SingleNode[A <: NodeConnection](name: String) extends ExhaustivePathPattern[A] {
+  final case class SingleNode[A <: ExhaustiveNodeConnection](name: String) extends ExhaustivePathPattern[A] {
     override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
   }
 
@@ -240,13 +240,13 @@ object ExhaustivePathPattern {
    * A path pattern of length 1 or more, made of at least one node connection.
    *
    * @param connections the connections making up the path pattern, in the order in which they appear in the original query.
-   * @tparam A In most cases, should be [[NodeConnection]], but can be used to narrow down the type of node connections to [[PatternRelationship]] only.
+   * @tparam A In most cases, should be [[ExhaustiveNodeConnection]], but can be used to narrow down the type of node connections to [[PatternRelationship]] only.
    */
-  final case class NodeConnections[+A <: NodeConnection](connections: NonEmptyList[A])
+  final case class NodeConnections[+A <: ExhaustiveNodeConnection](connections: NonEmptyList[A])
       extends ExhaustivePathPattern[A] {
 
     override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = {
-      connections.toSet[NodeConnection].collect {
+      connections.toSet[ExhaustiveNodeConnection].collect {
         case qpp: QuantifiedPathPattern => qpp
       }
     }

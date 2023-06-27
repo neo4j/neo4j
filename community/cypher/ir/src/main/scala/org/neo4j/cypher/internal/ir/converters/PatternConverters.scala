@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.SingleNode
 import org.neo4j.cypher.internal.ir.PathPattern
 import org.neo4j.cypher.internal.ir.PathPatterns
 import org.neo4j.cypher.internal.ir.Selections
@@ -139,8 +140,10 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
     convertPatternElement(element) match {
       case connections: NodeConnections[ExhaustiveNodeConnection] =>
         SelectivePathPattern(connections, selections, selector)
-      case _ =>
-        throw new IllegalStateException("Expected only exhaustive node connections as part of shortest path")
+      case _: SingleNode[_] =>
+        throw new IllegalStateException(
+          "Shortest paths over a single node should have been rewritten by FixedLengthShortestToAllRewriter"
+        )
     }
   }
 

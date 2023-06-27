@@ -500,8 +500,7 @@ object ClauseConverters {
       val currentStrictInteriorVars = clause.pattern.patternParts.view.collect {
         case spp @ PatternPartWithSelector(_: SelectiveSelector, _) =>
           (spp.allVariables -- boundaryNodes(spp.element)).map(_.name)
-      }
-        .flatten.toSet
+      }.flatten.toSet
       val hasInteriorReferringToPreviouslyBoundVar = previousPatternVars.intersect(currentStrictInteriorVars).nonEmpty
 
       hasReferenceFromThisPatternToInterior || hasInteriorReferringToPreviouslyBoundVar
