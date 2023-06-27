@@ -20,7 +20,6 @@
 package org.neo4j.importer;
 
 import static java.util.Collections.emptySet;
-import static org.apache.commons.io.output.NullPrintStream.NULL_PRINT_STREAM;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.io.output.NullPrintStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -74,8 +74,8 @@ class CsvImporterTest {
                 .withReportFile(reportLocation.toAbsolutePath())
                 .withCsvConfig(Configuration.TABS)
                 .withFileSystem(testDir.getFileSystem())
-                .withStdOut(NULL_PRINT_STREAM)
-                .withStdErr(NULL_PRINT_STREAM)
+                .withStdOut(NullPrintStream.INSTANCE)
+                .withStdErr(NullPrintStream.INSTANCE)
                 .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
                 .build();
 
@@ -132,8 +132,8 @@ class CsvImporterTest {
                 .withDatabaseConfig(config)
                 .withReportFile(reportLocation.toAbsolutePath())
                 .withFileSystem(testDir.getFileSystem())
-                .withStdOut(NULL_PRINT_STREAM)
-                .withStdErr(NULL_PRINT_STREAM)
+                .withStdOut(NullPrintStream.INSTANCE)
+                .withStdErr(NullPrintStream.INSTANCE)
                 .withPageCacheTracer(cacheTracer)
                 .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
                 .build();
@@ -155,8 +155,8 @@ class CsvImporterTest {
                 .withDatabaseConfig(Config.defaults(GraphDatabaseSettings.neo4j_home, testDir.homePath()))
                 .withDatabaseLayout(databaseLayout)
                 .withFileSystem(testDir.getFileSystem())
-                .withStdOut(NULL_PRINT_STREAM)
-                .withStdErr(NULL_PRINT_STREAM)
+                .withStdOut(NullPrintStream.INSTANCE)
+                .withStdErr(NullPrintStream.INSTANCE)
                 .withReportFile(testDir.file("report.txt"))
                 .addNodeFiles(emptySet(), new Path[] {nodes.toAbsolutePath()})
                 .withBadTolerance(4)

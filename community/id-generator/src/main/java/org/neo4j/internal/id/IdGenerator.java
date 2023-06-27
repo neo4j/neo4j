@@ -167,8 +167,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      *     <li>ID X allocated from high ID when reserving an ID for an entity</li>
      *     <li>{@link #markUsed(long)} when entity with ID X is committed</li>
      *     <li>{@link #markDeleted(long)} when entity with ID X is later perhaps deleted</li>
-     *     <li>{@link #markFree(long)} when entity with ID X is eligible, after being deleted,
-     *     to be reused for another entity</li>
      *     <li>X can now be allocated again, but from the freelist instead of from high ID</li>
      * </ul>
      * <ul>Allocating then un-allocating in case transaction rolls back

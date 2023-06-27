@@ -79,6 +79,7 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
         this.clock = clock;
     }
 
+    @Override
     public <Tx extends Child> Tx registerNewChildTransaction(
             Location location, TransactionMode mode, Supplier<Tx> transactionSupplier) throws FabricException {
         return switch (mode) {

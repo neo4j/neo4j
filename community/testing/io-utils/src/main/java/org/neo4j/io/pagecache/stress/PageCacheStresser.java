@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -88,7 +88,7 @@ public class PageCacheStresser {
         int maxRecords = Math.multiplyExact(maxPages, format.getRecordsPerPage());
         TinyLockManager locks = new TinyLockManager();
 
-        List<RecordStresser> recordStressers = new LinkedList<>();
+        List<RecordStresser> recordStressers = new ArrayList<>(numberOfThreads);
         for (int threadId = 0; threadId < numberOfThreads; threadId++) {
             recordStressers.add(
                     new RecordStresser(pagedFile, condition, maxRecords, format, threadId, locks, cacheTracer));

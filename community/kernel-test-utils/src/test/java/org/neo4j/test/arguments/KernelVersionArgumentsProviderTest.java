@@ -131,9 +131,4 @@ class KernelVersionArgumentsProviderTest {
     private static KernelVersionArgumentsProvider.Version v(Integer major, Integer minor) {
         return new KernelVersionArgumentsProvider.Version(major, minor);
     }
-
-    private static class TestCases {
-
-        private void atLeast() {}
-    }
 }

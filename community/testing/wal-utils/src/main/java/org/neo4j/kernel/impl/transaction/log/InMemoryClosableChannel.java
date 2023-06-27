@@ -282,7 +282,7 @@ public class InMemoryClosableChannel
     @Override
     public void position(long byteOffset) {
         var buffer = isReader ? reader : writer;
-        buffer.position((int) byteOffset);
+        buffer.position(byteOffset);
     }
 
     @Override

@@ -34,6 +34,7 @@ public abstract class PathReference extends VirtualPathValue {
         return new PathReferenceReferences(nodes, relationships);
     }
 
+    @Override
     public abstract ListValue relationshipsAsList();
 
     private static class PathReferencePrimitive extends PathReference {
@@ -72,6 +73,7 @@ public abstract class PathReference extends VirtualPathValue {
             return relationships;
         }
 
+        @Override
         public ListValue relationshipsAsList() {
 
             int size = relationships.length;
@@ -167,6 +169,7 @@ public abstract class PathReference extends VirtualPathValue {
             return res;
         }
 
+        @Override
         public ListValue relationshipsAsList() {
             return VirtualValues.fromList(Arrays.asList(relationships));
         }

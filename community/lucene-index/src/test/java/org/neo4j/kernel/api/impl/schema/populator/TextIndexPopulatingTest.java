@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
@@ -29,8 +27,6 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
-import java.io.IOException;
-import org.apache.lucene.index.Term;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -82,10 +78,6 @@ class TextIndexPopulatingTest {
 
         updater.process(remove(3, SCHEMA_DESCRIPTOR, "baz"));
         verify(writer).deleteDocuments(newTermForChangeOrRemove(3));
-    }
-
-    private static void verifyDocument(LuceneIndexWriter writer, Term eq, String documentString) throws IOException {
-        verify(writer).updateOrDeleteDocument(eq(eq), argThat(doc -> documentString.equals(doc.toString())));
     }
 
     private static TextIndexPopulatingUpdater newUpdater(LuceneIndexWriter writer) {

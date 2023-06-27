@@ -84,6 +84,7 @@ public class BoltProtocolV40 extends AbstractBoltProtocol {
         return new StateMachineV40(stateMachineSPI, connection, clock);
     }
 
+    @Override
     protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
         return super.createRequestMessageRegistry()
                 // Authentication

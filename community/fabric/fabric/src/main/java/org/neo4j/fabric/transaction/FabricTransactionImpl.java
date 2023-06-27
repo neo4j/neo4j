@@ -234,6 +234,7 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
         }
     }
 
+    @Override
     public ExecutingQuery.TransactionBinding transactionBinding() throws FabricException {
         if (kernelTransaction == null) {
             return null;
@@ -247,6 +248,7 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
                 namedDbId, () -> 0L, () -> 0L, () -> 0L, transactionSequenceNumber);
     }
 
+    @Override
     public Procedures contextlessProcedures() {
         return contextlessProcedures;
     }

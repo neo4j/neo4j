@@ -122,8 +122,7 @@ class JfrProfilerTest {
                 .build();
         FileSystemUtils.writeString(
                 fs, pidFile, format("%s%n", ProcessHandle.current().pid()), EmptyMemoryTracker.INSTANCE);
-        JMXDumper jmxDumper =
-                new JMXDumper(cfg, fs, NullPrintStream.NULL_PRINT_STREAM, NullPrintStream.NULL_PRINT_STREAM, true);
+        JMXDumper jmxDumper = new JMXDumper(cfg, fs, NullPrintStream.INSTANCE, NullPrintStream.INSTANCE, true);
         Optional<JmxDump> maybeDump = jmxDumper.getJMXDump();
         assumeThat(maybeDump).isPresent(); // IF not, then no point in running tests
         JmxDump jmxDump = maybeDump.get();

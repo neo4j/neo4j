@@ -170,6 +170,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 getCompositeDatabaseStack());
     }
 
+    @Override
     protected <T> T resolve(Class<T> type) {
         return dependencies.resolveDependency(type);
     }

@@ -318,11 +318,5 @@ class DeleteDuplicateNodesStepTest {
         return result;
     }
 
-    private static void startAndAwaitCompletionOf(DeleteDuplicateNodesStep step) throws InterruptedException {
-        step.start(0);
-        step.receive(0, null);
-        step.awaitCompleted();
-    }
-
     private record Ids(NodeRecord node, PropertyRecord[] properties) {}
 }

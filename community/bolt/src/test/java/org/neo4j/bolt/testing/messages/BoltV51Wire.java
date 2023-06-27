@@ -46,6 +46,7 @@ public class BoltV51Wire extends BoltV50Wire {
         return "BoltWire/5.1";
     }
 
+    @Override
     public ByteBuf logon(Map<String, Object> authToken) {
         return PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(1, MESSAGE_TAG_LOGON))

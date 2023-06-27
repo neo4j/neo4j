@@ -57,6 +57,7 @@ public enum SchemaValueType implements TypeRepresentation {
         this.order = order;
     }
 
+    @Override
     public String userDescription() {
         return userDescription;
     }

@@ -80,6 +80,7 @@ public class IndexFiles {
         }
     }
 
+    @Override
     public String toString() {
         return String.format("%s[base=%s,storeFile=%s]", getClass().getSimpleName(), getBase(), getStoreFile());
     }
