@@ -429,7 +429,7 @@ object Deprecations {
     )
 
     private def isPoint(semanticTable: SemanticTable, e: Expression) =
-      semanticTable.types(e).actual == CTPoint.invariant
+      semanticTable.types.get(e).map(_.actual).contains(CTPoint.invariant)
 
     private def isListCoercedToBoolean(semanticTable: SemanticTable, e: Expression): Boolean = semanticTable.types.get(e).exists(
       typeInfo =>
