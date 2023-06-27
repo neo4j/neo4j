@@ -74,9 +74,14 @@ public final class ValuePopulation {
 
     public static NodeValue populate(
             VirtualNodeValue value, DbAccess dbAccess, NodeCursor nodeCursor, PropertyCursor propertyCursor) {
-        if (value instanceof NodeEntityWrappingNodeValue wrappingNodeValue) {
-            wrappingNodeValue.populate(nodeCursor, propertyCursor);
-            return wrappingNodeValue;
+        if (value instanceof NodeEntityWrappingNodeValue wrappingNodeValue && !wrappingNodeValue.isPopulated()) {
+            if (wrappingNodeValue.canPopulate()) {
+                wrappingNodeValue.populate(nodeCursor, propertyCursor);
+                return wrappingNodeValue;
+            } else {
+                // Node was created in an inner transaction that has been closed
+                return nodeValue(value.id(), dbAccess, nodeCursor, propertyCursor);
+            }
         } else if (value instanceof NodeValue) {
             return (NodeValue) value;
         } else {
@@ -90,9 +95,14 @@ public final class ValuePopulation {
             NodeCursor nodeCursor,
             RelationshipScanCursor relCursor,
             PropertyCursor propertyCursor) {
-        if (value instanceof RelationshipEntityWrappingValue wrappingValue) {
-            wrappingValue.populate(relCursor, propertyCursor);
-            return wrappingValue;
+        if (value instanceof RelationshipEntityWrappingValue wrappingValue && !wrappingValue.isPopulated()) {
+            if (wrappingValue.canPopulate()) {
+                wrappingValue.populate(relCursor, propertyCursor);
+                return wrappingValue;
+            } else {
+                // Relationship was created in an inner transaction that has been closed
+                return relationshipValue(value.id(), dbAccess, nodeCursor, relCursor, propertyCursor);
+            }
         } else if (value instanceof RelationshipValue) {
             return (RelationshipValue) value;
         } else {

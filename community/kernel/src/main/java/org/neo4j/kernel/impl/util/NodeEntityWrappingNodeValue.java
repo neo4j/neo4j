@@ -93,6 +93,13 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         return labels != null && properties != null;
     }
 
+    public boolean canPopulate() {
+        if (node instanceof NodeEntity entity) {
+            return entity.getTransaction().isOpen();
+        }
+        return true;
+    }
+
     public TextArray labels(NodeCursor nodeCursor) {
         TextArray l = labels;
         if (l == null) {
