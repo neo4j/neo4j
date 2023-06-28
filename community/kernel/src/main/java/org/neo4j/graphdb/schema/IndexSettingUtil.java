@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Maps;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -119,6 +120,23 @@ public class IndexSettingUtil {
             case "wgs-84-3d" -> SPATIAL_WGS84_3D_MAX;
             default -> throw new IllegalArgumentException("Unrecognized coordinate reference system " + crs);
         };
+    }
+
+    @VisibleForTesting
+    public static Map<IndexSetting, Object> defaultSettingsForTesting(IndexType type) {
+        return switch (type) {
+            case VECTOR -> Map.of(
+                    IndexSetting.vector_Dimensions(),
+                    1024,
+                    IndexSetting.vector_Similarity_Function(),
+                    VectorSimilarityFunction.EUCLIDEAN.name());
+            default -> Map.of();
+        };
+    }
+
+    @VisibleForTesting
+    public static IndexConfig defaultConfigForTest(IndexType type) {
+        return toIndexConfigFromIndexSettingObjectMap(defaultSettingsForTesting(type));
     }
 
     /**
