@@ -20,10 +20,16 @@
 package org.neo4j.internal.schema;
 
 public interface StorageEngineIndexingBehaviour {
+
     StorageEngineIndexingBehaviour EMPTY = new StorageEngineIndexingBehaviour() {
         @Override
         public boolean useNodeIdsInRelationshipTokenIndex() {
             return false;
+        }
+
+        @Override
+        public boolean requireCoordinationLocks() {
+            return true;
         }
 
         @Override
@@ -43,6 +49,13 @@ public interface StorageEngineIndexingBehaviour {
      * contain at least one outgoing relationship of a given relationship type.
      */
     boolean useNodeIdsInRelationshipTokenIndex();
+
+    /**
+     * @return whether the store/lookup-index scans for building indexes require locks coordination using
+     * {@link org.neo4j.lock.LockService}. If {@code true} then locks will be acquired for each entity during
+     * scan, otherwise not.
+     */
+    boolean requireCoordinationLocks();
 
     /**
      * @return number of nodes per page cache page
