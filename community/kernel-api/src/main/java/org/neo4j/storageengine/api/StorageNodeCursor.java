@@ -34,6 +34,15 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan> 
     boolean hasLabel(int label);
 
     /**
+     * Atomically read labels and properties.
+     */
+    default long[] labelsAndProperties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
+        var labels = labels();
+        properties(propertyCursor, selection);
+        return labels;
+    }
+
+    /**
      * @return {@code true} if the node this cursor is placed at has at least one label, otherwise {@code false}.
      */
     boolean hasLabel();

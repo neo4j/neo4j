@@ -126,7 +126,14 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
 
     private void generateUpdates(
             GeneratedIndexUpdates updates, CURSOR entityCursor, StoragePropertyCursor propertyCursor) {
-        long[] tokens = entityCursorBehaviour.readTokens(entityCursor);
+        long[] tokens;
+        if (gatherPropertyUpdates) {
+            tokens = entityCursorBehaviour.readTokensAndProperties(
+                    entityCursor, propertyCursor, PropertySelection.ALL_PROPERTIES);
+        } else {
+            tokens = entityCursorBehaviour.readTokens(entityCursor);
+        }
+
         if (tokens.length == 0) {
             // This entity has no tokens at all
             return;
@@ -143,13 +150,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
 
     void readRelevantProperties(
             CURSOR cursor, StoragePropertyCursor propertyCursor, long[] tokens, GeneratedIndexUpdates indexUpdates) {
-        if (!cursor.hasProperties()) {
-            return;
-        }
-        cursor.properties(propertyCursor, PropertySelection.ALL_PROPERTIES);
-
         Map<Integer, Value> relevantProperties = new HashMap<>();
-
         while (propertyCursor.next()) {
             int propertyKeyId = propertyCursor.propertyKey();
             if (propertyKeyIdFilter.test(propertyKeyId)) {
