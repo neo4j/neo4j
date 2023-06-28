@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -135,6 +136,7 @@ public class IndexingServiceIntegrationTest {
                     .indexFor(Label.label(FOOD_LABEL))
                     .on(PROPERTY_NAME)
                     .withIndexType(indexType)
+                    .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType))
                     .create();
             index = indexDefinition.getIndexReference();
             tx.commit();
@@ -161,6 +163,7 @@ public class IndexingServiceIntegrationTest {
                     .indexFor(RelationshipType.withName(FOOD_LABEL))
                     .on(PROPERTY_NAME)
                     .withIndexType(indexType)
+                    .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType))
                     .create();
             index = indexDefinition.getIndexReference();
             tx.commit();
@@ -195,6 +198,7 @@ public class IndexingServiceIntegrationTest {
                     .indexFor(Label.label(WEATHER_LABEL))
                     .on(PROPERTY_NAME)
                     .withIndexType(indexType)
+                    .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType))
                     .withName(indexName)
                     .create();
 
@@ -228,6 +232,7 @@ public class IndexingServiceIntegrationTest {
                     .indexFor(Label.label("label"))
                     .on("prop")
                     .withIndexType(indexType)
+                    .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType))
                     .create();
             indexDescriptor = indexDefinition.getIndexReference();
             tx.commit();
@@ -259,6 +264,7 @@ public class IndexingServiceIntegrationTest {
                         .indexFor(Label.label("label"))
                         .on("prop" + i)
                         .withIndexType(indexType)
+                        .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType))
                         .create();
             }
             tx.commit();

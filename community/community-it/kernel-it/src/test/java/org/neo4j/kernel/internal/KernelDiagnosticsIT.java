@@ -38,6 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -60,7 +61,7 @@ class KernelDiagnosticsIT {
     @EnumSource(
             value = IndexType.class,
             mode = EnumSource.Mode.EXCLUDE,
-            names = {"LOOKUP"})
+            names = {"LOOKUP"}) // testing property indexes
     void shouldIncludeNativeIndexFilesInTotalMappedSize(IndexType indexType) {
         // given
         createIndexAndData(indexType);
@@ -89,7 +90,12 @@ class KernelDiagnosticsIT {
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            tx.schema().indexFor(label).on(key).withIndexType(indexType).create();
+            tx.schema()
+                    .indexFor(label)
+                    .on(key)
+                    .withIndexType(indexType)
+                    .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType))
+                    .create();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {

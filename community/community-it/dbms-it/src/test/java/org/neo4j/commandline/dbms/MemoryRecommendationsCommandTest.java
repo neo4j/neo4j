@@ -67,6 +67,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAlloc
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -456,6 +457,7 @@ class MemoryRecommendationsCommandTest {
                             .indexFor(labelOne)
                             .on(key)
                             .withIndexType(indexType)
+                            .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType))
                             .create();
                     tx.commit();
                 }
