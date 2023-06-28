@@ -19,20 +19,18 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 class CountsStoreTransactionApplierFactory implements TransactionApplierFactory {
     private final TransactionApplicationMode mode;
-    private final GBPTreeCountsStore countsStore;
+    private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
 
     CountsStoreTransactionApplierFactory(
-            TransactionApplicationMode mode,
-            GBPTreeCountsStore countsStore,
-            RelationshipGroupDegreesStore groupDegreesStore) {
+            TransactionApplicationMode mode, CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore) {
         this.mode = mode;
         this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;

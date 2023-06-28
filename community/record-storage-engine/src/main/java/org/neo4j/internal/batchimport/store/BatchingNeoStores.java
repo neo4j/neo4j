@@ -47,6 +47,7 @@ import java.util.function.Predicate;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.Configuration;
@@ -54,7 +55,7 @@ import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.store.io.IoTracer;
 import org.neo4j.internal.counts.CountsBuilder;
-import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.CountsStoreProvider;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -492,20 +493,16 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        try (var countsStore = new GBPTreeCountsStore(
+        try (var countsStore = openCountsStore(
                         pageCache,
-                        databaseLayout.countStore(),
                         fileSystem,
+                        databaseLayout,
+                        userLogProvider,
                         RecoveryCleanupWorkCollector.immediate(),
                         builder,
-                        false,
-                        GBPTreeCountsStore.NO_MONITOR,
-                        databaseName,
-                        neo4jConfig.get(counts_store_max_cached_entries),
-                        userLogProvider,
+                        neo4jConfig,
                         contextFactory,
-                        pageCacheTracer,
-                        openOptions);
+                        pageCacheTracer);
                 var cursorContext = contextFactory.create("buildCountsStore")) {
             countsStore.start(cursorContext, storeCursors, memoryTracker);
             try (var flushEvent = pageCacheTracer.beginFileFlush()) {
@@ -541,6 +538,30 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private CountsStore openCountsStore(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            RecordDatabaseLayout layout,
+            InternalLogProvider userLogProvider,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            CountsBuilder builder,
+            Config config,
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer) {
+        return CountsStoreProvider.getInstance()
+                .openCountsStore(
+                        pageCache,
+                        fs,
+                        layout,
+                        userLogProvider,
+                        recoveryCleanupWorkCollector,
+                        config,
+                        contextFactory,
+                        pageCacheTracer,
+                        getOpenOptions(),
+                        builder);
     }
 
     @Override

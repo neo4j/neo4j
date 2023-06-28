@@ -48,6 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
@@ -151,7 +152,7 @@ class OnlineIndexUpdatesTest {
                 new CountsComputer(
                         neoStores, pageCache, contextFactory, databaseLayout, INSTANCE, NullLog.getInstance()),
                 false,
-                GBPTreeCountsStore.NO_MONITOR,
+                GBPTreeGenericCountsStore.NO_MONITOR,
                 databaseLayout.getDatabaseName(),
                 1_000,
                 NullLogProvider.getInstance(),

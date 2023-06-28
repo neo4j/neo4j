@@ -28,6 +28,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -47,7 +48,7 @@ import org.neo4j.memory.MemoryTracker;
  * Checkpoint will acquire a write lock, wait for currently active appliers to close while at the same time blocking new appliers to start,
  * but doesn't wait for appliers that haven't even started yet, i.e. it doesn't require a gap-free transaction sequence to be completed.
  */
-public class GBPTreeCountsStore extends GBPTreeGenericCountsStore<CountsAccessor.Updater> implements CountsAccessor {
+public class GBPTreeCountsStore extends GBPTreeGenericCountsStore<CountsAccessor.Updater> implements CountsStore {
     private static final String NAME = "Counts store";
 
     private static final byte TYPE_NODE = 1;

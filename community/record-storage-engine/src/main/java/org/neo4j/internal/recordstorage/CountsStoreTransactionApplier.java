@@ -20,14 +20,14 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 
 class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
-    private final GBPTreeCountsStore countsStore;
+    private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CommandBatchToApply commandsBatch;
     private final CountTransformer countTransformer;
@@ -38,7 +38,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     private boolean degreesUpdaterClosed;
 
     CountsStoreTransactionApplier(
-            GBPTreeCountsStore countsStore,
+            CountsStore countsStore,
             RelationshipGroupDegreesStore groupDegreesStore,
             CommandBatchToApply commandsBatch,
             CountTransformer countTransformer) {

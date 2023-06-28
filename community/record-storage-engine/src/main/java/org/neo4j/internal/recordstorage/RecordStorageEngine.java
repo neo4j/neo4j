@@ -45,13 +45,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.CountsStoreProvider;
 import org.neo4j.internal.counts.DegreesRebuildFromStore;
-import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
@@ -162,7 +163,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final MemoryTracker otherMemoryTracker;
     final KernelVersionRepository kernelVersionRepository;
     private final LockVerificationFactory lockVerificationFactory;
-    private final GBPTreeCountsStore countsStore;
+    private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final int denseNodeThreshold;
     private final IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs;
@@ -305,7 +306,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 idUpdateListenerFunction, appliers.toArray(TransactionApplierFactory[]::new));
     }
 
-    private GBPTreeCountsStore openCountsStore(
+    private CountsStore openCountsStore(
             PageCache pageCache,
             FileSystemAbstraction fs,
             RecordDatabaseLayout layout,
@@ -315,43 +316,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             Config config,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
-        try {
-            return new GBPTreeCountsStore(
-                    pageCache,
-                    layout.countStore(),
-                    fs,
-                    recoveryCleanupWorkCollector,
-                    new CountsBuilder() {
-                        private final InternalLog log = internalLogProvider.getLog(MetaDataStore.class);
-
-                        @Override
-                        public void initialize(
-                                CountsAccessor.Updater updater,
-                                CursorContext cursorContext,
-                                MemoryTracker memoryTracker) {
-                            log.warn("Missing counts store, rebuilding it.");
-                            new CountsComputer(neoStores, pageCache, contextFactory, layout, memoryTracker, log)
-                                    .initialize(updater, cursorContext, memoryTracker);
-                            log.warn("Counts store rebuild completed.");
-                        }
-
-                        @Override
-                        public long lastCommittedTxId() {
-                            TransactionIdStore txIdStore = metadataProvider();
-                            return txIdStore.getLastCommittedTransactionId();
-                        }
-                    },
-                    false,
-                    GBPTreeGenericCountsStore.NO_MONITOR,
-                    layout.getDatabaseName(),
-                    config.get(counts_store_max_cached_entries),
-                    userLogProvider,
-                    contextFactory,
-                    pageCacheTracer,
-                    getOpenOptions());
-        } catch (IOException e) {
-            throw new UnderlyingStorageException(e);
-        }
+        return CountsStoreProvider.getInstance()
+                .openCountsStore(
+                        pageCache,
+                        fs,
+                        layout,
+                        userLogProvider,
+                        recoveryCleanupWorkCollector,
+                        config,
+                        contextFactory,
+                        pageCacheTracer,
+                        getOpenOptions(),
+                        new RecordCountsBuilder(internalLogProvider, pageCache, contextFactory, layout));
     }
 
     private RelationshipGroupDegreesStore openDegreesStore(
@@ -766,6 +742,39 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 databaseHealth.outOfDiskSpace(e);
                 throw e;
             }
+        }
+    }
+
+    private class RecordCountsBuilder implements CountsBuilder {
+        private final InternalLog log;
+        private final PageCache pageCache;
+        private final CursorContextFactory contextFactory;
+        private final RecordDatabaseLayout layout;
+
+        public RecordCountsBuilder(
+                InternalLogProvider internalLogProvider,
+                PageCache pageCache,
+                CursorContextFactory contextFactory,
+                RecordDatabaseLayout layout) {
+            this.pageCache = pageCache;
+            this.contextFactory = contextFactory;
+            this.layout = layout;
+            log = internalLogProvider.getLog(MetaDataStore.class);
+        }
+
+        @Override
+        public void initialize(
+                CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            log.warn("Missing counts store, rebuilding it.");
+            new CountsComputer(neoStores, pageCache, contextFactory, layout, memoryTracker, log)
+                    .initialize(updater, cursorContext, memoryTracker);
+            log.warn("Counts store rebuild completed.");
+        }
+
+        @Override
+        public long lastCommittedTxId() {
+            TransactionIdStore txIdStore = metadataProvider();
+            return txIdStore.getLastCommittedTransactionId();
         }
     }
 }

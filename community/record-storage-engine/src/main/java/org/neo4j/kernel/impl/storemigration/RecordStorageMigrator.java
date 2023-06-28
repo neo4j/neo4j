@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fi
 import static org.neo4j.storageengine.api.format.CapabilityType.FORMAT;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,10 +45,13 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -66,7 +70,7 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.counts.CountsBuilder;
-import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.CountsStoreProvider;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -105,6 +109,7 @@ import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -741,17 +746,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 return txIdBeforeMigration;
             }
         };
-        try (var countsStore = new GBPTreeCountsStore(
+        try (var countsStore = openCountsStore(
                         pageCache,
-                        recordLayout.countStore(),
                         fileSystem,
+                        recordLayout,
+                        logService.getInternalLogProvider(),
                         immediate(),
                         countsBuilder,
-                        false,
-                        NO_MONITOR,
-                        databaseLayout.getDatabaseName(),
-                        counts_store_max_cached_entries.defaultValue(),
-                        logService.getInternalLogProvider(),
+                        Config.defaults(),
                         contextFactory,
                         pageCacheTracer,
                         openOptions);
@@ -806,6 +808,31 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         if (formatsHaveDifferentStoreCapabilities) {
             fileSystem.delete(recordLayout.indexStatisticsStore());
         }
+    }
+
+    private CountsStore openCountsStore(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            RecordDatabaseLayout layout,
+            InternalLogProvider userLogProvider,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            CountsBuilder builder,
+            Config config,
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
+            ImmutableSet<OpenOption> openOptions) {
+        return CountsStoreProvider.getInstance()
+                .openCountsStore(
+                        pageCache,
+                        fs,
+                        layout,
+                        userLogProvider,
+                        recoveryCleanupWorkCollector,
+                        config,
+                        contextFactory,
+                        pageCacheTracer,
+                        openOptions,
+                        builder);
     }
 
     @Override
