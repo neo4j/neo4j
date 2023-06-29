@@ -188,4 +188,8 @@ public sealed interface TypeRepresentation permits SchemaValueType, SpecialTypes
         // All of the type constraints currently permits NULL values
         return true;
     }
+
+    static boolean hasListTypes(PropertyTypeSet set) {
+        return set.contains(SpecialTypes.LIST_NOTHING);
+    }
 }

@@ -117,6 +117,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.TypeRepresentation;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
@@ -1993,11 +1994,9 @@ public class Operations implements Write, SchemaWrite {
         if (schema.getPropertyIds().length != 1) {
             throw new UnsupportedOperationException("Composite property type constraints are not supported.");
         }
-        if (!typeConstraintEnabled) {
-            throw new UnsupportedOperationException("Property type constraints are not supported yet");
-        }
         assertSupportedInVersion(
                 "Failed to create property type constraint.", KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED);
+
         ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, propertyType);
 
         TypeConstraintDescriptor descriptor = constraint.asPropertyTypeConstraint();
@@ -2020,10 +2019,31 @@ public class Operations implements Write, SchemaWrite {
 
     private ConstraintDescriptor lockAndValidatePropertyTypeConstraint(
             SchemaDescriptor descriptor, String name, PropertyTypeSet propertyType) throws KernelException {
-        if (propertyType.size() != 1) {
+        var size = propertyType.size();
+        var hasListType = TypeRepresentation.hasListTypes(propertyType);
+
+        // Only a single constraint type is allowed.
+        if (size != 1) {
             throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"
-                    + propertyType.userDescription() + "' is not legal: Must have exactly one property type.");
+                    + propertyType.userDescription() + "' is not legal: Must specify exactly one property type.");
         }
+
+        // List types allow only for a list of a single type e.g. LIST_STRING
+        // See CLG discussion regarding ANY<LIST<T1>, LIST<T2>> where the ordering becomes unclear.
+        if (hasListType && size != 1) {
+            throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"
+                    + propertyType.userDescription()
+                    + "' is not legal: Must specify exactly one property type of LIST.");
+        }
+
+        // Only the basic type constraint was introduced in KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED.
+        // For expanded support, we require the kernel version below:
+        if (!typeConstraintEnabled && (hasListType || size != 1)) {
+            assertSupportedInVersion(
+                    "Failed to create property type constraint with %s.".formatted(propertyType.userDescription()),
+                    KernelVersion.VERSION_LIST_TYPE_CONSTRAINTS_INTRODUCED);
+        }
+
         return lockAndValidateNonIndexPropertyConstraint(
                 descriptor, desc -> ConstraintDescriptorFactory.typeForSchema(desc, propertyType), name);
     }

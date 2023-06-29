@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.graphdb.RelationshipType;
@@ -30,6 +32,8 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.SchemaValueType;
+import org.neo4j.util.VisibleForTesting;
 
 public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator {
     protected final RelationshipType type;
@@ -70,6 +74,16 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
         PropertyTypeSet propertyTypeSet = validatePropertyTypes(propertyType);
         return new RelationshipPropertyTypeConstraintCreator(
                 actions, name, type, propertyKey, indexType, indexConfig, propertyTypeSet);
+    }
+
+    @VisibleForTesting
+    public ConstraintCreator assertPropertyHasType(
+            String propertyKey, SchemaValueType propertyType, SchemaValueType... propertyTypes) {
+        var entries = new ArrayList<SchemaValueType>();
+        entries.add(propertyType);
+        entries.addAll(Arrays.asList(propertyTypes));
+        return new RelationshipPropertyTypeConstraintCreator(
+                actions, name, type, propertyKey, indexType, indexConfig, PropertyTypeSet.of(entries));
     }
 
     @Override
