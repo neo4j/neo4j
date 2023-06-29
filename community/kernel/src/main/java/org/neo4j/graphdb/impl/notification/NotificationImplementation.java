@@ -33,12 +33,14 @@ public final class NotificationImplementation implements Notification {
     private final SeverityLevel severity;
     private final NotificationCategory category;
     private final InputPosition position;
+    private final String message;
 
     NotificationImplementation(
             NotificationCodeWithDescription notificationCodeWithDescription,
             InputPosition position,
             String title,
-            String description) {
+            String description,
+            String message) {
 
         this.statusCode = notificationCodeWithDescription.getStatus().code();
 
@@ -52,6 +54,7 @@ public final class NotificationImplementation implements Notification {
         this.position = position;
         this.title = title;
         this.description = description;
+        this.message = message;
     }
 
     public static class NotificationBuilder {
@@ -59,12 +62,14 @@ public final class NotificationImplementation implements Notification {
         private String title;
         private String description;
         private InputPosition position;
+        private String message;
 
         public NotificationBuilder(NotificationCodeWithDescription notificationCodeWithDescription) {
             this.notificationCodeWithDescription = notificationCodeWithDescription;
             this.description = notificationCodeWithDescription.getDescription();
             this.title = notificationCodeWithDescription.getStatus().code().description();
             this.position = InputPosition.empty;
+            this.message = notificationCodeWithDescription.getMessage();
         }
 
         public NotificationBuilder setPosition(InputPosition position) {
@@ -86,8 +91,14 @@ public final class NotificationImplementation implements Notification {
             return this;
         }
 
+        public NotificationBuilder setMessageParameters(String... parameters) {
+            this.message = String.format(message, (Object[]) parameters);
+            return this;
+        }
+
         public NotificationImplementation build() {
-            return new NotificationImplementation(notificationCodeWithDescription, position, title, description);
+            return new NotificationImplementation(
+                    notificationCodeWithDescription, position, title, description, message);
         }
     }
 
@@ -137,7 +148,8 @@ public final class NotificationImplementation implements Notification {
         NotificationImplementation that = (NotificationImplementation) o;
         return Objects.equals(position, that.position)
                 && Objects.equals(description, that.description)
-                && Objects.equals(title, that.title);
+                && Objects.equals(title, that.title)
+                && Objects.equals(message, that.message);
     }
 
     @Override
@@ -151,5 +163,10 @@ public final class NotificationImplementation implements Notification {
 
     private NotificationCategory mapCategory(String category) {
         return NotificationCategory.valueOf(category);
+    }
+
+    // Note: this should not be in the public interface until we have decided what name this field/function should have.
+    public String getMessage() {
+        return message;
     }
 }

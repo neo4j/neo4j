@@ -159,10 +159,18 @@ public enum NotificationCodeWithDescription {
 
     private final Status status;
     private final String description;
+    private final String message;
 
     NotificationCodeWithDescription(Status status, String description) {
         this.status = status;
         this.description = description;
+        this.message = null;
+    }
+
+    NotificationCodeWithDescription(Status status, String description, String message) {
+        this.status = status;
+        this.description = description;
+        this.message = message;
     }
 
     public Status getStatus() {
@@ -171,6 +179,10 @@ public enum NotificationCodeWithDescription {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getMessage() {
+        return message;
     }
 
     public static NotificationImplementation cartesianProduct(InputPosition position, String param) {
@@ -326,6 +338,15 @@ public enum NotificationCodeWithDescription {
         return new NotificationImplementation.NotificationBuilder(this)
                 .setPosition(position)
                 .setNotificationDetails(details)
+                .build();
+    }
+
+    private NotificationImplementation notificationWithMessage(
+            InputPosition position, String[] oldDetails, String[] parameters) {
+        return new NotificationImplementation.NotificationBuilder(this)
+                .setPosition(position)
+                .setNotificationDetails(oldDetails)
+                .setMessageParameters(parameters)
                 .build();
     }
 
