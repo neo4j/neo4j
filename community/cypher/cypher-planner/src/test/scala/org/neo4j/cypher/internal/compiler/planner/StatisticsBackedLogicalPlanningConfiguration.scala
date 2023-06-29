@@ -101,7 +101,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     StatisticsBackedLogicalPlanningConfigurationBuilder()
 
   case class Options(
-    debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
+    debug: CypherDebugOptions = CypherDebugOptions(Set(CypherDebugOption.verboseEagernessReasons)),
     connectComponentsPlanner: Boolean = true,
     executionModel: ExecutionModel = ExecutionModel.default,
     useMinimumGraphStatistics: Boolean = false,

@@ -409,6 +409,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object rawCardinalities extends CypherDebugOption("rawcardinalities")
   case object warnOnCompilationErrors extends CypherDebugOption("warnoncompilationerrors")
   case object disableExistsSubqueryCaching extends CypherDebugOption("disableexistssubquerycaching")
+  case object verboseEagernessReasons extends CypherDebugOption("verboseeagernessreasons")
 
   def values: Set[CypherDebugOption] = Set(
     tostring,
@@ -427,7 +428,8 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     logicalPlanBuilder,
     rawCardinalities,
     warnOnCompilationErrors,
-    disableExistsSubqueryCaching
+    disableExistsSubqueryCaching,
+    verboseEagernessReasons
   )
 
   implicit val hasDefault: OptionDefault[CypherDebugOption] = OptionDefault.create(default)
@@ -476,4 +478,5 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
   val warnOnCompilationErrors: Boolean = isEnabled(CypherDebugOption.warnOnCompilationErrors)
   val disableExistsSubqueryCaching: Boolean = isEnabled(CypherDebugOption.disableExistsSubqueryCaching)
+  val verboseEagernessReasons: Boolean = isEnabled(CypherDebugOption.verboseEagernessReasons)
 }

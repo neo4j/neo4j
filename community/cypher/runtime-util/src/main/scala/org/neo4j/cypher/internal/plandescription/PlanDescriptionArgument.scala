@@ -33,6 +33,10 @@ case class PrettyString private[plandescription] (prettifiedString: String) {
   override def toString: String = prettifiedString
 }
 
+object PrettyString {
+  implicit val byPrettifiedString: Ordering[PrettyString] = Ordering.by(_.prettifiedString)
+}
+
 object Arguments {
   private val VERSION_PATTERN = "(\\d+)\\.{1}(\\d+).*".r
 

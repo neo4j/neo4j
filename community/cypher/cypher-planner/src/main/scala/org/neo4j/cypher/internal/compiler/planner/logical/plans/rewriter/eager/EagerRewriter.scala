@@ -75,7 +75,8 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
           from.anonymousVariableNameGenerator
         )
       case `defaultUpdateStrategy` =>
-        EagerWhereNeededRewriter(cardinalities, attributes).eagerize(
+        val shouldCompressReasons = !context.debugOptions.verboseEagernessReasons
+        EagerWhereNeededRewriter(cardinalities, attributes, shouldCompressReasons).eagerize(
           from.logicalPlan,
           from.semanticTable(),
           from.anonymousVariableNameGenerator

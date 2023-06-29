@@ -885,7 +885,11 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
           PropertyKeyName("Foo")(InputPosition.NONE),
           Some(EagernessReason.Conflict(Id(1), Id(2)))
         ),
-        EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(1), Id(2))))
+        EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(1), Id(2)))),
+        EagernessReason.Summarized(Map(
+          EagernessReason.ReadDeleteConflict("ident") -> (EagernessReason.Conflict(Id(7), Id(8)), 123),
+          EagernessReason.ReadCreateConflict -> (EagernessReason.Conflict(Id(9), Id(10)), 321)
+        ))
       ))
       .argument()
       .build()

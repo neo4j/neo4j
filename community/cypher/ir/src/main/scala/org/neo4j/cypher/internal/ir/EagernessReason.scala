@@ -40,40 +40,97 @@ object EagernessReason {
     }
   }
 
-  sealed trait Reason {
-    def maybeConflict: Option[Conflict]
+  sealed trait Reason
+
+  case object Unknown extends Reason
+  case object UpdateStrategyEager extends Reason
+  case object WriteAfterCallInTransactions extends Reason
+
+  /**
+   * Non-unique reasons can be reported by multiple conflicting plan pairs.
+   */
+  sealed trait NonUnique extends Reason {
+    def withConflict(conflict: Conflict): ReasonWithConflict = ReasonWithConflict(this, conflict)
+
+    def withMaybeConflict(maybeConflict: Option[Conflict]): Reason = {
+      maybeConflict.fold(this: Reason)(withConflict)
+    }
+
   }
 
-  case object Unknown extends Reason {
-    override def maybeConflict: Option[Conflict] = None
+  case class LabelReadSetConflict(label: LabelName) extends NonUnique
+
+  object LabelReadSetConflict {
+
+    def apply(label: LabelName, maybeConflict: Option[Conflict]): Reason =
+      LabelReadSetConflict(label).withMaybeConflict(maybeConflict)
   }
 
-  case object UpdateStrategyEager extends Reason {
-    override def maybeConflict: Option[Conflict] = None
+  case class TypeReadSetConflict(relType: RelTypeName) extends NonUnique
+
+  object TypeReadSetConflict {
+
+    def apply(relType: RelTypeName, maybeConflict: Option[Conflict]): Reason =
+      TypeReadSetConflict(relType).withMaybeConflict(maybeConflict)
   }
 
-  case class LabelReadSetConflict(label: LabelName, override val maybeConflict: Option[Conflict] = None)
-      extends Reason
+  case class LabelReadRemoveConflict(label: LabelName) extends NonUnique
 
-  case class TypeReadSetConflict(relType: RelTypeName, override val maybeConflict: Option[Conflict] = None)
-      extends Reason
+  object LabelReadRemoveConflict {
 
-  case class LabelReadRemoveConflict(label: LabelName, override val maybeConflict: Option[Conflict] = None)
-      extends Reason
+    def apply(label: LabelName, maybeConflict: Option[Conflict]): Reason =
+      LabelReadRemoveConflict(label).withMaybeConflict(maybeConflict)
+  }
 
-  case class ReadDeleteConflict(identifier: String, override val maybeConflict: Option[Conflict] = None)
-      extends Reason
+  case class ReadDeleteConflict(identifier: String) extends NonUnique
 
-  case class ReadCreateConflict(override val maybeConflict: Option[Conflict] = None) extends Reason
+  object ReadDeleteConflict {
 
-  case class PropertyReadSetConflict(
-    property: PropertyKeyName,
-    override val maybeConflict: Option[Conflict] = None
-  ) extends Reason
+    def apply(identifier: String, maybeConflict: Option[Conflict]): Reason =
+      ReadDeleteConflict(identifier).withMaybeConflict(maybeConflict)
+  }
 
-  case class UnknownPropertyReadSetConflict(override val maybeConflict: Option[Conflict] = None) extends Reason
+  case class PropertyReadSetConflict(property: PropertyKeyName) extends NonUnique
 
-  case object WriteAfterCallInTransactions extends Reason {
-    override def maybeConflict: Option[Conflict] = None
+  object PropertyReadSetConflict {
+
+    def apply(property: PropertyKeyName, maybeConflict: Option[Conflict]): Reason =
+      PropertyReadSetConflict(property).withMaybeConflict(maybeConflict)
+  }
+
+  case object ReadCreateConflict extends NonUnique {
+
+    def apply(maybeConflict: Option[Conflict]): Reason =
+      ReadCreateConflict.withMaybeConflict(maybeConflict)
+
+    def apply(): Reason = this
+  }
+
+  case object UnknownPropertyReadSetConflict extends NonUnique {
+
+    def apply(maybeConflict: Option[Conflict]): Reason =
+      UnknownPropertyReadSetConflict.withMaybeConflict(maybeConflict)
+    def apply(): Reason = this
+  }
+
+  final case class ReasonWithConflict(reason: NonUnique, conflict: Conflict) extends Reason
+
+  /**
+   * @param summary For a given non-unique reason, contains a single (arbitrary) conflicting plan pair
+   *                and a total number of conflicting pairs with the same reason.
+   */
+  final case class Summarized(summary: Map[NonUnique, (Conflict, Int)])
+      extends Reason {
+
+    def addReason(r: ReasonWithConflict): Summarized = {
+      copy(summary = summary.updatedWith(r.reason) {
+        case None         => Some(r.conflict -> 1)
+        case Some(_ -> n) => Some(r.conflict -> (n + 1))
+      })
+    }
+  }
+
+  object Summarized {
+    val empty: Summarized = Summarized(Map.empty)
   }
 }

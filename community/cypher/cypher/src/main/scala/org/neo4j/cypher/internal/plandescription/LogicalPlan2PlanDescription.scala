@@ -2516,43 +2516,61 @@ case class LogicalPlan2PlanDescription(
   }
 
   private def eagernessReasonInfo(reasons: ListSet[EagernessReason.Reason]): Seq[PrettyString] = {
-    reasons.toSeq.flatMap { reason =>
-      val reasonDetail = eagernessReasonDetails(reason)
-      val conflictDetails = reason.maybeConflict.map(conflictInfo)
+    reasons.toSeq.flatMap(eagernessReasonDetails).sorted
+  }
 
-      (reasonDetail, conflictDetails) match {
-        case (Some(detail), None)           => Seq(detail)
-        case (Some(detail), Some(conflict)) => Seq(pretty"$detail $conflict")
-        case (_, _)                         => Seq()
-      }
+  private def eagernessReasonDetails(reason: EagernessReason.Reason): Seq[PrettyString] = reason match {
+    case r: EagernessReason.NonUnique =>
+      Seq(formatEagernessReason(nonUniqueEagernessReasonDetails(r)))
+    case r: EagernessReason.ReasonWithConflict =>
+      Seq(formatEagernessReason(nonUniqueEagernessReasonDetails(r.reason), Some(r.conflict)))
+    case EagernessReason.UpdateStrategyEager =>
+      Seq(formatEagernessReason(pretty"updateStrategy=eager"))
+    case EagernessReason.WriteAfterCallInTransactions =>
+      Seq(formatEagernessReason(pretty"write after CALL { ... } IN TRANSACTIONS"))
+    case EagernessReason.Summarized(summary) =>
+      summary.map { case (reason, (conflict, count)) =>
+        formatEagernessReason(
+          nonUniqueEagernessReasonDetails(reason),
+          Some(conflict),
+          Option.when(count > 1)(count - 1)
+        )
+      }.toSeq
+    case EagernessReason.Unknown =>
+      Seq.empty
+  }
+
+  private def formatEagernessReason(
+    detail: PrettyString,
+    conflict: Option[EagernessReason.Conflict] = None,
+    extraCount: Option[Int] = None
+  ): PrettyString = {
+    val extraCountStr = extraCount.fold("")(c => s", and $c more conflicting operators")
+    val conflictStr = conflict.fold("")(c => s" (${conflictInfo(c)}$extraCountStr)")
+    pretty"$detail${asPrettyString.raw(conflictStr)}"
+  }
+
+  private def nonUniqueEagernessReasonDetails(reason: EagernessReason.NonUnique): PrettyString = {
+    reason match {
+      case EagernessReason.LabelReadSetConflict(label) =>
+        pretty"read/set conflict for label: ${asPrettyString(label)}"
+      case EagernessReason.TypeReadSetConflict(label) =>
+        (pretty"read/set conflict for relationship type: ${asPrettyString(label)}")
+      case EagernessReason.LabelReadRemoveConflict(label) =>
+        (pretty"read/remove conflict for label: ${asPrettyString(label)}")
+      case EagernessReason.ReadDeleteConflict(identifier) =>
+        (pretty"read/delete conflict for variable: ${asPrettyString(identifier)}")
+      case EagernessReason.ReadCreateConflict =>
+        (pretty"read/create conflict")
+      case EagernessReason.PropertyReadSetConflict(property) =>
+        (pretty"read/set conflict for property: ${asPrettyString(property)}")
+      case EagernessReason.UnknownPropertyReadSetConflict =>
+        (pretty"read/set conflict for some property")
     }
   }
 
-  private def eagernessReasonDetails(reason: EagernessReason.Reason): Option[PrettyString] = reason match {
-    case EagernessReason.UpdateStrategyEager =>
-      Some(pretty"updateStrategy=eager")
-    case EagernessReason.LabelReadSetConflict(label, _) =>
-      Some(pretty"read/set conflict for label: ${asPrettyString(label)}")
-    case EagernessReason.TypeReadSetConflict(label, _) =>
-      Some(pretty"read/set conflict for relationship type: ${asPrettyString(label)}")
-    case EagernessReason.LabelReadRemoveConflict(label, _) =>
-      Some(pretty"read/remove conflict for label: ${asPrettyString(label)}")
-    case EagernessReason.ReadDeleteConflict(identifier, _) =>
-      Some(pretty"read/delete conflict for variable: ${asPrettyString(identifier)}")
-    case EagernessReason.ReadCreateConflict(_) =>
-      Some(pretty"read/create conflict")
-    case EagernessReason.PropertyReadSetConflict(property, _) =>
-      Some(pretty"read/set conflict for property: ${asPrettyString(property)}")
-    case EagernessReason.UnknownPropertyReadSetConflict(_) =>
-      Some(pretty"read/set conflict for some property")
-    case EagernessReason.WriteAfterCallInTransactions =>
-      Some(pretty"write after CALL { ... } IN TRANSACTIONS")
-    case EagernessReason.Unknown =>
-      None
-  }
-
-  private def conflictInfo(conflict: EagernessReason.Conflict): PrettyString =
-    pretty"(Operator: ${asPrettyString.raw(conflict.first.x.toString)} vs ${asPrettyString.raw(conflict.second.x.toString)})"
+  private def conflictInfo(conflict: EagernessReason.Conflict): String =
+    s"Operator: ${conflict.first.x} vs ${conflict.second.x}"
 
   private def expandExpressionDescription(
     from: LogicalVariable,

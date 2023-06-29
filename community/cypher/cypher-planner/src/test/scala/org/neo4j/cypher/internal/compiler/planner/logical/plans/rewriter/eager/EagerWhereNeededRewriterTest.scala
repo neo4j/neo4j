@@ -89,8 +89,16 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       override val idGen: IdGen = new SequentialIdGen(100)
     }
 
-  private def eagerizePlan(planBuilder: LogicalPlanBuilder, plan: LogicalPlan): LogicalPlan =
-    EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+  private def eagerizePlan(
+    planBuilder: LogicalPlanBuilder,
+    plan: LogicalPlan,
+    shouldCompressReasons: Boolean = false
+  ): LogicalPlan =
+    EagerWhereNeededRewriter(
+      planBuilder.cardinalities,
+      Attributes(planBuilder.idGen),
+      shouldCompressReasons
+    ).eagerize(
       plan,
       planBuilder.getSemanticTable,
       new AnonymousVariableNameGenerator
@@ -190,7 +198,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     // Currently OrderedUnion is only planned for read-plans
     an[IllegalStateException] should be thrownBy {
-      EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      EagerWhereNeededRewriter(
+        planBuilder.cardinalities,
+        Attributes(planBuilder.idGen),
+        shouldCompressReasons = false
+      ).eagerize(
         plan,
         planBuilder.getSemanticTable,
         new AnonymousVariableNameGenerator
@@ -210,7 +222,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     // Currently AssertSameNode is only planned for read-plans
     an[IllegalStateException] should be thrownBy {
-      EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      EagerWhereNeededRewriter(
+        planBuilder.cardinalities,
+        Attributes(planBuilder.idGen),
+        shouldCompressReasons = false
+      ).eagerize(
         plan,
         planBuilder.getSemanticTable,
         new AnonymousVariableNameGenerator
@@ -2848,7 +2864,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     // Currently the RHS of any SemiApply variant must be read-only
     an[IllegalStateException] should be thrownBy {
-      EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      EagerWhereNeededRewriter(
+        planBuilder.cardinalities,
+        Attributes(planBuilder.idGen),
+        shouldCompressReasons = false
+      ).eagerize(
         plan,
         planBuilder.getSemanticTable,
         new AnonymousVariableNameGenerator
@@ -7072,5 +7092,82 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val result = eagerizePlan(planBuilder, plan)
 
     result should equal(plan)
+  }
+
+  test("should rewrite eagerness reasons into summary") {
+    val readDeleteA = ReadDeleteConflict("a")
+    val labelReadRemoveA = LabelReadRemoveConflict(labelName("a"))
+    val typeReadSetRel = TypeReadSetConflict(relTypeName("REL"))
+
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .eager(ListSet(
+        EagernessReason.WriteAfterCallInTransactions,
+        readDeleteA.withConflict(Conflict(Id(1), Id(2))),
+        readDeleteA.withConflict(Conflict(Id(2), Id(3))),
+        readDeleteA.withConflict(Conflict(Id(3), Id(4))),
+        EagernessReason.UpdateStrategyEager,
+        ReadCreateConflict.withConflict(Conflict(Id(4), Id(5))),
+        ReadCreateConflict.withConflict(Conflict(Id(5), Id(6)))
+      ))
+      .eager(ListSet(
+        labelReadRemoveA.withConflict(Conflict(Id(6), Id(7))),
+        labelReadRemoveA.withConflict(Conflict(Id(7), Id(8))),
+        typeReadSetRel.withConflict(Conflict(Id(8), Id(9)))
+      ))
+      .argument()
+      .build()
+
+    val rewrittenPlan = plan.endoRewrite(EagerWhereNeededRewriter.summarizeEagernessReasonsRewriter)
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .eager(ListSet(
+        EagernessReason.WriteAfterCallInTransactions,
+        EagernessReason.UpdateStrategyEager,
+        EagernessReason.Summarized(Map(
+          readDeleteA -> (Conflict(Id(3), Id(4)), 3),
+          ReadCreateConflict -> (Conflict(Id(5), Id(6)), 2)
+        ))
+      ))
+      .eager(ListSet(
+        EagernessReason.Summarized(Map(
+          labelReadRemoveA -> (Conflict(Id(7), Id(8)), 2),
+          typeReadSetRel -> (Conflict(Id(8), Id(9)), 1)
+        ))
+      ))
+      .argument()
+      .build()
+
+    rewrittenPlan shouldEqual expectedPlan
+  }
+
+  test("should insert eager and rewrite eagerness reasons into summary") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setLabels("n", "B")
+      .setLabels("n", "B")
+      .setLabels("n", "B")
+      .apply()
+      .|.nodeByLabelScan("m", "B")
+      .nodeByLabelScan("n", "A")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan, shouldCompressReasons = true)
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setLabels("n", "B")
+      .setLabels("n", "B")
+      .setLabels("n", "B")
+      .eager(ListSet(EagernessReason.Summarized(Map(
+        LabelReadSetConflict(labelName("B")) -> (Conflict(Id(4), Id(6)), 3)
+      ))))
+      .apply()
+      .|.nodeByLabelScan("m", "B")
+      .nodeByLabelScan("n", "A")
+      .build()
+
+    result shouldEqual expectedPlan
   }
 }

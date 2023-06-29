@@ -23,20 +23,30 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.BestPositionFinder.pickPlansToEagerize
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.findCandidateLists
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.findConflictingPlans
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.summarizeEagernessReasonsRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.truncateDatabaseDeeagerizer
+import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.ReasonWithConflict
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.inSequence
+import org.neo4j.cypher.internal.util.topDown
 
 /**
  * Insert Eager only where it's needed to maintain correct semantics.
  */
-case class EagerWhereNeededRewriter(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan])
-    extends EagerRewriter(attributes) {
+case class EagerWhereNeededRewriter(
+  cardinalities: Cardinalities,
+  attributes: Attributes[LogicalPlan],
+  shouldCompressReasons: Boolean
+) extends EagerRewriter(attributes) {
 
   override def eagerize(
     plan: LogicalPlan,
@@ -56,14 +66,36 @@ case class EagerWhereNeededRewriter(cardinalities: Cardinalities, attributes: At
     val plansToEagerize = pickPlansToEagerize(cardinalities, candidateLists)
 
     // Step 5: Actually insert Eager operators
-    val eagerizedPlan = plan.endoRewrite(bottomUp(Rewriter.lift {
+    val insertEagerRewriter = bottomUp(Rewriter.lift {
       case p: LogicalPlan if plansToEagerize.contains(p.id) =>
         eagerOnTopOf(p, plansToEagerize(p.id))
-    }))
+    })
 
-    // Step 6: Hackily remove one case of Eager in Call-In-Transactions that is actually not needed.
-    // This rewriter is part of PlanRewriter, but that Phase must run before EagerRewriter, so we
-    // invoke it manually here
-    eagerizedPlan.endoRewrite(truncateDatabaseDeeagerizer)
+    val rewritingSteps = Seq(
+      insertEagerRewriter,
+
+      // Step 6: Hackily remove one case of Eager in Call-In-Transactions that is actually not needed.
+      // This rewriter is part of PlanRewriter, but that Phase must run before EagerRewriter, so we
+      // invoke it manually here
+      truncateDatabaseDeeagerizer
+    ) ++
+      // Step 7: Optionally, compress reported eagerness reasons.
+      Option.when(shouldCompressReasons)(summarizeEagernessReasonsRewriter)
+
+    plan.endoRewrite(inSequence(rewritingSteps: _*))
   }
+}
+
+object EagerWhereNeededRewriter {
+
+  private[eager] val summarizeEagernessReasonsRewriter: Rewriter = topDown(Rewriter.lift {
+    case e: Eager if e.reasons.size > 1 =>
+      val (reasonsWithoutConflicts, reasonsWithConflictsSummary) =
+        e.reasons.foldLeft((e.reasons.empty, EagernessReason.Summarized.empty)) {
+          case ((withoutConflicts, summary), r: ReasonWithConflict) => (withoutConflicts, summary.addReason(r))
+          case ((withoutConflicts, summary), r)                     => (withoutConflicts + r, summary)
+        }
+
+      e.copy(reasons = reasonsWithoutConflicts + reasonsWithConflictsSummary)(SameId(e.id))
+  })
 }

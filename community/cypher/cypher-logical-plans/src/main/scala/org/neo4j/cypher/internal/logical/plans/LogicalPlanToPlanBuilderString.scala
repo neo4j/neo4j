@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.EagernessReason
-import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -1598,34 +1597,43 @@ object LogicalPlanToPlanBuilderString {
     s"\"${si.id.name} ${if (si.isAscending) "ASC" else "DESC"}\""
   }
 
-  def conflictStr(maybeConflict: Option[EagernessReason.Conflict]): String =
-    maybeConflict match {
-      case Some(conflict) => s"Some(EagernessReason.Conflict(${conflict.first}, ${conflict.second}))"
-      case None           => "None"
-    }
+  private def conflictStr(conflict: EagernessReason.Conflict): String =
+    s"EagernessReason.Conflict(${conflict.first}, ${conflict.second})"
 
-  private def eagernessReasonStr(reason: Reason): String = {
+  private def eagernessReasonStr(reason: EagernessReason.Reason): String = {
     val prefix = objectName(EagernessReason)
     val suffix = reason match {
       case EagernessReason.Unknown                      => objectName(EagernessReason.Unknown)
       case EagernessReason.UpdateStrategyEager          => objectName(EagernessReason.UpdateStrategyEager)
       case EagernessReason.WriteAfterCallInTransactions => objectName(EagernessReason.WriteAfterCallInTransactions)
-      case EagernessReason.LabelReadSetConflict(label, maybeConflict) =>
-        s"${objectName(EagernessReason.LabelReadSetConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
-      case EagernessReason.TypeReadSetConflict(relType, maybeConflict) =>
-        s"${objectName(EagernessReason.TypeReadSetConflict)}(RelTypeName(${wrapInQuotations(relType.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
-      case EagernessReason.LabelReadRemoveConflict(label, maybeConflict) =>
-        s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
-      case EagernessReason.ReadDeleteConflict(identifier, maybeConflict) =>
-        s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)}, ${conflictStr(maybeConflict)})"
-      case EagernessReason.ReadCreateConflict(maybeConflict) =>
-        s"${objectName(EagernessReason.ReadCreateConflict)}(${conflictStr(maybeConflict)})"
-      case EagernessReason.PropertyReadSetConflict(property, maybeConflict) =>
-        s"${objectName(EagernessReason.PropertyReadSetConflict)}(PropertyKeyName(${wrapInQuotations(property.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
-      case EagernessReason.UnknownPropertyReadSetConflict(maybeConflict) =>
-        s"${objectName(EagernessReason.UnknownPropertyReadSetConflict)}(${conflictStr(maybeConflict)})"
+      case r: EagernessReason.NonUnique                 => nonUniqueEagernessReasonStr(r)
+      case EagernessReason.ReasonWithConflict(reason, conflict) =>
+        s"${nonUniqueEagernessReasonStr(reason)}.withConflict(${conflictStr(conflict)})"
+      case EagernessReason.Summarized(summary) =>
+        val summaryStr = summary.map {
+          case (reason, (conflict, count)) =>
+            s"${eagernessReasonStr(reason)} -> (${conflictStr(conflict)}, $count)"
+        }.mkString("Map(", ", ", ")")
+        s"${objectName(EagernessReason.Summarized)}($summaryStr)"
     }
     s"$prefix.$suffix"
+  }
+
+  private def nonUniqueEagernessReasonStr(reason: EagernessReason.NonUnique): String = reason match {
+    case EagernessReason.LabelReadSetConflict(label) =>
+      s"${objectName(EagernessReason.LabelReadSetConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
+    case EagernessReason.TypeReadSetConflict(relType) =>
+      s"${objectName(EagernessReason.TypeReadSetConflict)}(RelTypeName(${wrapInQuotations(relType.name)})(InputPosition.NONE))"
+    case EagernessReason.LabelReadRemoveConflict(label) =>
+      s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
+    case EagernessReason.ReadDeleteConflict(identifier) =>
+      s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)})"
+    case EagernessReason.ReadCreateConflict =>
+      s"${objectName(EagernessReason.ReadCreateConflict)}"
+    case EagernessReason.PropertyReadSetConflict(property) =>
+      s"${objectName(EagernessReason.PropertyReadSetConflict)}(PropertyKeyName(${wrapInQuotations(property.name)})(InputPosition.NONE))"
+    case EagernessReason.UnknownPropertyReadSetConflict =>
+      s"${objectName(EagernessReason.UnknownPropertyReadSetConflict)}"
   }
 
   private def variablePredicates(predicates: Seq[VariablePredicate], name: String): String = {
