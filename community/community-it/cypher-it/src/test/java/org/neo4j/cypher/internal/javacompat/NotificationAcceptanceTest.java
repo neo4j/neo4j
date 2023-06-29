@@ -21,11 +21,6 @@ package org.neo4j.cypher.internal.javacompat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RUNTIME_OPTION;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EAGER_LOAD_CSV;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.nodeAnyIndex;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.nodeTextIndex;
 
@@ -37,6 +32,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 class NotificationAcceptanceTest extends NotificationTestSupport {
@@ -46,8 +42,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         shouldNotifyInStreamWithDetail(
                 "EXPLAIN CYPHER runtime=pipelined RETURN 1",
                 InputPosition.empty,
-                RUNTIME_UNSUPPORTED,
-                "This version of Neo4j does not " + "support requested runtime: pipelined");
+                "This version of Neo4j does not " + "support requested runtime: pipelined",
+                NotificationCodeWithDescription::runtimeUnsupported);
     }
 
     @Test
@@ -72,8 +68,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         shouldNotifyInStreamWithDetail(
                 " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n",
                 InputPosition.empty,
-                INDEX_HINT_UNFULFILLABLE,
-                nodeAnyIndex("n", "Person", "name"));
+                nodeAnyIndex("n", "Person", "name"),
+                NotificationCodeWithDescription::indexHintUnfulfillable);
     }
 
     @Test
@@ -87,13 +83,25 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 + "RETURN n";
 
         shouldNotifyInStreamWithDetail(
-                query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeAnyIndex("n", "Person", "name"));
+                query,
+                InputPosition.empty,
+                nodeAnyIndex("n", "Person", "name"),
+                NotificationCodeWithDescription::indexHintUnfulfillable);
         shouldNotifyInStreamWithDetail(
-                query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeAnyIndex("m", "Party", "city"));
+                query,
+                InputPosition.empty,
+                nodeAnyIndex("m", "Party", "city"),
+                NotificationCodeWithDescription::indexHintUnfulfillable);
         shouldNotifyInStreamWithDetail(
-                query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeAnyIndex("k", "Animal", "species"));
+                query,
+                InputPosition.empty,
+                nodeAnyIndex("k", "Animal", "species"),
+                NotificationCodeWithDescription::indexHintUnfulfillable);
         shouldNotifyInStreamWithDetail(
-                query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeTextIndex("o", "Other", "text"));
+                query,
+                InputPosition.empty,
+                nodeTextIndex("o", "Other", "text"),
+                NotificationCodeWithDescription::indexHintUnfulfillable);
     }
 
     @Test
@@ -152,7 +160,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         shouldNotifyInStream(
                 "EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line",
                 InputPosition.empty,
-                EAGER_LOAD_CSV);
+                NotificationCodeWithDescription::eagerLoadCsv);
     }
 
     @Test
@@ -207,7 +215,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         shouldNotifyInStream(
                 "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m",
                 new InputPosition(31, 1, 32),
-                UNBOUNDED_SHORTEST_PATH);
+                NotificationCodeWithDescription::unboundedShortestPath);
     }
 
     @Test
@@ -457,7 +465,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         shouldNotifyInStreamWithDetail(
                 "EXPLAIN CYPHER runtime=interpreted RETURN 1",
                 InputPosition.empty,
-                DEPRECATED_RUNTIME_OPTION,
-                "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead");
+                "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead",
+                NotificationCodeWithDescription::deprecatedRuntimeOption);
     }
 }

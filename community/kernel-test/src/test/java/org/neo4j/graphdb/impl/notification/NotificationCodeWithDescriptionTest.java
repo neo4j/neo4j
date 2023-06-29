@@ -21,41 +21,40 @@ package org.neo4j.graphdb.impl.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CARTESIAN_PRODUCT;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CODE_GENERATION_FAILED;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_DATABASE_NAME;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FORMAT;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FUNCTION;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROPERTY_REFERENCE_IN_CREATE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RUNTIME_OPTION;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EAGER_LOAD_CSV;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EXHAUSTIVE_SHORTEST_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.HOME_DATABASE_NOT_PRESENT;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.IMPOSSIBLE_REVOKE_COMMAND;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.JOIN_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.LARGE_LABEL_LOAD_CSV;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_LABEL;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_PARAMETERS_FOR_EXPLAIN;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_PROPERTY_NAME;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_REL_TYPE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.PROCEDURE_WARNING;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.REPEATED_RELATIONSHIP_REFERENCE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_EXPERIMENTAL;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBQUERY_VARIABLE_SHADOWING;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNION_RETURN_ORDER;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.codeGenerationFailed;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffect;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedDatabaseName;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFormat;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunction;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedure;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRuntimeOption;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.eagerLoadCsv;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.exhaustiveShortestPath;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.homeDatabaseNotPresent;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.impossibleRevokeCommand;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.indexHintUnfulfillable;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.indexLookupForDynamicProperty;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.joinHintUnfulfillable;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.largeLabelLoadCsv;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingLabel;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingParameterForExplain;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingPropertyName;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingRelType;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.procedureWarning;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedRelationshipReference;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.runtimeExperimental;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.runtimeUnsupported;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.subqueryVariableShadowing;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unboundedShortestPath;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unionReturnOrder;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unsatisfiableRelationshipTypeExpression;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.repeatedRelationship;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.unsatisfiableRelTypeExpression;
 
@@ -70,12 +69,13 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
+import org.neo4j.kernel.api.exceptions.Status;
 
 class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index() {
         String indexDetail = NotificationDetail.nodeAnyIndex("person", "Person", "name");
-        Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
+        Notification notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
 
         verifyNotification(
                 notification,
@@ -89,7 +89,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_text_index() {
         String indexDetail = NotificationDetail.nodeTextIndex("person", "Person", "name");
-        Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
+        Notification notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
 
         verifyNotification(
                 notification,
@@ -103,7 +103,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_index() {
         String indexDetail = NotificationDetail.relationshipAnyIndex("person", "Person", "name");
-        Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
+        Notification notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
 
         verifyNotification(
                 notification,
@@ -117,7 +117,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_text_index() {
         String indexDetail = NotificationDetail.relationshipTextIndex("person", "Person", "name");
-        Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
+        Notification notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
 
         verifyNotification(
                 notification,
@@ -133,8 +133,9 @@ class NotificationCodeWithDescriptionTest {
         Set<String> idents = new TreeSet<>();
         idents.add("n");
         idents.add("node2");
-        String identifierDetail = NotificationDetail.cartesianProduct(idents);
-        Notification notification = CARTESIAN_PRODUCT.notification(InputPosition.empty, identifierDetail);
+        String identifierDetail = NotificationDetail.cartesianProductDescription(idents);
+        Notification notification =
+                NotificationCodeWithDescription.cartesianProduct(InputPosition.empty, identifierDetail);
 
         verifyNotification(
                 notification,
@@ -155,7 +156,7 @@ class NotificationCodeWithDescriptionTest {
         idents.add("n");
         idents.add("node2");
         String identifierDetail = NotificationDetail.joinKey(idents);
-        Notification notification = JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, identifierDetail);
+        Notification notification = joinHintUnfulfillable(InputPosition.empty, identifierDetail);
 
         verifyNotification(
                 notification,
@@ -171,7 +172,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE() {
         String identifierDetail = NotificationDetail.deprecatedName("oldName", "newName");
-        Notification notification = DEPRECATED_PROCEDURE.notification(InputPosition.empty, identifierDetail);
+        Notification notification = deprecatedProcedure(InputPosition.empty, identifierDetail);
 
         verifyNotification(
                 notification,
@@ -185,7 +186,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName() {
         String identifierDetail = NotificationDetail.deprecatedName("oldName", "");
-        Notification notification = DEPRECATED_PROCEDURE.notification(InputPosition.empty, identifierDetail);
+        Notification notification = deprecatedProcedure(InputPosition.empty, identifierDetail);
 
         verifyNotification(
                 notification,
@@ -198,34 +199,34 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_RUNTIME_UNSUPPORTED() {
-        Notification notification = RUNTIME_UNSUPPORTED.notification(InputPosition.empty);
+        Notification notification = runtimeUnsupported(InputPosition.empty, "PARALLEL");
 
         verifyNotification(
                 notification,
                 "This query is not supported by the chosen runtime.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.RuntimeUnsupportedWarning",
-                "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)",
+                "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (PARALLEL)",
                 NotificationCategory.UNSUPPORTED);
     }
 
     @Test
     void shouldConstructNotificationsFor_INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY() {
-        Notification notification = INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(InputPosition.empty);
+        Notification notification = indexLookupForDynamicProperty(InputPosition.empty, "m[n.x]");
 
         verifyNotification(
                 notification,
                 "Queries using dynamic properties will use neither index seeks nor index scans for those properties",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.DynamicProperty",
-                "Using a dynamic property makes it impossible to use an index lookup for this query (%s)",
+                "Using a dynamic property makes it impossible to use an index lookup for this query (m[n.x])",
                 NotificationCategory.PERFORMANCE);
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_FUNCTION() {
         String identifierDetail = NotificationDetail.deprecatedName("oldName", "newName");
-        Notification notification = DEPRECATED_FUNCTION.notification(InputPosition.empty, identifierDetail);
+        Notification notification = deprecatedFunction(InputPosition.empty, identifierDetail);
 
         verifyNotification(
                 notification,
@@ -239,7 +240,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_FUNCTION_with_no_newName() {
         String identifierDetail = NotificationDetail.deprecatedName("oldName", "");
-        Notification notification = DEPRECATED_FUNCTION.notification(InputPosition.empty, identifierDetail);
+        Notification notification = deprecatedFunction(InputPosition.empty, identifierDetail);
 
         verifyNotification(
                 notification,
@@ -252,59 +253,59 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_RUNTIME_OPTION() {
-        Notification notification = DEPRECATED_RUNTIME_OPTION.notification(InputPosition.empty);
+        Notification notification = deprecatedRuntimeOption(InputPosition.empty, "option=deprecatedOption");
 
         verifyNotification(
                 notification,
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated runtime option. (%s)",
+                "The query used a deprecated runtime option. (option=deprecatedOption)",
                 NotificationCategory.DEPRECATION);
     }
 
     @Test
     void shouldConstructNotificationsFor_PROCEDURE_WARNING() {
-        Notification notification = PROCEDURE_WARNING.notification(InputPosition.empty);
+        Notification notification = procedureWarning(InputPosition.empty, "deprecated procedure");
 
         verifyNotification(
                 notification,
                 "The query used a procedure that generated a warning.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Procedure.ProcedureWarning",
-                "The query used a procedure that generated a warning. (%s)",
+                "The query used a procedure that generated a warning. (deprecated procedure)",
                 NotificationCategory.GENERIC);
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_RETURN_FIELD() {
-        Notification notification = DEPRECATED_PROCEDURE_RETURN_FIELD.notification(InputPosition.empty);
+        Notification notification = deprecatedProcedureReturnField(InputPosition.empty, "deprecatedField");
 
         verifyNotification(
                 notification,
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated field from a procedure. (%s)",
+                "The query used a deprecated field from a procedure. (deprecatedField)",
                 NotificationCategory.DEPRECATION);
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR() {
-        Notification notification = DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(InputPosition.empty);
+        Notification notification = deprecatedRelationshipTypeSeparator(InputPosition.empty, "a:b");
 
         verifyNotification(
                 notification,
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The semantics of using colon in the separation of alternative relationship types will change in a future version. (%s)",
+                "The semantics of using colon in the separation of alternative relationship types will change in a future version. (a:b)",
                 NotificationCategory.DEPRECATION);
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE() {
-        Notification notification = DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(InputPosition.empty);
+        Notification notification = deprecatedNodeOrRelationshipOnRhsSetClause(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -318,8 +319,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP() {
-        Notification notification =
-                DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(InputPosition.empty);
+        Notification notification = deprecatedShortestPathWithFixedLengthRelationship(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -333,7 +333,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_EAGER_LOAD_CSV() {
-        Notification notification = EAGER_LOAD_CSV.notification(InputPosition.empty);
+        Notification notification = eagerLoadCsv(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -350,20 +350,20 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_FORMAT() {
-        Notification notification = DEPRECATED_FORMAT.notification(InputPosition.empty);
+        Notification notification = deprecatedFormat(InputPosition.empty, "u627");
 
         verifyNotification(
                 notification,
                 "The client made a request for a format which has been deprecated.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Request.DeprecatedFormat",
-                "The requested format has been deprecated. (%s)",
+                "The requested format has been deprecated. (u627)",
                 NotificationCategory.DEPRECATION);
     }
 
     @Test
     void shouldConstructNotificationsFor_LARGE_LABEL_LOAD_CSV() {
-        Notification notification = LARGE_LABEL_LOAD_CSV.notification(InputPosition.empty);
+        Notification notification = largeLabelLoadCsv(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -377,7 +377,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_MISSING_LABEL() {
-        Notification notification = MISSING_LABEL.notification(InputPosition.empty);
+        Notification notification = missingLabel(InputPosition.empty, "Label");
 
         verifyNotification(
                 notification,
@@ -385,13 +385,13 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                 "One of the labels in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application (%s)",
+                        + "misspell it or that the label is available when you run this statement in your application (Label)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
     @Test
     void shouldConstructNotificationsFor_MISSING_REL_TYPE() {
-        Notification notification = MISSING_REL_TYPE.notification(InputPosition.empty);
+        Notification notification = missingRelType(InputPosition.empty, "Rel");
 
         verifyNotification(
                 notification,
@@ -399,13 +399,13 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
                 "One of the relationship types in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application (%s)",
+                        + "misspell it or that the label is available when you run this statement in your application (Rel)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
     @Test
     void shouldConstructNotificationsFor_MISSING_PROPERTY_NAME() {
-        Notification notification = MISSING_PROPERTY_NAME.notification(InputPosition.empty);
+        Notification notification = missingPropertyName(InputPosition.empty, "prop");
 
         verifyNotification(
                 notification,
@@ -413,13 +413,13 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
                 "One of the property names in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application (%s)",
+                        + "misspell it or that the label is available when you run this statement in your application (prop)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
     @Test
     void shouldConstructNotificationsFor_UNBOUNDED_SHORTEST_PATH() {
-        Notification notification = UNBOUNDED_SHORTEST_PATH.notification(InputPosition.empty);
+        Notification notification = unboundedShortestPath(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -433,7 +433,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_EXHAUSTIVE_SHORTEST_PATH() {
-        Notification notification = EXHAUSTIVE_SHORTEST_PATH.notification(InputPosition.empty);
+        Notification notification = exhaustiveShortestPath(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -450,20 +450,20 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_RUNTIME_EXPERIMENTAL() {
-        Notification notification = RUNTIME_EXPERIMENTAL.notification(InputPosition.empty);
+        Notification notification = runtimeExperimental(InputPosition.empty, "PARALLEL");
 
         verifyNotification(
                 notification,
                 "This feature is experimental and should not be used in production systems.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.RuntimeExperimental",
-                "You are using an experimental feature (%s)",
+                "You are using an experimental feature (PARALLEL)",
                 NotificationCategory.UNSUPPORTED);
     }
 
     @Test
     void shouldConstructNotificationsFor_MISSING_PARAMETERS_FOR_EXPLAIN() {
-        Notification notification = MISSING_PARAMETERS_FOR_EXPLAIN.notification(InputPosition.empty);
+        Notification notification = missingParameterForExplain(InputPosition.empty, "param");
 
         verifyNotification(
                 notification,
@@ -471,26 +471,26 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.ParameterNotProvided",
                 "Did not supply query with enough parameters. "
-                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (%s)",
+                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (param)",
                 NotificationCategory.GENERIC);
     }
 
     @Test
     void shouldConstructNotificationsFor_CODE_GENERATION_FAILED() {
-        Notification notification = CODE_GENERATION_FAILED.notification(InputPosition.empty);
+        Notification notification = codeGenerationFailed(InputPosition.empty, "method too big");
 
         verifyNotification(
                 notification,
                 "The database was unable to generate code for the query. A stacktrace can be found in the debug.log.",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.CodeGenerationFailed",
-                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)",
+                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (method too big)",
                 NotificationCategory.PERFORMANCE);
     }
 
     @Test
     void shouldConstructNotificationsFor_SUBQUERY_VARIABLE_SHADOWING() {
-        Notification notification = SUBQUERY_VARIABLE_SHADOWING.notification(InputPosition.empty);
+        Notification notification = subqueryVariableShadowing(InputPosition.empty, "v");
 
         verifyNotification(
                 notification,
@@ -498,13 +498,13 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.SubqueryVariableShadowing",
                 "Variable in subquery is shadowing a variable with the same name from the outer scope. "
-                        + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (%s)",
+                        + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (v)",
                 NotificationCategory.GENERIC);
     }
 
     @Test
     void shouldConstructNotificationsFor_HOME_DATABASE_NOT_PRESENT() {
-        Notification notification = HOME_DATABASE_NOT_PRESENT.notification(InputPosition.empty);
+        Notification notification = homeDatabaseNotPresent(InputPosition.empty, "db");
 
         verifyNotification(
                 notification,
@@ -512,13 +512,13 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Database.HomeDatabaseNotFound",
                 "The home database provided does not currently exist in the DBMS. "
-                        + "This command will not take effect until this database is created. (%s)",
+                        + "This command will not take effect until this database is created. (db)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_DATABASE_NAME() {
-        Notification notification = DEPRECATED_DATABASE_NAME.notification(InputPosition.empty);
+        Notification notification = deprecatedDatabaseName(InputPosition.empty, "db.one");
 
         verifyNotification(
                 notification,
@@ -526,14 +526,14 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
-                        + "Names containing `.` should be escaped. (%s)",
+                        + "Names containing `.` should be escaped. (db.one)",
                 NotificationCategory.DEPRECATION);
     }
 
     @Test
     void shouldConstructNotificationsFor_UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION() {
-        Notification notification = UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(
-                InputPosition.empty, unsatisfiableRelTypeExpression("!%"));
+        Notification notification =
+                unsatisfiableRelationshipTypeExpression(InputPosition.empty, unsatisfiableRelTypeExpression("!%"));
 
         verifyNotification(
                 notification,
@@ -546,8 +546,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_REPEATED_RELATIONSHIP_REFERENCE() {
-        Notification notification =
-                REPEATED_RELATIONSHIP_REFERENCE.notification(InputPosition.empty, repeatedRelationship("r"));
+        Notification notification = repeatedRelationshipReference(InputPosition.empty, repeatedRelationship("r"));
 
         verifyNotification(
                 notification,
@@ -561,7 +560,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE() {
         Notification notification =
-                REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notification(InputPosition.empty, repeatedRelationship("r"));
+                repeatedVarLengthRelationshipReference(InputPosition.empty, repeatedRelationship("r"));
 
         verifyNotification(
                 notification,
@@ -574,7 +573,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_UNION_RETURN_ORDER() {
-        Notification notification = UNION_RETURN_ORDER.notification(InputPosition.empty);
+        Notification notification = unionReturnOrder(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -587,8 +586,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION() {
-        Notification notification =
-                DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(InputPosition.empty);
+        Notification notification = deprecatedConnectComponentsPlannerPreParserOption(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -603,41 +601,43 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT() {
-        Notification notification = COMMAND_HAS_NO_EFFECT.notification(InputPosition.empty);
+        Notification notification = commandHasNoEffect(
+                InputPosition.empty, "CREATE DATABASE db IF NOT EXISTS", "Database db already exist.");
 
         verifyNotification(
                 notification,
-                "`%s` has no effect.",
+                "`CREATE DATABASE db IF NOT EXISTS` has no effect.",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
-                "%s See Status Codes documentation for more information.",
+                "Database db already exist. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY);
     }
 
     @Test
     void shouldConstructNotificationsFor_IMPOSSIBLE_REVOKE_COMMAND() {
-        Notification notification = IMPOSSIBLE_REVOKE_COMMAND.notification(InputPosition.empty);
+        Notification notification =
+                impossibleRevokeCommand(InputPosition.empty, "REVOKE admin FROM ALICE", "Role does not exist.");
 
         verifyNotification(
                 notification,
-                "`%s` has no effect.",
+                "`REVOKE admin FROM ALICE` has no effect.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Security.ImpossibleRevokeCommand",
-                "%s Make sure nothing is misspelled. This notification will become an error in a future major version. "
+                "Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version. "
                         + "See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY);
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROPERTY_REFERENCE_IN_CREATE() {
-        Notification notification = DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notification(InputPosition.empty);
+        Notification notification = deprecatedPropertyReferenceInCreate(InputPosition.empty, "n.prop");
 
         verifyNotification(
                 notification,
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated.",
+                "Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -658,16 +658,16 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void allNotificationsShouldBeAClientNotification() {
 
-        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> assertThat(
-                        notification.notification(InputPosition.empty).getCode())
-                .contains("ClientNotification"));
+        Arrays.stream(NotificationCodeWithDescription.values())
+                .forEach(notification ->
+                        assertThat(notification.getStatus().code().serialize()).contains("ClientNotification"));
     }
 
     @Test
     void noNotificationShouldHaveUnknownCategory() {
         Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> assertThat(
-                        notification.notification(InputPosition.empty).getCategory())
-                .isNotEqualTo(NotificationCategory.UNKNOWN));
+                        ((Status.NotificationCode) notification.getStatus().code()).getNotificationCategory())
+                .isNotEqualTo(NotificationCategory.UNKNOWN.name()));
     }
 
     /**
@@ -679,15 +679,16 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void verifyNotificationsHaveNotChanged() {
         StringBuilder notificationBuilder = new StringBuilder();
-        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notificationCode -> {
-            Notification notification = notificationCode.notification(InputPosition.empty);
+        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> {
+            var status = notification.getStatus();
+            Status.NotificationCode notificationCode = (Status.NotificationCode) status.code();
 
             // Covers all notification information except NotificationDetail and position, which are query dependent
-            notificationBuilder.append(notification.getTitle());
-            notificationBuilder.append(notification.getDescription());
-            notificationBuilder.append(notification.getCode());
-            notificationBuilder.append(notification.getSeverity());
-            notificationBuilder.append(notification.getCategory());
+            notificationBuilder.append(notificationCode.description()); // Title
+            notificationBuilder.append(notification.getDescription()); // Description
+            notificationBuilder.append(notificationCode.serialize());
+            notificationBuilder.append(notificationCode.getSeverity());
+            notificationBuilder.append(notificationCode.getNotificationCategory());
         });
 
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());

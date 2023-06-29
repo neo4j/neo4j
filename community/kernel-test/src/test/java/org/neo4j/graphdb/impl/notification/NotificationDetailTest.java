@@ -45,7 +45,7 @@ class NotificationDetailTest {
     void shouldConstructCartesianProductDetailsSingular() {
         Set<String> idents = new HashSet<>();
         idents.add("n");
-        String detail = NotificationDetail.cartesianProduct(idents);
+        String detail = NotificationDetail.cartesianProductDescription(idents);
         assertThat(detail).isEqualTo("identifier is: (n)");
     }
 
@@ -54,7 +54,7 @@ class NotificationDetailTest {
         Set<String> idents = new TreeSet<>();
         idents.add("n");
         idents.add("node2");
-        String detail = NotificationDetail.cartesianProduct(idents);
+        String detail = NotificationDetail.cartesianProductDescription(idents);
         assertThat(detail).isEqualTo("identifiers are: (n, node2)");
     }
 

@@ -970,8 +970,7 @@ class ExecutionResultSerializerTest {
     @Test
     void shouldReturnNotifications() {
         // given
-        Notification notification =
-                NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(new InputPosition(1, 2, 3));
+        Notification notification = NotificationCodeWithDescription.cartesianProduct(new InputPosition(1, 2, 3), "a");
         List<Notification> notifications = Collections.singletonList(notification);
 
         var row = Map.of(
@@ -996,7 +995,7 @@ class ExecutionResultSerializerTest {
                         + " between all those parts. This may produce a large amount of data and slow down query "
                         + "processing. While occasionally intended, it may often be possible to reformulate the query "
                         + "that avoids the use of this cross product, perhaps by adding a relationship between the "
-                        + "different parts or by using OPTIONAL MATCH (%s)\",\"position\":{\"offset\":1,\"line\":2,"
+                        + "different parts or by using OPTIONAL MATCH (a)\",\"position\":{\"offset\":1,\"line\":2,"
                         + "\"column\":3}}],\"errors\":[],\"commit\":\"commit/uri/1\"}",
                 result);
     }
@@ -1030,7 +1029,7 @@ class ExecutionResultSerializerTest {
                 "column1", "value1",
                 "column2", "value2");
 
-        Notification notification = NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(InputPosition.empty);
+        Notification notification = NotificationCodeWithDescription.cartesianProduct(InputPosition.empty, "a");
 
         List<Notification> notifications = Collections.singletonList(notification);
 
@@ -1052,7 +1051,7 @@ class ExecutionResultSerializerTest {
                         + " between all those parts. This may produce a large amount of data and slow down query "
                         + "processing. While occasionally intended, it may often be possible to reformulate the query "
                         + "that avoids the use of this cross product, perhaps by adding a relationship between the "
-                        + "different parts or by using OPTIONAL MATCH (%s)\"}],\"errors\":[],\"commit\":\"commit/uri/1\"}",
+                        + "different parts or by using OPTIONAL MATCH (a)\"}],\"errors\":[],\"commit\":\"commit/uri/1\"}",
                 result);
     }
 

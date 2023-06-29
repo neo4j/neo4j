@@ -173,21 +173,170 @@ public enum NotificationCodeWithDescription {
         return description;
     }
 
-    public NotificationImplementation notification(InputPosition position, String... details) {
+    public static NotificationImplementation cartesianProduct(InputPosition position, String param) {
+        return CARTESIAN_PRODUCT.notification(position, param);
+    }
+
+    public static NotificationImplementation runtimeUnsupported(InputPosition position, String param) {
+        return RUNTIME_UNSUPPORTED.notification(position, param);
+    }
+
+    public static NotificationImplementation indexHintUnfulfillable(InputPosition position, String param) {
+        return INDEX_HINT_UNFULFILLABLE.notification(position, param);
+    }
+
+    public static NotificationImplementation joinHintUnfulfillable(InputPosition position, String param) {
+        return JOIN_HINT_UNFULFILLABLE.notification(position, param);
+    }
+
+    public static NotificationImplementation indexLookupForDynamicProperty(InputPosition position, String param) {
+        return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedFunction(InputPosition position, String param) {
+        return DEPRECATED_FUNCTION.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedProcedure(InputPosition position, String param) {
+        return DEPRECATED_PROCEDURE.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedRuntimeOption(InputPosition position, String param) {
+        return DEPRECATED_RUNTIME_OPTION.notification(position, param);
+    }
+
+    public static NotificationImplementation procedureWarning(InputPosition position, String param) {
+        return PROCEDURE_WARNING.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedProcedureReturnField(InputPosition position, String param) {
+        return DEPRECATED_PROCEDURE_RETURN_FIELD.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedRelationshipTypeSeparator(InputPosition position, String param) {
+        return DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedNodeOrRelationshipOnRhsSetClause(InputPosition position) {
+        return DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(position);
+    }
+
+    public static NotificationImplementation deprecatedPropertyReferenceInCreate(InputPosition position, String param) {
+        return DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedShortestPathWithFixedLengthRelationship(InputPosition position) {
+        return DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(position);
+    }
+
+    public static NotificationImplementation deprecatedTextIndexProvider(InputPosition position) {
+        return DEPRECATED_TEXT_INDEX_PROVIDER.notification(position);
+    }
+
+    public static NotificationImplementation eagerLoadCsv(InputPosition position) {
+        return EAGER_LOAD_CSV.notification(position);
+    }
+
+    public static NotificationImplementation deprecatedFormat(InputPosition position, String param) {
+        return DEPRECATED_FORMAT.notification(position, param);
+    }
+
+    public static NotificationImplementation largeLabelLoadCsv(InputPosition position) {
+        return LARGE_LABEL_LOAD_CSV.notification(position);
+    }
+
+    public static NotificationImplementation missingLabel(InputPosition position, String param) {
+        return MISSING_LABEL.notification(position, param);
+    }
+
+    public static NotificationImplementation missingRelType(InputPosition position, String param) {
+        return MISSING_REL_TYPE.notification(position, param);
+    }
+
+    public static NotificationImplementation missingPropertyName(InputPosition position, String param) {
+        return MISSING_PROPERTY_NAME.notification(position, param);
+    }
+
+    public static NotificationImplementation unboundedShortestPath(InputPosition position) {
+        return UNBOUNDED_SHORTEST_PATH.notification(position);
+    }
+
+    public static NotificationImplementation exhaustiveShortestPath(InputPosition position) {
+        return EXHAUSTIVE_SHORTEST_PATH.notification(position);
+    }
+
+    public static NotificationImplementation runtimeExperimental(InputPosition position, String param) {
+        return RUNTIME_EXPERIMENTAL.notification(position, param);
+    }
+
+    public static NotificationImplementation missingParameterForExplain(InputPosition position, String param) {
+        return MISSING_PARAMETERS_FOR_EXPLAIN.notification(position, param);
+    }
+
+    public static NotificationImplementation codeGenerationFailed(InputPosition position, String param) {
+        return CODE_GENERATION_FAILED.notification(position, param);
+    }
+
+    public static NotificationImplementation subqueryVariableShadowing(InputPosition position, String param) {
+        return SUBQUERY_VARIABLE_SHADOWING.notification(position, param);
+    }
+
+    public static NotificationImplementation unionReturnOrder(InputPosition position) {
+        return UNION_RETURN_ORDER.notification(position);
+    }
+
+    public static NotificationImplementation homeDatabaseNotPresent(InputPosition position, String param) {
+        return HOME_DATABASE_NOT_PRESENT.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedDatabaseName(InputPosition position, String param) {
+        return DEPRECATED_DATABASE_NAME.notification(position, param);
+    }
+
+    public static NotificationImplementation unsatisfiableRelationshipTypeExpression(
+            InputPosition position, String param) {
+        return UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(position, param);
+    }
+
+    public static NotificationImplementation repeatedRelationshipReference(InputPosition position, String param) {
+        return REPEATED_RELATIONSHIP_REFERENCE.notification(position, param);
+    }
+
+    public static NotificationImplementation repeatedVarLengthRelationshipReference(
+            InputPosition position, String param) {
+        return REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notification(position, param);
+    }
+
+    public static NotificationImplementation deprecatedConnectComponentsPlannerPreParserOption(InputPosition position) {
+        return DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(position);
+    }
+
+    public static NotificationImplementation commandHasNoEffect(
+            InputPosition position, String titleParam, String descriptionParam) {
+        return COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(position, titleParam, descriptionParam);
+    }
+
+    public static NotificationImplementation impossibleRevokeCommand(
+            InputPosition position, String titleParam, String descriptionParam) {
+        return IMPOSSIBLE_REVOKE_COMMAND.notificationWithTitleAndDescriptionDetails(
+                position, titleParam, descriptionParam);
+    }
+
+    private NotificationImplementation notification(InputPosition position, String... details) {
         return new NotificationImplementation.NotificationBuilder(this)
                 .setPosition(position)
                 .setNotificationDetails(details)
                 .build();
     }
 
-    public NotificationImplementation notificationWithTitleDetails(InputPosition position, String... details) {
+    private NotificationImplementation notificationWithTitleDetails(InputPosition position, String... details) {
         return new NotificationImplementation.NotificationBuilder(this)
                 .setPosition(position)
                 .setTitleDetails(details)
                 .build();
     }
 
-    public NotificationImplementation notificationWithTitleAndDescriptionDetails(
+    private NotificationImplementation notificationWithTitleAndDescriptionDetails(
             InputPosition position, String titleDetail, String... descriptionDetails) {
         // Allows a single detail in the title and multiple in the description
         return new NotificationImplementation.NotificationBuilder(this)

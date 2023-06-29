@@ -78,12 +78,12 @@ object NotificationWrapping {
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification)
     : NotificationImplementation = notification match {
     case CartesianProductNotification(pos, variables) =>
-      NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(
+      NotificationCodeWithDescription.cartesianProduct(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.cartesianProduct(variables.asJava)
+        NotificationDetail.cartesianProductDescription(variables.asJava)
       )
     case RuntimeUnsupportedNotification(msg) =>
-      NotificationCodeWithDescription.RUNTIME_UNSUPPORTED.notification(
+      NotificationCodeWithDescription.runtimeUnsupported(
         graphdb.InputPosition.empty,
         msg
       )
@@ -106,143 +106,143 @@ object NotificationWrapping {
               NotificationDetail.relationshipPointIndex(variableName, label, propertyKeys: _*)
           }
       }
-      NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
+      NotificationCodeWithDescription.indexHintUnfulfillable(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>
-      NotificationCodeWithDescription.JOIN_HINT_UNFULFILLABLE.notification(
+      NotificationCodeWithDescription.joinHintUnfulfillable(
         graphdb.InputPosition.empty,
         NotificationDetail.joinKey(variables.asJava)
       )
     case NodeIndexLookupUnfulfillableNotification(labels) =>
-      NotificationCodeWithDescription.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
+      NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
         NotificationDetail.nodeIndexSeekOrScan(labels.asJava)
       )
     case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
-      NotificationCodeWithDescription.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
+      NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
         NotificationDetail.relationshipIndexSeekOrScan(relTypes.asJava)
       )
     case EagerLoadCsvNotification =>
-      NotificationCodeWithDescription.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
+      NotificationCodeWithDescription.eagerLoadCsv(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
-      NotificationCodeWithDescription.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
+      NotificationCodeWithDescription.largeLabelLoadCsv(graphdb.InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCodeWithDescription.MISSING_LABEL.notification(
+      NotificationCodeWithDescription.missingLabel(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.label(label)
       )
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCodeWithDescription.MISSING_REL_TYPE.notification(
+      NotificationCodeWithDescription.missingRelType(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.relationshipType(relType)
       )
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCodeWithDescription.MISSING_PROPERTY_NAME.notification(
+      NotificationCodeWithDescription.missingPropertyName(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.propertyName(name)
       )
     case UnboundedShortestPathNotification(pos) =>
-      NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
+      NotificationCodeWithDescription.unboundedShortestPath(pos.withOffset(offset).asInputPosition)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
-      NotificationCodeWithDescription.EXHAUSTIVE_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
+      NotificationCodeWithDescription.exhaustiveShortestPath(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCodeWithDescription.DEPRECATED_FUNCTION.notification(
+      NotificationCodeWithDescription.deprecatedFunction(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.deprecatedName(oldName, newName)
       )
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      NotificationCodeWithDescription.DEPRECATED_PROCEDURE.notification(
+      NotificationCodeWithDescription.deprecatedProcedure(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.deprecatedName(oldName, newName)
       )
     case DeprecatedFieldNotification(pos, procedure, field) =>
-      NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(
+      NotificationCodeWithDescription.deprecatedProcedureReturnField(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.deprecatedField(procedure, field)
       )
     case DeprecatedRelTypeSeparatorNotification(pos, rewrittenExpression) =>
-      NotificationCodeWithDescription.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(
+      NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.deprecationNotificationDetail(rewrittenExpression)
       )
     case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos) =>
-      NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(
+      NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause(
         pos.withOffset(offset).asInputPosition
       )
     case DeprecatedPropertyReferenceInCreate(pos, name) =>
-      NotificationCodeWithDescription.DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notification(
+      NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate(
         pos.withOffset(offset).asInputPosition,
         name
       )
     case ProcedureWarningNotification(pos, name, warning) =>
-      NotificationCodeWithDescription.PROCEDURE_WARNING.notification(
+      NotificationCodeWithDescription.procedureWarning(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.procedureWarning(name, warning)
       )
     case ExperimentalFeatureNotification(msg) =>
-      NotificationCodeWithDescription.RUNTIME_EXPERIMENTAL.notification(
+      NotificationCodeWithDescription.runtimeExperimental(
         graphdb.InputPosition.empty,
         msg
       )
     case MissingParametersNotification(names) =>
-      NotificationCodeWithDescription.MISSING_PARAMETERS_FOR_EXPLAIN.notification(
+      NotificationCodeWithDescription.missingParameterForExplain(
         graphdb.InputPosition.empty,
         names.mkString("Missing parameters: ", ", ", "")
       )
     case CodeGenerationFailedNotification(msg) =>
-      NotificationCodeWithDescription.CODE_GENERATION_FAILED.notification(
+      NotificationCodeWithDescription.codeGenerationFailed(
         graphdb.InputPosition.empty,
         msg
       )
     case SubqueryVariableShadowing(pos, varName) =>
-      NotificationCodeWithDescription.SUBQUERY_VARIABLE_SHADOWING.notification(
+      NotificationCodeWithDescription.subqueryVariableShadowing(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.shadowingVariable(varName)
       )
     case UnionReturnItemsInDifferentOrder(pos) =>
-      NotificationCodeWithDescription.UNION_RETURN_ORDER.notification(
+      NotificationCodeWithDescription.unionReturnOrder(
         pos.withOffset(offset).asInputPosition
       )
-    case HomeDatabaseNotPresent(name) => NotificationCodeWithDescription.HOME_DATABASE_NOT_PRESENT.notification(
+    case HomeDatabaseNotPresent(name) => NotificationCodeWithDescription.homeDatabaseNotPresent(
         InputPosition.NONE.asInputPosition,
         s"HOME DATABASE: $name"
       )
     case FixedLengthRelationshipInShortestPath(pos) =>
-      NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(
+      NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship(
         pos.withOffset(offset).asInputPosition
       )
 
     case DeprecatedTextIndexProvider(pos) =>
-      NotificationCodeWithDescription.DEPRECATED_TEXT_INDEX_PROVIDER.notification(
+      NotificationCodeWithDescription.deprecatedTextIndexProvider(
         pos.withOffset(offset).asInputPosition
       )
 
     case DeprecatedDatabaseNameNotification(name, pos) =>
-      NotificationCodeWithDescription.DEPRECATED_DATABASE_NAME.notification(
+      NotificationCodeWithDescription.deprecatedDatabaseName(
         pos.map(_.withOffset(offset).asInputPosition).getOrElse(graphdb.InputPosition.empty),
         s"Name: $name"
       )
 
     case DeprecatedRuntimeNotification(msg) =>
-      NotificationCodeWithDescription.DEPRECATED_RUNTIME_OPTION.notification(
+      NotificationCodeWithDescription.deprecatedRuntimeOption(
         graphdb.InputPosition.empty,
         msg
       )
 
     case UnsatisfiableRelationshipTypeExpression(position, relTypeExpression) =>
-      NotificationCodeWithDescription.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(
+      NotificationCodeWithDescription.unsatisfiableRelationshipTypeExpression(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.unsatisfiableRelTypeExpression(relTypeExpression)
       )
 
     case RepeatedRelationshipReference(position, relName) =>
-      NotificationCodeWithDescription.REPEATED_RELATIONSHIP_REFERENCE.notification(
+      NotificationCodeWithDescription.repeatedRelationshipReference(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.repeatedRelationship(relName)
       )
 
     case RepeatedVarLengthRelationshipReference(position, relName) =>
-      NotificationCodeWithDescription.REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notification(
+      NotificationCodeWithDescription.repeatedVarLengthRelationshipReference(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.repeatedVarLengthRel(relName)
       )
@@ -250,40 +250,40 @@ object NotificationWrapping {
     case DeprecatedConnectComponentsPlannerPreParserOption(position) =>
       // Not using .withOffset(offset) is intentional.
       // This notification is generated from the pre-parser and thus should not be offset.
-      NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(
+      NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption(
         position.asInputPosition
       )
 
     case AssignPrivilegeCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+      NotificationCodeWithDescription.commandHasNoEffect(
         graphdb.InputPosition.empty,
         command,
         "The role already has the privilege."
       )
 
     case RevokePrivilegeCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+      NotificationCodeWithDescription.commandHasNoEffect(
         graphdb.InputPosition.empty,
         command,
         "The role does not have the privilege."
       )
 
     case GrantRoleCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+      NotificationCodeWithDescription.commandHasNoEffect(
         graphdb.InputPosition.empty,
         command,
         "The user already has the role."
       )
 
     case RevokeRoleCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+      NotificationCodeWithDescription.commandHasNoEffect(
         graphdb.InputPosition.empty,
         command,
         "The user does not have the role."
       )
 
     case ImpossibleRevokeCommandWarning(command, cause) =>
-      NotificationCodeWithDescription.IMPOSSIBLE_REVOKE_COMMAND.notificationWithTitleAndDescriptionDetails(
+      NotificationCodeWithDescription.impossibleRevokeCommand(
         graphdb.InputPosition.empty,
         command,
         cause

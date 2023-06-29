@@ -32,6 +32,16 @@ import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_TEXT_INDEX_PROVIDER
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNION_RETURN_ORDER
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunction
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedure
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedTextIndexProvider
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unionReturnOrder
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.neo4j.graphdb.impl.notification.NotificationDetail.deprecationNotificationDetail
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
@@ -56,7 +66,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated procedure calls") {
     val queries = Seq("CALL oldProc()", "CALL oldProc() RETURN 1")
     val detail = NotificationDetail.deprecatedName("oldProc", "newProc")
-    assertNotification(queries, true, DEPRECATED_PROCEDURE, detail)
+    assertNotification(queries, true, DEPRECATED_PROCEDURE, detail, deprecatedProcedure)
   }
 
   test("non-deprecated procedure calls") {
@@ -68,7 +78,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated procedure result field") {
     val query = "CALL changedProc() YIELD oldField RETURN oldField"
     val detail = NotificationDetail.deprecatedField("changedProc", "oldField")
-    assertNotification(Seq(query), true, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
+    assertNotification(Seq(query), true, DEPRECATED_PROCEDURE_RETURN_FIELD, detail, deprecatedProcedureReturnField)
   }
 
   test("non-deprecated procedure result field") {
@@ -83,7 +93,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (n) WHERE org.example.com.oldFunc() = 1 RETURN n"
     )
     val detail = NotificationDetail.deprecatedName("org.example.com.oldFunc", "org.example.com.newFunc")
-    assertNotification(queries, true, DEPRECATED_FUNCTION, detail)
+    assertNotification(queries, true, DEPRECATED_FUNCTION, detail, deprecatedFunction)
   }
 
   test("deprecated aggregation function calls") {
@@ -92,7 +102,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "UNWIND [1, 2, 3] AS nums WITH org.example.com.oldAggFunc(nums) AS aggTest RETURN aggTest"
     )
     val detail = NotificationDetail.deprecatedName("org.example.com.oldAggFunc", "org.example.com.newAggFunc")
-    assertNotification(queries, true, DEPRECATED_FUNCTION, detail)
+    assertNotification(queries, true, DEPRECATED_FUNCTION, detail, deprecatedFunction)
   }
 
   test("non-deprecated function calls") {
@@ -120,7 +130,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (a)-[:A|:B|:C]-() RETURN a"
     )
 
-    assertNotification(queries, true, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR, deprecationNotificationDetail(":A|B|C"))
+    assertNotification(
+      queries,
+      true,
+      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR,
+      deprecationNotificationDetail(":A|B|C"),
+      deprecatedRelationshipTypeSeparator
+    )
 
     // clear caches of the rewritten queries to not keep notifications around
     dbms.clearQueryCaches()
@@ -133,7 +149,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (g)-[r:KNOWS]->(k) SET g += r",
       "MATCH (g)-[r:KNOWS]->(k) SET g += k"
     )
-    assertNotification(queries, true, DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE)
+    assertNotification(
+      queries,
+      true,
+      DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE,
+      deprecatedNodeOrRelationshipOnRhsSetClause
+    )
   }
 
   test("do not deprecate using map on the RHS of a Set Clause") {
@@ -161,7 +182,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b",
       "MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b"
     )
-    assertNotification(queries, true, DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP)
+    assertNotification(
+      queries,
+      true,
+      DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP,
+      deprecatedShortestPathWithFixedLengthRelationship
+    )
   }
 
   test("deprecate explicit use of old text index provider") {
@@ -170,7 +196,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       s"CREATE TEXT INDEX FOR (n:Label) ON (n.prop) OPTIONS {indexProvider : '$deprecatedProvider'}",
       s"CREATE TEXT INDEX FOR ()-[r:TYPE]-() ON (r.prop) OPTIONS {indexProvider : '$deprecatedProvider'}"
     )
-    assertNotification(deprecatedProviderQueries, shouldContainNotification = true, DEPRECATED_TEXT_INDEX_PROVIDER)
+    assertNotification(
+      deprecatedProviderQueries,
+      shouldContainNotification = true,
+      DEPRECATED_TEXT_INDEX_PROVIDER,
+      deprecatedTextIndexProvider
+    )
 
     val validProvider = TrigramIndexProvider.DESCRIPTOR.name()
     val validProviderQueries = Seq(
@@ -252,7 +283,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       queries,
       shouldContainNotification = true,
-      UNION_RETURN_ORDER
+      UNION_RETURN_ORDER,
+      unionReturnOrder
     )
   }
 
@@ -301,7 +333,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       DEPRECATED_FUNCTION,
-      detail
+      detail,
+      deprecatedFunction
     )
   }
 
@@ -313,7 +346,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       queries,
       shouldContainNotification = true,
-      DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION
+      DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION,
+      deprecatedConnectComponentsPlannerPreParserOption
     )
   }
 
@@ -341,7 +375,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       deprecated,
       shouldContainNotification = true,
       DEPRECATED_PROPERTY_REFERENCE_IN_CREATE,
-      "a"
+      "a",
+      deprecatedPropertyReferenceInCreate
     )
 
     assertNoDeprecations(notDeprecated)

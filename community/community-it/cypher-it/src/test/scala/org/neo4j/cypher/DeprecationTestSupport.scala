@@ -34,7 +34,8 @@ trait DeprecationTestSupport extends Suite with Matchers {
     queries: Seq[String],
     shouldContainNotification: Boolean,
     notificationCode: NotificationCodeWithDescription,
-    details: String*
+    details: String,
+    createNotification: (InputPosition, String) => Notification
   ): Unit = {
     queries.foreach(query => {
       withClue(s"Failed for query '$query' \n") {
@@ -43,7 +44,9 @@ trait DeprecationTestSupport extends Suite with Matchers {
           val result = transaction.execute(s"EXPLAIN $query")
           val notifications: Iterable[Notification] = result.getNotifications()
           val hasNotification =
-            notifications.exists(notification => matchesCode(notification, notificationCode, details: _*))
+            notifications.exists(notification =>
+              matchesCode(notification, notificationCode, details, createNotification)
+            )
           withClue(notifications) {
             hasNotification should be(shouldContainNotification)
           }
@@ -52,6 +55,15 @@ trait DeprecationTestSupport extends Suite with Matchers {
         }
       }
     })
+  }
+
+  def assertNotification(
+    queries: Seq[String],
+    shouldContainNotification: Boolean,
+    notificationCode: NotificationCodeWithDescription,
+    createNotification: (InputPosition) => Notification
+  ): Unit = {
+    assertNotification(queries, shouldContainNotification, notificationCode, "", (pos, _) => createNotification(pos))
   }
 
   // this is hacky but we have no other way to probe the notification's status (`Status.Statement.FeatureDeprecationWarning`)
@@ -84,10 +96,11 @@ trait DeprecationTestSupport extends Suite with Matchers {
   private def matchesCode(
     notification: Notification,
     notificationCode: NotificationCodeWithDescription,
-    details: String*
+    details: String,
+    createNotification: (InputPosition, String) => Notification
   ): Boolean = {
     // In this test class we are not interested in the exact input position
-    val expected = notificationCode.notification(InputPosition.empty, details: _*)
+    val expected = createNotification(InputPosition.empty, details)
     notification.getCode.equals(expected.getCode) &&
     notification.getDescription.equals(expected.getDescription) &&
     notification.getSeverity.equals(expected.getSeverity)

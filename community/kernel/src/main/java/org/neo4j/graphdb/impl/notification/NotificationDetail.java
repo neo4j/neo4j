@@ -148,7 +148,7 @@ public class NotificationDetail {
                 singular ? "hinted join key identifier" : "hinted join key identifiers", builder.toString(), singular);
     }
 
-    public static String cartesianProduct(Set<String> identifiers) {
+    public static String cartesianProductDescription(Set<String> identifiers) {
         return createNotificationDetail(identifiers, "identifier", "identifiers");
     }
 
