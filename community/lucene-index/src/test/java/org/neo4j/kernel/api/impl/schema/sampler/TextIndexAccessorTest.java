@@ -60,7 +60,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.IOFunction;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -68,6 +67,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -75,6 +75,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.TextIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.TextIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -103,8 +104,11 @@ public class TextIndexAccessorTest {
     private final Object value = "value";
     private final Object value2 = "40";
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexDescriptor GENERAL_INDEX =
-            IndexPrototype.forSchema(forLabel(0, PROP_ID)).withName("a").materialise(0);
+    private static final IndexDescriptor GENERAL_INDEX = IndexPrototype.forSchema(forLabel(0, PROP_ID))
+            .withName("a")
+            .withIndexType(IndexType.TEXT)
+            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
+            .materialise(0);
     private static final Config CONFIG = Config.defaults();
 
     public static Stream<Arguments> implementations() {

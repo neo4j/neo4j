@@ -45,6 +45,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -71,6 +72,8 @@ class TextIndexIT {
 
     private final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 0))
             .withName("a")
+            .withIndexType(IndexType.TEXT)
+            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
             .materialise(1);
     private final Config config = Config.newBuilder()
             .set(GraphDatabaseInternalSettings.lucene_max_partition_size, 10)

@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -46,6 +47,7 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.TextIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.TextIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -61,6 +63,8 @@ import org.neo4j.values.storable.Values;
 class TextIndexPopulationIT {
     private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(0, 0))
             .withName("a")
+            .withIndexType(IndexType.TEXT)
+            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
             .materialise(1);
     private final Config config = Config.newBuilder()
             .set(GraphDatabaseInternalSettings.lucene_max_partition_size, 10)

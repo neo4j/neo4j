@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.IOUtils;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.TextIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
@@ -78,6 +80,8 @@ class TextIndexPopulatorTest {
 
         IndexDescriptor descriptor = IndexPrototype.forSchema(labelSchemaDescriptor.schema())
                 .withName("index")
+                .withIndexType(IndexType.TEXT)
+                .withIndexProvider(TextIndexProvider.DESCRIPTOR)
                 .materialise(13);
         index = TextIndexBuilder.create(descriptor, writable(), Config.defaults())
                 .withIndexStorage(indexStorage)
