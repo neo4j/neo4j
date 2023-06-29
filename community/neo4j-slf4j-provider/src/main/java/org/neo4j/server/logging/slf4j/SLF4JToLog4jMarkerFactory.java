@@ -30,7 +30,7 @@ import org.apache.logging.log4j.status.StatusLogger;
 import org.slf4j.IMarkerFactory;
 import org.slf4j.Marker;
 
-class SLF4JToLog4jMarkerFactory implements IMarkerFactory {
+public class SLF4JToLog4jMarkerFactory implements IMarkerFactory {
     private static final Logger LOGGER = StatusLogger.getLogger();
 
     private final ConcurrentMap<String, Marker> markerMap = new ConcurrentHashMap<>();

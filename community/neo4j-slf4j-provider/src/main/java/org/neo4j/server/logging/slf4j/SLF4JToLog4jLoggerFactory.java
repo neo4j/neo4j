@@ -27,13 +27,13 @@ import org.slf4j.Logger;
 import org.slf4j.event.Level;
 import org.slf4j.helpers.NOPLogger;
 
-class SLF4JToLog4jLoggerFactory implements ILoggerFactory {
+public class SLF4JToLog4jLoggerFactory implements ILoggerFactory {
     private final Log4jLogProvider logProvider;
     private final SLF4JToLog4jMarkerFactory markerFactory;
     private final List<String> classPrefixes;
     private final Level level;
 
-    SLF4JToLog4jLoggerFactory(
+    public SLF4JToLog4jLoggerFactory(
             Log4jLogProvider logProvider,
             SLF4JToLog4jMarkerFactory markerFactory,
             List<String> classPrefixes,

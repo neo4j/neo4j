@@ -43,7 +43,7 @@ public class Neo4jLoggerContext implements Closeable {
      * Package-private specifically to not leak {@link Logger} outside logging module.
      * Should not be used outside of the logging module.
      */
-    ExtendedLogger getLogger(Class<?> clazz) {
+    public ExtendedLogger getLogger(Class<?> clazz) {
         // StringFormatterMessageFactory will recognize printf syntax, default is anchor {} which we don't use
         return ctx.getLogger(clazz, StringFormatterMessageFactory.INSTANCE);
     }
