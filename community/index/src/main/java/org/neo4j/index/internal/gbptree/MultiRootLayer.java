@@ -354,15 +354,16 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             var high = dataLayout.newKey();
             dataLayout.initializeAsLowest(low);
             dataLayout.initializeAsHighest(high);
+            // Temporarily disable concurrency as there is a bug causing the checker to hang
             try (var partitionProgress = state.progress.threadLocalReporter();
-                    var seeker = support.internalAllocateSeeker(dataLayout, dataTreeNode, CursorContext.NULL_CONTEXT)) {
+            /*var seeker = support.internalAllocateSeeker(dataLayout, dataTreeNode, CursorContext.NULL_CONTEXT)*/ ) {
                 for (var root : batch) {
-                    int treeDepth = depthOf(root, seeker, low, high);
+                    // int treeDepth = depthOf(root, seeker, low, high);
                     new GBPTreeConsistencyChecker<>(
                                     dataTreeNode,
                                     dataLayout,
                                     state,
-                                    treeDepth >= 2 ? state.numThreads : 1,
+                                    /*treeDepth >= 2 ? state.numThreads : 1*/ 1,
                                     stableGeneration,
                                     unstableGeneration,
                                     reportDirty,
