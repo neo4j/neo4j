@@ -1055,7 +1055,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     }
 
   private def checkForShadowedVariables: SemanticCheck = (inner: SemanticState) => {
-    val outerScopeSymbols = inner.currentScope.parent.get.scope.symbolTable
+    val outerScopeSymbols = inner.currentScope.parent.get.parent match {
+      case Some(parent) => parent.scope.symbolTable ++ inner.currentScope.parent.get.scope.symbolTable
+      case None         => inner.currentScope.parent.get.scope.symbolTable
+    }
     val innerScopeSymbols = inner.currentScope.scope.allSymbols
 
     // Union symbols are excluded as those always have the position of the UNION keyword regardless of shadowing

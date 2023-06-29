@@ -211,6 +211,19 @@ class ExistsExpressionSemanticAnalysisTest
     )
   }
 
+  test(
+    """MATCH (a) ((n)-->() WHERE EXISTS { RETURN 1 AS a })+
+      |RETURN *
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "The variable `a` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+        InputPosition(47, 1, 48)
+      )
+    )
+  }
+
   test("""MATCH (a)
          |RETURN EXISTS {
          |  MATCH (a)-->(b)

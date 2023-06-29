@@ -122,7 +122,7 @@ class MoveQuantifiedPathPatternPredicatesToConnectedNodesTest extends CypherFunS
     assertIsNotRewritten(testName)
   }
 
-  test("MATCH (x) ((a)-->(b) WHERE EXISTS { (a)-->(c) WHERE any(x IN c.list WHERE x > 0) })+ RETURN count(*) AS c") {
+  test("MATCH (x) ((a)-->(b) WHERE EXISTS { (a)-->(c) WHERE any(z IN c.list WHERE z > 0) })+ RETURN count(*) AS c") {
     assertIsNotRewritten(testName)
   }
 
