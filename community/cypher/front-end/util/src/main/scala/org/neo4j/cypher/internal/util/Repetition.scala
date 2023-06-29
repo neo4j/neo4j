@@ -16,12 +16,16 @@
  */
 package org.neo4j.cypher.internal.util
 
-case class Repetition(min: Long, max: UpperBound)
+case class Repetition(min: Long, max: UpperBound) {
+  def solvedString: String = s"{$min, ${max.solvedString}}"
+}
 
 sealed trait UpperBound {
   def isGreaterThan(count: Long): Boolean
 
   def limit: Option[Long]
+
+  def solvedString: String
 }
 
 object UpperBound {
@@ -31,11 +35,13 @@ object UpperBound {
   case object Unlimited extends UpperBound {
     override def isGreaterThan(count: Long): Boolean = true
     override def limit: Option[Long] = None
+    override def solvedString: String = ""
   }
 
   case class Limited(n: Long) extends UpperBound {
     require(n > 0)
     override def isGreaterThan(count: Long): Boolean = count < n
     override def limit: Option[Long] = Some(n)
+    override def solvedString: String = n.toString
   }
 }

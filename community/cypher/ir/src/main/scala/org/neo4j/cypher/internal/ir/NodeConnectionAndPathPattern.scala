@@ -60,12 +60,33 @@ sealed trait NodeConnection {
         s"Did not provide either side as an argument to otherSide. Rel: $this, argument: $node"
       )
     }
+
+  /**
+   * @return A Cypher representation of this node connection
+   */
+  def solvedString: String
 }
 
 /**
  * This is a node connection that is not restricted by a selector.
  */
-sealed trait ExhaustiveNodeConnection extends NodeConnection
+sealed trait ExhaustiveNodeConnection extends NodeConnection {
+
+  /**
+   * @return same as solvedString, but omitting the left node of the node connection
+   */
+  def solvedStringSuffix: String
+}
+
+object ExhaustiveNodeConnection {
+
+  /**
+   * A Cypher String from the given node connections forming a path pattern, left to right.
+   */
+  def solvedString(ncs: Seq[ExhaustiveNodeConnection]): String = {
+    (ncs.head.solvedString +: ncs.tail.map(_.solvedStringSuffix)).mkString("")
+  }
+}
 
 final case class PatternRelationship(
   name: String,
@@ -87,7 +108,12 @@ final case class PatternRelationship(
     case _                          => (left, right)
   }
 
-  override def toString: String = {
+  override def toString: String = solvedString
+
+  override def solvedString: String =
+    s"(${boundaryNodes._1})$solvedStringSuffix"
+
+  override def solvedStringSuffix: String = {
     val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
     val rArrow = if (dir == SemanticDirection.OUTGOING) ">" else ""
     val typesStr =
@@ -102,7 +128,7 @@ final case class PatternRelationship(
       case VarPatternLength(x, None)        => s"*$x.."
       case VarPatternLength(min, Some(max)) => s"*$min..$max"
     }
-    s"(${boundaryNodes._1})$lArrow-[$name$typesStr$lengthStr]-$rArrow(${boundaryNodes._2})"
+    s"$lArrow-[$name$typesStr$lengthStr]-$rArrow(${boundaryNodes._2})"
   }
 }
 
@@ -181,6 +207,16 @@ final case class QuantifiedPathPattern(
 
   override def toString: String =
     s"QPP($leftBinding, $rightBinding, $asQueryGraph, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
+
+  override def solvedStringSuffix: String = {
+    val where =
+      if (selections.isEmpty) ""
+      else selections.flatPredicates.map(QueryGraph.stringifier(_)).mkString(" WHERE ", " AND ", "")
+    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships)}$where)${repetition.solvedString} (${rightBinding.outer})"
+  }
+
+  override def solvedString: String =
+    s"(${leftBinding.outer})$solvedStringSuffix"
 
   val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies) ++ argumentIds
 
@@ -274,6 +310,14 @@ final case class SelectivePathPattern(
   override def coveredIds: Set[String] = pathPattern.connections.toSet[NodeConnection].flatMap(_.coveredIds)
 
   val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies)
+
+  def solvedString: String = {
+    val where =
+      if (selections.isEmpty) ""
+      else selections.flatPredicates.map(QueryGraph.stringifier(_)).mkString(" WHERE ", " AND ", "")
+
+    s"${selector.solvedString} (${ExhaustiveNodeConnection.solvedString(pathPattern.connections.toIndexedSeq)}$where)"
+  }
 }
 
 object SelectivePathPattern {
@@ -281,25 +325,37 @@ object SelectivePathPattern {
   /**
    * Defines the paths to find for each combination of start and end nodes.
    */
-  sealed trait Selector
+  sealed trait Selector {
+
+    /**
+     * @return A Cypher representation of this selector
+     */
+    def solvedString: String
+  }
 
   object Selector {
 
     /**
      * Finds up to k paths arbitrarily.
      */
-    case class Any(k: Long) extends Selector
+    case class Any(k: Long) extends Selector {
+      override def solvedString: String = s"ANY $k"
+    }
 
     /**
      * Returns the shortest, second-shortest, etc. up to k paths.
      * If there are multiple paths of same length, picks arbitrarily.
      */
-    case class Shortest(k: Long) extends Selector
+    case class Shortest(k: Long) extends Selector {
+      override def solvedString: String = s"SHORTEST $k"
+    }
 
     /**
      * Finds all shortest paths, all second shortest paths, etc. up to all Kth shortest paths.
      */
-    case class ShortestGroups(k: Long) extends Selector
+    case class ShortestGroups(k: Long) extends Selector {
+      override def solvedString: String = s"SHORTEST $k GROUPS"
+    }
   }
 }
 

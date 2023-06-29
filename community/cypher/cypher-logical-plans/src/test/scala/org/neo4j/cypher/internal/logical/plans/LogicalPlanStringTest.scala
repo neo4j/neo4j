@@ -304,7 +304,8 @@ object LogicalPlanStringTest {
       "subqueryAstNode",
       "prettified",
       "mkString",
-      "className"
+      "className",
+      "solvedString"
     )
   }
 }

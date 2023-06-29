@@ -569,19 +569,6 @@ case class QueryGraph(
   override def toString: String = {
     var added = false
     val builder = new StringBuilder("QueryGraph {")
-    val stringifier = ExpressionStringifier(
-      extension = new ExpressionStringifier.Extension {
-        override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
-          case pp: PartialPredicate[_] => s"partial(${ctx(pp.coveredPredicate)}, ${ctx(pp.coveringPredicate)})"
-          case e                       => e.asCanonicalStringVal
-        }
-      },
-      alwaysParens = false,
-      alwaysBacktick = false,
-      preferSingleQuotes = false,
-      sensitiveParamsAsParams = false
-    )
-
     def addSetIfNonEmptyS(s: Iterable[String], name: String): Unit = addSetIfNonEmpty(s, name, (x: String) => x)
     def addSetIfNonEmpty[T](s: Iterable[T], name: String, f: T => String): Unit = {
       if (s.nonEmpty) {
@@ -599,7 +586,7 @@ case class QueryGraph(
     addSetIfNonEmpty(patternRelationships, "Rels", (_: PatternRelationship).toString)
     addSetIfNonEmpty(quantifiedPathPatterns, "Quantified path patterns", (_: QuantifiedPathPattern).toString)
     addSetIfNonEmptyS(argumentIds, "Arguments")
-    addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => stringifier.apply(e))
+    addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => QueryGraph.stringifier.apply(e))
     addSetIfNonEmpty(shortestRelationshipPatterns, "Shortest relationships", (_: ShortestRelationshipPattern).toString)
     addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
     addSetIfNonEmpty(hints, "Hints", (_: Hint).toString)
@@ -672,6 +659,20 @@ case class QueryGraph(
 
 object QueryGraph {
   def empty: QueryGraph = QueryGraph()
+
+  val stringifier: ExpressionStringifier = ExpressionStringifier(
+    extension = new ExpressionStringifier.Extension {
+
+      override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
+        case pp: PartialPredicate[_] => s"partial(${ctx(pp.coveredPredicate)}, ${ctx(pp.coveringPredicate)})"
+        case e                       => e.asCanonicalStringVal
+      }
+    },
+    alwaysParens = false,
+    alwaysBacktick = false,
+    preferSingleQuotes = false,
+    sensitiveParamsAsParams = false
+  )
 
   implicit object byCoveredIds extends Ordering[QueryGraph] {
 
