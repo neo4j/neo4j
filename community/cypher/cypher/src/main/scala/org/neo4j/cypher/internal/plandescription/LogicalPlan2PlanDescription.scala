@@ -1442,7 +1442,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case StatefulShortestPath(_, _, _, _, _, _, _, _, solvedExpressionString) =>
+      case StatefulShortestPath(_, _, _, _, _, _, _, _, _, solvedExpressionString) =>
         PlanDescriptionImpl(
           id = id,
           name = "StatefulShortestPath",

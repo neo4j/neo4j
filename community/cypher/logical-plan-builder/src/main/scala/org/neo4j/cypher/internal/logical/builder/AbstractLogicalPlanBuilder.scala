@@ -561,6 +561,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nonInlinablePreFilters: Option[String],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
+    singletonVariables: Set[String],
     selector: StatefulShortestPath.Selector,
     nfa: NFA
   ): IMPL = {
@@ -580,6 +581,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         predicates,
         nodeVariableGroupings,
         relationshipVariableGroupings,
+        singletonVariables.map(varFor),
         selector,
         solvedExpressionString
       )(_)

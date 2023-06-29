@@ -1840,21 +1840,35 @@ object StatefulShortestPath {
   }
 }
 
+/**
+ *
+ * @param sourceNode                    the source node of the shortest path algorithm
+ * @param targetNode                    the target node of the shortest path algorithm
+ * @param nfa                           the NFA describing the valid paths
+ * @param nonInlinedPreFilters          all filters that were not inlined into the NFA
+ * @param nodeVariableGroupings         node variables to aggregate
+ * @param relationshipVariableGroupings relationship variables to aggregate
+ * @param singletonVariables            all singleton variables of the path pattern that should get projected into the outgoing row.
+ * @param selector                      the selector for the shortest path algorithm
+ * @param solvedExpressionAsString      the string for EXPLAIN
+ */
 case class StatefulShortestPath(
   override val source: LogicalPlan,
   sourceNode: LogicalVariable,
   targetNode: LogicalVariable,
   nfa: NFA,
-  nonInlinablePreFilters: Option[Expression],
+  nonInlinedPreFilters: Option[Expression],
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping],
+  singletonVariables: Set[LogicalVariable],
   selector: StatefulShortestPath.Selector,
   solvedExpressionAsString: String
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ nfa.availableSymbols ++
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++
+    singletonVariables ++
     nodeVariableGroupings.map(_.groupName) ++
     relationshipVariableGroupings.map(_.groupName)
 

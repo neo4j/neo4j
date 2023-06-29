@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
 import org.neo4j.cypher.internal.logical.plans.NFA.Transitions
 
@@ -34,30 +33,13 @@ object NFA {
 
   object State {
     private[plans] def expressionStringifier: ExpressionStringifier = ExpressionStringifier(_.asCanonicalStringVal)
-
-    sealed trait VarName {
-      val name: LogicalVariable
-
-      def toDotString: String
-    }
-
-    object VarName {
-
-      case class SingletonVarName(name: LogicalVariable) extends VarName {
-        override def toDotString: String = name.name
-      }
-
-      case class GroupVarName(name: LogicalVariable) extends VarName {
-        override def toDotString: String = s"<i>${name.name}</i>"
-      }
-    }
   }
 
   /**
-   * A State is associated with a node (varName) and an ID that must be unique per NFA.
+   * A State is associated with a node (variable) and an ID that must be unique per NFA.
    */
-  case class State(id: Int, varName: VarName) {
-    def toDotString: String = s"<($id, ${varName.toDotString})>"
+  case class State(id: Int, variable: LogicalVariable) {
+    def toDotString: String = s"<($id, ${variable.name})>"
   }
 
   /**
@@ -91,7 +73,7 @@ object NFA {
    * Below, we use this pattern as an example, assuming we're transitioning from a to b.
    * {{{(a)-[r:R|Q WHERE r.prop = 5]->(b:B)}}}
    *
-   * @param relVarName the name of the relationship. `r` in the example.
+   * @param relationshipVariable the relationship. `r` in the example.
    * @param relPred the predicate for the relationship `r.prop = 5` in the example.
    * @param types the allowed types of the relationship. This is not inlined into relPred because this predicate can be
    *              executed more efficiently. `Seq(R,Q)` in the example.
@@ -100,7 +82,7 @@ object NFA {
    * @param nodePred the predicate for the node of the end state of the transition. `b:B` in the example.
    */
   case class RelationshipExpansionPredicate(
-    relVarName: VarName,
+    relationshipVariable: LogicalVariable,
     relPred: Option[VariablePredicate],
     types: Seq[RelTypeName],
     dir: SemanticDirection,
@@ -115,7 +97,7 @@ object NFA {
       val relWhere = relPred.map(vp => s" WHERE ${State.expressionStringifier(vp.predicate)}").getOrElse("")
       val nodeWhere = nodePred.map(vp => s" WHERE ${State.expressionStringifier(vp.predicate)}").getOrElse("")
       val nodeName = nodePred.map(_.variable.name).getOrElse("")
-      s"()$dirStrA[${relVarName.name}$typeStr$relWhere]$dirStrB($nodeName$nodeWhere)"
+      s"()$dirStrA[${relationshipVariable.name}$typeStr$relWhere]$dirStrB($nodeName$nodeWhere)"
     }
   }
 
@@ -162,15 +144,13 @@ case class NFA(
   finalStates: Set[State]
 ) {
 
-  def nodeNames: Set[LogicalVariable] = states.map(_.varName.name)
+  def nodeNames: Set[LogicalVariable] = states.map(_.variable)
 
   def relationshipNames: Set[LogicalVariable] =
     transitions.flatMap(_._2.transitions).map(_.predicate).collect {
-      case RelationshipExpansionPredicate(relVarName, _, _, _, _) =>
-        relVarName.name
+      case RelationshipExpansionPredicate(relVar, _, _, _, _) =>
+        relVar
     }.toSet
-
-  def availableSymbols: Set[LogicalVariable] = nodeNames ++ relationshipNames
 
   /**
    * @return a DOT String to generate a graphviz. For example use

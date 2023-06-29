@@ -26,13 +26,9 @@ import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransitions
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransitions
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.SingletonVarName
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.State
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.StateImpl
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.Transition
-import org.neo4j.cypher.internal.logical.plans.NFABuilder.asVarName
 
 import scala.collection.mutable
 
@@ -46,20 +42,12 @@ object NFABuilder {
    */
   sealed trait State {
     def id: Int
-    def name: VarName
+    def variable: LogicalVariable
   }
 
-  private case class StateImpl(id: Int, name: VarName) extends State
+  private case class StateImpl(id: Int, variable: LogicalVariable) extends State
 
   case class Transition(nfaPredicate: NFA.Predicate, end: State)
-
-  def asVarName(name: String, groupVar: Boolean): VarName = {
-    if (groupVar) GroupVarName(varFor(name)) else SingletonVarName(varFor(name))
-  }
-
-  def asVarName(variable: LogicalVariable, groupVar: Boolean): VarName = {
-    if (groupVar) GroupVarName(variable) else SingletonVarName(variable)
-  }
 }
 
 /**
@@ -71,14 +59,14 @@ object NFABuilder {
  *
  * would look like this:
  * {{{
- *   val builder = new NFABuilder(SingletonVarName("a"))
+ *   val builder = new NFABuilder(varFor("a"))
  *
- *   val bState = builder.addAndGetState(SingletonVarName("b"))
+ *   val bState = builder.addAndGetState(varFor("b"))
  *   builder.addTransition(
  *     builder.getStartState,
  *     bState,
  *     RelationshipExpansionPredicate(
- *       SingletonVarName("r"),
+ *       varFor("r"),
  *       None,
  *       Seq.empty,
  *       SemanticDirection.OUTGOING,
@@ -86,7 +74,7 @@ object NFABuilder {
  *     )
  *   )
  *
- *   val cState = builder.addAndGetState(SingletonVarName("c"))
+ *   val cState = builder.addAndGetState(varFor("c"))
  *   builder.addTransition(
  *     bState,
  *     cState,
@@ -98,7 +86,7 @@ object NFABuilder {
  *  }}}
  */
 class NFABuilder protected (_startState: State) {
-  private val states: mutable.Map[Int, VarName] = mutable.Map(_startState.id -> _startState.name)
+  private val states: mutable.Map[Int, LogicalVariable] = mutable.Map(_startState.id -> _startState.variable)
   private var startState: State = _startState
   private val finalStates: mutable.Set[State] = mutable.Set.empty
   private val transitions: mutable.MultiDict[State, Transition] = mutable.MultiDict.empty
@@ -107,7 +95,7 @@ class NFABuilder protected (_startState: State) {
   /**
    * @param _startState the varName of the initial node of the start state of the NFA.
    */
-  def this(_startState: VarName) = {
+  def this(_startState: LogicalVariable) = {
     this(StateImpl(0, _startState))
     nextId += 1
   }
@@ -115,8 +103,8 @@ class NFABuilder protected (_startState: State) {
   /**
    * Protected constructor to support TestNFABuilder.
    */
-  protected def this(id: Int, startName: String, groupVar: Boolean) = {
-    this(StateImpl(id, asVarName(startName, groupVar)))
+  protected def this(id: Int, startName: String) = {
+    this(StateImpl(id, varFor(startName)))
     nextId += 1
   }
 
@@ -130,8 +118,8 @@ class NFABuilder protected (_startState: State) {
   /**
    * To support TestNFABuilder.
    */
-  protected def getOrCreateState(id: Int, name: LogicalVariable, groupVar: Boolean): State = {
-    StateImpl(id, states.getOrElseUpdate(id, asVarName(name, groupVar)))
+  protected def getOrCreateState(id: Int, variable: LogicalVariable): State = {
+    StateImpl(id, states.getOrElseUpdate(id, variable))
   }
 
   def build(): NFA = {
@@ -170,9 +158,9 @@ class NFABuilder protected (_startState: State) {
 
   def getStartState: State = startState
 
-  def addAndGetState(name: VarName): State = {
-    val newState = StateImpl(this.nextId, name)
-    this.states += (newState.id -> newState.name)
+  def addAndGetState(variable: LogicalVariable): State = {
+    val newState = StateImpl(this.nextId, variable)
+    this.states += (newState.id -> newState.variable)
     this.nextId = nextId + 1
     newState
   }

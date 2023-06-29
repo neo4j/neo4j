@@ -47,7 +47,6 @@ import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
 import org.neo4j.cypher.internal.logical.plans.NFA.Transitions
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
@@ -384,6 +383,7 @@ object LogicalPlanToPlanBuilderString {
           nonInlinablePreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
+          singletonVariables,
           selector,
           solvedExpressionString
         ) =>
@@ -394,6 +394,7 @@ object LogicalPlanToPlanBuilderString {
           nonInlinablePreFilters.map(e => wrapInQuotations(expressionStringifier(e))),
           s"Set(${groupEntitiesString(nodeVariableGroupings)})",
           s"Set(${groupEntitiesString(relationshipVariableGroupings)})",
+          s"Set(${wrapVarsInQuotationsAndMkString(singletonVariables)})",
           objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
           nfaString(nfa)
         ).mkString(", ")
@@ -1206,7 +1207,7 @@ object LogicalPlanToPlanBuilderString {
   private def nfaString(nfa: NFA): String = {
     val start = nfa.startState
     val constructor =
-      s"new TestNFABuilder(${start.id}, ${wrapInQuotations(start.varName.name)}, groupVar = ${start.varName.isInstanceOf[GroupVarName]})"
+      s"new TestNFABuilder(${start.id}, ${wrapInQuotations(start.variable.name)})"
     val transitions = nfa.transitions.flatMap {
       case (from, Transitions(transitions)) => transitions.map(t => transitionString(from, t.predicate, t.end))
     }
@@ -1218,31 +1219,18 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def transitionString(from: State, nfaPredicate: Predicate, to: State): String = {
-    val (patternString, groupVars) = nfaPredicate match {
+    val patternString = nfaPredicate match {
       case NodeJuxtapositionPredicate(variablePredicate) =>
         val whereString = variablePredicate.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
-        val patternString = s""" "(${from.varName.name.name}) (${to.varName.name.name}$whereString)" """.trim
-        val groupVars = Set(
-          Option.when(from.varName.isInstanceOf[GroupVarName])(wrapInQuotations(from.varName.name.name)),
-          Option.when(to.varName.isInstanceOf[GroupVarName])(wrapInQuotations(to.varName.name.name))
-        ).flatten
-        (patternString, groupVars)
+        s""" "(${from.variable.name}) (${to.variable.name}$whereString)" """.trim
       case RelationshipExpansionPredicate(relName, relPred, types, dir, nodePred) =>
         val relWhereString = relPred.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
         val nodeWhereString = nodePred.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
-        val patternString =
-          s""" "(${from.varName.name.name})$dirStrA[${relName.name.name}$typeStr$relWhereString]$dirStrB(${to.varName.name.name}$nodeWhereString)" """.trim
-        val groupVars = Set(
-          Option.when(from.varName.isInstanceOf[GroupVarName])(wrapInQuotations(from.varName.name)),
-          Option.when(to.varName.isInstanceOf[GroupVarName])(wrapInQuotations(to.varName.name)),
-          Option.when(relName.isInstanceOf[GroupVarName])(wrapInQuotations(relName.name))
-        ).flatten
-        (patternString, groupVars)
+        s""" "(${from.variable.name})$dirStrA[${relName.name}$typeStr$relWhereString]$dirStrB(${to.variable.name}$nodeWhereString)" """.trim
     }
-    val groupVarsString = s"groupVars = $groupVars"
-    s".addTransition(${from.id}, ${to.id}, $patternString, $groupVarsString)"
+    s".addTransition(${from.id}, ${to.id}, $patternString)"
   }
 
   private def trailParametersString(

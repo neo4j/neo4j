@@ -93,8 +93,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         None,
         Set.empty,
         Set.empty,
+        Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
-        new TestNFABuilder(0, "a", groupVar = false)
+        new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r]->(b)")
           .addFinalState(1)
           .build()
@@ -114,13 +115,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         Some("a.prop + c.prop = 5"),
         Set(("b_in", "b_in"), ("c_in", "c_in")),
         Set(("r2", "r2")),
+        Set("a", "b", "c", "d"),
         StatefulShortestPath.Selector.ShortestGroups(5),
-        new TestNFABuilder(0, "a", groupVar = false)
+        new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r WHERE r.prop > 5]->(b:A&B WHERE b.prop = 10)")
-          .addTransition(1, 2, "(b) (b_in WHERE b_in.prop = 10)", groupVars = Set("b_in"))
-          .addTransition(2, 3, "(b_in)<-[r2:R2 WHERE r2 < 7]-(c_in)", groupVars = Set("b_in", "c_in", "r2"))
-          .addTransition(3, 2, "(c_in) (b_in: A|C)", groupVars = Set("b_in", "c_in"))
-          .addTransition(3, 4, "(c_in) (c:C&D WHERE c.prop = 5)", groupVars = Set("c_in"))
+          .addTransition(1, 2, "(b) (b_in WHERE b_in.prop = 10)")
+          .addTransition(2, 3, "(b_in)<-[r2:R2 WHERE r2 < 7]-(c_in)")
+          .addTransition(3, 2, "(c_in) (b_in: A|C)")
+          .addTransition(3, 4, "(c_in) (c:C&D WHERE c.prop = 5)")
           .addTransition(1, 4, "(b) (c)")
           .addTransition(4, 5, "(c)-[r3]-(d)")
           .addFinalState(4)

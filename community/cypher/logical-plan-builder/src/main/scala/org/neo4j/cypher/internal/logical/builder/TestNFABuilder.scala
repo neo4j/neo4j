@@ -70,15 +70,15 @@ object TestNFABuilder {
 /**
  * Builder used to build NFAs in test code together with an [[AbstractLogicalPlanBuilder]].
  */
-class TestNFABuilder(startStateId: Int, startStateName: String, groupVar: Boolean = false)
-    extends NFABuilder(startStateId, startStateName, groupVar) {
+class TestNFABuilder(startStateId: Int, startStateName: String)
+    extends NFABuilder(startStateId, startStateName) {
 
-  def addTransition(fromId: Int, toId: Int, pattern: String, groupVars: Set[String] = Set.empty): TestNFABuilder = {
+  def addTransition(fromId: Int, toId: Int, pattern: String): TestNFABuilder = {
 
     def assertFromNameMatchesFromId(actualState: State, specifiedName: String): Unit = {
-      if (actualState.name.name.name != specifiedName) {
+      if (actualState.variable.name != specifiedName) {
         throw new IllegalArgumentException(
-          s"For id $fromId in pattern '$pattern': expected '${actualState.name.name}' but was '$specifiedName'"
+          s"For id $fromId in pattern '$pattern': expected '${actualState.variable.name}' but was '$specifiedName'"
         )
       }
     }
@@ -101,16 +101,16 @@ class TestNFABuilder(startStateId: Int, startStateName: String, groupVar: Boolea
         val relVariablePredicate = relPredicate.map(Expand.VariablePredicate(rel, _))
 
         val nfaPredicate = RelationshipExpansionPredicate(
-          NFABuilder.asVarName(rel, groupVars.contains(rel.name)),
+          rel,
           relVariablePredicate,
           types,
           direction,
           toNodePredicate
         )
 
-        val fromState = getOrCreateState(fromId, from, groupVars.contains(from.name))
+        val fromState = getOrCreateState(fromId, from)
         assertFromNameMatchesFromId(fromState, from.name)
-        val toState = getOrCreateState(toId, toName, groupVars.contains(toName.name))
+        val toState = getOrCreateState(toId, toName)
 
         addTransition(fromState, toState, nfaPredicate)
 
@@ -118,9 +118,9 @@ class TestNFABuilder(startStateId: Int, startStateName: String, groupVar: Boolea
           NodePattern(Some(from: LogicalVariable), None, None, None),
           NodePredicate(to, toNodePredicate)
         )) =>
-        val fromState = getOrCreateState(fromId, from, groupVars.contains(from.name))
+        val fromState = getOrCreateState(fromId, from)
         assertFromNameMatchesFromId(fromState, from.name)
-        val toState = getOrCreateState(toId, to, groupVars.contains(to.name))
+        val toState = getOrCreateState(toId, to)
         addTransition(fromState, toState, NodeJuxtapositionPredicate(toNodePredicate))
 
       case _ => throw new IllegalArgumentException(s"Expected path pattern or two juxtaposed nodes but was: $pattern")

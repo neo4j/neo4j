@@ -58,9 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
-import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.SingletonVarName
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -385,7 +383,7 @@ object VariableRefRewriter extends Rewriter {
           p.copy(variable = varRef(variable))(SameId(p.id))
         case p @ ForeachApply(_, _, variable, _) =>
           p.copy(variable = varRef(variable))(SameId(p.id))
-        case p @ StatefulShortestPath(_, source, target, _, _, _, _, _, _) =>
+        case p @ StatefulShortestPath(_, source, target, _, _, _, _, _, _, _) =>
           p.copy(sourceNode = varRef(source), targetNode = varRef(target))(SameId(p.id))
         case p @ Input(nodes, relationships, variables, nullable) =>
           Input(nodes.map(varRef), relationships.map(varRef), variables.map(varRef), nullable)(SameId(p.id))
@@ -480,10 +478,7 @@ object VariableRefRewriter extends Rewriter {
     case g @ VariableGrouping(left, right)           => g.copy(varRef(left), varRef(right))
     case p @ PatternRelationship(name, (left, right), _, _, _) =>
       p.copy(name = varRef(name), nodes = (varRef(left), varRef(right)))
-    case varName: VarName => varName match {
-        case SingletonVarName(v) => SingletonVarName(varRef(v))
-        case GroupVarName(v)     => GroupVarName(varRef(v))
-      }
+    case NFA.State(id, variable) => NFA.State(id, varRef(variable))
   }
 
   private val instance = topDown(rewriter)
