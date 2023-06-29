@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -232,13 +232,20 @@ public class DynamicIndexStoreViewIT {
     private StoreScan nodeStoreScan(TokenScanConsumer consumer) {
         CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         return storeView.visitNodes(
-                getLabelIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE);
+                getLabelIds(), PropertySelection.ALL_PROPERTIES, null, consumer, false, true, contextFactory, INSTANCE);
     }
 
     private StoreScan relationshipStoreScan(TokenScanConsumer consumer) {
         CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         return storeView.visitRelationships(
-                getRelationTypeIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE);
+                getRelationTypeIds(),
+                PropertySelection.ALL_PROPERTIES,
+                null,
+                consumer,
+                false,
+                true,
+                contextFactory,
+                INSTANCE);
     }
 
     private int[] getLabelIds() {

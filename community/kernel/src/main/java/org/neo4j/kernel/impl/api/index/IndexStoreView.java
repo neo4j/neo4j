@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.function.IntPredicate;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView {
@@ -36,7 +36,7 @@ public interface IndexStoreView {
      *
      * @param labelIds array of label ids to generate updates for. Empty array means all.
      * This filter is used only for property scan consumer and not for label scan consumer.
-     * @param propertyKeyIdFilter property key ids to generate updates for.
+     * @param propertySelection property key ids to generate updates for.
      * This filter is used only for property scan consumer and not for label scan consumer.
      * @param propertyScanConsumer a consumer of a scan over nodes generating a tuple of
      * node id, labels and property map for each scanned node.
@@ -50,7 +50,7 @@ public interface IndexStoreView {
      */
     StoreScan visitNodes(
             int[] labelIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer labelScanConsumer,
             boolean forceStoreScan,
@@ -65,7 +65,7 @@ public interface IndexStoreView {
      *
      * @param relationshipTypeIds array of relationship type ids to generate updates for. Empty array means all.
      * This filter is used only for property scan consumer and not for relationship type scan consumer.
-     * @param propertyKeyIdFilter property key ids to generate updates for.
+     * @param propertySelection property key ids to generate updates for.
      * This filter is used only for property scan consumer and not for relationship type scan consumer.
      * @param propertyScanConsumer a consumer of a scan over relationships generating a tuple of
      * relationship id, relationshipType and property map for each scanned relationship.
@@ -79,7 +79,7 @@ public interface IndexStoreView {
      */
     StoreScan visitRelationships(
             int[] relationshipTypeIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan,
@@ -106,7 +106,7 @@ public interface IndexStoreView {
         @Override
         public StoreScan visitNodes(
                 int[] labelIds,
-                IntPredicate propertyKeyIdFilter,
+                PropertySelection propertySelection,
                 PropertyScanConsumer propertyScanConsumer,
                 TokenScanConsumer labelScanConsumer,
                 boolean forceStoreScan,
@@ -119,7 +119,7 @@ public interface IndexStoreView {
         @Override
         public StoreScan visitRelationships(
                 int[] relationshipTypeIds,
-                IntPredicate propertyKeyIdFilter,
+                PropertySelection propertySelection,
                 PropertyScanConsumer propertyScanConsumer,
                 TokenScanConsumer relationshipTypeScanConsumer,
                 boolean forceStoreScan,

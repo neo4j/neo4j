@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -44,6 +43,7 @@ import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -62,7 +62,7 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
             StorageReader storageReader,
             Function<CursorContext, StoreCursors> storeCursorsFactory,
             int[] entityTokenIdFilter,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer tokenScanConsumer,
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour,
@@ -99,7 +99,7 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
                         config,
                         storageReader,
                         storeCursorsFactory,
-                        propertyKeyIdFilter,
+                        propertySelection,
                         entityCursorBehaviour,
                         entityTokenIdFilter,
                         propertyScanConsumer,

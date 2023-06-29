@@ -24,7 +24,6 @@ import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.internal.batchimport.Configuration;
@@ -49,7 +48,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
 
     private final StorageReader reader;
     private final Function<CursorContext, StoreCursors> storeCursorsFactory;
-    private final IntPredicate propertyKeyIdFilter;
+    private final PropertySelection propertySelection;
     private final EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour;
     private final long[] relevantTokenIds;
     private final PropertyScanConsumer propertyScanConsumer;
@@ -66,7 +65,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
             Configuration config,
             StorageReader reader,
             Function<CursorContext, StoreCursors> storeCursorsFactory,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour,
             int[] entityTokenIdFilter,
             PropertyScanConsumer propertyScanConsumer,
@@ -80,7 +79,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         super(control, "generate updates", config, parallelism, contextFactory);
         this.reader = reader;
         this.storeCursorsFactory = storeCursorsFactory;
-        this.propertyKeyIdFilter = propertyKeyIdFilter;
+        this.propertySelection = propertySelection;
         this.entityCursorBehaviour = entityCursorBehaviour;
         this.relevantTokenIds = intsToLongs(entityTokenIdFilter);
         this.propertyScanConsumer = propertyScanConsumer;
@@ -128,8 +127,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
             GeneratedIndexUpdates updates, CURSOR entityCursor, StoragePropertyCursor propertyCursor) {
         long[] tokens;
         if (gatherPropertyUpdates) {
-            tokens = entityCursorBehaviour.readTokensAndProperties(
-                    entityCursor, propertyCursor, PropertySelection.ALL_PROPERTIES);
+            tokens = entityCursorBehaviour.readTokensAndProperties(entityCursor, propertyCursor, propertySelection);
         } else {
             tokens = entityCursorBehaviour.readTokens(entityCursor);
         }
@@ -153,15 +151,13 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         Map<Integer, Value> relevantProperties = new HashMap<>();
         while (propertyCursor.next()) {
             int propertyKeyId = propertyCursor.propertyKey();
-            if (propertyKeyIdFilter.test(propertyKeyId)) {
-                // This entity has a property of interest to us
-                Value value = propertyCursor.propertyValue();
-                // No need to validate values before passing them to the updater since the index implementation
-                // is allowed to fail in which ever way it wants to. The result of failure will be the same as
-                // a failed validation, i.e. population FAILED.
-                relevantProperties.put(propertyKeyId, value);
-                indexUpdates.propertiesByteSize += value.estimatedHeapUsage();
-            }
+            // This entity has a property of interest to us
+            Value value = propertyCursor.propertyValue();
+            // No need to validate values before passing them to the updater since the index implementation
+            // is allowed to fail in which ever way it wants to. The result of failure will be the same as
+            // a failed validation, i.e. population FAILED.
+            relevantProperties.put(propertyKeyId, value);
+            indexUpdates.propertiesByteSize += value.estimatedHeapUsage();
         }
         if (!relevantProperties.isEmpty()) {
             indexUpdates.propertyUpdates.addRecord(cursor.entityReference(), tokens, relevantProperties);

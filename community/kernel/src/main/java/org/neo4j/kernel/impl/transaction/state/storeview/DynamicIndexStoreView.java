@@ -25,7 +25,6 @@ import static org.neo4j.kernel.impl.api.KernelTransactions.SYSTEM_TRANSACTION_ID
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.Optional;
-import java.util.function.IntPredicate;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -49,6 +48,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -81,7 +81,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
     @Override
     public StoreScan visitNodes(
             int[] labelIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer labelScanConsumer,
             boolean forceStoreScan,
@@ -106,7 +106,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
                             labelScanConsumer,
                             propertyScanConsumer,
                             labelIds,
-                            propertyKeyIdFilter,
+                            propertySelection,
                             parallelWrite,
                             fullScanStoreView.scheduler,
                             contextFactory,
@@ -124,7 +124,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
 
         return fullScanStoreView.visitNodes(
                 labelIds,
-                propertyKeyIdFilter,
+                propertySelection,
                 propertyScanConsumer,
                 labelScanConsumer,
                 forceStoreScan,
@@ -136,7 +136,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
     @Override
     public StoreScan visitRelationships(
             int[] relationshipTypeIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan,
@@ -164,7 +164,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
                                 relationshipTypeScanConsumer,
                                 propertyScanConsumer,
                                 relationshipTypeIds,
-                                propertyKeyIdFilter,
+                                propertySelection,
                                 parallelWrite,
                                 fullScanStoreView.scheduler,
                                 contextFactory,
@@ -179,7 +179,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
                                 relationshipTypeScanConsumer,
                                 propertyScanConsumer,
                                 relationshipTypeIds,
-                                propertyKeyIdFilter,
+                                propertySelection,
                                 parallelWrite,
                                 fullScanStoreView.scheduler,
                                 contextFactory,
@@ -198,7 +198,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
 
         return fullScanStoreView.visitRelationships(
                 relationshipTypeIds,
-                propertyKeyIdFilter,
+                propertySelection,
                 propertyScanConsumer,
                 relationshipTypeScanConsumer,
                 forceStoreScan,

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.internal.batchimport.staging.ProcessorAssignmentStrategies.saturateSpecificStep;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -56,6 +55,7 @@ import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -107,7 +107,7 @@ class StoreScanStageTest {
                 data,
                 any -> StoreCursors.NULL,
                 new int[] {LABEL},
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 propertyConsumer,
                 tokenConsumer,
                 new NodeCursorBehaviour(data),
@@ -151,7 +151,7 @@ class StoreScanStageTest {
                 data,
                 any -> StoreCursors.NULL,
                 new int[] {LABEL},
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 failingWriter,
                 null,
                 new NodeCursorBehaviour(data),
@@ -188,7 +188,7 @@ class StoreScanStageTest {
                 data,
                 any -> StoreCursors.NULL,
                 new int[] {LABEL},
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 writer,
                 null,
                 new NodeCursorBehaviour(data),
@@ -225,7 +225,7 @@ class StoreScanStageTest {
                 data,
                 any -> StoreCursors.NULL,
                 new int[] {LABEL},
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 writer,
                 null,
                 new NodeCursorBehaviour(data),
@@ -269,7 +269,7 @@ class StoreScanStageTest {
                 data,
                 any -> StoreCursors.NULL,
                 new int[] {LABEL},
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 new ThreadCapturingPropertyConsumer(),
                 new ThreadCapturingTokenConsumer(),
                 new NodeCursorBehaviour(data),
@@ -308,7 +308,7 @@ class StoreScanStageTest {
                 data,
                 any -> StoreCursors.NULL,
                 new int[] {LABEL},
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 writer,
                 null,
                 new NodeCursorBehaviour(data),

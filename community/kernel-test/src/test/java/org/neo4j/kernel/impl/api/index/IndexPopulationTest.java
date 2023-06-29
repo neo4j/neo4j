@@ -26,7 +26,6 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.util.function.IntPredicate;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -50,6 +49,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Values;
@@ -130,7 +130,7 @@ class IndexPopulationTest {
             @Override
             public StoreScan visitNodes(
                     int[] labelIds,
-                    IntPredicate propertyKeyIdFilter,
+                    PropertySelection propertySelection,
                     PropertyScanConsumer propertyScanConsumer,
                     TokenScanConsumer labelScanConsumer,
                     boolean forceStoreScan,

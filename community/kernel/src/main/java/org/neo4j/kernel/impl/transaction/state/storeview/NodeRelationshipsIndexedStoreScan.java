@@ -23,7 +23,6 @@ import static org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan.ge
 import static org.neo4j.lock.LockType.SHARED;
 
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -60,7 +60,7 @@ public class NodeRelationshipsIndexedStoreScan
             TokenScanConsumer relationshipTypeScanConsumer,
             PropertyScanConsumer propertyScanConsumer,
             int[] relationshipTypeIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
@@ -71,7 +71,7 @@ public class NodeRelationshipsIndexedStoreScan
                 storeCursorsFactory,
                 getNodeCount(reader, contextFactory),
                 relationshipTypeIds,
-                propertyKeyIdFilter,
+                propertySelection,
                 propertyScanConsumer,
                 relationshipTypeScanConsumer,
                 id -> locks.acquireNodeLock(id, SHARED),

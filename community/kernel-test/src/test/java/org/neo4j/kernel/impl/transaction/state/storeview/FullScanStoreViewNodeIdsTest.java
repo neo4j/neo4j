@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -70,7 +71,14 @@ class FullScanStoreViewNodeIdsTest {
         // when
         var consumer = new TestTokenScanConsumer();
         var scan = fullScanStoreView.visitRelationships(
-                relationshipTypes, key -> true, null, consumer, true, false, NULL_CONTEXT_FACTORY, INSTANCE);
+                relationshipTypes,
+                PropertySelection.ALL_PROPERTIES,
+                null,
+                consumer,
+                true,
+                false,
+                NULL_CONTEXT_FACTORY,
+                INSTANCE);
         scan.run(NO_EXTERNAL_UPDATES);
 
         // then

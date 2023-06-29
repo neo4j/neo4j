@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.function.IntPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -30,6 +29,7 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.Preconditions;
@@ -54,7 +54,7 @@ public class FullScanStoreView implements IndexStoreView {
     @Override
     public StoreScan visitNodes(
             int[] labelIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer labelScanConsumer,
             boolean forceStoreScan,
@@ -69,7 +69,7 @@ public class FullScanStoreView implements IndexStoreView {
                 labelScanConsumer,
                 propertyScanConsumer,
                 labelIds,
-                propertyKeyIdFilter,
+                propertySelection,
                 parallelWrite,
                 scheduler,
                 contextFactory,
@@ -79,7 +79,7 @@ public class FullScanStoreView implements IndexStoreView {
     @Override
     public StoreScan visitRelationships(
             int[] relationshipTypeIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan,
@@ -118,7 +118,7 @@ public class FullScanStoreView implements IndexStoreView {
                 relationshipTypeScanConsumer,
                 propertyScanConsumer,
                 relationshipTypeIds,
-                propertyKeyIdFilter,
+                propertySelection,
                 parallelWrite,
                 scheduler,
                 contextFactory,

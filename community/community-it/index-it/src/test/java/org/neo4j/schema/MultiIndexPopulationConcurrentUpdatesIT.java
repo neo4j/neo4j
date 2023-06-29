@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -105,6 +104,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -549,7 +549,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         @Override
         public StoreScan visitNodes(
                 int[] labelIds,
-                IntPredicate propertyKeyIdFilter,
+                PropertySelection propertySelection,
                 PropertyScanConsumer propertyScanConsumer,
                 TokenScanConsumer labelScanConsumer,
                 boolean forceStoreScan,
@@ -558,7 +558,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                 MemoryTracker memoryTracker) {
             StoreScan storeScan = super.visitNodes(
                     labelIds,
-                    propertyKeyIdFilter,
+                    propertySelection,
                     propertyScanConsumer,
                     labelScanConsumer,
                     forceStoreScan,
@@ -572,7 +572,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     null,
                     propertyScanConsumer,
                     labelIds,
-                    propertyKeyIdFilter,
+                    propertySelection,
                     (NodeStoreScan) storeScan,
                     customAction,
                     jobScheduler);
@@ -590,7 +590,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                 TokenScanConsumer labelScanConsumer,
                 PropertyScanConsumer propertyUpdatesConsumer,
                 int[] labelIds,
-                IntPredicate propertyKeyIdFilter,
+                PropertySelection propertyKeyIdFilter,
                 NodeStoreScan delegate,
                 Runnable customAction,
                 JobScheduler jobScheduler) {

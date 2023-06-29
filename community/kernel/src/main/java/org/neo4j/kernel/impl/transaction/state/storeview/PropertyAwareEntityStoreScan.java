@@ -24,7 +24,6 @@ import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superv
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 import org.neo4j.collection.PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator;
 import org.neo4j.configuration.Config;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -61,7 +61,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private final MemoryTracker memoryTracker;
     private final boolean canDetermineExternalUpdatesCutOffPoint;
     protected final int[] entityTokenIdFilter;
-    private final IntPredicate propertyKeyIdFilter;
+    private final PropertySelection propertySelection;
     private final LongFunction<Lock> lockFunction;
     private final Config dbConfig;
     private PhaseTracker phaseTracker;
@@ -75,7 +75,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             Function<CursorContext, StoreCursors> storeCursorsFactory,
             long totalEntityCount,
             int[] entityTokenIdFilter,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer tokenScanConsumer,
             LongFunction<Lock> lockFunction,
@@ -92,7 +92,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.scheduler = scheduler;
         this.contextFactory = contextFactory;
         this.entityTokenIdFilter = entityTokenIdFilter;
-        this.propertyKeyIdFilter = propertyKeyIdFilter;
+        this.propertySelection = propertySelection;
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;
         this.memoryTracker = memoryTracker;
@@ -115,7 +115,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
                 storageReader,
                 storeCursorsFactory,
                 entityTokenIdFilter,
-                propertyKeyIdFilter,
+                propertySelection,
                 propertyScanConsumer,
                 tokenScanConsumer,
                 cursorBehaviour,

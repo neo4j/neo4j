@@ -28,11 +28,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
 import static org.neo4j.test.PageCacheTracerAssertions.pins;
 
@@ -63,6 +63,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.extension.DbmsExtension;
@@ -135,7 +136,7 @@ class FullScanStoreViewTest {
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         try (StoreScan storeScan = storeView.visitNodes(
                 new int[] {labelId},
-                id -> id == propertyKeyId,
+                PropertySelection.selection(propertyKeyId),
                 propertyScanConsumer,
                 new TestTokenScanConsumer(),
                 false,
@@ -160,7 +161,7 @@ class FullScanStoreViewTest {
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
                 new int[] {relTypeId},
-                id -> id == relPropertyKeyId,
+                PropertySelection.selection(relPropertyKeyId),
                 propertyScanConsumer,
                 null,
                 true,
@@ -186,7 +187,7 @@ class FullScanStoreViewTest {
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         try (StoreScan storeScan = storeView.visitNodes(
                 new int[] {labelId},
-                id -> id == propertyKeyId,
+                PropertySelection.selection(propertyKeyId),
                 propertyScanConsumer,
                 new TestTokenScanConsumer(),
                 false,
@@ -210,7 +211,7 @@ class FullScanStoreViewTest {
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
                 new int[] {relTypeId},
-                id -> id == relPropertyKeyId,
+                PropertySelection.selection(relPropertyKeyId),
                 propertyScanConsumer,
                 null,
                 true,
@@ -230,7 +231,7 @@ class FullScanStoreViewTest {
         // given
         try (StoreScan storeScan = storeView.visitNodes(
                 new int[] {labelId},
-                id -> id == propertyKeyId,
+                PropertySelection.selection(propertyKeyId),
                 new TestPropertyScanConsumer(),
                 null,
                 false,
@@ -262,7 +263,7 @@ class FullScanStoreViewTest {
         // given
         StoreScan storeScan = storeView.visitRelationships(
                 new int[] {relTypeId},
-                id -> id == relPropertyKeyId,
+                PropertySelection.selection(relPropertyKeyId),
                 new TestPropertyScanConsumer(),
                 null,
                 true,
@@ -304,7 +305,7 @@ class FullScanStoreViewTest {
                 null,
                 propertyScanConsumer,
                 new int[] {labelId},
-                id -> true,
+                ALL_PROPERTIES,
                 false,
                 jobScheduler,
                 contextFactory,
@@ -335,7 +336,7 @@ class FullScanStoreViewTest {
                 null,
                 propertyScanConsumer,
                 new int[] {relTypeId},
-                id -> true,
+                ALL_PROPERTIES,
                 false,
                 jobScheduler,
                 contextFactory,
@@ -355,7 +356,7 @@ class FullScanStoreViewTest {
         // Given
         TestTokenScanConsumer tokenScanConsumer = new TestTokenScanConsumer();
         StoreScan storeViewRelationshipStoreScan = storeView.visitRelationships(
-                EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenScanConsumer, true, true, CONTEXT_FACTORY, INSTANCE);
+                EMPTY_INT_ARRAY, ALL_PROPERTIES, null, tokenScanConsumer, true, true, CONTEXT_FACTORY, INSTANCE);
 
         // When
         storeViewRelationshipStoreScan.run(NO_EXTERNAL_UPDATES);

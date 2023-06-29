@@ -110,7 +110,7 @@ public abstract class PropertySelection {
             return keysOnly ? ALL_PROPERTY_KEYS : ALL_PROPERTIES;
         }
         if (keys.length == 0) {
-            throw new IllegalArgumentException("Can't make a property selection of zero keys");
+            return NO_PROPERTIES;
         }
         return keys.length == 1 ? SingleKey.singleKey(keysOnly, keys[0]) : new MultipleKeys(keysOnly, keys);
     }
@@ -231,6 +231,37 @@ public abstract class PropertySelection {
 
     public static final PropertySelection ALL_PROPERTIES = allProperties(false);
     public static final PropertySelection ALL_PROPERTY_KEYS = allProperties(true);
+    public static final PropertySelection NO_PROPERTIES = new PropertySelection(true) {
+        @Override
+        public boolean isLimited() {
+            return true;
+        }
+
+        @Override
+        public int numberOfKeys() {
+            return 0;
+        }
+
+        @Override
+        public int key(int index) {
+            throw new IllegalStateException("This selection has no keys");
+        }
+
+        @Override
+        public boolean test(int key) {
+            return false;
+        }
+
+        @Override
+        public int lowestKey() {
+            throw new IllegalStateException("This selection has no keys");
+        }
+
+        @Override
+        public int highestKey() {
+            throw new IllegalStateException("This selection has no keys");
+        }
+    };
 
     private static PropertySelection allProperties(boolean keysOnly) {
         return new PropertySelection(keysOnly) {

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
 import static org.neo4j.test.PageCacheTracerAssertions.pins;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -87,7 +87,7 @@ class DynamicIndexStoreViewTracingIT {
                 NullLogProvider.getInstance());
         try (var storeScan = indexStoreView.visitNodes(
                 new int[] {0, 1, 2},
-                ALWAYS_TRUE_INT,
+                PropertySelection.ALL_PROPERTIES,
                 null,
                 new TestTokenScanConsumer(),
                 false,

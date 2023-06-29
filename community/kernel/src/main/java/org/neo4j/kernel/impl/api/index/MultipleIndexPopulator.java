@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
-import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -39,7 +38,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
@@ -72,6 +70,7 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -208,12 +207,12 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     StoreScan createStoreScan(CursorContextFactory contextFactory) {
         int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();
-        IntPredicate propertyKeyIdFilter = propertyKeyId -> contains(propertyKeyIds, propertyKeyId);
+        var propertySelection = PropertySelection.selection(propertyKeyIds);
 
         if (type == EntityType.RELATIONSHIP) {
             StoreScan innerStoreScan = storeView.visitRelationships(
                     entityTokenIds,
-                    propertyKeyIdFilter,
+                    propertySelection,
                     createPropertyScanConsumer(),
                     createTokenScanConsumer(),
                     false,
@@ -224,7 +223,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         } else {
             StoreScan innerStoreScan = storeView.visitNodes(
                     entityTokenIds,
-                    propertyKeyIdFilter,
+                    propertySelection,
                     createPropertyScanConsumer(),
                     createTokenScanConsumer(),
                     false,

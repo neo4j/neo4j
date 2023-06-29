@@ -28,7 +28,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.Arrays;
 import java.util.PrimitiveIterator;
-import java.util.function.IntPredicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.TokenConstants;
@@ -52,7 +52,6 @@ import org.neo4j.token.api.TokenConstants;
 class RelationshipIndexedRelationshipStoreScanTest {
     private final StubStorageCursors cursors = new StubStorageCursors();
     private final TokenIndexReader relationshipTypeScanReader = mock(TokenIndexReader.class);
-    private final IntPredicate propertyKeyIdFilter = mock(IntPredicate.class);
     private final TokenScanConsumer typeScanConsumer = mock(TokenScanConsumer.class);
     private final PropertyScanConsumer propertyScanConsumer = mock(PropertyScanConsumer.class);
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -133,7 +132,7 @@ class RelationshipIndexedRelationshipStoreScanTest {
                 typeScanConsumer,
                 propertyScanConsumer,
                 relationshipTypeIds,
-                propertyKeyIdFilter,
+                PropertySelection.ALL_PROPERTIES,
                 false,
                 jobScheduler,
                 new CursorContextFactory(PageCacheTracer.NULL, EMPTY),

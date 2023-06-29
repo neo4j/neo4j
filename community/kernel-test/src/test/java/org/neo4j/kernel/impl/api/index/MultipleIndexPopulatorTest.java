@@ -48,7 +48,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
-import java.util.function.IntPredicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,6 +74,7 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -271,7 +271,7 @@ class MultipleIndexPopulatorTest {
         verify(indexStoreView)
                 .visitNodes(
                         any(int[].class),
-                        any(IntPredicate.class),
+                        any(PropertySelection.class),
                         any(PropertyScanConsumer.class),
                         isNull(),
                         anyBoolean(),

@@ -63,7 +63,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.IntPredicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -109,6 +108,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.DoubleLatch;
@@ -453,7 +453,7 @@ class IndexPopulationJobTest {
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when(storeView.visitNodes(
                         any(int[].class),
-                        any(IntPredicate.class),
+                        any(PropertySelection.class),
                         ArgumentMatchers.any(),
                         ArgumentMatchers.any(),
                         anyBoolean(),
@@ -652,7 +652,7 @@ class IndexPopulationJobTest {
             @Override
             public StoreScan visitNodes(
                     int[] labelIds,
-                    IntPredicate propertyKeyIdFilter,
+                    PropertySelection propertySelection,
                     PropertyScanConsumer propertyScanConsumer,
                     TokenScanConsumer labelScanConsumer,
                     boolean forceStoreScan,

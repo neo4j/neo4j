@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -91,7 +92,7 @@ class LabelScanNodeViewTracingIT {
                 new TestTokenScanConsumer(),
                 null,
                 new int[] {labelId},
-                any -> false,
+                PropertySelection.ALL_PROPERTIES,
                 false,
                 jobScheduler,
                 contextFactory,

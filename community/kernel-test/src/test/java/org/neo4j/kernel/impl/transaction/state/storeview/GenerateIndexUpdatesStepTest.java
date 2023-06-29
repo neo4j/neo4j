@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -76,7 +75,7 @@ class GenerateIndexUpdatesStepTest {
                 DEFAULT,
                 data,
                 any -> StoreCursors.NULL,
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 new NodeCursorBehaviour(data),
                 new int[] {LABEL},
                 scanConsumer,
@@ -114,7 +113,7 @@ class GenerateIndexUpdatesStepTest {
                 DEFAULT,
                 data,
                 any -> StoreCursors.NULL,
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 new NodeCursorBehaviour(data),
                 new int[] {LABEL},
                 scanConsumer,
@@ -151,7 +150,7 @@ class GenerateIndexUpdatesStepTest {
                 DEFAULT,
                 data,
                 any -> StoreCursors.NULL,
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 new NodeCursorBehaviour(data),
                 new int[] {LABEL},
                 scanConsumer,
@@ -208,7 +207,7 @@ class GenerateIndexUpdatesStepTest {
                 DEFAULT,
                 data,
                 any -> StoreCursors.NULL,
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 new NodeCursorBehaviour(data),
                 new int[] {LABEL},
                 null,
@@ -265,7 +264,7 @@ class GenerateIndexUpdatesStepTest {
                 DEFAULT,
                 data,
                 any -> StoreCursors.NULL,
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 new NodeCursorBehaviour(data),
                 new int[] {LABEL},
                 scanConsumer,
@@ -314,7 +313,7 @@ class GenerateIndexUpdatesStepTest {
                 DEFAULT,
                 data,
                 any -> StoreCursors.NULL,
-                pid -> pid == otherKeyId,
+                PropertySelection.selection(otherKeyId),
                 new NodeCursorBehaviour(data),
                 new int[] {LABEL},
                 scanConsumer,
@@ -358,7 +357,7 @@ class GenerateIndexUpdatesStepTest {
                 DEFAULT,
                 data,
                 any -> StoreCursors.NULL,
-                alwaysTrue(),
+                PropertySelection.ALL_PROPERTIES,
                 new NodeCursorBehaviour(data),
                 new int[] {LABEL},
                 propertyScanConsumer,

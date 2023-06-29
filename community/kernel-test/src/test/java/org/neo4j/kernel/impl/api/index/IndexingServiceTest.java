@@ -95,7 +95,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.IntPredicate;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -168,6 +167,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
@@ -1807,7 +1807,7 @@ class IndexingServiceTest {
         void getsProcessedByStoreScanFrom(IndexStoreView mock) {
             when(mock.visitNodes(
                             any(int[].class),
-                            any(IntPredicate.class),
+                            any(PropertySelection.class),
                             any(PropertyScanConsumer.class),
                             isNull(),
                             anyBoolean(),
@@ -1817,7 +1817,7 @@ class IndexingServiceTest {
                     .thenAnswer(this);
             when(mock.visitRelationships(
                             any(int[].class),
-                            any(IntPredicate.class),
+                            any(PropertySelection.class),
                             any(PropertyScanConsumer.class),
                             any(TokenScanConsumer.class),
                             anyBoolean(),

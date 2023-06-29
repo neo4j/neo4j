@@ -39,7 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.IntPredicate;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
@@ -48,7 +47,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
-import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
@@ -60,6 +58,7 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -112,7 +111,7 @@ class DynamicIndexStoreViewTest {
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
         try (StoreScan storeScan = storeView.visitNodes(
                 indexedLabels,
-                Predicates.ALWAYS_TRUE_INT,
+                PropertySelection.ALL_PROPERTIES,
                 new TestPropertyScanConsumer(),
                 consumer,
                 false,
@@ -170,7 +169,7 @@ class DynamicIndexStoreViewTest {
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
                 indexedTypes,
-                relationType -> true,
+                PropertySelection.ALL_PROPERTIES,
                 propertyScanConsumer,
                 tokenConsumer,
                 false,
@@ -207,7 +206,7 @@ class DynamicIndexStoreViewTest {
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
         try (StoreScan storeScan = storeView.visitNodes(
                 indexedLabels,
-                Predicates.ALWAYS_TRUE_INT,
+                PropertySelection.ALL_PROPERTIES,
                 new TestPropertyScanConsumer(),
                 consumer,
                 false,
@@ -245,7 +244,7 @@ class DynamicIndexStoreViewTest {
             relationshipsWithTargetType.add(id++);
         }
         int targetPropertyKeyId = cursors.propertyKeyTokenHolder().getIdByName(targetPropertyKey);
-        IntPredicate propertyKeyIdFilter = value -> value == targetPropertyKeyId;
+        var propertyKeyIdFilter = PropertySelection.selection(targetPropertyKeyId);
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
         TestTokenScanConsumer tokenConsumer = new TestTokenScanConsumer();
@@ -326,7 +325,7 @@ class DynamicIndexStoreViewTest {
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
                 indexedTypes,
-                key -> key == targetPropertyKeyId,
+                PropertySelection.selection(targetPropertyKeyId),
                 propertyScanConsumer,
                 null,
                 false,

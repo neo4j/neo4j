@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.PrimitiveArrays.intersect;
@@ -31,7 +30,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.IntPredicate;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
@@ -55,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.TestPropertyScanConsume
 import org.neo4j.kernel.impl.transaction.state.storeview.TestTokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
@@ -92,22 +91,22 @@ class NodeStoreScanTest {
 
     @Test
     void shouldScanOverRelevantNodesAllLabelsAndAllProperties() {
-        shouldScanOverRelevantNodes(allPossibleLabelIds, alwaysTrue());
+        shouldScanOverRelevantNodes(allPossibleLabelIds, PropertySelection.ALL_PROPERTIES);
     }
 
     @Test
     void shouldScanOverRelevantNodesAllLabelsAndSomeProperties() {
-        shouldScanOverRelevantNodes(allPossibleLabelIds, key -> key == nameKeyId);
+        shouldScanOverRelevantNodes(allPossibleLabelIds, PropertySelection.selection(nameKeyId));
     }
 
     @Test
     void shouldScanOverRelevantNodesSomeLabelsAndAllProperties() {
-        shouldScanOverRelevantNodes(randomLabels(), alwaysTrue());
+        shouldScanOverRelevantNodes(randomLabels(), PropertySelection.ALL_PROPERTIES);
     }
 
     @Test
     void shouldScanOverRelevantNodesSomeLabelsAndSomeProperties() {
-        shouldScanOverRelevantNodes(randomLabels(), key -> key == ageKeyId);
+        shouldScanOverRelevantNodes(randomLabels(), PropertySelection.selection(ageKeyId));
     }
 
     @Test
@@ -121,7 +120,7 @@ class NodeStoreScanTest {
                 mock(TokenScanConsumer.class),
                 mock(PropertyScanConsumer.class),
                 allPossibleLabelIds,
-                k -> true,
+                PropertySelection.ALL_PROPERTIES,
                 false,
                 jobScheduler,
                 CONTEXT_FACTORY,
@@ -134,7 +133,7 @@ class NodeStoreScanTest {
         assertThat(progressBeforeStarted.getCompleted()).isZero();
     }
 
-    private void shouldScanOverRelevantNodes(int[] labelFilter, IntPredicate propertyKeyFilter) {
+    private void shouldScanOverRelevantNodes(int[] labelFilter, PropertySelection propertySelection) {
         // given
         long total = 100;
         MutableLongSet expectedPropertyUpdatesNodes = new LongHashSet();
@@ -147,11 +146,11 @@ class NodeStoreScanTest {
             boolean passesPropertyFilter = false;
             if (random.nextBoolean()) {
                 properties.put(KEY_NAME, Values.of("Node_" + id));
-                passesPropertyFilter |= propertyKeyFilter.test(nameKeyId);
+                passesPropertyFilter |= propertySelection.test(nameKeyId);
             }
             if (random.nextBoolean()) {
                 properties.put(KEY_AGE, Values.of(id));
-                passesPropertyFilter |= propertyKeyFilter.test(ageKeyId);
+                passesPropertyFilter |= propertySelection.test(ageKeyId);
             }
             node.properties(properties);
             if (passesPropertyFilter && intersect(intsToLongs(labels), intsToLongs(labelFilter)).length > 0) {
@@ -173,7 +172,7 @@ class NodeStoreScanTest {
                 tokenConsumer,
                 propertyConsumer,
                 labelFilter,
-                propertyKeyFilter,
+                propertySelection,
                 false,
                 jobScheduler,
                 CONTEXT_FACTORY,

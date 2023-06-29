@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -71,7 +71,7 @@ class FullScanStoreViewTracingIT {
         var indexStoreView = new FullScanStoreView(lockService, storageEngine, Config.defaults(), jobScheduler);
         try (var storeScan = indexStoreView.visitNodes(
                 EMPTY_INT_ARRAY,
-                ALWAYS_TRUE_INT,
+                PropertySelection.ALL_PROPERTIES,
                 null,
                 new TestTokenScanConsumer(),
                 true,

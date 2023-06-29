@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import static org.neo4j.lock.LockType.SHARED;
 
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -32,6 +31,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
@@ -55,7 +55,7 @@ public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCurso
             TokenScanConsumer labelScanConsumer,
             PropertyScanConsumer propertyScanConsumer,
             int[] labelIds,
-            IntPredicate propertyKeyIdFilter,
+            PropertySelection propertySelection,
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
@@ -66,7 +66,7 @@ public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCurso
                 storeCursorsFactory,
                 getNodeCount(storageReader, contextFactory),
                 labelIds,
-                propertyKeyIdFilter,
+                propertySelection,
                 propertyScanConsumer,
                 labelScanConsumer,
                 id -> locks.acquireNodeLock(id, SHARED),
