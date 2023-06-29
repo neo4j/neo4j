@@ -86,7 +86,10 @@ public enum NotificationCodeWithDescription {
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                     + "how problems could be avoided."),
-    DEPRECATED_FORMAT(Status.Request.DeprecatedFormat, "The requested format has been deprecated. (%s)"),
+    DEPRECATED_FORMAT(
+            Status.Request.DeprecatedFormat,
+            "The requested format has been deprecated. (%s)",
+            "The requested `%s` format is deprecated. Replace it with `%s`."),
     LARGE_LABEL_LOAD_CSV(
             Status.Statement.NoApplicableIndex,
             "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
@@ -249,8 +252,10 @@ public enum NotificationCodeWithDescription {
         return EAGER_LOAD_CSV.notification(position);
     }
 
-    public static NotificationImplementation deprecatedFormat(InputPosition position, String param) {
-        return DEPRECATED_FORMAT.notification(position, param);
+    public static NotificationImplementation deprecatedFormat(
+            InputPosition position, String oldDetail, String deprecatedFormat, String newFormat) {
+        return DEPRECATED_FORMAT.notificationWithMessage(
+                position, new String[] {oldDetail}, new String[] {deprecatedFormat, newFormat});
     }
 
     public static NotificationImplementation largeLabelLoadCsv(InputPosition position) {

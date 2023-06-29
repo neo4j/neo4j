@@ -60,7 +60,7 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
     protected final List<Notification> notifications = new ArrayList<>();
     protected final List<FailureEvent> errors = new ArrayList<>();
     protected final OutputStream output;
-    private final boolean isDeprecatedFormat;
+    protected final String deprecatedFormat;
 
     /**
      * The original parameters from the {@link org.neo4j.server.http.cypher.format.api.OutputEventSource}.
@@ -76,11 +76,11 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
             boolean isStrictMode,
             JsonFactory jsonFactory,
             OutputStream output,
-            boolean isDeprecatedFormat) {
+            String deprecatedFormat) {
         this.parameters = parameters;
         this.output = output;
         this.writer = new EventSourceWriter();
-        this.isDeprecatedFormat = isDeprecatedFormat;
+        this.deprecatedFormat = deprecatedFormat;
 
         ObjectCodec codec = instantiateCodec(isStrictMode, classOfCodec);
         this.jsonGenerator = createGenerator(jsonFactory, codec, output);
@@ -191,7 +191,7 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
 
             statementEndEvent.getNotifications().forEach(notifications::add);
 
-            if (isDeprecatedFormat) {
+            if (deprecatedFormat != null) {
                 notifications.add(deprecationWarning());
             }
 
@@ -432,16 +432,19 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
         return deprecationWarning(
                 LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE,
                 LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V1,
+                deprecatedFormat,
                 LineDelimitedEventSourceJoltV2MessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V2);
     }
 
     public static Notification deprecationWarning(
-            String deprecatedFormatA, String deprecatedFormatB, String newFormat) {
+            String deprecatedFormatA, String deprecatedFormatB, String actualDeprecatedFormat, String newFormat) {
         return deprecatedFormat(
                 InputPosition.empty,
                 String.format(
                         "'%s' and '%s' have been deprecated and will be removed in a future version. "
                                 + "Please use '%s'.",
-                        deprecatedFormatA, deprecatedFormatB, newFormat));
+                        deprecatedFormatA, deprecatedFormatB, newFormat),
+                actualDeprecatedFormat,
+                newFormat);
     }
 }

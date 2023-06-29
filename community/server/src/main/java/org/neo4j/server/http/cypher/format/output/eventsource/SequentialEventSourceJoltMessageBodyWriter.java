@@ -48,6 +48,11 @@ public class SequentialEventSourceJoltMessageBodyWriter extends AbstractEventSou
     protected EventSourceSerializer createSerializer(
             OutputStream outputStream, JsonFactory jsonFactory, Map<String, Object> parameters, boolean strict) {
         return new SequentialEventSourceJoltSerializer(
-                parameters, JoltV1Codec.class, strict, jsonFactory, outputStream, true);
+                parameters,
+                JoltV1Codec.class,
+                strict,
+                jsonFactory,
+                outputStream,
+                getMediaType().getType());
     }
 }

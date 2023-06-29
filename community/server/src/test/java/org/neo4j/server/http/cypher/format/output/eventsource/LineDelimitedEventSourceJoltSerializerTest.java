@@ -780,7 +780,12 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     void shouldReturnDeprecationNotification() {
         // given
         var joltV2Serializer = new LineDelimitedEventSourceJoltSerializer(
-                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, true);
+                Collections.emptyMap(),
+                JoltV1Codec.class,
+                true,
+                JSON_FACTORY,
+                output,
+                LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE);
         var row = Map.of(
                 "column1", "value1",
                 "column2", "value2");
@@ -844,6 +849,6 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
 
     protected static LineDelimitedEventSourceJoltSerializer getSerializerWith(OutputStream output) {
         return new LineDelimitedEventSourceJoltSerializer(
-                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, false);
+                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, null);
     }
 }

@@ -47,8 +47,8 @@ public class SequentialEventSourceJoltSerializer extends LineDelimitedEventSourc
             boolean isStrictMode,
             JsonFactory jsonFactory,
             OutputStream output,
-            boolean isDeprecatedFormat) {
-        super(parameters, classOfCodec, isStrictMode, jsonFactory, output, isDeprecatedFormat);
+            String deprecatedFormat) {
+        super(parameters, classOfCodec, isStrictMode, jsonFactory, output, deprecatedFormat);
     }
 
     private void writeRecordSeparator() {
@@ -103,6 +103,7 @@ public class SequentialEventSourceJoltSerializer extends LineDelimitedEventSourc
         return deprecationWarning(
                 SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE,
                 SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V1,
+                deprecatedFormat,
                 SequentialEventSourceJoltV2MessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V2);
     }
 }

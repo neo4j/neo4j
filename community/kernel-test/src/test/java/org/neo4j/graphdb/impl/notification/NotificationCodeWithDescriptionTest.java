@@ -350,7 +350,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_FORMAT() {
-        Notification notification = deprecatedFormat(InputPosition.empty, "u627");
+        NotificationImplementation notification =
+                deprecatedFormat(InputPosition.empty, "u627", "deprecatedFormat", "newFormat");
 
         verifyNotification(
                 notification,
@@ -358,7 +359,8 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Request.DeprecatedFormat",
                 "The requested format has been deprecated. (u627)",
-                NotificationCategory.DEPRECATION);
+                NotificationCategory.DEPRECATION,
+                "The requested `deprecatedFormat` format is deprecated. Replace it with `newFormat`.");
     }
 
     @Test
@@ -653,6 +655,18 @@ class NotificationCodeWithDescriptionTest {
         assertThat(notification.getCode()).isEqualTo(code);
         assertThat(notification.getDescription()).isEqualTo(description);
         assertThat(notification.getCategory()).isEqualTo(category);
+    }
+
+    private void verifyNotification(
+            NotificationImplementation notification,
+            String title,
+            SeverityLevel severity,
+            String code,
+            String description,
+            NotificationCategory category,
+            String message) {
+        verifyNotification(notification, title, severity, code, description, category);
+        assertThat(notification.getMessage()).isEqualTo(message);
     }
 
     @Test

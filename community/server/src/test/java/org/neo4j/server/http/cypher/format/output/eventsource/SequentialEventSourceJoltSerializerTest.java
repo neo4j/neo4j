@@ -100,7 +100,12 @@ public class SequentialEventSourceJoltSerializerTest extends AbstractEventSource
     void shouldReturnDeprecationNotification() {
         // given
         var joltV2Serializer = new SequentialEventSourceJoltSerializer(
-                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, true);
+                Collections.emptyMap(),
+                JoltV1Codec.class,
+                true,
+                JSON_FACTORY,
+                output,
+                SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE);
         var row = Map.of(
                 "column1", "value1",
                 "column2", "value2");
@@ -131,6 +136,6 @@ public class SequentialEventSourceJoltSerializerTest extends AbstractEventSource
 
     protected static SequentialEventSourceJoltSerializer getSerializerWith(OutputStream output) {
         return new SequentialEventSourceJoltSerializer(
-                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, false);
+                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, null);
     }
 }

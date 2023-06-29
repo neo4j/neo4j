@@ -49,6 +49,11 @@ public class LineDelimitedEventSourceJoltMessageBodyWriter extends AbstractEvent
     protected LineDelimitedEventSourceJoltSerializer createSerializer(
             OutputStream outputStream, JsonFactory jsonFactory, Map<String, Object> parameters, boolean strict) {
         return new LineDelimitedEventSourceJoltSerializer(
-                parameters, JoltV1Codec.class, strict, jsonFactory, outputStream, true);
+                parameters,
+                JoltV1Codec.class,
+                strict,
+                jsonFactory,
+                outputStream,
+                getMediaType().getType());
     }
 }

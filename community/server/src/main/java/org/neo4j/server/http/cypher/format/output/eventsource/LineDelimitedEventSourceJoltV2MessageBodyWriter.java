@@ -44,6 +44,6 @@ public class LineDelimitedEventSourceJoltV2MessageBodyWriter extends AbstractEve
     protected LineDelimitedEventSourceJoltSerializer createSerializer(
             OutputStream outputStream, JsonFactory jsonFactory, Map<String, Object> parameters, boolean strict) {
         return new LineDelimitedEventSourceJoltSerializer(
-                parameters, JoltV2Codec.class, strict, jsonFactory, outputStream, false);
+                parameters, JoltV2Codec.class, strict, jsonFactory, outputStream, null);
     }
 }
