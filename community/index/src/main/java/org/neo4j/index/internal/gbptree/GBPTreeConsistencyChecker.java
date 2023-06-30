@@ -742,29 +742,38 @@ class GBPTreeConsistencyChecker<KEY> {
 
         @Override
         public void close() throws IOException {
-            this.executor.shutdown();
-            long highId = highId();
-            long expectedNumberOfPages = highId - MIN_TREE_NODE_ID;
-            var totalNumSeenIds = allThreadLocalSeenIds.stream()
-                    .mapToLong(BitSet::cardinality)
-                    .sum();
-            if (totalNumSeenIds != expectedNumberOfPages) {
-                for (var threadLocalSeenIds : allThreadLocalSeenIds) {
-                    if (threadLocalSeenIds != mainSeenIds) {
-                        threadLocalSeenIds.stream()
-                                .forEach(id -> addToSeenList(file, mainSeenIds, id, lastId, visitor));
-                    }
-                }
-                int index = (int) MIN_TREE_NODE_ID;
-                while (index >= 0 && index < highId) {
-                    index = mainSeenIds.nextClearBit(index);
-                    if (index != -1 && index < highId) {
-                        visitor.unusedPage(index, file);
-                    }
-                    index++;
+            shutdownExecutor();
+
+            for (var threadLocalSeenIds : allThreadLocalSeenIds) {
+                if (threadLocalSeenIds != mainSeenIds) {
+                    threadLocalSeenIds.stream().forEach(id -> addToSeenList(file, mainSeenIds, id, lastId, visitor));
                 }
             }
+
+            var index = (int) MIN_TREE_NODE_ID;
+            final var highId = highId();
+            while (index >= 0 && index < highId) {
+                index = mainSeenIds.nextClearBit(index);
+                if (index != -1 && index < highId) {
+                    visitor.unusedPage(index, file);
+                }
+                index++;
+            }
+
             progress.close();
+        }
+
+        private void shutdownExecutor() {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                // preserve interrupt status
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

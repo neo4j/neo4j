@@ -27,6 +27,7 @@ import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADE
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheck;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -502,6 +504,75 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
         // Need to restart tree to reload corrupted freelist
         try (GBPTree<KEY, VALUE> index = index().build()) {
             assertReportUnusedPage(index, lastId);
+        }
+    }
+
+    @Test
+    void shouldDetectExtraEmptyPageAndDuplicateInFile() throws IOException {
+        try (var index = index().build()) {
+            var keyCount = 0;
+            while (getHeight(index) < 2) {
+                try (var writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+                    writer.put(layout.key(keyCount), layout.value(keyCount));
+                    keyCount++;
+                }
+            }
+
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
+
+        final long targetNode;
+        try (var index = index().with(immutable.with(NO_FLUSH_ON_CLOSE)).build()) {
+            final var inspection = inspect(index);
+            targetNode = randomAmong(inspection.single().allNodes());
+            index.unsafe(GBPTreeCorruption.addFreelistEntry(targetNode), NULL_CONTEXT);
+        }
+
+        final long lastId;
+        try (var index = index().with(immutable.with(NO_FLUSH_ON_CLOSE)).build()) {
+            final var treeState = inspect(index).treeState();
+            lastId = treeState.lastId() + 1;
+            final var newTreeState = treeStateWithLastId(lastId, treeState);
+            index.unsafe(GBPTreeCorruption.setTreeState(newTreeState), NULL_CONTEXT);
+        }
+
+        /*
+        This process would give a tree something like the following page IDs:
+        free: - - - - - 8 - -- -- -- -- -- -- 16
+        used: 3 4 5 6 7 8 9 10 11 12 13 14 15 --
+
+        Previously, the checker would have a lastId=16 and a total cardinality of 13 amongst all the seen IDs
+        (the duplicates only gets counted once). The check to check for duplicates and unused in the close call to
+        ConsistencyCheckState would then get skipped as: last id(16) - MIN_TREE_NODE_ID(3) == total cardinality(13)
+        Fix is to always merge the seen IDs and perform the unused check on that merged bitset
+         */
+
+        // Need to restart tree to reload corrupted freelist
+        try (var index = index().build()) {
+            final var duplicated = new MutableBoolean();
+            final var unused = new MutableBoolean();
+            index.consistencyCheck(
+                    new GBPTreeConsistencyCheckVisitor.Adaptor() {
+                        @Override
+                        public void pageIdSeenMultipleTimes(long pageId, Path file) {
+                            duplicated.setTrue();
+                            assertEquals(targetNode, pageId);
+                        }
+
+                        @Override
+                        public void unusedPage(long pageId, Path file) {
+                            unused.setTrue();
+                            assertEquals(lastId, pageId);
+                        }
+                    },
+                    true,
+                    NULL_CONTEXT_FACTORY,
+                    // force the sub-tree checks to get their own thread locals rather than reuse via CallerRunsPolicy
+                    4,
+                    ProgressMonitorFactory.NONE);
+
+            assertCalled(duplicated);
+            assertCalled(unused);
         }
     }
 
