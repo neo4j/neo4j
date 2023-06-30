@@ -396,16 +396,16 @@ private class DefaultExpressionStringifier(
         }
         s"$prefix(${apply(elementIdExpr)})"
 
-      case NoneOfRelationships(Variable(rel), Variable(relList)) => s"not `$rel` in `$relList`"
+      case NoneOfRelationships(rel, relList) => s"not ${apply(rel)} in ${apply(relList)}"
 
-      case DifferentRelationships(Variable(rel1), Variable(rel2)) => s"not `$rel1` = `$rel2`"
+      case DifferentRelationships(rel1, rel2) => s"not ${apply(rel1)} = ${apply(rel2)}"
 
-      case Disjoint(Variable(rel1), Variable(rel2)) => s"disjoint(`$rel1`, `$rel2`)"
+      case Disjoint(rel1, rel2) => s"disjoint(${apply(rel1)}, ${apply(rel2)})"
 
-      case Unique(Variable(rel)) => s"unique(`$rel`)"
+      case Unique(rel) => s"unique(${apply(rel)})"
 
-      case VarLengthLowerBound(Variable(relName), bound) => s"size(`$relName`) >= $bound"
-      case VarLengthUpperBound(Variable(relName), bound) => s"size(`$relName`) <= $bound"
+      case VarLengthLowerBound(relName, bound) => s"size(${apply(relName)}) >= $bound"
+      case VarLengthUpperBound(relName, bound) => s"size(${apply(relName)}) <= $bound"
 
       case IsRepeatTrailUnique(argument) =>
         s"isRepeatTrailUnique(${apply(argument)})"
