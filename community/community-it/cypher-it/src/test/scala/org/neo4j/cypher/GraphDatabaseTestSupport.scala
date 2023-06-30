@@ -43,6 +43,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexProvider
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
@@ -129,7 +130,8 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
   protected def beginTransaction(`type`: KernelTransaction.Type, loginContext: LoginContext): InternalTransaction = {
     if (tx != null) {
       throw new TransactionFailureException(
-        "Failed to start a new transaction. Already have an open transaction in `tx` in this test."
+        "Failed to start a new transaction. Already have an open transaction in `tx` in this test.",
+        Status.Transaction.TransactionStartFailed
       )
     }
     tx = graph.beginTransaction(`type`, loginContext)

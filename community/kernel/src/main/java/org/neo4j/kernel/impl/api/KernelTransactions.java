@@ -289,7 +289,8 @@ public class KernelTransactions extends LifecycleAdapter
             }
         } catch (InterruptedException ie) {
             Thread.interrupted();
-            throw new TransactionFailureException("Fail to start new transaction.", ie);
+            throw new TransactionFailureException(
+                    "Fail to start new transaction.", ie, Status.Transaction.TransactionStartFailed);
         }
     }
 

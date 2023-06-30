@@ -20,17 +20,41 @@
 package org.neo4j.graphdb;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Signals that a transaction failed and has been rolled back.
  */
 @PublicApi
-public class TransactionFailureException extends RuntimeException {
+public class TransactionFailureException extends RuntimeException implements Status.HasStatus {
+
+    public final Status status;
+
+    @Deprecated
     public TransactionFailureException(String msg) {
         super(msg);
+        this.status = Status.Database.Unknown;
     }
 
+    @Deprecated
     public TransactionFailureException(String msg, Throwable cause) {
         super(msg, cause);
+        this.status =
+                (cause instanceof Status.HasStatus) ? ((Status.HasStatus) cause).status() : Status.Database.Unknown;
+    }
+
+    public TransactionFailureException(String msg, Status status) {
+        super(msg);
+        this.status = status;
+    }
+
+    public TransactionFailureException(String msg, Throwable cause, Status status) {
+        super(msg, cause);
+        this.status = status;
+    }
+
+    @Override
+    public Status status() {
+        return status;
     }
 }

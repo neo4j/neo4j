@@ -609,7 +609,7 @@ public class SchemaImpl implements Schema {
             } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
                 throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
             } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
+                throw new TransactionFailureException("Unknown error trying to create token ids", e, e.status());
             }
         }
 
@@ -644,7 +644,7 @@ public class SchemaImpl implements Schema {
             } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
                 throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
             } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
+                throw new TransactionFailureException("Unknown error trying to create token ids", e, e.status());
             }
         }
 
@@ -661,7 +661,7 @@ public class SchemaImpl implements Schema {
             } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
                 throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
             } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create index", e);
+                throw new TransactionFailureException("Unknown error trying to create index", e, e.status());
             }
         }
 
@@ -947,7 +947,7 @@ public class SchemaImpl implements Schema {
             } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
                 throw new ConstraintViolationException(e.getMessage(), e);
             } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
+                throw new TransactionFailureException("Unknown error trying to create token ids", e, e.status());
             }
         }
     }

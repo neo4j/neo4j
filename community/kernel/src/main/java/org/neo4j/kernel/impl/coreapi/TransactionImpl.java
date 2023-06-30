@@ -235,7 +235,7 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
             availabilityGuard.assertDatabaseAvailable();
             return executionEngine.executeQuery(query, parameters, context, false);
         } catch (UnavailableException ue) {
-            throw new org.neo4j.graphdb.TransactionFailureException(ue.getMessage(), ue);
+            throw new org.neo4j.graphdb.TransactionFailureException(ue.getMessage(), ue, ue.status());
         } catch (QueryExecutionKernelException e) {
             throw e.asUserException();
         }

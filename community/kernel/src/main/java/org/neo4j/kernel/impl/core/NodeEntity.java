@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.storable.Values;
 
@@ -154,7 +155,7 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to create property key token", e);
+            throw new TransactionFailureException("Unknown error trying to create property key token", e, e.status());
         }
 
         try {
@@ -166,7 +167,8 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
                 transaction.rollback();
             } catch (org.neo4j.internal.kernel.api.exceptions.TransactionFailureException ex) {
                 ex.addSuppressed(e);
-                throw new TransactionFailureException("Fail to rollback transaction.", ex);
+                throw new TransactionFailureException(
+                        "Fail to rollback transaction.", ex, Status.Transaction.TransactionRollbackFailed);
             }
             throw e;
         } catch (EntityNotFoundException e) {
@@ -185,7 +187,7 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         } catch (IllegalTokenNameException e) {
             throw new IllegalArgumentException(format("Invalid property key '%s'.", key), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to get property key token", e);
+            throw new TransactionFailureException("Unknown error trying to get property key token", e, e.status());
         }
 
         try {
@@ -278,7 +280,8 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to create relationship type token", e);
+            throw new TransactionFailureException(
+                    "Unknown error trying to create relationship type token", e, e.status());
         }
 
         try {
@@ -305,7 +308,7 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to create label token", e);
+            throw new TransactionFailureException("Unknown error trying to create label token", e, e.status());
         }
 
         try {

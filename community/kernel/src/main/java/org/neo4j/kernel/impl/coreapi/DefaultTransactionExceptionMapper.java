@@ -53,7 +53,7 @@ public class DefaultTransactionExceptionMapper implements TransactionExceptionMa
             }
             return new TransactionStatusFailureException(status, statusExceptionMessage, e);
         } else {
-            return new TransactionFailureException(UNABLE_TO_COMPLETE_TRANSACTION, e);
+            return new TransactionFailureException(UNABLE_TO_COMPLETE_TRANSACTION, e, Status.Database.Unknown);
         }
     }
 }

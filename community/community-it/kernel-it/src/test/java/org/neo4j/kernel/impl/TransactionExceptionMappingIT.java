@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionStartFailed;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -49,7 +50,7 @@ class TransactionExceptionMappingIT {
 
     @Test
     void transactionFailureOnTransactionClose() {
-        var rootCause = new TransactionFailureException("Test failure");
+        var rootCause = new TransactionFailureException("Test failure", TransactionStartFailed);
         var e = assertThrows(Exception.class, () -> {
             try (var tx = database.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
                 tx.registerCloseableResource(() -> {

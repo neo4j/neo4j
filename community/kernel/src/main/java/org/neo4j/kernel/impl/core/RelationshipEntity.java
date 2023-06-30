@@ -52,6 +52,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -386,7 +387,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to create property key token", e);
+            throw new TransactionFailureException("Unknown error trying to create property key token", e, e.status());
         }
 
         try {
@@ -398,7 +399,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
                 transaction.rollback();
             } catch (org.neo4j.internal.kernel.api.exceptions.TransactionFailureException ex) {
                 ex.addSuppressed(e);
-                throw new TransactionFailureException("Fail to rollback transaction.", ex);
+                throw new TransactionFailureException(
+                        "Fail to rollback transaction.", ex, Status.Transaction.TransactionRollbackFailed);
             }
             throw e;
         } catch (EntityNotFoundException e) {
@@ -417,7 +419,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         } catch (IllegalTokenNameException e) {
             throw new IllegalArgumentException(format("Invalid property key '%s'.", key), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to get property key token", e);
+            throw new TransactionFailureException("Unknown error trying to get property key token", e, e.status());
         }
 
         try {

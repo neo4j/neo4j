@@ -148,7 +148,7 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
             availabilityGuard.assertDatabaseAvailable();
             return database.getKernel().beginTransaction(type, loginContext, connectionInfo, timeout);
         } catch (UnavailableException | TransactionFailureException e) {
-            throw new org.neo4j.graphdb.TransactionFailureException(e.getMessage(), e);
+            throw new org.neo4j.graphdb.TransactionFailureException(e.getMessage(), e, e.status());
         }
     }
 
