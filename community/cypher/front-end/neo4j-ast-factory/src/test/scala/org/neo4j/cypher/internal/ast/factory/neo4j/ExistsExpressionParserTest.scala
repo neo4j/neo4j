@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
@@ -38,8 +39,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement] {
 
-  implicit private val javaccRule = JavaccRule.Statement
-  implicit private val antlrRule = AntlrRule.Statement
+  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
+  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
 
   test(
     """MATCH (m)

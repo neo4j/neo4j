@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
 class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit val javaccRule = JavaccRule.Statement
-  implicit val antlrRule = AntlrRule.Statement
+  implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
+  implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
 
   private val whitespaceCharacters =
     Seq(

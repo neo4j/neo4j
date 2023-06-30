@@ -27,8 +27,8 @@ class StatementReturnColumnsParserTest extends ParserTestBase[Cst.Statement, Sta
 
   override def convert(statement: Statement): List[String] = statement.returnColumns.map(_.name)
 
-  implicit private val javaccRule = JavaccRule.Statement
-  implicit private val antlrRule = AntlrRule.Statement
+  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
+  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
 
   test("MATCH ... RETURN ...") {
     parsing("MATCH (n) RETURN n, n.prop AS m") shouldGive List("n", "m")

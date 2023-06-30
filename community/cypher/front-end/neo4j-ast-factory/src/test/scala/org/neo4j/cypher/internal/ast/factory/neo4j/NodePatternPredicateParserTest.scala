@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 class NodePatternPredicateParserTest extends CypherFunSuite with TestName
     with ParserSyntaxTreeBase[Cst.NodePattern, NodePattern] {
 
-  implicit val javaccRule = JavaccRule.NodePattern
-  implicit val antlrRule = AntlrRule.NodePattern
+  implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
+  implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
 
   for {
     (maybeLabelExpression, maybeLabelExpressionAst) <-

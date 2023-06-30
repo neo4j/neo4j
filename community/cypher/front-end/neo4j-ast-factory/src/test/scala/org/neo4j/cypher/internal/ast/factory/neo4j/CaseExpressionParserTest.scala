@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Expression
 
 class CaseExpressionParserTest extends ParserSyntaxTreeBase[Cst.CaseExpression, Expression] {
-  implicit private val javaccRule = JavaccRule.CaseExpression
-  implicit private val antlrRule = AntlrRule.CaseExpression
+  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.CaseExpression
+  implicit private val antlrRule: AntlrRule[Cst.CaseExpression] = AntlrRule.CaseExpression
 
   test("CASE WHEN (e) THEN e ELSE null END") {
     yields {

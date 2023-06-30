@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 class IsWhereRelationshipPatternParserTest
     extends ParserSyntaxTreeBase[Cst.RelationshipPattern, RelationshipPattern] {
 
-  implicit val javaccRule = JavaccRule.RelationshipPattern
-  implicit val antlrRule = AntlrRule.RelationshipPattern
+  implicit val javaccRule: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
+  implicit val antlrRule: AntlrRule[Cst.RelationshipPattern] = AntlrRule.RelationshipPattern
 
   for {
     (maybeVariable, maybeVariableName) <-

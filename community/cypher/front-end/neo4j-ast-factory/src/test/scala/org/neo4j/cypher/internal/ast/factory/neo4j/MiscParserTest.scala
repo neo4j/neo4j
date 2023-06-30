@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.antlr.v4.runtime.ParserRuleContext
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Expression
@@ -38,8 +40,8 @@ import org.neo4j.cypher.internal.util.ASTNode
 class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
 
   test("RETURN 1 AS x //l33t comment") {
-    implicit val javaccRule = JavaccRule.Statement
-    implicit val antlrRule = AntlrRule.Statement
+    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
+    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
 
     gives {
       singleQuery(returnLit(1 -> "x"))
@@ -47,8 +49,8 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
   }
 
   test("keywords are allowed names") {
-    implicit val javaccRule = JavaccRule.Statement
-    implicit val antlrRule = AntlrRule.Statement
+    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
+    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
 
     val keywords =
       Seq(
@@ -137,8 +139,8 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
   }
 
   test("should allow chained map access in SET/REMOVE") {
-    implicit val javaccRule = JavaccRule.Clause
-    implicit val antlrRule = AntlrRule.Clause
+    implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+    implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
 
     val chainedProperties = prop(prop(varFor("map"), "node"), "property")
 
@@ -154,8 +156,8 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
   }
 
   test("should allow True and False as label name") {
-    implicit val javaccRule = JavaccRule.NodePattern
-    implicit val antlrRule = AntlrRule.NodePattern
+    implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
+    implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
 
     parsing("(:True)") shouldGive NodePattern(None, Some(labelLeaf("True")), None, None) _
     parsing("(:False)") shouldGive NodePattern(None, Some(labelLeaf("False")), None, None) _
@@ -165,8 +167,8 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
   }
 
   test("-[:Person*1..2]-") {
-    implicit val javaccRule = JavaccRule.RelationshipPattern
-    implicit val antlrRule = AntlrRule.RelationshipPattern
+    implicit val javaccRule: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
+    implicit val antlrRule: AntlrRule[Cst.RelationshipPattern] = AntlrRule.RelationshipPattern
 
     yields {
       RelationshipPattern(
@@ -186,8 +188,8 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
   }
 
   test("should not parse list literal as pattern comprehension") {
-    implicit val javaccRule = JavaccRule.Expression
-    implicit val antlrRule = AntlrRule.Expression
+    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
+    implicit val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
 
     val listLiterals = Seq(
       "[x = '1']",

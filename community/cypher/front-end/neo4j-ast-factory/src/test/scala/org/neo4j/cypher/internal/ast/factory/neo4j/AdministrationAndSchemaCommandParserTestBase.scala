@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -41,8 +42,8 @@ class AdministrationAndSchemaCommandParserTestBase
     extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement]
     with VerifyAstPositionTestSupport {
 
-  implicit protected val javaccParser = JavaccRule.Statements
-  implicit protected val antlrParser = AntlrRule.Statements()
+  implicit protected val javaccParser: JavaccRule[Statement] = JavaccRule.Statements
+  implicit protected val antlrParser: AntlrRule[Cst.Statement] = AntlrRule.Statements()
 
   protected def assertAst(expected: ast.Statement, comparePosition: Boolean = true)(implicit
   p: JavaccRule[ast.Statement]): Unit = {

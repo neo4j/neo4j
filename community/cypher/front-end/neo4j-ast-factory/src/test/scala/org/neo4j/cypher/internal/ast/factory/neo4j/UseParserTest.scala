@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
 class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit private val javaccRule = JavaccRule.Statements
-  implicit private val antlrRule = AntlrRule.Statements()
+  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
+  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements()
 
   test("USING PERIODIC COMMIT USE db LOAD CSV FROM 'url' AS line RETURN line") {
     failsToParse

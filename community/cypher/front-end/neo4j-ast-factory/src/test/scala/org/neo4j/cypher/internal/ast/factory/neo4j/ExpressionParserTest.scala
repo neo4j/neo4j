@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 
 class ExpressionParserTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
 
-  implicit private val javaccRule = JavaccRule.Expression
-  implicit private val antlrRule = AntlrRule.Expression
+  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
+  implicit private val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
 
   test("[true IN [1, 2]]") {
     gives(listComprehension(varFor("true"), listOf(literalInt(1), literalInt(2)), None, None))

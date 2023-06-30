@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression
 
 trait PatternParserTestBase extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit val javaccRule = JavaccRule.Statements
-  implicit val antlrRule = AntlrRule.Statements()
+  implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
+  implicit val antlrRule: AntlrRule[Cst.Statements] = AntlrRule.Statements()
 
   val labelExpressions: Seq[(String, LabelExpression, LabelExpression, LabelExpression)] =
     createLabelExpression("IS", containsIs = true) ++

@@ -28,7 +28,7 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 
 class ExecutionResultTest extends ExecutionEngineFunSuite {
 
-  implicit val windowsSafe = WindowsStringSafe
+  implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   test("columnOrderIsPreserved") {
     val columns = List("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")

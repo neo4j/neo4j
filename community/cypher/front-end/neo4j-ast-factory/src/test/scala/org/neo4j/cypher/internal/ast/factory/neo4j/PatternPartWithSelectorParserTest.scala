@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
@@ -42,8 +43,8 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
     with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
     with AstConstructionTestSupport {
 
-  implicit val javaccRule = JavaccRule.Clause
-  implicit val antlrRule = AntlrRule.Clause
+  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
 
   private val selectors = Map(
     "ALL" -> allPathsSelector(),

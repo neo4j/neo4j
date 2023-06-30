@@ -36,8 +36,8 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
 
-  implicit protected val javaccRule = JavaccRule.Expression
-  implicit protected val antlrRule = AntlrRule.Expression
+  implicit protected val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
+  implicit protected val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
 
   /**
    * Precedence in Cypher:

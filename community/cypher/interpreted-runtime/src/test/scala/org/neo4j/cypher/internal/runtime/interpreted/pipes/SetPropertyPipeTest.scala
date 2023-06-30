@@ -62,7 +62,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   private val propertyKey2 = PropertyKeyName(property2)(pos)
   private val literalInt1 = internal.expressions.SignedDecimalIntegerLiteral("1")(pos)
 
-  implicit private val table = new SemanticTable()
+  implicit private val table: SemanticTable = new SemanticTable()
   table.resolvedPropertyKeyNames.put(property1, PropertyKeyId(1))
   table.resolvedPropertyKeyNames.put(property2, PropertyKeyId(2))
 

@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.antlr.v4.runtime.ParserRuleContext
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
@@ -35,8 +39,8 @@ class LiteralsParserTest extends ParserTestBase[Any with ParserRuleContext, Any,
   private val t = DummyPosition(0)
 
   test("test variable can contain ascii") {
-    implicit val javaccRule = JavaccRule.Variable
-    implicit val antlrRule = AntlrRule.Variable
+    implicit val javaccRule: JavaccRule[Variable] = JavaccRule.Variable
+    implicit val antlrRule: AntlrRule[Cst.Variable] = AntlrRule.Variable
 
     parsing("abc") shouldGive expressions.Variable("abc")(t)
     parsing("a123") shouldGive expressions.Variable("a123")(t)
@@ -46,8 +50,8 @@ class LiteralsParserTest extends ParserTestBase[Any with ParserRuleContext, Any,
   }
 
   test("test variable can contain utf8") {
-    implicit val javaccRule = JavaccRule.Variable
-    implicit val antlrRule = AntlrRule.Variable
+    implicit val javaccRule: JavaccRule[Variable] = JavaccRule.Variable
+    implicit val antlrRule: AntlrRule[Cst.Variable] = AntlrRule.Variable
 
     parsing("aé") shouldGive expressions.Variable("aé")(t)
     parsing("⁔") shouldGive expressions.Variable("⁔")(t)
@@ -56,15 +60,15 @@ class LiteralsParserTest extends ParserTestBase[Any with ParserRuleContext, Any,
   }
 
   test("test variable name can not start with number") {
-    implicit val javaccRule = JavaccRule.Variable
-    implicit val antlrRule = AntlrRule.Variable
+    implicit val javaccRule: JavaccRule[Variable] = JavaccRule.Variable
+    implicit val antlrRule: AntlrRule[Cst.Variable] = AntlrRule.Variable
 
     assertFails("1bcd")
   }
 
   test("can parse numbers") {
-    implicit val javaccRule = JavaccRule.NumberLiteral
-    implicit val antlrRule = AntlrRule.NumberLiteral
+    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.NumberLiteral
+    implicit val antlrRule: AntlrRule[Cst.NumberLiteral] = AntlrRule.NumberLiteral
 
     val validInts = Seq("123", "0", "-23", "-0")
     for (i <- validInts) withClue(i) {
@@ -112,8 +116,8 @@ class LiteralsParserTest extends ParserTestBase[Any with ParserRuleContext, Any,
   }
 
   test("can parse parameter syntax") {
-    implicit val javaccRule = JavaccRule.Parameter
-    implicit val antlrRule = AntlrRule.Parameter
+    implicit val javaccRule: JavaccRule[Parameter] = JavaccRule.Parameter
+    implicit val antlrRule: AntlrRule[Cst.Parameter] = AntlrRule.Parameter
 
     parsing("$p") shouldGive expressions.ExplicitParameter("p", CTAny)(t)
     parsing("$`the funny horse`") shouldGive expressions.ExplicitParameter("the funny horse", CTAny)(t)
@@ -130,8 +134,8 @@ class LiteralsParserTest extends ParserTestBase[Any with ParserRuleContext, Any,
   }
 
   test("variables are not allowed to start with currency symbols") {
-    implicit val javaccRule = JavaccRule.Variable
-    implicit val antlrRule = AntlrRule.Variable
+    implicit val javaccRule: JavaccRule[Variable] = JavaccRule.Variable
+    implicit val antlrRule: AntlrRule[Cst.Variable] = AntlrRule.Variable
 
     Seq("$", "¢", "£", "₲", "₶", "\u20BD", "＄", "﹩").foreach { curr =>
       assertFails(s"${curr}var")

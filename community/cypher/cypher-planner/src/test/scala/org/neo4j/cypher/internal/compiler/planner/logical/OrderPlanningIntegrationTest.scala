@@ -1684,7 +1684,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       id = 1
     )
 
-    val nodeCount = 10000
+    val nodeCount = 10000.0
     plannerBuilder()
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
@@ -1824,7 +1824,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop
         |ORDER BY a.prop""".stripMargin
 
-    val nodeCount = 10000
+    val nodeCount = 10000.0
     val plan = plannerBuilder()
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount / 10)
@@ -1944,7 +1944,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop, count(*) AS c
         |ORDER BY a.prop""".stripMargin
 
-    val nodeCount = 10000
+    val nodeCount = 10000.0
     val plan = plannerBuilder()
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount / 10)

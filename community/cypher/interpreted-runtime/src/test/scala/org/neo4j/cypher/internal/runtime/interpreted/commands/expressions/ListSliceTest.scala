@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
@@ -63,7 +64,7 @@ class ListSliceTest extends CypherFunSuite {
   }
 
   private val ctx = CypherRow.empty
-  implicit private val state = QueryStateHelper.empty
+  implicit private val state: QueryState = QueryStateHelper.empty
   private val NO_VALUE = -666
 
   private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE)(implicit collection: Expression) = {

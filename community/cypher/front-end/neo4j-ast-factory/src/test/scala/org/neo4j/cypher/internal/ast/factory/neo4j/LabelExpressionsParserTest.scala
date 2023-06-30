@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Expression
@@ -43,8 +44,8 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
     with ParserSyntaxTreeBase[Cst.NodePattern, NodePattern]
     with AstConstructionTestSupport {
 
-  implicit val javaccRule = JavaccRule.NodePattern
-  implicit val antlrRule = AntlrRule.NodePattern
+  implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
+  implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
 
   test("(n)") {
     givesIncludingPositions {
@@ -419,8 +420,8 @@ class RelationshipTypeExpressionParserTest extends CypherFunSuite
     with ParserSyntaxTreeBase[Cst.RelationshipPattern, RelationshipPattern]
     with AstConstructionTestSupport {
 
-  implicit val javaccRule = JavaccRule.RelationshipPattern
-  implicit val antlrRule = AntlrRule.RelationshipPattern
+  implicit val javaccRule: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
+  implicit val antlrRule: AntlrRule[Cst.RelationshipPattern] = AntlrRule.RelationshipPattern
 
   test("-[r:R|S]->") {
     givesIncludingPositions {
@@ -472,8 +473,8 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite
     with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
     with AstConstructionTestSupport {
 
-  implicit val javaccRule = JavaccRule.Clause
-  implicit val antlrRule = AntlrRule.Clause
+  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
 
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
@@ -557,8 +558,8 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite
 class ExpressionLabelExpressionsParserTest extends CypherFunSuite
     with ParserSyntaxTreeBase[Cst.Expression, Expression]
     with AstConstructionTestSupport {
-  implicit val javaccRule = JavaccRule.Expression
-  implicit val antlrRule = AntlrRule.Expression
+  implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
+  implicit val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
 
   test("[p = (n)<-[]-() WHERE ()<-[:A|B]-(n) | p]") {
     gives {

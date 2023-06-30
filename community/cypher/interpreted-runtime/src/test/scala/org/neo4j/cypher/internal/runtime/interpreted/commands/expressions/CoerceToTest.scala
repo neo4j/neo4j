@@ -62,8 +62,8 @@ import scala.language.postfixOps
 class CoerceToTest extends CypherFunSuite {
 
   implicit val openCases: Counter = Counter()
-  implicit val qtx = mock[QueryContext]
-  implicit val state = QueryStateHelper.emptyWith(query = qtx)
+  implicit val qtx: QueryContext = mock[QueryContext]
+  implicit val state: QueryState = QueryStateHelper.emptyWith(query = qtx)
 
   val basicTypes = Set(CTAny, CTBoolean, CTString, CTNumber, CTInteger, CTFloat, CTPoint)
   val graphTypes = Set(CTNode, CTRelationship, CTPath)

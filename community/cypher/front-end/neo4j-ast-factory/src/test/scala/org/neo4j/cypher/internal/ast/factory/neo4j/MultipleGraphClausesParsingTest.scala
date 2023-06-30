@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.util.symbols
 
 class MultipleGraphClausesParsingTest extends ParserSyntaxTreeBase[Cst.Clause, Clause] {
 
-  implicit private val javaccRule = JavaccRule.Clause
-  implicit private val antlrRule = AntlrRule.Clause
+  implicit private val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+  implicit private val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
 
   val keywords: Seq[(String, expressions.Expression => ast.GraphSelection)] = Seq(
     "USE" -> use,

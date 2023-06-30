@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
 class LoadCsvParserTest extends ParserSyntaxTreeBase[Cst.Clause, ast.Clause] {
-  implicit val javaccRule = JavaccRule.Clause
-  implicit val antlrRule = AntlrRule.Clause
+  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
 
   private val fileExpressionFailed =
     "Failed to parse the file expression. Please remember to use quotes for string literals."

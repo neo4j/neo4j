@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 
 class ProjectionClauseParserTest extends ParserSyntaxTreeBase[Cst.Clause, ast.Clause] {
 
-  implicit val javaccRule = JavaccRule.Clause
-  implicit val antlrRule = AntlrRule.Clause
+  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
 
   test("WITH *") {
     yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.expressions.Expression
 
 class ComparisonParserTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
 
-  implicit private val javaccRule = JavaccRule.Expression
-  implicit private val antlrRule = AntlrRule.Expression
+  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
+  implicit private val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
 
   test("a < b") {
     gives(lt(id("a"), id("b")))

@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
  */
 class PatternComprehensionParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
 
-  implicit private val javaccRule = JavaccRule.Statements
-  implicit private val antlrRule = AntlrRule.Statements()
+  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
+  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements()
 
   private val variable = Seq("", "x")
   private val labelExpressions = Seq("", ":A", "IS A")

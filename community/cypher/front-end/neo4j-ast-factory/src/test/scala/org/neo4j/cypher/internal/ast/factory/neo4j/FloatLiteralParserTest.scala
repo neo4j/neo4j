@@ -21,13 +21,16 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.antlr.v4.runtime.ParserRuleContext
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 
 class FloatLiteralParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
 
   test("float literals fail to parse in expressions") {
-    implicit val javaccRule = JavaccRule.Expression
-    implicit val antlrRule = AntlrRule.Expression
+    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
+    implicit val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
 
     parsing("NaN") shouldGive NaNLiteral
     parsing("nan") shouldGive NaNLiteral
@@ -47,8 +50,8 @@ class FloatLiteralParserTest extends ParserSyntaxTreeBase[ParserRuleContext, AST
   }
 
   test("float literals parse as a variable name") {
-    implicit val javaccRule = JavaccRule.Variable
-    implicit val antlrRule = AntlrRule.Variable
+    implicit val javaccRule: JavaccRule[Variable] = JavaccRule.Variable
+    implicit val antlrRule: AntlrRule[Cst.Variable] = AntlrRule.Variable
 
     parsing("NaN") shouldGive varFor("NaN")
     parsing("nan") shouldGive varFor("nan")

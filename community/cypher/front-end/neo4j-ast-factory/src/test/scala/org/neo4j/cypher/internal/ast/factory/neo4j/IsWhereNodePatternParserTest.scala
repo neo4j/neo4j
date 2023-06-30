@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
  */
 class IsWhereNodePatternParserTest extends ParserSyntaxTreeBase[Cst.NodePattern, NodePattern] {
 
-  implicit val javaccRule = JavaccRule.NodePattern
-  implicit val antlrRule = AntlrRule.NodePattern
+  implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
+  implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
 
   for {
     (maybeVariable, maybeVariableName) <-

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
@@ -39,7 +40,7 @@ import scala.jdk.CollectionConverters.MapHasAsJava
 class ContainerIndexTest extends CypherFunSuite {
 
   val qtx = mock[QueryContext]
-  implicit val state = QueryStateHelper.empty.withQueryContext(qtx)
+  implicit val state: QueryState = QueryStateHelper.empty.withQueryContext(qtx)
   val ctx = CypherRow.empty
   val expectedNull: AnyValue = Values.NO_VALUE
 

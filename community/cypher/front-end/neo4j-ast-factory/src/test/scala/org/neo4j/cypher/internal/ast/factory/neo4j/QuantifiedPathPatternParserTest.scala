@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
@@ -50,8 +51,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
     with ParserSyntaxTreeBase[Cst.Pattern, PatternPart]
     with AstConstructionTestSupport {
 
-  implicit val javaccRule = JavaccRule.PatternPart
-  implicit val antlrRule = AntlrRule.PatternPart
+  implicit val javaccRule: JavaccRule[PatternPart] = JavaccRule.PatternPart
+  implicit val antlrRule: AntlrRule[Cst.Pattern] = AntlrRule.PatternPart
 
   test("(n)") {
     givesIncludingPositions {
@@ -287,8 +288,8 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
     with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
     with AstConstructionTestSupport {
 
-  implicit val javaccRule = JavaccRule.Clause
-  implicit val antlrRule = AntlrRule.Clause
+  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
 
   test("MATCH p= ( (a)-->(b) ) WHERE a.prop") {
     gives {
