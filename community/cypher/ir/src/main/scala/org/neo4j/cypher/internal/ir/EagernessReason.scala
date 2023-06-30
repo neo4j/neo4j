@@ -51,67 +51,15 @@ object EagernessReason {
    */
   sealed trait NonUnique extends EagernessReason {
     def withConflict(conflict: Conflict): ReasonWithConflict = ReasonWithConflict(this, conflict)
-
-    def withMaybeConflict(maybeConflict: Option[Conflict]): EagernessReason = {
-      maybeConflict.fold(this: EagernessReason)(withConflict)
-    }
-
   }
 
-  case class LabelReadSetConflict(label: LabelName) extends NonUnique
-
-  object LabelReadSetConflict {
-
-    def apply(label: LabelName, maybeConflict: Option[Conflict]): EagernessReason =
-      LabelReadSetConflict(label).withMaybeConflict(maybeConflict)
-  }
-
-  case class TypeReadSetConflict(relType: RelTypeName) extends NonUnique
-
-  object TypeReadSetConflict {
-
-    def apply(relType: RelTypeName, maybeConflict: Option[Conflict]): EagernessReason =
-      TypeReadSetConflict(relType).withMaybeConflict(maybeConflict)
-  }
-
-  case class LabelReadRemoveConflict(label: LabelName) extends NonUnique
-
-  object LabelReadRemoveConflict {
-
-    def apply(label: LabelName, maybeConflict: Option[Conflict]): EagernessReason =
-      LabelReadRemoveConflict(label).withMaybeConflict(maybeConflict)
-  }
-
-  case class ReadDeleteConflict(identifier: String) extends NonUnique
-
-  object ReadDeleteConflict {
-
-    def apply(identifier: String, maybeConflict: Option[Conflict]): EagernessReason =
-      ReadDeleteConflict(identifier).withMaybeConflict(maybeConflict)
-  }
-
-  case class PropertyReadSetConflict(property: PropertyKeyName) extends NonUnique
-
-  object PropertyReadSetConflict {
-
-    def apply(property: PropertyKeyName, maybeConflict: Option[Conflict]): EagernessReason =
-      PropertyReadSetConflict(property).withMaybeConflict(maybeConflict)
-  }
-
-  case object ReadCreateConflict extends NonUnique {
-
-    def apply(maybeConflict: Option[Conflict]): EagernessReason =
-      ReadCreateConflict.withMaybeConflict(maybeConflict)
-
-    def apply(): EagernessReason = this
-  }
-
-  case object UnknownPropertyReadSetConflict extends NonUnique {
-
-    def apply(maybeConflict: Option[Conflict]): EagernessReason =
-      UnknownPropertyReadSetConflict.withMaybeConflict(maybeConflict)
-    def apply(): EagernessReason = this
-  }
+  final case class LabelReadSetConflict(label: LabelName) extends NonUnique
+  final case class TypeReadSetConflict(relType: RelTypeName) extends NonUnique
+  final case class LabelReadRemoveConflict(label: LabelName) extends NonUnique
+  final case class ReadDeleteConflict(identifier: String) extends NonUnique
+  final case class PropertyReadSetConflict(property: PropertyKeyName) extends NonUnique
+  case object ReadCreateConflict extends NonUnique
+  case object UnknownPropertyReadSetConflict extends NonUnique
 
   final case class ReasonWithConflict(reason: NonUnique, conflict: Conflict) extends EagernessReason
 
@@ -132,7 +80,6 @@ object EagernessReason {
 
   object Summarized {
     val empty: Summarized = Summarized(Map.empty)
-
   }
 
   final case class SummaryEntry(conflictToReport: Conflict, totalConflictCount: Int) {

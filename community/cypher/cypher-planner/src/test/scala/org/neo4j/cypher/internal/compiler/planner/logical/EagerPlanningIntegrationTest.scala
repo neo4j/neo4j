@@ -594,7 +594,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .produceResults()
         .emptyResult()
         .create(createNode("a2", "A"))
-        .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(2), Id(5))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("A")).withConflict(Conflict(Id(2), Id(5)))))
         .apply()
         .|.nodeByLabelScan("a", "A", IndexOrderNone, "i")
         .unwind("[1, 2] AS i")

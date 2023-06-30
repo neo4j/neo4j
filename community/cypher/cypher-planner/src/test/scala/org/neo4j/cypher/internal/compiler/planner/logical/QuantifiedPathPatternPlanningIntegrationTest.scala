@@ -1370,10 +1370,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .emptyResult()
       .deleteNode("x")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("start", None),
-        EagernessReason.ReadDeleteConflict("end", None),
-        EagernessReason.ReadDeleteConflict("a", None),
-        EagernessReason.ReadDeleteConflict("b", None)
+        EagernessReason.ReadDeleteConflict("start"),
+        EagernessReason.ReadDeleteConflict("end"),
+        EagernessReason.ReadDeleteConflict("a"),
+        EagernessReason.ReadDeleteConflict("b")
       ))
       .apply()
       .|.optional("x")

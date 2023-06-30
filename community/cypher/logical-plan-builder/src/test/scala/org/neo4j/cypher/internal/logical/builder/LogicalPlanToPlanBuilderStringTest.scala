@@ -864,37 +864,28 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         EagernessReason.TypeReadSetConflict(RelTypeName("X")(InputPosition.NONE)),
         EagernessReason.LabelReadRemoveConflict(LabelName("Bar")(InputPosition.NONE)),
         EagernessReason.ReadDeleteConflict("n"),
-        EagernessReason.ReadCreateConflict(),
+        EagernessReason.ReadCreateConflict,
         EagernessReason.PropertyReadSetConflict(PropertyKeyName("Foo")(InputPosition.NONE)),
-        EagernessReason.UnknownPropertyReadSetConflict(),
-        EagernessReason.LabelReadSetConflict(
-          LabelName("X")(InputPosition.NONE),
-          Some(EagernessReason.Conflict(Id(1), Id(2)))
-        ),
-        EagernessReason.TypeReadSetConflict(
-          RelTypeName("X")(InputPosition.NONE),
-          Some(EagernessReason.Conflict(Id(1), Id(2)))
-        ),
-        EagernessReason.LabelReadRemoveConflict(
-          LabelName("Bar")(InputPosition.NONE),
-          Some(EagernessReason.Conflict(Id(1), Id(2)))
-        ),
-        EagernessReason.ReadDeleteConflict("n", Some(EagernessReason.Conflict(Id(1), Id(2)))),
-        EagernessReason.ReadCreateConflict(Some(EagernessReason.Conflict(Id(1), Id(2)))),
-        EagernessReason.PropertyReadSetConflict(
-          PropertyKeyName("Foo")(InputPosition.NONE),
-          Some(EagernessReason.Conflict(Id(1), Id(2)))
-        ),
-        EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(1), Id(2)))),
+        EagernessReason.UnknownPropertyReadSetConflict,
+        EagernessReason.LabelReadSetConflict(LabelName("X")(InputPosition.NONE))
+          .withConflict(EagernessReason.Conflict(Id(1), Id(2))),
+        EagernessReason.TypeReadSetConflict(RelTypeName("X")(InputPosition.NONE))
+          .withConflict(EagernessReason.Conflict(Id(1), Id(2))),
+        EagernessReason.LabelReadRemoveConflict(LabelName("Bar")(InputPosition.NONE))
+          .withConflict(EagernessReason.Conflict(Id(1), Id(2))),
+        EagernessReason.ReadDeleteConflict("n")
+          .withConflict(EagernessReason.Conflict(Id(1), Id(2))),
+        EagernessReason.ReadCreateConflict
+          .withConflict(EagernessReason.Conflict(Id(1), Id(2))),
+        EagernessReason.PropertyReadSetConflict(PropertyKeyName("Foo")(InputPosition.NONE))
+          .withConflict(EagernessReason.Conflict(Id(1), Id(2))),
+        EagernessReason.UnknownPropertyReadSetConflict
+          .withConflict(EagernessReason.Conflict(Id(1), Id(2))),
         EagernessReason.Summarized(Map(
-          EagernessReason.ReadDeleteConflict("ident") -> EagernessReason.SummaryEntry(
-            EagernessReason.Conflict(Id(7), Id(8)),
-            123
-          ),
-          EagernessReason.ReadCreateConflict -> EagernessReason.SummaryEntry(
-            EagernessReason.Conflict(Id(9), Id(10)),
-            321
-          )
+          EagernessReason.ReadDeleteConflict("ident") ->
+            EagernessReason.SummaryEntry(EagernessReason.Conflict(Id(7), Id(8)), 123),
+          EagernessReason.ReadCreateConflict ->
+            EagernessReason.SummaryEntry(EagernessReason.Conflict(Id(9), Id(10)), 321)
         ))
       ))
       .argument()

@@ -1815,7 +1815,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         EagernessReason.ReadDeleteConflict("b")
       ))
       .projection(project = Seq("[n] AS nodes"), discard = Set("n"))
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("n", None)))
+      .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
       .allNodeScan("n")
       .build())
   }

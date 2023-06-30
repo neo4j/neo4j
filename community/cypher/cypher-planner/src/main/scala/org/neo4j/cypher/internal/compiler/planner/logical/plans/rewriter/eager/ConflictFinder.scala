@@ -96,9 +96,9 @@ object ConflictFinder {
       writePlan <- writePlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
-      val conflict = Some(Conflict(writePlan.id, readPlan.id))
-      val reasons = Set[EagernessReason](prop.map(PropertyReadSetConflict(_, conflict))
-        .getOrElse(UnknownPropertyReadSetConflict(conflict)))
+      val conflict = Conflict(writePlan.id, readPlan.id)
+      val reasons = Set[EagernessReason](prop.map(PropertyReadSetConflict(_).withConflict(conflict))
+        .getOrElse(UnknownPropertyReadSetConflict.withConflict(conflict)))
 
       ConflictingPlanPair(Ref(writePlan), Ref(readPlan), reasons)
     }
@@ -111,14 +111,14 @@ object ConflictFinder {
       writePlan <- writePlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
-      val conflict = Some(Conflict(writePlan.id, readPlan.id))
+      val conflict = Conflict(writePlan.id, readPlan.id)
       writePlan match {
         case _: RemoveLabels =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadRemoveConflict(label, conflict)))
+          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadRemoveConflict(label).withConflict(conflict)))
         case forEach: Foreach if forEach.mutations.exists(_.isInstanceOf[RemoveLabelPattern]) =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadRemoveConflict(label, conflict)))
+          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadRemoveConflict(label).withConflict(conflict)))
         case _ =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadSetConflict(label, conflict)))
+          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadSetConflict(label).withConflict(conflict)))
       }
     }
   }
@@ -132,7 +132,7 @@ object ConflictFinder {
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, FilterExpressions],
     filterExpressions: ReadsAndWritesFinder.Reads => Map[LogicalVariable, FilterExpressions],
-    createEntityReason: (String, Option[Conflict]) => EagernessReason
+    createEntityReason: (String, Conflict) => EagernessReason
   ): Iterable[ConflictingPlanPair] = {
     for {
       (Ref(writePlan), createdEntities) <- createdEntities(readsAndWrites.writes.creates)
@@ -171,7 +171,7 @@ object ConflictFinder {
       Ref(readPlan) <- readPlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
-      val conflict = Some(Conflict(writePlan.id, readPlan.id))
+      val conflict = Conflict(writePlan.id, readPlan.id)
       // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
       val reasons: Set[EagernessReason] = overlap match {
         case CreateOverlaps.Overlap(_, propertiesOverlap, entityOverlap) =>
@@ -183,12 +183,12 @@ object ConflictFinder {
           }
           val propertyReasons = propertiesOverlap match {
             case PropertiesOverlap.Overlap(properties) =>
-              properties.map(PropertyReadSetConflict(_, conflict))
+              properties.map(PropertyReadSetConflict(_).withConflict(conflict))
             case PropertiesOverlap.UnknownOverlap =>
-              Set(UnknownPropertyReadSetConflict(conflict))
+              Set(UnknownPropertyReadSetConflict.withConflict(conflict))
           }
           val allReasons = entityReasons ++ propertyReasons
-          if (allReasons.isEmpty) Set(ReadCreateConflict(conflict))
+          if (allReasons.isEmpty) Set(ReadCreateConflict.withConflict(conflict))
           else allReasons
 
         // Other cases have been filtered out above
@@ -318,8 +318,8 @@ object ConflictFinder {
     readPlan: LogicalPlan,
     writePlan: LogicalPlan
   ): ConflictingPlanPair = {
-    val conflict = Some(Conflict(writePlan.id, readPlan.id))
-    val reasons: Set[EagernessReason] = Set(ReadDeleteConflict(readVariable.name, conflict))
+    val conflict = Conflict(writePlan.id, readPlan.id)
+    val reasons: Set[EagernessReason] = Set(ReadDeleteConflict(readVariable.name).withConflict(conflict))
     ConflictingPlanPair(Ref(writePlan), Ref(readPlan), reasons)
   }
 
@@ -390,7 +390,7 @@ object ConflictFinder {
       _.createdNodes,
       _.nodeFilterExpressionsSnapshots(_),
       _.nodeFilterExpressions,
-      (ln, conflict) => LabelReadSetConflict(LabelName(ln)(InputPosition.NONE), conflict)
+      (ln, conflict) => LabelReadSetConflict(LabelName(ln)(InputPosition.NONE)).withConflict(conflict)
     ).foreach(addConflict)
 
     // Conflicts between a type read (determined by a snapshot filterExpressions) and a type CREATE
@@ -400,7 +400,7 @@ object ConflictFinder {
       _.createdRelationships,
       _.relationshipFilterExpressionsSnapshots(_),
       _.relationshipFilterExpressions,
-      (tn, conflict) => TypeReadSetConflict(RelTypeName(tn)(InputPosition.NONE), conflict)
+      (tn, conflict) => TypeReadSetConflict(RelTypeName(tn)(InputPosition.NONE)).withConflict(conflict)
     ).foreach(addConflict)
 
     // Conflicts between a MATCH and a DELETE with a node variable

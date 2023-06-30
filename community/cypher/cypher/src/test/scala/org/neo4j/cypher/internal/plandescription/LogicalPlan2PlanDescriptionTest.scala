@@ -4514,7 +4514,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     {
-      val reason = EagernessReason.LabelReadRemoveConflict(label("Foo"), maybeConflict = Some(Conflict(Id(1), Id(2))))
+      val reason = EagernessReason.LabelReadRemoveConflict(label("Foo")).withConflict(Conflict(Id(1), Id(2)))
       assertGood(
         attach(Eager(lhsLP, ListSet(reason)), 34.5),
         planDescription(
@@ -4589,8 +4589,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     {
-      val reason1 = EagernessReason.ReadDeleteConflict("b", maybeConflict = Some(Conflict(Id(1), Id(2))))
-      val reason2 = EagernessReason.LabelReadSetConflict(label("Foo"), maybeConflict = Some(Conflict(Id(3), Id(4))))
+      val reason1 = EagernessReason.ReadDeleteConflict("b").withConflict(Conflict(Id(1), Id(2)))
+      val reason2 = EagernessReason.LabelReadSetConflict(label("Foo")).withConflict(Conflict(Id(3), Id(4)))
       assertGood(
         attach(
           Eager(
@@ -4613,8 +4613,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     }
 
     {
-      val reason1 = EagernessReason.ReadDeleteConflict("r", maybeConflict = Some(Conflict(Id(1), Id(2))))
-      val reason2 = EagernessReason.TypeReadSetConflict(relType("Foo"), maybeConflict = Some(Conflict(Id(3), Id(4))))
+      val reason1 = EagernessReason.ReadDeleteConflict("r").withConflict(Conflict(Id(1), Id(2)))
+      val reason2 = EagernessReason.TypeReadSetConflict(relType("Foo")).withConflict(Conflict(Id(3), Id(4)))
       assertGood(
         attach(
           Eager(
