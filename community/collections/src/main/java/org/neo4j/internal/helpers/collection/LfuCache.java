@@ -24,7 +24,9 @@ import static org.neo4j.util.Preconditions.requirePositive;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 /**
  * Thread safe implementation of cache.
@@ -45,12 +47,26 @@ public class LfuCache<K, E> {
      * @param maxSize maximum size of this cache
      */
     public LfuCache(String name, int maxSize) {
+        this(name, maxSize, null);
+    }
+
+    /**
+     * Creates a LFU cache. If {@code maxSize < 1} an
+     * IllegalArgumentException is thrown.
+     * @param name    name of cache
+     * @param maxSize maximum size of this cache
+     * @param removalListener action to perform whenever an entry is removed from the cache (for any reason like evicted, invalidated etc.)
+     */
+    public LfuCache(String name, int maxSize, BiConsumer<K, E> removalListener) {
         this.name = requireNonNull(name);
         this.maxSize = requirePositive(maxSize);
-        this.cache = Caffeine.newBuilder()
-                .executor(Runnable::run)
-                .maximumSize(maxSize)
-                .build();
+        Caffeine<Object, Object> caffeineBuilder =
+                Caffeine.newBuilder().executor(Runnable::run).maximumSize(maxSize);
+        if (removalListener != null) {
+            RemovalListener<K, E> listener = (k, v, c) -> removalListener.accept(k, v);
+            caffeineBuilder.removalListener(listener);
+        }
+        this.cache = caffeineBuilder.build();
     }
 
     public String getName() {
