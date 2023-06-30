@@ -30,16 +30,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.impl.factory.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.procedure.builtin.VectorIndexProcedures.Neighbor;
+import org.neo4j.procedure.builtin.VectorIndexProcedures.NodeRecord;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -180,6 +186,44 @@ class VectorIndexProceduresIT {
             }
         }
 
+        @ParameterizedTest
+        @MethodSource("org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils#validVectorsFromDoubleList")
+        void canSetValidVector(List<Double> candidate) {
+            final long id;
+            try (final var tx = db.beginTx()) {
+                final var node = tx.createNode(LABEL);
+                id = node.getId();
+                try (final var result = setVectorProperty(tx, node, candidate)) {
+                    assertThatCode(() -> collectNodes(result)).doesNotThrowAnyException();
+                }
+                tx.commit();
+            }
+
+            try (final var tx = db.beginTx()) {
+                final var node = tx.getNodeById(id);
+                assertThat(node.getPropertyKeys()).contains(PROPERTY_KEY);
+                final var vector = node.getProperty(PROPERTY_KEY);
+                assertThat(vector)
+                        .asInstanceOf(InstanceOfAssertFactories.FLOAT_ARRAY)
+                        .containsExactly(Lists.immutable
+                                .ofAll(candidate)
+                                .collectFloat(Double::floatValue)
+                                .toArray());
+            }
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils#invalidVectorsFromDoubleList")
+        void cannotSetValidVector(List<Double> candidate) {
+            try (final var tx = db.beginTx()) {
+                final var node = tx.createNode(LABEL);
+                assertThatThrownBy(() -> setVectorProperty(tx, node, candidate), "invalid vectors should throw")
+                        .rootCause()
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("Index query vector must contain finite values", "Provided");
+            }
+        }
+
         @Test
         void cannotReturnMoreThanMax() {
             createIndex();
@@ -233,11 +277,23 @@ class VectorIndexProceduresIT {
                             "query", query));
         }
 
+        private static Result setVectorProperty(Transaction tx, Node node, List<Double> vector) {
+            return tx.execute(
+                    "CALL db.create.setVectorProperty($node, $propKey, $vector)",
+                    Maps.mutable.of("node", node, "propKey", PROPERTY_KEY, "vector", vector));
+        }
+
         private static List<Neighbor> collectNeighbors(Result results) {
             final var neighbors = new ArrayList<Neighbor>();
             results.accept(row -> neighbors.add(
                     new Neighbor(row.getNode("node"), row.getNumber("score").doubleValue())));
             return neighbors;
+        }
+
+        private static List<NodeRecord> collectNodes(Result results) {
+            final var nodes = new ArrayList<NodeRecord>();
+            results.accept(row -> nodes.add(new NodeRecord(row.getNode("node"))));
+            return nodes;
         }
 
         private List<Neighbor> linearSearch(Label label, String propertyKey, float[] query, int k) {

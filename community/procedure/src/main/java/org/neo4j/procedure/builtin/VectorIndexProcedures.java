@@ -23,6 +23,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.maybeToValidVector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 import static org.neo4j.procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.Mode.WRITE;
 
 import java.util.Comparator;
 import java.util.List;
@@ -145,6 +146,24 @@ public class VectorIndexProcedures {
         return new NeighborSpliterator(tx, cursor, k).stream();
     }
 
+    @Internal
+    @Description("Set a vector property on a given node in a more space efficient representation than Cypher's SET.")
+    @Procedure(name = "db.create.setVectorProperty", mode = WRITE)
+    public Stream<NodeRecord> setVectorProperty(
+            @Name("node") Node node, @Name("key") String propKey, @Name("vector") List<Double> vector) {
+        node.setProperty(propKey, validVector(vector));
+        return Stream.of(new NodeRecord(node));
+    }
+
+    private float[] validVector(List<Double> candidate) {
+        final var vector = maybeToValidVector(candidate);
+        if (vector == null) {
+            throw new IllegalArgumentException(
+                    "Index query vector must contain finite values. Provided: %s".formatted(candidate));
+        }
+        return vector;
+    }
+
     private float[] validateAndConvertQuery(IndexDescriptor index, List<Double> query) {
         final var config = index.getIndexConfig();
 
@@ -154,13 +173,7 @@ public class VectorIndexProcedures {
                     .formatted(query.size(), dimensions));
         }
 
-        final var vector = maybeToValidVector(query);
-        if (vector == null) {
-            throw new IllegalArgumentException(
-                    "Index query vector must contain finite values. Provided: %s".formatted(query));
-        }
-
-        return vector;
+        return validVector(query);
     }
 
     private IndexDescriptor getValidIndex(String name) {
@@ -210,6 +223,8 @@ public class VectorIndexProcedures {
             }
         }
     }
+
+    public record NodeRecord(Node node) {}
 
     private record NeighborSpliterator(Transaction tx, NodeValueIndexCursor cursor, int k)
             implements Spliterator<Neighbor> {
