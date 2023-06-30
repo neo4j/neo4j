@@ -7124,14 +7124,14 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         EagernessReason.WriteAfterCallInTransactions,
         EagernessReason.UpdateStrategyEager,
         EagernessReason.Summarized(Map(
-          readDeleteA -> (Conflict(Id(3), Id(4)), 3),
-          ReadCreateConflict -> (Conflict(Id(5), Id(6)), 2)
+          readDeleteA -> EagernessReason.SummaryEntry(Conflict(Id(3), Id(4)), 3),
+          ReadCreateConflict -> EagernessReason.SummaryEntry(Conflict(Id(5), Id(6)), 2)
         ))
       ))
       .eager(ListSet(
         EagernessReason.Summarized(Map(
-          labelReadRemoveA -> (Conflict(Id(7), Id(8)), 2),
-          typeReadSetRel -> (Conflict(Id(8), Id(9)), 1)
+          labelReadRemoveA -> EagernessReason.SummaryEntry(Conflict(Id(7), Id(8)), 2),
+          typeReadSetRel -> EagernessReason.SummaryEntry(Conflict(Id(8), Id(9)), 1)
         ))
       ))
       .argument()
@@ -7161,7 +7161,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setLabels("n", "B")
       .setLabels("n", "B")
       .eager(ListSet(EagernessReason.Summarized(Map(
-        LabelReadSetConflict(labelName("B")) -> (Conflict(Id(4), Id(6)), 3)
+        LabelReadSetConflict(labelName("B")) -> EagernessReason.SummaryEntry(Conflict(Id(4), Id(6)), 3)
       ))))
       .apply()
       .|.nodeByLabelScan("m", "B")

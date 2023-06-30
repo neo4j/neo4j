@@ -4638,8 +4638,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     {
       val reason = {
         EagernessReason.Summarized(Map(
-          EagernessReason.ReadDeleteConflict("r") -> (Conflict(Id(1), Id(2)), 123),
-          EagernessReason.TypeReadSetConflict(relType("REL")) -> (Conflict(Id(3), Id(4)), 321)
+          EagernessReason.ReadDeleteConflict("r") -> EagernessReason.SummaryEntry(Conflict(Id(1), Id(2)), 123),
+          EagernessReason.TypeReadSetConflict(relType("REL")) -> EagernessReason.SummaryEntry(
+            Conflict(Id(3), Id(4)),
+            321
+          )
         ))
       }
       assertGood(

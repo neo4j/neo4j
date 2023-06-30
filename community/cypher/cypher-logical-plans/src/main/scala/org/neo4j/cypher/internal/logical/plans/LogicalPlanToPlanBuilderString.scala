@@ -1610,9 +1610,10 @@ object LogicalPlanToPlanBuilderString {
       case EagernessReason.ReasonWithConflict(reason, conflict) =>
         s"${nonUniqueEagernessReasonStr(reason)}.withConflict(${conflictStr(conflict)})"
       case EagernessReason.Summarized(summary) =>
+        val entryPrefix = s"$prefix.${objectName(EagernessReason.SummaryEntry)}"
         val summaryStr = summary.map {
-          case (reason, (conflict, count)) =>
-            s"${eagernessReasonStr(reason)} -> (${conflictStr(conflict)}, $count)"
+          case (reason, EagernessReason.SummaryEntry(conflict, count)) =>
+            s"${eagernessReasonStr(reason)} -> $entryPrefix(${conflictStr(conflict)}, $count)"
         }.mkString("Map(", ", ", ")")
         s"${objectName(EagernessReason.Summarized)}($summaryStr)"
     }

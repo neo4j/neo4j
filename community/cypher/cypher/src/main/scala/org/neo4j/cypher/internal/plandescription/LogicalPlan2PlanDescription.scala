@@ -2529,7 +2529,7 @@ case class LogicalPlan2PlanDescription(
     case EagernessReason.WriteAfterCallInTransactions =>
       Seq(formatEagernessReason(pretty"write after CALL { ... } IN TRANSACTIONS"))
     case EagernessReason.Summarized(summary) =>
-      summary.map { case (reason, (conflict, count)) =>
+      summary.map { case (reason, EagernessReason.SummaryEntry(conflict, count)) =>
         formatEagernessReason(
           nonUniqueEagernessReasonDetails(reason),
           Some(conflict),

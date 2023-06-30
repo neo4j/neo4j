@@ -119,18 +119,23 @@ object EagernessReason {
    * @param summary For a given non-unique reason, contains a single (arbitrary) conflicting plan pair
    *                and a total number of conflicting pairs with the same reason.
    */
-  final case class Summarized(summary: Map[NonUnique, (Conflict, Int)])
+  final case class Summarized(summary: Map[NonUnique, SummaryEntry])
       extends EagernessReason {
 
     def addReason(r: ReasonWithConflict): Summarized = {
       copy(summary = summary.updatedWith(r.reason) {
-        case None         => Some(r.conflict -> 1)
-        case Some(_ -> n) => Some(r.conflict -> (n + 1))
+        case None        => Some(SummaryEntry(r.conflict, totalConflictCount = 1))
+        case Some(entry) => Some(entry.incCount)
       })
     }
   }
 
   object Summarized {
     val empty: Summarized = Summarized(Map.empty)
+
+  }
+
+  final case class SummaryEntry(conflictToReport: Conflict, totalConflictCount: Int) {
+    def incCount: SummaryEntry = copy(totalConflictCount = totalConflictCount + 1)
   }
 }
