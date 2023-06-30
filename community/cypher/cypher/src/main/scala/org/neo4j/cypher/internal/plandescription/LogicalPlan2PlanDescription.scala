@@ -2515,11 +2515,11 @@ case class LogicalPlan2PlanDescription(
     }.mkPrettyString(SEPARATOR)
   }
 
-  private def eagernessReasonInfo(reasons: ListSet[EagernessReason.Reason]): Seq[PrettyString] = {
+  private def eagernessReasonInfo(reasons: ListSet[EagernessReason]): Seq[PrettyString] = {
     reasons.toSeq.flatMap(eagernessReasonDetails).sorted
   }
 
-  private def eagernessReasonDetails(reason: EagernessReason.Reason): Seq[PrettyString] = reason match {
+  private def eagernessReasonDetails(reason: EagernessReason): Seq[PrettyString] = reason match {
     case r: EagernessReason.NonUnique =>
       Seq(formatEagernessReason(nonUniqueEagernessReasonDetails(r)))
     case r: EagernessReason.ReasonWithConflict =>

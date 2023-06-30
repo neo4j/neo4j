@@ -953,7 +953,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     )
   }
 
-  def eager(reasons: ListSet[EagernessReason.Reason] = ListSet(EagernessReason.Unknown)): IMPL = {
+  def eager(reasons: ListSet[EagernessReason] = ListSet(EagernessReason.Unknown)): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Eager(lp, reasons)(_)))
     self
   }

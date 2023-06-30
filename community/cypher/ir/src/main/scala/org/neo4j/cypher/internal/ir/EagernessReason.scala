@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.attribution.Id
 
+sealed trait EagernessReason
+
 object EagernessReason {
 
   case class Conflict(first: Id, second: Id) extends Rewritable {
@@ -40,20 +42,18 @@ object EagernessReason {
     }
   }
 
-  sealed trait Reason
-
-  case object Unknown extends Reason
-  case object UpdateStrategyEager extends Reason
-  case object WriteAfterCallInTransactions extends Reason
+  case object Unknown extends EagernessReason
+  case object UpdateStrategyEager extends EagernessReason
+  case object WriteAfterCallInTransactions extends EagernessReason
 
   /**
    * Non-unique reasons can be reported by multiple conflicting plan pairs.
    */
-  sealed trait NonUnique extends Reason {
+  sealed trait NonUnique extends EagernessReason {
     def withConflict(conflict: Conflict): ReasonWithConflict = ReasonWithConflict(this, conflict)
 
-    def withMaybeConflict(maybeConflict: Option[Conflict]): Reason = {
-      maybeConflict.fold(this: Reason)(withConflict)
+    def withMaybeConflict(maybeConflict: Option[Conflict]): EagernessReason = {
+      maybeConflict.fold(this: EagernessReason)(withConflict)
     }
 
   }
@@ -62,7 +62,7 @@ object EagernessReason {
 
   object LabelReadSetConflict {
 
-    def apply(label: LabelName, maybeConflict: Option[Conflict]): Reason =
+    def apply(label: LabelName, maybeConflict: Option[Conflict]): EagernessReason =
       LabelReadSetConflict(label).withMaybeConflict(maybeConflict)
   }
 
@@ -70,7 +70,7 @@ object EagernessReason {
 
   object TypeReadSetConflict {
 
-    def apply(relType: RelTypeName, maybeConflict: Option[Conflict]): Reason =
+    def apply(relType: RelTypeName, maybeConflict: Option[Conflict]): EagernessReason =
       TypeReadSetConflict(relType).withMaybeConflict(maybeConflict)
   }
 
@@ -78,7 +78,7 @@ object EagernessReason {
 
   object LabelReadRemoveConflict {
 
-    def apply(label: LabelName, maybeConflict: Option[Conflict]): Reason =
+    def apply(label: LabelName, maybeConflict: Option[Conflict]): EagernessReason =
       LabelReadRemoveConflict(label).withMaybeConflict(maybeConflict)
   }
 
@@ -86,7 +86,7 @@ object EagernessReason {
 
   object ReadDeleteConflict {
 
-    def apply(identifier: String, maybeConflict: Option[Conflict]): Reason =
+    def apply(identifier: String, maybeConflict: Option[Conflict]): EagernessReason =
       ReadDeleteConflict(identifier).withMaybeConflict(maybeConflict)
   }
 
@@ -94,33 +94,33 @@ object EagernessReason {
 
   object PropertyReadSetConflict {
 
-    def apply(property: PropertyKeyName, maybeConflict: Option[Conflict]): Reason =
+    def apply(property: PropertyKeyName, maybeConflict: Option[Conflict]): EagernessReason =
       PropertyReadSetConflict(property).withMaybeConflict(maybeConflict)
   }
 
   case object ReadCreateConflict extends NonUnique {
 
-    def apply(maybeConflict: Option[Conflict]): Reason =
+    def apply(maybeConflict: Option[Conflict]): EagernessReason =
       ReadCreateConflict.withMaybeConflict(maybeConflict)
 
-    def apply(): Reason = this
+    def apply(): EagernessReason = this
   }
 
   case object UnknownPropertyReadSetConflict extends NonUnique {
 
-    def apply(maybeConflict: Option[Conflict]): Reason =
+    def apply(maybeConflict: Option[Conflict]): EagernessReason =
       UnknownPropertyReadSetConflict.withMaybeConflict(maybeConflict)
-    def apply(): Reason = this
+    def apply(): EagernessReason = this
   }
 
-  final case class ReasonWithConflict(reason: NonUnique, conflict: Conflict) extends Reason
+  final case class ReasonWithConflict(reason: NonUnique, conflict: Conflict) extends EagernessReason
 
   /**
    * @param summary For a given non-unique reason, contains a single (arbitrary) conflicting plan pair
    *                and a total number of conflicting pairs with the same reason.
    */
   final case class Summarized(summary: Map[NonUnique, (Conflict, Int)])
-      extends Reason {
+      extends EagernessReason {
 
     def addReason(r: ReasonWithConflict): Summarized = {
       copy(summary = summary.updatedWith(r.reason) {

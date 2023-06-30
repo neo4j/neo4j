@@ -48,7 +48,7 @@ object BestPositionFinder {
   private case class CandidateSetWithMinimum(
     candidates: Set[Ref[LogicalPlan]],
     minimum: Ref[LogicalPlan],
-    reasons: Set[EagernessReason.Reason]
+    reasons: Set[EagernessReason]
   )
 
   /**
@@ -59,7 +59,7 @@ object BestPositionFinder {
   private[eager] def pickPlansToEagerize(
     cardinalities: Cardinalities,
     candidateLists: Seq[CandidateList]
-  ): Map[Id, ListSet[EagernessReason.Reason]] = {
+  ): Map[Id, ListSet[EagernessReason]] = {
     // Find the minimum of each candidate set
     val csWithMinima = candidateLists.map(cl =>
       CandidateSetWithMinimum(

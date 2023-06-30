@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
-import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
@@ -82,7 +81,7 @@ object ConflictFinder {
   private[eager] case class ConflictingPlanPair(
     first: Ref[LogicalPlan],
     second: Ref[LogicalPlan],
-    reasons: Set[Reason]
+    reasons: Set[EagernessReason]
   )
 
   private def propertyConflicts(
@@ -98,7 +97,7 @@ object ConflictFinder {
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
-      val reasons = Set[Reason](prop.map(PropertyReadSetConflict(_, conflict))
+      val reasons = Set[EagernessReason](prop.map(PropertyReadSetConflict(_, conflict))
         .getOrElse(UnknownPropertyReadSetConflict(conflict)))
 
       ConflictingPlanPair(Ref(writePlan), Ref(readPlan), reasons)
@@ -133,7 +132,7 @@ object ConflictFinder {
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, FilterExpressions],
     filterExpressions: ReadsAndWritesFinder.Reads => Map[LogicalVariable, FilterExpressions],
-    createEntityReason: (String, Option[Conflict]) => Reason
+    createEntityReason: (String, Option[Conflict]) => EagernessReason
   ): Iterable[ConflictingPlanPair] = {
     for {
       (Ref(writePlan), createdEntities) <- createdEntities(readsAndWrites.writes.creates)
@@ -174,9 +173,9 @@ object ConflictFinder {
     } yield {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
       // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
-      val reasons: Set[Reason] = overlap match {
+      val reasons: Set[EagernessReason] = overlap match {
         case CreateOverlaps.Overlap(_, propertiesOverlap, entityOverlap) =>
-          val entityReasons: Set[Reason] = entityOverlap match {
+          val entityReasons: Set[EagernessReason] = entityOverlap match {
             case NodeLabels.KnownLabels(entityNames) => entityNames
                 .map(ln => createEntityReason(ln, conflict))
             case NodeLabels.SomeUnknownLabels =>
@@ -320,7 +319,7 @@ object ConflictFinder {
     writePlan: LogicalPlan
   ): ConflictingPlanPair = {
     val conflict = Some(Conflict(writePlan.id, readPlan.id))
-    val reasons: Set[Reason] = Set(ReadDeleteConflict(readVariable.name, conflict))
+    val reasons: Set[EagernessReason] = Set(ReadDeleteConflict(readVariable.name, conflict))
     ConflictingPlanPair(Ref(writePlan), Ref(readPlan), reasons)
   }
 
@@ -356,12 +355,12 @@ object ConflictFinder {
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan
   ): Seq[ConflictingPlanPair] = {
-    val map = mutable.Map[Set[Ref[LogicalPlan]], Set[Reason]]()
+    val map = mutable.Map[Set[Ref[LogicalPlan]], Set[EagernessReason]]()
 
     def addConflict(conflictingPlanPair: ConflictingPlanPair): Unit = {
       map(Set(conflictingPlanPair.first, conflictingPlanPair.second)) = map.getOrElse(
         Set(conflictingPlanPair.first, conflictingPlanPair.second),
-        Set.empty[Reason]
+        Set.empty[EagernessReason]
       ) ++ conflictingPlanPair.reasons
     }
 

@@ -1600,7 +1600,7 @@ object LogicalPlanToPlanBuilderString {
   private def conflictStr(conflict: EagernessReason.Conflict): String =
     s"EagernessReason.Conflict(${conflict.first}, ${conflict.second})"
 
-  private def eagernessReasonStr(reason: EagernessReason.Reason): String = {
+  private def eagernessReasonStr(reason: EagernessReason): String = {
     val prefix = objectName(EagernessReason)
     val suffix = reason match {
       case EagernessReason.Unknown                      => objectName(EagernessReason.Unknown)

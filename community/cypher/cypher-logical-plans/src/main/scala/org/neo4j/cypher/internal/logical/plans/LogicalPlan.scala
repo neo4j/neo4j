@@ -1564,7 +1564,7 @@ case class Distinct(
  */
 case class Eager(
   override val source: LogicalPlan,
-  reasons: ListSet[EagernessReason.Reason] = ListSet(EagernessReason.Unknown)
+  reasons: ListSet[EagernessReason] = ListSet(EagernessReason.Unknown)
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)

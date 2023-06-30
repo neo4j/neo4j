@@ -112,7 +112,7 @@ abstract class EagerRewriter(attributes: Attributes[LogicalPlan]) {
   /**
    * Inserts Eager on top of the given plan. If the given plan is already Eager, merges the Eagerness reasons.
    */
-  protected def eagerOnTopOf(plan: LogicalPlan, reasons: ListSet[EagernessReason.Reason]): Eager = {
+  protected def eagerOnTopOf(plan: LogicalPlan, reasons: ListSet[EagernessReason]): Eager = {
     plan match {
       case eager @ Eager(innerPlan, moreReasons) => Eager(innerPlan, reasons ++ moreReasons)(SameId(eager.id))
       case _                                     => Eager(plan, reasons)(attributes.copy(plan.id))

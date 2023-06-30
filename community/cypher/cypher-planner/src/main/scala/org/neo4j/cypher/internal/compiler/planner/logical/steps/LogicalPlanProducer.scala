@@ -2938,7 +2938,7 @@ case class LogicalPlanProducer(
   def planEager(
     inner: LogicalPlan,
     context: LogicalPlanningContext,
-    reasons: ListSet[EagernessReason.Reason]
+    reasons: ListSet[EagernessReason]
   ): LogicalPlan =
     annotate(Eager(inner, reasons), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
 
