@@ -38,7 +38,6 @@ abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
     new AggregationFunction {
       private var innerReducer: UserAggregationReducer = _
       private var innerUpdater: UserAggregationUpdater = _
-      private val argValues = new Array[AnyValue](arguments.length)
 
       override def result(state: QueryState): AnyValue = {
         assertLoaded(state)
@@ -48,6 +47,7 @@ abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
 
       override def apply(data: ReadableRow, state: QueryState): Unit = {
         val length = arguments.length
+        val argValues = new Array[AnyValue](length)
         var i = 0
         while (i < length) {
           argValues(i) = arguments(i).apply(data, state)

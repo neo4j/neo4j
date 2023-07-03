@@ -29,7 +29,6 @@ import org.neo4j.values.AnyValue
 
 abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
     extends Expression with GraphElementPropertyFunctions {
-  private val inputArray = new Array[AnyValue](input.length)
 
   override def arguments: Seq[Expression] = input
 
@@ -37,13 +36,9 @@ abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val query = state.query
-    val argValues = inputArray
-    var i = 0
-    while (i < argValues.length) {
-      argValues(i) = input(i)(row, state)
-
-      i += 1
-    }
+    val argValues = input.map(arg => {
+      arg(row, state)
+    })
     call(query, argValues)
   }
 
