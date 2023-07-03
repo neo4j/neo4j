@@ -78,11 +78,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         if (multiVersioned) {
             long pagePointer = pointer;
             long headVersion = getLongAt(pagePointer, littleEndian);
+            versionContext.observedChainHead(headVersion);
             if (shouldLoadSnapshot(headVersion)) {
+                versionContext.markHeadInvisible();
                 if (chainFollow) {
                     versionStorage.loadReadSnapshot(this, versionContext, pinEvent);
                 }
-                versionContext.invisibleChainHead(headVersion);
             }
         }
     }

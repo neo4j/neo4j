@@ -39,6 +39,7 @@ public class ChunkedTransaction implements CommandBatchToApply {
     private CommandChunk chunk;
     // to sure for what reason we need those now here?
     private final CursorContext cursorContext;
+    private final long transactionSequenceNumber;
     private final StoreCursors storeCursors;
     private final Commitment commitment;
     private final TransactionIdGenerator transactionIdGenerator;
@@ -50,10 +51,12 @@ public class ChunkedTransaction implements CommandBatchToApply {
 
     public ChunkedTransaction(
             CursorContext cursorContext,
+            long transactionSequenceNumber,
             StoreCursors storeCursors,
             Commitment commitment,
             TransactionIdGenerator transactionIdGenerator) {
         this.cursorContext = cursorContext;
+        this.transactionSequenceNumber = transactionSequenceNumber;
         this.storeCursors = storeCursors;
         this.commitment = commitment;
         this.transactionIdGenerator = transactionIdGenerator;
@@ -152,5 +155,11 @@ public class ChunkedTransaction implements CommandBatchToApply {
     @Override
     public Iterator<StorageCommand> iterator() {
         return chunk.iterator();
+    }
+
+    @Override
+    public String toString() {
+        return "ChunkedTransaction{" + "transactionSequenceNumber=" + transactionSequenceNumber + ", transactionId="
+                + transactionId + '}';
     }
 }

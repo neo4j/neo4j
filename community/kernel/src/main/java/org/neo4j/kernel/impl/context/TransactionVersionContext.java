@@ -37,8 +37,9 @@ public class TransactionVersionContext implements VersionContext {
     private long transactionId = BASE_TX_ID - 1;
     private TransactionIdSnapshot transactionIds;
     private long oldestTransactionId = BASE_TX_ID - 1;
-    private long updatedChainHeadVersion;
+    private long headChain;
     private boolean dirty;
+    private boolean nonVisibleHead;
 
     public TransactionVersionContext(
             TransactionIdSnapshotFactory transactionIdSnapshotFactory, OldestTransactionIdFactory oldestIdFactory) {
@@ -90,23 +91,29 @@ public class TransactionVersionContext implements VersionContext {
     }
 
     @Override
-    public void invisibleChainHead(long headVersion) {
-        updatedChainHeadVersion = headVersion;
+    public void observedChainHead(long headVersion) {
+        headChain = headVersion;
     }
 
     @Override
-    public boolean obsoleteHeadObserved() {
-        return updatedChainHeadVersion > 0;
+    public boolean invisibleHeadObserved() {
+        return nonVisibleHead;
+    }
+
+    @Override
+    public void markHeadInvisible() {
+        nonVisibleHead = true;
     }
 
     @Override
     public void resetObsoleteHeadState() {
-        updatedChainHeadVersion = UNKNOWN_OBSOLETE_HEAD_VERSION;
+        headChain = UNKNOWN_OBSOLETE_HEAD_VERSION;
+        nonVisibleHead = false;
     }
 
     @Override
-    public long currentInvisibleChainHeadVersion() {
-        return updatedChainHeadVersion;
+    public long chainHeadVersion() {
+        return headChain;
     }
 
     @Override
@@ -126,11 +133,8 @@ public class TransactionVersionContext implements VersionContext {
 
     @Override
     public String toString() {
-        return "TransactionVersionContext{" + "transactionId="
-                + transactionId + ", transactionIds="
-                + transactionIds + ", oldestTransactionId="
-                + oldestTransactionId + ", updatedChainHeadVersion="
-                + updatedChainHeadVersion + ", dirty="
-                + dirty + '}';
+        return "TransactionVersionContext{" + "transactionId=" + transactionId + ", transactionIds=" + transactionIds
+                + ", oldestTransactionId=" + oldestTransactionId + ", headChain=" + headChain + ", dirty=" + dirty
+                + ", nonVisibleHead=" + nonVisibleHead + '}';
     }
 }

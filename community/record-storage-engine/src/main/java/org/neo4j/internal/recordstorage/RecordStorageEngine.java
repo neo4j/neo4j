@@ -394,7 +394,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
         return new TransactionCommandValidatorFactory(
-                neoStores, storageEngineFactory, config, clock, internalLogProvider, databaseHealth);
+                neoStores, storageEngineFactory, config, clock, internalLogProvider);
     }
 
     @Override

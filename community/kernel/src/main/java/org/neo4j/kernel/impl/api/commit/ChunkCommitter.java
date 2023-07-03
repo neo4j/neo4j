@@ -127,7 +127,7 @@ public final class ChunkCommitter implements TransactionCommitter {
             if (commit) {
                 validateCurrentKernelVersion();
             }
-            try (var guards = transactionValidator.validate(
+            try (var validationResource = transactionValidator.validate(
                     extractedCommands, ktx.getTransactionSequenceNumber(), cursorContext, leaseClient, lockTracer)) {
                 var chunkMetadata = new ChunkMetadata(
                         chunkNumber == BASE_CHUNK_NUMBER,
@@ -145,6 +145,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                 if (transactionPayload == null) {
                     transactionPayload = new ChunkedTransaction(
                             cursorContext,
+                            ktx.getTransactionSequenceNumber(),
                             transactionalCursors,
                             commitmentFactory.newCommitment(),
                             transactionIdGenerator);
@@ -152,9 +153,11 @@ public final class ChunkCommitter implements TransactionCommitter {
                 CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
                 transactionPayload.init(chunk);
                 commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
+
+                validationResource.chunkAppended(chunkNumber, transactionPayload.transactionId());
+                transactionWriteEvent.chunkAppended(
+                        chunkNumber, ktx.getTransactionSequenceNumber(), transactionPayload.transactionId());
             }
-            transactionWriteEvent.chunkAppended(
-                    chunkNumber, ktx.getTransactionSequenceNumber(), transactionPayload.transactionId());
             previousBatchLogPosition = transactionPayload.lastBatchLogPosition();
             chunkNumber++;
         }

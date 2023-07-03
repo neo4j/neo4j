@@ -24,7 +24,6 @@ import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
@@ -33,7 +32,6 @@ import org.neo4j.time.SystemNanoClock;
 public class TransactionCommandValidatorFactory implements TransactionValidatorFactory {
     private final NeoStores neoStores;
     private final LogProvider logProvider;
-    private final DatabaseHealth databaseHealth;
     private final LockManager lockManager;
     private final Config config;
 
@@ -42,19 +40,16 @@ public class TransactionCommandValidatorFactory implements TransactionValidatorF
             StorageEngineFactory storageEngineFactory,
             Config config,
             SystemNanoClock clock,
-            LogProvider logProvider,
-            DatabaseHealth databaseHealth) {
+            LogProvider logProvider) {
         this.neoStores = neoStores;
         this.logProvider = logProvider;
-        this.databaseHealth = databaseHealth;
         this.lockManager = storageEngineFactory.createLockManager(config, clock);
         this.config = config;
     }
 
     @Override
     public TransactionValidator createTransactionValidator(MemoryTracker memoryTracker) {
-        return new TransactionCommandValidator(
-                neoStores, lockManager, memoryTracker, config, logProvider, databaseHealth);
+        return new TransactionCommandValidator(neoStores, lockManager, memoryTracker, config, logProvider);
     }
 
     @Override

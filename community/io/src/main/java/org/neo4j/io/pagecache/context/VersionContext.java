@@ -108,12 +108,12 @@ public interface VersionContext {
     /**
      * Set invisible chain head version
      */
-    void invisibleChainHead(long headVersion);
+    void observedChainHead(long headVersion);
 
     /**
      * Check if this context ever encountered chain where latest visible page is not in the head of the chains
      */
-    boolean obsoleteHeadObserved();
+    boolean invisibleHeadObserved();
 
     /**
      * Reset chain obsolete chain head state context
@@ -121,11 +121,16 @@ public interface VersionContext {
     void resetObsoleteHeadState();
 
     /**
+     * Mark observed head state as invisible
+     */
+    void markHeadInvisible();
+
+    /**
      * Return version of the chain had that is invisible to current context.
      * If obsolete version was not encountered unspecified number if returned. To check
-     * if obsolete version was encountered {@link #obsoleteHeadObserved()} should be used.
+     * if obsolete version was encountered {@link #invisibleHeadObserved()} should be used.
      */
-    long currentInvisibleChainHeadVersion();
+    long chainHeadVersion();
 
     boolean initializedForWrite();
 }

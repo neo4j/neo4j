@@ -20,16 +20,20 @@
 package org.neo4j.internal.recordstorage.validation;
 
 import static java.lang.System.lineSeparator;
+import static java.util.Collections.emptyMap;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_dump_transaction_validation_page_locks;
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
 import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
 import static org.neo4j.lock.ResourceType.PAGE;
+import static org.neo4j.storageengine.api.txstate.validation.TransactionValidationResource.EMPTY_VALIDATION_RESOURCE;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
@@ -38,6 +42,7 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -52,44 +57,43 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidationResource;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
 public class TransactionCommandValidator implements CommandVisitor, TransactionValidator {
 
     private static final int PAGE_ID_BITS = 54;
-    private static final long PAGE_ID_MASK = 1L << PAGE_ID_BITS - 1;
+    private static final long PAGE_ID_MASK = (1L << PAGE_ID_BITS) - 1;
     private final NeoStores neoStores;
     private final LockManager.Client validationLockClient;
     private final MemoryTracker memoryTracker;
     private final Config config;
-    private final DatabaseHealth databaseHealth;
     private final PageCursor[] validationCursors;
     private final Log log;
     private EnumMap<StoreType, MutableLongSet> checkedPages;
     private LockTracer lockTracer;
     private CursorContext cursorContext;
+    private boolean dumpLocks;
+    private Map<PageEntry, Long> observedPageVersions;
 
     public TransactionCommandValidator(
             NeoStores neoStores,
             LockManager lockManager,
             MemoryTracker memoryTracker,
             Config config,
-            LogProvider logProvider,
-            DatabaseHealth databaseHealth) {
+            LogProvider logProvider) {
         this.neoStores = neoStores;
         this.validationLockClient = lockManager.newClient();
         this.memoryTracker = memoryTracker;
         this.config = config;
-        this.databaseHealth = databaseHealth;
         this.validationCursors = new PageCursor[STORE_TYPES.length];
         this.checkedPages = new EnumMap<>(StoreType.class);
         this.log = logProvider.getLog(getClass());
     }
 
     @Override
-    public Resource validate(
+    public TransactionValidationResource validate(
             Collection<StorageCommand> commands,
             long transactionSequenceNumber,
             CursorContext cursorContext,
@@ -97,7 +101,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
             LockTracer lockTracer) {
         try {
             if (commands.isEmpty()) {
-                return Resource.EMPTY;
+                return EMPTY_VALIDATION_RESOURCE;
             }
             initValidation(transactionSequenceNumber, cursorContext, leaseClient, lockTracer);
 
@@ -106,9 +110,10 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
                 ((Command) command).handle(this);
             }
 
-            Resource closeLocksResult = validationLockClient::close;
-            return config.get(multi_version_dump_transaction_validation_page_locks)
-                    ? new DumpStateResourceWrapper(closeLocksResult, validationLockClient, log, databaseHealth)
+            TransactionValidationResource closeLocksResult = validationLockClient::close;
+            return dumpLocks
+                    ? new DumpStateResourceWrapper(
+                            closeLocksResult, validationLockClient, log, neoStores, observedPageVersions)
                     : closeLocksResult;
         } catch (TransactionConflictException tce) {
             validationLockClient.close();
@@ -125,7 +130,8 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
             long txSequenceNumber, CursorContext cursorContext, LeaseClient leaseClient, LockTracer lockTracer) {
         this.cursorContext = cursorContext;
         this.lockTracer = lockTracer;
-
+        this.dumpLocks = config.get(multi_version_dump_transaction_validation_page_locks);
+        this.observedPageVersions = dumpLocks ? new HashMap<>() : emptyMap();
         validationLockClient.initialize(leaseClient, txSequenceNumber, memoryTracker, config);
     }
 
@@ -259,59 +265,98 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         }
 
         validationLockClient.acquireExclusive(lockTracer, PAGE, pageId | ((long) storeType.ordinal() << PAGE_ID_BITS));
+        var versionContext = cursorContext.getVersionContext();
         if (pageCursor.next(pageId)) {
-            var versionContext = cursorContext.getVersionContext();
-            if (versionContext.obsoleteHeadObserved()) {
+            if (versionContext.invisibleHeadObserved()) {
                 throw new TransactionConflictException(storeType, versionContext);
             }
         }
         checkedStorePages.add(pageId);
+
+        if (dumpLocks) {
+            storyPageInfo(storeType, pageId, versionContext);
+        }
     }
 
-    private static class DumpStateResourceWrapper implements Resource {
+    private void storyPageInfo(StoreType storeType, long pageId, VersionContext versionContext) {
+        long chainHead = versionContext.chainHeadVersion();
+        observedPageVersions.put(new PageEntry(pageId, storeType), chainHead);
+    }
 
+    private static class DumpStateResourceWrapper implements TransactionValidationResource {
+        private static final long UNKNOWN_PAGE_VERSION = -1;
         private final Resource delegate;
         private final LockManager.Client lockClient;
         private final Log log;
-        private final DatabaseHealth databaseHealth;
+        private final NeoStores neoStores;
+        private int chunkNumber;
+        private long txId;
+        private final Map<PageEntry, Long> observedVersions;
 
         private DumpStateResourceWrapper(
-                Resource delegate, LockManager.Client lockClient, Log log, DatabaseHealth databaseHealth) {
+                Resource delegate,
+                LockManager.Client lockClient,
+                Log log,
+                NeoStores neoStores,
+                Map<PageEntry, Long> observedVersions) {
             this.delegate = delegate;
             this.lockClient = lockClient;
             this.log = log;
-            this.databaseHealth = databaseHealth;
+            this.neoStores = neoStores;
+            this.observedVersions = observedVersions;
         }
 
         @Override
         public void close() {
-            if (!databaseHealth.hasNoPanic()) {
-                describeStateOnFailure();
-            }
+            dumpLockedPagesInfo();
             delegate.close();
         }
 
-        private void describeStateOnFailure() {
+        private void dumpLockedPagesInfo() {
             StringBuilder locksDumpBuilder = new StringBuilder();
-            locksDumpBuilder.append("Transaction ").append(lockClient.getTransactionId());
+            locksDumpBuilder
+                    .append("Transaction sequence number: ")
+                    .append(lockClient.getTransactionId())
+                    .append(" with tx id(chunk): ")
+                    .append(txId)
+                    .append("(")
+                    .append(chunkNumber)
+                    .append(")");
             var locks = lockClient.activeLocks();
             if (locks.isEmpty()) {
-                locksDumpBuilder.append(" does not have any validation locks.");
+                locksDumpBuilder.append(" does not have any validation page locks.");
             } else {
                 locksDumpBuilder.append(" locked page(s):").append(lineSeparator());
+
+                var storyTypeRecords = new EnumMap<StoreType, Integer>(StoreType.class);
+
                 for (ActiveLock activeLock : locks) {
                     long resourceId = activeLock.resourceId();
                     var storeType = StoreType.values()[(int) (resourceId >> PAGE_ID_BITS)];
+                    int recordsPerPage = storyTypeRecords.computeIfAbsent(
+                            storeType, type -> neoStores.getRecordStore(type).getRecordsPerPage());
                     long pageId = resourceId & PAGE_ID_MASK;
                     locksDumpBuilder
                             .append(pageId)
                             .append(" of ")
                             .append(storeType)
-                            .append(" store")
+                            .append(" store, with records per page ")
+                            .append(recordsPerPage)
+                            .append(" observed page version: ")
+                            .append(observedVersions.getOrDefault(
+                                    new PageEntry(pageId, storeType), UNKNOWN_PAGE_VERSION))
                             .append(lineSeparator());
                 }
             }
             log.error(locksDumpBuilder.toString());
         }
+
+        @Override
+        public void chunkAppended(int chunkNumber, long txId) {
+            this.chunkNumber = chunkNumber;
+            this.txId = txId;
+        }
     }
+
+    private record PageEntry(long id, StoreType type) {}
 }

@@ -35,7 +35,7 @@ public class TransactionConflictException extends RuntimeException implements St
 
     public TransactionConflictException(StoreType type, VersionContext versionContext) {
         this.storeType = type;
-        this.observedVersion = versionContext.currentInvisibleChainHeadVersion();
+        this.observedVersion = versionContext.chainHeadVersion();
         this.highestClosed = versionContext.highestClosed();
         this.nonVisibleTransactions = versionContext.notVisibleTransactionIds();
         this.message = createMessage();

@@ -19,8 +19,9 @@
  */
 package org.neo4j.storageengine.api.txstate.validation;
 
+import static org.neo4j.storageengine.api.txstate.validation.TransactionValidationResource.EMPTY_VALIDATION_RESOURCE;
+
 import java.util.Collection;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.LockTracer;
@@ -33,9 +34,9 @@ import org.neo4j.storageengine.api.StorageCommand;
 @FunctionalInterface
 public interface TransactionValidator {
     TransactionValidator EMPTY_VALIDATOR =
-            (commands, transactionSequenceNumber, cursorContext, leaseClient, lockTracer) -> Resource.EMPTY;
+            (commands, transactionSequenceNumber, cursorContext, leaseClient, lockTracer) -> EMPTY_VALIDATION_RESOURCE;
 
-    Resource validate(
+    TransactionValidationResource validate(
             Collection<StorageCommand> commands,
             long transactionSequenceNumber,
             CursorContext cursorContext,
