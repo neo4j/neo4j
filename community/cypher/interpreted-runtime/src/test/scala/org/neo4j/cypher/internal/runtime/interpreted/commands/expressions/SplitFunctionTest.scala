@@ -67,8 +67,16 @@ class SplitFunctionTest extends CypherFunSuite {
     split("first,second;third", List(",", ";")) should be(seq("first", "second", "third"))
   }
 
+  test("splitting non-empty string with multiple separator characters as array") {
+    split("first,second;third", Array(",", ";")) should be(seq("first", "second", "third"))
+  }
+
   test("splitting non-empty string with multiple separator strings") {
     split("(a)-->(b)<--(c)-->(d)--(e)", List("-->", "<--", "--")) should be(seq("(a)", "(b)", "(c)", "(d)", "(e)"))
+  }
+
+  test("splitting non-empty string with multiple separator strings as array") {
+    split("(a)-->(b)<--(c)-->(d)--(e)", Array("-->", "<--", "--")) should be(seq("(a)", "(b)", "(c)", "(d)", "(e)"))
   }
 
   test(
@@ -111,6 +119,11 @@ class SplitFunctionTest extends CypherFunSuite {
   }
 
   private def split(orig: String, splitDelimiters: List[String]) = {
+    val expr = SplitFunction(literal(orig), literal(splitDelimiters))
+    expr(CypherRow.empty, QueryStateHelper.empty)
+  }
+
+  private def split(orig: String, splitDelimiters: Array[String]) = {
     val expr = SplitFunction(literal(orig), literal(splitDelimiters))
     expr(CypherRow.empty, QueryStateHelper.empty)
   }

@@ -52,6 +52,10 @@ class ToBooleanListFunctionTest extends CypherFunSuite with ScalaCheckDrivenProp
     assert(toBooleanList(Seq[String]("true", "false")) === Values.booleanArray(Array(true, false)))
   }
 
+  test("should convert an array of strings to a list of booleans") {
+    assert(toBooleanList(Array("true", "false")) === Values.booleanArray(Array(true, false)))
+  }
+
   test("should not convert a list of doubles to a list of booleans") {
     assert(toBooleanList(Seq(123.0d, 456.5d)) === VirtualValues.list(NO_VALUE, NO_VALUE))
   }

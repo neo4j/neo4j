@@ -49,6 +49,10 @@ class ToFloatListFunctionTest extends CypherFunSuite with CypherScalaCheckDriven
     assert(toFloatList(Seq[Int](123, 456)) === Values.doubleArray(Array(123d, 456d)))
   }
 
+  test("should convert an array of integers to a list of floats") {
+    assert(toFloatList(Array(123, 456)) === Values.doubleArray(Array(123d, 456d)))
+  }
+
   test("should convert a list of strings to a list of floats") {
     assert(toFloatList(Seq[String]("123.2", "456")) === Values.doubleArray(Array(123.2d, 456d)))
   }

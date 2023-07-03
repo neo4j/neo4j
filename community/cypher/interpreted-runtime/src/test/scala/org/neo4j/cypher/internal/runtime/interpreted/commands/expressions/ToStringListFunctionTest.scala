@@ -52,6 +52,10 @@ class ToStringListFunctionTest extends CypherFunSuite with CypherScalaCheckDrive
     assert(toStringList(Seq[String]("123", "456")) === Values.stringArray("123", "456"))
   }
 
+  test("should convert an array of strings to a list of string") {
+    assert(toStringList(Array("123", "456")) === Values.stringArray("123", "456"))
+  }
+
   test("should convert a list of doubles to a list of strings") {
     assert(toStringList(Seq(123.0d, 456.5d)) === Values.stringArray("123.0", "456.5"))
   }

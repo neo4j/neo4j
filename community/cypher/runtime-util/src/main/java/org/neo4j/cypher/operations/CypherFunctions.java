@@ -38,12 +38,12 @@ import static org.neo4j.values.virtual.VirtualValues.asList;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
 import org.neo4j.cypher.internal.expressions.BooleanTypeName;
 import org.neo4j.cypher.internal.expressions.CypherTypeName;
 import org.neo4j.cypher.internal.expressions.DateTypeName;
@@ -732,7 +732,7 @@ public final class CypherFunctions {
             if (asText.length() == 0) {
                 return VirtualValues.list(EMPTY_STRING);
             }
-            if (separator instanceof ListValue separatorList) {
+            if (separator instanceof SequenceValue separatorList) {
                 var separators = new ArrayList<String>();
                 for (var s : separatorList) {
                     if (s == NO_VALUE) {
@@ -1185,8 +1185,8 @@ public final class CypherFunctions {
     public static AnyValue toBooleanList(AnyValue in) {
         if (in == NO_VALUE) {
             return NO_VALUE;
-        } else if (in instanceof ListValue lv) {
-            return Arrays.stream(lv.asArray())
+        } else if (in instanceof SequenceValue sv) {
+            return StreamSupport.stream(sv.spliterator(), false)
                     .map(entry -> entry == NO_VALUE ? NO_VALUE : toBooleanOrNull(entry))
                     .collect(ListValueBuilder.collector());
         } else {
@@ -1225,8 +1225,8 @@ public final class CypherFunctions {
     public static AnyValue toFloatList(AnyValue in) {
         if (in == NO_VALUE) {
             return NO_VALUE;
-        } else if (in instanceof ListValue lv) {
-            return Arrays.stream(lv.asArray())
+        } else if (in instanceof SequenceValue sv) {
+            return StreamSupport.stream(sv.spliterator(), false)
                     .map(entry -> entry == NO_VALUE ? NO_VALUE : toFloatOrNull(entry))
                     .collect(ListValueBuilder.collector());
         } else {
@@ -1319,8 +1319,8 @@ public final class CypherFunctions {
     public static AnyValue toStringList(AnyValue in) {
         if (in == NO_VALUE) {
             return NO_VALUE;
-        } else if (in instanceof ListValue lv) {
-            return Arrays.stream(lv.asArray())
+        } else if (in instanceof SequenceValue sv) {
+            return StreamSupport.stream(sv.spliterator(), false)
                     .map(entry -> entry == NO_VALUE ? NO_VALUE : toStringOrNull(entry))
                     .collect(ListValueBuilder.collector());
         } else {
