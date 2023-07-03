@@ -71,6 +71,7 @@ public class RecordDatabaseLayout extends PlainDatabaseLayout {
     @Override
     public Path pathForStore(CommonDatabaseStores store) {
         return switch (store) {
+            case NODE -> nodeStore();
             case COUNTS -> countStore();
             case LABEL_TOKENS -> labelTokenStore();
             case RELATIONSHIP_TYPE_TOKENS -> relationshipTypeTokenStore();

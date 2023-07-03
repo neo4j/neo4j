@@ -26,5 +26,6 @@ public enum CommonDatabaseStores {
     PROPERTY_KEY_TOKENS,
     SCHEMAS,
     INDEX_STATISTICS,
-    METADATA
+    METADATA,
+    NODE
 }
