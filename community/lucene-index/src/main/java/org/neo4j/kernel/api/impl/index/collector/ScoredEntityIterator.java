@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.index.collector;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.function.LongPredicate;
-import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
 /**
  * Iterator over entity ids together with their respective score.
  */
-public class ScoreEntityIterator implements ValuesIterator {
+public class ScoredEntityIterator implements ValuesIterator {
     private final ValuesIterator iterator;
     private final LongPredicate predicate;
     private boolean hasNext;
@@ -37,7 +36,7 @@ public class ScoreEntityIterator implements ValuesIterator {
     private long nextEntityId;
     private float nextScore;
 
-    private ScoreEntityIterator(ValuesIterator sortedValuesIterator, LongPredicate predicate) {
+    private ScoredEntityIterator(ValuesIterator sortedValuesIterator, LongPredicate predicate) {
         this.iterator = sortedValuesIterator;
         this.predicate = predicate;
         advanceIterator();
@@ -85,35 +84,35 @@ public class ScoreEntityIterator implements ValuesIterator {
         } while (hasNext && !predicate.test(nextEntityId));
     }
 
-    public static ValuesIterator filter(ValuesIterator itr, LongPredicate predicate) {
-        return new ScoreEntityIterator(itr, predicate);
+    public static ValuesIterator filter(ValuesIterator iterator, LongPredicate predicate) {
+        return new ScoredEntityIterator(iterator, predicate);
     }
 
     /**
      * Merges the given iterators into a single iterator, that maintains the aggregate descending score sort order.
      *
      * @param iterators to concatenate
-     * @return a {@link ScoreEntityIterator} that iterates over all of the elements in all of the given iterators
+     * @return a {@link ScoredEntityIterator} that iterates over all of the elements in all of the given iterators
      */
-    static ValuesIterator mergeIterators(List<ValuesIterator> iterators) {
+    public static ValuesIterator mergeIterators(List<ValuesIterator> iterators) {
         if (iterators.size() == 1) {
             return iterators.get(0);
         }
-        return new ConcatenatingScoreEntityIterator(iterators);
+        return new ConcatenatingScoredEntityIterator(iterators);
     }
 
-    private static class ConcatenatingScoreEntityIterator implements ValuesIterator {
+    private static class ConcatenatingScoredEntityIterator implements ValuesIterator {
         private final PriorityQueue<ValuesIterator> sources;
         private boolean hasNext;
         private long entityId;
         private float score;
 
-        ConcatenatingScoreEntityIterator(List<? extends ValuesIterator> iterators) {
+        ConcatenatingScoredEntityIterator(Iterable<? extends ValuesIterator> iterators) {
             // We take the delegate iterators in current score order, using the ordering defined in CIP2016-06-14, where
             // NaN comes between positive infinity
             // and the largest float/double value. This is the same as Float/Double.compare.
             sources = new PriorityQueue<>((o1, o2) -> Float.compare(o2.currentScore(), o1.currentScore()));
-            for (ValuesIterator iterator : iterators) {
+            for (final var iterator : iterators) {
                 if (iterator.hasNext()) {
                     iterator.next();
                     sources.add(iterator);
@@ -140,13 +139,13 @@ public class ScoreEntityIterator implements ValuesIterator {
         @Override
         public long next() {
             if (hasNext) {
-                ValuesIterator itr = sources.poll();
-                assert itr != null;
-                entityId = itr.current();
-                score = itr.currentScore();
-                if (itr.hasNext()) {
-                    itr.next();
-                    sources.add(itr);
+                final var iterator = sources.poll();
+                assert iterator != null;
+                entityId = iterator.current();
+                score = iterator.currentScore();
+                if (iterator.hasNext()) {
+                    iterator.next();
+                    sources.add(iterator);
                 }
                 hasNext = !sources.isEmpty();
                 return entityId;

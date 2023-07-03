@@ -32,6 +32,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -43,8 +44,10 @@ import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.impl.index.collector.ScoredEntityIterator;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
+import org.neo4j.kernel.api.impl.schema.LuceneScoredEntityIndexProgressor;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -57,7 +60,7 @@ import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 
 public class FulltextIndexReader implements ValueIndexReader {
-    static final LongPredicate ALWAYS_FALSE = value -> false;
+    private static final LongPredicate ALWAYS_FALSE = LongPredicates.alwaysFalse();
     private final List<SearcherReference> searchers;
     private final TokenHolder propertyKeyTokenHolder;
     private final IndexDescriptor index;
@@ -118,7 +121,7 @@ public class FulltextIndexReader implements ValueIndexReader {
         usageTracker.queried();
         ValuesIterator itr =
                 searchLucene(query, constraints, context, context.cursorContext(), context.memoryTracker());
-        IndexProgressor progressor = new FulltextIndexProgressor(itr, client, constraints);
+        IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(itr, client, constraints);
         client.initialize(index, progressor, accessMode, true, false, constraints, queries);
     }
 
@@ -217,7 +220,7 @@ public class FulltextIndexReader implements ValueIndexReader {
                 results.add(search.search(query, constraints, statsCollector));
             }
 
-            return ScoreEntityIterator.mergeIterators(results);
+            return ScoredEntityIterator.mergeIterators(results);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

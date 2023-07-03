@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -29,11 +29,12 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.impl.index.collector.StubValuesIterator;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.values.storable.Value;
 
-class FulltextIndexProgressorTest {
+class LuceneScoredEntityIndexProgressorTest {
     @Test
     void mustSkipAndLimitEntriesPerConstraints() {
         StubValuesIterator iterator = new StubValuesIterator();
@@ -45,7 +46,7 @@ class FulltextIndexProgressorTest {
         IndexQueryConstraints constraints = unconstrained().skip(1).limit(2);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
+        IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
         do {
             keepGoing = progressor.next();
@@ -66,7 +67,7 @@ class FulltextIndexProgressorTest {
         IndexQueryConstraints constraints = unconstrained().skip(1).limit(1);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
+        IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
         do {
             keepGoing = progressor.next();
@@ -87,7 +88,7 @@ class FulltextIndexProgressorTest {
         IndexQueryConstraints constraints = unconstrained().skip(4).limit(1);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
+        IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
         do {
             keepGoing = progressor.next();
@@ -108,7 +109,7 @@ class FulltextIndexProgressorTest {
         IndexQueryConstraints constraints = unconstrained().limit(5);
 
         StubEntityValueClient client = new StubEntityValueClient();
-        FulltextIndexProgressor progressor = new FulltextIndexProgressor(iterator, client, constraints);
+        IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(iterator, client, constraints);
         boolean keepGoing;
         do {
             keepGoing = progressor.next();

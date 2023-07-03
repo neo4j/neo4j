@@ -17,46 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.schema;
 
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-class FulltextIndexProgressor implements IndexProgressor {
-    private final ValuesIterator itr;
+public class LuceneScoredEntityIndexProgressor implements IndexProgressor {
+    private final ValuesIterator iterator;
     private final EntityValueClient client;
     private long limit;
 
-    FulltextIndexProgressor(ValuesIterator itr, EntityValueClient client, IndexQueryConstraints constraints) {
-        this.itr = itr;
+    public LuceneScoredEntityIndexProgressor(
+            ValuesIterator iterator, EntityValueClient client, IndexQueryConstraints constraints) {
+        this.iterator = iterator;
         this.client = client;
-        if (constraints.skip().isPresent()) {
-            long skip = constraints.skip().getAsLong();
-            while (skip > 0 && itr.hasNext()) {
-                itr.next();
-                skip--;
-            }
-        }
-        if (constraints.limit().isPresent()) {
-            this.limit = constraints.limit().getAsLong();
-        } else {
-            this.limit = Long.MAX_VALUE;
-        }
+        Iterators.skip(iterator, constraints.skip().orElse(0));
+        this.limit = constraints.limit().orElse(Long.MAX_VALUE);
     }
 
     @Override
     public boolean next() {
-        if (!itr.hasNext() || limit == 0) {
+        if (!iterator.hasNext() || limit == 0) {
             return false;
         }
         boolean accepted;
         do {
-            long entityId = itr.next();
-            float score = itr.currentScore();
+            long entityId = iterator.next();
+            float score = iterator.currentScore();
             accepted = client.acceptEntity(entityId, score, (Value[]) null);
-        } while (!accepted && itr.hasNext());
+        } while (!accepted && iterator.hasNext());
         limit--;
         return accepted;
     }

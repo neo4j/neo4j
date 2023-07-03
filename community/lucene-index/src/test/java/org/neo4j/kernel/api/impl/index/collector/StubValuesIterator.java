@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.index.collector;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
+import org.eclipse.collections.api.factory.primitive.FloatLists;
+import org.eclipse.collections.api.list.primitive.MutableFloatList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 
-class StubValuesIterator implements ValuesIterator {
-    private List<Long> entityIds = new ArrayList<>();
-    private List<Float> scores = new ArrayList<>();
+public class StubValuesIterator implements ValuesIterator {
+    private final MutableLongList entityIds = LongLists.mutable.empty();
+    private final MutableFloatList scores = FloatLists.mutable.empty();
     private int nextIndex;
 
     public StubValuesIterator add(long entityId, float score) {
@@ -46,9 +47,7 @@ class StubValuesIterator implements ValuesIterator {
 
     @Override
     public long next() {
-        long entityId = entityIds.get(nextIndex);
-        nextIndex++;
-        return entityId;
+        return entityIds.get(nextIndex++);
     }
 
     @Override

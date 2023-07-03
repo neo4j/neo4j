@@ -37,6 +37,7 @@ import java.util.Spliterator;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.assertj.core.util.Sets;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
@@ -377,5 +378,26 @@ class TestCommonIterators {
         // then
         assertThat(closed1.getValue()).isTrue();
         assertThat(closed2.getValue()).isTrue();
+    }
+
+    @Test
+    void iteratorSkipDiscardsItems() {
+        final var iterator = Iterators.iterator("a", "b", "c", "d", "e");
+
+        Iterators.skip(iterator, 3);
+        assertThat(iterator.next()).isEqualTo("d");
+        assertThat(iterator.next()).isEqualTo("e");
+        assertThat(iterator.hasNext()).isFalse();
+    }
+
+    @Test
+    void longIteratorSkipDiscardsItems() {
+        final var items = LongArrayList.newListWith(1, 2, 3, 4, 5);
+        final var iterator = items.longIterator();
+
+        Iterators.skip(iterator, 3);
+        assertThat(iterator.next()).isEqualTo(4);
+        assertThat(iterator.next()).isEqualTo(5);
+        assertThat(iterator.hasNext()).isFalse();
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.index.collector;
 
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
@@ -27,9 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
-class ScoreEntityIteratorTest {
+class ScoredEntityIteratorTest {
     @Test
     void mergeShouldReturnOrderedResults() {
         StubValuesIterator one = new StubValuesIterator().add(3, 10).add(10, 3).add(12, 1);
@@ -42,7 +41,7 @@ class ScoreEntityIteratorTest {
         StubValuesIterator three =
                 new StubValuesIterator().add(2, 11).add(4, 9).add(6, 7).add(9, 4);
 
-        ValuesIterator concat = ScoreEntityIterator.mergeIterators(Arrays.asList(one, two, three));
+        ValuesIterator concat = ScoredEntityIterator.mergeIterators(Arrays.asList(one, two, three));
 
         for (int i = 1; i <= 12; i++) {
             assertTrue(concat.hasNext());
@@ -68,7 +67,7 @@ class ScoreEntityIteratorTest {
                 .add(7, 0.0f)
                 .add(9, Float.NEGATIVE_INFINITY);
 
-        ValuesIterator concat = ScoreEntityIterator.mergeIterators(Arrays.asList(one, two));
+        ValuesIterator concat = ScoredEntityIterator.mergeIterators(Arrays.asList(one, two));
 
         assertTrue(concat.hasNext());
         assertEquals(1, concat.next());
@@ -93,7 +92,7 @@ class ScoreEntityIteratorTest {
                 new StubValuesIterator().add(1, 5).add(2, 4).add(3, 3).add(4, 2).add(5, 1);
         StubValuesIterator three = new StubValuesIterator();
 
-        ValuesIterator concat = ScoreEntityIterator.mergeIterators(Arrays.asList(one, two, three));
+        ValuesIterator concat = ScoredEntityIterator.mergeIterators(Arrays.asList(one, two, three));
 
         for (int i = 1; i <= 5; i++) {
             assertTrue(concat.hasNext());
@@ -110,7 +109,7 @@ class ScoreEntityIteratorTest {
         StubValuesIterator two = new StubValuesIterator();
         StubValuesIterator three = new StubValuesIterator();
 
-        ValuesIterator concat = ScoreEntityIterator.mergeIterators(Arrays.asList(one, two, three));
+        ValuesIterator concat = ScoredEntityIterator.mergeIterators(Arrays.asList(one, two, three));
 
         assertFalse(concat.hasNext());
     }

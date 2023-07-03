@@ -44,6 +44,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
@@ -800,6 +801,30 @@ public final class Iterators {
             iterator.forEachRemaining(consumer);
         } finally {
             tryCloseResource(iterator);
+        }
+    }
+
+    /**
+     * Skips the first items from the iterator
+     *
+     * @param iterator the iterator to skip items in
+     * @param count number of items to skip
+     */
+    public static <T> void skip(Iterator<T> iterator, long count) {
+        for (; count > 0 && iterator.hasNext(); count--) {
+            iterator.next();
+        }
+    }
+
+    /**
+     * Skips the first items from the iterator
+     *
+     * @param iterator the iterator to skip items in
+     * @param count number of items to skip
+     */
+    public static void skip(LongIterator iterator, long count) {
+        for (; count > 0 && iterator.hasNext(); count--) {
+            iterator.next();
         }
     }
 
