@@ -85,6 +85,7 @@ import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -303,6 +304,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         check(ctx, x.arguments) chain
           expectType(CTRelationship, lhs) chain
           expectType(CTRelationship, rhs) chain
+          specifyType(CTBoolean, x)
+
+      case x @ NoneOfRelationships(relationship, relationshipList) =>
+        check(ctx, x.arguments) chain
+          expectType(CTRelationship, relationship) chain
+          expectType(CTList(CTRelationship), relationshipList) chain
           specifyType(CTBoolean, x)
 
       case x @ Disjoint(lhs, rhs) =>

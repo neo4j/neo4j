@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
-import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -238,7 +237,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
           .map(_.variable.copyId)
           .reduceRightOption[Expression]((y, x) => expressions.Add(x, y)(pos))
           .map { innerY =>
-            Not(In(x.variable.copyId, innerY)(pos))(pos)
+            NoneOfRelationships(x.variable.copyId, innerY)(pos)
           }
 
       case (x: RelationshipGroup, y: SingleRelationship) =>
@@ -247,7 +246,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
           .map(_.variable.copyId)
           .reduceRightOption[Expression]((y, x) => expressions.Add(x, y)(pos))
           .map { innerX =>
-            Not(In(y.variable.copyId, innerX)(pos))(pos)
+            NoneOfRelationships(y.variable.copyId, innerX)(pos)
           }
 
       case (x: RelationshipGroup, y: RelationshipGroup) =>

@@ -396,14 +396,31 @@ case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends Bo
 }
 
 /**
+ * Predicate used for enforcing relationship uniqueness as done in
+ * AddRelationshipPredicates.
+ */
+sealed trait RelationshipUniquenessPredicate extends BooleanExpression
+
+/**
  * Tests whether the two relationships given are different.
  *
  * @param rel1 first relationship
  * @param rel2 second relationship
  */
 case class DifferentRelationships(rel1: LogicalVariable, rel2: LogicalVariable)(val position: InputPosition)
-    extends BooleanExpression {
+    extends RelationshipUniquenessPredicate {
   override def isConstantForQuery: Boolean = false
+}
+
+/**
+ * Tests whether the relationship is none of the elements from the list.
+ *
+ * @param relationship the relationship
+ * @param listOfRelationships the list of relationships
+ */
+case class NoneOfRelationships(relationship: Expression, listOfRelationships: Expression)(val position: InputPosition)
+    extends RelationshipUniquenessPredicate {
+  override def isConstantForQuery: Boolean = relationship.isConstantForQuery && listOfRelationships.isConstantForQuery
 }
 
 /**
@@ -413,7 +430,8 @@ case class DifferentRelationships(rel1: LogicalVariable, rel2: LogicalVariable)(
  * @param lhs first list
  * @param rhs second list
  */
-case class Disjoint(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression {
+case class Disjoint(lhs: Expression, rhs: Expression)(val position: InputPosition)
+    extends RelationshipUniquenessPredicate {
   override def isConstantForQuery: Boolean = lhs.isConstantForQuery && rhs.isConstantForQuery
 }
 
@@ -423,14 +441,15 @@ case class Disjoint(lhs: Expression, rhs: Expression)(val position: InputPositio
  *
  * @param rhs the list to test
  */
-case class Unique(rhs: Expression)(val position: InputPosition) extends BooleanExpression {
+case class Unique(rhs: Expression)(val position: InputPosition) extends RelationshipUniquenessPredicate {
   override def isConstantForQuery: Boolean = rhs.isConstantForQuery
 }
 
 /**
  * Tests whether the relationship is unique across Repeat(Trail) iterations.
  */
-case class IsRepeatTrailUnique(variableToCheck: Variable)(val position: InputPosition) extends BooleanExpression {
+case class IsRepeatTrailUnique(variableToCheck: Variable)(val position: InputPosition)
+    extends RelationshipUniquenessPredicate {
   override def isConstantForQuery: Boolean = false
 }
 

@@ -519,7 +519,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
 
     val expand = subPlanBuilder
       .projection(project = Seq("1 AS s"), discard = Set("c", "rr", "r", "b", "a"))
-      .filter("not rr IN r")
+      .filterExpression(noneOfRels(varFor("rr"), varFor("r")))
       .expand("(b)<-[r*1..]-(a)")
       .allRelationshipsScan("(b)-[rr]-(c)")
       .build()
@@ -740,7 +740,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .|.filterExpression(isRepeatTrailUnique("rrr"))
       .|.expand("(x)-[rrr]->(y)")
       .|.argument("x")
-      .filter("not rr IN r")
+      .filterExpression(noneOfRels(varFor("rr"), varFor("r")))
       .expand("(b)-[rr]->(c)")
       .trail(`(a) ((n)-[r]-(m))+ (b)`)
       .|.filterExpression(isRepeatTrailUnique("r"))
@@ -751,9 +751,9 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
     val expand = subPlanBuilder
       .projection(project = Seq("1 AS s"), discard = Set("c", "rr", "r", "rrr", "d", "b", "a"))
       .filterExpression(disjoint(varFor("rrr"), varFor("r")))
-      .filter("not rr IN rrr")
+      .filterExpression(noneOfRels(varFor("rr"), varFor("rrr")))
       .expand("(c)-[rrr*1..]->(d)")
-      .filter("not rr IN r")
+      .filterExpression(noneOfRels(varFor("rr"), varFor("r")))
       .expand("(b)-[rr]->(c)")
       .expand("(a)-[r*1..]->(b)")
       .allNodeScan("a")

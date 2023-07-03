@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -267,8 +268,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case _: Unique | _: IsRepeatTrailUnique =>
       // These are currently only generated for var-length or QPP uniqueness predicates and
       // those are already included in the calculations in PatternRelationshipMultiplierCalculator.
-      // We should revisit this when doing Cardinality estimation for QPPs.
       Selectivity.ONE
+
+    case _: NoneOfRelationships =>
+      // Previous to this predicate, this was implemented using Not(In(rel, list)).
+      // We do not have an estimation for In(...), which is why that would be mapped to DEFAULT_PREDICATE_SELECTIVITY.
+      // In reality, this predicate is probably far less selective. But selecting the right selectivity should be done separately from defining this predicate.
+      DEFAULT_PREDICATE_SELECTIVITY.negate
 
     case _: VarLengthBound =>
       // These are inserted by AddVarLengthPredicates and taken care of in the cardinality estimation of the referenced var-length relationship.

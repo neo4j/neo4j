@@ -28,9 +28,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
-import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
@@ -425,9 +424,9 @@ object expandSolverStep {
         if list2.subsetOf(groupingRelationshipNames) && list1.forall(isBound) =>
         SolvedUniquenessPredicate(disjointPred, previouslyBoundRelationshipGroups = list1)
 
-      case notInPred @ Not(In(Variable(singletonVariable), VariableList(groupedVariables)))
+      case noneOfPred @ NoneOfRelationships(Variable(singletonVariable), VariableList(groupedVariables))
         if groupedVariables.subsetOf(groupingRelationshipNames) && isBound(singletonVariable) =>
-        SolvedUniquenessPredicate(notInPred, previouslyBoundRelationships = Some(singletonVariable))
+        SolvedUniquenessPredicate(noneOfPred, previouslyBoundRelationships = Some(singletonVariable))
     }
 
     val solvedPredicates = uniquenessPredicates.map(_.solvedPredicate)

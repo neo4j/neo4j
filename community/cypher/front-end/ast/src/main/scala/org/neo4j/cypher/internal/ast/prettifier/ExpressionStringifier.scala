@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Or
@@ -394,6 +395,8 @@ private class DefaultExpressionStringifier(
             "elementIdListToRelationshipIdList"
         }
         s"$prefix(${apply(elementIdExpr)})"
+
+      case NoneOfRelationships(Variable(rel), Variable(relList)) => s"not `$rel` in `$relList`"
 
       case DifferentRelationships(Variable(rel1), Variable(rel2)) => s"not `$rel1` = `$rel2`"
 

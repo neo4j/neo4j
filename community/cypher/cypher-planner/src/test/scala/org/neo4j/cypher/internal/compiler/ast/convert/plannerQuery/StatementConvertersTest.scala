@@ -1761,8 +1761,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       selections = Selections.from(Set(
         differentRelationships("r1", "r3"),
         unique(varFor("r2")),
-        not(in(varFor("r1"), varFor("r2"))),
-        not(in(varFor("r3"), varFor("r2")))
+        noneOfRels(varFor("r1"), varFor("r2")),
+        noneOfRels(varFor("r3"), varFor("r2"))
       )),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(

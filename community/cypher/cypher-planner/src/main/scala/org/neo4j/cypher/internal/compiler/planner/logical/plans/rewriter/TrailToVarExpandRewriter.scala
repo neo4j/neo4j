@@ -25,10 +25,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailTo
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -154,7 +153,7 @@ case class TrailToVarExpandRewriter(
     source: LogicalPlan
   ): LogicalPlan = {
     def excluded(groupRelationship: LogicalVariable, previouslyBoundedRel: LogicalVariable): Expression =
-      Not(In(previouslyBoundedRel, groupRelationship)(InputPosition.NONE))(InputPosition.NONE)
+      NoneOfRelationships(previouslyBoundedRel, groupRelationship)(InputPosition.NONE)
 
     if (trail.previouslyBoundRelationships.nonEmpty) {
       val groupRel = trailRelationship.groupName

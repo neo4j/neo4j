@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -985,6 +986,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def differentRelationships(relVar1: LogicalVariable, relVar2: LogicalVariable): DifferentRelationships =
     DifferentRelationships(relVar1, relVar2)(pos)
+
+  def noneOfRels(relVar: LogicalVariable, relListVar: LogicalVariable): NoneOfRelationships =
+    NoneOfRelationships(relVar, relListVar)(pos)
 
   def unique(list: Expression): Unique =
     Unique(list)(pos)

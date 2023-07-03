@@ -413,6 +413,10 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     ).factor * T1prop)
   }
 
+  test("MATCH ()-[t1:T1]->()-[t2:T1*1..1]->()") {
+    expectCardinality(N * N * N * ANY_T1_ANY_sel * ANY_T1_ANY_sel * 0.25)
+  }
+
   test("MATCH ()-[t:T1]->() WHERE t.prop STARTS WITH 'prefix'") {
     expectCardinality(ANY_T1_ANY * (DEFAULT_RANGE_SEEK_FACTOR / "prefix".length))
   }
