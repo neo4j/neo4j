@@ -113,11 +113,6 @@ trait UpdateGraph {
     case p: CreatePattern => p
   }
 
-  def hasCreatePatterns: Boolean = mutatingPatterns.exists {
-    case _: CreatePattern => true
-    case _                => false
-  }
-
   def mergeNodePatterns: Seq[MergeNodePattern] = mutatingPatterns.collect {
     case m: MergeNodePattern => m
   }
