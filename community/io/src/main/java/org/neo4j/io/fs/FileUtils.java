@@ -408,7 +408,7 @@ public final class FileUtils {
 
     public static void tryForceDirectory(Path directory) throws IOException {
         if (notExists(directory)) {
-            throw new NoSuchFileException(format("The directory %s does not exist!", directory.toAbsolutePath()));
+            return;
         } else if (!isDirectory(directory)) {
             throw new NotDirectoryException(
                     format("The path %s must refer to a directory!", directory.toAbsolutePath()));
