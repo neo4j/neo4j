@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -293,6 +295,50 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         .produceResults("n", "m", "o").withCardinality(400).withProvidedOrder(po_n)
         .expand("(m)-->(o)").withCardinality(400).withProvidedOrder(po_n)
         .expand("(n)-->(m)").withCardinality(200).withProvidedOrder(po_n)
+        .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+    )
+  }
+
+  test("should unnest StatefulShortestPath and multiply cardinality") {
+    val nfa = new TestNFABuilder(0, "n")
+      .addTransition(0, 1, "(n) (n_i)")
+      .addTransition(1, 2, "(n_i)-[r_i]->(m_i)")
+      .addTransition(2, 1, "(m_i) (n_i)")
+      .addTransition(2, 3, "(m_i) (m)")
+      .addFinalState(3)
+      .build()
+
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m", "o").withCardinality(200).withProvidedOrder(po_n)
+      .apply().withCardinality(200).withProvidedOrder(po_n)
+      .|.statefulShortestPath(
+        "n",
+        "m",
+        "",
+        None,
+        groupNodes = Set(("n_i", "n_i"), ("m_i", "m_i")),
+        groupRelationships = Set(("r_i", "r_i")),
+        singletonVariables = Set("m"),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa
+      ).withCardinality(2)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("n", "m", "o").withCardinality(200).withProvidedOrder(po_n)
+        .statefulShortestPath(
+          "n",
+          "m",
+          "",
+          None,
+          groupNodes = Set(("n_i", "n_i"), ("m_i", "m_i")),
+          groupRelationships = Set(("r_i", "r_i")),
+          singletonVariables = Set("m"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        ).withCardinality(200).withProvidedOrder(po_n)
         .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
     )
   }
