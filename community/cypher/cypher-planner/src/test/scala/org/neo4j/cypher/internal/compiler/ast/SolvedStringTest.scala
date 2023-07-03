@@ -22,14 +22,16 @@ package org.neo4j.cypher.internal.compiler.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-class SolvedStringTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class SolvedStringTest extends CypherFunSuite with LogicalPlanningTestSupport with TableDrivenPropertyChecks {
 
   override val semanticFeatures: List[SemanticFeature] = List(
     SemanticFeature.GpmShortestPath
   )
 
-  private val tests = Seq(
+  private val tests = Table(
+    "Cypher" -> "Expected",
     // Test different selectors
     "ANY SHORTEST (a)-[r]->(b)" -> "SHORTEST 1 ((a)-[r]->(b))",
     "SHORTEST 1 (a)-[r]->(b)" -> "SHORTEST 1 ((a)-[r]->(b))",
@@ -53,17 +55,15 @@ class SolvedStringTest extends CypherFunSuite with LogicalPlanningTestSupport {
   )
 
   test("solvedString is correct") {
-    tests.zipWithIndex.foreach {
-      case ((cypher, expected), i) =>
-        withClue(s"Test no $i:") {
-          val fullCypher = s"MATCH $cypher RETURN *"
-          val query = buildSinglePlannerQuery(fullCypher)
-          query.queryGraph.selectivePathPatterns should not be empty
-          val spp = query.queryGraph.selectivePathPatterns.head
-          val solvedString = spp.solvedString
+    forAll(tests) {
+      case (cypher, expected) =>
+        val fullCypher = s"MATCH $cypher RETURN *"
+        val query = buildSinglePlannerQuery(fullCypher)
+        query.queryGraph.selectivePathPatterns should not be empty
+        val spp = query.queryGraph.selectivePathPatterns.head
+        val solvedString = spp.solvedString
 
-          solvedString should equal(expected)
-        }
+        solvedString should equal(expected)
     }
   }
 
