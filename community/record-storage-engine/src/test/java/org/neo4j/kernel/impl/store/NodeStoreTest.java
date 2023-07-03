@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -427,7 +427,7 @@ class NodeStoreTest {
     }
 
     @Test
-    public void shouldIncludeNodeRecordInExceptionLoadingDynamicLabelRecords() {
+    public void shouldVerifyThatEnsureHeavyDoesNotFailWhenEncounteringALabelNotInUse() {
         // given a node with reference to a dynamic label record
         nodeStore = newNodeStore(fs);
         NodeRecord record = new NodeRecord(5L)
@@ -456,11 +456,11 @@ class NodeStoreTest {
         // when loading that node and making it heavy
         NodeRecord loadedRecord = nodeStore.newRecord();
         nodeStore.getRecordByCursor(record.getId(), loadedRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR));
+        nodeStore.ensureHeavy(loadedRecord, storeCursors);
 
         // then
-        assertThatThrownBy(() -> nodeStore.ensureHeavy(loadedRecord, storeCursors))
-                .isInstanceOf(InvalidRecordException.class)
-                .hasMessageContaining(loadedRecord.toString());
+        assertThat(loadedRecord.getUsedDynamicLabelRecords()).isEmpty();
+        assertThat(loadedRecord.getDynamicLabelRecords()).isEqualTo(record.getDynamicLabelRecords());
     }
 
     @Test

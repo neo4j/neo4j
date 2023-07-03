@@ -115,7 +115,8 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
                     node.getLabelField(),
                     dynamicLabelStore.getRecords(
                             firstDynamicLabelRecord,
-                            RecordLoad.NORMAL,
+                            RecordLoad
+                                    .ALWAYS /* We might load labels that are no longer in use. In situations where this matters, getUsedDynamicLabels should be used. */,
                             false,
                             storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR)));
         } catch (InvalidRecordException e) {

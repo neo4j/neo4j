@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.store.record;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 public class NodeRecord extends PrimitiveRecord {
     public static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeRecord.class);
@@ -113,8 +113,8 @@ public class NodeRecord extends PrimitiveRecord {
         return this.dynamicLabelRecords;
     }
 
-    public Iterable<DynamicRecord> getUsedDynamicLabelRecords() {
-        return filter(AbstractBaseRecord::inUse, dynamicLabelRecords);
+    public List<DynamicRecord> getUsedDynamicLabelRecords() {
+        return Iterables.asList(Iterables.filter(AbstractBaseRecord::inUse, dynamicLabelRecords));
     }
 
     public boolean isDense() {

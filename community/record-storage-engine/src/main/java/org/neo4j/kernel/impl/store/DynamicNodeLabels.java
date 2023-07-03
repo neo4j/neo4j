@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
@@ -55,10 +56,12 @@ public class DynamicNodeLabels implements NodeLabels {
     }
 
     public static long[] get(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
-        if (node.isLight()) {
-            nodeStore.ensureHeavy(node, firstDynamicLabelRecordId(node.getLabelField()), storeCursors);
+        nodeStore.ensureHeavy(node, firstDynamicLabelRecordId(node.getLabelField()), storeCursors);
+        var usedLabels = node.getUsedDynamicLabelRecords();
+        if (usedLabels.isEmpty()) {
+            return ArrayUtils.EMPTY_LONG_ARRAY;
         }
-        return getDynamicLabelsArray(node.getUsedDynamicLabelRecords(), nodeStore.getDynamicLabelStore(), storeCursors);
+        return getDynamicLabelsArray(usedLabels, nodeStore.getDynamicLabelStore(), storeCursors);
     }
 
     public static boolean hasLabel(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, int label) {

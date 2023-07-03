@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -509,6 +510,21 @@ class NodeLabelsFieldTest {
                 idsOf(initialRecords).containsAll(idsOf(used(reallocatedRecords))),
                 "initial:" + initialRecords + ", reallocated:" + reallocatedRecords);
         assertTrue(used(reallocatedRecords).size() < initialRecords.size());
+    }
+
+    @Test
+    void shouldNotFailWhenDynamicRecordsBecomeUnused() {
+        // GIVEN
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, fourByteLongs(100));
+        assertThat(NodeLabelsField.get(node, nodeStore, storeCursors)).isNotEmpty();
+
+        // WHEN
+        for (DynamicRecord record : node.getDynamicLabelRecords()) {
+            record.setInUse(false);
+        }
+
+        // THEN
+        assertThat(NodeLabelsField.get(node, nodeStore, storeCursors)).isEmpty();
     }
 
     /*
