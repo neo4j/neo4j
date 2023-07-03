@@ -63,6 +63,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -636,20 +637,9 @@ class TransactionLogServiceIT {
 
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
         String testReason = "My unique last checkpoint1.";
-        logService.appendCheckpoint(lastTransactionId, testReason);
 
-        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
-        assertThat(checkpointInfo.reason()).contains(testReason);
-
-        LogTailInformation freshTail = getFreshLogTail();
-        assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
-        assertThat(freshTail.getLastCheckPoint().orElseThrow()).isEqualTo(checkpointInfo);
-        assertThat(freshTail.logsAfterLastCheckpoint())
-                .describedAs("There should not be any new commits after the checkpoint." + freshTail)
-                .isFalse();
-        assertThat(freshTail.isRecoveryRequired())
-                .describedAs("Recovery should not be required. " + freshTail)
-                .isFalse();
+        assertThatThrownBy(() -> logService.appendCheckpoint(lastTransactionId, testReason))
+                .isInstanceOf(NoSuchTransactionException.class);
     }
 
     @Test

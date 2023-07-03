@@ -72,7 +72,8 @@ public class CheckpointInfoFactory {
                     // we need to use kernel version from transaction command since checkpoints were broken in old
                     // version and used incorrect kernel version
                     checkpointFilePostReadPosition,
-                    transactionInfo.kernelVersion(),
+                    transactionInfo.kernelVersion,
+                    transactionInfo.kernelVersion().version(),
                     transactionInfo.transactionId(),
                     checkpoint42.getReason());
         } else if (entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50) {
@@ -83,6 +84,7 @@ public class CheckpointInfoFactory {
                     channelPositionAfterCheckpoint,
                     checkpointFilePostReadPosition,
                     checkpoint50.kernelVersion(),
+                    checkpoint50.kernelVersion().version(),
                     checkpoint50.getTransactionId(),
                     checkpoint50.getReason());
         } else {

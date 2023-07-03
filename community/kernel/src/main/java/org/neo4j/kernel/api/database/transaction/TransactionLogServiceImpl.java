@@ -113,12 +113,10 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         if (logFile.getMatchedFiles().length == 1 && !logFile.hasAnyEntries(currentLogVersion)) {
             batchPosition = logFile.extractHeader(currentLogVersion).getStartPosition();
         } else {
-            try (var commandBatchCursor = transactionStore.getCommandBatches(txId)) {
-                // we select transaction and read that from the start since it can be the last one and we need the
-                // position
-                // right after that, and we can't lookup batches from txId + 1 since that does not exist.
-                commandBatchCursor.get();
-                commandBatchCursor.next();
+            // We have to look for txId + 1 (to get the end position of txId) because txId will not exist if no further
+            // transactions were applied after the store files are downloaded in a
+            // full store copy.
+            try (var commandBatchCursor = transactionStore.getCommandBatches(txId + 1)) {
                 batchPosition = commandBatchCursor.position();
             } catch (NoSuchTransactionException e) {
                 throw new NoSuchTransactionException(

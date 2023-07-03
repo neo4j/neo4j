@@ -111,6 +111,7 @@ class RecoveryStartInformationProviderTest {
                                 afterCheckpointPosition,
                                 readerPostPosition,
                                 LatestVersions.LATEST_KERNEL_VERSION,
+                                LatestVersions.LATEST_KERNEL_VERSION.version(),
                                 transactionId,
                                 "test"),
                         true,

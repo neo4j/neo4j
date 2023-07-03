@@ -278,6 +278,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @FunctionalInterface
     public interface ForceOperation {
+        ForceOperation NO_OP = (flushEvent, cursorContext) -> {};
+
         void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
     }
 }

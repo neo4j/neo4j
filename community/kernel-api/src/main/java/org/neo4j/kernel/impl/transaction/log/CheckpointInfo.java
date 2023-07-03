@@ -24,6 +24,10 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
+/**
+ * When want to tell if a checkpoint file is from an unsupported kernel version we have to create a CheckpointInfo with the raw kernel version code in order to
+ * do the lookup (KernelVersion.getForVersion(byte version)) later.
+ */
 public record CheckpointInfo(
         LogPosition transactionLogPosition,
         StoreId storeId,
@@ -31,6 +35,7 @@ public record CheckpointInfo(
         LogPosition channelPositionAfterCheckpoint,
         LogPosition checkpointFilePostReadPosition,
         KernelVersion kernelVersion,
+        byte kernelVersionByte,
         TransactionId transactionId,
         String reason)
         implements KernelVersionProvider {}

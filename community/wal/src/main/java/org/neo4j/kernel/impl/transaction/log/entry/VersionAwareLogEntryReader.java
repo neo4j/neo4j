@@ -92,21 +92,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             parserSet = LogEntrySerializationSets.serializationSet(
                     KernelVersion.getForVersion(versionCode), binarySupportedKernelVersions);
         } catch (IllegalArgumentException e) {
-            String msg;
-            if (binarySupportedKernelVersions.latestSupportedIsLessThan(versionCode)) {
-                msg = String.format(
-                        "Log file contains entries with prefix %d, and the highest supported Kernel Version is %s. This "
-                                + "indicates that the log files originates from an newer version of neo4j, which we don't support "
-                                + "downgrading from.",
-                        versionCode, binarySupportedKernelVersions);
-            } else {
-                msg = String.format(
-                        "Log file contains entries with prefix %d, and the lowest supported Kernel Version is %s. This "
-                                + "indicates that the log files originates from an older version of neo4j, which we don't support "
-                                + "migrations from.",
-                        versionCode, KernelVersion.EARLIEST);
-            }
-            throw new UnsupportedLogVersionException(msg);
+            throw UnsupportedLogVersionException.unsupported(binarySupportedKernelVersions, versionCode);
         }
         // Since checksum is calculated over the whole entry we need to rewind and begin
         // a new checksum segment if we change version parser.
@@ -131,7 +117,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             LogPosition position = positionMarker.newPosition();
             var message = e.getMessage() + ". At position " + position + " and entry version " + versionCode;
             if (e instanceof UnsupportedLogVersionException) {
-                throw new UnsupportedLogVersionException(message, e);
+                throw new UnsupportedLogVersionException(versionCode, message, e);
             }
             throw new IOException(message, e);
         }

@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -117,8 +118,11 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
 
         shutdownDbms();
-        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
-        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
+        var config = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.latest_kernel_version, KernelVersion.GLORIOUS_FUTURE.version())
+                .build();
+        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem, config);
+        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem, config);
         assertFalse(logsContainCheckpoint(dbLayout, fileSystem));
 
         startDbms(this::configureGloriousFutureAsLatest, true);
@@ -165,8 +169,11 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
         shutdownDbms();
 
-        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
-        assertThat(getLatestCheckpoint(dbLayout, fileSystem).kernelVersion())
+        var config = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.latest_kernel_version, KernelVersion.GLORIOUS_FUTURE.version())
+                .build();
+        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem, config);
+        assertThat(getLatestCheckpoint(dbLayout, fileSystem, config).kernelVersion())
                 .isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
 
         startDbms(this::configureGloriousFutureAsLatest, true);

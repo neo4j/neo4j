@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.KernelVersion;
 
 /**
  * Represents a "snapshot" of a Neo4j store.
@@ -50,6 +51,7 @@ public record StoreSnapshot(
         Stream<StoreResource> unrecoverableFiles,
         Path[] recoverableFiles,
         TransactionId lastAppliedTransactionId,
+        KernelVersion lastAppliedTransactionKernelVersion,
         StoreId storeId,
         Resource checkPointMutex)
         implements AutoCloseable {

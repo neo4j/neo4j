@@ -35,9 +35,9 @@ public final class RecoveryHelpers {
     private RecoveryHelpers() { // non-constructable
     }
 
-    public static void removeLastCheckpointRecordFromLastLogFile(DatabaseLayout dbLayout, FileSystemAbstraction fs)
-            throws IOException {
-        LogFiles logFiles = buildLogFiles(dbLayout, fs, null);
+    public static void removeLastCheckpointRecordFromLastLogFile(
+            DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config) throws IOException {
+        LogFiles logFiles = buildLogFiles(dbLayout, fs, config);
         var checkpointFile = logFiles.getCheckpointFile();
         Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
         latestCheckpoint.ifPresent(checkpointInfo -> {
@@ -48,6 +48,11 @@ public final class RecoveryHelpers {
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    public static void removeLastCheckpointRecordFromLastLogFile(DatabaseLayout dbLayout, FileSystemAbstraction fs)
+            throws IOException {
+        removeLastCheckpointRecordFromLastLogFile(dbLayout, fs, null);
     }
 
     public static boolean logsContainCheckpoint(DatabaseLayout dbLayout, FileSystemAbstraction fs) throws IOException {
