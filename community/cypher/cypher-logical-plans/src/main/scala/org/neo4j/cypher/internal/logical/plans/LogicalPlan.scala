@@ -1858,14 +1858,22 @@ case class StatefulShortestPath(
   targetNode: LogicalVariable,
   nfa: NFA,
   nonInlinedPreFilters: Option[Expression],
-  nodeVariableGroupings: Set[VariableGrouping],
-  relationshipVariableGroupings: Set[VariableGrouping],
+  override val nodeVariableGroupings: Set[VariableGrouping],
+  override val relationshipVariableGroupings: Set[VariableGrouping],
   singletonVariables: Set[LogicalVariable],
   selector: StatefulShortestPath.Selector,
   solvedExpressionAsString: String
 )(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) {
+    extends LogicalUnaryPlan(idGen) with PlanWithVariableGroupings {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override def withVariableGroupings(
+    nodeVariableGroupings: Set[VariableGrouping],
+    relationshipVariableGroupings: Set[VariableGrouping]
+  )(idGen: IdGen): PlanWithVariableGroupings = copy(
+    nodeVariableGroupings = nodeVariableGroupings,
+    relationshipVariableGroupings = relationshipVariableGroupings
+  )(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++
     singletonVariables ++
@@ -3310,6 +3318,30 @@ case class Top1WithTies(override val source: LogicalPlan, sortItems: Seq[ColumnO
 }
 
 /**
+ * Common class for all plans that need to project group variables.
+ */
+sealed trait PlanWithVariableGroupings extends LogicalPlan {
+
+  /**
+   * @return node variables to aggregate
+   */
+  def nodeVariableGroupings: Set[VariableGrouping]
+
+  /**
+   * @return relationship variables to aggregate
+   */
+  def relationshipVariableGroupings: Set[VariableGrouping]
+
+  /**
+   * @return a copy with updated variable groupings
+   */
+  def withVariableGroupings(
+    nodeVariableGroupings: Set[VariableGrouping],
+    relationshipVariableGroupings: Set[VariableGrouping]
+  )(idGen: IdGen): PlanWithVariableGroupings
+}
+
+/**
  * Used to solve queries like: `(start) [(innerStart)-->(innerEnd)]{i, j} (end)`
  *
  * @param left                              source plan
@@ -3338,16 +3370,24 @@ case class Trail(
   end: LogicalVariable,
   innerStart: LogicalVariable,
   innerEnd: LogicalVariable,
-  nodeVariableGroupings: Set[VariableGrouping],
-  relationshipVariableGroupings: Set[VariableGrouping],
+  override val nodeVariableGroupings: Set[VariableGrouping],
+  override val relationshipVariableGroupings: Set[VariableGrouping],
   innerRelationships: Set[LogicalVariable],
   previouslyBoundRelationships: Set[LogicalVariable],
   previouslyBoundRelationshipGroups: Set[LogicalVariable],
   reverseGroupVariableProjections: Boolean
 )(implicit idGen: IdGen)
-    extends LogicalBinaryPlan(idGen) with ApplyPlan {
+    extends LogicalBinaryPlan(idGen) with ApplyPlan with PlanWithVariableGroupings {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
+
+  override def withVariableGroupings(
+    nodeVariableGroupings: Set[VariableGrouping],
+    relationshipVariableGroupings: Set[VariableGrouping]
+  )(idGen: IdGen): PlanWithVariableGroupings = copy(
+    nodeVariableGroupings = nodeVariableGroupings,
+    relationshipVariableGroupings = relationshipVariableGroupings
+  )(idGen)
 
   override val availableSymbols: Set[LogicalVariable] =
     left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(

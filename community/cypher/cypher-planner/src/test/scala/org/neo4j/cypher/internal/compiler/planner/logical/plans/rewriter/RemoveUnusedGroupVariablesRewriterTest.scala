@@ -28,7 +28,10 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NFA
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
@@ -54,6 +57,30 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
     rewrites(origin, target)
   }
 
+  // all node group variables unused
+  test("MATCH ANY SHORTEST (a) ((n)-[r]->(m))+ (b) RETURN r") {
+    def plan(params: TrailParameters) =
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .statefulShortestPath(
+          sourceNode = "a",
+          targetNode = "b",
+          solvedExpressionString = "",
+          nonInlinablePreFilters = None,
+          groupNodes = params.groupNodes,
+          groupRelationships = params.groupRelationships,
+          singletonVariables = Set("b"),
+          selector = StatefulShortestPath.Selector.Shortest(1),
+          `(a) ((n)-[r]-(m))+ (b)`.nfa
+        )
+        .allNodeScan("a")
+        .build()
+
+    val origin = plan(`(a) ((n)-[r]-(m))+ (b)`.full)
+    val target = plan(`(a) ((n)-[r]-(m))+ (b)`.nmless)
+    rewrites(origin, target)
+  }
+
   // relationship group variable unused
   test("MATCH (a) ((n)-[r]->(m))+ (b) RETURN n, m") {
     def plan(params: TrailParameters) =
@@ -71,6 +98,30 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
     rewrites(origin, target)
   }
 
+  // relationship group variable unused
+  test("MATCH ANY SHORTEST (a) ((n)-[r]->(m))+ (b) RETURN n, m") {
+    def plan(params: TrailParameters) =
+      new LogicalPlanBuilder()
+        .produceResults("n", "m")
+        .statefulShortestPath(
+          sourceNode = "a",
+          targetNode = "b",
+          solvedExpressionString = "",
+          nonInlinablePreFilters = None,
+          groupNodes = params.groupNodes,
+          groupRelationships = params.groupRelationships,
+          singletonVariables = Set("b"),
+          selector = StatefulShortestPath.Selector.Shortest(1),
+          `(a) ((n)-[r]-(m))+ (b)`.nfa
+        )
+        .allNodeScan("a")
+        .build()
+
+    val origin = plan(`(a) ((n)-[r]-(m))+ (b)`.full)
+    val target = plan(`(a) ((n)-[r]-(m))+ (b)`.rless)
+    rewrites(origin, target)
+  }
+
   // all group variables used
   test("MATCH (a) ((n)-[r]->(m))+ (b) RETURN n, r, m") {
     def plan(params: TrailParameters) =
@@ -80,6 +131,29 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .|.filterExpression(isRepeatTrailUnique("r_i"))
         .|.expandAll("(n_i)-[r_i]->(m_i)")
         .|.argument("n_i")
+        .allNodeScan("a")
+        .build()
+
+    val origin = plan(`(a) ((n)-[r]-(m))+ (b)`.full)
+    preserves(origin)
+  }
+
+  // all group variables used
+  test("MATCH ANY SHORTEST (a) ((n)-[r]->(m))+ (b) RETURN n, r, m") {
+    def plan(params: TrailParameters) =
+      new LogicalPlanBuilder()
+        .produceResults("n", "r", "m")
+        .statefulShortestPath(
+          sourceNode = "a",
+          targetNode = "b",
+          solvedExpressionString = "",
+          nonInlinablePreFilters = None,
+          groupNodes = params.groupNodes,
+          groupRelationships = params.groupRelationships,
+          singletonVariables = Set("b"),
+          selector = StatefulShortestPath.Selector.Shortest(1),
+          `(a) ((n)-[r]-(m))+ (b)`.nfa
+        )
         .allNodeScan("a")
         .build()
 
@@ -256,6 +330,33 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
         .|.filterExpression(isRepeatTrailUnique("r_i"))
         .|.expandAll("(n_i)-[r_i]->(m_i)")
         .|.argument("n_i")
+        .allNodeScan("a")
+        .build()
+    }
+
+    val origin = plan(`(a) ((n)-[r]-(m))+ (b)`.full, Set("a", "b", "r", "n", "m"))
+    val target = plan(`(a) ((n)-[r]-(m))+ (b)`.mless, Set("r", "n", "a", "b"))
+    rewrites(origin, target)
+  }
+
+  // group variables used by named path
+  test("MATCH p = ANY SHORTEST (a) ((n)-[r]->(m))+ (b) RETURN p") {
+    def plan(params: TrailParameters, projectionDiscard: Set[String]) = {
+      val pathExpression = qppPath(varFor("a"), Seq(varFor("n"), varFor("r")), varFor("b"))
+      new LogicalPlanBuilder()
+        .produceResults("p")
+        .projection(project = Map("p" -> pathExpression), discard = projectionDiscard)
+        .statefulShortestPath(
+          sourceNode = "a",
+          targetNode = "b",
+          solvedExpressionString = "",
+          nonInlinablePreFilters = None,
+          groupNodes = params.groupNodes,
+          groupRelationships = params.groupRelationships,
+          singletonVariables = Set("b"),
+          selector = StatefulShortestPath.Selector.Shortest(1),
+          `(a) ((n)-[r]-(m))+ (b)`.nfa
+        )
         .allNodeScan("a")
         .build()
     }
@@ -448,6 +549,14 @@ object RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite {
     val rmless: TrailParameters = full.copy(groupNodes = Set(("n_i", "n")), groupRelationships = Set.empty)
 
     val empty: TrailParameters = full.copy(groupNodes = Set.empty, groupRelationships = Set.empty)
+
+    val nfa: NFA = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (n_i)")
+      .addTransition(1, 2, "(n_i)-[r_i]-(m_i)")
+      .addTransition(2, 1, "(m_i) (n_i)")
+      .addTransition(2, 3, "(m_i) (b)")
+      .addFinalState(3)
+      .build()
   }
 
   def preserves(origin: LogicalPlan): Assertion =

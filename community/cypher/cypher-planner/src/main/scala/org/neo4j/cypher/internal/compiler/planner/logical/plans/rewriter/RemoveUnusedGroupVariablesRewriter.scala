@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.logical.plans.PlanWithVariableGroupings
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
-import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -48,9 +48,9 @@ import org.neo4j.cypher.internal.util.topDown
  * .|.argument(n)
  * .allNodeScan(a)
  *
- * The rewriter finds all usages of group variables. If group variables are not used, then the Trail will be rewritten
- * so that it does not generate any unused group variables. Given that group variables are lists, this optimisation can
- * save time and space.
+ * The rewriter finds all usages of group variables. If group variables are not used, then the Trail/StatefulShortestPath
+ * will be rewritten so that it does not generate any unused group variables. 
+ * Given that group variables are lists, this optimisation can save time and space.
  *
  * Should run before [[TrailToVarExpandRewriter]] as these rewrites cannot happen if group variables are not removed.
  */
@@ -64,16 +64,19 @@ case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
   }
 
   def instance(unusedGroupVariables: Set[LogicalVariable]): Rewriter = topDown(Rewriter.lift {
-    case t: Trail =>
-      val usedNodeVariables = t.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
-      val usedRelVariables = t.relationshipVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
-      t.copy(nodeVariableGroupings = usedNodeVariables, relationshipVariableGroupings = usedRelVariables)(SameId(t.id))
+    case p: PlanWithVariableGroupings =>
+      val usedNodeVariables = p.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
+      val usedRelVariables = p.relationshipVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
+      p.withVariableGroupings(
+        nodeVariableGroupings = usedNodeVariables,
+        relationshipVariableGroupings = usedRelVariables
+      )(SameId(p.id))
   })
 
   def findGroupVariableDeclarations(plan: AnyRef): Set[LogicalVariable] = {
     plan.folder.treeFold(Set.empty[LogicalVariable]) {
-      case Trail(_, _, _, _, _, _, _, nodeGroupVariables, relationshipGroupVariables, _, _, _, _) =>
-        val groupVars = nodeGroupVariables.map(_.groupName) ++ relationshipGroupVariables.map(_.groupName)
+      case p: PlanWithVariableGroupings =>
+        val groupVars = p.nodeVariableGroupings.map(_.groupName) ++ p.relationshipVariableGroupings.map(_.groupName)
         acc => TraverseChildren(acc ++ groupVars)
     }
   }
@@ -85,7 +88,7 @@ case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
         // to ignore discarded variables as they should not count as legitimate variable references. In a simpler world
         // we would initialise the counter for the variable to 0. Instead we set the count for the variable to -1 when
         // visiting the Projection, because the folder will then also visit Projection.discardedSymbols and increment
-        // the counter by 1, therefor setting to 0.
+        // the counter by 1, therefore setting to 0.
         case plan: ProjectingPlan => acc =>
             TraverseChildren(
               plan.discardSymbols.foldLeft(acc) {
