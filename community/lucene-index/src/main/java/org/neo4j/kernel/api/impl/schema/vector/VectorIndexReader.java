@@ -29,7 +29,9 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils.AutoCloseables;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneScoredEntityIndexProgressor;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
@@ -75,6 +78,17 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     }
 
     @Override
+    public void query(
+            EntityValueClient client,
+            QueryContext context,
+            AccessMode accessMode,
+            IndexQueryConstraints constraints,
+            PropertyIndexQuery... predicates)
+            throws IndexNotApplicableKernelException {
+        super.query(client, context, accessMode, adjustedConstraints(constraints, predicates), predicates);
+    }
+
+    @Override
     protected PropertyIndexQuery validateQuery(PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
         final var predicate = super.validateQuery(predicates);
@@ -89,14 +103,28 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
         return predicate;
     }
 
+    private IndexQueryConstraints adjustedConstraints(
+            IndexQueryConstraints constraints, PropertyIndexQuery... predicates)
+            throws IndexNotApplicableKernelException {
+        return validateQuery(predicates) instanceof final NearestNeighborsPredicate nearestNeighbour
+                ? constraints.limit(Math.min(
+                        nearestNeighbour.numberOfNeighbors(),
+                        constraints.limit().orElse(Integer.MAX_VALUE)))
+                : constraints;
+    }
+
     @Override
-    protected Query toLuceneQuery(PropertyIndexQuery predicate) {
+    protected Query toLuceneQuery(PropertyIndexQuery predicate, IndexQueryConstraints constraints) {
         return switch (predicate.type()) {
             case ALL_ENTRIES -> VectorQueryFactory.allValues();
             case NEAREST_NEIGHBORS -> {
                 final var nearestNeighborsPredicate = (NearestNeighborsPredicate) predicate;
+                final var k = Math.min(
+                        nearestNeighborsPredicate.numberOfNeighbors(),
+                        constraints.limit().orElse(Integer.MAX_VALUE));
+                final var effectiveK = k + constraints.skip().orElse(0);
                 yield VectorQueryFactory.approximateNearestNeighbors(
-                        nearestNeighborsPredicate.query(), nearestNeighborsPredicate.numberOfNeighbors());
+                        nearestNeighborsPredicate.query(), Math.toIntExact(effectiveK));
             }
             default -> throw invalidQuery(IllegalArgumentException::new, predicate);
         };

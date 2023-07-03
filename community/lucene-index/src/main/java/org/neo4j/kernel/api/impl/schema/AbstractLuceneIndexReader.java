@@ -71,7 +71,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
             PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
         final var predicate = validateQuery(predicates);
-        final var query = toLuceneQuery(predicate);
+        final var query = toLuceneQuery(predicate, constraints);
         context.monitor().queried(descriptor);
         usageTracker.queried();
 
@@ -94,7 +94,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         return predicate;
     }
 
-    protected abstract Query toLuceneQuery(PropertyIndexQuery predicate);
+    protected abstract Query toLuceneQuery(PropertyIndexQuery predicate, IndexQueryConstraints constraints);
 
     protected <E extends Exception> E invalidCompositeQuery(
             Function<String, E> constructor, PropertyIndexQuery... predicates) {

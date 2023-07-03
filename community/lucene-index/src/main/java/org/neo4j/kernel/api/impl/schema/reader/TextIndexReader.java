@@ -28,6 +28,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringContainsPredicate;
@@ -66,7 +67,7 @@ public class TextIndexReader extends AbstractTextIndexReader {
     }
 
     @Override
-    protected Query toLuceneQuery(PropertyIndexQuery predicate) {
+    protected Query toLuceneQuery(PropertyIndexQuery predicate, IndexQueryConstraints constraints) {
         return switch (predicate.type()) {
             case ALL_ENTRIES -> TextDocumentStructure.newScanQuery();
             case EXACT -> TextDocumentStructure.newSeekQuery(((ExactPredicate) predicate).value());
