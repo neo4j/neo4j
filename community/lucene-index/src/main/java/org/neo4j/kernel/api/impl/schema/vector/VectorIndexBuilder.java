@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.impl.index.WritableDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
 class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> {
@@ -87,7 +86,7 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
      *
      * @return lucene schema index
      */
-    DatabaseIndex<ValueIndexReader> build() {
+    DatabaseIndex<VectorIndexReader> build() {
         PartitionedIndexStorage storage = storageBuilder.build();
         var index = new VectorIndex(
                 storage, new WritableIndexPartitionFactory(writerConfigFactory), descriptor, config, samplingConfig);

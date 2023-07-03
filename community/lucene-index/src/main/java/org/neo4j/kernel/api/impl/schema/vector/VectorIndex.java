@@ -28,12 +28,10 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
-import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
-import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
-class VectorIndex extends AbstractLuceneIndex<ValueIndexReader> {
+class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
     private final IndexSamplingConfig samplingConfig;
     private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
@@ -59,20 +57,15 @@ class VectorIndex extends AbstractLuceneIndex<ValueIndexReader> {
     }
 
     @Override
-    protected ValueIndexReader createSimpleReader(
+    protected VectorIndexReader createSimpleReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
-        final var searcher = getFirstPartition(partitions);
-        return new VectorIndexReader(
-                descriptor, searcher.acquireSearcher(), samplingConfig, taskCoordinator, usageTracker);
+        return createPartitionedReader(partitions, usageTracker);
     }
 
     @Override
-    protected PartitionedValueIndexReader createPartitionedReader(
+    protected VectorIndexReader createPartitionedReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
-        final var readers = acquireSearchers(partitions).stream()
-                .map(partitionSearcher -> (ValueIndexReader) new VectorIndexReader(
-                        descriptor, partitionSearcher, samplingConfig, taskCoordinator, usageTracker))
-                .toList();
-        return new PartitionedValueIndexReader(descriptor, readers, usageTracker);
+        final var searchers = acquireSearchers(partitions);
+        return new VectorIndexReader(descriptor, searchers, samplingConfig, taskCoordinator, usageTracker);
     }
 }

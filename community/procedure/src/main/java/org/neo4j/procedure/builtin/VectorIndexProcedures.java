@@ -99,7 +99,6 @@ public class VectorIndexProcedures {
         indexCreator.create();
     }
 
-    // TODO VECTOR: figure out how to get sorting working
     @Internal
     @Description(
             """
@@ -132,7 +131,7 @@ public class VectorIndexProcedures {
 
         final var cursor = ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker());
         final var session = ktx.dataRead().indexReadSession(index);
-        final var constraints = IndexQueryConstraints.unconstrained(); // ordered(IndexOrder.DESCENDING);
+        final var constraints = IndexQueryConstraints.unconstrained();
 
         final var k = Math.toIntExact(numberOfNearestNeighbours);
         ktx.dataRead()
@@ -254,7 +253,7 @@ public class VectorIndexProcedures {
         @Override
         public int characteristics() {
             return Spliterator.ORDERED
-                    // | Spliterator.SORTED  // TODO VECTOR: perhaps add back if we fix the provided order
+                    | Spliterator.SORTED
                     | Spliterator.DISTINCT
                     | Spliterator.NONNULL
                     | Spliterator.IMMUTABLE;

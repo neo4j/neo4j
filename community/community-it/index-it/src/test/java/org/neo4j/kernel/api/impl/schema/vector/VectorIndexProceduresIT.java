@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -59,6 +60,7 @@ class VectorIndexProceduresIT {
     @ExtendWith(RandomExtension.class)
     abstract static class VectorIndexProceduresITBase {
         private static final int NUMBER_OF_NODES = 1000;
+        private static final int MAX_PARTITION_SIZE = 400;
         private static final int VECTOR_DIMENSIONALITY = 1000;
         private static final Label LABEL = Label.label("Vector");
         private static final String PROPERTY_KEY = "vector";
@@ -78,7 +80,8 @@ class VectorIndexProceduresIT {
 
         @ExtensionCallback
         void configure(TestDatabaseManagementServiceBuilder builder) {
-            builder.setConfig(SUGGESTED_SETTINGS);
+            builder.setConfig(SUGGESTED_SETTINGS)
+                    .setConfig(GraphDatabaseInternalSettings.lucene_max_partition_size, MAX_PARTITION_SIZE);
         }
 
         @BeforeEach
@@ -102,7 +105,7 @@ class VectorIndexProceduresIT {
         }
 
         @Test
-        void testQuery() {
+        void testRecall() {
             createIndex();
 
             final var k = 10;
@@ -111,7 +114,11 @@ class VectorIndexProceduresIT {
             final var exactNearest = linearSearch(LABEL, PROPERTY_KEY, query, k);
             final var recall = recall(approximateNearest, exactNearest);
 
-            assertThat(approximateNearest).as("approximate nearest neighbors").hasSize(k);
+            assertThat(approximateNearest)
+                    .as("approximate nearest neighbors")
+                    .hasSize(k)
+                    .isSorted();
+
             assertThat(recall).as("recall").isGreaterThan(0.5);
             // TODO VECTOR: what is appropriate recall here?
             //              should we have a larger NUMBER_OF_NODES

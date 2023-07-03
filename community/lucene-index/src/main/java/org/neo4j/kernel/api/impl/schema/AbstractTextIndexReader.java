@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import java.io.IOException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 public abstract class AbstractTextIndexReader extends AbstractLuceneIndexReader {
+    protected final SearcherReference searcherReference;
 
     protected AbstractTextIndexReader(
             IndexDescriptor descriptor,
@@ -36,12 +40,23 @@ public abstract class AbstractTextIndexReader extends AbstractLuceneIndexReader 
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator,
             IndexUsageTracker usageTracker) {
-        super(descriptor, searcherReference, samplingConfig, taskCoordinator, usageTracker, false);
+        super(descriptor, samplingConfig, taskCoordinator, usageTracker, false);
+        this.searcherReference = searcherReference;
     }
 
     @Override
-    protected IndexProgressor indexProgressor(Query query, EntityValueClient client) {
+    protected IndexProgressor indexProgressor(
+            Query query, IndexQueryConstraints constraints, EntityValueClient client) {
         return search(getIndexSearcher(), query).getIndexProgressor(entityIdFieldKey(), client);
+    }
+
+    @Override
+    public void close() {
+        try (searcherReference) {
+            super.close();
+        } catch (IOException e) {
+            throw new IndexReaderCloseException(e);
+        }
     }
 
     protected IndexSearcher getIndexSearcher() {

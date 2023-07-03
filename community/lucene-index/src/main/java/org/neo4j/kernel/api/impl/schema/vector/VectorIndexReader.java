@@ -22,35 +22,43 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 
 import java.io.IOException;
-import org.apache.lucene.search.IndexSearcher;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.search.Query;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.IOUtils.AutoCloseables;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.impl.index.collector.ScoredEntityIterator;
+import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexReader;
+import org.neo4j.kernel.api.impl.schema.LuceneScoredEntityIndexProgressor;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
+import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.values.storable.Value;
 
 class VectorIndexReader extends AbstractLuceneIndexReader {
+    private final List<SearcherReference> searchers;
     private final int vectorDimensionality;
 
     VectorIndexReader(
             IndexDescriptor descriptor,
-            SearcherReference searcherReference,
+            List<SearcherReference> searchers,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator,
             IndexUsageTracker usageTracker) {
         // TODO VECTOR: should this actually keep scores? Do we care?
-        super(descriptor, searcherReference, samplingConfig, taskCoordinator, usageTracker, true);
+        super(descriptor, samplingConfig, taskCoordinator, usageTracker, true);
+        this.searchers = searchers;
         this.vectorDimensionality = vectorDimensionsFrom(descriptor.getIndexConfig());
     }
 
@@ -95,8 +103,10 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     }
 
     @Override
-    protected IndexProgressor indexProgressor(Query query, EntityValueClient client) {
-        return search(getIndexSearcher(), query).getIndexProgressor(entityIdFieldKey(), client);
+    protected IndexProgressor indexProgressor(
+            Query query, IndexQueryConstraints constraints, IndexProgressor.EntityValueClient client) {
+        final var iterator = searchLucene(query, constraints);
+        return new LuceneScoredEntityIndexProgressor(iterator, client, constraints);
     }
 
     @Override
@@ -111,16 +121,36 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
         return false;
     }
 
-    private IndexSearcher getIndexSearcher() {
-        return searcherReference.getIndexSearcher();
+    @Override
+    public void close() {
+        new AutoCloseables<>(IndexReaderCloseException::new, searchers).close();
+    }
+
+    private ValuesIterator searchLucene(Query query, IndexQueryConstraints constraints) {
+        // TODO VECTOR: FulltextIndexReader handles transaction state in a similar way
+        //              with QueryContext, CursorContext, MemoryTracker
+        try {
+            // TODO VECTOR: pre-rewrite query? Not sure what rewriting entails
+            final var results = new ArrayList<ValuesIterator>(searchers.size());
+            for (final var searcher : searchers) {
+                final var collector = new VectorResultCollector(constraints);
+                searcher.getIndexSearcher().search(query, collector);
+                results.add(collector.iterator());
+            }
+            return ScoredEntityIterator.mergeIterators(results);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     BoundedIterable<Long> newAllEntriesValueReader(long fromIdInclusive, long toIdExclusive) throws IOException {
-        return newAllEntriesValueReader(
-                VectorDocumentStructure.ENTITY_ID_KEY,
-                getIndexSearcher(),
-                VectorQueryFactory.allValues(),
-                fromIdInclusive,
-                toIdExclusive);
+        final var field = VectorDocumentStructure.ENTITY_ID_KEY;
+        final var query = VectorQueryFactory.allValues();
+        final var iterables = new ArrayList<BoundedIterable<Long>>(searchers.size());
+        for (final var searcher : searchers) {
+            iterables.add(newAllEntriesValueReaderForPartition(
+                    field, searcher.getIndexSearcher(), query, fromIdInclusive, toIdExclusive));
+        }
+        return BoundedIterable.concat(iterables);
     }
 }

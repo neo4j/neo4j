@@ -126,7 +126,7 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
     }
 
     BoundedIterable<Long> newAllEntriesValueReader(long fromIdInclusive, long toIdExclusive) throws IOException {
-        return newAllEntriesValueReader(
+        return newAllEntriesValueReaderForPartition(
                 TrigramDocumentStructure.ENTITY_ID_KEY,
                 getIndexSearcher(),
                 TrigramQueryFactory.allValues(),

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -111,7 +112,9 @@ class VectorIndexEntryUpdateTest {
     abstract static class VectorIndexEntryUpdateTestBase {
         private static final int DIMENSIONS = 3;
 
-        private static final Config CONFIG = Config.defaults();
+        private static final Config CONFIG = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.lucene_max_partition_size, 5)
+                .build();
         private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig(CONFIG);
 
         private final LifeSupport life = new LifeSupport();

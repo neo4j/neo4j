@@ -30,17 +30,16 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 
-class VectorIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, DatabaseIndex<ValueIndexReader>> {
+class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader, DatabaseIndex<VectorIndexReader>> {
     private final VectorSimilarityFunction similarityFunction;
 
     protected VectorIndexAccessor(
-            DatabaseIndex<ValueIndexReader> luceneIndex,
+            DatabaseIndex<VectorIndexReader> luceneIndex,
             IndexDescriptor descriptor,
             IndexUpdateIgnoreStrategy ignoreStrategy,
             VectorSimilarityFunction similarityFunction) {
@@ -52,7 +51,8 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, 
     public BoundedIterable<Long> newAllEntriesValueReader(
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
         try {
-            return ((VectorIndexReader) luceneIndex.getIndexReader(NO_USAGE_TRACKER))
+            return luceneIndex
+                    .getIndexReader(NO_USAGE_TRACKER)
                     .newAllEntriesValueReader(fromIdInclusive, toIdExclusive);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

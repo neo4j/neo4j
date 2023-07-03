@@ -25,16 +25,15 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.FloatingPointArray;
 
-class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueIndexReader>> {
+class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorIndexReader>> {
     private final VectorSimilarityFunction similarityFunction;
 
     VectorIndexPopulator(
-            DatabaseIndex<ValueIndexReader> luceneIndex,
+            DatabaseIndex<VectorIndexReader> luceneIndex,
             IndexUpdateIgnoreStrategy ignoreStrategy,
             VectorSimilarityFunction similarityFunction) {
         super(luceneIndex, ignoreStrategy);

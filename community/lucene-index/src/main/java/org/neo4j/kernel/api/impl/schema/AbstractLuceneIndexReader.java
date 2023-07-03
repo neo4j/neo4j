@@ -34,10 +34,8 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector.InRangeEntityConsumer;
-import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -46,7 +44,6 @@ import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 
 public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     protected final IndexDescriptor descriptor;
-    protected final SearcherReference searcherReference;
     protected final IndexSamplingConfig samplingConfig;
     protected final TaskCoordinator taskCoordinator;
     protected final IndexUsageTracker usageTracker;
@@ -54,13 +51,11 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
 
     public AbstractLuceneIndexReader(
             IndexDescriptor descriptor,
-            SearcherReference searcherReference,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator,
             IndexUsageTracker usageTracker,
             boolean keepScores) {
         this.descriptor = descriptor;
-        this.searcherReference = searcherReference;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
         this.usageTracker = usageTracker;
@@ -80,7 +75,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         context.monitor().queried(descriptor);
         usageTracker.queried();
 
-        final var progressor = indexProgressor(query, client);
+        final var progressor = indexProgressor(query, constraints, client);
         final var needStoreFilter = needStoreFilter(predicate);
         client.initialize(descriptor, progressor, accessMode, false, needStoreFilter, constraints, predicate);
     }
@@ -115,7 +110,8 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         return constructor.apply("Index query not supported for %s index. Query: %s".formatted(indexType, predicate));
     }
 
-    protected abstract IndexProgressor indexProgressor(Query query, IndexProgressor.EntityValueClient client);
+    protected abstract IndexProgressor indexProgressor(
+            Query query, IndexQueryConstraints constraints, IndexProgressor.EntityValueClient client);
 
     protected abstract String entityIdFieldKey();
 
@@ -127,15 +123,9 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("EmptyTryBlock")
     @Override
     public void close() {
-        try (usageTracker;
-                searcherReference) {
-            // low-cost closing without overhead of IOUtils::closeAll
-        } catch (IOException e) {
-            throw new IndexReaderCloseException(e);
-        }
+        usageTracker.close();
     }
 
     protected DocValuesCollector search(IndexSearcher searcher, Query query) {
@@ -148,16 +138,16 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         }
     }
 
-    protected BoundedIterable<Long> newAllEntriesValueReader(
+    protected BoundedIterable<Long> newAllEntriesValueReaderForPartition(
             String field, IndexSearcher searcher, Query query, long fromIdInclusive, long toIdExclusive) {
         final var collector = search(searcher, query);
         final var entityConsumer = new InRangeEntityConsumer(fromIdInclusive, toIdExclusive);
         final var indexProgressor = collector.getIndexProgressor(field, entityConsumer);
-        return new AllEntriesValueReader(indexProgressor, entityConsumer);
+        return new AllEntriesValueReaderForPartition(indexProgressor, entityConsumer);
     }
 
-    private record AllEntriesValueReader(IndexProgressor indexProgressor, InRangeEntityConsumer entityConsumer)
-            implements BoundedIterable<Long> {
+    private record AllEntriesValueReaderForPartition(
+            IndexProgressor indexProgressor, InRangeEntityConsumer entityConsumer) implements BoundedIterable<Long> {
 
         @Override
         public Iterator<Long> iterator() {
