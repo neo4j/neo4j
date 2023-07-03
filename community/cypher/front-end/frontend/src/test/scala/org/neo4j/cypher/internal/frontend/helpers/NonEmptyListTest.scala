@@ -78,11 +78,13 @@ class NonEmptyListTest extends CypherFunSuite {
   }
 
   test("Should prepend single element to NonEmptyLists") {
-    2 +: NonEmptyList(1) should equal(NonEmptyList(2, 1))
+    1 +: NonEmptyList(2) should equal(NonEmptyList(1, 2))
+    1 +: NonEmptyList(2, 3) should equal(NonEmptyList(1, 2, 3))
   }
 
   test("should append single element to NonEmptyLists") {
     NonEmptyList(1) :+ 2 should equal(NonEmptyList(1, 2))
+    NonEmptyList(1, 2) :+ 3 should equal(NonEmptyList(1, 2, 3))
   }
 
   test("should append single element to longer NonEmptyLists") {
@@ -209,21 +211,16 @@ class NonEmptyListTest extends CypherFunSuite {
     NonEmptyList(1, 2, 3).partition { x => if (x == 1) Left(x) else Right(x) } should equal(
       Left(NonEmptyList(1) -> Some(NonEmptyList(2, 3)))
     )
-    NonEmptyList(1, 2, 3).partition { x => if (x != 1) Left(x) else Right(x) } should equal(Right(Some(NonEmptyList(
-      2,
-      3
-    )) -> NonEmptyList(1)))
+    NonEmptyList(1, 2, 3).partition { x => if (x != 1) Left(x) else Right(x) } should equal(
+      Right(Some(NonEmptyList(2, 3)) -> NonEmptyList(1))
+    )
 
-    NonEmptyList(1, 2, 3).partition { x => if (x != 0) Left(x) else Right(x) } should equal(Left(NonEmptyList(
-      1,
-      2,
-      3
-    ) -> None))
-    NonEmptyList(1, 2, 3).partition { x => if (x == 0) Left(x) else Right(x) } should equal(Right(None -> NonEmptyList(
-      1,
-      2,
-      3
-    )))
+    NonEmptyList(1, 2, 3).partition { x => if (x != 0) Left(x) else Right(x) } should equal(
+      Left(NonEmptyList(1, 2, 3) -> None)
+    )
+    NonEmptyList(1, 2, 3).partition { x => if (x == 0) Left(x) else Right(x) } should equal(
+      Right(None -> NonEmptyList(1, 2, 3))
+    )
   }
 
   test("exists should work as expected") {
@@ -240,5 +237,23 @@ class NonEmptyListTest extends CypherFunSuite {
     NonEmptyList(1, 2, 3).forall(_ == 4) should be(false)
     NonEmptyList(1, 2, 3).forall(_ < 4) should be(true)
     NonEmptyList(1, 2, 3).forall(_ >= 3) should be(false)
+  }
+
+  test("reverse should work as expected") {
+    NonEmptyList(1).reverse should equal(NonEmptyList(1))
+    NonEmptyList(1, 2).reverse should equal(NonEmptyList(2, 1))
+    NonEmptyList(1, 1).reverse should equal(NonEmptyList(1, 1))
+  }
+
+  test("tailOption should work as expected") {
+    NonEmptyList(1).tailOption should equal(None)
+    NonEmptyList(1, 2).tailOption should equal(Some(NonEmptyList(2)))
+    NonEmptyList(1, 2, 3).tailOption should equal(Some(NonEmptyList(2, 3)))
+  }
+
+  test("initOption should work as expected") {
+    NonEmptyList(1).initOption should equal(None)
+    NonEmptyList(1, 2).initOption should equal(Some(NonEmptyList(1)))
+    NonEmptyList(1, 2, 3).initOption should equal(Some(NonEmptyList(1, 2)))
   }
 }

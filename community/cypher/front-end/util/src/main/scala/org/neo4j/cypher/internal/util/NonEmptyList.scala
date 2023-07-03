@@ -87,6 +87,34 @@ object NonEmptyList {
       asReverseNonEmptyListOption.map(_.reverse)
   }
 
+  implicit class MaybeListConnector[T](tail: Option[NonEmptyList[T]]) {
+
+    /**
+     * Prepend an element to an optional tail.
+     * Allows this pattern
+     *
+     * {{{
+     * f(nel.head) +: nel.tailOption
+     * }}}
+     *
+     */
+    def +:[X >: T](elem: X): NonEmptyList[X] = {
+      tail.fold[NonEmptyList[X]](Last(elem))(elem +: _)
+    }
+
+    /**
+     * Append an element to an optional init.
+     * Allows this pattern
+     *
+     * {{{
+     * nel.tailInit :+ f(nel.last)
+     * }}}
+     *
+     */
+    def :+[X >: T](elem: X): NonEmptyList[X] =
+      tail.fold[NonEmptyList[X]](Last(elem))(_ :+ elem)
+  }
+
   @tailrec
   private def loop[X](acc: NonEmptyList[X], iterator: Iterator[X]): NonEmptyList[X] =
     if (iterator.hasNext) loop(Fby(iterator.next(), acc), iterator) else acc
@@ -110,6 +138,8 @@ sealed trait NonEmptyList[+T] {
   def last: T
 
   def tailOption: Option[NonEmptyList[T]]
+
+  def initOption: Option[NonEmptyList[T]]
 
   def hasTail: Boolean
   def isLast: Boolean
@@ -360,6 +390,10 @@ sealed trait NonEmptyList[+T] {
 final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T] {
   override def last: T = tail.last
   override def tailOption: Option[NonEmptyList[T]] = Some(tail)
+  override def initOption: Option[NonEmptyList[T]] = tail.initOption match {
+    case Some(init) => Some(Fby(head, init))
+    case None => Some(Last(head))
+  }
   override def hasTail: Boolean = true
   override def isLast: Boolean = false
   override def toString = s"${head.toString}, ${tail.toString}"
@@ -369,6 +403,7 @@ final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T]
 final case class Last[+T](head: T) extends NonEmptyList[T] {
   override def last: T = head
   override def tailOption: Option[NonEmptyList[T]] = None
+  override def initOption: Option[NonEmptyList[T]] = None
   override def hasTail: Boolean = false
   override def isLast: Boolean = true
   override def toString = s"${head.toString}"
