@@ -324,9 +324,13 @@ org.neo4j.graphdb.Transaction::rollback() void public abstract
 org.neo4j.graphdb.Transaction::schema() org.neo4j.graphdb.schema.Schema public abstract
 org.neo4j.graphdb.Transaction::terminate() void public abstract
 org.neo4j.graphdb.Transaction::traversalDescription() org.neo4j.graphdb.traversal.TraversalDescription public abstract
-org.neo4j.graphdb.TransactionFailureException public class extends java.lang.RuntimeException
+org.neo4j.graphdb.TransactionFailureException public class extends java.lang.RuntimeException implements org.neo4j.kernel.api.exceptions.Status.HasStatus
 org.neo4j.graphdb.TransactionFailureException::TransactionFailureException(java.lang.String) void public
 org.neo4j.graphdb.TransactionFailureException::TransactionFailureException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.graphdb.TransactionFailureException::TransactionFailureException(java.lang.String, java.lang.Throwable, org.neo4j.kernel.api.exceptions.Status) void public
+org.neo4j.graphdb.TransactionFailureException::TransactionFailureException(java.lang.String, org.neo4j.kernel.api.exceptions.Status) void public
+org.neo4j.graphdb.TransactionFailureException::status org.neo4j.kernel.api.exceptions.Status public final
+org.neo4j.graphdb.TransactionFailureException::status() org.neo4j.kernel.api.exceptions.Status public
 org.neo4j.graphdb.TransactionTerminatedException public class extends org.neo4j.graphdb.TransactionFailureException implements org.neo4j.kernel.api.exceptions.Status.HasStatus
 org.neo4j.graphdb.TransactionTerminatedException::TransactionTerminatedException(org.neo4j.kernel.api.exceptions.Status) void public
 org.neo4j.graphdb.TransactionTerminatedException::TransactionTerminatedException(org.neo4j.kernel.api.exceptions.Status, java.lang.String) void protected
