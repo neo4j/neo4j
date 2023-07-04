@@ -29,19 +29,10 @@ import org.scalatestplus.mockito.MockitoSugar
 abstract class CypherFunSuite
     extends Suite
     with Assertions
-    with CypherTestSupport
     with MockitoSugar
     with AnyFunSuiteLike
     with Matchers
     with BeforeAndAfterEach {
-
-  override protected def beforeEach(): Unit = {
-    initTest()
-  }
-
-  override protected def afterEach(): Unit = {
-    stopTest()
-  }
 
   def argCaptor[T <: AnyRef](implicit manifest: Manifest[T]): ArgumentCaptor[T] = {
     ArgumentCaptor.forClass(manifest.runtimeClass.asInstanceOf[Class[T]])

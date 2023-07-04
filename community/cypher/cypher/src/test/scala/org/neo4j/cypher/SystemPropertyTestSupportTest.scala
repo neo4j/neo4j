@@ -20,13 +20,12 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import java.util.Properties
 
 class SystemPropertyTestSupportTest extends CypherFunSuite {
 
-  trait SystemPropertyTestSupportFixture extends CypherTestSupport with SystemPropertyTestSupport {
+  trait SystemPropertyTestSupportFixture extends SystemPropertyTestSupport {
     val systemProperties = new Properties()
 
     override def getSystemProperty(propertyKey: String): (String, String) =

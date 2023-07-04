@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
@@ -55,6 +54,7 @@ import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.NullLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -67,7 +67,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.Try
 
-trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
+trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
   self: CypherFunSuite =>
 
   var graphOps: GraphDatabaseService = _
@@ -85,8 +85,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
    */
   def externalDatabase: Option[(String, String)] = None
 
-  override protected def initTest(): Unit = {
-    super.initTest()
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     startGraphDatabase()
   }
 
@@ -185,13 +185,13 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     startGraphDatabase(maybeProvider = Some((factory, provider)))
   }
 
-  override protected def stopTest(): Unit = {
+  override protected def afterEach(): Unit = {
     try {
       if (tx != null) {
         tx.close()
         tx = null
       }
-      super.stopTest()
+      super.afterEach()
     } finally {
       if (managementService != null) {
         managementService.shutdown()

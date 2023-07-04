@@ -150,7 +150,8 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     }
   )
 
-  override protected def initTest(): Unit = {
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     testVar.set(0)
     procedures.foreach(registerProcedure)
   }

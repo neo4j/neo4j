@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.runtime.debug
 
 import org.neo4j.codegen.api.CodeGeneration.GENERATED_SOURCE_LOCATION_PROPERTY
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.Suite
 
 import java.nio.file.FileVisitResult
 import java.nio.file.FileVisitResult.CONTINUE
@@ -50,15 +51,16 @@ import java.nio.file.attribute.BasicFileAttributes
  * 8. Note that every time you re-run your test, you will have to repeat steps 5 to 7, since new code will be
  *    generated each time.
  */
-trait SaveGeneratedSource extends CypherTestSupport {
+trait SaveGeneratedSource extends BeforeAndAfterEach {
+  self: Suite =>
   val saveGeneratedSourceEnabled: Boolean
   val keepSourceFilesAfterTestFinishes: Boolean = false
   val logSaveLocation: Boolean = true
 
   private var generatedSources: Option[Path] = None
 
-  override protected def initTest(): Unit = {
-    super.initTest()
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     if (saveGeneratedSourceEnabled) {
       val cwd = Paths.get(".").normalize.toRealPath()
       // If CWD is set up correctly, we assign the generated source location
@@ -82,7 +84,7 @@ trait SaveGeneratedSource extends CypherTestSupport {
     System.setProperty(GENERATED_SOURCE_LOCATION_PROPERTY, location.toString)
   }
 
-  override protected def stopTest(): Unit = {
+  override protected def afterEach(): Unit = {
     if (saveGeneratedSourceEnabled) {
       System.clearProperty(GENERATED_SOURCE_LOCATION_PROPERTY)
       if (!keepSourceFilesAfterTestFinishes) {
@@ -99,6 +101,6 @@ trait SaveGeneratedSource extends CypherTestSupport {
         }
       }
     }
-    super.stopTest()
+    super.afterEach()
   }
 }

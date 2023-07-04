@@ -29,8 +29,8 @@ abstract class CommunityAdministrationCommandAcceptanceTestBase extends Executio
   val param: String = s"$$param"
   val paramName: String = "param"
 
-  override protected def initTest(): Unit = {
-    super.initTest()
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     selectDatabase(SYSTEM_DATABASE_NAME)
   }
 

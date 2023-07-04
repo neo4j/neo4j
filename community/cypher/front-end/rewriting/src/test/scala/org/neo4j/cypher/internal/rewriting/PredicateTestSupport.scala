@@ -30,10 +30,9 @@ import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.scalatest.Assertion
 
-trait PredicateTestSupport extends CypherTestSupport {
+trait PredicateTestSupport {
   self: CypherFunSuite =>
 
   private val pos = DummyPosition(0)

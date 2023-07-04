@@ -35,8 +35,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   private var db: GraphDatabaseService = _
   private var managementService: DatabaseManagementService = _
 
-  override protected def stopTest(): Unit = {
-    super.stopTest()
+  override protected def afterEach(): Unit = {
+    super.afterEach()
     if (db != null) {
       managementService.shutdown()
     }

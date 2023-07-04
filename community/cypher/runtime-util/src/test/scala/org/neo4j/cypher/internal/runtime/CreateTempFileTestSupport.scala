@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.scalatest.BeforeAndAfterEach
 
-trait CreateTempFileTestSupport extends TempFileCreator with CypherTestSupport {
+trait CreateTempFileTestSupport extends TempFileCreator with BeforeAndAfterEach {
   self: CypherFunSuite =>
 
-  override protected def stopTest(): Unit = {
+  override protected def afterEach(): Unit = {
     try {
       deleteTemporaryFiles()
     } finally {
-      super.stopTest()
+      super.afterEach()
     }
   }
 }

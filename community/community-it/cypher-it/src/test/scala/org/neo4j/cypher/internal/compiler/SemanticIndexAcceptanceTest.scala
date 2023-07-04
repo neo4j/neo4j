@@ -101,8 +101,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
     testOperator(bound, valueGen)
   }
 
-  override protected def initTest(): Unit = {
-    super.initTest()
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     graph.createNodeIndex("Label", "indexed")
     graph.withTx(tx =>
       tx.schema().awaitIndexesOnline(30, TimeUnit.SECONDS)

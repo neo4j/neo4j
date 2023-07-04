@@ -66,7 +66,8 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
       }
     }
 
-  override protected def initTest(): Unit = {
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     registerFunction(function)
   }
 

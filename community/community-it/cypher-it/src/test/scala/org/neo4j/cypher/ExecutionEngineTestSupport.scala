@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.DeadlockDetectedException
@@ -61,7 +60,7 @@ import scala.jdk.CollectionConverters.IterableHasAsJava
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineHelper {
+trait ExecutionEngineTestSupport extends ExecutionEngineHelper {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
 
   var eengine: ExecutionEngine = _

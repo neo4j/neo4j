@@ -20,9 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
-trait TxCountsTrackingTestSupport extends CypherTestSupport {
+trait TxCountsTrackingTestSupport {
   self: CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport =>
 
   def prepareAndTrackTxCounts[T](f: => T): (T, TxCounts) = {

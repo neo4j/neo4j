@@ -113,12 +113,10 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import scala.collection.mutable
 
-trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport
-    with LogicalPlanConstructionTestSupport {
+trait LogicalPlanningTestSupport extends AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
   val monitors = mock[Monitors]

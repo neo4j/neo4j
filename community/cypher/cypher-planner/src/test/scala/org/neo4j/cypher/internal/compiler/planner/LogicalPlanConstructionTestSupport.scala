@@ -39,11 +39,10 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import scala.language.implicitConversions
 
-trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
+trait LogicalPlanConstructionTestSupport {
   self: AstConstructionTestSupport =>
 
   implicit val idGen: IdGen = new SequentialIdGen()

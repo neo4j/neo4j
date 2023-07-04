@@ -168,7 +168,6 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.UnknownSize
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import java.nio.charset.StandardCharsets
 
@@ -177,7 +176,7 @@ import scala.collection.immutable.ListSet
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
-trait AstConstructionTestSupport extends CypherTestSupport {
+trait AstConstructionTestSupport {
   protected val pos: InputPosition = DummyPosition(0)
   protected val defaultPos: InputPosition = InputPosition(0, 1, 1)
 

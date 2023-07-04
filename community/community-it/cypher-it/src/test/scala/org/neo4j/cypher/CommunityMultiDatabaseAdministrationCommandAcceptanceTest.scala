@@ -803,7 +803,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     )
 
   // Disable normal database creation because we need different settings on each test
-  override protected def initTest(): Unit = {}
+  override protected def beforeEach(): Unit = {}
 
   private def setup(config: Config): Unit = {
     managementService = graphDatabaseFactory(Path.of("test")).impermanent().setConfig(

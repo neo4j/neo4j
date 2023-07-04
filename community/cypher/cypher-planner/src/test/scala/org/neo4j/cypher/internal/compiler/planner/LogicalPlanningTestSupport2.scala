@@ -102,7 +102,6 @@ import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.scalatestplus.mockito.MockitoSugar
 
 import scala.language.implicitConversions
@@ -202,8 +201,8 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   }
 }
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport
-    with LogicalPlanConstructionTestSupport with UsingMatcher {
+trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with LogicalPlanConstructionTestSupport
+    with UsingMatcher {
   self: CypherFunSuite =>
 
   val parser = JavaCCParser

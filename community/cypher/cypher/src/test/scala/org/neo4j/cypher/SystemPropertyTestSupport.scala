@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
-
 trait SystemPropertyTestSupport {
-  self: CypherTestSupport =>
 
-  def withSystemProperties[T](properties: (String, String)*)(f: => T) = {
+  def withSystemProperties[T](properties: (String, String)*)(f: => T): T = {
     val backup = Map.newBuilder[String, String]
     try {
       properties.foreach(backup += setSystemProperty(_))

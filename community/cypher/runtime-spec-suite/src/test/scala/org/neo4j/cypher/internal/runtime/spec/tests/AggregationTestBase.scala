@@ -53,6 +53,7 @@ import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
+import org.scalatest.BeforeAndAfterEach
 
 import java.time.Duration
 import java.time.temporal.ChronoUnit
@@ -1451,7 +1452,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
-trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
+trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAndAfterEach {
   self: AggregationTestBase[CONTEXT] =>
 
   private val userAggregationFunctions = {
@@ -1543,7 +1544,8 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
     )
   }
 
-  override protected def initTest(): Unit = {
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     userAggregationFunctions.foreach(registerUserAggregation)
   }
 
