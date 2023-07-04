@@ -94,15 +94,16 @@ case class TrailToVarExpandRewriter(
           _,
           _,
           VariableGroupings.Empty(),
-          VariableGroupings.Single(relationship),
+          VariableGroupings.Maybe(relationship),
           _,
           _,
           _,
           _
         ) =>
-        val varExpand = createVarExpand(trail, expand, quantifier, relationship, relationshipPredicates)
-        val expandWithUniqueRel = maybeAddRelUniquenessPredicates(trail, relationship, varExpand)
-        val expandWithUniqueGroupRel = maybeAddGroupRelUniquenessPredicates(trail, relationship, expandWithUniqueRel)
+        val varExpandRel = relationship.map(_.groupName).getOrElse(trail.innerRelationships.head)
+        val varExpand = createVarExpand(trail, expand, quantifier, relationshipPredicates, varExpandRel)
+        val expandWithUniqueRel = maybeAddRelUniquenessPredicates(trail, varExpandRel, varExpand)
+        val expandWithUniqueGroupRel = maybeAddGroupRelUniquenessPredicates(trail, varExpandRel, expandWithUniqueRel)
         expandWithUniqueGroupRel
     }
   }
@@ -113,8 +114,8 @@ case class TrailToVarExpandRewriter(
     trail: Trail,
     trailExpand: Expand,
     trailQuantifier: VarPatternLength,
-    trailRelationship: VariableGrouping,
-    trailRelationshipPredicates: Seq[VariablePredicate]
+    trailRelationshipPredicates: Seq[VariablePredicate],
+    expandRel: LogicalVariable
   ): LogicalPlan = {
     def getProjectedDir: SemanticDirection = (trailExpand.dir, trail.reverseGroupVariableProjections) match {
       case (SemanticDirection.BOTH, false) => SemanticDirection.OUTGOING
@@ -127,7 +128,7 @@ case class TrailToVarExpandRewriter(
       source = trail.left,
       from = trail.start,
       to = trail.end,
-      relName = trailRelationship.groupName,
+      relName = expandRel,
       dir = trailExpand.dir,
       projectedDir = getProjectedDir,
       types = trailExpand.types,
@@ -149,16 +150,15 @@ case class TrailToVarExpandRewriter(
    */
   private def maybeAddRelUniquenessPredicates(
     trail: Trail,
-    trailRelationship: VariableGrouping,
+    varExpandRel: LogicalVariable,
     source: LogicalPlan
   ): LogicalPlan = {
     def excluded(groupRelationship: LogicalVariable, previouslyBoundedRel: LogicalVariable): Expression =
       NoneOfRelationships(previouslyBoundedRel, groupRelationship)(InputPosition.NONE)
 
     if (trail.previouslyBoundRelationships.nonEmpty) {
-      val groupRel = trailRelationship.groupName
       val predicates: Set[Expression] = trail.previouslyBoundRelationships
-        .map(boundRel => excluded(groupRel, boundRel))
+        .map(boundRel => excluded(varExpandRel, boundRel))
       appendSelection(source, predicates)
     } else {
       source
@@ -170,13 +170,12 @@ case class TrailToVarExpandRewriter(
    */
   private def maybeAddGroupRelUniquenessPredicates(
     trail: Trail,
-    trailRelationship: VariableGrouping,
+    varExpandRel: LogicalVariable,
     source: LogicalPlan
   ): LogicalPlan =
     if (trail.previouslyBoundRelationshipGroups.nonEmpty) {
-      val groupRel = trailRelationship.groupName
       val predicates: Set[Expression] = trail.previouslyBoundRelationshipGroups
-        .map(boundRel => Disjoint(groupRel, boundRel)(InputPosition.NONE))
+        .map(boundRel => Disjoint(varExpandRel, boundRel)(InputPosition.NONE))
       appendSelection(source, predicates)
     } else {
       source
@@ -198,10 +197,17 @@ object TrailToVarExpandRewriter {
 
   object VariableGroupings {
 
-    object Single {
+    object Maybe {
 
-      def unapply(variableGroupings: Set[VariableGrouping]): Option[VariableGrouping] = {
-        Option.when(variableGroupings.size == 1)(variableGroupings.head)
+      /**
+       * Unapplies Set[VariableGrouping] if the set has none or one entry.
+       *
+       * @return Some(None)        if variableGroupings.size == 0
+       * @return Some(Some(head))  if variableGroupings.size == 1
+       * @return None              if none of the above
+       */
+      def unapply(variableGroupings: Set[VariableGrouping]): Option[Option[VariableGrouping]] = {
+        Option.when(variableGroupings.size <= 1)(variableGroupings.headOption)
       }
     }
 

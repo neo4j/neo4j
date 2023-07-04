@@ -52,9 +52,6 @@ import org.neo4j.cypher.internal.util.topDown
  * so that it does not generate any unused group variables. Given that group variables are lists, this optimisation can
  * save time and space.
  *
- * Variables referenced in Projection(discard = Set[String]) should not count towards a legitimate variable usage, given
- * that they are discarded.
- *
  * Should run before [[TrailToVarExpandRewriter]] as these rewrites cannot happen if group variables are not removed.
  */
 case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
@@ -66,39 +63,48 @@ case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
     instance(unusedGroupVariableDeclarations)(plan)
   }
 
-  def instance(unusedGroupVariables: Set[String]): Rewriter = topDown(Rewriter.lift {
+  def instance(unusedGroupVariables: Set[LogicalVariable]): Rewriter = topDown(Rewriter.lift {
     case t: Trail =>
-      val usedNodeVariables = t.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName.name))
-      t.copy(nodeVariableGroupings = usedNodeVariables)(SameId(t.id))
+      val usedNodeVariables = t.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
+      val usedRelVariables = t.relationshipVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
+      t.copy(nodeVariableGroupings = usedNodeVariables, relationshipVariableGroupings = usedRelVariables)(SameId(t.id))
   })
 
-  def findGroupVariableDeclarations(plan: AnyRef): Set[String] = {
-    plan.folder.treeFold(Set.empty[String]) {
+  def findGroupVariableDeclarations(plan: AnyRef): Set[LogicalVariable] = {
+    plan.folder.treeFold(Set.empty[LogicalVariable]) {
       case Trail(_, _, _, _, _, _, _, nodeGroupVariables, relationshipGroupVariables, _, _, _, _) =>
-        val groupVars = nodeGroupVariables.map(_.groupName.name) ++ relationshipGroupVariables.map(_.groupName.name)
+        val groupVars = nodeGroupVariables.map(_.groupName) ++ relationshipGroupVariables.map(_.groupName)
         acc => TraverseChildren(acc ++ groupVars)
     }
   }
 
-  // variables references = total variable count - variable declarations - variable discard (if exists)
-  def findAllVariableReferences(plan: AnyRef): Set[String] = {
-    plan.folder
-      .treeFold(Map.empty[String, Int]) {
+  def findAllVariableReferences(plan: AnyRef): Set[LogicalVariable] = {
+    def inner(plan: AnyRef): Map[LogicalVariable, Int] =
+      plan.folder.treeFold(Map.empty[LogicalVariable, Int]) {
+        // The folder is top-down which means that we will encounter any discarded variable first. We want
+        // to ignore discarded variables as they should not count as legitimate variable references. In a simpler world
+        // we would initialise the counter for the variable to 0. Instead we set the count for the variable to -1 when
+        // visiting the Projection, because the folder will then also visit Projection.discardedSymbols and increment
+        // the counter by 1, therefor setting to 0.
         case plan: ProjectingPlan => acc =>
             TraverseChildren(
               plan.discardSymbols.foldLeft(acc) {
-                case (acc, variable) => acc + (variable.name -> -1)
+                case (acc, variable) => acc + (variable -> -1)
               }
             )
-        case LogicalVariable(name) => acc =>
+        case variable: LogicalVariable => acc =>
             SkipChildren(
-              acc.updatedWith(name) {
+              acc.updatedWith(variable) {
                 case Some(existingCount) => Some(existingCount + 1)
                 case None                => Some(1)
               }
             )
       }
-      .filterNot { case (_, count) => count == 1 }
+
+    // If a variable only appears once, that is the declaration of the variable and the variable is otherwise unused.
+    // If a variable appears at least twice, there is a reference to the variable.
+    inner(plan)
+      .filter { case (_, count) => count > 1 }
       .keySet
   }
 }
