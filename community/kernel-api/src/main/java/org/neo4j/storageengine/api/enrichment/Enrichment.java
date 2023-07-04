@@ -139,11 +139,11 @@ public abstract sealed class Enrichment {
                     .putInt(detailsBuffer.capacity())
                     .putInt(changesBuffer.capacity())
                     .putInt(valuesBuffer.capacity())
-                    // now write out the content from the start to the limit (capacity)
-                    .putAll(entitiesBuffer.position(0))
-                    .putAll(detailsBuffer.position(0))
-                    .putAll(changesBuffer.position(0))
-                    .putAll(valuesBuffer.position(0));
+                    // now write out all the buffer's content from the start
+                    .putAll(slice(entitiesBuffer))
+                    .putAll(slice(detailsBuffer))
+                    .putAll(slice(changesBuffer))
+                    .putAll(slice(valuesBuffer));
         }
 
         /**
