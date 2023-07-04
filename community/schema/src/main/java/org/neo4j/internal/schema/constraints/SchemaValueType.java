@@ -89,6 +89,17 @@ public enum SchemaValueType implements TypeRepresentation {
             case ZONED_TIME -> SchemaValueType.ZONED_TIME;
             case LOCAL_TIME -> SchemaValueType.LOCAL_TIME;
             case POINT -> SchemaValueType.POINT;
+            case LIST_BOOLEAN_NOT_NULL -> SchemaValueType.LIST_BOOLEAN;
+            case LIST_STRING_NOT_NULL -> SchemaValueType.LIST_STRING;
+            case LIST_INTEGER_NOT_NULL -> SchemaValueType.LIST_INTEGER;
+            case LIST_FLOAT_NOT_NULL -> SchemaValueType.LIST_FLOAT;
+            case LIST_DATE_NOT_NULL -> SchemaValueType.LIST_DATE;
+            case LIST_LOCAL_TIME_NOT_NULL -> SchemaValueType.LIST_LOCAL_TIME;
+            case LIST_ZONED_TIME_NOT_NULL -> SchemaValueType.LIST_ZONED_TIME;
+            case LIST_LOCAL_DATETIME_NOT_NULL -> SchemaValueType.LIST_LOCAL_DATETIME;
+            case LIST_ZONED_DATETIME_NOT_NULL -> SchemaValueType.LIST_ZONED_DATETIME;
+            case LIST_DURATION_NOT_NULL -> SchemaValueType.LIST_DURATION;
+            case LIST_POINT_NOT_NULL -> SchemaValueType.LIST_POINT;
         };
     }
 
@@ -104,6 +115,17 @@ public enum SchemaValueType implements TypeRepresentation {
             case LOCAL_DATETIME -> PropertyType.LOCAL_DATETIME;
             case ZONED_TIME -> PropertyType.ZONED_TIME;
             case LOCAL_TIME -> PropertyType.LOCAL_TIME;
+            case LIST_BOOLEAN -> PropertyType.LIST_BOOLEAN_NOT_NULL;
+            case LIST_STRING -> PropertyType.LIST_STRING_NOT_NULL;
+            case LIST_INTEGER -> PropertyType.LIST_INTEGER_NOT_NULL;
+            case LIST_FLOAT -> PropertyType.LIST_FLOAT_NOT_NULL;
+            case LIST_DATE -> PropertyType.LIST_DATE_NOT_NULL;
+            case LIST_LOCAL_TIME -> PropertyType.LIST_LOCAL_TIME_NOT_NULL;
+            case LIST_ZONED_TIME -> PropertyType.LIST_ZONED_TIME_NOT_NULL;
+            case LIST_LOCAL_DATETIME -> PropertyType.LIST_LOCAL_DATETIME_NOT_NULL;
+            case LIST_ZONED_DATETIME -> PropertyType.LIST_ZONED_DATETIME_NOT_NULL;
+            case LIST_DURATION -> PropertyType.LIST_DURATION_NOT_NULL;
+            case LIST_POINT -> PropertyType.LIST_POINT_NOT_NULL;
             case POINT -> PropertyType.POINT;
                 // FIXME PTC remove default when we have all the types in Core API
             default -> throw new IllegalArgumentException(

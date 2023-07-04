@@ -463,6 +463,17 @@ org.neo4j.graphdb.schema.PropertyType::DATE org.neo4j.graphdb.schema.PropertyTyp
 org.neo4j.graphdb.schema.PropertyType::DURATION org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::FLOAT org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::INTEGER org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_BOOLEAN_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_DATE_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_DURATION_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_FLOAT_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_INTEGER_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_LOCAL_DATETIME_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_LOCAL_TIME_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_POINT_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_STRING_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_ZONED_DATETIME_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LIST_ZONED_TIME_NOT_NULL org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::LOCAL_DATETIME org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::LOCAL_TIME org.neo4j.graphdb.schema.PropertyType public static final
 org.neo4j.graphdb.schema.PropertyType::POINT org.neo4j.graphdb.schema.PropertyType public static final
