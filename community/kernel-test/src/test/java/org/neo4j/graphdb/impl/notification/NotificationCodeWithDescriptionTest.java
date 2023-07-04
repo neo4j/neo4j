@@ -66,7 +66,6 @@ import java.util.TreeSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -265,7 +264,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_RUNTIME_OPTION() {
-        NotificationImplementation notification = deprecatedRuntimeOption(InputPosition.empty, "option=deprecatedOption");
+        NotificationImplementation notification =
+                deprecatedRuntimeOption(InputPosition.empty, "option=deprecatedOption");
 
         verifyNotification(
                 notification,
@@ -293,7 +293,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_RETURN_FIELD() {
-        NotificationImplementation notification = deprecatedProcedureReturnField(InputPosition.empty, "deprecatedField");
+        NotificationImplementation notification =
+                deprecatedProcedureReturnField(InputPosition.empty, "deprecatedField");
 
         verifyNotification(
                 notification,
@@ -336,7 +337,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP() {
-        NotificationImplementation notification = deprecatedShortestPathWithFixedLengthRelationship(InputPosition.empty);
+        NotificationImplementation notification =
+                deprecatedShortestPathWithFixedLengthRelationship(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -580,7 +582,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_REPEATED_RELATIONSHIP_REFERENCE() {
-        NotificationImplementation notification = repeatedRelationshipReference(InputPosition.empty, repeatedRelationship("r"));
+        NotificationImplementation notification =
+                repeatedRelationshipReference(InputPosition.empty, repeatedRelationship("r"));
 
         verifyNotification(
                 notification,
@@ -623,7 +626,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION() {
-        NotificationImplementation notification = deprecatedConnectComponentsPlannerPreParserOption(InputPosition.empty);
+        NotificationImplementation notification =
+                deprecatedConnectComponentsPlannerPreParserOption(InputPosition.empty);
 
         verifyNotification(
                 notification,
