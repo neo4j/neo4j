@@ -36,9 +36,14 @@ abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val query = state.query
-    val argValues = input.map(arg => {
-      arg(row, state)
-    })
+    val length = arguments.length
+    val argValues = new Array[AnyValue](length)
+    var i = 0
+    while (i < length) {
+      argValues(i) = arguments(i).apply(row, state)
+      i += 1
+    }
+
     call(query, argValues)
   }
 
