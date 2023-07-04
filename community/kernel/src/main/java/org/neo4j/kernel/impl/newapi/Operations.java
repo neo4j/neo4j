@@ -2019,29 +2019,18 @@ public class Operations implements Write, SchemaWrite {
 
     private ConstraintDescriptor lockAndValidatePropertyTypeConstraint(
             SchemaDescriptor descriptor, String name, PropertyTypeSet propertyType) throws KernelException {
+
+        TypeRepresentation.validate(propertyType);
+
         var size = propertyType.size();
         var hasListType = TypeRepresentation.hasListTypes(propertyType);
-
-        // Only a single constraint type is allowed.
-        if (size != 1) {
-            throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"
-                    + propertyType.userDescription() + "' is not legal: Must specify exactly one property type.");
-        }
-
-        // List types allow only for a list of a single type e.g. LIST_STRING
-        // See CLG discussion regarding ANY<LIST<T1>, LIST<T2>> where the ordering becomes unclear.
-        if (hasListType && size != 1) {
-            throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"
-                    + propertyType.userDescription()
-                    + "' is not legal: Must specify exactly one property type of LIST.");
-        }
 
         // Only the basic type constraint was introduced in KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED.
         // For expanded support, we require the kernel version below:
         if (!typeConstraintEnabled && (hasListType || size != 1)) {
             assertSupportedInVersion(
                     "Failed to create property type constraint with %s.".formatted(propertyType.userDescription()),
-                    KernelVersion.VERSION_LIST_TYPE_CONSTRAINTS_INTRODUCED);
+                    KernelVersion.VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED);
         }
 
         return lockAndValidateNonIndexPropertyConstraint(

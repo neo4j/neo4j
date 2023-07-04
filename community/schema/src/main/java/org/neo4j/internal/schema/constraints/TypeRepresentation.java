@@ -192,4 +192,20 @@ public sealed interface TypeRepresentation permits SchemaValueType, SpecialTypes
     static boolean hasListTypes(PropertyTypeSet set) {
         return set.contains(SpecialTypes.LIST_NOTHING);
     }
+
+    /**
+     * Evaluate if a PropertyTypeSet follows the business rules for the type constraints.
+     *
+     * @param set {@link PropertyTypeSet}
+     * @throws IllegalArgumentException if the set violates the business rules.
+     */
+    static void validate(PropertyTypeSet set) {
+        var size = set.size();
+        var hasListType = TypeRepresentation.hasListTypes(set);
+
+        if (size == 0) {
+            throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"
+                    + set.userDescription() + "' is not legal: Must specify at least one property type.");
+        }
+    }
 }

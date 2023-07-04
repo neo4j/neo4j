@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -46,8 +45,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
@@ -73,8 +70,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.internal.schema.constraints.PropertyTypeSet;
-import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -317,14 +312,6 @@ abstract class OperationsTest {
         // then
         verify(locks).acquireExclusive(any(), eq(ResourceType.RELATIONSHIP), eq(1L));
         verify(locks).acquireShared(any(), eq(ResourceType.RELATIONSHIP_TYPE), eq((long) type));
-    }
-
-    @ParameterizedTest
-    @MethodSource("schemaDescriptors")
-    void shouldThrowWhenCreatingPropertyTypeConstraintWithIllegalUnion(SchemaDescriptor schema) {
-        var illegalPropertyTypeUnion = PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.DATE);
-        assertThatThrownBy(() -> operations.propertyTypeConstraintCreate(schema, "name", illegalPropertyTypeUnion))
-                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private static Stream<SchemaDescriptor> schemaDescriptors() {
