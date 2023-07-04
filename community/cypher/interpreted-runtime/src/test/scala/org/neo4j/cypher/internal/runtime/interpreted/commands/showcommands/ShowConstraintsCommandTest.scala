@@ -173,6 +173,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     labelsOrTypes: Option[List[String]] = None,
     properties: Option[List[String]] = None,
     index: Option[String] = None,
+    propType: Option[String] = None,
     options: Option[AnyValue] = None,
     createStatement: Option[String] = None
   ): Unit = {
@@ -187,6 +188,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       resultMap("properties") should be(VirtualValues.list(expected.map(Values.stringValue): _*))
     )
     index.foreach(expected => resultMap("ownedIndex") should be(Values.stringOrNoValue(expected)))
+    propType.foreach(expected => resultMap("propertyType") should be(Values.stringOrNoValue(expected)))
     options.foreach(expected => resultMap("options") should be(expected))
     createStatement.foreach(expected => resultMap("createStatement") should be(Values.stringValue(expected)))
   }
@@ -252,7 +254,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
-      index = "constraint0"
+      index = "constraint0",
+      propType = Some(null)
     )
     checkResult(
       result.last,
@@ -262,7 +265,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
-      index = Some(null)
+      index = Some(null),
+      propType = Some(null)
     )
     // confirm no verbose columns:
     result.foreach(res => {
@@ -292,6 +296,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       labelsOrTypes = List(label),
       properties = List(prop),
       index = "constraint0",
+      propType = Some(null),
       options = optionsMap,
       createStatement = s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
     )
@@ -304,6 +309,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       labelsOrTypes = List(relType),
       properties = List(prop),
       index = Some(null),
+      propType = Some(null),
       options = Values.NO_VALUE,
       createStatement = s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
     )
@@ -342,6 +348,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "UNIQUENESS",
       entityType = "NODE",
       index = "constraint0",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
@@ -352,6 +359,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
       entityType = "RELATIONSHIP",
       index = Some(null),
+      propType = Some(null),
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
@@ -365,6 +373,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       labelsOrTypes = List(label),
       properties = List(prop),
       index = Some(null),
+      propType = "BOOLEAN",
       options = Values.NO_VALUE,
       createStatement = s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
     )
@@ -377,6 +386,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       labelsOrTypes = List(relType),
       properties = List(prop),
       index = Some(null),
+      propType = "STRING",
       options = Values.NO_VALUE,
       createStatement = s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
     )
@@ -386,6 +396,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_UNIQUENESS",
       entityType = "RELATIONSHIP",
       index = "constraint2",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE $optionsString"
@@ -396,6 +407,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_KEY",
       entityType = "NODE",
       index = "constraint3",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY $optionsString"
@@ -406,6 +418,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_KEY",
       entityType = "RELATIONSHIP",
       index = "constraint4",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY $optionsString"
@@ -416,6 +429,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_PROPERTY_EXISTENCE",
       entityType = "NODE",
       index = Some(null),
+      propType = Some(null),
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
@@ -438,6 +452,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "UNIQUENESS",
       entityType = "NODE",
       index = "constraint0",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
@@ -448,6 +463,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_UNIQUENESS",
       entityType = "RELATIONSHIP",
       index = "constraint2",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE $optionsString"
@@ -470,6 +486,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "UNIQUENESS",
       entityType = "NODE",
       index = "constraint0",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
@@ -494,6 +511,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_UNIQUENESS",
       entityType = "RELATIONSHIP",
       index = "constraint2",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE $optionsString"
@@ -516,6 +534,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_KEY",
       entityType = "NODE",
       index = "constraint3",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY $optionsString"
@@ -526,6 +545,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_KEY",
       entityType = "RELATIONSHIP",
       index = "constraint4",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY $optionsString"
@@ -548,6 +568,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_KEY",
       entityType = "NODE",
       index = "constraint3",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY $optionsString"
@@ -570,6 +591,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_KEY",
       entityType = "RELATIONSHIP",
       index = "constraint4",
+      propType = Some(null),
       options = optionsMap,
       createStatement =
         s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY $optionsString"
@@ -592,6 +614,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
       entityType = "RELATIONSHIP",
       index = Some(null),
+      propType = Some(null),
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
@@ -602,6 +625,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_PROPERTY_EXISTENCE",
       entityType = "NODE",
       index = Some(null),
+      propType = Some(null),
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
@@ -624,6 +648,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_PROPERTY_EXISTENCE",
       entityType = "NODE",
       index = Some(null),
+      propType = Some(null),
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
@@ -648,6 +673,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
       entityType = "RELATIONSHIP",
       index = Some(null),
+      propType = Some(null),
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
@@ -670,6 +696,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_PROPERTY_TYPE",
       entityType = "NODE",
       index = Some(null),
+      propType = "BOOLEAN",
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
@@ -680,6 +707,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_PROPERTY_TYPE",
       entityType = "RELATIONSHIP",
       index = Some(null),
+      propType = "STRING",
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
@@ -702,6 +730,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "NODE_PROPERTY_TYPE",
       entityType = "NODE",
       index = Some(null),
+      propType = "BOOLEAN",
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
@@ -726,9 +755,61 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_PROPERTY_TYPE",
       entityType = "RELATIONSHIP",
       index = Some(null),
+      propType = "STRING",
       options = Values.NO_VALUE,
       createStatement =
         s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
     )
+  }
+
+  Seq(
+    ("BOOLEAN", SchemaValueType.BOOLEAN),
+    ("STRING", SchemaValueType.STRING),
+    ("INTEGER", SchemaValueType.INTEGER),
+    ("FLOAT", SchemaValueType.FLOAT),
+    ("DATE", SchemaValueType.DATE),
+    ("LOCAL TIME", SchemaValueType.LOCAL_TIME),
+    ("ZONED TIME", SchemaValueType.ZONED_TIME),
+    ("LOCAL DATETIME", SchemaValueType.LOCAL_DATETIME),
+    ("ZONED DATETIME", SchemaValueType.ZONED_DATETIME),
+    ("DURATION", SchemaValueType.DURATION),
+    ("POINT", SchemaValueType.POINT)
+  ).foreach { case (propTypeString, propType) =>
+    test(s"show normalized property type representation: $propType") {
+      // Given
+      val nodePropTypeConstraintDescriptor =
+        ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType))
+          .withName("constraint0")
+          .withId(0)
+      val relPropTypeConstraintDescriptor =
+        ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType))
+          .withName("constraint1")
+          .withId(1)
+      when(ctx.getAllConstraints()).thenReturn(Map(
+        nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
+        relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
+      ))
+
+      // When
+      val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns)
+      val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+      // Then
+      result should have size 2
+      checkResult(
+        result.head,
+        name = "constraint0",
+        propType = propTypeString,
+        createStatement =
+          s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: $propTypeString"
+      )
+      checkResult(
+        result.last,
+        name = "constraint1",
+        propType = propTypeString,
+        createStatement =
+          s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: $propTypeString"
+      )
+    }
   }
 }
