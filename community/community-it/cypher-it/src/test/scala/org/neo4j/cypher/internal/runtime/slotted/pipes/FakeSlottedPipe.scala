@@ -33,12 +33,11 @@ import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Value
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.collection.mutable
 
 case class FakeSlottedPipe(slots: SlotConfiguration, data: Iterable[Map[Any, Any]]*)
-    extends Pipe with MockitoSugar {
+    extends Pipe {
 
   private val dataIterator = data.iterator
   private val createdResults = mutable.Buffer.empty[CountingIterator[CypherRow]]
