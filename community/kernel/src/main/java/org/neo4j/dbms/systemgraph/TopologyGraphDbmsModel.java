@@ -248,6 +248,7 @@ public interface TopologyGraphDbmsModel {
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY = "default_database";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_CREATE_ATTEMPTED_FLAG = "default_database_created";
     String TOPOLOGY_GRAPH_CONFIG_INITIAL_INSTANCES_ENABLED_FLAG = "initial_instances_enabled";
+    String TOPOLOGY_GRAPH_CONFIG_AUTO_ENABLE_FREE_SERVERS_FLAG = "auto_enable_free_servers";
     Label SUPPORTED_COMPONENT_VERSIONS_LABEL = Label.label("SupportedVersions");
     RelationshipType LATEST_SUPPORTED_COMPONENT_VERSIONS_RELATIONSHIP =
             RelationshipType.withName("LATEST_SUPPORTED_VERSIONS");

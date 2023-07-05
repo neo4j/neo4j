@@ -1418,6 +1418,34 @@
   },
   {
     "admin": true,
+    "name": "dbms.cluster.setAutomaticallyEnableFreeServers",
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.setAutomaticallyEnableFreeServers(autoEnable :: BOOLEAN?) :: VOID",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [],
+    "description": "With this method you can set whether free servers are automatically enabled.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "autoEnable",
+        "description": "autoEnable :: BOOLEAN?",
+        "type": "BOOLEAN?",
+        "isDeprecated": false
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": true,
     "name": "dbms.cluster.uncordonServer",
     "isDeprecated": false,
     "option": {
@@ -2498,7 +2526,7 @@
     "option": {
       "deprecated": false
     },
-    "signature": "dbms.showTopologyGraphConfig() :: (allocator :: STRING?, defaultPrimariesCount :: INTEGER?, defaultSecondariesCount :: INTEGER?, defaultDatabase :: STRING?)",
+    "signature": "dbms.showTopologyGraphConfig() :: (allocator :: STRING?, defaultPrimariesCount :: INTEGER?, defaultSecondariesCount :: INTEGER?, defaultDatabase :: STRING?, autoEnableFreeServers :: BOOLEAN?)",
     "rolesBoostedExecution": [
       "admin"
     ],
@@ -2527,8 +2555,13 @@
         "description": "defaultDatabase :: STRING?",
         "type": "STRING?",
         "isDeprecated": false
+      },
+      {
+        "name": "autoEnableFreeServers",
+        "description": "autoEnableFreeServers :: BOOLEAN?",
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
-
     ],
     "description": "With this method the configuration of the Topology Graph can be displayed.",
     "rolesExecution": [
