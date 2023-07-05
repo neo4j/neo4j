@@ -30,6 +30,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL_SHORTE
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALTER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AND;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ANY;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ARRAY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
@@ -83,6 +84,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DRYRUN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DUMP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DURATION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EACH;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EDGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELSE;
@@ -131,10 +133,12 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.KEY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABEL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABELS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LIMITROWS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LIST;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOAD;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOCAL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOOKUP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MANAGEMENT;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MAP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MATCH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MERGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAME;
@@ -145,6 +149,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NONE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOT;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOTHING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOWAIT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NULL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OF;
@@ -241,8 +246,10 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USING;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VALUE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VARCHAR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VERBOSE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VERTEX;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WAIT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHEN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHERE;
@@ -272,6 +279,7 @@ public class IdentifierTokens {
             ALTER,
             AND,
             ANY,
+            ARRAY,
             AS,
             ASC,
             ASSERT,
@@ -325,6 +333,7 @@ public class IdentifierTokens {
             DUMP,
             DURATION,
             EACH,
+            EDGE,
             ELEMENT,
             ELEMENTS,
             ELSE,
@@ -372,10 +381,12 @@ public class IdentifierTokens {
             LABEL,
             LABELS,
             LIMITROWS,
+            LIST,
             LOAD,
             LOCAL,
             LOOKUP,
             MANAGEMENT,
+            MAP,
             MATCH,
             MERGE,
             NAME,
@@ -386,6 +397,7 @@ public class IdentifierTokens {
             NODES,
             NONE,
             NOT,
+            NOTHING,
             NOWAIT,
             NULL,
             OF,
@@ -483,7 +495,9 @@ public class IdentifierTokens {
             USERS,
             USING,
             VARCHAR,
+            VALUE,
             VERBOSE,
+            VERTEX,
             WAIT,
             WITHOUT,
             WHEN,

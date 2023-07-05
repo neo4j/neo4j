@@ -471,21 +471,21 @@ trait CreateConstraint extends SchemaCommand {
 
   protected def checkPropertyType(entityTypeString: String, propertyType: CypherTypeName): SemanticCheck = {
     val allowedTypes = List(
-      BooleanTypeName(),
-      StringTypeName(),
-      IntegerTypeName(),
-      FloatTypeName(),
-      DateTypeName(),
-      LocalTimeTypeName(),
-      ZonedTimeTypeName(),
-      LocalDateTimeTypeName(),
-      ZonedDateTimeTypeName(),
-      DurationTypeName(),
-      PointTypeName()
+      BooleanTypeName(true),
+      StringTypeName(true),
+      IntegerTypeName(true),
+      FloatTypeName(true),
+      DateTypeName(true),
+      LocalTimeTypeName(true),
+      ZonedTimeTypeName(true),
+      LocalDateTimeTypeName(true),
+      ZonedDateTimeTypeName(true),
+      DurationTypeName(true),
+      PointTypeName(true)
     )
 
     if (!allowedTypes.contains(propertyType)) error(
-      s"Failed to create $entityTypeString property type constraint: Invalid property type ${propertyType.description}.",
+      s"Failed to create $entityTypeString property type constraint: Invalid property type `${propertyType.description}`.",
       position
     )
     else SemanticCheck.success

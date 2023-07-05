@@ -377,6 +377,7 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.ListTypeName
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -1652,15 +1653,46 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
-  private val allCypherTypeNamesFromReflection: Set[CypherTypeName] = {
-    val reflections = new Reflections("org.neo4j.cypher.internal.expressions")
-    reflections.getSubTypesOf[CypherTypeName](classOf[CypherTypeName]).asScala.toSet
-      .map((cls: Class[_ <: CypherTypeName]) => cls.getDeclaredConstructor().newInstance())
-  }
-
   def _cypherTypeName: Gen[CypherTypeName] = for {
     _type <- oneOf(allCypherTypeNamesFromReflection)
   } yield _type
+
+  private val allCypherTypeNamesFromReflection: Set[CypherTypeName] = {
+    val reflections = new Reflections("org.neo4j.cypher.internal.expressions")
+    val innerTypes = reflections.getSubTypesOf[CypherTypeName](classOf[CypherTypeName]).asScala.toSet
+      .flatMap((cls: Class[_ <: CypherTypeName]) => {
+        try {
+          // NOTHING, NULL
+          Set(cls.getDeclaredConstructor().newInstance())
+        } catch {
+          case _: NoSuchMethodException =>
+            try {
+              // List<...>
+              // Gets handled separately afterwords
+              cls.getDeclaredConstructor(classOf[CypherTypeName], classOf[Boolean])
+              Set()
+            } catch {
+              case _: NoSuchMethodException =>
+                // remaining types
+                val constructor = cls.getDeclaredConstructor(classOf[Boolean])
+                Set(constructor.newInstance(true), constructor.newInstance(false))
+            }
+        }
+      })
+    val listTypes = innerTypes.flatMap(inner => {
+      Set(
+        ListTypeName(inner, isNullable = true),
+        ListTypeName(inner, isNullable = false)
+      )
+    })
+    val nestedListTypes = listTypes.flatMap(inner => {
+      Set(
+        ListTypeName(inner, isNullable = true),
+        ListTypeName(inner, isNullable = false)
+      )
+    })
+    innerTypes ++ listTypes ++ nestedListTypes
+  }
 
   def _createIndex: Gen[CreateIndex] = for {
     variable <- _variable

@@ -419,6 +419,7 @@ TOKEN [IGNORE_CASE] :
     | < ALTER: "ALTER" >
     | < AND: "AND" >
     | < ANY: "ANY" >
+    | < ARRAY: "ARRAY" >
     | < AS: "AS" >
     | < ASC: "ASC" ("ENDING")? >
     | < ASSERT: "ASSERT" >
@@ -480,6 +481,7 @@ TOKEN [IGNORE_CASE] :
     | < DUMP: "DUMP" >
     | < DURATION: "DURATION" >
     | < EACH: "EACH" >
+    | < EDGE: "EDGE" >
     | < ENABLE: "ENABLE" >
     | < ELEMENT: "ELEMENT" >
     | < ELEMENTS: "ELEMENTS" >
@@ -534,12 +536,14 @@ TOKEN [IGNORE_CASE] :
     | < LCURLY: "{" >
     | < LE: "<=" >
     | < LIMITROWS: "LIMIT" >
+    | < LIST: "LIST" >
     | < LOAD: "LOAD" >
     | < LOCAL: "LOCAL" >
     | < LOOKUP: "LOOKUP" >
     | < LPAREN: "(" >
     | < LT: "<" >
     | < MANAGEMENT: "MANAGEMENT" >
+    | < MAP: "MAP" >
     | < MATCH: "MATCH" >
     | < MERGE: "MERGE" >
     | < MINUS: "-" >
@@ -554,6 +558,7 @@ TOKEN [IGNORE_CASE] :
     | < NODES: "NODES" >
     | < NONE: "NONE" >
     | < NOT: "NOT" >
+    | < NOTHING: "NOTHING" >
     | < NOWAIT: "NOWAIT">
     | < NULL: "null">
     | < OF: "OF" >
@@ -660,8 +665,10 @@ TOKEN [IGNORE_CASE] :
     | < USER: "USER">
     | < USERS: "USERS">
     | < USING: "USING" >
+    | < VALUE: "VALUE" >
     | < VARCHAR: "VARCHAR" >
     | < VERBOSE: "VERBOSE" >
+    | < VERTEX: "VERTEX" >
     | < WAIT: "WAIT">
     | < WHEN: "WHEN" >
     | < WHERE: "WHERE" >
@@ -4759,36 +4766,53 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
 
 ParserCypherTypeName cypherTypeName():
 {
-    ParserCypherTypeName propertyType = null;
+    ParserCypherTypeName typeName = null;
+    ParserCypherTypeName innerType = null;
 }
 {
     (
-        (<BOOLEAN> | <BOOL>) { propertyType = ParserCypherTypeName.BOOLEAN; }
-        | (<STRING> | <VARCHAR>) { propertyType = ParserCypherTypeName.STRING; }
-        | (<INT> | (<SIGNED>)? <INTEGER>) { propertyType = ParserCypherTypeName.INTEGER; }
-        | <FLOAT> { propertyType = ParserCypherTypeName.FLOAT; }
-        | <DATE> { propertyType = ParserCypherTypeName.DATE; }
+        <NOTHING> { typeName = ParserCypherTypeName.NOTHING; }
+        | <NULL> { typeName = ParserCypherTypeName.NULL; }
+        | (<BOOLEAN> | <BOOL>) { typeName = ParserCypherTypeName.BOOLEAN; }
+        | (<STRING> | <VARCHAR>) { typeName = ParserCypherTypeName.STRING; }
+        | (<INT> | (<SIGNED>)? <INTEGER>) { typeName = ParserCypherTypeName.INTEGER; }
+        | <FLOAT> { typeName = ParserCypherTypeName.FLOAT; }
+        | <DATE> { typeName = ParserCypherTypeName.DATE; }
         | <LOCAL> (
-            <TIME> { propertyType = ParserCypherTypeName.LOCAL_TIME; }
-            | <DATETIME> { propertyType = ParserCypherTypeName.LOCAL_DATETIME; }
+            <TIME> { typeName = ParserCypherTypeName.LOCAL_TIME; }
+            | <DATETIME> { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
         )
         | <ZONED> (
-            <TIME> { propertyType = ParserCypherTypeName.ZONED_TIME; }
-            | <DATETIME> { propertyType = ParserCypherTypeName.ZONED_DATETIME; }
+            <TIME> { typeName = ParserCypherTypeName.ZONED_TIME; }
+            | <DATETIME> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
         )
         | <TIME> (
-            <WITHOUT> <TIMEZONE> { propertyType = ParserCypherTypeName.LOCAL_TIME; }
-            | <WITH> <TIMEZONE> { propertyType = ParserCypherTypeName.ZONED_TIME; }
+            <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_TIME; }
+            | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_TIME; }
         )
         | <TIMESTAMP> (
-            <WITHOUT> <TIMEZONE> { propertyType = ParserCypherTypeName.LOCAL_DATETIME; }
-            | <WITH> <TIMEZONE> { propertyType = ParserCypherTypeName.ZONED_DATETIME; }
+            <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
+            | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
         )
-        | <DURATION> { propertyType = ParserCypherTypeName.DURATION; }
-        | <POINT> { propertyType = ParserCypherTypeName.POINT; }
-    )
+        | <DURATION> { typeName = ParserCypherTypeName.DURATION; }
+        | <POINT> { typeName = ParserCypherTypeName.POINT; }
+        | (<NODE> | <VERTEX>) { typeName = ParserCypherTypeName.NODE; }
+        | (<RELATIONSHIP> | <EDGE>){ typeName = ParserCypherTypeName.RELATIONSHIP; }
+        | <MAP> { typeName = ParserCypherTypeName.MAP; }
+        | (<LIST> | <ARRAY>) <LT> innerType=cypherTypeName() <GT> { typeName = ParserCypherTypeName.listOf(innerType); }
+        | <PATH> { typeName = ParserCypherTypeName.PATH; }
+        | <PROPERTY> <VALUE> { typeName = ParserCypherTypeName.PROPERTY_VALUE; }
+        | LOOKAHEAD(2) <ANY> (
+            (<NODE> | <VERTEX>) { typeName = ParserCypherTypeName.NODE; }
+            | (<RELATIONSHIP> | <EDGE>) { typeName = ParserCypherTypeName.RELATIONSHIP; }
+            | <MAP> { typeName = ParserCypherTypeName.MAP; }
+            | <PROPERTY> <VALUE> { typeName = ParserCypherTypeName.PROPERTY_VALUE; }
+        )
+        | <ANY> (<VALUE>)? { typeName = ParserCypherTypeName.ANY; }
+    ) ( <NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); } )?
+    ((<LIST> | <ARRAY>) { typeName = ParserCypherTypeName.listOf(typeName); } (<NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); })? )*
     {
-        return propertyType;
+        return typeName;
     }
 }
 
@@ -6809,6 +6833,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<ALTER>
         | t=<AND>
         | t=<ANY>
+        | t=<ARRAY>
         | t=<AS>
         | t=<ASC>
         | t=<ASSERT>
@@ -6862,6 +6887,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<DUMP>
         | t=<DURATION>
         | t=<EACH>
+        | t=<EDGE>
         | t=<ELEMENT>
         | t=<ELEMENTS>
         | t=<ELSE>
@@ -6907,11 +6933,13 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<LABEL>
         | t=<LABELS>
         | t=<LIMITROWS>
+        | t=<LIST>
         | t=<LOAD>
         | t=<LOCAL>
         | t=<LOOKUP>
         | t=<MATCH>
         | t=<MANAGEMENT>
+        | t=<MAP>
         | t=<MERGE>
         | t=<NAME>
         | t=<NAMES>
@@ -6920,6 +6948,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<NODE>
         | t=<NODES>
         | t=<NONE>
+        | t=<NOTHING>
         | t=<NOWAIT>
         | t=<OF>
         | t=<ON>
@@ -7014,8 +7043,10 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<USER>
         | t=<USERS>
         | t=<USING>
+        | t=<VALUE>
         | t=<VARCHAR>
         | t=<VERBOSE>
+        | t=<VERTEX>
         | t=<WAIT>
         | t=<WHEN>
         | t=<WHERE>

@@ -100,7 +100,7 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     // isNotTyped(P) <=> not(isTyped(P, INTEGER))
     assertRewrittenMatches(
       "'P' IS NOT :: INTEGER",
-      { case Not(IsTyped(StringLiteral("P"), IntegerTypeName())) => () }
+      { case Not(IsTyped(StringLiteral("P"), IntegerTypeName(true))) => () }
     )
   }
 
@@ -108,14 +108,14 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     // not(isNotTyped(P), STRING) <=> isTyped(P, STRING)
     assertRewrittenMatches(
       "NOT( 'P' IS NOT :: STRING )",
-      { case IsTyped(StringLiteral("P"), StringTypeName()) => () }
+      { case IsTyped(StringLiteral("P"), StringTypeName(true)) => () }
     )
   }
 
   test("NOT IS :: is not rewritten") {
     assertRewrittenMatches(
       "NOT( 'P' IS :: BOOL )",
-      { case Not(IsTyped(StringLiteral("P"), BooleanTypeName())) => () }
+      { case Not(IsTyped(StringLiteral("P"), BooleanTypeName(true))) => () }
     )
   }
 

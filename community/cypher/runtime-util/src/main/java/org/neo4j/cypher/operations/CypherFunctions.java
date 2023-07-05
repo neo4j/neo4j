@@ -44,15 +44,24 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
+import org.neo4j.cypher.internal.expressions.AnyTypeName;
 import org.neo4j.cypher.internal.expressions.BooleanTypeName;
 import org.neo4j.cypher.internal.expressions.CypherTypeName;
 import org.neo4j.cypher.internal.expressions.DateTypeName;
 import org.neo4j.cypher.internal.expressions.DurationTypeName;
 import org.neo4j.cypher.internal.expressions.FloatTypeName;
 import org.neo4j.cypher.internal.expressions.IntegerTypeName;
+import org.neo4j.cypher.internal.expressions.ListTypeName;
 import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName;
 import org.neo4j.cypher.internal.expressions.LocalTimeTypeName;
+import org.neo4j.cypher.internal.expressions.MapTypeName;
+import org.neo4j.cypher.internal.expressions.NodeTypeName;
+import org.neo4j.cypher.internal.expressions.NothingTypeName;
+import org.neo4j.cypher.internal.expressions.NullTypeName;
+import org.neo4j.cypher.internal.expressions.PathTypeName;
 import org.neo4j.cypher.internal.expressions.PointTypeName;
+import org.neo4j.cypher.internal.expressions.PropertyValueTypeName;
+import org.neo4j.cypher.internal.expressions.RelationshipTypeName;
 import org.neo4j.cypher.internal.expressions.StringTypeName;
 import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName;
 import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName;
@@ -91,13 +100,17 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.NodeIdReference;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.PathReference;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.RelationshipVisitor;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -1585,7 +1598,13 @@ public final class CypherFunctions {
 
     public static BooleanValue isTyped(AnyValue item, CypherTypeName typeName) {
         boolean result;
-        if (item instanceof NoValue) {
+        if (typeName instanceof NothingTypeName) {
+            result = false;
+        } else if (item instanceof NoValue) {
+            result = typeName instanceof NullTypeName || typeName.isNullable();
+        } else if (typeName instanceof NullTypeName) {
+            result = false;
+        } else if (typeName instanceof AnyTypeName) {
             result = true;
         } else if (typeName instanceof BooleanTypeName) {
             result = Values.isBooleanValue(item);
@@ -1609,11 +1628,43 @@ public final class CypherFunctions {
             result = item instanceof DurationValue;
         } else if (typeName instanceof PointTypeName) {
             result = item instanceof PointValue;
+        } else if (typeName instanceof NodeTypeName) {
+            result = item instanceof NodeIdReference;
+        } else if (typeName instanceof RelationshipTypeName) {
+            result = item instanceof RelationshipReference;
+        } else if (typeName instanceof MapTypeName) {
+            result = item instanceof MapValue;
+        } else if (typeName instanceof ListTypeName) {
+            result = (item instanceof ListValue || item instanceof ArrayValue)
+                    && checkInnerListIsTyped((Iterable<AnyValue>) item, ((ListTypeName) typeName).innerType());
+        } else if (typeName instanceof PathTypeName) {
+            result = item instanceof PathReference;
+        } else if (typeName instanceof PropertyValueTypeName) {
+            result = (!item.valueRepresentation().equals(ValueRepresentation.UNKNOWN)
+                            && !item.valueRepresentation().equals(ValueRepresentation.ANYTHING))
+                    || (item instanceof ListValue listValue
+                            && (listValue.isEmpty()
+                                    || (!listValue.itemValueRepresentation().equals(ValueRepresentation.UNKNOWN)
+                                            && !listValue
+                                                    .itemValueRepresentation()
+                                                    .equals(ValueRepresentation.ANYTHING)
+                                            && !listValue
+                                                    .itemValueRepresentation()
+                                                    .equals(ValueRepresentation.NO_VALUE))));
         } else {
             throw new IllegalArgumentException(String.format("Unexpected type: %s", typeName.typeName()));
         }
 
         return Values.booleanValue(result);
+    }
+
+    private static boolean checkInnerListIsTyped(Iterable<AnyValue> values, CypherTypeName typeName) {
+        for (AnyValue value : values) {
+            if (isTyped(value, typeName) == FALSE) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static AnyValue assertIsNode(AnyValue item) {

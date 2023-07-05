@@ -778,8 +778,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT `$foo` FOR (a:A) REQUIRE (a.p) IS :: STRING",
     "create OR replace CONSTRAINT FOR (a:A) REQUIRE a.p IS TYPED time with timezone" ->
       "CREATE OR REPLACE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS :: ZONED TIME",
-    "create CONSTRAINT foo if not EXISTS FOR (a:A) REQUIRE a.p IS :: INTEGER" ->
-      "CREATE CONSTRAINT foo IF NOT EXISTS FOR (a:A) REQUIRE (a.p) IS :: INTEGER",
+    "create CONSTRAINT foo if not EXISTS FOR (a:A) REQUIRE a.p IS :: LIST<date not null>" ->
+      "CREATE CONSTRAINT foo IF NOT EXISTS FOR (a:A) REQUIRE (a.p) IS :: LIST<DATE NOT NULL>",
     "create CONSTRAINT FOR ()-[r:R]-() REQUIRE r.p is tyPED bool" ->
       "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS :: BOOLEAN",
     "create CONSTRAINT foo FOR ()-[r:R]->() REQUIRE (r.p) IS :: int" ->
@@ -792,8 +792,8 @@ class PrettifierIT extends CypherFunSuite {
       """CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS :: POINT OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
     "create CONSTRAINT IF not exists FOR ()-[r:R]-() REQUIRE r.p IS TYPED timestamp without timezone" ->
       "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS :: LOCAL DATETIME",
-    "create or Replace CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS :: string" ->
-      "CREATE OR REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS :: STRING",
+    "create or Replace CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS :: list<duration NOT NULL>" ->
+      "CREATE OR REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS :: LIST<DURATION NOT NULL>",
     "drop CONSTRAINT foo" ->
       "DROP CONSTRAINT foo",
     "drop CONSTRAINT `foo`" ->

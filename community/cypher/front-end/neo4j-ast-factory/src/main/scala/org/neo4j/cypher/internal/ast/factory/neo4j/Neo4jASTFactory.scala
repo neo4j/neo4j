@@ -342,6 +342,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
 import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName
+import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName.ListParserCypherTypeName
 import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
 import org.neo4j.cypher.internal.ast.factory.SimpleEither
@@ -352,6 +353,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.AnyTypeName
 import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -390,6 +392,7 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.ListTypeName
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
@@ -397,6 +400,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.MapProjectionElement
+import org.neo4j.cypher.internal.expressions.MapTypeName
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
@@ -407,17 +411,21 @@ import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NodeTypeName
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.expressions.NothingTypeName
 import org.neo4j.cypher.internal.expressions.Null
+import org.neo4j.cypher.internal.expressions.NullTypeName
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
 import org.neo4j.cypher.internal.expressions.PathPatternPart
+import org.neo4j.cypher.internal.expressions.PathTypeName
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -433,6 +441,7 @@ import org.neo4j.cypher.internal.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertySelector
+import org.neo4j.cypher.internal.expressions.PropertyValueTypeName
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.ReduceExpression
@@ -440,6 +449,7 @@ import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
@@ -1766,28 +1776,81 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
   }
 
   private def convertCypherType(javaType: ParserCypherTypeName): CypherTypeName = javaType match {
+    case ParserCypherTypeName.NOTHING =>
+      NothingTypeName()
+    case ParserCypherTypeName.NULL =>
+      NullTypeName()
     case ParserCypherTypeName.BOOLEAN =>
-      BooleanTypeName()
+      BooleanTypeName(true)
+    case ParserCypherTypeName.BOOLEAN_NOT_NULL =>
+      BooleanTypeName(false)
     case ParserCypherTypeName.STRING =>
-      StringTypeName()
+      StringTypeName(true)
+    case ParserCypherTypeName.STRING_NOT_NULL =>
+      StringTypeName(false)
     case ParserCypherTypeName.INTEGER =>
-      IntegerTypeName()
+      IntegerTypeName(true)
+    case ParserCypherTypeName.INTEGER_NOT_NULL =>
+      IntegerTypeName(false)
     case ParserCypherTypeName.FLOAT =>
-      FloatTypeName()
+      FloatTypeName(true)
+    case ParserCypherTypeName.FLOAT_NOT_NULL =>
+      FloatTypeName(false)
     case ParserCypherTypeName.DATE =>
-      DateTypeName()
+      DateTypeName(true)
+    case ParserCypherTypeName.DATE_NOT_NULL =>
+      DateTypeName(false)
     case ParserCypherTypeName.LOCAL_TIME =>
-      LocalTimeTypeName()
+      LocalTimeTypeName(true)
+    case ParserCypherTypeName.LOCAL_TIME_NOT_NULL =>
+      LocalTimeTypeName(false)
     case ParserCypherTypeName.ZONED_TIME =>
-      ZonedTimeTypeName()
+      ZonedTimeTypeName(true)
+    case ParserCypherTypeName.ZONED_TIME_NOT_NULL =>
+      ZonedTimeTypeName(false)
     case ParserCypherTypeName.LOCAL_DATETIME =>
-      LocalDateTimeTypeName()
+      LocalDateTimeTypeName(true)
+    case ParserCypherTypeName.LOCAL_DATETIME_NOT_NULL =>
+      LocalDateTimeTypeName(false)
     case ParserCypherTypeName.ZONED_DATETIME =>
-      ZonedDateTimeTypeName()
+      ZonedDateTimeTypeName(true)
+    case ParserCypherTypeName.ZONED_DATETIME_NOT_NULL =>
+      ZonedDateTimeTypeName(false)
     case ParserCypherTypeName.DURATION =>
-      DurationTypeName()
+      DurationTypeName(true)
+    case ParserCypherTypeName.DURATION_NOT_NULL =>
+      DurationTypeName(false)
     case ParserCypherTypeName.POINT =>
-      PointTypeName()
+      PointTypeName(true)
+    case ParserCypherTypeName.POINT_NOT_NULL =>
+      PointTypeName(false)
+    case ParserCypherTypeName.NODE =>
+      NodeTypeName(true)
+    case ParserCypherTypeName.NODE_NOT_NULL =>
+      NodeTypeName(false)
+    case ParserCypherTypeName.RELATIONSHIP =>
+      RelationshipTypeName(true)
+    case ParserCypherTypeName.RELATIONSHIP_NOT_NULL =>
+      RelationshipTypeName(false)
+    case ParserCypherTypeName.MAP =>
+      MapTypeName(true)
+    case ParserCypherTypeName.MAP_NOT_NULL =>
+      MapTypeName(false)
+    case l: ListParserCypherTypeName =>
+      val inner = convertCypherType(l.getInnerType)
+      ListTypeName(inner, l.isNullable)
+    case ParserCypherTypeName.PATH =>
+      PathTypeName(true)
+    case ParserCypherTypeName.PATH_NOT_NULL =>
+      PathTypeName(false)
+    case ParserCypherTypeName.PROPERTY_VALUE =>
+      PropertyValueTypeName(true)
+    case ParserCypherTypeName.PROPERTY_VALUE_NOT_NULL =>
+      PropertyValueTypeName(false)
+    case ParserCypherTypeName.ANY =>
+      AnyTypeName(true)
+    case ParserCypherTypeName.ANY_NOT_NULL =>
+      AnyTypeName(false)
     case ct =>
       throw new Neo4jASTConstructionException(s"Unknown Cypher type: $ct")
   }

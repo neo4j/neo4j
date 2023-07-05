@@ -126,11 +126,11 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
         ),
         eq(
           in(literalString("string"), varFor("list")),
-          isTyped(varFor("y"), BooleanTypeName())
+          isTyped(varFor("y"), BooleanTypeName(true))
         ),
         eq(
-          isTyped(varFor("y"), BooleanTypeName()),
-          isNotTyped(literalInt(1), BooleanTypeName())
+          isTyped(varFor("y"), BooleanTypeName(true)),
+          isNotTyped(literalInt(1), BooleanTypeName(true))
         )
       )
   }
@@ -182,11 +182,11 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
 
     //  ([true] + n.p) :: STRING
     parsing(" [true] + n.p :: STRING") shouldGive
-      isTyped(add(listOf(trueLiteral), prop("n", "p")), StringTypeName())
+      isTyped(add(listOf(trueLiteral), prop("n", "p")), StringTypeName(true))
 
     // (3 - 4) IS NOT TYPED BOOLEAN
     parsing("3 - 4 IS NOT :: BOOLEAN") shouldGive
-      isNotTyped(subtract(literalInt(3), literalInt(4)), BooleanTypeName())
+      isNotTyped(subtract(literalInt(3), literalInt(4)), BooleanTypeName(true))
   }
 
   test("precedence 6 - left-associativity") {

@@ -119,6 +119,9 @@ AND:
 ANY:
    A N Y;
 
+ARRAY:
+   A R R A Y;
+
 AS:
    A S;
 
@@ -302,6 +305,9 @@ DURATION:
 EACH:
    E A C H;
 
+EDGE:
+   E D G E;
+
 ENABLE:
    E N A B L E;
 
@@ -464,6 +470,9 @@ LE:
 LIMITROWS:
    L I M I T;
 
+LIST:
+   L I S T;
+
 LOAD:
    L O A D;
 
@@ -481,6 +490,9 @@ LT:
 
 MANAGEMENT:
    M A N A G E M E N T;
+
+MAP:
+   M A P;
 
 MATCH:
    M A T C H;
@@ -523,6 +535,9 @@ NONE:
 
 NOT:
    N O T;
+
+NOTHING:
+  N O T H I N G;
 
 NOWAIT:
    N O W A I T;
@@ -842,11 +857,17 @@ USERS:
 USING:
    U S I N G;
 
+VALUE:
+   V A L U E;
+
 VARCHAR:
    V A R C H A R;
 
 VERBOSE:
    V E R B O S E;
+
+VERTEX:
+   V E R T E X;
 
 WAIT:
    W A I T;

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.expressions.AnyTypeName
 import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.DateTypeName
@@ -29,9 +30,17 @@ import org.neo4j.cypher.internal.expressions.DurationTypeName
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FloatTypeName
 import org.neo4j.cypher.internal.expressions.IntegerTypeName
+import org.neo4j.cypher.internal.expressions.ListTypeName
 import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
+import org.neo4j.cypher.internal.expressions.MapTypeName
+import org.neo4j.cypher.internal.expressions.NodeTypeName
+import org.neo4j.cypher.internal.expressions.NothingTypeName
+import org.neo4j.cypher.internal.expressions.NullTypeName
+import org.neo4j.cypher.internal.expressions.PathTypeName
 import org.neo4j.cypher.internal.expressions.PointTypeName
+import org.neo4j.cypher.internal.expressions.PropertyValueTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipTypeName
 import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
@@ -44,27 +53,249 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
   implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
   implicit val antlrRule: AntlrRule[ExpressionContext] = AntlrRule.Expression
 
-  Seq(
-    ("BOOL", BooleanTypeName()),
-    ("BOOLEAN", BooleanTypeName()),
-    ("VARCHAR", StringTypeName()),
-    ("STRING", StringTypeName()),
-    ("INTEGER", IntegerTypeName()),
-    ("INT", IntegerTypeName()),
-    ("SIGNED INTEGER", IntegerTypeName()),
-    ("FLOAT", FloatTypeName()),
-    ("DATE", DateTypeName()),
-    ("LOCAL TIME", LocalTimeTypeName()),
-    ("TIME WITHOUT TIMEZONE", LocalTimeTypeName()),
-    ("ZONED TIME", ZonedTimeTypeName()),
-    ("TIME WITH TIMEZONE", ZonedTimeTypeName()),
-    ("LOCAL DATETIME", LocalDateTimeTypeName()),
-    ("TIMESTAMP WITHOUT TIMEZONE", LocalDateTimeTypeName()),
-    ("ZONED DATETIME", ZonedDateTimeTypeName()),
-    ("TIMESTAMP WITH TIMEZONE", ZonedDateTimeTypeName()),
-    ("DURATION", DurationTypeName()),
-    ("POINT", PointTypeName())
-  ).foreach { case (typeString, typeExpr: CypherTypeName) =>
+  private val allNonListTypes = Seq(
+    ("NOTHING", NothingTypeName()),
+    ("NOTHING NOT NULL", NothingTypeName()),
+    ("NULL", NullTypeName()),
+    ("NULL NOT NULL", NothingTypeName()),
+    ("BOOL", BooleanTypeName(true)),
+    ("BOOL NOT NULL", BooleanTypeName(false)),
+    ("BOOLEAN", BooleanTypeName(true)),
+    ("BOOLEAN NOT NULL", BooleanTypeName(false)),
+    ("VARCHAR", StringTypeName(true)),
+    ("VARCHAR NOT NULL", StringTypeName(false)),
+    ("STRING", StringTypeName(true)),
+    ("STRING NOT NULL", StringTypeName(false)),
+    ("INTEGER", IntegerTypeName(true)),
+    ("INTEGER NOT NULL", IntegerTypeName(false)),
+    ("INT", IntegerTypeName(true)),
+    ("INT NOT NULL", IntegerTypeName(false)),
+    ("SIGNED INTEGER", IntegerTypeName(true)),
+    ("SIGNED INTEGER NOT NULL", IntegerTypeName(false)),
+    ("FLOAT", FloatTypeName(true)),
+    ("FLOAT NOT NULL", FloatTypeName(false)),
+    ("DATE", DateTypeName(true)),
+    ("DATE NOT NULL", DateTypeName(false)),
+    ("LOCAL TIME", LocalTimeTypeName(true)),
+    ("LOCAL TIME NOT NULL", LocalTimeTypeName(false)),
+    ("TIME WITHOUT TIMEZONE", LocalTimeTypeName(true)),
+    ("TIME WITHOUT TIMEZONE NOT NULL", LocalTimeTypeName(false)),
+    ("ZONED TIME", ZonedTimeTypeName(true)),
+    ("ZONED TIME NOT NULL", ZonedTimeTypeName(false)),
+    ("TIME WITH TIMEZONE", ZonedTimeTypeName(true)),
+    ("TIME WITH TIMEZONE NOT NULL", ZonedTimeTypeName(false)),
+    ("LOCAL DATETIME", LocalDateTimeTypeName(true)),
+    ("LOCAL DATETIME NOT NULL", LocalDateTimeTypeName(false)),
+    ("TIMESTAMP WITHOUT TIMEZONE", LocalDateTimeTypeName(true)),
+    ("TIMESTAMP WITHOUT TIMEZONE NOT NULL", LocalDateTimeTypeName(false)),
+    ("ZONED DATETIME", ZonedDateTimeTypeName(true)),
+    ("ZONED DATETIME NOT NULL", ZonedDateTimeTypeName(false)),
+    ("TIMESTAMP WITH TIMEZONE", ZonedDateTimeTypeName(true)),
+    ("TIMESTAMP WITH TIMEZONE NOT NULL", ZonedDateTimeTypeName(false)),
+    ("DURATION", DurationTypeName(true)),
+    ("DURATION NOT NULL", DurationTypeName(false)),
+    ("POINT", PointTypeName(true)),
+    ("POINT NOT NULL", PointTypeName(false)),
+    ("NODE", NodeTypeName(true)),
+    ("NODE NOT NULL", NodeTypeName(false)),
+    ("ANY NODE", NodeTypeName(true)),
+    ("ANY NODE NOT NULL", NodeTypeName(false)),
+    ("VERTEX", NodeTypeName(true)),
+    ("VERTEX NOT NULL", NodeTypeName(false)),
+    ("ANY VERTEX", NodeTypeName(true)),
+    ("ANY VERTEX NOT NULL", NodeTypeName(false)),
+    ("RELATIONSHIP", RelationshipTypeName(true)),
+    ("RELATIONSHIP NOT NULL", RelationshipTypeName(false)),
+    ("ANY RELATIONSHIP", RelationshipTypeName(true)),
+    ("ANY RELATIONSHIP NOT NULL", RelationshipTypeName(false)),
+    ("EDGE", RelationshipTypeName(true)),
+    ("EDGE NOT NULL", RelationshipTypeName(false)),
+    ("ANY EDGE", RelationshipTypeName(true)),
+    ("ANY EDGE NOT NULL", RelationshipTypeName(false)),
+    ("MAP", MapTypeName(true)),
+    ("MAP NOT NULL", MapTypeName(false)),
+    ("ANY MAP", MapTypeName(true)),
+    ("ANY MAP NOT NULL", MapTypeName(false)),
+    ("PATH", PathTypeName(true)),
+    ("PATH NOT NULL", PathTypeName(false)),
+    ("ANY PROPERTY VALUE", PropertyValueTypeName(true)),
+    ("ANY PROPERTY VALUE NOT NULL", PropertyValueTypeName(false)),
+    ("PROPERTY VALUE", PropertyValueTypeName(true)),
+    ("PROPERTY VALUE NOT NULL", PropertyValueTypeName(false)),
+    ("ANY VALUE", AnyTypeName(true)),
+    ("ANY VALUE NOT NULL", AnyTypeName(false)),
+    ("ANY", AnyTypeName(true)),
+    ("ANY NOT NULL", AnyTypeName(false))
+  )
+
+  private val listTypes = allNonListTypes.flatMap { case (innerTypeString, innerTypeExpr: CypherTypeName) =>
+    Seq(
+      // LIST<type>
+      (s"LIST<$innerTypeString>", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"LIST<$innerTypeString> NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      (s"ARRAY<$innerTypeString>", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"ARRAY<$innerTypeString> NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      (s"$innerTypeString LIST", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"$innerTypeString LIST NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      (s"$innerTypeString ARRAY", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"$innerTypeString ARRAY NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      // LIST<LIST<type>>
+      (
+        s"LIST<LIST<$innerTypeString>>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"LIST<LIST<$innerTypeString>> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<LIST<$innerTypeString> NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<LIST<$innerTypeString> NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString>>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString>> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString> NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString> NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"LIST<$innerTypeString LIST>", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"LIST<$innerTypeString LIST> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString LIST NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString LIST NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"LIST<$innerTypeString> LIST", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"LIST<$innerTypeString> LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString> NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString> NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (
+        s"ARRAY<$innerTypeString> LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"ARRAY<$innerTypeString> LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"ARRAY<$innerTypeString> NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"ARRAY<$innerTypeString> NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"$innerTypeString LIST LIST", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"$innerTypeString LIST LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"$innerTypeString LIST NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"$innerTypeString LIST NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"$innerTypeString ARRAY LIST", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"$innerTypeString ARRAY LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"$innerTypeString ARRAY NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"$innerTypeString ARRAY NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      // even more nesting lists
+      (
+        s"LIST<LIST<LIST<LIST<$innerTypeString>> NOT NULL> NOT NULL LIST NOT NULL>",
+        ListTypeName(
+          ListTypeName(
+            ListTypeName(
+              ListTypeName(
+                ListTypeName(
+                  innerTypeExpr,
+                  isNullable = true
+                ),
+                isNullable = false
+              ),
+              isNullable = false
+            ),
+            isNullable = false
+          ),
+          isNullable = true
+        )
+      ),
+      (
+        s"$innerTypeString LIST NOT NULL LIST LIST NOT NULL LIST",
+        ListTypeName(
+          ListTypeName(
+            ListTypeName(
+              ListTypeName(
+                innerTypeExpr,
+                isNullable = false
+              ),
+              isNullable = true
+            ),
+            isNullable = false
+          ),
+          isNullable = true
+        )
+      )
+    )
+  }
+
+  (allNonListTypes ++ listTypes).foreach { case (typeString, typeExpr: CypherTypeName) =>
     test(s"x IS :: $typeString") {
       gives {
         isTyped(varFor("x"), typeExpr)
@@ -99,5 +330,17 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
     test(s"x NOT :: $typeString") {
       failsToParse
     }
+  }
+
+  test("x :: BOOLEAN NOT NULL NOT NULL") {
+    failsToParse
+  }
+
+  test("x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
+    failsToParse
+  }
+
+  test("x :: BOOLEAN LIST NOT NULL NOT NULL") {
+    failsToParse
   }
 }

@@ -20,12 +20,35 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.AnyTypeName
+import org.neo4j.cypher.internal.expressions.BooleanTypeName
+import org.neo4j.cypher.internal.expressions.CypherTypeName
+import org.neo4j.cypher.internal.expressions.DateTypeName
+import org.neo4j.cypher.internal.expressions.DurationTypeName
+import org.neo4j.cypher.internal.expressions.FloatTypeName
+import org.neo4j.cypher.internal.expressions.IntegerTypeName
+import org.neo4j.cypher.internal.expressions.ListTypeName
+import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
+import org.neo4j.cypher.internal.expressions.MapTypeName
+import org.neo4j.cypher.internal.expressions.NodeTypeName
+import org.neo4j.cypher.internal.expressions.NothingTypeName
+import org.neo4j.cypher.internal.expressions.NullTypeName
+import org.neo4j.cypher.internal.expressions.PathTypeName
+import org.neo4j.cypher.internal.expressions.PointTypeName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertyValueTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipTypeName
+import org.neo4j.cypher.internal.expressions.StringTypeName
+import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 /* Tests for creating and dropping constraints */
@@ -801,7 +824,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -817,7 +840,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -833,7 +856,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -849,7 +872,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -865,7 +888,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -881,7 +904,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -895,7 +918,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -911,7 +934,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -927,7 +950,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -943,7 +966,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -959,7 +982,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -975,7 +998,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -991,7 +1014,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.BooleanTypeName(),
+                expressions.BooleanTypeName(true),
                 None,
                 ast.IfExistsThrowError,
                 ast.OptionsMap(Map.empty),
@@ -1712,7 +1735,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("my_constraint"),
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -1728,7 +1751,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("my_constraint"),
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -1744,7 +1767,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("my_constraint"),
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -1760,7 +1783,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("my_constraint"),
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -1776,7 +1799,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("my_constraint"),
                 ast.IfExistsThrowError,
                 ast.OptionsMap(Map.empty),
@@ -1805,7 +1828,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("$my_constraint"),
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -1821,7 +1844,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("my_constraint"),
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -1837,7 +1860,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("$my_constraint"),
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -1853,7 +1876,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("$my_constraint"),
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -1869,7 +1892,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                expressions.StringTypeName(),
+                expressions.StringTypeName(true),
                 Some("$my_constraint"),
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -2014,27 +2037,30 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
   // Property types
 
-  Seq(
-    ("BOOL", expressions.BooleanTypeName()),
-    ("BOOLEAN", expressions.BooleanTypeName()),
-    ("VARCHAR", expressions.StringTypeName()),
-    ("STRING", expressions.StringTypeName()),
-    ("INTEGER", expressions.IntegerTypeName()),
-    ("INT", expressions.IntegerTypeName()),
-    ("SIGNED INTEGER", expressions.IntegerTypeName()),
-    ("FLOAT", expressions.FloatTypeName()),
-    ("DATE", expressions.DateTypeName()),
-    ("LOCAL TIME", expressions.LocalTimeTypeName()),
-    ("TIME WITHOUT TIMEZONE", expressions.LocalTimeTypeName()),
-    ("ZONED TIME", expressions.ZonedTimeTypeName()),
-    ("TIME WITH TIMEZONE", expressions.ZonedTimeTypeName()),
-    ("LOCAL DATETIME", expressions.LocalDateTimeTypeName()),
-    ("TIMESTAMP WITHOUT TIMEZONE", expressions.LocalDateTimeTypeName()),
-    ("ZONED DATETIME", expressions.ZonedDateTimeTypeName()),
-    ("TIMESTAMP WITH TIMEZONE", expressions.ZonedDateTimeTypeName()),
-    ("DURATION", expressions.DurationTypeName()),
-    ("POINT", expressions.PointTypeName())
-  ).foreach { case (typeString, typeExpr: expressions.CypherTypeName) =>
+  // allowed types
+  private val allowedNonListTypes = Seq(
+    ("BOOL", expressions.BooleanTypeName(true)),
+    ("BOOLEAN", expressions.BooleanTypeName(true)),
+    ("VARCHAR", expressions.StringTypeName(true)),
+    ("STRING", expressions.StringTypeName(true)),
+    ("INTEGER", expressions.IntegerTypeName(true)),
+    ("INT", expressions.IntegerTypeName(true)),
+    ("SIGNED INTEGER", expressions.IntegerTypeName(true)),
+    ("FLOAT", expressions.FloatTypeName(true)),
+    ("DATE", expressions.DateTypeName(true)),
+    ("LOCAL TIME", expressions.LocalTimeTypeName(true)),
+    ("TIME WITHOUT TIMEZONE", expressions.LocalTimeTypeName(true)),
+    ("ZONED TIME", expressions.ZonedTimeTypeName(true)),
+    ("TIME WITH TIMEZONE", expressions.ZonedTimeTypeName(true)),
+    ("LOCAL DATETIME", expressions.LocalDateTimeTypeName(true)),
+    ("TIMESTAMP WITHOUT TIMEZONE", expressions.LocalDateTimeTypeName(true)),
+    ("ZONED DATETIME", expressions.ZonedDateTimeTypeName(true)),
+    ("TIMESTAMP WITH TIMEZONE", expressions.ZonedDateTimeTypeName(true)),
+    ("DURATION", expressions.DurationTypeName(true)),
+    ("POINT", expressions.PointTypeName(true))
+  )
+
+  allowedNonListTypes.foreach { case (typeString, typeExpr: expressions.CypherTypeName) =>
     test(s"CREATE CONSTRAINT FOR (n:Label) REQUIRE r.prop IS TYPED $typeString") {
       yields(ast.CreateNodePropertyTypeConstraint(
         varFor("n"),
@@ -2094,6 +2120,304 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         ast.ConstraintVersion2
       ))
     }
+  }
+
+  // disallowed types (throws in semantic checking)
+  private val disallowedNonListTypes = Seq(
+    ("NOTHING", NothingTypeName()),
+    ("NOTHING NOT NULL", NothingTypeName()),
+    ("NULL", NullTypeName()),
+    ("NULL NOT NULL", NothingTypeName()),
+    ("BOOL NOT NULL", BooleanTypeName(false)),
+    ("BOOLEAN NOT NULL", BooleanTypeName(false)),
+    ("VARCHAR NOT NULL", StringTypeName(false)),
+    ("STRING NOT NULL", StringTypeName(false)),
+    ("INTEGER NOT NULL", IntegerTypeName(false)),
+    ("INT NOT NULL", IntegerTypeName(false)),
+    ("SIGNED INTEGER NOT NULL", IntegerTypeName(false)),
+    ("FLOAT NOT NULL", FloatTypeName(false)),
+    ("DATE NOT NULL", DateTypeName(false)),
+    ("LOCAL TIME NOT NULL", LocalTimeTypeName(false)),
+    ("TIME WITHOUT TIMEZONE NOT NULL", LocalTimeTypeName(false)),
+    ("ZONED TIME NOT NULL", ZonedTimeTypeName(false)),
+    ("TIME WITH TIMEZONE NOT NULL", ZonedTimeTypeName(false)),
+    ("LOCAL DATETIME NOT NULL", LocalDateTimeTypeName(false)),
+    ("TIMESTAMP WITHOUT TIMEZONE NOT NULL", LocalDateTimeTypeName(false)),
+    ("ZONED DATETIME NOT NULL", ZonedDateTimeTypeName(false)),
+    ("TIMESTAMP WITH TIMEZONE NOT NULL", ZonedDateTimeTypeName(false)),
+    ("DURATION NOT NULL", DurationTypeName(false)),
+    ("POINT NOT NULL", PointTypeName(false)),
+    ("NODE", NodeTypeName(true)),
+    ("NODE NOT NULL", NodeTypeName(false)),
+    ("ANY NODE", NodeTypeName(true)),
+    ("ANY NODE NOT NULL", NodeTypeName(false)),
+    ("VERTEX", NodeTypeName(true)),
+    ("VERTEX NOT NULL", NodeTypeName(false)),
+    ("ANY VERTEX", NodeTypeName(true)),
+    ("ANY VERTEX NOT NULL", NodeTypeName(false)),
+    ("RELATIONSHIP", RelationshipTypeName(true)),
+    ("RELATIONSHIP NOT NULL", RelationshipTypeName(false)),
+    ("ANY RELATIONSHIP", RelationshipTypeName(true)),
+    ("ANY RELATIONSHIP NOT NULL", RelationshipTypeName(false)),
+    ("EDGE", RelationshipTypeName(true)),
+    ("EDGE NOT NULL", RelationshipTypeName(false)),
+    ("ANY EDGE", RelationshipTypeName(true)),
+    ("ANY EDGE NOT NULL", RelationshipTypeName(false)),
+    ("MAP", MapTypeName(true)),
+    ("MAP NOT NULL", MapTypeName(false)),
+    ("ANY MAP", MapTypeName(true)),
+    ("ANY MAP NOT NULL", MapTypeName(false)),
+    ("PATH", PathTypeName(true)),
+    ("PATH NOT NULL", PathTypeName(false)),
+    ("ANY PROPERTY VALUE", PropertyValueTypeName(true)),
+    ("ANY PROPERTY VALUE NOT NULL", PropertyValueTypeName(false)),
+    ("PROPERTY VALUE", PropertyValueTypeName(true)),
+    ("PROPERTY VALUE NOT NULL", PropertyValueTypeName(false)),
+    ("ANY VALUE", AnyTypeName(true)),
+    ("ANY VALUE NOT NULL", AnyTypeName(false)),
+    ("ANY", AnyTypeName(true)),
+    ("ANY NOT NULL", AnyTypeName(false))
+  )
+
+  disallowedNonListTypes.foreach { case (typeString, typeExpr: CypherTypeName) =>
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${typeString.toLowerCase}"
+    ) {
+      yields(ast.CreateNodePropertyTypeConstraint(
+        varFor("n"),
+        labelName("Label"),
+        prop("r", "prop"),
+        typeExpr,
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        containsOn = false,
+        ast.ConstraintVersion2
+      ))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE n.prop IS TYPED $typeString"
+    ) {
+      yields(ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("n", "prop"),
+        typeExpr,
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        containsOn = false,
+        ast.ConstraintVersion2
+      ))
+    }
+  }
+
+  // List types (mix of allowed and disallowed types)
+  (allowedNonListTypes ++ disallowedNonListTypes).foreach { case (innerTypeString, innerTypeExpr: CypherTypeName) =>
+    Seq(
+      // LIST<type>
+      (s"LIST<$innerTypeString>", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"LIST<$innerTypeString> NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      (s"ARRAY<$innerTypeString>", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"ARRAY<$innerTypeString> NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      (s"$innerTypeString LIST", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"$innerTypeString LIST NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      (s"$innerTypeString ARRAY", ListTypeName(innerTypeExpr, isNullable = true)),
+      (s"$innerTypeString ARRAY NOT NULL", ListTypeName(innerTypeExpr, isNullable = false)),
+      // LIST<LIST<type>>
+      (
+        s"LIST<LIST<$innerTypeString>>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"LIST<LIST<$innerTypeString>> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<LIST<$innerTypeString> NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<LIST<$innerTypeString> NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString>>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString>> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString> NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<ARRAY<$innerTypeString> NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"LIST<$innerTypeString LIST>", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"LIST<$innerTypeString LIST> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString LIST NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString LIST NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY NOT NULL>",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString ARRAY NOT NULL> NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"LIST<$innerTypeString> LIST", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"LIST<$innerTypeString> LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"LIST<$innerTypeString> NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"LIST<$innerTypeString> NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (
+        s"ARRAY<$innerTypeString> LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)
+      ),
+      (
+        s"ARRAY<$innerTypeString> LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"ARRAY<$innerTypeString> NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"ARRAY<$innerTypeString> NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"$innerTypeString LIST LIST", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"$innerTypeString LIST LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"$innerTypeString LIST NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"$innerTypeString LIST NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      (s"$innerTypeString ARRAY LIST", ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = true)),
+      (
+        s"$innerTypeString ARRAY LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = true), isNullable = false)
+      ),
+      (
+        s"$innerTypeString ARRAY NOT NULL LIST",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = true)
+      ),
+      (
+        s"$innerTypeString ARRAY NOT NULL LIST NOT NULL",
+        ListTypeName(ListTypeName(innerTypeExpr, isNullable = false), isNullable = false)
+      ),
+      // even more nesting lists
+      (
+        s"LIST<LIST<LIST<LIST<$innerTypeString>> NOT NULL> NOT NULL LIST NOT NULL>",
+        ListTypeName(
+          ListTypeName(
+            ListTypeName(
+              ListTypeName(
+                ListTypeName(
+                  innerTypeExpr,
+                  isNullable = true
+                ),
+                isNullable = false
+              ),
+              isNullable = false
+            ),
+            isNullable = false
+          ),
+          isNullable = true
+        )
+      ),
+      (
+        s"$innerTypeString LIST NOT NULL LIST LIST NOT NULL LIST",
+        ListTypeName(
+          ListTypeName(
+            ListTypeName(
+              ListTypeName(
+                innerTypeExpr,
+                isNullable = false
+              ),
+              isNullable = true
+            ),
+            isNullable = false
+          ),
+          isNullable = true
+        )
+      )
+    ).foreach { case (listTypeString, listTypeExpr: CypherTypeName) =>
+      test(
+        s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${listTypeString.toLowerCase}"
+      ) {
+        yields(ast.CreateNodePropertyTypeConstraint(
+          varFor("n"),
+          labelName("Label"),
+          prop("r", "prop"),
+          listTypeExpr,
+          Some("my_constraint"),
+          ast.IfExistsThrowError,
+          ast.NoOptions,
+          containsOn = false,
+          ast.ConstraintVersion2
+        ))
+      }
+
+      test(
+        s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE n.prop IS TYPED $listTypeString"
+      ) {
+        yields(ast.CreateRelationshipPropertyTypeConstraint(
+          varFor("r"),
+          relTypeName("R"),
+          prop("n", "prop"),
+          listTypeExpr,
+          Some("my_constraint"),
+          ast.IfExistsThrowError,
+          ast.NoOptions,
+          containsOn = false,
+          ast.ConstraintVersion2
+        ))
+      }
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: BOOLEAN LIST NOT NULL NOT NULL") {
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'NOT': expected \"ARRAY\", \"LIST\", \"OPTIONS\" or <EOF> (line 1, column 83 (offset: 82))"
+    )
   }
 
   // ASSERT EXISTS
@@ -2417,8 +2741,8 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT my_constraint FOR (n:Person) REQUIRE n.prop IS NOT NULL OPTIONS {indexProvider : 'range-1.0'};"
   ) {
-    implicit val javaccRule = JavaccRule.Statements
-    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
+    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements(checkAllTokensConsumed = false)
 
     yields(ast.CreateNodePropertyExistenceConstraint(
       varFor("n"),
@@ -2435,8 +2759,8 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT FOR (n:Person) REQUIRE n.prop IS NOT NULL; CREATE CONSTRAINT FOR (n:User) REQUIRE n.prop IS UNIQUE"
   ) {
-    implicit val javaccRule = JavaccRule.Statements
-    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
+    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements(checkAllTokensConsumed = false)
 
     // The test setup does 'fromParser(_.Statements().get(0)', so only the first statement is yielded.
     // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
@@ -2601,21 +2925,33 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessageStart(
       testName,
       """Invalid input '': expected
+        |  "ANY"
+        |  "ARRAY"
         |  "BOOL"
         |  "BOOLEAN"
         |  "DATE"
         |  "DURATION"
+        |  "EDGE"
         |  "FLOAT"
         |  "INT"
         |  "INTEGER"
+        |  "LIST"
         |  "LOCAL"
+        |  "MAP"
+        |  "NODE"
+        |  "NOTHING"
+        |  "PATH"
         |  "POINT"
+        |  "PROPERTY"
+        |  "RELATIONSHIP"
         |  "SIGNED"
         |  "STRING"
         |  "TIME"
         |  "TIMESTAMP"
         |  "VARCHAR"
-        |  "ZONED"""".stripMargin
+        |  "VERTEX"
+        |  "ZONED"
+        |  "null"""".stripMargin
     )
   }
 
@@ -2623,21 +2959,33 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessageStart(
       testName,
       """Invalid input '': expected
+        |  "ANY"
+        |  "ARRAY"
         |  "BOOL"
         |  "BOOLEAN"
         |  "DATE"
         |  "DURATION"
+        |  "EDGE"
         |  "FLOAT"
         |  "INT"
         |  "INTEGER"
+        |  "LIST"
         |  "LOCAL"
+        |  "MAP"
+        |  "NODE"
+        |  "NOTHING"
+        |  "PATH"
         |  "POINT"
+        |  "PROPERTY"
+        |  "RELATIONSHIP"
         |  "SIGNED"
         |  "STRING"
         |  "TIME"
         |  "TIMESTAMP"
         |  "VARCHAR"
-        |  "ZONED"""".stripMargin
+        |  "VERTEX"
+        |  "ZONED"
+        |  "null"""".stripMargin
     )
   }
 
@@ -2645,21 +2993,33 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessageStart(
       testName,
       """Invalid input '': expected
+        |  "ANY"
+        |  "ARRAY"
         |  "BOOL"
         |  "BOOLEAN"
         |  "DATE"
         |  "DURATION"
+        |  "EDGE"
         |  "FLOAT"
         |  "INT"
         |  "INTEGER"
+        |  "LIST"
         |  "LOCAL"
+        |  "MAP"
+        |  "NODE"
+        |  "NOTHING"
+        |  "PATH"
         |  "POINT"
+        |  "PROPERTY"
+        |  "RELATIONSHIP"
         |  "SIGNED"
         |  "STRING"
         |  "TIME"
         |  "TIMESTAMP"
         |  "VARCHAR"
-        |  "ZONED"""".stripMargin
+        |  "VERTEX"
+        |  "ZONED"
+        |  "null"""".stripMargin
     )
   }
 
@@ -2667,21 +3027,33 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessage(
       testName,
       """Invalid input 'TYPED': expected
+        |  "ANY"
+        |  "ARRAY"
         |  "BOOL"
         |  "BOOLEAN"
         |  "DATE"
         |  "DURATION"
+        |  "EDGE"
         |  "FLOAT"
         |  "INT"
         |  "INTEGER"
+        |  "LIST"
         |  "LOCAL"
+        |  "MAP"
+        |  "NODE"
+        |  "NOTHING"
+        |  "PATH"
         |  "POINT"
+        |  "PROPERTY"
+        |  "RELATIONSHIP"
         |  "SIGNED"
         |  "STRING"
         |  "TIME"
         |  "TIMESTAMP"
         |  "VARCHAR"
-        |  "ZONED" (line 1, column 44 (offset: 43))""".stripMargin
+        |  "VERTEX"
+        |  "ZONED"
+        |  "null" (line 1, column 44 (offset: 43))""".stripMargin
     )
   }
 
@@ -2689,30 +3061,58 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessage(
       testName,
       """Invalid input 'UNIQUE': expected
+        |  "ANY"
+        |  "ARRAY"
         |  "BOOL"
         |  "BOOLEAN"
         |  "DATE"
         |  "DURATION"
+        |  "EDGE"
         |  "FLOAT"
         |  "INT"
         |  "INTEGER"
+        |  "LIST"
         |  "LOCAL"
+        |  "MAP"
+        |  "NODE"
+        |  "NOTHING"
+        |  "PATH"
         |  "POINT"
+        |  "PROPERTY"
+        |  "RELATIONSHIP"
         |  "SIGNED"
         |  "STRING"
         |  "TIME"
         |  "TIMESTAMP"
         |  "VARCHAR"
-        |  "ZONED" (line 1, column 44 (offset: 43))""".stripMargin
+        |  "VERTEX"
+        |  "ZONED"
+        |  "null" (line 1, column 44 (offset: 43))""".stripMargin
     )
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE") {
-    assertFailsWithMessageStart(testName, """Invalid input 'UNIQUE': expected "OPTIONS" or <EOF>""")
+    assertFailsWithMessageStart(
+      testName,
+      """Invalid input 'UNIQUE': expected
+        |  "ARRAY"
+        |  "LIST"
+        |  "NOT"
+        |  "OPTIONS"
+        |  <EOF>""".stripMargin
+    )
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN") {
-    assertFailsWithMessageStart(testName, """Invalid input 'EAN': expected "OPTIONS" or <EOF>""")
+    assertFailsWithMessageStart(
+      testName,
+      """Invalid input 'EAN': expected
+        |  "ARRAY"
+        |  "LIST"
+        |  "NOT"
+        |  "OPTIONS"
+        |  <EOF>""".stripMargin
+    )
   }
 
   // Drop constraint
@@ -2851,15 +3251,15 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT my_constraint IF EXISTS;") {
-    implicit val javaccRule = JavaccRule.Statements
-    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
+    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements(checkAllTokensConsumed = false)
 
     yields(ast.DropConstraintOnName("my_constraint", ifExists = true))(javaccRule, antlrRule)
   }
 
   test("DROP CONSTRAINT my_constraint; DROP CONSTRAINT my_constraint2;") {
-    implicit val javaccRule = JavaccRule.Statements
-    implicit val antlrRule = AntlrRule.Statements(checkAllTokensConsumed = false)
+    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
+    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements(checkAllTokensConsumed = false)
 
     // The test setup does 'fromParser(_.Statements().get(0)', so only the first statement is yielded.
     // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.

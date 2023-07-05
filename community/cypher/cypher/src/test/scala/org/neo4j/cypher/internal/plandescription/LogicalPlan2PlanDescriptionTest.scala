@@ -3323,7 +3323,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodePropertyType(IntegerTypeName()),
+          NodePropertyType(IntegerTypeName(true)),
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3344,7 +3344,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodePropertyType(BooleanTypeName()),
+          NodePropertyType(BooleanTypeName(true)),
           label("Label"),
           Seq(prop("x", "prop")),
           Some("constraintName"),
@@ -3367,11 +3367,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             label("Label"),
             Seq(prop(" x", "prop")),
-            NodePropertyType(ZonedDateTimeTypeName()),
+            NodePropertyType(ZonedDateTimeTypeName(true)),
             None,
             NoOptions
           )),
-          NodePropertyType(ZonedDateTimeTypeName()),
+          NodePropertyType(ZonedDateTimeTypeName(true)),
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3402,7 +3402,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipPropertyType(FloatTypeName()),
+          RelationshipPropertyType(FloatTypeName(true)),
           relType("R"),
           Seq(prop(" x", "prop")),
           None,
@@ -3423,7 +3423,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipPropertyType(LocalTimeTypeName()),
+          RelationshipPropertyType(LocalTimeTypeName(true)),
           relType("R"),
           Seq(prop(" x", "prop")),
           Some("constraintName"),
@@ -3446,11 +3446,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             relType("R"),
             Seq(prop(" x", "prop")),
-            RelationshipPropertyType(DurationTypeName()),
+            RelationshipPropertyType(DurationTypeName(true)),
             None,
             NoOptions
           )),
-          RelationshipPropertyType(DurationTypeName()),
+          RelationshipPropertyType(DurationTypeName(true)),
           relType("R"),
           Seq(prop(" x", "prop")),
           None,
