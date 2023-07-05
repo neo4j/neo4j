@@ -288,19 +288,19 @@ class SchemaRuleTest {
                 "Constraint( type='RELATIONSHIP UNIQUENESS', schema=()-[:Type1 {prop2, prop3}]-() )",
                 uniqueRelTypeConstraint);
         assertUserDescription(
-                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=ANY<BOOLEAN | INTEGER> )",
+                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=BOOLEAN | INTEGER )",
                 nodeTypeConstraintBoolInt);
         assertUserDescription(
-                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=ANY<BOOLEAN | INTEGER> )",
+                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=BOOLEAN | INTEGER )",
                 nodeTypeConstraintIntBool);
         assertUserDescription(
-                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=ANY<BOOLEAN | STRING> )",
+                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=BOOLEAN | STRING )",
                 nodeTypeConstraintBoolString);
         assertUserDescription(
-                "Constraint( type='RELATIONSHIP PROPERTY TYPE', schema=()-[:Type1 {prop2, prop3}]-(), propertyType=ANY<BOOLEAN | STRING> )",
+                "Constraint( type='RELATIONSHIP PROPERTY TYPE', schema=()-[:Type1 {prop2, prop3}]-(), propertyType=BOOLEAN | STRING )",
                 relationshipTypeConstraintBoolInt);
         assertUserDescription(
-                "Constraint( type='RELATIONSHIP PROPERTY TYPE', schema=()-[:Type1 {prop2, prop3}]-(), propertyType=ANY<BOOLEAN | STRING> )",
+                "Constraint( type='RELATIONSHIP PROPERTY TYPE', schema=()-[:Type1 {prop2, prop3}]-(), propertyType=BOOLEAN | STRING )",
                 relationshipTypeConstraintIntBool);
         assertUserDescription(
                 "Index( name='rangeLabelPrototypeNamed', type='RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",

@@ -32,7 +32,7 @@ class PropertyTypeSetTest {
 
     private static Stream<Arguments> descriptions() {
         return Stream.of(
-                Arguments.of(List.of(), "ANY"),
+                Arguments.of(List.of(), "NOTHING"),
                 Arguments.of(List.of(SchemaValueType.DURATION), "DURATION"),
                 Arguments.of(
                         List.of(
@@ -41,13 +41,33 @@ class PropertyTypeSetTest {
                                 SchemaValueType.BOOLEAN,
                                 SchemaValueType.BOOLEAN,
                                 SchemaValueType.FLOAT),
-                        "ANY<BOOLEAN | INTEGER | FLOAT>"));
+                        "BOOLEAN | INTEGER | FLOAT"));
     }
 
     @ParameterizedTest
     @MethodSource("descriptions")
     void testUserDescription(List<SchemaValueType> types, String expected) {
         assertThat(PropertyTypeSet.of(types).userDescription()).isEqualTo(expected);
+    }
+
+    private static Stream<Arguments> setSizes() {
+        return Stream.of(
+                Arguments.of(List.of(), 0),
+                Arguments.of(List.of(SchemaValueType.DURATION), 1),
+                Arguments.of(
+                        List.of(
+                                SchemaValueType.FLOAT,
+                                SchemaValueType.INTEGER,
+                                SchemaValueType.BOOLEAN,
+                                SchemaValueType.BOOLEAN,
+                                SchemaValueType.FLOAT),
+                        3));
+    }
+
+    @ParameterizedTest
+    @MethodSource("setSizes")
+    void testSize(List<SchemaValueType> types, int expectedSize) {
+        assertThat(PropertyTypeSet.of(types).size()).isEqualTo(expectedSize);
     }
 
     @Test

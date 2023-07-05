@@ -21,8 +21,9 @@ package org.neo4j.internal.schema.constraints;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
@@ -33,20 +34,34 @@ import java.util.stream.Stream;
  */
 public class PropertyTypeSet implements Iterable<SchemaValueType> {
 
-    private final Set<TypeRepresentation> representation;
-    private final int size;
+    private final Set<SchemaValueType> lookup;
+    private final List<SchemaValueType> types;
+    private final boolean acceptsEmptyList;
 
-    private PropertyTypeSet(Collection<SchemaValueType> types) {
-        representation = makeRepresentation(types);
-        size = types.size();
+    private PropertyTypeSet(Set<SchemaValueType> lookup, List<SchemaValueType> types, boolean acceptsEmptyList) {
+        this.lookup = lookup;
+        this.types = types;
+        this.acceptsEmptyList = acceptsEmptyList;
+    }
+
+    public static PropertyTypeSet empty() {
+        return new PropertyTypeSet(Set.of(), List.of(), false);
     }
 
     public static PropertyTypeSet of(Collection<SchemaValueType> types) {
-        return new PropertyTypeSet(types);
+        if (types.isEmpty()) {
+            return empty();
+        }
+
+        var lookup = EnumSet.copyOf(types);
+        var uniqueTypes = lookup.stream().sorted(TypeRepresentation::compare).toList();
+        var acceptsEmptyList = types.stream().anyMatch(TypeRepresentation::isList);
+
+        return new PropertyTypeSet(lookup, uniqueTypes, acceptsEmptyList);
     }
 
     public static PropertyTypeSet of(SchemaValueType... types) {
-        return new PropertyTypeSet(Arrays.asList(types));
+        return of(Arrays.asList(types));
     }
 
     /**
@@ -54,13 +69,12 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
      * @return A string representation of the normalized type expression
      */
     public String userDescription() {
-        var joiner =
-                switch (size) {
-                    case 0 -> new StringJoiner("", "ANY", "");
-                    case 1 -> new StringJoiner("");
-                    default -> new StringJoiner(" | ", "ANY<", ">");
-                };
-        for (var type : this) {
+        if (types.isEmpty()) {
+            return "NOTHING";
+        }
+
+        var joiner = new StringJoiner(" | ");
+        for (var type : types) {
             joiner.add(type.userDescription());
         }
         return joiner.toString();
@@ -69,7 +83,7 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
     @Override
     public int hashCode() {
         // Use the types' serialization as basis for hash code to make it stable in the face of changing type ordering
-        return stream().mapToInt(type -> type.serialize().hashCode()).sum();
+        return types.stream().mapToInt(type -> type.serialize().hashCode()).sum();
     }
 
     @Override
@@ -84,15 +98,25 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
 
         PropertyTypeSet that = (PropertyTypeSet) o;
 
-        return representation.equals(that.representation);
+        return types.equals(that.types);
     }
 
     public int size() {
-        return size;
+        return types.size();
     }
 
-    public boolean contains(TypeRepresentation type) {
-        return representation.contains(type);
+    public boolean contains(TypeRepresentation repr) {
+        if (repr instanceof SchemaValueType type) {
+            return lookup.contains(type);
+        }
+
+        // All types are nullable
+        if (repr == SpecialTypes.NULL) {
+            return true;
+        }
+
+        // For list types, accept the empty list
+        return acceptsEmptyList && repr == SpecialTypes.LIST_NOTHING;
     }
 
     public PropertyTypeSet union(PropertyTypeSet other) {
@@ -100,40 +124,23 @@ public class PropertyTypeSet implements Iterable<SchemaValueType> {
     }
 
     public PropertyTypeSet intersection(PropertyTypeSet other) {
-        return of(stream().filter(other.representation::contains).toList());
+        return of(stream().filter(other.lookup::contains).toList());
     }
 
     public PropertyTypeSet difference(PropertyTypeSet other) {
-        return of(stream().filter(v -> !other.representation.contains(v)).toList());
+        return of(stream().filter(v -> !other.lookup.contains(v)).toList());
     }
 
     public Stream<SchemaValueType> stream() {
-        return representation.stream()
-                .filter(SchemaValueType.class::isInstance)
-                .map(SchemaValueType.class::cast)
-                .sorted(TypeRepresentation::compare);
+        return types.stream();
     }
 
     @Override
     public Iterator<SchemaValueType> iterator() {
-        return stream().iterator();
+        return types.iterator();
     }
 
     public SchemaValueType[] values() {
-        return stream().toArray(SchemaValueType[]::new);
-    }
-
-    private static Set<TypeRepresentation> makeRepresentation(Collection<SchemaValueType> types) {
-        Set<TypeRepresentation> out = new HashSet<>();
-        for (var type : types) {
-            if (TypeRepresentation.isList(type)) {
-                out.add(SpecialTypes.LIST_NOTHING);
-            }
-            if (TypeRepresentation.isNullable(type)) {
-                out.add(SpecialTypes.NULL);
-            }
-            out.add(type);
-        }
-        return out;
+        return types.toArray(SchemaValueType[]::new);
     }
 }

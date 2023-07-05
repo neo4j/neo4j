@@ -136,10 +136,9 @@ class TypeRepresentationTest {
 
     private static Stream<Arguments> illegalCombinations() {
         return Stream.of(
+                Arguments.of(PropertyTypeSet.of(), Values.of(1l)),
+                Arguments.of(PropertyTypeSet.of(), Values.of("HELLO")),
                 Arguments.of(PropertyTypeSet.of(SchemaValueType.STRING), Values.of(1l)),
-                // Note: These are actually an illegal closed dynamic unions, but the implementation of PropertyTypeSet
-                // becomes easier if we allow it. We will provide a shim above PropertyTypeSet that handles these
-                // issues.
                 Arguments.of(
                         PropertyTypeSet.of(SchemaValueType.LIST_BOOLEAN, SchemaValueType.LIST_INTEGER),
                         Values.of("hello")),
