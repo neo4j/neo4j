@@ -390,9 +390,10 @@ sealed trait NonEmptyList[+T] {
 final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T] {
   override def last: T = tail.last
   override def tailOption: Option[NonEmptyList[T]] = Some(tail)
+
   override def initOption: Option[NonEmptyList[T]] = tail.initOption match {
     case Some(init) => Some(Fby(head, init))
-    case None => Some(Last(head))
+    case None       => Some(Last(head))
   }
   override def hasTail: Boolean = true
   override def isLast: Boolean = false

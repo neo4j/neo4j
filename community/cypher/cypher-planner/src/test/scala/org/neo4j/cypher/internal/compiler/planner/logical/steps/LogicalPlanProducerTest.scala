@@ -1251,7 +1251,6 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
             Nil,
             SimplePatternLength
           )),
-        patternNodes = Set("n", "m"),
         repetition = Repetition(min = 1, max = UpperBound.Unlimited),
         nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
         relationshipVariableGroupings = Set(VariableGrouping("r", "r"))

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Rewritable
@@ -208,13 +209,36 @@ final case class QuantifiedPathPattern(
   leftBinding: NodeBinding,
   rightBinding: NodeBinding,
   patternRelationships: Seq[PatternRelationship],
-  patternNodes: Set[String] = Set.empty,
   argumentIds: Set[String] = Set.empty,
   selections: Selections = Selections(),
   repetition: Repetition,
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping]
 ) extends ExhaustiveNodeConnection {
+
+  // all pattern nodes are part of a relationship because a QPP has always at least one relationship and is linear in shape
+  val patternNodes: Set[String] = patternRelationships.flatMap(_.boundaryNodesSet).toSet
+
+  // all variables are meant as singletons except those in the groupings
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    patternRelationships.head.left == leftBinding.inner,
+    s"${leftBinding.inner} is not the left node of the first relationship ${patternRelationships.head.left}"
+  )
+
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    patternRelationships.last.right == rightBinding.inner,
+    s"${rightBinding.inner} is not the right node of the last relationship ${patternRelationships.last.right}"
+  )
+
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    nodeVariableGroupings.forall(grouping => patternNodes.contains(grouping.singletonName)),
+    s"Not all singleton node variables ${nodeVariableGroupings.map(_.singletonName)} were pattern nodes"
+  )
+
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    relationshipVariableGroupings.forall(grouping => patternRelationships.map(_.name).contains(grouping.singletonName)),
+    s"Not all singleton relationship variables ${relationshipVariableGroupings.map(_.singletonName)} were relationship names"
+  )
 
   private def singletonToGroup(groupings: Set[VariableGrouping], singleton: String): Option[String] =
     groupings.find(_.singletonName == singleton).map(_.groupName)

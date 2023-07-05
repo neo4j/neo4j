@@ -55,7 +55,6 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
         length = SimplePatternLength
       )
     ),
-    patternNodes = Set("a", "b", "c"),
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(0, UpperBound.Unlimited),

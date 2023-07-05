@@ -49,7 +49,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       types = Nil,
       length = SimplePatternLength
     )),
-    patternNodes = Set("a", "b"),
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.Unlimited),
@@ -69,7 +68,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         types = Seq(relTypeName("T")),
         length = SimplePatternLength
       )),
-      patternNodes = Set("a", "b"),
       argumentIds = Set.empty,
       selections = Selections.from(Seq(
         hasLabels("a", "A"),
@@ -225,7 +223,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
           length = SimplePatternLength
         )
       ),
-      patternNodes = Set("a", "b", "c"),
       argumentIds = Set.empty,
       selections = Selections.from(differentRelationships(varFor("r"), varFor("s"))),
       repetition = Repetition(0, UpperBound.Unlimited),
@@ -294,7 +291,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         types = Seq.empty,
         length = SimplePatternLength
       )),
-      patternNodes = Set("a", "b"),
       argumentIds = Set.empty,
       selections = Selections.from(Seq(
         equals(prop("a", "prop"), varFor("foo")),

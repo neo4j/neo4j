@@ -106,7 +106,6 @@ object QuantifiedPathPatternConverters {
     leftMostNode: String,
     rightMostNode: String,
     patternRelationships: Vector[PatternRelationship],
-    patternNodes: Set[String],
     nodeVariableGroupings: Set[VariableGrouping],
     relationshipVariableGroupings: Set[VariableGrouping]
   ) {
@@ -116,7 +115,6 @@ object QuantifiedPathPatternConverters {
         leftMostNode = leftMostNode,
         rightMostNode = right.rightMostNode,
         patternRelationships = patternRelationships ++ right.patternRelationships,
-        patternNodes = patternNodes.union(right.patternNodes),
         nodeVariableGroupings = nodeVariableGroupings.union(right.nodeVariableGroupings),
         relationshipVariableGroupings = relationshipVariableGroupings.union(right.relationshipVariableGroupings)
       )
@@ -131,7 +129,6 @@ object QuantifiedPathPatternConverters {
         leftBinding = NodeBinding(leftMostNode, outerLeft),
         rightBinding = NodeBinding(rightMostNode, outerRight),
         patternRelationships = patternRelationships,
-        patternNodes = patternNodes,
         argumentIds = Set.empty,
         selections = selections,
         repetition = repetition,
@@ -151,7 +148,6 @@ object QuantifiedPathPatternConverters {
         leftMostNode = patternRelationship.left,
         rightMostNode = patternRelationship.right,
         patternRelationships = Vector(patternRelationship),
-        patternNodes = patternNodes,
         nodeVariableGroupings = variableGroupings.forSingletonNames(patternNodes),
         relationshipVariableGroupings = variableGroupings.forSingletonName(patternRelationship.name).toSet
       )

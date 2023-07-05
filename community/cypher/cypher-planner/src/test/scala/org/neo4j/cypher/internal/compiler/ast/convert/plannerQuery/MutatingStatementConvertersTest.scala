@@ -247,7 +247,6 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           types = Nil,
           length = SimplePatternLength
         )),
-        patternNodes = Set("a", "b"),
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),
@@ -265,7 +264,6 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           types = Nil,
           length = SimplePatternLength
         )),
-        patternNodes = Set("c", "d"),
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),

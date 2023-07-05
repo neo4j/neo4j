@@ -123,7 +123,6 @@ object ConvertToNFA {
               rightBinding,
               patternRelationships,
               _,
-              _,
               qppSelections,
               repetition,
               _,

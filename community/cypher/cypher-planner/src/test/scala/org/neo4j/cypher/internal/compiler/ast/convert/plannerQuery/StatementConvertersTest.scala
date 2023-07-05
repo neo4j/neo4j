@@ -1688,7 +1688,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
@@ -1714,7 +1713,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("anon_1", "anon_3"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set.empty,
           relationshipVariableGroupings = Set(VariableGrouping("anon_5", "anon_6"))
@@ -1740,7 +1738,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 2, max = UpperBound.Limited(5)),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
@@ -1776,7 +1773,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
@@ -1805,7 +1801,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq(relTypeName("R2")),
               SimplePatternLength
             )),
-          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
@@ -1836,7 +1831,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r1", "r1"))
@@ -1852,7 +1846,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("x", "y"),
           repetition = Repetition(min = 0, max = UpperBound.Limited(3)),
           nodeVariableGroupings = Set(VariableGrouping("x", "x"), VariableGrouping("y", "y")),
           relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
@@ -1891,7 +1884,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
                 SimplePatternLength
               )
             ),
-          patternNodes = Set("a", "b", "c"),
           selections = Selections.from(differentRelationships("r2", "r1")),
           repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
           nodeVariableGroupings =
@@ -1909,7 +1901,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("x", "y"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("x", "x"), VariableGrouping("y", "y")),
           relationshipVariableGroupings = Set(VariableGrouping("r3", "r3"))
@@ -1955,7 +1946,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
                 SimplePatternLength
               )
             ),
-          patternNodes = Set("a", "b", "c", "d"),
           selections = Selections.from(List(
             differentRelationships("r3", "r2"),
             differentRelationships("r3", "r1"),
@@ -1995,7 +1985,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
                 Seq.empty,
                 SimplePatternLength
               )),
-            patternNodes = Set("n", "m"),
             repetition = Repetition(min = 1, max = UpperBound.Unlimited),
             nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
             relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
@@ -2025,7 +2014,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           Seq.empty,
           SimplePatternLength
         )),
-      patternNodes = Set(n, m),
       argumentIds = Set("a"),
       repetition = Repetition(min = 1, max = UpperBound.Unlimited),
       nodeVariableGroupings = Set(VariableGrouping(n, n), VariableGrouping(m, m)),
@@ -2061,7 +2049,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("n", "m"),
           selections = Selections.from(andedPropertyInequalities(greaterThan(prop("n", "prop"), prop("m", "prop")))),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
@@ -2088,7 +2075,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               Seq.empty,
               SimplePatternLength
             )),
-          patternNodes = Set("n", "m"),
           selections = Selections.from(andedPropertyInequalities(
             propGreaterThan("r", "prop", 0),
             propLessThan("r", "prop", 10)
@@ -2231,7 +2217,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           types = Nil,
           length = SimplePatternLength
         )),
-        patternNodes = Set("a", "b"),
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.Limited(5)),
@@ -2274,7 +2259,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           types = List(relTypeName("R")),
           length = SimplePatternLength
         )),
-        patternNodes = Set("a", "b"),
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.Unlimited),

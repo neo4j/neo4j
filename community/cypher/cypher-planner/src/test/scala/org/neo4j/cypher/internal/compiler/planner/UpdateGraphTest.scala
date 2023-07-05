@@ -421,7 +421,6 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
           types = Nil,
           length = SimplePatternLength
         )),
-        patternNodes = Set("a_n", "b_n"),
         repetition = Repetition(min = 0, max = UpperBound.Unlimited),
         nodeVariableGroupings = Set.empty,
         relationshipVariableGroupings = Set(VariableGrouping(singletonName = "r_n", groupName = "r"))

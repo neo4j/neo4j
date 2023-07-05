@@ -49,20 +49,24 @@ class QueryGraphConnectedComponentsTest
   private val C_to_X = PatternRelationship("r7", (C, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val B_to_X = PatternRelationship("r12", (B, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  private def rel(from: String, to: String) =
-    PatternRelationship(s"rel$from$to", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private def rel(from: String, to: String, rel: String): PatternRelationship =
+    PatternRelationship(rel, (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  private def qpp(from: String, to: String) =
+  private def rel(from: String, to: String): PatternRelationship = {
+    rel(from, to, s"rel$from$to")
+  }
+
+  private def qpp(from: String, to: String): QuantifiedPathPattern =
     QuantifiedPathPattern(
-      leftBinding = NodeBinding(s"${from}_inner", from),
-      rightBinding = NodeBinding(s"${to}_inner", to),
-      patternRelationships = List(rel(s"${from}_inner", s"${to}_inner")),
+      leftBinding = NodeBinding(s"${from}_inner_singleton", from),
+      rightBinding = NodeBinding(s"${to}_inner_singleton", to),
+      patternRelationships = List(rel(s"${from}_inner_singleton", s"${to}_inner_singleton", "r")),
       repetition = Repetition(0, Unlimited),
       nodeVariableGroupings = Set(
-        VariableGrouping("anon_1", s"${from}_inner"),
-        VariableGrouping("anon_3", s"${to}_inner")
+        VariableGrouping(s"${from}_inner_singleton", s"${from}_inner_group"),
+        VariableGrouping(s"${to}_inner_singleton", s"${to}_inner_group")
       ),
-      relationshipVariableGroupings = Set(VariableGrouping("anon_2", "r"))
+      relationshipVariableGroupings = Set(VariableGrouping("r", "r_group"))
     )
 
   private def spp(from: String, to: String) =
@@ -366,7 +370,7 @@ class QueryGraphConnectedComponentsTest
       argumentIds = Set(X),
       patternNodes = Set(A, B),
       quantifiedPathPatterns = Set(qpp(A, B)),
-      selections = Selections.from(equals(varFor("a_inner"), varFor(X)))
+      selections = Selections.from(equals(varFor("a_inner_group"), varFor(X)))
     )
 
     val components = graph.connectedComponents
@@ -456,7 +460,7 @@ class QueryGraphConnectedComponentsTest
         selectivePathPatterns = spps
       )
 
-    sppQG.connectedComponents.toSet shouldBe Set(sppQG)
+    sppQG.connectedComponents shouldBe Seq(sppQG)
   }
 
   test("should pick the predicates correctly on selective path patterns when they depend on arguments") {
