@@ -22,11 +22,9 @@ package org.neo4j.kernel.impl.storemigration;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
-import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -71,8 +69,9 @@ import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMoni
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.CountsStoreProvider;
-import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.Updater;
+import org.neo4j.internal.counts.DegreeStoreProvider;
+import org.neo4j.internal.counts.DegreeUpdater;
+import org.neo4j.internal.counts.DegreesRebuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -769,9 +768,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         }
 
         var degreesUpToDate = new MutableBoolean(true);
-        var degreesBuilder = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+        var degreesBuilder = new DegreesRebuilder() {
             @Override
-            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 degreesUpToDate.setFalse();
             }
 
@@ -780,20 +779,19 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 return txIdBeforeMigration;
             }
         };
-        try (var degreesStore = new GBPTreeRelationshipGroupDegreesStore(
-                        pageCache,
-                        recordLayout.relationshipGroupDegreesStore(),
-                        fileSystem,
-                        immediate(),
-                        degreesBuilder,
-                        false,
-                        NO_MONITOR,
-                        databaseLayout.getDatabaseName(),
-                        counts_store_max_cached_entries.defaultValue(),
-                        logService.getInternalLogProvider(),
-                        contextFactory,
-                        pageCacheTracer,
-                        openOptions);
+        try (var degreesStore = DegreeStoreProvider.getInstance()
+                        .openDegreesStore(
+                                pageCache,
+                                fileSystem,
+                                recordLayout,
+                                logService.getInternalLogProvider(),
+                                immediate(),
+                                Config.defaults(),
+                                contextFactory,
+                                pageCacheTracer,
+                                degreesBuilder,
+                                openOptions,
+                                false);
                 var context = contextFactory.create("update group degrees store");
                 var flushEvent = pageCacheTracer.beginFileFlush()) {
             degreesStore.start(context, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);

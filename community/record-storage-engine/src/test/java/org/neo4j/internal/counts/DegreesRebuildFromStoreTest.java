@@ -194,7 +194,7 @@ class DegreesRebuildFromStoreTest {
                     NullLogProvider.getInstance(),
                     Configuration.withBatchSize(Configuration.DEFAULT, 100));
             rebuild.rebuild(
-                    new Updater() {
+                    new DegreeUpdater() {
                         @Override
                         public void increment(long groupId, RelationshipDirection direction, long degree) {
                             builtExpectedDegrees.put(combinedKeyOnGroupAndDirection(groupId, direction), degree);

@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.ID;
@@ -47,14 +46,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.CountsStoreProvider;
+import org.neo4j.internal.counts.DegreeStoreProvider;
 import org.neo4j.internal.counts.DegreesRebuildFromStore;
-import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
-import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
@@ -340,30 +337,25 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             Config config,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
-        try {
-            return new GBPTreeRelationshipGroupDegreesStore(
-                    pageCache,
-                    layout.relationshipGroupDegreesStore(),
-                    fs,
-                    recoveryCleanupWorkCollector,
-                    new DegreesRebuildFromStore(
-                            pageCache,
-                            neoStores,
-                            databaseLayout,
-                            contextFactory,
-                            internalLogProvider,
-                            Configuration.DEFAULT),
-                    false,
-                    GBPTreeGenericCountsStore.NO_MONITOR,
-                    layout.getDatabaseName(),
-                    config.get(counts_store_max_cached_entries),
-                    userLogProvider,
-                    contextFactory,
-                    pageCacheTracer,
-                    getOpenOptions());
-        } catch (IOException e) {
-            throw new UnderlyingStorageException(e);
-        }
+        return DegreeStoreProvider.getInstance()
+                .openDegreesStore(
+                        pageCache,
+                        fs,
+                        layout,
+                        userLogProvider,
+                        recoveryCleanupWorkCollector,
+                        config,
+                        contextFactory,
+                        pageCacheTracer,
+                        new DegreesRebuildFromStore(
+                                pageCache,
+                                neoStores,
+                                databaseLayout,
+                                contextFactory,
+                                internalLogProvider,
+                                Configuration.DEFAULT),
+                        getOpenOptions(),
+                        false);
     }
 
     @Override

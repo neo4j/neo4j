@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
 
-import org.neo4j.internal.counts.Updater;
+import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -95,7 +95,7 @@ public class RelationshipCreator {
     public void relationshipCreate(
             RelationshipBatch creations,
             RecordAccessSet recordChanges,
-            Updater groupDegreesUpdater,
+            DegreeUpdater groupDegreesUpdater,
             NodeDataLookup nodeDataLookup) {
         creations.forEach((id, type, firstNodeId, secondNodeId, addedProperties) -> relationshipCreate(
                 id, type, firstNodeId, secondNodeId, recordChanges, groupDegreesUpdater, nodeDataLookup));
@@ -116,7 +116,7 @@ public class RelationshipCreator {
             long firstNodeId,
             long secondNodeId,
             RecordAccessSet recordChanges,
-            Updater groupDegreesUpdater,
+            DegreeUpdater groupDegreesUpdater,
             NodeDataLookup nodeDataLookup) {
         RecordProxy<NodeRecord, Void> firstNode = recordChanges.getNodeRecords().getOrLoad(firstNodeId, null);
         RecordProxy<NodeRecord, Void> secondNode = firstNodeId == secondNodeId
@@ -140,7 +140,7 @@ public class RelationshipCreator {
     private void convertNodeToDenseIfNecessary(
             RecordProxy<NodeRecord, Void> nodeChange,
             RecordAccess<RelationshipRecord, Void> relRecords,
-            Updater groupDegreesUpdater,
+            DegreeUpdater groupDegreesUpdater,
             NodeDataLookup nodeDataLookup) {
         NodeRecord node = nodeChange.forReadingLinkage();
         if (node.isDense()) {
@@ -166,7 +166,7 @@ public class RelationshipCreator {
             RecordProxy<NodeRecord, Void> secondNodeChange,
             RelationshipRecord rel,
             RecordAccess<RelationshipRecord, Void> relRecords,
-            Updater groupDegreesUpdater,
+            DegreeUpdater groupDegreesUpdater,
             NodeDataLookup nodeDataLookup) {
         // Assertion interpreted: if node is a normal node and we're trying to create a
         // relationship that we already have as first rel for that node --> error
@@ -229,7 +229,7 @@ public class RelationshipCreator {
             RecordProxy<NodeRecord, Void> nodeChange,
             RelationshipRecord createdRelationship,
             RecordAccess<RelationshipRecord, Void> relRecords,
-            Updater groupDegreesUpdater,
+            DegreeUpdater groupDegreesUpdater,
             RecordProxy<RelationshipRecord, Void> insertionPoint,
             NodeDataLookup nodeDataLookup,
             ConnectToDenseMonitor connectToDenseMonitor) {
@@ -250,7 +250,7 @@ public class RelationshipCreator {
             RecordProxy<NodeRecord, Void> nodeChange,
             RelationshipRecord firstRel,
             RecordAccess<RelationshipRecord, Void> relRecords,
-            Updater groupDegreesUpdater,
+            DegreeUpdater groupDegreesUpdater,
             NodeDataLookup nodeDataLookup,
             ConnectToDenseMonitor connectToDenseMonitor) {
         NodeRecord node = nodeChange.forChangingLinkage();
@@ -296,7 +296,7 @@ public class RelationshipCreator {
             DirectionWrapper direction,
             RelationshipRecord createdRelationship,
             RecordAccess<RelationshipRecord, Void> relRecords,
-            Updater groupDegreesUpdater,
+            DegreeUpdater groupDegreesUpdater,
             RecordProxy<RelationshipRecord, Void> insertionPoint,
             ConnectToDenseMonitor monitor) {
         long nodeId = node.getId();

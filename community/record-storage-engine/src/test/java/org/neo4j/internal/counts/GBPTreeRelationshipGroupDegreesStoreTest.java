@@ -46,7 +46,6 @@ import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -92,11 +91,11 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     void failToApplySameTransactionTwice() {
         long txId = BASE_TX_ID + 1;
 
-        try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+        try (DegreeUpdater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, 10);
         }
         assertThatThrownBy(() -> {
-                    try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+                    try (DegreeUpdater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
                         updater.increment(GROUP_ID_1, OUTGOING, 10);
                     }
                 })
@@ -110,12 +109,12 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
 
         assertDoesNotThrow(() -> {
             for (int i = 0; i < 100; i++) {
-                try (Updater updater = countsStore.apply(txId, false, NULL_CONTEXT)) {
+                try (DegreeUpdater updater = countsStore.apply(txId, false, NULL_CONTEXT)) {
                     updater.increment(GROUP_ID_1, OUTGOING, 10);
                 }
             }
 
-            try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+            try (DegreeUpdater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
                 updater.increment(GROUP_ID_1, OUTGOING, 10);
             }
         });
@@ -125,13 +124,13 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     void shouldUpdateAndReadSomeCounts() throws IOException {
         // given
         long txId = BASE_TX_ID;
-        try (Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
+        try (DegreeUpdater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, 10);
             updater.increment(GROUP_ID_1, INCOMING, 3);
             updater.increment(GROUP_ID_2, OUTGOING, 7);
             updater.increment(GROUP_ID_2, LOOP, 14);
         }
-        try (Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
+        try (DegreeUpdater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, 5); // now at 15
             updater.increment(GROUP_ID_1, INCOMING, 2); // now at 5
         }
@@ -145,7 +144,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
         assertEquals(14, countsStore.degree(GROUP_ID_2, LOOP, NULL_CONTEXT));
 
         // and when
-        try (Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
+        try (DegreeUpdater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, -7);
             updater.increment(GROUP_ID_1, INCOMING, -5);
             updater.increment(GROUP_ID_2, OUTGOING, -2);
@@ -170,7 +169,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
         // when
         TestableCountsBuilder builder = new TestableCountsBuilder(rebuiltAtTransactionId) {
             @Override
-            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 super.rebuild(updater, cursorContext, memoryTracker);
                 updater.increment(groupId1, OUTGOING, 10);
                 updater.increment(groupId2, INCOMING, 14);
@@ -200,7 +199,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     void shouldDumpCountsStore() throws IOException {
         // given
         long txId = BASE_TX_ID + 1;
-        try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+        try (DegreeUpdater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, 10);
             updater.increment(GROUP_ID_1, INCOMING, 3);
             updater.increment(GROUP_ID_2, LOOP, 7);
@@ -228,7 +227,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     }
 
     private void increment(long txId, long groupId, RelationshipDirection direction, int delta) {
-        try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+        try (DegreeUpdater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
             updater.increment(groupId, direction, delta);
         }
     }
@@ -280,7 +279,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
         }
 
         @Override
-        public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        public void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
             rebuildCalled = true;
         }
 

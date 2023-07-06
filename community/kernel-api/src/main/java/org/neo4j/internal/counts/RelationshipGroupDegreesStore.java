@@ -19,14 +19,16 @@
  */
 package org.neo4j.internal.counts;
 
+import java.io.IOException;
 import org.neo4j.counts.CountsStorage;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
  * Store for degrees of relationship chains for dense nodes. Relationship group record ID plus relationship direction forms the key for the counts.
  */
-public interface RelationshipGroupDegreesStore extends CountsStorage<Updater> {
+public interface RelationshipGroupDegreesStore extends CountsStorage<DegreeUpdater> {
     /**
      * @param groupId the relationship group ID to look for.
      * @param direction the direction to look for.
@@ -41,6 +43,10 @@ public interface RelationshipGroupDegreesStore extends CountsStorage<Updater> {
      * @param cursorContext page cache access context.
      */
     void accept(GroupDegreeVisitor visitor, CursorContext cursorContext);
+
+    default DegreeUpdater directApply(CursorContext cursorContext) throws IOException {
+        return apply(TransactionIdStore.BASE_TX_ID, true, cursorContext);
+    }
 
     interface GroupDegreeVisitor {
         /**

@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport.store;
 import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -56,7 +55,7 @@ import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.store.io.IoTracer;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.CountsStoreProvider;
-import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
+import org.neo4j.internal.counts.DegreeStoreProvider;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
@@ -515,21 +514,20 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         // Also build an empty relationship group degrees store since the importer will not make any group degrees
         // external.
         // This will prevent an unnecessary rebuild on the first startup.
-        try (var groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore(
-                        pageCache,
-                        databaseLayout.relationshipGroupDegreesStore(),
-                        fileSystem,
-                        immediate(),
-                        new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder(
-                                neoStores.getMetaDataStore().getLastCommittedTransactionId()),
-                        false,
-                        GBPTreeGenericCountsStore.NO_MONITOR,
-                        databaseLayout.getDatabaseName(),
-                        neo4jConfig.get(counts_store_max_cached_entries),
-                        userLogProvider,
-                        contextFactory,
-                        pageCacheTracer,
-                        openOptions);
+        try (var groupDegreesStore = DegreeStoreProvider.getInstance()
+                        .openDegreesStore(
+                                pageCache,
+                                fileSystem,
+                                databaseLayout,
+                                userLogProvider,
+                                immediate(),
+                                neo4jConfig,
+                                contextFactory,
+                                pageCacheTracer,
+                                new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder(
+                                        neoStores.getMetaDataStore().getLastCommittedTransactionId()),
+                                openOptions,
+                                false);
                 var cursorContext = contextFactory.create("buildRelationshipDegreesStore")) {
             groupDegreesStore.start(cursorContext, storeCursors, memoryTracker);
             try (var flushEvent = pageCacheTracer.beginFileFlush()) {

@@ -54,10 +54,11 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.DegreeUpdater;
+import org.neo4j.internal.counts.DegreesRebuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.io.ByteUnit;
@@ -410,9 +411,9 @@ class RecordStorageMigratorIT {
             // The counts store should now have been updated to be at the txIdAfterMigration
             assertEquals(txIdAfterMigration, countsStore.txId());
         }
-        var noGroupsRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+        var noGroupsRebuildAssertion = new DegreesRebuilder() {
             @Override
-            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 throw new IllegalStateException("Rebuild should not be required");
             }
 
@@ -514,9 +515,9 @@ class RecordStorageMigratorIT {
             countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
         }
         var groupDegreesStoreNeedsRebuild = new MutableBoolean();
-        var groupsRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+        var groupsRebuildAssertion = new DegreesRebuilder() {
             @Override
-            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 groupDegreesStoreNeedsRebuild.setTrue();
             }
 
@@ -687,13 +688,11 @@ class RecordStorageMigratorIT {
             }
             store.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
-        try (var store = openGroupDegreesStore(
-                PageCacheTracer.NULL,
-                NULL_CONTEXT_FACTORY,
-                openOptions,
-                new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+        try (var store =
+                openGroupDegreesStore(PageCacheTracer.NULL, NULL_CONTEXT_FACTORY, openOptions, new DegreesRebuilder() {
                     @Override
-                    public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                    public void rebuild(
+                            DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                         // Do nothing
                     }
 
@@ -714,7 +713,7 @@ class RecordStorageMigratorIT {
             PageCacheTracer cacheTracer,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> migratedStoreOpenOptions,
-            GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder groupsRebuildAssertion)
+            DegreesRebuilder groupsRebuildAssertion)
             throws IOException {
         return new GBPTreeRelationshipGroupDegreesStore(
                 pageCache,

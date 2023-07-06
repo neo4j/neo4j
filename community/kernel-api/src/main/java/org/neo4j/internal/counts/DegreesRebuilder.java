@@ -19,18 +19,11 @@
  */
 package org.neo4j.internal.counts;
 
-import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.MemoryTracker;
 
-public interface Updater extends AutoCloseable {
-    @Override
-    void close();
+public interface DegreesRebuilder {
+    void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker);
 
-    /**
-     * Changes the degree of the given groupId and direction.
-     *
-     * @param groupId   the relationship group ID to make the change for.
-     * @param direction the direction to make the change for.
-     * @param delta     delta value to apply, can be either positive or negative.
-     */
-    void increment(long groupId, RelationshipDirection direction, long delta);
+    long lastCommittedTxId();
 }

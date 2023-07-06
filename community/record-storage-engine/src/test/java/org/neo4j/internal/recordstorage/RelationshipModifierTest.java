@@ -73,7 +73,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.counts.Updater;
+import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -553,7 +553,7 @@ class RelationshipModifierTest {
                         new RelationshipData(relationshipId, typeId, startNodeId, endNodeId)));
     }
 
-    private static class GroupUpdater implements Updater {
+    private static class GroupUpdater implements DegreeUpdater {
         // nodeId, direction, degree
         private final MutableLongObjectMap<MutableLong> degrees = LongObjectMaps.mutable.empty();
         private final MapRecordStore store;

@@ -61,7 +61,7 @@ import org.neo4j.memory.MemoryTracker;
 /**
  * Scans the store and rebuilds the {@link GBPTreeRelationshipGroupDegreesStore} contents if the file is missing.
  */
-public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder {
+public class DegreesRebuildFromStore implements DegreesRebuilder {
     private final PageCache pageCache;
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
@@ -90,7 +90,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
     }
 
     @Override
-    public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+    public void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (neoStores.getRelationshipGroupStore().isEmpty()) {
             return;
         }
@@ -226,7 +226,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
             return (int) group;
         }
 
-        void writeTo(Updater updater) {
+        void writeTo(DegreeUpdater updater) {
             for (long node = 0; node < highNodeId; node++) {
                 long groupIndex = nodeCache.get(node);
                 while (groupIndex != -1) {

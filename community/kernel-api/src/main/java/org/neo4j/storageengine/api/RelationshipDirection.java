@@ -60,6 +60,9 @@ public enum RelationshipDirection {
         }
     };
 
+    public static final RelationshipDirection MIN_VALUE = OUTGOING;
+    public static final RelationshipDirection MAX_VALUE = LOOP;
+
     private static final RelationshipDirection[] DIRECTIONS_BY_ID =
             new RelationshipDirection[] {OUTGOING, INCOMING, LOOP};
 

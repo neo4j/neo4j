@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.RelationshipDirection;
  * {@link RelationshipGroupDegreesStore} backed by the {@link GBPTree}.
  * @see GBPTreeGenericCountsStore
  */
-public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore<Updater>
+public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore<DegreeUpdater>
         implements RelationshipGroupDegreesStore {
     private static final String NAME = "Relationship group degrees store";
     static final byte TYPE_DEGREE = (byte) 3;
@@ -81,13 +81,18 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     }
 
     @Override
-    public Updater apply(long txId, boolean isLast, CursorContext cursorContext) {
+    public DegreeUpdater apply(long txId, boolean isLast, CursorContext cursorContext) {
         CountUpdater updater = updater(txId, isLast, cursorContext);
-        return updater != null ? new DegreeUpdater(updater) : NO_OP_UPDATER;
+        return updater != null ? new TreeUpdater(updater) : NO_OP_UPDATER;
     }
 
-    public Updater directApply(boolean applyDeltas, CursorContext cursorContext) throws IOException {
-        return new DegreeUpdater(directUpdater(applyDeltas, cursorContext));
+    @Override
+    public DegreeUpdater directApply(CursorContext cursorContext) throws IOException {
+        return directApply(false, cursorContext);
+    }
+
+    public DegreeUpdater directApply(boolean applyDeltas, CursorContext cursorContext) throws IOException {
+        return new TreeUpdater(directUpdater(applyDeltas, cursorContext));
     }
 
     @Override
@@ -100,10 +105,10 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         visitAllCounts((key, count) -> visitor.degree(groupIdOf(key), directionOf(key), count), cursorContext);
     }
 
-    private static class DegreeUpdater implements Updater, AutoCloseable {
+    private static class TreeUpdater implements DegreeUpdater, AutoCloseable {
         private final CountUpdater actual;
 
-        DegreeUpdater(CountUpdater actual) {
+        TreeUpdater(CountUpdater actual) {
             this.actual = actual;
         }
 
@@ -174,19 +179,13 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
                 openOptions);
     }
 
-    public static final Updater NO_OP_UPDATER = new Updater() {
+    public static final DegreeUpdater NO_OP_UPDATER = new DegreeUpdater() {
         @Override
         public void close() {}
 
         @Override
         public void increment(long groupId, RelationshipDirection direction, long delta) {}
     };
-
-    public interface DegreesRebuilder {
-        void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker);
-
-        long lastCommittedTxId();
-    }
 
     private static class RebuilderWrapper implements Rebuilder {
         private final DegreesRebuilder rebuilder;
@@ -197,7 +196,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
         @Override
         public void rebuild(CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
-            rebuilder.rebuild(new DegreeUpdater(updater), cursorContext, memoryTracker);
+            rebuilder.rebuild(new TreeUpdater(updater), cursorContext, memoryTracker);
         }
 
         @Override
@@ -214,7 +213,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         }
 
         @Override
-        public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {}
+        public void rebuild(DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {}
 
         @Override
         public long lastCommittedTxId() {

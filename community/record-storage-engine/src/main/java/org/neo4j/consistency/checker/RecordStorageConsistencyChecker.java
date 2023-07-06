@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.checker.SchemaChecker.moreDescriptiveRecordToStrings;
 import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
@@ -51,10 +52,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.DegreeStoreProvider;
+import org.neo4j.internal.counts.DegreeUpdater;
+import org.neo4j.internal.counts.DegreesRebuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
-import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
-import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -445,31 +446,31 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             return;
         }
 
-        try (var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore(
-                pageCache,
-                databaseLayout.relationshipGroupDegreesStore(),
-                fileSystem,
-                RecoveryCleanupWorkCollector.ignore(),
-                new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
-                    @Override
-                    public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
-                        throw new UnsupportedOperationException(
-                                "Counts store needed rebuild, consistency checker will instead report broken or missing store");
-                    }
+        try (var relationshipGroupDegrees = DegreeStoreProvider.getInstance()
+                .openDegreesStore(
+                        pageCache,
+                        fileSystem,
+                        databaseLayout,
+                        NullLogProvider.getInstance(),
+                        RecoveryCleanupWorkCollector.ignore(),
+                        Config.defaults(counts_store_max_cached_entries, 100),
+                        contextFactory,
+                        cacheTracer,
+                        new DegreesRebuilder() {
+                            @Override
+                            public void rebuild(
+                                    DegreeUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                                throw new UnsupportedOperationException(
+                                        "Counts store needed rebuild, consistency checker will instead report broken or missing store");
+                            }
 
-                    @Override
-                    public long lastCommittedTxId() {
-                        return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-                    }
-                },
-                true,
-                GBPTreeGenericCountsStore.NO_MONITOR,
-                databaseLayout.getDatabaseName(),
-                100,
-                NullLogProvider.getInstance(),
-                contextFactory,
-                cacheTracer,
-                neoStores.getOpenOptions())) {
+                            @Override
+                            public long lastCommittedTxId() {
+                                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                            }
+                        },
+                        neoStores.getOpenOptions(),
+                        true)) {
             consistencyCheckSingleCheckable(
                     report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP);
         } catch (Exception e) {
