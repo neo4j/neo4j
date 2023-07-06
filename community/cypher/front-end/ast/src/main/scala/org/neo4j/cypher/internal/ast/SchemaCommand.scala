@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.ListTypeName
 import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -469,27 +470,46 @@ trait CreateConstraint extends SchemaCommand {
       }
   }
 
-  protected def checkPropertyType(entityTypeString: String, propertyType: CypherTypeName): SemanticCheck = {
-    val allowedTypes = List(
-      BooleanTypeName(true),
-      StringTypeName(true),
-      IntegerTypeName(true),
-      FloatTypeName(true),
-      DateTypeName(true),
-      LocalTimeTypeName(true),
-      ZonedTimeTypeName(true),
-      LocalDateTimeTypeName(true),
-      ZonedDateTimeTypeName(true),
-      DurationTypeName(true),
-      PointTypeName(true)
-    )
+  private val allowedPropertyTypes = List(
+    BooleanTypeName(isNullable = true),
+    StringTypeName(isNullable = true),
+    IntegerTypeName(isNullable = true),
+    FloatTypeName(isNullable = true),
+    DateTypeName(isNullable = true),
+    LocalTimeTypeName(isNullable = true),
+    ZonedTimeTypeName(isNullable = true),
+    LocalDateTimeTypeName(isNullable = true),
+    ZonedDateTimeTypeName(isNullable = true),
+    DurationTypeName(isNullable = true),
+    PointTypeName(isNullable = true),
+    ListTypeName(BooleanTypeName(isNullable = false), isNullable = true),
+    ListTypeName(StringTypeName(isNullable = false), isNullable = true),
+    ListTypeName(IntegerTypeName(isNullable = false), isNullable = true),
+    ListTypeName(FloatTypeName(isNullable = false), isNullable = true),
+    ListTypeName(DateTypeName(isNullable = false), isNullable = true),
+    ListTypeName(LocalTimeTypeName(isNullable = false), isNullable = true),
+    ListTypeName(ZonedTimeTypeName(isNullable = false), isNullable = true),
+    ListTypeName(LocalDateTimeTypeName(isNullable = false), isNullable = true),
+    ListTypeName(ZonedDateTimeTypeName(isNullable = false), isNullable = true),
+    ListTypeName(DurationTypeName(isNullable = false), isNullable = true),
+    ListTypeName(PointTypeName(isNullable = false), isNullable = true)
+  )
 
-    if (!allowedTypes.contains(propertyType)) error(
-      s"Failed to create $entityTypeString property type constraint: Invalid property type `${propertyType.description}`.",
-      position
-    )
-    else SemanticCheck.success
-  }
+  protected def checkPropertyType(entityTypeString: String, propertyType: CypherTypeName): SemanticCheck =
+    if (!allowedPropertyTypes.contains(propertyType)) {
+      val additionalErrorInfo = propertyType match {
+        case ListTypeName(_: ListTypeName, _) =>
+          " Lists cannot have lists as an inner type."
+        case ListTypeName(inner, _) if inner.isNullable =>
+          " Lists cannot have nullable inner types."
+        case _ => ""
+      }
+
+      error(
+        s"Failed to create $entityTypeString property type constraint: Invalid property type `${propertyType.description}`.$additionalErrorInfo",
+        position
+      )
+    } else SemanticCheck.success
 }
 
 case class CreateNodeKeyConstraint(

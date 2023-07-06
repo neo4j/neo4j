@@ -773,7 +773,18 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ("LOCAL DATETIME", SchemaValueType.LOCAL_DATETIME),
     ("ZONED DATETIME", SchemaValueType.ZONED_DATETIME),
     ("DURATION", SchemaValueType.DURATION),
-    ("POINT", SchemaValueType.POINT)
+    ("POINT", SchemaValueType.POINT),
+    ("LIST<BOOLEAN NOT NULL>", SchemaValueType.LIST_BOOLEAN),
+    ("LIST<STRING NOT NULL>", SchemaValueType.LIST_STRING),
+    ("LIST<INTEGER NOT NULL>", SchemaValueType.LIST_INTEGER),
+    ("LIST<FLOAT NOT NULL>", SchemaValueType.LIST_FLOAT),
+    ("LIST<DATE NOT NULL>", SchemaValueType.LIST_DATE),
+    ("LIST<LOCAL TIME NOT NULL>", SchemaValueType.LIST_LOCAL_TIME),
+    ("LIST<ZONED TIME NOT NULL>", SchemaValueType.LIST_ZONED_TIME),
+    ("LIST<LOCAL DATETIME NOT NULL>", SchemaValueType.LIST_LOCAL_DATETIME),
+    ("LIST<ZONED DATETIME NOT NULL>", SchemaValueType.LIST_ZONED_DATETIME),
+    ("LIST<DURATION NOT NULL>", SchemaValueType.LIST_DURATION),
+    ("LIST<POINT NOT NULL>", SchemaValueType.LIST_POINT)
   ).foreach { case (propTypeString, propType) =>
     test(s"show normalized property type representation: $propType") {
       // Given
