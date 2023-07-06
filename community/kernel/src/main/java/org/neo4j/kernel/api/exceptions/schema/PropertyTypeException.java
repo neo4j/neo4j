@@ -26,12 +26,15 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.TypeRepresentation;
 import org.neo4j.values.storable.Value;
 
 public class PropertyTypeException extends ConstraintValidationException {
     private final long entityId;
     private final TypeConstraintDescriptor descriptor;
     private final Value value;
+
+    private final Phase phase;
 
     public PropertyTypeException(
             TypeConstraintDescriptor descriptor,
@@ -47,6 +50,7 @@ public class PropertyTypeException extends ConstraintValidationException {
         this.entityId = entityId;
         this.descriptor = descriptor;
         this.value = value;
+        this.phase = phase;
     }
 
     @Override
@@ -60,14 +64,22 @@ public class PropertyTypeException extends ConstraintValidationException {
                 : tokenNameLookup.relationshipTypeGetName(schema.getRelTypeId());
         String propertyKey = tokenNameLookup.propertyKeyGetName(schema.getPropertyId());
 
-        return format(
-                "%s(%s) with %s `%s` has property `%s` of wrong type `%s`. Allowed types: %s",
-                entityString,
-                entityId,
-                entityTokenType,
-                entityToken,
-                propertyKey,
-                value.getTypeName(),
-                descriptor.propertyType().userDescription());
+        return switch (phase) {
+            case VERIFICATION -> format(
+                    "%s(%s) property `%s` is of type `%s`.",
+                    entityString,
+                    entityId,
+                    propertyKey,
+                    TypeRepresentation.infer(value).userDescription());
+            case VALIDATION -> format(
+                    "%s(%s) with %s `%s` required the property `%s` to be of type `%s`, but was of type `%s`.",
+                    entityString,
+                    entityId,
+                    entityTokenType,
+                    entityToken,
+                    propertyKey,
+                    descriptor.propertyType().userDescription(),
+                    TypeRepresentation.infer(value).userDescription());
+        };
     }
 }
