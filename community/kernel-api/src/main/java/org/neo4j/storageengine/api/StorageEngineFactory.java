@@ -77,6 +77,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.migration.SchemaRuleMigrationAccessExtended;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
@@ -278,6 +279,16 @@ public interface StorageEngineFactory {
             PageCacheTracer pageCacheTracer,
             boolean lenient,
             CursorContextFactory contextFactory);
+
+    SchemaRuleMigrationAccessExtended schemaRuleMigrationAccess(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
+            Config config,
+            DatabaseLayout databaseLayout,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker)
+            throws IOException;
 
     /**
      * Asks this storage engine about the state of a specific store before opening it. If this specific store is missing optional or

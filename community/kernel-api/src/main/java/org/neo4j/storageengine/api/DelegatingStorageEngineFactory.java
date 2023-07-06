@@ -70,6 +70,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.migration.SchemaRuleMigrationAccessExtended;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
@@ -290,6 +291,20 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             CursorContextFactory contextFactory) {
         return delegate.loadReadOnlyTokens(
                 fs, databaseLayout, config, pageCache, pageCacheTracer, lenient, contextFactory);
+    }
+
+    @Override
+    public SchemaRuleMigrationAccessExtended schemaRuleMigrationAccess(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
+            Config config,
+            DatabaseLayout databaseLayout,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker)
+            throws IOException {
+        return delegate.schemaRuleMigrationAccess(
+                fs, pageCache, pageCacheTracer, config, databaseLayout, contextFactory, memoryTracker);
     }
 
     @Override

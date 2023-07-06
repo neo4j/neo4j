@@ -24,11 +24,17 @@ import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_TOKEN_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.kernel.impl.store.StoreType.LABEL_TOKEN_NAME;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_KEY_TOKEN_NAME;
+import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_TYPE_TOKEN_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
 
@@ -99,22 +105,23 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
 import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
@@ -144,9 +151,11 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.StoreVersionIdentifier;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
+import org.neo4j.storageengine.migration.SchemaRuleMigrationAccessExtended;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -522,6 +531,81 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         }
     }
 
+    @Override
+    public SchemaRuleMigrationAccessExtended schemaRuleMigrationAccess(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
+            Config config,
+            DatabaseLayout databaseLayout,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker)
+            throws IOException {
+        DefaultIdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
+        StoreFactory dstFactory = new StoreFactory(
+                databaseLayout,
+                config,
+                idGeneratorFactory,
+                pageCache,
+                pageCacheTracer,
+                fs,
+                NullLogProvider.getInstance(),
+                contextFactory,
+                false,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
+
+        CursorContext cursorContext = contextFactory.create("schemaStoreMigration");
+        NeoStores dstStore = dstFactory.openNeoStores(
+                StoreType.SCHEMA,
+                StoreType.PROPERTY_KEY_TOKEN,
+                StoreType.PROPERTY,
+                StoreType.PROPERTY_KEY_TOKEN_NAME,
+                StoreType.LABEL_TOKEN,
+                StoreType.LABEL_TOKEN_NAME,
+                StoreType.RELATIONSHIP_TYPE_TOKEN,
+                StoreType.RELATIONSHIP_TYPE_TOKEN_NAME);
+        dstStore.start(cursorContext);
+        try {
+            SchemaStore dstSchema = dstStore.getSchemaStore();
+            var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(dstStore);
+
+            // Token holders that create the tokens asked for if they don't already have them
+            TokenHolders dstTokenHolders = new TokenHolders(
+                    new DelegatingTokenHolder(
+                            getPropertyTokenCreator(dstStore, contextFactory, memoryTracker, allocatorProvider),
+                            TokenHolder.TYPE_PROPERTY_KEY),
+                    new DelegatingTokenHolder(
+                            getLabelTokenCreator(dstStore, contextFactory, memoryTracker, allocatorProvider),
+                            TokenHolder.TYPE_LABEL),
+                    new DelegatingTokenHolder(
+                            getRelTypeTokenCreator(dstStore, contextFactory, memoryTracker, allocatorProvider),
+                            TokenHolder.TYPE_RELATIONSHIP_TYPE));
+            var storeCursors = new CachedStoreCursors(dstStore, cursorContext);
+            dstTokenHolders
+                    .propertyKeyTokens()
+                    .setInitialTokens(dstStore.getPropertyKeyTokenStore().getTokens(storeCursors));
+            dstTokenHolders
+                    .labelTokens()
+                    .setInitialTokens(dstStore.getLabelTokenStore().getTokens(storeCursors));
+            dstTokenHolders
+                    .relationshipTypeTokens()
+                    .setInitialTokens(dstStore.getRelationshipTypeTokenStore().getTokens(storeCursors));
+
+            return new SchemaRuleMigrationAccessImplExtended(
+                    dstStore,
+                    new SchemaStorage(dstSchema, dstTokenHolders),
+                    allocatorProvider,
+                    cursorContext,
+                    memoryTracker,
+                    storeCursors,
+                    dstTokenHolders);
+        } catch (Throwable e) {
+            dstStore.close();
+            throw e;
+        }
+    }
+
     private TokenHolders loadReadOnlyTokens(NeoStores stores, boolean lenient, CursorContextFactory contextFactory) {
         try (var cursorContext = contextFactory.create("loadReadOnlyTokens");
                 var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
@@ -841,44 +925,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             NeoStores stores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
         SchemaStore dstSchema = stores.getSchemaStore();
         var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(stores);
-        TokenCreator propertyKeyTokenCreator = (name, internal) -> {
-            try (var cursorContext = contextFactory.create("createMigrationTargetSchemaRuleAccess");
-                    var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
-                PropertyKeyTokenStore keyTokenStore = stores.getPropertyKeyTokenStore();
-                DynamicStringStore nameStore = keyTokenStore.getNameStore();
-                byte[] bytes = PropertyStore.encodeString(name);
-                List<DynamicRecord> nameRecords = new ArrayList<>();
-                AbstractDynamicStore.allocateRecordsFromBytes(
-                        nameRecords,
-                        bytes,
-                        allocatorProvider.allocator(PROPERTY_KEY_TOKEN_NAME),
-                        cursorContext,
-                        memoryTracker);
-                nameRecords.forEach(
-                        record -> nameStore.prepareForCommit(record, nameStore.getIdGenerator(), cursorContext));
-                try (PageCursor cursor = storeCursors.writeCursor(DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR)) {
-                    nameRecords.forEach(record -> nameStore.updateRecord(record, cursor, cursorContext, storeCursors));
-                }
-                nameRecords.forEach(record -> {
-                    long highId = record.getId();
-                    nameStore.getIdGenerator().setHighestPossibleIdInUse(highId);
-                });
-                int nameId = Iterables.first(nameRecords).getIntId();
-                PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
-                long tokenId = keyTokenStore.getIdGenerator().nextId(cursorContext);
-                keyTokenRecord.setId(tokenId);
-                keyTokenRecord.initialize(true, nameId);
-                keyTokenRecord.setInternal(internal);
-                keyTokenRecord.setCreated();
-                keyTokenStore.prepareForCommit(keyTokenRecord, keyTokenStore.getIdGenerator(), cursorContext);
-                try (PageCursor pageCursor = storeCursors.writeCursor(PROPERTY_KEY_TOKEN_CURSOR)) {
-                    keyTokenStore.updateRecord(keyTokenRecord, pageCursor, cursorContext, storeCursors);
-                }
-                long highId = keyTokenRecord.getId();
-                keyTokenStore.getIdGenerator().setHighestPossibleIdInUse(highId);
-                return Math.toIntExact(tokenId);
-            }
-        };
+        TokenCreator propertyKeyTokenCreator =
+                getPropertyTokenCreator(stores, contextFactory, memoryTracker, allocatorProvider);
         var cursorContext = contextFactory.create("createMigrationTargetSchemaRuleAccess");
         var storeCursors = new CachedStoreCursors(stores, cursorContext);
         TokenHolders dstTokenHolders = loadTokenHolders(stores, propertyKeyTokenCreator, storeCursors);
@@ -889,6 +937,98 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 cursorContext,
                 memoryTracker,
                 storeCursors);
+    }
+
+    private static TokenCreator getPropertyTokenCreator(
+            NeoStores stores,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker,
+            DynamicAllocatorProvider allocatorProvider) {
+        return getTokenCreator(
+                stores,
+                stores.getPropertyKeyTokenStore(),
+                PROPERTY_KEY_TOKEN_NAME,
+                DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR,
+                PROPERTY_KEY_TOKEN_CURSOR,
+                contextFactory,
+                memoryTracker,
+                allocatorProvider);
+    }
+
+    private static TokenCreator getLabelTokenCreator(
+            NeoStores stores,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker,
+            DynamicAllocatorProvider allocatorProvider) {
+        return getTokenCreator(
+                stores,
+                stores.getLabelTokenStore(),
+                LABEL_TOKEN_NAME,
+                DYNAMIC_LABEL_TOKEN_CURSOR,
+                LABEL_TOKEN_CURSOR,
+                contextFactory,
+                memoryTracker,
+                allocatorProvider);
+    }
+
+    private static TokenCreator getRelTypeTokenCreator(
+            NeoStores stores,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker,
+            DynamicAllocatorProvider allocatorProvider) {
+        return getTokenCreator(
+                stores,
+                stores.getRelationshipTypeTokenStore(),
+                RELATIONSHIP_TYPE_TOKEN_NAME,
+                DYNAMIC_REL_TYPE_TOKEN_CURSOR,
+                REL_TYPE_TOKEN_CURSOR,
+                contextFactory,
+                memoryTracker,
+                allocatorProvider);
+    }
+
+    private static <T extends TokenRecord, STORE extends TokenStore<T>> TokenCreator getTokenCreator(
+            NeoStores stores,
+            STORE tokenStore,
+            StoreType nameStoreType,
+            CursorType nameStoreCursorType,
+            CursorType storeCursorType,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker,
+            DynamicAllocatorProvider allocatorProvider) {
+        return (name, internal) -> {
+            try (var cursorContext = contextFactory.create("createMigrationTargetSchemaRuleAccess");
+                    var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
+                DynamicStringStore nameStore = tokenStore.getNameStore();
+                byte[] bytes = PropertyStore.encodeString(name);
+                List<DynamicRecord> nameRecords = new ArrayList<>();
+                AbstractDynamicStore.allocateRecordsFromBytes(
+                        nameRecords, bytes, allocatorProvider.allocator(nameStoreType), cursorContext, memoryTracker);
+                nameRecords.forEach(
+                        record -> nameStore.prepareForCommit(record, nameStore.getIdGenerator(), cursorContext));
+                try (PageCursor cursor = storeCursors.writeCursor(nameStoreCursorType)) {
+                    nameRecords.forEach(record -> nameStore.updateRecord(record, cursor, cursorContext, storeCursors));
+                }
+                nameRecords.forEach(record -> {
+                    long highId = record.getId();
+                    nameStore.getIdGenerator().setHighestPossibleIdInUse(highId);
+                });
+                int nameId = Iterables.first(nameRecords).getIntId();
+                T keyTokenRecord = tokenStore.newRecord();
+                long tokenId = tokenStore.getIdGenerator().nextId(cursorContext);
+                keyTokenRecord.setId(tokenId);
+                keyTokenRecord.initialize(true, nameId);
+                keyTokenRecord.setInternal(internal);
+                keyTokenRecord.setCreated();
+                tokenStore.prepareForCommit(keyTokenRecord, tokenStore.getIdGenerator(), cursorContext);
+                try (PageCursor pageCursor = storeCursors.writeCursor(storeCursorType)) {
+                    tokenStore.updateRecord(keyTokenRecord, pageCursor, cursorContext, storeCursors);
+                }
+                long highId = keyTokenRecord.getId();
+                tokenStore.getIdGenerator().setHighestPossibleIdInUse(highId);
+                return Math.toIntExact(tokenId);
+            }
+        };
     }
 
     private static TokenHolders loadTokenHolders(
