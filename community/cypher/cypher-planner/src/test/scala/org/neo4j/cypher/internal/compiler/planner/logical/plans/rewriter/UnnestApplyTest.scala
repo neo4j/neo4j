@@ -663,12 +663,6 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         expectedBuilder.providedOrders
       ))
     }
-
-    def shouldNotRewritePlan: Assertion = {
-      val inputPlan = inputBuilder.build()
-      val resultPlan = rewrite(inputPlan, inputBuilder.cardinalities, inputBuilder.providedOrders, inputBuilder.idGen)
-      resultPlan shouldEqual inputPlan
-    }
   }
 
   private def rewrite(

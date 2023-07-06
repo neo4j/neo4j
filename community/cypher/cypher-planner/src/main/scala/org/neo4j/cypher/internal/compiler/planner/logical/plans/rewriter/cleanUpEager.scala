@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class cleanUpEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) extends Rewriter {
+case class cleanUpEager(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
 
@@ -42,26 +42,22 @@ case class cleanUpEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) e
 
     // E U => U E
     case eager @ Eager(unwind @ UnwindCollection(source, _, _), reasons) =>
-      val res = unwind.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(
-        attributes.copy(unwind.id)
-      )
-      solveds.copy(eager.id, res.id)
-      res
+      val newEager = eager.copy(source = source, reasons = reasons)(attributes.copy(eager.id))
+      cardinalities.copy(source.id, newEager.id)
+      unwind.copy(source = newEager)(SameId(unwind.id))
 
     // E LCSV => LCSV E
     case eager @ Eager(loadCSV @ LoadCSV(source, _, _, _, _, _, _), reasons) =>
-      val res = loadCSV.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(
-        attributes.copy(loadCSV.id)
-      )
-      solveds.copy(eager.id, res.id)
-      res
+      val newEager = eager.copy(source = source, reasons = reasons)(attributes.copy(eager.id))
+      cardinalities.copy(source.id, newEager.id)
+      loadCSV.copy(source = newEager)(SameId(loadCSV.id))
 
     // LIMIT E => E LIMIT
     case limit @ Limit(eager @ Eager(source, reasons), _) =>
-      val res =
-        eager.copy(source = planLimitOnTopOf(source, limit.count)(SameId(limit.id)), reasons)(attributes.copy(eager.id))
-      solveds.copy(limit.id, res.id)
-      res
+      val newLimit = planLimitOnTopOf(source, limit.count)(SameId(limit.id))
+      val newEager = eager.copy(source = newLimit, reasons)(attributes.copy(eager.id))
+      cardinalities.copy(limit.id, newEager.id)
+      newEager
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

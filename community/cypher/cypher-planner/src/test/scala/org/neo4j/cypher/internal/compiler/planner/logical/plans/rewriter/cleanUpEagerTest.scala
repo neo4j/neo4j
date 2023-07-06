@@ -19,176 +19,156 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.plans.Aggregation
-import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
-import org.neo4j.cypher.internal.logical.plans.Limit
-import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Assertion
 
-class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class cleanUpEagerTest extends CypherFunSuite
+    with LogicalPlanningAttributesTestSupport
+    with LogicalPlanConstructionTestSupport
+    with AstConstructionTestSupport {
   val DEFAULT_BUFFER_SIZE_4MB: Int = 4 * 1024 * 1024
 
   test("should concatenate two eagers after eachother") {
-    val leaf = newMockedLogicalPlan()
-    val eager1 = Eager(leaf)
-    val eager2 = Eager(eager1)
-    val topPlan = Projection(eager2, Set.empty, Map.empty)
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(1)
+      .eager().withCardinality(1)
+      .argument().withCardinality(1)
 
-    rewrite(topPlan) should equal(Projection(Eager(leaf), Set.empty, Map.empty))
+    inputBuilder shouldRewriteToPlanWithAttributes new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(1)
+      .argument().withCardinality(1)
   }
 
   test("should not move eager below unwind") {
-    val leaf = newMockedLogicalPlan()
-    val eager = Eager(leaf)
-    val unwind = UnwindCollection(eager, varFor("i"), null)
-    val topPlan = Projection(unwind, Set.empty, Map.empty)
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .unwind("[1,2,3] AS i").withCardinality(1)
+      .eager().withCardinality(1)
+      .argument().withCardinality(1)
 
-    rewrite(topPlan) should equal(topPlan)
+    inputBuilder.shouldNotRewritePlan
   }
 
   test("should move eager on top of unwind to below it") {
-    val leaf = newMockedLogicalPlan()
-    val unwind = UnwindCollection(leaf, varFor("i"), null)
-    val eager = Eager(unwind)
-    val topPlan = Projection(eager, Set.empty, Map.empty)
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(3)
+      .unwind("[1,2,3] AS i").withCardinality(3)
+      .argument().withCardinality(1)
 
-    rewrite(topPlan) should equal(Projection(UnwindCollection(Eager(leaf), varFor("i"), null), Set.empty, Map.empty))
+    inputBuilder shouldRewriteToPlanWithAttributes new LogicalPlanBuilder(wholePlan = false)
+      .unwind("[1,2,3] AS i").withCardinality(3)
+      .eager().withCardinality(1)
+      .argument().withCardinality(1)
   }
 
   test("should move eager on top of unwind to below it repeatedly") {
-    val leaf = newMockedLogicalPlan()
-    val unwind1 = UnwindCollection(leaf, varFor("i"), null)
-    val eager1 = Eager(unwind1)
-    val unwind2 = UnwindCollection(eager1, varFor("i"), null)
-    val eager2 = Eager(unwind2)
-    val unwind3 = UnwindCollection(eager2, varFor("i"), null)
-    val eager3 = Eager(unwind3)
-    val topPlan = Projection(eager3, Set.empty, Map.empty)
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(27)
+      .unwind("[1,2,3] AS k").withCardinality(27)
+      .eager().withCardinality(9)
+      .unwind("[1,2,3] AS j").withCardinality(9)
+      .eager().withCardinality(3)
+      .unwind("[1,2,3] AS i").withCardinality(3)
+      .argument().withCardinality(1)
 
-    rewrite(topPlan) should equal(
-      Projection(
-        UnwindCollection(
-          UnwindCollection(
-            UnwindCollection(Eager(leaf), varFor("i"), null),
-            varFor("i"),
-            null
-          ),
-          varFor("i"),
-          null
-        ),
-        Set.empty,
-        Map.empty
-      )
-    )
+    inputBuilder shouldRewriteToPlanWithAttributes new LogicalPlanBuilder(wholePlan = false)
+      .unwind("[1,2,3] AS k").withCardinality(27)
+      .unwind("[1,2,3] AS j").withCardinality(9)
+      .unwind("[1,2,3] AS i").withCardinality(3)
+      .eager().withCardinality(1)
+      .argument().withCardinality(1)
   }
 
   test("should move eager on top of load csv to below it") {
-    val leaf = newMockedLogicalPlan()
-    val url = literalString("file:///tmp/foo.csv")
-    val loadCSV =
-      LoadCSV(leaf, url, varFor("a"), NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)
-    val eager = Eager(loadCSV)
-    val topPlan = Projection(eager, Set.empty, Map.empty)
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(3)
+      .loadCSV("$url", "a", NoHeaders).withCardinality(3)
+      .argument().withCardinality(1)
 
-    rewrite(topPlan) should equal(
-      Projection(
-        LoadCSV(
-          Eager(leaf),
-          url,
-          varFor("a"),
-          NoHeaders,
-          None,
-          legacyCsvQuoteEscaping = false,
-          DEFAULT_BUFFER_SIZE_4MB
-        ),
-        Set.empty,
-        Map.empty
-      )
-    )
+    inputBuilder shouldRewriteToPlanWithAttributes new LogicalPlanBuilder(wholePlan = false)
+      .loadCSV("$url", "a", NoHeaders).withCardinality(3)
+      .eager().withCardinality(1)
+      .argument().withCardinality(1)
   }
 
-  test("should move eager on top of limit to below it") {
-    val leaf = newMockedLogicalPlan()
+  test("should move limit on top of eager to below it") {
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .limit(10).withCardinality(10)
+      .eager().withCardinality(100)
+      .argument().withCardinality(100)
 
-    rewrite(
-      Projection(
-        Limit(
-          Eager(leaf),
-          literalInt(12)
-        ),
-        Set.empty,
-        Map.empty
-      )
-    ) should equal(
-      Projection(
-        Eager(
-          Limit(leaf, literalInt(12))
-        ),
-        Set.empty,
-        Map.empty
-      )
-    )
+    inputBuilder shouldRewriteToPlanWithAttributes new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(10)
+      .limit(10).withCardinality(10)
+      .argument().withCardinality(100)
   }
 
   test("should not rewrite plan with eager below load csv") {
-    val leaf = newMockedLogicalPlan()
-    val eager = Eager(leaf)
-    val loadCSV = LoadCSV(
-      eager,
-      literalString("file:///tmp/foo.csv"),
-      varFor("a"),
-      NoHeaders,
-      None,
-      legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE_4MB
-    )
-    val topPlan = Projection(loadCSV, Set.empty, Map.empty)
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .loadCSV("$url", "a", NoHeaders).withCardinality(3)
+      .eager().withCardinality(1)
+      .argument().withCardinality(1)
 
-    rewrite(topPlan) should equal(topPlan)
+    inputBuilder.shouldNotRewritePlan
   }
 
   test("should use exhaustive limit when moving eager on top of limit when there are updates") {
-    val leaf = Create(newMockedLogicalPlan(), Seq(createNode("n")))
-    rewrite(
-      Projection(
-        Limit(
-          Eager(leaf),
-          literalInt(12)
-        ),
-        Set.empty,
-        Map.empty
-      )
-    ) should equal(
-      Projection(
-        Eager(
-          ExhaustiveLimit(leaf, literalInt(12))
-        ),
-        Set.empty,
-        Map.empty
-      )
-    )
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .limit(10).withCardinality(10)
+      .eager().withCardinality(100)
+      .create(createNode("n")).withCardinality(100)
+      .argument().withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithAttributes new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(10)
+      .exhaustiveLimit(10).withCardinality(10)
+      .create(createNode("n")).withCardinality(100)
+      .argument().withCardinality(100)
   }
 
   test("should remove eager on top of eager aggregation") {
-    val leaf = newMockedLogicalPlan()
-    val aggregatingExpression = distinctFunction("count", varFor("to"))
-    val aggregation = Aggregation(leaf, Map.empty, Map(varFor("x") -> aggregatingExpression))
-    val eager = Eager(aggregation)
-    val topPlan = Projection(eager, Set.empty, Map.empty)
+    val inputBuilder = new LogicalPlanBuilder(wholePlan = false)
+      .eager().withCardinality(1)
+      .aggregation(Seq.empty, Seq.empty).withCardinality(1)
+      .argument().withCardinality(10)
 
-    rewrite(topPlan) should equal(Projection(aggregation, Set.empty, Map.empty))
+    inputBuilder shouldRewriteToPlanWithAttributes new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq.empty).withCardinality(1)
+      .argument().withCardinality(10)
   }
 
-  private def rewrite(p: LogicalPlan): LogicalPlan =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(cleanUpEager(new StubSolveds, Attributes(idGen))))(p)
+  implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
+
+    def shouldRewriteToPlanWithAttributes(expectedBuilder: LogicalPlanBuilder): Assertion = {
+      val resultPlan =
+        rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.idGen)
+      (resultPlan, inputBuilder.cardinalities) should haveSamePlanAndCardinalitiesAs((
+        expectedBuilder.build(),
+        expectedBuilder.cardinalities
+      ))
+      (resultPlan, inputBuilder.providedOrders) should haveSamePlanAndProvidedOrdersAs((
+        expectedBuilder.build(),
+        expectedBuilder.providedOrders
+      ))
+    }
+
+    def shouldNotRewritePlan: Assertion = {
+      val inputPlan = inputBuilder.build()
+      val resultPlan = rewrite(inputPlan, inputBuilder.cardinalities, inputBuilder.idGen)
+      resultPlan shouldEqual inputPlan
+    }
+  }
+
+  private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, idGen: IdGen): LogicalPlan =
+    fixedPoint((p: LogicalPlan) => p.endoRewrite(cleanUpEager(cardinalities, Attributes(idGen))))(p)
 }

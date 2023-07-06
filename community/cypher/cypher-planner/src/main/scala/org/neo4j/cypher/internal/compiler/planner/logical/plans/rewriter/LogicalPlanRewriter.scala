@@ -87,8 +87,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         unnestCartesianProduct,
         if (context.eagerAnalyzer == CypherEagerAnalyzerOption.lp) identity
         else cleanUpEager(
-          solveds,
-          otherAttributes.withAlso(cardinalities, effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
+          cardinalities,
+          otherAttributes.withAlso(solveds, effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
         ),
         simplifyPredicates,
         unnestOptional,
