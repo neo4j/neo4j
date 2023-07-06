@@ -1404,4 +1404,43 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
+
+  test("should project endpoints with continuation") {
+    // given
+    val nodes = given {
+      for {
+        _ <- Range(0, 16)
+        a = runtimeTestSupport.tx.createNode(Label.label("A"))
+        b = runtimeTestSupport.tx.createNode(Label.label("B"))
+      } yield {
+        a.createRelationshipTo(b, RelationshipType.withName("A_TO_B"))
+        val cs = nodeGraph(7)
+        cs.foreach(c => b.createRelationshipTo(c, RelationshipType.withName("B_TO_C")))
+        (a, b, cs)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "x", "y", "c")
+      .apply()
+      .|.expandAll("(x)-[r2:B_TO_C]->(c)")
+      .|.projectEndpoints("(x)-[r1]-(y)", startInScope = false, endInScope = false)
+      .|.argument()
+      .expandAll("(a)-[r1:A_TO_B]->(b)")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      (a, b, cs) <- nodes
+      c <- cs
+    } yield {
+      Array(a, b, a, c)
+    }
+
+    runtimeResult should beColumns("a", "x", "y", "c").withRows(expected)
+  }
 }
