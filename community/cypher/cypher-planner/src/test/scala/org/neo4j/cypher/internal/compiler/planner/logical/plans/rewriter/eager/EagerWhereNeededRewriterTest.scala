@@ -58,9 +58,11 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setP
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
+import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -7025,6 +7027,295 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(ReadDeleteConflict("a").withConflict(Conflict(Id(3), Id(6)))))
         .filter("a.prop = 0")
         .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
+  // SHORTEST TESTS
+  test("Insert eager between shortest path pattern and create") {
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (a)")
+      .addTransition(1, 2, "(a)-[r]->(b)")
+      .addTransition(2, 1, "(b) (a)")
+      .addTransition(2, 3, "(b) (v WHERE v.prop = 42)")
+      .addTransition(3, 4, "(v) (c)")
+      .addTransition(4, 5, "(c)-[s]->(d)")
+      .addTransition(5, 4, "(d) (c)")
+      .addTransition(5, 6, "(d) (w WHERE w:N)")
+      .addFinalState(6)
+      .build()
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createNode("o", "M", "O"))
+      .statefulShortestPath(
+        "u",
+        "w",
+        "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+        None,
+        Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+        Set(("r", "r"), ("s", "s")),
+        singletonVariables = Set("v", "w"),
+        StatefulShortestPath.Selector.Shortest(1),
+        expectedNfa
+      )
+      .nodeByLabelScan("u", "User")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .create(createNode("o", "M", "O"))
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("M")).withConflict(Conflict(Id(1), Id(2))),
+          LabelReadSetConflict(labelName("O")).withConflict(Conflict(Id(1), Id(2)))
+        ))
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+          None,
+          Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+          Set(("r", "r"), ("s", "s")),
+          singletonVariables = Set("v", "w"),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Insert eager between shortest path pattern and delete") {
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (a)")
+      .addTransition(1, 2, "(a)-[r]->(b)")
+      .addTransition(2, 1, "(b) (a)")
+      .addTransition(2, 3, "(b) (v WHERE v.prop = 42)")
+      .addTransition(3, 4, "(v) (c)")
+      .addTransition(4, 5, "(c)-[s]->(d)")
+      .addTransition(5, 4, "(d) (c)")
+      .addTransition(5, 6, "(d) (w WHERE w:N)")
+      .addFinalState(6)
+      .build()
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .deleteNode("w")
+      .statefulShortestPath(
+        "u",
+        "w",
+        "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+        None,
+        Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+        Set(("r", "r"), ("s", "s")),
+        singletonVariables = Set("v", "w"),
+        StatefulShortestPath.Selector.Shortest(1),
+        expectedNfa
+      )
+      .nodeByLabelScan("u", "User")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .deleteNode("w")
+        .eager(ListSet(
+          ReadDeleteConflict("d").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("b").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("w").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("u").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("a").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("v").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("c").withConflict(Conflict(Id(1), Id(2)))
+        ))
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+          None,
+          Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+          Set(("r", "r"), ("s", "s")),
+          singletonVariables = Set("v", "w"),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Insert eager between shortest path pattern and detach delete") {
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (a)")
+      .addTransition(1, 2, "(a)-[r]->(b)")
+      .addTransition(2, 1, "(b) (a)")
+      .addTransition(2, 3, "(b) (v WHERE v.prop = 42)")
+      .addTransition(3, 4, "(v) (c)")
+      .addTransition(4, 5, "(c)-[s]->(d)")
+      .addTransition(5, 4, "(d) (c)")
+      .addTransition(5, 6, "(d) (w WHERE w:N)")
+      .addFinalState(6)
+      .build()
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .detachDeleteNode("w")
+      .statefulShortestPath(
+        "u",
+        "w",
+        "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+        None,
+        Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+        Set(("r", "r"), ("s", "s")),
+        singletonVariables = Set("v", "w"),
+        StatefulShortestPath.Selector.Shortest(1),
+        expectedNfa
+      )
+      .nodeByLabelScan("u", "User")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .detachDeleteNode("w")
+        .eager(ListSet(
+          ReadDeleteConflict("s").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("d").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("w").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("u").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("a").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("b").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("v").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("c").withConflict(Conflict(Id(1), Id(2)))
+        ))
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+          None,
+          Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+          Set(("r", "r"), ("s", "s")),
+          singletonVariables = Set("v", "w"),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Insert eager between shortest path pattern and set property") {
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (a)")
+      .addTransition(1, 2, "(a)-[r]->(b)")
+      .addTransition(2, 1, "(b) (a)")
+      .addTransition(2, 3, "(b) (v WHERE v.prop = 42)")
+      .addTransition(3, 4, "(v) (c)")
+      .addTransition(4, 5, "(c)-[s]->(d)")
+      .addTransition(5, 4, "(d) (c)")
+      .addTransition(5, 6, "(d) (w WHERE w:N)")
+      .addFinalState(6)
+      .build()
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .setNodeProperty("w", "prop", "2")
+      .statefulShortestPath(
+        "u",
+        "w",
+        "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+        None,
+        Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+        Set(("r", "r"), ("s", "s")),
+        singletonVariables = Set("v", "w"),
+        StatefulShortestPath.Selector.Shortest(1),
+        expectedNfa
+      )
+      .nodeByLabelScan("u", "User")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(1), Id(0)))))
+        .setNodeProperty("w", "prop", "2")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(1), Id(2)))))
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
+          None,
+          Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+          Set(("r", "r"), ("s", "s")),
+          singletonVariables = Set("v", "w"),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Do not insert eager between shortest path pattern and create when there is no overlap") {
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (a)")
+      .addTransition(1, 2, "(a)-[r WHERE r:A]->(b WHERE b:A)")
+      .addTransition(2, 1, "(b) (a WHERE a:A)")
+      .addTransition(2, 3, "(b) (v WHERE v:A)")
+      .addTransition(3, 4, "(v) (c WHERE c:A)")
+      .addTransition(4, 5, "(c)-[s WHERE s:A]->(d WHERE d:A)")
+      .addTransition(5, 4, "(d) (c WHERE c:A)")
+      .addTransition(5, 6, "(d) (w WHERE w:A)")
+      .addFinalState(6)
+      .build()
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createNodeWithProperties("q", Seq.empty, "prop1"))
+      .statefulShortestPath(
+        "u",
+        "w",
+        "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) " +
+          "AND a:A AND b:A AND c:A AND d:A AND r:A AND s:A AND v:A AND w:A)",
+        None,
+        Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+        Set(("r", "r"), ("s", "s")),
+        singletonVariables = Set("v", "w"),
+        StatefulShortestPath.Selector.Shortest(1),
+        expectedNfa
+      )
+      .nodeByLabelScan("u", "User")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .create(createNodeWithProperties("q", Seq.empty, "prop1"))
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) " +
+            "AND a:A AND b:A AND c:A AND d:A AND r:A AND s:A AND v:A AND w:A)",
+          None,
+          Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
+          Set(("r", "r"), ("s", "s")),
+          singletonVariables = Set("v", "w"),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa
+        )
+        .nodeByLabelScan("u", "User")
         .build()
     )
   }

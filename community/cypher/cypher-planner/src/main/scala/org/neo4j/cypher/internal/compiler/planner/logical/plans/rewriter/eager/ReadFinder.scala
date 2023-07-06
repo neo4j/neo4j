@@ -104,6 +104,9 @@ import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.logical.plans.Merge
+import org.neo4j.cypher.internal.logical.plans.NFA
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransitions
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransitions
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -676,7 +679,8 @@ object ReadFinder {
         ) =>
         processShortestPaths(name.name, (nodes._1.name, nodes._2.name), types)
 
-      case StatefulShortestPath(_, _, _, _, _, _, _, _, _, _) => ???
+      case StatefulShortestPath(_, sourceNode, targetNode, nfa, _, pathNodes, pathRels, singleNodes, _, _) =>
+        processStatefulShortest(sourceNode, targetNode, nfa, pathNodes, pathRels, singleNodes)
 
       case LegacyFindShortestPaths(
           _,
@@ -1046,6 +1050,53 @@ object ReadFinder {
           TraverseChildren(nextAcc)
         }
     }
+  }
+
+  private def processStatefulShortest(
+    sourceNode: LogicalVariable,
+    targetNode: LogicalVariable,
+    nfa: NFA,
+    pathNodes: Set[Trail.VariableGrouping],
+    pathRels: Set[Trail.VariableGrouping],
+    singleNodes: Set[LogicalVariable]
+  ): PlanReads = {
+
+    def getExpressions(nfa: NFA): (Set[Expand.VariablePredicate], Set[Expand.VariablePredicate]) = {
+      nfa.transitions.foldLeft((Set[Expand.VariablePredicate](), Set[Expand.VariablePredicate]())) { (acc, trans) =>
+        trans match {
+          case (_, transition) => transition match {
+              case NodeJuxtapositionTransitions(transitions) =>
+                val newPred = transitions.flatMap(_.predicate.variablePredicates) ++ acc._1
+                (newPred, acc._2)
+              case RelationshipExpansionTransitions(transitions) =>
+                val newNodePred = transitions.flatMap(_.predicate.nodePred) ++ acc._1
+                val newRelPred = transitions.flatMap(_.predicate.relPred) ++ acc._2
+                (newNodePred, newRelPred)
+            }
+        }
+      }
+    }
+
+    val initialRead = PlanReads()
+      .withReferencedNodeVariable(sourceNode)
+      .withIntroducedNodeVariable(targetNode)
+    val readWithPathNodes = pathNodes.foldLeft(initialRead) { (acc, pathNode) =>
+      acc.withIntroducedNodeVariable(pathNode.singletonName)
+    }
+    val readWithAllNodes = singleNodes.foldLeft(readWithPathNodes) { (acc, singleNode) =>
+      acc.withIntroducedNodeVariable(singleNode)
+    }
+    val readWithPathRels = pathRels.foldLeft(readWithAllNodes) { (acc, pathRel) =>
+      acc.withIntroducedRelationshipVariable(pathRel.singletonName.name)
+    }
+    val (nodeExpr, relExpr) = getExpressions(nfa)
+    val additionalNodeExpr = nodeExpr.foldLeft(readWithPathRels)((acc, pred) =>
+      acc.withAddedNodeFilterExpression(pred.variable, pred.predicate)
+    )
+
+    relExpr.foldLeft(additionalNodeExpr)((acc, pred) =>
+      acc.withAddedRelationshipFilterExpression(pred.variable, pred.predicate)
+    )
   }
 
   private def processShortestPaths(name: String, nodes: (String, String), types: Seq[RelTypeName]): PlanReads = {
