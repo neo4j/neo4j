@@ -365,7 +365,8 @@ public class Config implements Configuration {
                     strictWarningMessage);
         }
 
-        private static void validateFilePermissionForCommandExpansion(List<Path> files) {
+        // Public so APOC can use this for its command expansion
+        public static void validateFilePermissionForCommandExpansion(List<Path> files) {
             if (files.isEmpty()) {
                 return;
             }
@@ -858,6 +859,11 @@ public class Config implements Configuration {
         }
     }
 
+    // Needed for APOC to be able to check for command expansion
+    public boolean expandCommands() {
+        return this.expandCommands;
+    }
+
     private void validateSettingNamespace(SettingImpl<Object> setting) {
         String name = setting.name();
         for (String supportedNamespace : SUPPORTED_NAMESPACES) {
@@ -900,7 +906,8 @@ public class Config implements Configuration {
         return entry;
     }
 
-    private static boolean isCommand(String entry) {
+    // Public so APOC can use this for its command expansion
+    public static boolean isCommand(String entry) {
         String str = entry.trim();
         return str.length() > 3 && str.charAt(0) == '$' && str.charAt(1) == '(' && str.charAt(str.length() - 1) == ')';
     }
