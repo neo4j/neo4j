@@ -85,6 +85,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.DefaultElementIdMapperV1;
 import org.neo4j.kernel.api.Kernel;
@@ -925,7 +926,9 @@ public class Database extends AbstractDatabase {
                 pruneLock,
                 databaseAvailabilityGuard,
                 logProvider,
-                checkPointer);
+                checkPointer,
+                commandReaderFactory,
+                databaseDependencies.resolveDependency(BinarySupportedKernelVersions.class));
         databaseDependencies.satisfyDependencies(
                 checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService);
 

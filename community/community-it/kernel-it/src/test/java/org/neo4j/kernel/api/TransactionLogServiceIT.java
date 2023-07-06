@@ -63,10 +63,10 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -632,14 +632,30 @@ class TransactionLogServiceIT {
     }
 
     @Test
-    void appendCheckpointForTheLastAvailableTransaction() throws IOException {
+    void checkpointAtEndOfFileWhenAppendingToLastAvailableTransaction() throws IOException {
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
-        String testReason = "My unique last checkpoint1.";
+        String testReason = "Should checkpoint at end of file";
 
-        assertThatThrownBy(() -> logService.appendCheckpoint(lastTransactionId, testReason))
-                .isInstanceOf(NoSuchTransactionException.class);
+        var eofPosition = findEndOfFile(lastTransactionId.transactionId());
+
+        logService.appendCheckpoint(lastTransactionId, testReason);
+
+        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpointInfo.reason()).contains(testReason);
+
+        LogTailInformation freshTail = getFreshLogTail();
+        assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
+        assertThat(freshTail.getLastCheckPoint().orElseThrow().transactionLogPosition())
+                .isEqualTo(eofPosition);
+        assertThat(freshTail.getLastCheckPoint().orElseThrow()).isEqualTo(checkpointInfo);
+        assertThat(freshTail.logsAfterLastCheckpoint())
+                .describedAs("There should not be any commits after the checkpoint." + freshTail)
+                .isFalse();
+        assertThat(freshTail.isRecoveryRequired())
+                .describedAs("Recovery should not be required. " + freshTail)
+                .isFalse();
     }
 
     @Test
@@ -670,7 +686,7 @@ class TransactionLogServiceIT {
     }
 
     @Test
-    void appendCheckpointWhenLogFilesAreEmpty() throws IOException {
+    void checkpointAtEndOfFileWhenLogFileIsEmpty() throws IOException {
         for (int i = 0; i < 10; i++) {
             createNodeInIsolatedTransaction("foo");
         }
@@ -687,6 +703,7 @@ class TransactionLogServiceIT {
             logVersion--;
         }
 
+        var eofPosition = new LogPosition(logFile.getHighestLogVersion(), LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE);
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         String testReason = "Checkpoint on empty log files should work since its full story copy.";
@@ -694,6 +711,8 @@ class TransactionLogServiceIT {
 
         LogTailInformation freshTail = getFreshLogTail();
         assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
+        assertThat(freshTail.getLastCheckPoint().orElseThrow().transactionLogPosition())
+                .isEqualTo(eofPosition);
         assertThat(freshTail.logsAfterLastCheckpoint())
                 .describedAs("There should not be any commits after the checkpoint." + freshTail)
                 .isFalse();
@@ -703,7 +722,7 @@ class TransactionLogServiceIT {
     }
 
     @Test
-    void failToAppendCheckpointWhenHaveSeveralLogFiles() throws IOException {
+    void checkpointAtEndOfFileWhenTransactionIsRotatedOut() throws IOException {
         for (int i = 0; i < 10; i++) {
             createNodeInIsolatedTransaction("foo");
         }
@@ -721,39 +740,91 @@ class TransactionLogServiceIT {
             logVersion--;
         }
 
+        var eofPosition = new LogPosition(logFile.getHighestLogVersion(), LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE);
+
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        String testReason = "Fail to append this checkpoint to non existing tx.";
-        assertThatThrownBy(() -> logService.appendCheckpoint(lastTransactionId, testReason))
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining(
-                        "requested checkpoint record can't be created since transaction does not exist in the log files.");
+        String testReason = "Should checkpoint at EOF when transaction is rotated out";
+        logService.appendCheckpoint(lastTransactionId, testReason);
+
+        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpointInfo.reason()).contains(testReason);
+
+        LogTailInformation freshTail = getFreshLogTail();
+        assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
+        assertThat(freshTail.getLastCheckPoint().orElseThrow()).isEqualTo(checkpointInfo);
+        assertThat(freshTail.getLastCheckPoint().orElseThrow().transactionLogPosition())
+                .isEqualTo(eofPosition);
     }
 
     @Test
-    void failToAppendCheckpointWhenHaveNonEmptyLogFile() throws IOException {
+    void findTransactionPositionWhenInPreviousLogFile() throws IOException {
         for (int i = 0; i < 10; i++) {
             createNodeInIsolatedTransaction("foo");
         }
-        assertThat(logFiles.getLogFile().getMatchedFiles()).hasSize(1);
+        // we have some transaction that actually generated tx id
+        TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
+
+        LogFile logFile = logFiles.getLogFile();
+        logFile.rotate();
+
+        for (int i = 0; i < 10; i++) {
+            createNodeInIsolatedTransaction("foo");
+        }
+
+        logFile.rotate();
+        var expectedPosition = findEndOfTransaction(lastTransactionId.transactionId());
 
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        String testReason = "Fail to append this checkpoint to non existing tx.";
-        assertThatThrownBy(() -> logService.appendCheckpoint(new TransactionId(789, 1, 2, 3), testReason))
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining(
-                        "requested checkpoint record can't be created since transaction does not exist in the log files.");
+        String testReason = "Should find position for transaction even when it has been rotated";
+        logService.appendCheckpoint(lastTransactionId, testReason);
+
+        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpointInfo.reason()).contains(testReason);
+
+        LogTailInformation freshTail = getFreshLogTail();
+        assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
+        assertThat(freshTail.getLastCheckPoint().orElseThrow()).isEqualTo(checkpointInfo);
+        assertThat(freshTail.getLastCheckPoint().orElseThrow().transactionLogPosition())
+                .isEqualTo(expectedPosition);
     }
 
     @Test
-    void failToAppendCheckpointForTransactionThatDoesNotExistInLogs() {
+    void checkpointAtEndOfFileWhenTransactionDoesntExist() throws IOException {
+        for (int i = 0; i < 10; i++) {
+            createNodeInIsolatedTransaction("foo");
+        }
+        TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
+        var eofPosition = findEndOfFile(lastTransactionId.transactionId());
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
-        String testReason = "My unique last checkpoint3.";
-        assertThatThrownBy(() -> logService.appendCheckpoint(new TransactionId(789, 7, 8, 9), testReason))
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining(
-                        "requested checkpoint record can't be created since transaction does not exist in the log files.");
+        String testReason = "Should checkpoint at end of file when transaction doesn't exist";
+        logService.appendCheckpoint(new TransactionId(789, 7, 8, 9), testReason);
+
+        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpointInfo.reason()).contains(testReason);
+
+        LogTailInformation freshTail = getFreshLogTail();
+        assertThat(freshTail.getLastCheckPoint().orElseThrow()).isEqualTo(checkpointInfo);
+        assertThat(freshTail.getLastCheckPoint().orElseThrow().transactionLogPosition())
+                .isEqualTo(eofPosition);
+    }
+
+    private LogPosition findEndOfTransaction(long txId) throws IOException {
+        try (var cursor = transactionStore.getCommandBatches(txId + 1)) {
+            // Return end position of txId
+            return cursor.position();
+        }
+    }
+
+    private LogPosition findEndOfFile(long txId) throws IOException {
+        try (var cursor = transactionStore.getCommandBatches(txId)) {
+            while (cursor.next()) {
+                // Find last command
+            }
+            // Return last position in file
+            return cursor.position();
+        }
     }
 
     private LogTailInformation getFreshLogTail() {

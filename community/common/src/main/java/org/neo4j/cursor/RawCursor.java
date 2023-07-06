@@ -19,6 +19,7 @@
  */
 package org.neo4j.cursor;
 
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -55,5 +56,18 @@ public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, 
         } finally {
             close();
         }
+    }
+
+    default <R> R foldl(BiFunction<T, R, R> fold, R zero) throws EXCEPTION {
+        var last = zero;
+        try {
+            while (next()) {
+                var t = get();
+                last = fold.apply(t, last);
+            }
+        } finally {
+            close();
+        }
+        return last;
     }
 }

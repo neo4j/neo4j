@@ -27,21 +27,26 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.OptionalLong;
 import java.util.concurrent.locks.Lock;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.TransactionOrEndPositionLocator;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -54,6 +59,8 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     private final AvailabilityGuard availabilityGuard;
     private final InternalLog log;
     private final CheckPointer checkPointer;
+    private final CommandReaderFactory commandReaderFactory;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
 
     public TransactionLogServiceImpl(
             TransactionIdStore transactionIdStore,
@@ -62,7 +69,9 @@ public class TransactionLogServiceImpl implements TransactionLogService {
             Lock pruneLock,
             AvailabilityGuard availabilityGuard,
             InternalLogProvider logProvider,
-            CheckPointer checkPointer) {
+            CheckPointer checkPointer,
+            CommandReaderFactory commandReaderFactory,
+            BinarySupportedKernelVersions binarySupportedKernelVersions) {
         this.transactionIdStore = transactionIdStore;
         this.transactionStore = transactionStore;
         this.pruneLock = pruneLock;
@@ -70,6 +79,8 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog(getClass());
         this.checkPointer = checkPointer;
+        this.commandReaderFactory = commandReaderFactory;
+        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
     }
 
     @Override
@@ -105,30 +116,30 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     @Override
     public void appendCheckpoint(TransactionId transactionId, String reason) throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
-        LogPosition batchPosition;
-        long txId = transactionId.transactionId();
-        long currentLogVersion = logFile.getCurrentLogVersion();
-        // we have only one log file, and they do not have any logs - scenario that is the result of full story
-        // copy. In this case we need to have a checkpoint that points right after the header.
-        if (logFile.getMatchedFiles().length == 1 && !logFile.hasAnyEntries(currentLogVersion)) {
-            batchPosition = logFile.extractHeader(currentLogVersion).getStartPosition();
-        } else {
-            // We have to look for txId + 1 (to get the end position of txId) because txId will not exist if no further
-            // transactions were applied after the store files are downloaded in a
-            // full store copy.
-            try (var commandBatchCursor = transactionStore.getCommandBatches(txId + 1)) {
-                batchPosition = commandBatchCursor.position();
-            } catch (NoSuchTransactionException e) {
-                throw new NoSuchTransactionException(
-                        txId + 1,
-                        "requested checkpoint record can't be created since transaction does not exist in the log files.",
-                        e);
+        long txId = transactionId.transactionId() + 1;
+        var lastHeaderPosition =
+                logFile.extractHeader(logFile.getHighestLogVersion()).getStartPosition();
+
+        var startPosition = new MutableObject<>(lastHeaderPosition);
+        logFile.accept((header, position, start, end) -> {
+            if (txId >= start && txId <= end) {
+                startPosition.setValue(position);
+                return false;
             }
-        }
+            return true;
+        });
+
+        var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
+        var transactionPositionLocator = new TransactionOrEndPositionLocator(txId, logEntryReader);
+        logFile.accept(transactionPositionLocator, startPosition.getValue());
+        var position = transactionPositionLocator.getLogPosition();
+
         log.info(
                 "Writing checkpoint to force recovery from transaction id:`%d` from specific position:`%s`.",
-                txId, batchPosition);
-        checkPointer.forceCheckPoint(transactionId, batchPosition, new SimpleTriggerInfo(reason));
+                txId, position);
+
+        // Write checkpoint at the end of txId
+        checkPointer.forceCheckPoint(transactionId, position, new SimpleTriggerInfo(reason));
     }
 
     private ArrayList<LogChannel> collectChannels(
