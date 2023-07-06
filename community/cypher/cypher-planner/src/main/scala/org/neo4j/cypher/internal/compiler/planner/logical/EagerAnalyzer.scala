@@ -304,14 +304,18 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
   override def horizonEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
     val pcWrappedPlan = inputPlan match {
       case ProcedureCall(left, call) if call.signature.eager =>
-        context.staticComponents.logicalPlanProducer.planProcedureCall(
-          context.staticComponents.logicalPlanProducer.planEager(
-            left,
-            context,
-            ListSet(EagernessReason.Unknown)
+        context.staticComponents.logicalPlanProducer.planEager(
+          context.staticComponents.logicalPlanProducer.planProcedureCall(
+            context.staticComponents.logicalPlanProducer.planEager(
+              left,
+              context,
+              ListSet(EagernessReason.Unknown)
+            ),
+            call,
+            context
           ),
-          call,
-          context
+          context,
+          ListSet(EagernessReason.Unknown)
         )
       case _ =>
         inputPlan
