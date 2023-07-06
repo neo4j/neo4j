@@ -1561,11 +1561,11 @@ private[internal] class TransactionBoundReadQueryContext(
   ): Iterator[Array[AnyValue]] =
     CallSupport.callDbmsProcedure(transactionalContext.procedures, id, args, context)
 
-  override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    CallSupport.callFunction(transactionalContext.procedures, id, args)
+  override def callFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
+    CallSupport.callFunction(transactionalContext.procedures, id, args, context)
 
-  override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    CallSupport.callBuiltInFunction(transactionalContext.procedures, id, args)
+  override def callBuiltInFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
+    CallSupport.callBuiltInFunction(transactionalContext.procedures, id, args, context)
 
   override def aggregateFunction(id: Int): UserAggregationReducer =
     CallSupport.aggregateFunction(transactionalContext.procedures, id)

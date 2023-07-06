@@ -33,13 +33,21 @@ public class ProcedureCallContext {
     private final String database;
     private final boolean isSystemDatabase;
 
+    private final String runtimeUsed;
+
     public ProcedureCallContext(
-            int id, String[] outputFieldNames, boolean calledFromCypher, String database, boolean isSystemDatabase) {
+            int id,
+            String[] outputFieldNames,
+            boolean calledFromCypher,
+            String database,
+            boolean isSystemDatabase,
+            String runtimeUsed) {
         this.id = id;
         this.outputFieldNames = outputFieldNames;
         this.calledFromCypher = calledFromCypher;
         this.database = database;
         this.isSystemDatabase = isSystemDatabase;
+        this.runtimeUsed = runtimeUsed;
     }
 
     /*
@@ -66,10 +74,15 @@ public class ProcedureCallContext {
         return isSystemDatabase;
     }
 
-    /* Can be used for testing purposes */
-    public static final ProcedureCallContext EMPTY = new ProcedureCallContext(-1, new String[] {}, false, "", false);
+    /* should only be used for testing purposes */
+    public static final ProcedureCallContext EMPTY =
+            new ProcedureCallContext(-1, new String[] {}, false, "", false, "");
 
     public int id() {
         return id;
+    }
+
+    public String cypherRuntimeName() {
+        return runtimeUsed;
     }
 }

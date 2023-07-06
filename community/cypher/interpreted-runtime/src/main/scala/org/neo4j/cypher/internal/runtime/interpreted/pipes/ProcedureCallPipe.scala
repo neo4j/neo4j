@@ -62,7 +62,14 @@ case class ProcedureCallPipe(
     // getting the original name of the yielded variable
     val originalVariables = resultIndices.map(_._2._2).toArray
     val databaseId = qtx.transactionalContext.databaseId
-    new ProcedureCallContext(signature.id, originalVariables, true, databaseId.name(), databaseId.isSystemDatabase)
+    new ProcedureCallContext(
+      signature.id,
+      originalVariables,
+      true,
+      databaseId.name(),
+      databaseId.isSystemDatabase,
+      rowFactory.runtimeName
+    )
   }
 
   override protected def internalCreateResults(

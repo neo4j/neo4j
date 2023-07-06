@@ -59,7 +59,7 @@ public abstract class ProcedureCaller {
         this.procedureView = procedureView;
     }
 
-    public AnyValue callFunction(int id, AnyValue[] input) throws ProcedureException {
+    public AnyValue callFunction(int id, AnyValue[] input, ProcedureCallContext context) throws ProcedureException {
         performCheckBeforeOperation();
 
         AccessMode mode = securityContext().mode();
@@ -75,13 +75,14 @@ public abstract class ProcedureCaller {
                 : securityContext().withMode(new RestrictedAccessMode(mode, AccessMode.Static.READ));
 
         try (var ignore = overrideSecurityContext(securityContext)) {
-            return procedureView.callFunction(prepareContext(securityContext, ProcedureCallContext.EMPTY), id, input);
+            return procedureView.callFunction(prepareContext(securityContext, context), id, input);
         }
     }
 
-    public AnyValue callBuiltInFunction(int id, AnyValue[] input) throws ProcedureException {
+    public AnyValue callBuiltInFunction(int id, AnyValue[] input, ProcedureCallContext context)
+            throws ProcedureException {
         performCheckBeforeOperation();
-        return procedureView.callFunction(prepareContext(securityContext(), ProcedureCallContext.EMPTY), id, input);
+        return procedureView.callFunction(prepareContext(securityContext(), context), id, input);
     }
 
     AccessMode checkAggregationFunctionAccessMode(int functionId) {

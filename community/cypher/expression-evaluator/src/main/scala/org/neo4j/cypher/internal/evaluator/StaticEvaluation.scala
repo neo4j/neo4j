@@ -128,11 +128,11 @@ object StaticEvaluation {
 
   private class SimplifiedStaticQueryContext(procedures: Procedures) extends EmptyQueryContext {
 
-    override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
-      procedures.functionCall(id, args)
+    override def callFunction(id: Int, args: Array[AnyValue], ctx: ProcedureCallContext): AnyValue =
+      procedures.functionCall(id, args, ctx)
 
-    override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue = {
-      procedures.builtInFunctionCall(id, args)
+    override def callBuiltInFunction(id: Int, args: Array[AnyValue], ctx: ProcedureCallContext): AnyValue = {
+      procedures.builtInFunctionCall(id, args, ctx)
     }
   }
 
@@ -588,7 +588,7 @@ object StaticEvaluation {
       propertyCursor: PropertyCursor
     ): MapValue = notAvailable()
 
-    override def callFunction(id: Int, args: Array[AnyValue]): AnyValue = notAvailable()
+    override def callFunction(id: Int, args: Array[AnyValue], ctx: ProcedureCallContext): AnyValue = notAvailable()
 
     override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value = notAvailable()
 

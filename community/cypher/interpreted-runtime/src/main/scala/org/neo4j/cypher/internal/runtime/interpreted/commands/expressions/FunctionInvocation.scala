@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.values.AnyValue
 
 abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
@@ -52,22 +53,42 @@ abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array
   override def toString = s"${signature.name}(${input.mkString(",")})"
 }
 
-case class BuiltInFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
+case class BuiltInFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression], runtimeUsed: String)
     extends FunctionInvocation(signature, input) {
 
-  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue =
-    query.callBuiltInFunction(signature.id, argValues)
+  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = {
+    val databaseId = query.transactionalContext.databaseId
+    val context = new ProcedureCallContext(
+      signature.id,
+      Array.empty,
+      true,
+      databaseId.name(),
+      databaseId.isSystemDatabase,
+      runtimeUsed
+    )
+    query.callBuiltInFunction(signature.id, argValues, context)
+  }
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(BuiltInFunctionInvocation(signature, input.map(a => a.rewrite(f))))
+    f(BuiltInFunctionInvocation(signature, input.map(a => a.rewrite(f)), runtimeUsed))
 }
 
-case class UserFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
+case class UserFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression], runtimeUsed: String)
     extends FunctionInvocation(signature, input) {
 
-  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue =
-    query.callFunction(signature.id, argValues)
+  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = {
+    val databaseId = query.transactionalContext.databaseId
+    val context = new ProcedureCallContext(
+      signature.id,
+      Array.empty,
+      true,
+      databaseId.name(),
+      databaseId.isSystemDatabase,
+      runtimeUsed
+    )
+    query.callFunction(signature.id, argValues, context)
+  }
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(UserFunctionInvocation(signature, input.map(a => a.rewrite(f))))
+    f(UserFunctionInvocation(signature, input.map(a => a.rewrite(f)), runtimeUsed))
 }

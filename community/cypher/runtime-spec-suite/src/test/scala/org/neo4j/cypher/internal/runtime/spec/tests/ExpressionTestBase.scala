@@ -36,12 +36,31 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
+import org.neo4j.kernel.api.procedure.CallableUserFunction.BasicUserFunction
+import org.neo4j.kernel.api.procedure.Context
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
 
+import java.util.Locale
+
 abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT], runtime: CypherRuntime[CONTEXT])
     extends RuntimeTestSuite(edition, runtime) {
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    registerFunction(new BasicUserFunction(UserFunctionSignature.functionSignature("runtimeName")
+      .out(Neo4jTypes.NTString).threadSafe().build()) {
+
+      override def apply(ctx: Context, input: Array[AnyValue]): AnyValue = {
+        Values.stringValue(ctx.procedureCallContext().cypherRuntimeName())
+      }
+    })
+  }
 
   test("hasLabel on top of allNodeScan") {
     // given
@@ -938,11 +957,6 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // then
     runtimeResult should beColumns("n").withNoRows()
   }
-}
-
-// Supported by all non-parallel runtimes
-trait ThreadUnsafeExpressionTests[CONTEXT <: RuntimeContext] {
-  self: ExpressionTestBase[CONTEXT] =>
 
   test("should get type of relationship") {
     // given
@@ -961,6 +975,22 @@ trait ThreadUnsafeExpressionTests[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("t").withRows(singleColumn((1 to size).map(_ => "TO")))
+  }
+
+  test("should be able to access what runtime that was used in a UDF") {
+    // given an empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("runtime")
+      .projection("runtimeName() AS runtime")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toUpperCase(Locale.ROOT))
   }
 }
 

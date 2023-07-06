@@ -159,7 +159,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.SkipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubqueryForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.ThreadUnsafeExpressionTests
 import org.neo4j.cypher.internal.runtime.spec.tests.Top1WithTiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailProfileRowsTestBase
@@ -389,7 +388,6 @@ class InterpretedMemoryLeakTest
 class InterpretedSubscriberErrorTest extends SubscriberErrorTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 
 class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime)
-    with ThreadUnsafeExpressionTests[CommunityRuntimeContext]
     with ExpressionWithTxStateChangesTests[CommunityRuntimeContext]
 class InterpretedProcedureCallTest extends ProcedureCallTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedShortestPathTest extends ShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

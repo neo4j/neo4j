@@ -483,12 +483,12 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public AnyValue functionCall(int id, AnyValue[] arguments) {
+        public AnyValue functionCall(int id, AnyValue[] arguments, ProcedureCallContext context) {
             return null;
         }
 
         @Override
-        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) {
+        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments, ProcedureCallContext context) {
             return null;
         }
 

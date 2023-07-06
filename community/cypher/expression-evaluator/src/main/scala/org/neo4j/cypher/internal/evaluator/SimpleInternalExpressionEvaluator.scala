@@ -124,7 +124,8 @@ object SimpleInternalExpressionEvaluator {
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
-      CypherRuntimeConfiguration.defaultConfiguration
+      CypherRuntimeConfiguration.defaultConfiguration,
+      "SimpleInternalExpressionEvaluator"
     ))
 
   object ExpressionParser {

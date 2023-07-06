@@ -985,7 +985,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def projection(projectionStrings: String*): IMPL = {
-    projectionWithDiscard(toVarMap(Parser.parseProjections(projectionStrings: _*)), Set.empty)
+    projectionWithDiscard(parseProjections(projectionStrings: _*), Set.empty)
   }
 
   def projection(projectExpressions: Map[String, Expression]): IMPL = {
@@ -993,7 +993,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def projection(project: Seq[String], discard: Set[String]): IMPL = {
-    projectionWithDiscard(toVarMap(Parser.parseProjections(project: _*)), discard)
+    projectionWithDiscard(parseProjections(project: _*), discard)
   }
 
   def projection(project: Map[String, Expression], discard: Set[String]): IMPL = {
@@ -1848,14 +1848,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def aggregation(groupingExpressions: Seq[String], aggregationExpression: Seq[String]): IMPL = {
-    val expressions = toVarMap(Parser.parseProjections(aggregationExpression: _*)).view.mapValues {
-      case f: FunctionInvocation if f.needsToBeResolved =>
-        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
-      case e => e
-    }.toMap
-
     appendAtCurrentIndent(UnaryOperator(lp => {
-      Aggregation(lp, toVarMap(Parser.parseProjections(groupingExpressions: _*)), expressions)(_)
+      Aggregation(
+        lp,
+        toVarMap(Parser.parseProjections(groupingExpressions: _*)),
+        parseProjections(aggregationExpression: _*)
+      )(_)
     }))
   }
 
@@ -2441,6 +2439,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
       case e => e
     }).endoRewrite(expressionRewriter)
+  }
+
+  private def parseProjections(projections: String*): Map[LogicalVariable, Expression] = {
+    toVarMap(Parser.parseProjections(projections: _*)).view.mapValues {
+      case f: FunctionInvocation if f.needsToBeResolved =>
+        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
+      case e => e
+    }.toMap
   }
 
   protected def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {

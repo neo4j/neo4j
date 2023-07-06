@@ -833,7 +833,7 @@ class Neo4jTransactionalContextIT {
         var txSetMetaData =
                 procsRegistry.getCurrentView().procedure(new QualifiedName(new String[] {"tx"}, "setMetaData"));
         var id = txSetMetaData.id();
-        var procContext = new ProcedureCallContext(id, EMPTY_STRING_ARRAY, false, "", false);
+        var procContext = new ProcedureCallContext(id, EMPTY_STRING_ARRAY, false, "", false, "runtimeUsed");
 
         // When
         AnyValue[] arguments = {VirtualValues.map(new String[] {"foo"}, new AnyValue[] {Values.stringValue("bar")})};

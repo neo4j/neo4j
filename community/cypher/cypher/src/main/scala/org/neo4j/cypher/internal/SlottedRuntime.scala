@@ -91,7 +91,12 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
 
       val baseConverters = List(
         SlottedExpressionConverters(physicalPlan),
-        CommunityExpressionConverter(context.tokenContext, context.anonymousVariableNameGenerator, context.config)
+        CommunityExpressionConverter(
+          context.tokenContext,
+          context.anonymousVariableNameGenerator,
+          context.config,
+          SlottedRuntimeName.name
+        )
       )
 
       val (allConverters, metadataGen, warningsGen) =

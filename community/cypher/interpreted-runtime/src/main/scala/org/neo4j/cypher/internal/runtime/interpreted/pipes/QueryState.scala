@@ -343,6 +343,8 @@ object QueryState {
 
 trait CypherRowFactory {
 
+  def runtimeName: String
+
   def newRow(): CypherRow
 
   def copyArgumentOf(row: ReadableRow): CypherRow
@@ -410,4 +412,6 @@ case class CommunityCypherRowFactory() extends CypherRowFactory {
     case context: MapCypherRow =>
       context.copyWith(key1, value1, key2, value2, key3, value3)
   }
+
+  override def runtimeName: String = "INTERPRETED"
 }

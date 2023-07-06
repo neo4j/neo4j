@@ -33,12 +33,17 @@ object CallSupport {
 
   type KernelProcedureCall = Array[AnyValue] => RawIterator[Array[AnyValue], ProcedureException]
 
-  def callFunction(procedures: Procedures, id: Int, args: Array[AnyValue]): AnyValue = {
-    procedures.functionCall(id, args)
+  def callFunction(procedures: Procedures, id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue = {
+    procedures.functionCall(id, args, context)
   }
 
-  def callBuiltInFunction(procedures: Procedures, id: Int, args: Array[AnyValue]): AnyValue = {
-    procedures.builtInFunctionCall(id, args)
+  def callBuiltInFunction(
+    procedures: Procedures,
+    id: Int,
+    args: Array[AnyValue],
+    context: ProcedureCallContext
+  ): AnyValue = {
+    procedures.builtInFunctionCall(id, args, context)
   }
 
   def callReadOnlyProcedure(

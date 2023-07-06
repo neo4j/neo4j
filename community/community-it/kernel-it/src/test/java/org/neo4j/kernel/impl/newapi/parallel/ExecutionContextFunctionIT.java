@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -76,6 +77,8 @@ import org.neo4j.values.virtual.VirtualValues;
 
 @DbmsExtension(configurationCallback = "configuration")
 class ExecutionContextFunctionIT {
+
+    private static final String RUNTIME_USED = "TEST";
 
     @Inject
     private GraphDatabaseAPI db;
@@ -277,10 +280,13 @@ class ExecutionContextFunctionIT {
                 ExecutionContext executionContext = createExecutionContext(transaction)) {
             try {
                 var handle = executionContext.procedures().functionGet(getName("plus"));
+                var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
+
                 transaction.rollback();
                 assertThatThrownBy(() -> executionContext
                                 .procedures()
-                                .functionCall(handle.id(), new Value[] {Values.intValue(1), Values.intValue(2)}))
+                                .functionCall(
+                                        handle.id(), new Value[] {Values.intValue(1), Values.intValue(2)}, procContext))
                         .isInstanceOf(NotInTransactionException.class)
                         .hasMessageContaining("This transaction has already been closed.");
             } finally {
@@ -338,9 +344,11 @@ class ExecutionContextFunctionIT {
     void testBuiltInFunction() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             var handle = executionContext.procedures().functionGet(new QualifiedName(List.of(), "date"));
+            var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
+
             AnyValue result = executionContext
                     .procedures()
-                    .builtInFunctionCall(handle.id(), new AnyValue[] {Values.stringValue("2022-10-07")});
+                    .builtInFunctionCall(handle.id(), new AnyValue[] {Values.stringValue("2022-10-07")}, procContext);
             assertThat(result).isEqualTo(DateValue.date(LocalDate.parse("2022-10-07")));
         });
     }
@@ -350,7 +358,10 @@ class ExecutionContextFunctionIT {
         doWithExecutionContext((ktx, executionContext) -> {
             ZonedDateTime referenceDateTime = ZonedDateTime.now();
             var handle = executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "realtime"));
-            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
+
+            AnyValue result =
+                    executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0], procContext);
             assertThat(result).isInstanceOf(DateTimeValue.class);
             // Why equal? The clock is not ticking quick enough on some platforms to return different time
             // for two requests for current time following quickly after each other
@@ -363,7 +374,10 @@ class ExecutionContextFunctionIT {
         doWithExecutionContext((ktx, executionContext) -> {
             var handle =
                     executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "transaction"));
-            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
+
+            AnyValue result =
+                    executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0], procContext);
             assertThat(result)
                     .isEqualTo(DateTimeValue.datetime(
                             ZonedDateTime.now(ktx.clocks().transactionClock())));
@@ -374,7 +388,10 @@ class ExecutionContextFunctionIT {
     void testStatementClockTemporalFunction() throws ProcedureException {
         doWithExecutionContext((ktx, executionContext) -> {
             var handle = executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "statement"));
-            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
+
+            AnyValue result =
+                    executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0], procContext);
             assertThat(result)
                     .isEqualTo(DateTimeValue.datetime(
                             ZonedDateTime.now(ktx.clocks().statementClock())));
@@ -385,7 +402,10 @@ class ExecutionContextFunctionIT {
     void testDefaultClockTemporalFunction() throws ProcedureException {
         doWithExecutionContext((ktx, executionContext) -> {
             var handle = executionContext.procedures().functionGet(new QualifiedName(List.of(), "datetime"));
-            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
+
+            AnyValue result =
+                    executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0], procContext);
             assertThat(result)
                     .isEqualTo(DateTimeValue.datetime(
                             ZonedDateTime.now(ktx.clocks().statementClock())));
@@ -425,7 +445,9 @@ class ExecutionContextFunctionIT {
     private AnyValue invokeUserFunction(ExecutionContext executionContext, String name, AnyValue... args)
             throws ProcedureException {
         var handle = executionContext.procedures().functionGet(getName(name));
-        return executionContext.procedures().functionCall(handle.id(), args);
+        var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
+
+        return executionContext.procedures().functionCall(handle.id(), args, procContext);
     }
 
     private UserAggregationReducer prepareUserAggregationFunction(ExecutionContext executionContext, String name)

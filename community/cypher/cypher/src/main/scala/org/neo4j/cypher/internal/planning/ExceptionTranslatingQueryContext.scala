@@ -300,11 +300,11 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   ): Iterator[Array[AnyValue]] =
     translateIterator(tokenNameLookup, inner.callDbmsProcedure(id, args, context))
 
-  override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    translateException(tokenNameLookup, inner.callFunction(id, args))
+  override def callFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
+    translateException(tokenNameLookup, inner.callFunction(id, args, context))
 
-  override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    translateException(tokenNameLookup, inner.callBuiltInFunction(id, args))
+  override def callBuiltInFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
+    translateException(tokenNameLookup, inner.callBuiltInFunction(id, args, context))
 
   override def aggregateFunction(id: Int): UserAggregationReducer =
     translateException(tokenNameLookup, inner.aggregateFunction(id))

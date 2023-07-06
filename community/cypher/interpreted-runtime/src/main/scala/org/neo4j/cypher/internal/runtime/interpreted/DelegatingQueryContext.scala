@@ -585,11 +585,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   ): Iterator[Array[AnyValue]] =
     unknownDbHits(inner.callDbmsProcedure(id, args, context))
 
-  override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    singleDbHit(inner.callFunction(id, args))
+  override def callFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
+    singleDbHit(inner.callFunction(id, args, context))
 
-  override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    singleDbHit(inner.callBuiltInFunction(id, args))
+  override def callBuiltInFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
+    singleDbHit(inner.callBuiltInFunction(id, args, context))
 
   override def aggregateFunction(id: Int): UserAggregationReducer =
     singleDbHit(inner.aggregateFunction(id))

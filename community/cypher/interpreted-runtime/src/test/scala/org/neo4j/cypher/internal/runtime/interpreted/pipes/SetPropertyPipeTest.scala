@@ -81,7 +81,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
-      CypherRuntimeConfiguration.defaultConfiguration
+      CypherRuntimeConfiguration.defaultConfiguration,
+      "test"
     ))
 
   private def convertExpression(astExpression: internal.expressions.Expression): Expression = {

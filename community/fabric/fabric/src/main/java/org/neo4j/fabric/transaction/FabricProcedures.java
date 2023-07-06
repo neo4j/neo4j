@@ -119,12 +119,13 @@ public class FabricProcedures implements Procedures {
     }
 
     @Override
-    public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
+    public AnyValue functionCall(int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return view.callFunction(EMPTY_CONTEXT, id, arguments);
     }
 
     @Override
-    public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
+    public AnyValue builtInFunctionCall(int id, AnyValue[] arguments, ProcedureCallContext context)
+            throws ProcedureException {
         return view.callFunction(EMPTY_CONTEXT, id, arguments);
     }
 

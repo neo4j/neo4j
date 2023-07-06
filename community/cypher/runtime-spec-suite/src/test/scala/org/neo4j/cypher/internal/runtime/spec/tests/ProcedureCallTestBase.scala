@@ -39,6 +39,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
 
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 
 abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
@@ -146,6 +147,23 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         RawIterator.of[Array[AnyValue], ProcedureException](input)
+      }
+    },
+    new BasicProcedure(
+      ProcedureSignature.procedureSignature(Array[String](), "runtimeName").mode(Mode.READ).out(
+        "runtime",
+        Neo4jTypes.NTString
+      ).build()
+    ) {
+
+      override def apply(
+        ctx: Context,
+        input: Array[AnyValue],
+        resourceMonitor: ResourceMonitor
+      ): RawIterator[Array[AnyValue], ProcedureException] = {
+        RawIterator.of[Array[AnyValue], ProcedureException](
+          Array[AnyValue](Values.stringValue(ctx.procedureCallContext().cypherRuntimeName()))
+        )
       }
     }
   )
@@ -455,5 +473,21 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
     // then
     verificationResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
+
+  test("should be able to access what runtime that was used") {
+    // given, an empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("runtime")
+      .procedureCall("runtimeName() YIELD runtime AS runtime")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toUpperCase(Locale.ROOT))
   }
 }

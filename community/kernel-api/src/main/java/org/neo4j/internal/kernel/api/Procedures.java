@@ -121,16 +121,18 @@ public interface Procedures {
     /** Invoke a read-only function by id
      * @param id the id of the function.
      * @param arguments the function arguments.
+     * @param context the procedure call context.
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException;
+    AnyValue functionCall(int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /** Invoke a read-only built in function by id
      * @param id the id of the function.
      * @param arguments the function arguments.
+     * @param context the procedure call context.
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException;
+    AnyValue builtInFunctionCall(int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /**
      * Create a read-only aggregation function by id

@@ -24,6 +24,8 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
@@ -165,9 +167,9 @@ public interface DbAccess extends EntityById {
 
     Value getTxStateRelationshipPropertyOrNull(long relId, int propertyKey);
 
-    AnyValue callFunction(int id, AnyValue[] args);
+    AnyValue callFunction(int id, AnyValue[] args, ProcedureCallContext ctx);
 
-    AnyValue callBuiltInFunction(int id, AnyValue[] args);
+    AnyValue callBuiltInFunction(int id, AnyValue[] args, ProcedureCallContext ctx);
 
     /**
      * @return `Optional.empty` if TxState has no changes.
@@ -206,4 +208,6 @@ public interface DbAccess extends EntityById {
     ElementIdMapper elementIdMapper();
 
     Read dataRead();
+
+    NamedDatabaseId databaseId();
 }

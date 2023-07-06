@@ -941,13 +941,14 @@ public abstract class AllStoreHolder extends Read {
     }
 
     @Override
-    public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return getProcedureCaller().callFunction(id, arguments);
+    public AnyValue functionCall(int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+        return getProcedureCaller().callFunction(id, arguments, context);
     }
 
     @Override
-    public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return getProcedureCaller().callBuiltInFunction(id, arguments);
+    public AnyValue builtInFunctionCall(int id, AnyValue[] arguments, ProcedureCallContext context)
+            throws ProcedureException {
+        return getProcedureCaller().callBuiltInFunction(id, arguments, context);
     }
 
     @Override

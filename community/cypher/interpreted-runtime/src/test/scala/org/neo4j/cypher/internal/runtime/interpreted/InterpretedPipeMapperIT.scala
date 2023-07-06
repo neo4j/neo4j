@@ -91,7 +91,8 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
-      CypherRuntimeConfiguration.defaultConfiguration
+      CypherRuntimeConfiguration.defaultConfiguration,
+      "test"
     ))
 
   private val pipeMapper =
