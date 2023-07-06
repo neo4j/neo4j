@@ -638,7 +638,8 @@ class InternalTreeLogic<KEY, VALUE> {
                     keyCount,
                     stableGeneration,
                     unstableGeneration,
-                    cursorContext);
+                    cursorContext,
+                    createIfNotExists);
         }
 
         if (createIfNotExists) {
@@ -672,6 +673,7 @@ class InternalTreeLogic<KEY, VALUE> {
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
      * @param cursorContext underlying page cursor context
+     * @param createIfNotExists create this key if it doesn't exist
      * @return {@code true} if the merge operation was permitted by the {@link TreeWriterCoordination}, otherwise {@code false}.
      * @throws IOException on cursor failure
      */
@@ -685,7 +687,8 @@ class InternalTreeLogic<KEY, VALUE> {
             int keyCount,
             long stableGeneration,
             long unstableGeneration,
-            CursorContext cursorContext)
+            CursorContext cursorContext,
+            boolean createIfNotExists)
             throws IOException {
         // This key already exists, what shall we do? ask the valueMerger
         bTreeNode.valueAt(cursor, readValue, pos, cursorContext);
@@ -696,6 +699,10 @@ class InternalTreeLogic<KEY, VALUE> {
             if (mergeResult == ValueMerger.MergeResult.UNCHANGED) {
                 return true;
             }
+        } else if (!createIfNotExists) {
+            // multiversion tree could observe key with undefined value, it shouldn't create new value if it's not
+            // requested in this case
+            return true;
         }
 
         // Check the value size diff with coordination because the size could be reduced and may cause underflow
