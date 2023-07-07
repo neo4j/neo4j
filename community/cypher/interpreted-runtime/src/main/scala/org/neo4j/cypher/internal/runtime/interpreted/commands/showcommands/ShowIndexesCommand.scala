@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.StringValue
@@ -313,6 +314,16 @@ object ShowIndexesCommand {
           case EntityType.RELATIONSHIP =>
             val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
             s"CREATE POINT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
+          case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+        }
+      case IndexType.VECTOR =>
+        entityType match {
+          case EntityType.NODE =>
+            val dimension = VectorUtils.vectorDimensionsFrom(indexConfig)
+            val similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(indexConfig).name
+            s"CALL db.index.vector.createNodeIndex('$name', '${labelsOrTypes.head}', '${properties.last}', $dimension, '$similarityFunction')"
+          case EntityType.RELATIONSHIP =>
+            throw new IllegalArgumentException(s"$entityType not valid for $indexType index")
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.LOOKUP =>
