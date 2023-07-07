@@ -31,6 +31,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.statistics.DefaultCounts;
+import org.neo4j.internal.batchimport.cache.ByteArray;
 
 class DefaultClientTest {
     private static ExecutorService executor;
@@ -49,24 +50,25 @@ class DefaultClientTest {
     void checkClientsIdBounds() throws ExecutionException, InterruptedException {
         int threads = 2;
         DefaultCounts counts = new DefaultCounts(threads);
-        DefaultCacheAccess cacheAccess =
-                new DefaultCacheAccess(DefaultCacheAccess.defaultByteArray(100, INSTANCE), counts, threads);
-        cacheAccess.prepareForProcessingOfSingleStore(34);
+        try (ByteArray byteArray = DefaultCacheAccess.defaultByteArray(100, INSTANCE)) {
+            DefaultCacheAccess cacheAccess = new DefaultCacheAccess(byteArray, counts, threads);
+            cacheAccess.prepareForProcessingOfSingleStore(34);
 
-        CacheAccess.Client client1 = cacheAccess.client();
-        assertTrue(client1.withinBounds(0));
-        assertTrue(client1.withinBounds(10));
-        assertTrue(client1.withinBounds(33));
-        assertFalse(client1.withinBounds(34));
+            CacheAccess.Client client1 = cacheAccess.client();
+            assertTrue(client1.withinBounds(0));
+            assertTrue(client1.withinBounds(10));
+            assertTrue(client1.withinBounds(33));
+            assertFalse(client1.withinBounds(34));
 
-        Future<?> secondClientIdChecks = executor.submit(() -> {
-            CacheAccess.Client client = cacheAccess.client();
-            assertFalse(client.withinBounds(5));
-            assertFalse(client.withinBounds(33));
-            assertTrue(client.withinBounds(34));
-            assertTrue(client.withinBounds(67));
-            assertFalse(client.withinBounds(68));
-        });
-        secondClientIdChecks.get();
+            Future<?> secondClientIdChecks = executor.submit(() -> {
+                CacheAccess.Client client = cacheAccess.client();
+                assertFalse(client.withinBounds(5));
+                assertFalse(client.withinBounds(33));
+                assertTrue(client.withinBounds(34));
+                assertTrue(client.withinBounds(67));
+                assertFalse(client.withinBounds(68));
+            });
+            secondClientIdChecks.get();
+        }
     }
 }

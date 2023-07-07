@@ -68,13 +68,6 @@ class PackedMultiFieldCache {
         this.initValues = getInitVals(slotSizes);
     }
 
-    void clear() {
-        long length = array.length();
-        for (long i = 0; i < length; i++) {
-            clear(i);
-        }
-    }
-
     void clearParallel(int numThreads) {
         long length = array.length();
         List<Callable<Void>> tasks = new ArrayList<>();

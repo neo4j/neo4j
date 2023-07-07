@@ -40,7 +40,6 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
-import org.neo4j.consistency.checking.index.IndexAccessors.IndexAccessorLookup;
 import org.neo4j.consistency.checking.index.IndexDescriptorProvider;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -97,7 +96,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     private static final String ID_GEN_CONSISTENCY_CHECKER_TAG = "idGeneratorConsistencyChecker";
     private static final String INDEX_STRUCTURE_CONSISTENCY_CHECKER_TAG = "indexStructureConsistencyChecker";
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
-    private static final String REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG = "relGroupStoreConsistencyChecker";
     private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
     private static final String CONSISTENCY_CHECKER_TOKEN_LOADER_TAG = "consistencyCheckerTokenLoader";
     static final int[] DEFAULT_SLOT_SIZES = {
@@ -131,7 +129,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             PageCache pageCache,
             NeoStores neoStores,
             IndexProviderMap indexProviders,
-            IndexAccessorLookup accessorLookup,
             IdGeneratorFactory idGeneratorFactory,
             ConsistencySummaryStatistics summary,
             ProgressMonitorFactory progressFactory,

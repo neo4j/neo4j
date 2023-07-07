@@ -103,7 +103,6 @@ import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
-import org.neo4j.consistency.checking.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.exceptions.KernelException;
@@ -146,7 +145,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -3065,8 +3063,6 @@ public class FullCheckIntegrationTest {
                 .resolveDependency(CheckPointer.class)
                 .forceCheckPoint(new SimpleTriggerInfo("Force before 'online' consistency check"));
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
-        LookupAccessorsFromRunningDb accessorLookup =
-                new LookupAccessorsFromRunningDb(dependencyResolver.resolveDependency(IndexingService.class));
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
 
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
@@ -3076,7 +3072,6 @@ public class FullCheckIntegrationTest {
                 dependencyResolver.resolveDependency(PageCache.class),
                 dependencyResolver.resolveDependency(RecordStorageEngine.class).testAccessNeoStores(),
                 dependencyResolver.resolveDependency(IndexProviderMap.class),
-                accessorLookup,
                 dependencyResolver.resolveDependency(IdGeneratorFactory.class),
                 summary,
                 ProgressMonitorFactory.NONE,

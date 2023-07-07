@@ -888,7 +888,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     pageCache,
                     neoStores,
                     indexProviders,
-                    null,
                     idGeneratorFactory,
                     summary,
                     progressMonitorFactory,
