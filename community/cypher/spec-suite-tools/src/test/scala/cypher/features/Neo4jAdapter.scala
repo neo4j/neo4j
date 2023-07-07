@@ -42,6 +42,7 @@ import org.opencypher.tools.tck.values.CypherValue
 
 import java.lang.Boolean.TRUE
 import java.time.Duration
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.Failure
 import scala.util.Success

@@ -63,6 +63,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.util.UUID
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -78,7 +79,7 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
   protected var tx: InternalTransaction = _
 
   def databaseConfig(): Map[Setting[_], Object] = Map(
-      GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15)
+    GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15)
   )
 
   def logProvider: InternalLogProvider = NullLogProvider.getInstance()
