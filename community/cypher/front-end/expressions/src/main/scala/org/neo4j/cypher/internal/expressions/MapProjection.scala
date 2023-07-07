@@ -45,7 +45,7 @@ case class VariableSelector(id: Variable)(val position: InputPosition) extends M
   override def isConstantForQuery: Boolean = false
 }
 
-case class PropertySelector(id: Variable)(val position: InputPosition) extends MapProjectionElement {
+case class PropertySelector(key: PropertyKeyName)(val position: InputPosition) extends MapProjectionElement {
   // we need the variable to read
   override def isConstantForQuery: Boolean = false
 }

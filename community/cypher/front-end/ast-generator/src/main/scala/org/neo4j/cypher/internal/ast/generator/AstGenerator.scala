@@ -730,7 +730,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     oneOf(
       for { key <- _propertyKeyName; exp <- _expression } yield LiteralEntry(key, exp)(pos),
       for { id <- _variable } yield VariableSelector(id)(pos),
-      for { id <- _variable } yield PropertySelector(id)(pos),
+      for { key <- _propertyKeyName } yield PropertySelector(key)(pos),
       const(AllPropertiesSelector()(pos))
     )
 
