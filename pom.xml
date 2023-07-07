@@ -138,20 +138,20 @@
     <jersey.version>2.34</jersey.version>
     <junit.version>5.9.3</junit.version>
     <junit.platform.version>1.9.3</junit.platform.version>
-    <mockito.version>5.3.1</mockito.version>
+    <mockito.version>5.4.0</mockito.version>
     <opencypher.version>1.0.0-M21</opencypher.version>
     <caffeine.version>3.1.6</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
     <jackson.version>2.15.2</jackson.version>
     <jackson-databind.version>2.15.2</jackson-databind.version>
-    <amazon-sdk.version>1.12.480</amazon-sdk.version>
-    <guava.version>32.0.0-jre</guava.version>
+    <amazon-sdk.version>1.12.502</amazon-sdk.version>
+    <guava.version>32.1.1-jre</guava.version>
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.20.0</log4j.version>
     <slf4j.version>2.0.7</slf4j.version>
     <neo4j-java-driver.version>5.10.0</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
-    <picocli.version>4.7.3</picocli.version>
+    <picocli.version>4.7.4</picocli.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
     <antlr.version>4.13.0</antlr.version>
@@ -1112,7 +1112,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2022.0.7</version>
+        <version>2022.0.8</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1243,14 +1243,14 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.15</version>
+        <version>1.16.0</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>org.netbeans.modules</groupId>
         <artifactId>org-netbeans-lib-profiler</artifactId>
-        <version>RELEASE170</version>
+        <version>RELEASE180</version>
         <scope>test</scope>
       </dependency>
 
@@ -1399,7 +1399,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.12.0</version>
+        <version>2.13.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -1448,7 +1448,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.5-3</version>
+        <version>1.5.5-4</version>
       </dependency>
 
       <!--
@@ -1458,7 +1458,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.93.Final</version>
+        <version>4.1.94.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1624,7 +1624,7 @@
       <dependency>
         <groupId>com.google.auto.service</groupId>
         <artifactId>auto-service</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.1</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.auto</groupId>
@@ -1639,12 +1639,12 @@
       <dependency>
         <groupId>com.google.auto</groupId>
         <artifactId>auto-common</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.truth</groupId>
         <artifactId>truth</artifactId>
-        <version>1.1.4</version>
+        <version>1.1.5</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.guava</groupId>

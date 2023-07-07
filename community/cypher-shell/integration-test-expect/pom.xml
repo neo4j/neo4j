@@ -97,13 +97,13 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>1.4.7</version>
+            <version>1.4.8</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.4.7</version>
+            <version>1.4.8</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
