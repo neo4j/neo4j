@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
-import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.cypher.internal.util.topDown
 
 case object ProjectionClausesHaveSemanticInfo extends Condition
 
@@ -62,7 +62,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
       expandedAstNode
   }
 
-  private val instance = bottomUp(rewriter)
+  private val instance = topDown(rewriter)
 
   private def returnItems(
     clause: Clause,

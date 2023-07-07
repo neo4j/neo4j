@@ -134,6 +134,34 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     )
   }
 
+  test("should be able to rewrite nested WITH clauses") {
+    assertRewrite(
+      """MATCH (a)
+        |RETURN * ORDER BY EXISTS {
+        |  WITH a
+        |  RETURN *
+        |}""".stripMargin,
+      """MATCH (a)
+        |RETURN a ORDER BY EXISTS {
+        |  WITH a
+        |  RETURN a
+        |}""".stripMargin
+    )
+
+    assertRewrite(
+      """MATCH (a)
+        |RETURN *, EXISTS {
+        |  MATCH (a)
+        |  RETURN *
+        |} AS n""".stripMargin,
+      """MATCH (a)
+        |RETURN a, EXISTS {
+        |  MATCH (a)
+        |  RETURN a
+        |} AS n""".stripMargin
+    )
+  }
+
   test("symbol shadowing should be taken into account") {
     assertRewrite(
       "match (a),(x),(y) with a match (b) return *",
