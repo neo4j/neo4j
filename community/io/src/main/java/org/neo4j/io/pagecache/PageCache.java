@@ -49,7 +49,7 @@ public interface PageCache extends AutoCloseable {
     /**
      * Page reserved bytes when file is mapped with {@link PageCacheOpenOptions#MULTI_VERSIONED} option.
      */
-    int RESERVED_BYTES = Long.BYTES * 3;
+    int RESERVED_BYTES = Long.BYTES * 2;
 
     /**
      * Ask for a handle to a paged file, backed by an empty set of file open options.

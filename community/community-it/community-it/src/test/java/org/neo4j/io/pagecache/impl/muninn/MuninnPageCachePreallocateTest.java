@@ -145,15 +145,7 @@ class MuninnPageCacheExplicitPreallocateTest {
         MuninnPageCache.Configuration configuration =
                 MuninnPageCache.config(allocator).preallocateStoreFiles(automaticPreAllocation);
         PageSwapperFactory pageSwapperFactory =
-                (path,
-                        filePageSize,
-                        reservedPageBytes,
-                        onEviction,
-                        createIfNotExist,
-                        useDirectIO,
-                        checksumPages,
-                        ioController,
-                        swappers) -> {
+                (path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers) -> {
                     when(swapper.swapperId()).thenReturn(swappers.allocate(swapper));
                     return swapper;
                 };

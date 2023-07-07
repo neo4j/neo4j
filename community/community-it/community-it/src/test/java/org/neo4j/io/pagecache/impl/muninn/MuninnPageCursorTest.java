@@ -174,24 +174,14 @@ class MuninnPageCursorTest {
             public PageSwapper createPageSwapper(
                     Path path,
                     int filePageSize,
-                    int reservedPageBytes,
                     PageEvictionCallback onEviction,
                     boolean createIfNotExist,
                     boolean useDirectIO,
-                    boolean checksumPages,
                     IOController ioController,
                     SwapperSet swappers)
                     throws IOException {
                 PageSwapper actualSwapper = actual.createPageSwapper(
-                        path,
-                        filePageSize,
-                        reservedPageBytes,
-                        onEviction,
-                        createIfNotExist,
-                        useDirectIO,
-                        checksumPages,
-                        ioController,
-                        swappers);
+                        path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers);
                 return new DelegatingPageSwapper(actualSwapper) {
                     @Override
                     public long read(long filePageId, long bufferAddress) throws IOException {

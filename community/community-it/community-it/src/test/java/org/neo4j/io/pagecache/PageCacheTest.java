@@ -4497,24 +4497,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             public PageSwapper createPageSwapper(
                     Path path,
                     int filePageSize,
-                    int reservedPageBytes,
                     PageEvictionCallback onEviction,
                     boolean createIfNotExist,
                     boolean useDirectIO,
-                    boolean checksumPages,
                     IOController ioController,
                     SwapperSet swappers)
                     throws IOException {
                 PageSwapper swapper = super.createPageSwapper(
-                        path,
-                        filePageSize,
-                        reservedPageBytes,
-                        onEviction,
-                        createIfNotExist,
-                        useDirectIO,
-                        checksumPages,
-                        ioController,
-                        swappers);
+                        path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers);
                 return new DelegatingPageSwapper(swapper) {
                     @Override
                     public long write(long filePageId, long bufferAddress) throws IOException {

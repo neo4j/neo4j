@@ -26,7 +26,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
 import static org.neo4j.io.pagecache.impl.muninn.PageList.validatePageRefAndSetFilePageId;
-import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.CHECKSUM_OFFSET;
 import static org.neo4j.util.FeatureToggles.flag;
 
 import java.io.IOException;
@@ -183,10 +182,6 @@ public abstract class MuninnPageCursor extends PageCursor {
         if (updateUsage) {
             PageList.incrementUsage(pageRef);
         }
-    }
-
-    protected long getPageChecksum() {
-        return getLongAt(pointer + CHECKSUM_OFFSET, littleEndian);
     }
 
     @Override

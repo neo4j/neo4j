@@ -28,7 +28,6 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
-  LZ4 and xxHash
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

@@ -201,15 +201,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
         swapper = swapperFactory.createPageSwapper(
-                path,
-                filePageSize,
-                reservedBytes,
-                onEviction,
-                createIfNotExists,
-                useDirectIo,
-                multiVersioned,
-                ioController,
-                getSwappers());
+                path, filePageSize, onEviction, createIfNotExists, useDirectIo, ioController, getSwappers());
         if (truncateExisting) {
             swapper.truncate();
         }

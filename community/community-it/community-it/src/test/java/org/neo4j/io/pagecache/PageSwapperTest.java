@@ -82,7 +82,6 @@ public abstract class PageSwapperTest {
     private final MemoryAllocator mman =
             MemoryAllocator.createAllocator(KibiByte.toBytes(32), new LocalMemoryTracker());
     private final SwapperSet swapperSet = new SwapperSet();
-    private boolean checksumPages;
 
     protected abstract PageSwapperFactory swapperFactory(FileSystemAbstraction fileSystem);
 
@@ -98,7 +97,6 @@ public abstract class PageSwapperTest {
     @BeforeEach
     @AfterEach
     void clearStrayInterrupts() {
-        checksumPages = RESERVED_BYTES > 0;
         Thread.interrupted();
     }
 
@@ -1114,16 +1112,10 @@ public abstract class PageSwapperTest {
             boolean createIfNotExist,
             boolean useDirectIO)
             throws IOException {
-        return createSwapper(
-                factory,
-                path,
-                filePageSize + RESERVED_BYTES,
-                RESERVED_BYTES,
-                callback,
-                createIfNotExist,
-                useDirectIO,
-                checksumPages,
-                DISABLED);
+        PageSwapper swapper = factory.createPageSwapper(
+                path, filePageSize + RESERVED_BYTES, callback, createIfNotExist, useDirectIO, DISABLED, swapperSet);
+        openedSwappers.add(swapper);
+        return swapper;
     }
 
     protected PageSwapper createSwapper(
@@ -1133,41 +1125,10 @@ public abstract class PageSwapperTest {
             PageEvictionCallback callback,
             boolean createIfNotExist,
             boolean useDirectIO,
-            IOController controller)
-            throws IOException {
-        return createSwapper(
-                factory,
-                path,
-                filePageSize + RESERVED_BYTES,
-                RESERVED_BYTES,
-                callback,
-                createIfNotExist,
-                useDirectIO,
-                checksumPages,
-                controller);
-    }
-
-    protected PageSwapper createSwapper(
-            PageSwapperFactory factory,
-            Path path,
-            int filePageSize,
-            int reservedPageBytes,
-            PageEvictionCallback callback,
-            boolean createIfNotExist,
-            boolean useDirectIO,
-            boolean checksumPages,
             IOController controller)
             throws IOException {
         PageSwapper swapper = factory.createPageSwapper(
-                path,
-                filePageSize,
-                reservedPageBytes,
-                callback,
-                createIfNotExist,
-                useDirectIO,
-                checksumPages,
-                controller,
-                swapperSet);
+                path, filePageSize + RESERVED_BYTES, callback, createIfNotExist, useDirectIO, controller, swapperSet);
         openedSwappers.add(swapper);
         return swapper;
     }

@@ -7,7 +7,6 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
-  LZ4 and xxHash
   Scala Reflect
 ------------------------------------------------------------------------------
 

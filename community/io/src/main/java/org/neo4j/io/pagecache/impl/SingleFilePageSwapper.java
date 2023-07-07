@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
 import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
-import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.CHECKSUM_OFFSET;
 
 import com.sun.nio.file.ExtendedOpenOption;
 import java.io.IOException;
@@ -36,15 +35,11 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Set;
-import net.jpountz.xxhash.XXHash64;
-import net.jpountz.xxhash.XXHashFactory;
 import org.apache.commons.lang3.SystemUtils;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessFactory;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.IOController;
@@ -64,13 +59,10 @@ import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
  * file system whenever the size of the given file is queried.
  */
 public class SingleFilePageSwapper implements PageSwapper {
-    private static final long CHECKSUM_SEED = 0xCAFFE_BABEL;
     private final FileSystemAbstraction fs;
     private final Path path;
     private final IOController ioController;
     private final int filePageSize;
-    private final boolean checksumPages;
-    private final int reservedPageBytes;
     private final Set<OpenOption> openOptions;
     private volatile PageEvictionCallback onEviction;
     private StoreChannel channel;
@@ -80,7 +72,6 @@ public class SingleFilePageSwapper implements PageSwapper {
     private final PageFileSwapperTracer fileSwapperTracer;
     private final BlockSwapper blockSwapper;
     private final NativeAccess nativeAccess;
-    private final XXHash64 xxHash64 = XXHashFactory.fastestInstance().hash64();
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -103,10 +94,8 @@ public class SingleFilePageSwapper implements PageSwapper {
             Path path,
             FileSystemAbstraction fs,
             int filePageSize,
-            int reservedPageBytes,
             PageEvictionCallback onEviction,
             boolean useDirectIO,
-            boolean checksumPages,
             IOController ioController,
             SwapperSet swapperSet,
             PageFileSwapperTracer fileSwapperTracer,
@@ -117,7 +106,6 @@ public class SingleFilePageSwapper implements PageSwapper {
         this.path = path;
         this.ioController = ioController;
         this.fileSwapperTracer = fileSwapperTracer;
-        this.checksumPages = checksumPages;
 
         var options = new ArrayList<>(WRITE_OPTIONS);
         if (useDirectIO) {
@@ -128,7 +116,6 @@ public class SingleFilePageSwapper implements PageSwapper {
         channel = createStoreChannel();
 
         this.filePageSize = filePageSize;
-        this.reservedPageBytes = reservedPageBytes;
         this.onEviction = onEviction;
         increaseFileSizeTo(channel.size());
 
@@ -202,16 +189,10 @@ public class SingleFilePageSwapper implements PageSwapper {
     private int swapIn(long bufferAddress, long fileOffset, int bufferSize) throws IOException {
         var readTotal = blockSwapper.swapIn(channel, bufferAddress, fileOffset, bufferSize);
         ioController.reportIO(1);
-        if (checksumPages) {
-            verifyChecksum(bufferAddress, bufferSize);
-        }
         return readTotal;
     }
 
     private int swapOut(long bufferAddress, long fileOffset, int bufferSize, boolean countIo) throws IOException {
-        if (checksumPages) {
-            writeChecksum(bufferAddress, bufferSize);
-        }
         blockSwapper.swapOut(channel, bufferAddress, fileOffset, bufferSize);
         if (countIo) {
             ioController.reportIO(1);
@@ -276,11 +257,6 @@ public class SingleFilePageSwapper implements PageSwapper {
         long bytesToRead = countBuffersLengths(bufferLengths, length);
         ByteBuffer[] srcs = convertToByteBuffers(bufferAddresses, bufferLengths, length);
         long bytesRead = lockPositionReadVector(fileOffset, srcs, bytesToRead);
-        if (checksumPages) {
-            for (int i = 0; i < srcs.length; i++) {
-                verifyChecksum(srcs[i], bufferAddresses[i], bufferLengths[i]);
-            }
-        }
         if (bytesRead == -1) {
             for (int i = 0; i < length; i++) {
                 UnsafeUtil.setMemory(bufferAddresses[i], bufferLengths[i], MuninnPageCache.ZERO_BYTE);
@@ -394,11 +370,6 @@ public class SingleFilePageSwapper implements PageSwapper {
         long bytesToWrite = countBuffersLengths(bufferLengths, length);
         increaseFileSizeTo(fileOffset + bytesToWrite);
         ByteBuffer[] srcs = convertToByteBuffers(bufferAddresses, bufferLengths, length);
-        if (checksumPages) {
-            for (int i = 0; i < srcs.length; i++) {
-                writeChecksum(srcs[i], bufferAddresses[i], bufferLengths[i]);
-            }
-        }
         return lockPositionWriteVector(fileOffset, srcs, bytesToWrite);
     }
 
@@ -622,45 +593,6 @@ public class SingleFilePageSwapper implements PageSwapper {
     @Override
     public PageFileSwapperTracer fileSwapperTracer() {
         return fileSwapperTracer;
-    }
-
-    private void writeChecksum(long bufferAddress, int bufferSize) {
-        try {
-            ByteBuffer byteBuffer = UnsafeUtil.newDirectByteBuffer(bufferAddress, bufferSize);
-            writeChecksum(byteBuffer, bufferAddress, bufferSize);
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
-    }
-
-    private void writeChecksum(ByteBuffer byteBuffer, long bufferAddress, int capacity) {
-        int pageOffset = 0;
-        int payload = filePageSize - reservedPageBytes;
-        while (pageOffset < capacity) {
-            long checksum = xxHash64.hash(byteBuffer, pageOffset + reservedPageBytes, payload, CHECKSUM_SEED);
-            UnsafeUtil.putLong(bufferAddress + pageOffset + CHECKSUM_OFFSET, checksum);
-            pageOffset += filePageSize;
-        }
-    }
-
-    private void verifyChecksum(long bufferAddress, int bufferSize) {
-        try {
-            ByteBuffer byteBuffer = UnsafeUtil.newDirectByteBuffer(bufferAddress, bufferSize);
-            verifyChecksum(byteBuffer, bufferAddress, bufferSize);
-        } catch (Throwable t) {
-            Exceptions.throwIfUnchecked(t);
-            throw new RuntimeException(t);
-        }
-    }
-
-    private void verifyChecksum(ByteBuffer byteBuffer, long bufferAddress, int capacity) {
-        long checksum = xxHash64.hash(byteBuffer, reservedPageBytes, capacity - reservedPageBytes, CHECKSUM_SEED);
-        long storedChecksum = UnsafeUtil.getLong(bufferAddress + CHECKSUM_OFFSET);
-        if (storedChecksum != 0 && storedChecksum != checksum) {
-            // tree have huge problems with checksums atm
-            throw new ChecksumMismatchException(
-                    "Page checksum mismatch. Stored page checksum: '%d', evaluated: '%d'.", storedChecksum, checksum);
-        }
     }
 
     @Override
