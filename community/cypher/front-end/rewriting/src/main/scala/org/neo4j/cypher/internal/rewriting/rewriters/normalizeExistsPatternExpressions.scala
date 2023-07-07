@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
+import org.neo4j.cypher.internal.rewriting.conditions.SizeOfCollectRewrittenToCount
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -111,7 +112,8 @@ case object normalizeExistsPatternExpressions extends StepSequencer.Step with AS
 
   override def preConditions: Set[Condition] = Set(
     !noUnnamedNodesAndRelationships,
-    PatternExpressionsHaveSemanticInfo // Looks up type of pattern expressions
+    PatternExpressionsHaveSemanticInfo, // Looks up type of pattern expressions
+    SizeOfCollectRewrittenToCount // Needed so that the COUNT { } > 0 => EXISTS { } rewrite can kick in
   )
 
   override def postConditions: Set[Condition] = Set(PatternExpressionAreWrappedInExists)

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.FixedLengthShortestToAllRew
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.ReturnItemsAreAliased
+import org.neo4j.cypher.internal.rewriting.rewriters.RewriteSizeOfCollectToCount
 import org.neo4j.cypher.internal.rewriting.rewriters.addDependenciesToProjectionsInSubqueryExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.combineSetProperty
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
@@ -84,7 +85,8 @@ object ASTRewriter {
         QuantifiedPathPatternNodeInsertRewriter,
         addDependenciesToProjectionsInSubqueryExpressions,
         FixedLengthShortestToAllRewriter,
-        cypherTypeNormalizationRewriter
+        cypherTypeNormalizationRewriter,
+        RewriteSizeOfCollectToCount
       ),
       initialConditions = SemanticInfoAvailable ++ Set(
         ReturnItemsAreAliased,
