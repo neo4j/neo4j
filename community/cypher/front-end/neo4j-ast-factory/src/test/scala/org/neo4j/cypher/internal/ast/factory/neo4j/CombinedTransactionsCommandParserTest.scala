@@ -556,7 +556,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
         ),
         returnClause(
           returnItems(
-            ast.AliasedReturnItem(isNotNull(literalString("")), varFor("ጤ"))(pos, isAutoAliased = false)
+            ast.AliasedReturnItem(isNotNull(literalString("")), varFor("ጤ"))(pos)
           ).withExisting(true),
           Some(orderBy(
             ast.DescSortItem(SignedHexIntegerLiteral("-0x1")(pos))(pos),

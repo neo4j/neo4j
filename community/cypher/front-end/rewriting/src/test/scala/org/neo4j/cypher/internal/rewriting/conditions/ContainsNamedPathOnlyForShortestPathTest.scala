@@ -45,7 +45,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         )(pos),
         None,
         None,
@@ -73,7 +73,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         )(pos),
         None,
         None,
@@ -100,7 +100,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         )(pos),
         None,
         None,

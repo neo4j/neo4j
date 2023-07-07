@@ -75,10 +75,7 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
           val withReturnItems: Set[ReturnItem] = extractExpressionsToInclude(withAggregations).map {
             e =>
-              AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(
-                e.position,
-                isAutoAliased = true
-              )
+              AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(e.position)
           } ++ others
           val pos = clause.position
           val withClause = With(
@@ -93,7 +90,7 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
           val expressionRewriter = createRewriterFor(withReturnItems)
           val newReturnItems = clauseReturnItems.map {
             case ri @ AliasedReturnItem(expression, _) =>
-              ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position, ri.isAutoAliased)
+              ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position)
             case ri @ UnaliasedReturnItem(expression, _) =>
               ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position)
           }

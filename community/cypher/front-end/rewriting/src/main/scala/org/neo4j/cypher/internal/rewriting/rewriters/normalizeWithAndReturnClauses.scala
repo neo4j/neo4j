@@ -165,7 +165,7 @@ case class normalizeWithAndReturnClauses(
       ri.items.map {
         case i: UnaliasedReturnItem =>
           val alias = i.alias.getOrElse(Variable(i.name)(i.expression.position))
-          AliasedReturnItem(i.expression, alias)(i.position, isAutoAliased = true)
+          AliasedReturnItem(i.expression, alias)(i.position)
         case x => x
       }
     ri.copy(items = aliasedReturnItems)(ri.position)
@@ -179,7 +179,7 @@ case class normalizeWithAndReturnClauses(
     val newItems =
       ri.items.map {
         case i: UnaliasedReturnItem if i.alias.isDefined =>
-          AliasedReturnItem(i.expression, i.alias.get)(i.position, isAutoAliased = true)
+          AliasedReturnItem(i.expression, i.alias.get)(i.position)
         case x => x
       }
     ri.copy(items = newItems)(ri.position)

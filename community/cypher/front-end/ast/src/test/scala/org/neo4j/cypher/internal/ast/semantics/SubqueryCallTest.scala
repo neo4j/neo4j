@@ -114,7 +114,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       with_(literal(1).as("x")),
       subqueryCall(
-        return_(AliasedReturnItem(literal(2), Variable("x")(varPos))(pos, isAutoAliased = false))
+        return_(AliasedReturnItem(literal(2), Variable("x")(varPos))(pos))
       ),
       return_(literal(1).as("y"))
     )

@@ -192,7 +192,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
                 acc.paths.collect {
                   case (variable, pathExpression) if pathReturnItems.exists(_.expression == variable) =>
                     pathExpression.step.dependencies
-                }.flatten.map(v => ast.AliasedReturnItem(v, v)(InputPosition.NONE, isAutoAliased = true)).toSeq
+                }.flatten.map(v => ast.AliasedReturnItem(v, v)(InputPosition.NONE)).toSeq
 
               val newImportingWith: Option[With] = {
                 if (returnItemsWithVariablesFromPaths.isEmpty) {

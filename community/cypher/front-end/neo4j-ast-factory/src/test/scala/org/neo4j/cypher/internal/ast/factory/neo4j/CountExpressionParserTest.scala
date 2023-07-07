@@ -238,7 +238,7 @@ class CountExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.
 
     givesIncludingPositions {
       singleQuery(
-        with_(AliasedReturnItem(countExpression, Variable("result")(pos))(pos, isAutoAliased = false)),
+        with_(AliasedReturnItem(countExpression, Variable("result")(pos))(pos)),
         return_(UnaliasedReturnItem(Variable("result")(pos), "result")(pos))
       )
     }

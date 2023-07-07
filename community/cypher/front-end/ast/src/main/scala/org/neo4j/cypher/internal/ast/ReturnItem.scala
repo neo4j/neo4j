@@ -121,22 +121,19 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
 object AliasedReturnItem {
 
   def apply(v: LogicalVariable): AliasedReturnItem =
-    AliasedReturnItem(v.copyId, v.copyId)(v.position, isAutoAliased = true)
+    AliasedReturnItem(v.copyId, v.copyId)(v.position)
 }
 
-//TODO variable should not be a Variable. A Variable is an expression, and the return item alias isn't
-case class AliasedReturnItem(expression: Expression, variable: LogicalVariable)(
-  val position: InputPosition,
-  val isAutoAliased: Boolean
-) extends ReturnItem {
+case class AliasedReturnItem(expression: Expression, variable: LogicalVariable)(val position: InputPosition)
+    extends ReturnItem {
   val alias: Option[LogicalVariable] = Some(variable)
   val name: String = variable.name
 
   override def dup(children: Seq[AnyRef]): AliasedReturnItem.this.type =
-    this.copy(children.head.asInstanceOf[Expression], children(1).asInstanceOf[LogicalVariable])(
-      position,
-      isAutoAliased
-    ).asInstanceOf[this.type]
+    this.copy(
+      children.head.asInstanceOf[Expression],
+      children(1).asInstanceOf[LogicalVariable]
+    )(position).asInstanceOf[this.type]
 
   override def asCanonicalStringVal: String = s"${expression.asCanonicalStringVal} AS ${variable.asCanonicalStringVal}"
 

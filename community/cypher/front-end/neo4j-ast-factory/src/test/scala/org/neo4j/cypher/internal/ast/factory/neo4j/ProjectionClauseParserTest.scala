@@ -33,14 +33,14 @@ class ProjectionClauseParserTest extends ParserSyntaxTreeBase[Cst.Clause, ast.Cl
   test("WITH 1 AS a") {
     yields(ast.With(ast.ReturnItems(
       includeExisting = false,
-      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos, isAutoAliased = false))
+      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 
   test("WITH *, 1 AS a") {
     yields(ast.With(ast.ReturnItems(
       includeExisting = true,
-      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos, isAutoAliased = false))
+      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 
@@ -55,14 +55,14 @@ class ProjectionClauseParserTest extends ParserSyntaxTreeBase[Cst.Clause, ast.Cl
   test("RETURN 1 AS a") {
     yields(ast.Return(ast.ReturnItems(
       includeExisting = false,
-      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos, isAutoAliased = false))
+      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 
   test("RETURN *, 1 AS a") {
     yields(ast.Return(ast.ReturnItems(
       includeExisting = true,
-      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos, isAutoAliased = false))
+      Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 

@@ -60,7 +60,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         ) _,
         None,
         None,
@@ -89,7 +89,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         ) _,
         None,
         None,
@@ -119,7 +119,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         ) _,
         None,
         None,
@@ -150,7 +150,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         ) _,
         None,
         None,
@@ -185,7 +185,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
         distinct = false,
         ReturnItems(
           includeExisting = false,
-          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false))
+          Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos))
         ) _,
         None,
         None,

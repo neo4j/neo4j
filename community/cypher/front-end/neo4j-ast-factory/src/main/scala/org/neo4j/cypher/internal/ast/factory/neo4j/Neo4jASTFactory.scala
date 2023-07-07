@@ -623,7 +623,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
   }
 
   override def newReturnItem(p: InputPosition, e: Expression, v: Variable): ReturnItem = {
-    AliasedReturnItem(e, v)(p, isAutoAliased = false)
+    AliasedReturnItem(e, v)(p)
   }
 
   override def newReturnItem(p: InputPosition, e: Expression, eStartOffset: Int, eEndOffset: Int): ReturnItem = {

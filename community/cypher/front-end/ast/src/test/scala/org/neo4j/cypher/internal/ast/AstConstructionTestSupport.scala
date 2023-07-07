@@ -843,12 +843,12 @@ trait AstConstructionTestSupport {
     AliasedReturnItem(
       varFor(originalName, position),
       varFor(newName, increasePos(position, originalName.length + 4))
-    )(position, isAutoAliased = false)
+    )(position)
 
   def aliasedReturnItem(originalExpr: Expression, newName: String): AliasedReturnItem = AliasedReturnItem(
     originalExpr,
     varFor(newName, increasePos(originalExpr.position, originalExpr.asCanonicalStringVal.length + 4))
-  )(originalExpr.position, isAutoAliased = false)
+  )(originalExpr.position)
 
   def autoAliasedReturnItem(originalExpr: Expression): AliasedReturnItem = AliasedReturnItem(
     originalExpr,
@@ -856,7 +856,7 @@ trait AstConstructionTestSupport {
       originalExpr.asCanonicalStringVal,
       increasePos(originalExpr.position, originalExpr.asCanonicalStringVal.length + 4)
     )
-  )(originalExpr.position, isAutoAliased = true)
+  )(originalExpr.position)
 
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
@@ -1005,14 +1005,14 @@ trait AstConstructionTestSupport {
     Foreach(varFor(variable), listExpr, updates)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
-    def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)
+    def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos)
 
     def asc: AscSortItem = AscSortItem(expr)(pos)
     def desc: DescSortItem = DescSortItem(expr)(pos)
   }
 
   implicit class VariableOps(v: Variable) {
-    def aliased: AliasedReturnItem = AliasedReturnItem(v, v)(pos, isAutoAliased = true)
+    def aliased: AliasedReturnItem = AliasedReturnItem(v, v)(pos)
   }
 
   implicit class NumberLiteralOps(nl: NumberLiteral) {

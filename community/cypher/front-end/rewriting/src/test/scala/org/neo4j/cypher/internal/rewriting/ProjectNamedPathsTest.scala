@@ -155,10 +155,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-                pos,
-                isAutoAliased = false
-              )
+              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
             )
           )(pos),
           None,
@@ -175,7 +172,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(p, p)(pos, isAutoAliased = false)
+            AliasedReturnItem(p, p)(pos)
           )
         )(pos),
         None,
@@ -212,7 +209,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(a, a)(pos, isAutoAliased = false)
+              AliasedReturnItem(a, a)(pos)
             )
           )(pos),
           None,
@@ -227,10 +224,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-                pos,
-                isAutoAliased = false
-              )
+              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
             )
           )(pos),
           None,
@@ -245,7 +239,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(literalInt(1), one)(pos, isAutoAliased = false)
+              AliasedReturnItem(literalInt(1), one)(pos)
             )
           )(pos),
           None,
@@ -262,10 +256,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-              pos,
-              isAutoAliased = false
-            )
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
           )
         )(pos),
         None,
@@ -309,9 +300,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(b, b)(pos, isAutoAliased = false),
-              AliasedReturnItem(r, r)(pos, isAutoAliased = false),
-              AliasedReturnItem(a, a)(pos, isAutoAliased = false)
+              AliasedReturnItem(b, b)(pos),
+              AliasedReturnItem(r, r)(pos),
+              AliasedReturnItem(a, a)(pos)
             )
           )(pos),
           None,
@@ -332,7 +323,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
                   SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep()(pos))(pos)
                 )(pos))(pos),
                 p
-              )(pos, isAutoAliased = false)
+              )(pos)
             )
           )(pos),
           None,
@@ -347,7 +338,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(literalInt(1), one)(pos, isAutoAliased = false)
+              AliasedReturnItem(literalInt(1), one)(pos)
             )
           )(pos),
           None,
@@ -370,7 +361,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
                 SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep()(pos))(pos)
               )(pos))(pos),
               p
-            )(pos, isAutoAliased = false)
+            )(pos)
           )
         )(pos),
         None,
@@ -421,11 +412,11 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(b, b)(pos, isAutoAliased = false),
-              AliasedReturnItem(r, r)(pos, isAutoAliased = false),
-              AliasedReturnItem(a, a)(pos, isAutoAliased = false),
-              AliasedReturnItem(c, c)(pos, isAutoAliased = false),
-              AliasedReturnItem(s, s)(pos, isAutoAliased = false)
+              AliasedReturnItem(b, b)(pos),
+              AliasedReturnItem(r, r)(pos),
+              AliasedReturnItem(a, a)(pos),
+              AliasedReturnItem(c, c)(pos),
+              AliasedReturnItem(s, s)(pos)
             )
           )(pos),
           None,
@@ -446,14 +437,14 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
                   SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep()(pos))(pos)
                 )(pos))(pos),
                 p
-              )(pos, isAutoAliased = false),
+              )(pos),
               AliasedReturnItem(
                 PathExpression(NodePathStep(
                   b,
                   SingleRelationshipPathStep(s, SemanticDirection.OUTGOING, Some(c), NilPathStep()(pos))(pos)
                 )(pos))(pos),
                 q
-              )(pos, isAutoAliased = false)
+              )(pos)
             )
           )(pos),
           None,
@@ -468,7 +459,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(literalInt(1), one)(pos, isAutoAliased = false)
+              AliasedReturnItem(literalInt(1), one)(pos)
             )
           )(pos),
           None,
@@ -491,7 +482,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
                 SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep()(pos))(pos)
               )(pos))(pos),
               p
-            )(pos, isAutoAliased = false)
+            )(pos)
           )
         )(pos),
         None,
@@ -540,11 +531,11 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(s, s)(pos, isAutoAliased = false),
-              AliasedReturnItem(r, r)(pos, isAutoAliased = false),
-              AliasedReturnItem(b, b)(pos, isAutoAliased = false),
-              AliasedReturnItem(a, a)(pos, isAutoAliased = false),
-              AliasedReturnItem(c, c)(pos, isAutoAliased = false)
+              AliasedReturnItem(s, s)(pos),
+              AliasedReturnItem(r, r)(pos),
+              AliasedReturnItem(b, b)(pos),
+              AliasedReturnItem(a, a)(pos),
+              AliasedReturnItem(c, c)(pos)
             )
           )(pos),
           None,
@@ -572,7 +563,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
                   )(pos)
                 )(pos),
                 p
-              )(pos, isAutoAliased = false)
+              )(pos)
             )
           )(pos),
           None,
@@ -587,7 +578,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(literalInt(1), one)(pos, isAutoAliased = false)
+              AliasedReturnItem(literalInt(1), one)(pos)
             )
           )(pos),
           None,
@@ -617,7 +608,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
                 )(pos)
               )(pos),
               p
-            )(pos, isAutoAliased = false)
+            )(pos)
           )
         )(pos),
         None,
@@ -654,7 +645,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(a, a)(pos, isAutoAliased = false)
+              AliasedReturnItem(a, a)(pos)
             )
           )(pos),
           None,
@@ -669,11 +660,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-                pos,
-                isAutoAliased = false
-              ),
-              AliasedReturnItem(a, a)(pos, isAutoAliased = false)
+              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos),
+              AliasedReturnItem(a, a)(pos)
             )
           )(pos),
           None,
@@ -688,7 +676,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(literalInt(1), one)(pos, isAutoAliased = false)
+              AliasedReturnItem(literalInt(1), one)(pos)
             )
           )(pos),
           None,
@@ -705,10 +693,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-              pos,
-              isAutoAliased = false
-            )
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
           )
         )(pos),
         None,
@@ -747,8 +732,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(a, a)(pos, isAutoAliased = false),
-              AliasedReturnItem(b, b)(pos, isAutoAliased = false)
+              AliasedReturnItem(a, a)(pos),
+              AliasedReturnItem(b, b)(pos)
             )
           )(pos),
           None,
@@ -763,11 +748,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-                pos,
-                isAutoAliased = false
-              ),
-              AliasedReturnItem(b, b)(pos, isAutoAliased = false)
+              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos),
+              AliasedReturnItem(b, b)(pos)
             )
           )(pos),
           None,
@@ -782,7 +764,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(literalInt(1), one)(pos, isAutoAliased = false)
+              AliasedReturnItem(literalInt(1), one)(pos)
             )
           )(pos),
           None,
@@ -799,10 +781,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-              pos,
-              isAutoAliased = false
-            )
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
           )
         )(pos),
         None,
@@ -840,7 +819,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             ReturnItems(
               includeExisting = false,
               Seq(
-                AliasedReturnItem(a, a)(pos, isAutoAliased = false)
+                AliasedReturnItem(a, a)(pos)
               )
             )(pos),
             None,
@@ -855,10 +834,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             ReturnItems(
               includeExisting = false,
               Seq(
-                AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-                  pos,
-                  isAutoAliased = false
-                )
+                AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
               )
             )(pos),
             None,
@@ -873,7 +849,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             ReturnItems(
               includeExisting = false,
               Seq(
-                AliasedReturnItem(literalInt(1), one)(pos, isAutoAliased = false)
+                AliasedReturnItem(literalInt(1), one)(pos)
               )
             )(pos),
             None,
@@ -890,7 +866,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             ReturnItems(
               includeExisting = false,
               Seq(
-                AliasedReturnItem(a, a)(pos, isAutoAliased = false)
+                AliasedReturnItem(a, a)(pos)
               )
             )(pos),
             None,
@@ -905,10 +881,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             ReturnItems(
               includeExisting = false,
               Seq(
-                AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-                  pos,
-                  isAutoAliased = false
-                )
+                AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
               )
             )(pos),
             None,
@@ -923,7 +896,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             ReturnItems(
               includeExisting = false,
               Seq(
-                AliasedReturnItem(literalInt(2), one)(pos, isAutoAliased = false)
+                AliasedReturnItem(literalInt(2), one)(pos)
               )
             )(pos),
             None,
@@ -942,10 +915,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-              pos,
-              isAutoAliased = false
-            )
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
           )
         )(pos),
         None,
@@ -979,10 +949,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-              pos,
-              isAutoAliased = false
-            )
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
           )
         )(pos),
         None,
@@ -997,7 +964,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(p, p)(pos, isAutoAliased = false)
+            AliasedReturnItem(p, p)(pos)
           )
         )(pos),
         None,
@@ -1032,11 +999,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-              pos,
-              isAutoAliased = false
-            ),
-            AliasedReturnItem(a, a)(pos, isAutoAliased = false)
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos),
+            AliasedReturnItem(a, a)(pos)
           )
         )(pos),
         None,
@@ -1051,7 +1015,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(p, p)(pos, isAutoAliased = false)
+            AliasedReturnItem(p, p)(pos)
           )
         )(pos),
         None,
@@ -1088,10 +1052,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(
-              pos,
-              isAutoAliased = false
-            )
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos)
           )
         )(pos),
         None,
@@ -1117,11 +1078,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(p, p)(pos, isAutoAliased = false),
-            AliasedReturnItem(PathExpression(NodePathStep(b, NilPathStep()(pos))(pos))(pos), q)(
-              pos,
-              isAutoAliased = false
-            )
+            AliasedReturnItem(p, p)(pos),
+            AliasedReturnItem(PathExpression(NodePathStep(b, NilPathStep()(pos))(pos))(pos), q)(pos)
           )
         )(pos),
         None,
@@ -1136,8 +1094,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(p, p)(pos, isAutoAliased = false),
-            AliasedReturnItem(q, q)(pos, isAutoAliased = false)
+            AliasedReturnItem(p, p)(pos),
+            AliasedReturnItem(q, q)(pos)
           )
         )(pos),
         None,
@@ -1303,8 +1261,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
                 SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
               )(pos))(pos),
               pId
-            )(pos, isAutoAliased = false),
-            AliasedReturnItem(literalInt(42), orderId)(pos, isAutoAliased = false)
+            )(pos),
+            AliasedReturnItem(literalInt(42), orderId)(pos)
           )
         )(pos),
         Some(OrderBy(List(AscSortItem(orderId)(pos)))(pos)),
@@ -1359,7 +1317,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           List(
-            AliasedReturnItem(literalInt(1), varFor("x"))(pos, isAutoAliased = false)
+            AliasedReturnItem(literalInt(1), varFor("x"))(pos)
           )
         )(pos),
         None,
@@ -1395,8 +1353,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(function("length", pathExpression), l)(pos, isAutoAliased = false),
-            AliasedReturnItem(CountStar()(pos), x)(pos, isAutoAliased = false)
+            AliasedReturnItem(function("length", pathExpression), l)(pos),
+            AliasedReturnItem(CountStar()(pos), x)(pos)
           )
         )(pos),
         None,
@@ -1411,8 +1369,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(l, l)(pos, isAutoAliased = false),
-            AliasedReturnItem(x, x)(pos, isAutoAliased = false)
+            AliasedReturnItem(l, l)(pos),
+            AliasedReturnItem(x, x)(pos)
           )
         )(pos),
         None,
@@ -1427,7 +1385,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(add(l, x), varFor("l + x"))(pos, isAutoAliased = false)
+            AliasedReturnItem(add(l, x), varFor("l + x"))(pos)
           )
         )(pos),
         None,
@@ -1472,7 +1430,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           Seq(
-            AliasedReturnItem(aId, aId)(pos, isAutoAliased = false)
+            AliasedReturnItem(aId, aId)(pos)
           )
         )(pos),
         Some(OrderBy(List(AscSortItem(pathExpression)(pos)))(pos)),
@@ -1487,7 +1445,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(
           includeExisting = false,
           List(
-            AliasedReturnItem(aId, aId)(pos, isAutoAliased = false)
+            AliasedReturnItem(aId, aId)(pos)
           )
         )(pos),
         None,

@@ -249,7 +249,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
 
     givesIncludingPositions {
       singleQuery(
-        with_(AliasedReturnItem(collectExpression, Variable("result")(pos))(pos, isAutoAliased = false)),
+        with_(AliasedReturnItem(collectExpression, Variable("result")(pos))(pos)),
         return_(UnaliasedReturnItem(Variable("result")(pos), "result")(pos))
       )
     }
