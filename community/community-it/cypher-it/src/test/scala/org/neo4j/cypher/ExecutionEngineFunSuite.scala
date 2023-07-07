@@ -31,6 +31,8 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import java.util.concurrent.atomic.AtomicLong
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ExecutionEngineFunSuite
@@ -121,13 +123,13 @@ abstract class ExecutionEngineFunSuite
 }
 
 case class CacheCounts(
-  hits: Int = 0,
-  misses: Int = 0,
-  flushes: Int = 0,
-  evicted: Int = 0,
-  discards: Int = 0,
-  compilations: Int = 0,
-  compilationsWithExpressionCodeGen: Int = 0
+  hits: Long = 0,
+  misses: Long = 0,
+  flushes: Long = 0,
+  evicted: Long = 0,
+  discards: Long = 0,
+  compilations: Long = 0,
+  compilationsWithExpressionCodeGen: Long = 0
 ) {
 
   override def toString =
@@ -135,22 +137,38 @@ case class CacheCounts(
 }
 
 class CountingCacheTracer[Key] extends CacheTracer[Key] {
-  var counts: CacheCounts = CacheCounts()
+  private val hits = new AtomicLong
+  private val misses = new AtomicLong
+  private val flushes = new AtomicLong
+  private val evicted = new AtomicLong
+  private val discards = new AtomicLong
+  private val compilations = new AtomicLong
+  private val compilationsWithExpressionCodeGen = new AtomicLong
+
+  def counts: CacheCounts = CacheCounts(
+    hits.get,
+    misses.get,
+    flushes.get,
+    evicted.get,
+    discards.get,
+    compilations.get,
+    compilationsWithExpressionCodeGen.get
+  )
 
   override def cacheHit(queryKey: Key, metaData: String): Unit =
-    counts = counts.copy(hits = counts.hits + 1)
+    hits.incrementAndGet()
 
   override def cacheMiss(queryKey: Key, metaData: String): Unit =
-    counts = counts.copy(misses = counts.misses + 1)
+    misses.incrementAndGet()
 
   override def compute(queryKey: Key, metaData: String): Unit =
-    counts = counts.copy(compilations = counts.compilations + 1)
+    compilations.incrementAndGet()
 
   override def discard(key: Key, metaData: String): Unit =
-    counts = counts.copy(discards = counts.discards + 1)
+    discards.incrementAndGet()
 
   override def computeWithExpressionCodeGen(queryKey: Key, metaData: String): Unit =
-    counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
+    compilationsWithExpressionCodeGen.incrementAndGet()
 
   override def cacheStale(
     queryKey: Key,
@@ -158,8 +176,8 @@ class CountingCacheTracer[Key] extends CacheTracer[Key] {
     metaData: String,
     maybeReason: Option[String]
   ): Unit =
-    counts = counts.copy(evicted = counts.evicted + 1)
+    evicted.incrementAndGet()
 
   override def cacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
-    counts = counts.copy(flushes = counts.flushes + 1)
+    flushes.incrementAndGet()
 }
