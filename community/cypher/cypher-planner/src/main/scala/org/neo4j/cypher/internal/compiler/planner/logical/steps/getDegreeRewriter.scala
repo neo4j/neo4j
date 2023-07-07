@@ -33,13 +33,8 @@ import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
-import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -56,8 +51,6 @@ import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.containsGpmSpecificRelType
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.getRelTypes
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -174,22 +167,6 @@ case object getDegreeRewriter extends Rewriter {
     } else {
       None
     }
-  }
-}
-
-object RelationshipsPatternSolvableByGetDegree {
-
-  def unapply(arg: Any)
-    : Option[(LogicalVariable, LogicalVariable, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
-    // (a)-[r:X|Y]->(b)
-    case RelationshipsPattern(RelationshipChain(
-        NodePattern(Some(node), None, None, None),
-        RelationshipPattern(Some(rel), labelExpression, None, None, None, dir),
-        NodePattern(Some(otherNode), None, None, None)
-      )) if !containsGpmSpecificRelType(labelExpression) =>
-      Some((node, rel, otherNode, getRelTypes(labelExpression), dir))
-
-    case _ => None
   }
 }
 
