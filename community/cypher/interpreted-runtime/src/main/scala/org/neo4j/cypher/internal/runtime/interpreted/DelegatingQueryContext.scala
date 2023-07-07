@@ -591,11 +591,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def callBuiltInFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
     singleDbHit(inner.callBuiltInFunction(id, args, context))
 
-  override def aggregateFunction(id: Int): UserAggregationReducer =
-    singleDbHit(inner.aggregateFunction(id))
+  override def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
+    singleDbHit(inner.aggregateFunction(id, context))
 
-  override def builtInAggregateFunction(id: Int): UserAggregationReducer =
-    singleDbHit(inner.builtInAggregateFunction(id))
+  override def builtInAggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
+    singleDbHit(inner.builtInAggregateFunction(id, context))
 
   override def detachDeleteNode(node: Long): Int = {
     val deletedRelationships = inner.detachDeleteNode(node)

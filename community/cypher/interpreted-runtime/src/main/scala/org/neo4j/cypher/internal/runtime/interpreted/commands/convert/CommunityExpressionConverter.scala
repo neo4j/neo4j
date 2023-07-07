@@ -412,7 +412,7 @@ case class CommunityExpressionConverter(
           }
         val signature = e.fcnSignature.get
         if (signature.isAggregate)
-          commands.expressions.AggregationFunctionInvocation(signature, callArgumentCommands)
+          commands.expressions.AggregationFunctionInvocation(signature, callArgumentCommands, runtimeName)
         else if (signature.builtIn) {
           commands.expressions.BuiltInFunctionInvocation(signature, callArgumentCommands.toArray, runtimeName)
         } else

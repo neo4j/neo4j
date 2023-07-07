@@ -137,18 +137,20 @@ public interface Procedures {
     /**
      * Create a read-only aggregation function by id
      * @param id the id of the function
+     * @param context the procedure call context.
      * @return the aggregation function
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    UserAggregationReducer aggregationFunction(int id) throws ProcedureException;
+    UserAggregationReducer aggregationFunction(int id, ProcedureCallContext context) throws ProcedureException;
 
     /**
      * Create a read-only built-in aggregation function by id
      * @param id the id of the function
+     * @param context the procedure call context.
      * @return the aggregation function
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException;
+    UserAggregationReducer builtInAggregationFunction(int id, ProcedureCallContext context) throws ProcedureException;
 
     long signatureVersion();
 }

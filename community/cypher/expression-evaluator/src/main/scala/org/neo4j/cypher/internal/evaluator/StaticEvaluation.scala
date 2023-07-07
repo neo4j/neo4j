@@ -439,9 +439,10 @@ object StaticEvaluation {
       context: ProcedureCallContext
     ): Iterator[Array[AnyValue]] = notAvailable()
 
-    override def aggregateFunction(id: Int): UserAggregationReducer = notAvailable()
+    override def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer = notAvailable()
 
-    override def builtInAggregateFunction(id: Int): UserAggregationReducer = notAvailable()
+    override def builtInAggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
+      notAvailable()
 
     override def detachDeleteNode(id: Long): Int = notAvailable()
 

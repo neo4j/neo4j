@@ -331,7 +331,9 @@ class ExecutionContextFunctionIT {
             try {
                 var handle = executionContext.procedures().aggregationFunctionGet(getName("sum"));
                 transaction.rollback();
-                assertThatThrownBy(() -> executionContext.procedures().aggregationFunction(handle.id()))
+                assertThatThrownBy(() -> executionContext
+                                .procedures()
+                                .aggregationFunction(handle.id(), ProcedureCallContext.EMPTY))
                         .isInstanceOf(NotInTransactionException.class)
                         .hasMessageContaining("This transaction has already been closed.");
             } finally {
@@ -453,7 +455,7 @@ class ExecutionContextFunctionIT {
     private UserAggregationReducer prepareUserAggregationFunction(ExecutionContext executionContext, String name)
             throws ProcedureException {
         var handle = executionContext.procedures().aggregationFunctionGet(getName(name));
-        return executionContext.procedures().aggregationFunction(handle.id());
+        return executionContext.procedures().aggregationFunction(handle.id(), ProcedureCallContext.EMPTY);
     }
 
     private QualifiedName getName(String name) {

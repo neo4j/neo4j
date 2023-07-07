@@ -952,13 +952,14 @@ public abstract class AllStoreHolder extends Read {
     }
 
     @Override
-    public UserAggregationReducer aggregationFunction(int id) throws ProcedureException {
-        return getProcedureCaller().createAggregationFunction(id);
+    public UserAggregationReducer aggregationFunction(int id, ProcedureCallContext context) throws ProcedureException {
+        return getProcedureCaller().createAggregationFunction(id, context);
     }
 
     @Override
-    public UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException {
-        return getProcedureCaller().createBuiltInAggregationFunction(id);
+    public UserAggregationReducer builtInAggregationFunction(int id, ProcedureCallContext context)
+            throws ProcedureException {
+        return getProcedureCaller().createBuiltInAggregationFunction(id, context);
     }
 
     @Override

@@ -78,12 +78,16 @@ object CallSupport {
   ): Iterator[Array[AnyValue]] =
     callProcedure(args, procedures.procedureCallDbms(id, _, context))
 
-  def aggregateFunction(procedures: Procedures, id: Int): UserAggregationReducer = {
-    procedures.aggregationFunction(id)
+  def aggregateFunction(procedures: Procedures, id: Int, context: ProcedureCallContext): UserAggregationReducer = {
+    procedures.aggregationFunction(id, context)
   }
 
-  def builtInAggregateFunction(procedures: Procedures, id: Int): UserAggregationReducer = {
-    procedures.builtInAggregationFunction(id)
+  def builtInAggregateFunction(
+    procedures: Procedures,
+    id: Int,
+    context: ProcedureCallContext
+  ): UserAggregationReducer = {
+    procedures.builtInAggregationFunction(id, context)
   }
 
   private def callProcedure(args: Array[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {

@@ -493,12 +493,12 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public UserAggregationReducer aggregationFunction(int id) {
+        public UserAggregationReducer aggregationFunction(int id, ProcedureCallContext context) {
             return null;
         }
 
         @Override
-        public UserAggregationReducer builtInAggregationFunction(int id) {
+        public UserAggregationReducer builtInAggregationFunction(int id, ProcedureCallContext context) {
             return null;
         }
 

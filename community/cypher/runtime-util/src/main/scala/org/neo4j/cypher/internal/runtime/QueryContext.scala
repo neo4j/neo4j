@@ -275,9 +275,9 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
-  def aggregateFunction(id: Int): UserAggregationReducer
+  def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer
 
-  def builtInAggregateFunction(id: Int): UserAggregationReducer
+  def builtInAggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer
 
   def assertShowIndexAllowed(): Unit
 

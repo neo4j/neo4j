@@ -96,15 +96,16 @@ public abstract class ProcedureCaller {
         return mode;
     }
 
-    UserAggregationReducer createGenericAggregator(boolean overrideAccessMode, AccessMode mode, int functionId)
+    UserAggregationReducer createGenericAggregator(
+            boolean overrideAccessMode, AccessMode mode, int functionId, ProcedureCallContext context)
             throws ProcedureException {
         final SecurityContext securityContext = overrideAccessMode
                 ? securityContext().withMode(new OverriddenAccessMode(mode, AccessMode.Static.READ))
                 : securityContext().withMode(new RestrictedAccessMode(mode, AccessMode.Static.READ));
 
         try (var ignore = overrideSecurityContext(securityContext)) {
-            UserAggregationReducer aggregator = procedureView.createAggregationFunction(
-                    prepareContext(securityContext, ProcedureCallContext.EMPTY), functionId);
+            UserAggregationReducer aggregator =
+                    procedureView.createAggregationFunction(prepareContext(securityContext, context), functionId);
             return new UserAggregationReducer() {
                 @Override
                 public UserAggregationUpdater newUpdater() throws ProcedureException {
@@ -138,11 +139,11 @@ public abstract class ProcedureCaller {
         }
     }
 
-    public UserAggregationReducer createBuiltInAggregationFunction(int id) throws ProcedureException {
+    public UserAggregationReducer createBuiltInAggregationFunction(int id, ProcedureCallContext context)
+            throws ProcedureException {
         performCheckBeforeOperation();
 
-        return procedureView.createAggregationFunction(
-                prepareContext(securityContext(), ProcedureCallContext.EMPTY), id);
+        return procedureView.createAggregationFunction(prepareContext(securityContext(), context), id);
     }
 
     Context prepareContext(SecurityContext securityContext, ProcedureCallContext procedureContext) {
@@ -216,7 +217,8 @@ public abstract class ProcedureCaller {
 
     abstract ValueMapper<Object> createValueMapper();
 
-    public abstract UserAggregationReducer createAggregationFunction(int id) throws ProcedureException;
+    public abstract UserAggregationReducer createAggregationFunction(int id, ProcedureCallContext context)
+            throws ProcedureException;
 
     abstract RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
             throws ProcedureException;
@@ -252,11 +254,12 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        public UserAggregationReducer createAggregationFunction(int id) throws ProcedureException {
+        public UserAggregationReducer createAggregationFunction(int id, ProcedureCallContext context)
+                throws ProcedureException {
             performCheckBeforeOperation();
             AccessMode mode = checkAggregationFunctionAccessMode(id);
             boolean overrideAccessMode = mode.shouldBoostAggregatingFunction(id).allowsAccess();
-            return createGenericAggregator(overrideAccessMode, mode, id);
+            return createGenericAggregator(overrideAccessMode, mode, id, context);
         }
 
         @Override
@@ -313,7 +316,8 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        public UserAggregationReducer createAggregationFunction(int id) throws ProcedureException {
+        public UserAggregationReducer createAggregationFunction(int id, ProcedureCallContext context)
+                throws ProcedureException {
             performCheckBeforeOperation();
             AccessMode mode = checkAggregationFunctionAccessMode(id);
             // The FULL access mode returns true on all shouldBoost-calls,
@@ -321,14 +325,14 @@ public abstract class ProcedureCaller {
             boolean overrideAccessMode = mode != AccessMode.Static.FULL
                     && mode.shouldBoostAggregatingFunction(id).allowsAccess();
             if (overrideAccessMode) {
-                return createGenericAggregator(true, mode, id);
+                return createGenericAggregator(true, mode, id, context);
             } else {
                 // Generally, functions have the access mode restricted to READ during their invocation.
                 // That is actually a quite expensive operation to do for every update call of an aggregation function.
                 // Since only read operations are currently supported during parallel execution,
                 // the expensive access mode restricting is not needed for execution context API.
                 return procedureView.createAggregationFunction(
-                        prepareContext(securityContext(), ProcedureCallContext.EMPTY), id);
+                        prepareContext(securityContext(), context), id);
             }
         }
 

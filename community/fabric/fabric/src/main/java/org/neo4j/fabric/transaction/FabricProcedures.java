@@ -130,12 +130,13 @@ public class FabricProcedures implements Procedures {
     }
 
     @Override
-    public UserAggregationReducer aggregationFunction(int id) throws ProcedureException {
+    public UserAggregationReducer aggregationFunction(int id, ProcedureCallContext context) throws ProcedureException {
         return notAvailable();
     }
 
     @Override
-    public UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException {
+    public UserAggregationReducer builtInAggregationFunction(int id, ProcedureCallContext context)
+            throws ProcedureException {
         return notAvailable();
     }
 

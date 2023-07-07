@@ -306,11 +306,11 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def callBuiltInFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
     translateException(tokenNameLookup, inner.callBuiltInFunction(id, args, context))
 
-  override def aggregateFunction(id: Int): UserAggregationReducer =
-    translateException(tokenNameLookup, inner.aggregateFunction(id))
+  override def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
+    translateException(tokenNameLookup, inner.aggregateFunction(id, context))
 
-  override def builtInAggregateFunction(id: Int): UserAggregationReducer =
-    translateException(tokenNameLookup, inner.builtInAggregateFunction(id))
+  override def builtInAggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
+    translateException(tokenNameLookup, inner.builtInAggregateFunction(id, context))
 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =
     translateException(tokenNameLookup, inner.isLabelSetOnNode(label, node, nodeCursor))

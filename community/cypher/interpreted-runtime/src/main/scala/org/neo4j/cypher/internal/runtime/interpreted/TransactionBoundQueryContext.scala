@@ -1567,11 +1567,11 @@ private[internal] class TransactionBoundReadQueryContext(
   override def callBuiltInFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
     CallSupport.callBuiltInFunction(transactionalContext.procedures, id, args, context)
 
-  override def aggregateFunction(id: Int): UserAggregationReducer =
-    CallSupport.aggregateFunction(transactionalContext.procedures, id)
+  override def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
+    CallSupport.aggregateFunction(transactionalContext.procedures, id, context)
 
-  override def builtInAggregateFunction(id: Int): UserAggregationReducer =
-    CallSupport.builtInAggregateFunction(transactionalContext.procedures, id)
+  override def builtInAggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
+    CallSupport.builtInAggregateFunction(transactionalContext.procedures, id, context)
 
   override def assertShowIndexAllowed(): Unit = {
     val ktx = transactionalContext.kernelTransaction

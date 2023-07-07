@@ -37,7 +37,11 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
+import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater
+import org.neo4j.internal.kernel.api.procs.UserAggregator
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
+import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction.BasicUserAggregationFunction
 import org.neo4j.kernel.api.procedure.CallableUserFunction.BasicUserFunction
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.values.AnyValue
@@ -60,6 +64,21 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
         Values.stringValue(ctx.procedureCallContext().cypherRuntimeName())
       }
     })
+
+    registerUserAggregation(
+      new BasicUserAggregationFunction(UserFunctionSignature.functionSignature("aggregate", "runtimeName")
+        .out(Neo4jTypes.NTString).threadSafe.build()) {
+        override def createReducer(ctx: Context): UserAggregationReducer =
+          new UserAggregationReducer with UserAggregationUpdater {
+            override def newUpdater(): UserAggregationUpdater = this
+            override def result(): AnyValue = Values.stringValue(ctx.procedureCallContext().cypherRuntimeName())
+            override def update(input: Array[AnyValue]): Unit = {}
+            override def applyUpdates(): Unit = {}
+          }
+
+        override def create(ctx: Context): UserAggregator = ???
+      }
+    )
   }
 
   test("hasLabel on top of allNodeScan") {
@@ -984,6 +1003,22 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("runtime")
       .projection("runtimeName() AS runtime")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toUpperCase(Locale.ROOT))
+  }
+
+  test("should be able to access what runtime that was used in a UDAF") {
+    // given an empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("runtime")
+      .aggregation(Seq.empty, Seq("aggregate.runtimeName() AS runtime"))
       .argument()
       .build()
 
