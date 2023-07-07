@@ -102,8 +102,7 @@ class StopTimeoutTest extends ServerProcessTestBase {
         var command = new Neo4jCommand(environment) {
             @Override
             protected Bootloader.Dbms createDbmsBootloader() {
-                var bootloader =
-                        spy(new Bootloader.Dbms(TestEntryPoint.class, environment, List.of(), expandCommands, verbose));
+                var bootloader = spy(new Bootloader.Dbms(TestEntryPoint.class, environment, expandCommands, verbose));
                 ProcessManager pm = new NotStoppingDbmsProcessManager(bootloader, handler);
                 doAnswer(inv -> pm).when(bootloader).processManager();
                 return bootloader;

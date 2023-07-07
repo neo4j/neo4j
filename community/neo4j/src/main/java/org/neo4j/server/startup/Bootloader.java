@@ -34,7 +34,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +91,6 @@ public abstract class Bootloader implements AutoCloseable {
 
     final Class<?> entrypoint;
     final Environment environment;
-    final Collection<BootloaderExtension> extensions;
 
     // init
     final boolean verbose;
@@ -111,13 +109,11 @@ public abstract class Bootloader implements AutoCloseable {
     protected Bootloader(
             Class<?> entrypoint,
             Environment environment,
-            Collection<BootloaderExtension> extensions,
             boolean expandCommands,
             boolean verbose,
             String... additionalArgs) {
         this.entrypoint = entrypoint;
         this.environment = environment;
-        this.extensions = extensions;
 
         this.expandCommands = expandCommands;
         this.verbose = verbose;
@@ -394,22 +390,12 @@ public abstract class Bootloader implements AutoCloseable {
 
     public static class Dbms extends Bootloader {
         public Dbms(Environment environment, boolean expandCommands, boolean verbose) {
-            this(
-                    EntryPoint.serviceloadEntryPoint(),
-                    environment,
-                    BootloaderExtension.serviceLoadExtensions(),
-                    expandCommands,
-                    verbose);
+            this(EntryPoint.serviceloadEntryPoint(), environment, expandCommands, verbose);
         }
 
         @VisibleForTesting
-        Dbms(
-                Class<?> entrypoint,
-                Environment environment,
-                Collection<BootloaderExtension> extensions,
-                boolean expandCommands,
-                boolean verbose) {
-            super(entrypoint, environment, extensions, expandCommands, verbose);
+        Dbms(Class<?> entrypoint, Environment environment, boolean expandCommands, boolean verbose) {
+            super(entrypoint, environment, expandCommands, verbose);
             if (expandCommands) {
                 this.additionalArgs.add(ARG_EXPAND_COMMANDS);
             }
@@ -618,7 +604,7 @@ public abstract class Bootloader implements AutoCloseable {
                 boolean expandCommands,
                 boolean verbose,
                 String... additionalArgs) {
-            super(entrypoint, environment, List.of(), expandCommands, verbose, additionalArgs);
+            super(entrypoint, environment, expandCommands, verbose, additionalArgs);
         }
 
         @Override

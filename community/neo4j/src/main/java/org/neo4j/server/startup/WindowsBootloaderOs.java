@@ -21,7 +21,6 @@ package org.neo4j.server.startup;
 
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.neo4j.configuration.BootloaderSettings.windows_tools_directory;
@@ -105,7 +104,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
         Path logs = bootloader.config().get(logs_directory);
         Path jvmDll = Path.of(getJavaCmd()).getParent().resolve(Path.of("server", "jvm.dll"));
         Preconditions.checkState(Files.exists(jvmDll), "Couldn't find the jvm DLL file %s", jvmDll);
-        List<String> jvmOpts = getJvmOpts(emptyList());
+        List<String> jvmOpts = getJvmOpts();
         argList.with(arg("--StartMode", "jvm"))
                 .with(arg("--StartMethod", "start"))
                 .with(arg("--ServiceUser", "LocalSystem"))
