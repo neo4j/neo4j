@@ -21,6 +21,7 @@ package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed.convert
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
@@ -40,7 +41,7 @@ import org.opencypher.tools.tck.api.StringRecords
 import org.opencypher.tools.tck.values.CypherValue
 
 import java.lang.Boolean.TRUE
-
+import java.time.Duration
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.Failure
 import scala.util.Success
@@ -51,7 +52,10 @@ object Neo4jAdapter {
   val defaultTestConfig: String => collection.Map[Setting[_], Object] =
     featureName => defaultTestConfigValues ++ featureDependentSettings(featureName)
 
-  val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
+  val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](
+    cypher_hints_error -> TRUE,
+    GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15)
+  )
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
     case _ =>
