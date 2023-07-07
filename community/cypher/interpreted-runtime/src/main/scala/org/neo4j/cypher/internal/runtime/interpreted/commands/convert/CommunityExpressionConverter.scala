@@ -201,7 +201,9 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.Ands =>
         predicates.Ands(NonEmptyList.from(e.exprs.map(self.toCommandPredicate(id, _))))
       case e: internal.expressions.AndsReorderable =>
-        predicates.AndsWithSelectivityTracking(e.exprs.toVector.map(self.toCommandPredicate(id, _)))
+        // TODO: we temporarily disable selectivity tracking because of a concurrency issue
+        // predicates.AndsWithSelectivityTracking(e.exprs.toVector.map(self.toCommandPredicate(id, _)))
+        predicates.Ands(NonEmptyList.from(e.exprs.map(self.toCommandPredicate(id, _))))
       case e: internal.expressions.Ors => predicates.Ors(NonEmptyList.from(e.exprs.map(self.toCommandPredicate(id, _))))
       case e: internal.expressions.Not => predicates.Not(self.toCommandPredicate(id, e.rhs))
       case e: internal.expressions.Equals =>
