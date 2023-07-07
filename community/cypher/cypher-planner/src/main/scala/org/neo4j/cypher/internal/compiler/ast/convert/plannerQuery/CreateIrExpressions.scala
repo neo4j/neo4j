@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PathStep
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -89,7 +88,7 @@ case class CreateIrExpressions(
   }
 
   /**
-   * Get the [[PlannerQuery]] for a pattern from a [[PatternExpression]] or [[PatternComprehension]] or [[ExistsExpression]] or [[CountExpression]].
+   * Get the [[PlannerQuery]] for a pattern from a [[PatternExpression]] or [[ExistsExpression]] or [[CountExpression]].
    *
    * @param pattern        the pattern
    * @param dependencies   the dependencies or the expression
@@ -188,27 +187,6 @@ case class CreateIrExpressions(
       )
 
     /**
-     * namedPaths in PatternComprehensions have already been rewritten away by [[inlineNamedPathsInPatternComprehensions]].
-     * Rewrites [(n)-->(:M) WHERE n.prop > 0 | n.foo] into
-     * IR for MATCH (n)-->(:M) WHERE n.prop > 0 RETURN n.foo
-     */
-    case pc @ PatternComprehension(None, pattern, predicate, projection) =>
-      val variableToCollectName = anonymousVariableNameGenerator.nextName
-      val collectionName = anonymousVariableNameGenerator.nextName
-
-      val query = getPlannerQuery(
-        pattern,
-        pc.dependencies.map(_.name),
-        predicate,
-        RegularQueryProjection(Map(variableToCollectName -> projection))
-      )
-      ListIRExpression(query, variableToCollectName, collectionName, stringifier(pc))(
-        pc.position,
-        pc.computedIntroducedVariables,
-        pc.computedScopeDependencies
-      )
-
-    /**
      * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN count(*)
      */
@@ -304,11 +282,6 @@ case class CreateIrExpressions(
         collectExpression.position,
         collectExpression.computedIntroducedVariables,
         collectExpression.computedScopeDependencies
-      )
-
-    case PatternComprehension(Some(_), _, _, _) =>
-      throw new IllegalStateException(
-        "namedPaths in PatternComprehensions should already have been rewritten away by inlineNamedPathsInPatternComprehensions."
       )
   })
 

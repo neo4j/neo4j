@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -44,7 +45,10 @@ case object NoNodeOrRelationshipPredicates extends StepSequencer.Condition
 case object normalizePredicates extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedNodesAndRelationships // unnamed pattern cannot be rewritten, so they need to be handled first
+    // unnamed pattern cannot be rewritten, so they need to be handled first
+    noUnnamedNodesAndRelationships,
+    // Pattern comprehensions must have been rewritten to COLLECT
+    containsNoNodesOfType[PatternComprehension]
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoNodeOrRelationshipPredicates)
@@ -79,16 +83,6 @@ case class normalizePredicates(normalizer: PredicateNormalizer) extends Rewriter
         pattern = normalizer.replaceAllIn(pattern),
         where = newWhere
       )(m.position)
-
-    case p: PatternComprehension =>
-      val predicates = normalizer.extractAllFrom(p.pattern)
-      val rewrittenPredicates = predicates ++ p.predicate
-      val newPredicate: Option[Expression] = rewrittenPredicates.reduceOption(And(_, _)(p.position))
-
-      p.copy(
-        pattern = normalizer.replaceAllIn(p.pattern),
-        predicate = newPredicate
-      )(p.position, p.computedIntroducedVariables, p.computedScopeDependencies)
 
     case part @ PatternPartWithSelector(_: SelectiveSelector, _) =>
       part.element match {

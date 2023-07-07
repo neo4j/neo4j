@@ -49,63 +49,8 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
   )
 
   testRewrite(
-    "MATCH (n) WHERE size([p = (n)--(m) | p]) > 0 RETURN n",
-    "MATCH (n) WHERE EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE 0 < size([p = (n)--(m) | p]) RETURN n",
-    "MATCH (n) WHERE EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE NOT size([p = (n)--(m) | p]) = 0 RETURN n",
-    "MATCH (n) WHERE EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE NOT 0 = size([p = (n)--(m) | p]) RETURN n",
-    "MATCH (n) WHERE EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
     "MATCH (n) WHERE NOT (n)--(m) RETURN n",
     "MATCH (n) WHERE NOT EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE size([p = (n)--(m) | p]) = 0 RETURN n",
-    "MATCH (n) WHERE NOT EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE 0 = size([p = (n)--(m) | p]) RETURN n",
-    "MATCH (n) WHERE NOT EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE NOT size([p = (n)--(m) | p]) > 0 RETURN n",
-    "MATCH (n) WHERE NOT EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE NOT 0 < size([p = (n)--(m) | p]) RETURN n",
-    "MATCH (n) WHERE NOT EXISTS { (n)--(m) } RETURN n"
-  )
-
-  testRewrite(
-    "MATCH (n) RETURN size([p = (n)--(m) | p]) > 0 AS b",
-    "MATCH (n) RETURN EXISTS { (n)--(m) } AS b"
-  )
-
-  testRewrite(
-    "MATCH (n) WITH size([p = (n)--(m) | p]) > 0 AS b RETURN b",
-    "MATCH (n) WITH EXISTS { (n)--(m) } AS b RETURN b"
-  )
-
-  testRewrite(
-    "MATCH (n) WHERE size([(n)--(m) WHERE n.prop > 0 | m]) > 0 RETURN n",
-    "MATCH (n) WHERE EXISTS { (n)--(m) WHERE n.prop > 0 } RETURN n"
   )
 
   testRewrite(
@@ -114,8 +59,8 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
   )
 
   testRewrite(
-    "RETURN [(x)-[]->(y) WHERE NOT (y)-[]->(x) | id(x)] AS ids",
-    "RETURN [(x)-[]->(y) WHERE NOT EXISTS { (y)-[]->(x) } | id(x)] AS ids"
+    "RETURN COLLECT { MATCH (x)-[]->(y) WHERE NOT (y)-[]->(x) RETURN id(x) } AS ids",
+    "RETURN COLLECT { MATCH (x)-[]->(y) WHERE NOT EXISTS { (y)-[]->(x) } RETURN id(x) } AS ids"
   )
 
   testRewrite(
@@ -185,11 +130,11 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
 
   testNoRewrite("RETURN (n)--(m)")
 
-  testNoRewrite("RETURN [(n)--(m) | n.prop]")
+  testNoRewrite("RETURN COLLECT { MATCH (n)--(m) RETURN n.prop }")
 
-  testNoRewrite("MATCH (n) WHERE 2 IN [(n)--(m) | n.prop] RETURN n")
+  testNoRewrite("MATCH (n) WHERE 2 IN COLLECT { MATCH (n)--(m) RETURN n.prop } RETURN n")
 
-  testNoRewrite("MATCH (n) WHERE size([p = (n)--(m) | p]) > 1 RETURN n")
+  testNoRewrite("MATCH (n) WHERE size(COLLECT { MATCH p = (n)--(m) RETURN p }) > 1 RETURN n")
 
   private def testNoRewrite(query: String): Unit = {
     test(query + " is not rewritten") {

@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -246,33 +245,6 @@ object getDegreeRewriterTest extends AstConstructionTestSupport {
       NodePattern(Some(to.map(varFor(_)).getOrElse(varFor("DEFAULT"))), None, None, None)(pos)
     )(pos))(pos)
   }
-}
-
-class GetDegreeRewriterSizeOfPatternComprehensionTest extends GetDegreeRewriterCountLikeTestBase {
-
-  override def makeInputExpression(
-    from: Option[String],
-    to: Option[String],
-    relationships: Seq[String],
-    predicate: Option[Expression],
-    introducedVariables: Set[LogicalVariable] = Set.empty,
-    scopeDependencies: Set[LogicalVariable] = Set.empty
-  ): Expression = {
-    Size(
-      PatternComprehension(
-        namedPath = None,
-        pattern = relPattern(from, to, relationships),
-        predicate = predicate,
-        projection = literalInt(1)
-      )(
-        position = pos,
-        computedIntroducedVariables = Some(introducedVariables),
-        computedScopeDependencies = Some(scopeDependencies)
-      )
-    )(pos)
-  }
-
-  override protected def testNameExpr(pattern: String): String = s"size([ $pattern | 1])"
 }
 
 class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTestBase {

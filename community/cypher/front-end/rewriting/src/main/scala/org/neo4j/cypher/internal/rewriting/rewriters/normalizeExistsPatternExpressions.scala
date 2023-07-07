@@ -30,14 +30,12 @@ import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
@@ -55,7 +53,7 @@ import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
- * Adds an exists() around any pattern expression that is expected to produce a boolean e.g.
+ * Adds an EXISTS { ... } around any pattern expression that is expected to produce a boolean e.g.
  *
  * MATCH (n) WHERE (n)-->(m) RETURN n
  *
@@ -136,20 +134,6 @@ case object normalizeExistsPatternExpressions extends StepSequencer.Step with AS
 case object CountLikeToExistsConverter {
 
   def unapply(expression: Expression): Option[ExistsExpression] = expression match {
-
-    // size([pt = (n)--(m) | pt])
-    case Size(p @ PatternComprehension(_, pattern, maybePredicate, _)) =>
-      Some(ExistsExpression(
-        PatternToQueryConverter.convertPatternToQuery(
-          pattern.element,
-          maybePredicate.map(mp => Where(mp)(mp.position)),
-          p.position
-        )
-      )(
-        p.position,
-        p.computedIntroducedVariables,
-        p.computedScopeDependencies
-      ))
 
     // COUNT { (n)--(m) }
     case ce @ CountExpression(query) =>

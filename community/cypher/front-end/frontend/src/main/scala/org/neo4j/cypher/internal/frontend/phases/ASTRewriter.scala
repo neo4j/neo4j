@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.FixedLengthShortestToAllRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.ReplacePatternComprehensionWithCollectSubquery
 import org.neo4j.cypher.internal.rewriting.rewriters.ReturnItemsAreAliased
 import org.neo4j.cypher.internal.rewriting.rewriters.RewriteSizeOfCollectToCount
 import org.neo4j.cypher.internal.rewriting.rewriters.addDependenciesToProjectionsInSubqueryExpressions
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
-import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
@@ -77,7 +77,6 @@ object ASTRewriter {
         AddVarLengthPredicates,
         simplifyIterablePredicates,
         replaceLiteralDynamicPropertyLookups,
-        inlineNamedPathsInPatternComprehensions,
         parameterValueTypeReplacement,
         rewriteOrderById,
         LabelExpressionPredicateNormalizer,
@@ -86,7 +85,8 @@ object ASTRewriter {
         addDependenciesToProjectionsInSubqueryExpressions,
         FixedLengthShortestToAllRewriter,
         cypherTypeNormalizationRewriter,
-        RewriteSizeOfCollectToCount
+        RewriteSizeOfCollectToCount,
+        ReplacePatternComprehensionWithCollectSubquery
       ),
       initialConditions = SemanticInfoAvailable ++ Set(
         ReturnItemsAreAliased,

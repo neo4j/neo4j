@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.GpmShortestPath
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
@@ -311,10 +312,10 @@ class CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriterTest
                 nodePat(Some("  m@2"))
               ),
               PlusQuantifier()(pos),
-              Some(isNull(patternComprehension(
-                relationshipChain(nodePat(Some("  n@0")), relPat(Some("rr")), nodePat(Some("c"))),
-                prop("  n@0", "a")
-              ))),
+              Some(isNull(CollectExpression(singleQuery(
+                match_(relationshipChain(nodePat(Some("  n@0")), relPat(Some("rr")), nodePat(Some("c")))),
+                return_(aliasedReturnItem(prop("  n@0", "a"), "  UNNAMED0"))
+              ))(pos, null, null))),
               Set(
                 variableGrouping("  n@0", "  n@3"),
                 variableGrouping("  r@1", "  r@4"),
@@ -323,13 +324,7 @@ class CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriterTest
             ),
             nodePat(Some("b"))
           ),
-          where = Some(where(ands(
-            isNull(patternComprehension(
-              relationshipChain(nodePat(Some("a")), relPat(Some("rr")), nodePat(Some("c"))),
-              prop("a", "a")
-            )),
-            unique(varFor("  r@4"))
-          )))
+          where = Some(where(unique(varFor("  r@4"))))
         ),
         returnLit((1, "s"))
       )

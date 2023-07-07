@@ -246,34 +246,6 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     assertRewrite("MATCH ()-[r:A|B|C]->() RETURN r")
   }
 
-  test("RETURN [(a WHERE a.prop > 123)-->(b) | a] AS result") {
-    assertRewrite("RETURN [(a)-->(b) WHERE a.prop > 123 | a] AS result")
-  }
-
-  test("RETURN [(a WHERE a.prop > 123)-->(b WHERE b.prop < 42) | a] AS result") {
-    assertRewrite("RETURN [(a)-->(b) WHERE a.prop > 123 AND b.prop < 42 | a] AS result")
-  }
-
-  test("RETURN [(a WHERE a.prop < 123)-->(b WHERE b.prop > 42) WHERE a.prop <> b.prop | a] AS result") {
-    assertRewrite("RETURN [(a)-->(b) WHERE (a.prop < 123 AND b.prop > 42) AND a.prop <> b.prop | a] AS result")
-  }
-
-  test("RETURN [(a)-[r WHERE r.prop > 123]->(b) | r] AS result") {
-    assertRewrite("RETURN [(a)-[r]->(b) WHERE r.prop > 123 | r] AS result")
-  }
-
-  test("RETURN [(a)-[r WHERE r.prop > 123]->()<-[s WHERE s.otherProp = \"ok\"]-(b) | r] AS result") {
-    assertRewrite("RETURN [(a)-[r]->()<-[s]-(b) WHERE r.prop > 123 AND s.otherProp = \"ok\" | r] AS result")
-  }
-
-  test("RETURN [(a:A&!B)-->(b) | a] AS result") {
-    assertRewrite("RETURN [(a)-->(b) WHERE a:A AND not a:B | a] AS result")
-  }
-
-  test("RETURN [(a {prop: 5})-[r {prop: 5}]->(b) | a] AS result") {
-    assertRewrite("RETURN [(a)-[r]->(b) WHERE a.prop = 5 AND r.prop = 5 | a] AS result")
-  }
-
   test("MATCH () ((n {foo: 'bar'})--())+ () RETURN n") {
     assertRewrite("MATCH () ((n)--() WHERE n.foo = 'bar')+ () RETURN n")
   }
@@ -571,24 +543,24 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     assertRewrite(s"MATCH (n)-[r]->(m) WHERE COUNT {MATCH ($node)-[$rel]->(b) WHERE $node:A AND b:B} > 1 RETURN *")
   }
 
-  test("MATCH (a WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1) RETURN *") {
-    assertRewrite("MATCH (a) WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1 RETURN *")
+  test("MATCH (a WHERE COUNT { (n)-->() WHERE n.prop > 0 } > 1) RETURN *") {
+    assertRewrite("MATCH (a) WHERE COUNT { (n)-->() WHERE n.prop > 0 } > 1 RETURN *")
   }
 
-  test("MATCH (a WHERE size([(n:L)-->() WHERE n.prop > 0 | n.foo]) > 1) RETURN *") {
-    assertRewrite("MATCH (a) WHERE size([(n)-->() WHERE n:L AND n.prop > 0 | n.foo]) > 1 RETURN *")
+  test("MATCH (a WHERE COUNT { (n:L)-->() WHERE n.prop > 0 } > 1) RETURN *") {
+    assertRewrite("MATCH (a) WHERE COUNT { (n)-->() WHERE n:L AND n.prop > 0 } > 1 RETURN *")
   }
 
-  test("MATCH (a { p: size([(n)-->() WHERE n.prop > 0 | n.foo]) } ) RETURN *") {
-    assertRewrite("MATCH (a) WHERE a.p = size([(n)-->() WHERE n.prop > 0 | n.foo]) RETURN *")
+  test("MATCH (a { p: COUNT { (n)-->() WHERE n.prop > 0 } } ) RETURN *") {
+    assertRewrite("MATCH (a) WHERE a.p = COUNT { (n)-->() WHERE n.prop > 0 } RETURN *")
   }
 
-  test("MATCH (a { p: size([(n {prop:42})-->() | n.foo]) } ) RETURN *") {
-    assertRewrite("MATCH (a) WHERE a.p = size([(n)-->() WHERE n.prop = 42 | n.foo]) RETURN *")
+  test("MATCH (a { p: COUNT { (n {prop:42})-->() } } ) RETURN *") {
+    assertRewrite("MATCH (a) WHERE a.p = COUNT { (n)-->() WHERE n.prop = 42 } RETURN *")
   }
 
-  test("MATCH (a { p: size([(n:L)-->() WHERE n.prop > 0 | n.foo]) } ) RETURN *") {
-    assertRewrite("MATCH (a) WHERE a.p = size([(n)-->() WHERE n:L AND n.prop > 0 | n.foo]) RETURN *")
+  test("MATCH (a { p: COUNT { (n:L)-->() WHERE n.prop > 0 } } ) RETURN *") {
+    assertRewrite("MATCH (a) WHERE a.p = COUNT { (n)-->() WHERE n:L AND n.prop > 0 } RETURN *")
   }
 
   test("MATCH (n WHERE exists( (:Label)--() )) RETURN *") {

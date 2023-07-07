@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
-import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.InternalException
@@ -74,9 +73,7 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     AmbiguousNamesDisambiguated,
     // and we want to take advantage of isolated aggregations in the planner
     StatementCondition(aggregationsAreIsolated),
-    InPredicatesCollapsed,
-    // Needed by the CreateIrExpressions rewriter
-    NoNamedPathsInPatternComprehensions
+    InPredicatesCollapsed
   ) ++
     // The PlannerQuery should be created based on normalised predicates
     PredicatesInCNF ++

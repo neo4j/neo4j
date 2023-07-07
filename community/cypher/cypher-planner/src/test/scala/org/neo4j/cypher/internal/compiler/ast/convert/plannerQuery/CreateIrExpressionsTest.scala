@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MatchMode
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -65,7 +64,6 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
@@ -84,7 +82,6 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private val r = varFor("r")
   private val r2 = varFor("r2")
   private val r3 = varFor("r3")
-  private val path = varFor("p")
 
   private val rPred = greaterThan(prop(r.name, "foo"), literalInt(5))
   private val rLessPred = lessThan(prop(r.name, "foo"), literalInt(10))
@@ -152,7 +149,6 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val anonymousVariableNameGenerator = makeAnonymousVariableNameGenerator()
     val rewriter = inSequence(
       AddUniquenessPredicates.rewriter,
-      inlineNamedPathsInPatternComprehensions.instance,
       normalizePredicates(PredicateNormalizer.normalizeInlinedWhereClauses),
       normalizePredicates(PredicateNormalizer.normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator)),
       flattenBooleanOperators,
@@ -304,158 +300,6 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
     existsIRExpression.solvedExpressionAsString shouldBe s"exists((${n.name})-[${r.name}]-(${m.name}:M|MM))"
-  }
-
-  test("Rewrites PatternComprehension") {
-    val pc = PatternComprehension(
-      None,
-      n_r_m,
-      None,
-      literalInt(5)
-    )(pos, Some(Set(r, m)), Some(Set(n)))
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val variableToCollectName = nameGenerator.nextName
-    val collectionName = nameGenerator.nextName
-
-    val rewritten = rewrite(pc)
-
-    rewritten should equal(
-      ListIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength))
-          ),
-          Some(RegularQueryProjection(Map(variableToCollectName -> literalInt(5))))
-        ),
-        variableToCollectName,
-        collectionName,
-        s"[(${n.name})-[${r.name}]-(${m.name}) | 5]"
-      )(pos, Some(Set(m, r)), Some(Set(n)))
-    )
-  }
-
-  test("Rewrites PatternComprehension with named path") {
-    val pc = PatternComprehension(
-      Some(path),
-      n_r_m,
-      None,
-      path
-    )(pos, Some(Set(r, m)), Some(Set(n)))
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val variableToCollectName = nameGenerator.nextName
-    val collectionName = nameGenerator.nextName
-
-    val pathExpression = PathExpressionBuilder.node(n.name).bothTo(r.name, m.name).build()
-
-    val rewritten = rewrite(pc)
-
-    rewritten should equal(
-      ListIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength))
-          ),
-          Some(RegularQueryProjection(Map(variableToCollectName -> pathExpression)))
-        ),
-        variableToCollectName,
-        collectionName,
-        s"[(${n.name})-[${r.name}]-(${m.name}) | (${n.name})-[${r.name}]-(${m.name})]"
-      )(pos, Some(Set(m, r)), Some(Set(n)))
-    )
-  }
-
-  test("Rewrites PatternComprehension with WHERE clause") {
-    val rPred = greaterThan(prop(r.name, "foo"), literalInt(5))
-
-    val pc = PatternComprehension(
-      None,
-      n_r_m,
-      Some(rPred),
-      prop(m, "foo")
-    )(pos, Some(Set(r, m)), Some(Set(n)))
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val variableToCollectName = nameGenerator.nextName
-    val collectionName = nameGenerator.nextName
-
-    val rewritten = rewrite(pc)
-
-    rewritten should equal(
-      ListIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-            selections = Selections.from(andedPropertyInequalities(rPred))
-          ),
-          Some(RegularQueryProjection(Map(variableToCollectName -> prop(m, "foo"))))
-        ),
-        variableToCollectName,
-        collectionName,
-        s"[(${n.name})-[${r.name}]-(${m.name}) WHERE ${r.name}.foo > 5 | ${m.name}.foo]"
-      )(pos, Some(Set(m, r)), Some(Set(n)))
-    )
-  }
-
-  test("Rewrites PatternComprehension with longer pattern and inlined predicates") {
-    val rPred = greaterThan(prop(r.name, "foo"), literalInt(5))
-    val oPred = greaterThan(prop(o.name, "foo"), literalInt(5))
-
-    val pc = PatternComprehension(
-      None,
-      n_r_m_withPreds,
-      None,
-      literalInt(5)
-    )(pos, Some(Set(r, m)), Some(Set(n)))
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val variableToCollectName = nameGenerator.nextName
-    val collectionName = nameGenerator.nextName
-
-    val rewritten = rewrite(pc)
-
-    rewritten should equal(
-      ListIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name, o.name),
-            argumentIds = Set(n.name),
-            patternRelationships = Set(
-              PatternRelationship(
-                r.name,
-                (n.name, m.name),
-                OUTGOING,
-                Seq(relTypeName("R"), relTypeName("P")),
-                SimplePatternLength
-              ),
-              PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
-            ),
-            selections = Selections.from(Seq(
-              differentRelationships(r2, r),
-              andedPropertyInequalities(rPred),
-              andedPropertyInequalities(oPred),
-              equals(prop(r.name, "prop"), literalInt(5)),
-              equals(prop(o.name, "prop"), literalInt(5)),
-              not(hasALabel(o.name))
-            ))
-          ),
-          Some(RegularQueryProjection(Map(variableToCollectName -> literalInt(5))))
-        ),
-        variableToCollectName,
-        collectionName,
-        s"[(n)-[r:R|P]->(m)<-[r2]-(o) WHERE r.prop = 5 AND o.prop = 5 AND NOT o:% AND r.foo > 5 AND o.foo > 5 | 5]"
-      )(pos, Some(Set(m, r)), Some(Set(n)))
-    )
   }
 
   test("Rewrites Simple ExistsExpression") {

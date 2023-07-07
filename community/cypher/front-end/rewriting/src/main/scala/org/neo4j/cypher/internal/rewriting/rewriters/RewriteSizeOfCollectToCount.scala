@@ -19,8 +19,10 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.rewriting.conditions.SizeOfCollectRewrittenToCount
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -42,7 +44,10 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
  */
 case object RewriteSizeOfCollectToCount extends StepSequencer.Step with ASTRewriterFactory {
 
-  override def preConditions: Set[Condition] = Set()
+  override def preConditions: Set[Condition] = Set(
+    // Pattern comprehensions must have been rewritten to COLLECT
+    containsNoNodesOfType[PatternComprehension]
+  )
 
   override def postConditions: Set[Condition] = Set(SizeOfCollectRewrittenToCount)
 
