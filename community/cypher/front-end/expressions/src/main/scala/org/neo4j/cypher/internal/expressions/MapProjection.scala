@@ -34,5 +34,5 @@ sealed trait MapProjectionElement extends Expression
 
 case class LiteralEntry(key: PropertyKeyName, exp: Expression)(val position: InputPosition) extends MapProjectionElement
 case class VariableSelector(id: Variable)(val position: InputPosition) extends MapProjectionElement
-case class PropertySelector(id: Variable)(val position: InputPosition) extends MapProjectionElement
+case class PropertySelector(key: PropertyKeyName)(val position: InputPosition) extends MapProjectionElement
 case class AllPropertiesSelector()(val position: InputPosition) extends MapProjectionElement

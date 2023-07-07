@@ -109,7 +109,7 @@ trait Literals extends Parser
     PropertyKeyName ~~ ch(':') ~~ Expression ~~>> (expressions.LiteralEntry(_, _)))
 
   def PropertySelector: Rule1[expressions.MapProjectionElement] = rule("property selector")(
-    ch('.') ~~ Variable ~~>> (expressions.PropertySelector(_)))
+    ch('.') ~~ PropertyKeyName ~~>> (expressions.PropertySelector(_)))
 
   def VariableSelector: Rule1[expressions.MapProjectionElement] = rule("variable selector")(
     Variable ~~>> (expressions.VariableSelector(_)))

@@ -31,7 +31,7 @@ class MapProjectionTest extends ParserTest[Any, Any] with Expressions {
 
     parsing("abc{.id}") shouldGive
       expressions.MapProjection(expressions.Variable("abc")(t),
-        Seq(expressions.PropertySelector(expressions.Variable("id")(t))(t)))(t)
+        Seq(expressions.PropertySelector(expressions.PropertyKeyName("id")(t))(t)))(t)
 
     parsing("abc{id}") shouldGive
       expressions.MapProjection(expressions.Variable("abc")(t),
@@ -49,7 +49,7 @@ class MapProjectionTest extends ParserTest[Any, Any] with Expressions {
       expressions.MapProjection(expressions.Variable("abc")(t),
         Seq(
           expressions.LiteralEntry(expressions.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t),
-          expressions.PropertySelector(expressions.Variable("foo")(t))(t),
+          expressions.PropertySelector(expressions.PropertyKeyName("foo")(t))(t),
           expressions.VariableSelector(expressions.Variable("bar")(t))(t)
         )
       )(t)

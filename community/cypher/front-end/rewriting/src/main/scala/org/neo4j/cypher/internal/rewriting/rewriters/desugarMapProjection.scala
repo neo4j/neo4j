@@ -67,8 +67,8 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
       val mapExpressionItems = items.flatMap {
         case x: LiteralEntry => Some(x)
         case _: AllPropertiesSelector => includeAllProps = true; None
-        case PropertySelector(property: Variable) => Some(propertySelect(property.position, property.name))
-        case VariableSelector(identifier: Variable) => Some(identifierSelect(identifier))
+        case PropertySelector(property) => Some(propertySelect(property.position, property.name))
+        case VariableSelector(identifier) => Some(identifierSelect(identifier))
       }
 
       DesugaredMapProjection(id, mapExpressionItems, includeAllProps)(e.position)

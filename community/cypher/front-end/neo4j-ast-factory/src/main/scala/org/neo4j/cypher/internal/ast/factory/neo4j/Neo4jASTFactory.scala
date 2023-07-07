@@ -1043,7 +1043,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     LiteralEntry(PropertyKeyName(property.string)(property.pos), value)(value.position)
 
   override def mapProjectionProperty(property: StringPos[InputPosition]): MapProjectionElement =
-    PropertySelector(Variable(property.string)(property.pos))(property.pos)
+    PropertySelector(PropertyKeyName(property.string)(property.pos))(property.pos)
 
   override def mapProjectionVariable(v: Variable): MapProjectionElement =
     VariableSelector(v)(v.position)

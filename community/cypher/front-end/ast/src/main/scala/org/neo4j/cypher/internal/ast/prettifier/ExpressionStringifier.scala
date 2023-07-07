@@ -249,8 +249,8 @@ case class ExpressionStringifier(
       case VariableSelector(v) =>
         apply(v)
 
-      case PropertySelector(v) =>
-        s".${apply(v)}"
+      case PropertySelector(k) =>
+        s".${apply(k)}"
 
       case AllPropertiesSelector() => ".*"
 
