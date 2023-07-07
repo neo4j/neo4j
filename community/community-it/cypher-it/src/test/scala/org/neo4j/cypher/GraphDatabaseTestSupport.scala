@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -60,8 +61,8 @@ import org.scalatest.matchers.Matcher
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.UUID
-
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -76,7 +77,9 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
   var nodes: List[Node] = _
   protected var tx: InternalTransaction = _
 
-  def databaseConfig(): Map[Setting[_], Object] = Map()
+  def databaseConfig(): Map[Setting[_], Object] = Map(
+      GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15)
+  )
 
   def logProvider: InternalLogProvider = NullLogProvider.getInstance()
 
