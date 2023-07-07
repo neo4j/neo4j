@@ -214,7 +214,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         super.visitNodeLabelChanges(id, added, removed);
         captureNodeState(id, DeltaType.MODIFIED, true);
 
-        final var position = changesChannel.position();
+        final var position = changesChannel.size();
         final var addedInThisBatch = txState.nodeIsAddedInThisBatch(id);
         if (addedInThisBatch) {
             final var labels = toIntArray(added);
@@ -238,7 +238,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         if (txState.nodeIsAddedInThisBatch(id)) {
             setNodeChangeDelta(id, ChangeType.PROPERTIES_STATE, addNewNodeProperties(added));
         } else {
-            final var position = changesChannel.position();
+            final var position = changesChannel.size();
             nodeCursor.single(id);
 
             final var changesFlag = entityProperties(nodeCursor, added, changed, removed);
@@ -275,7 +275,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
                 (captureMode == CaptureMode.FULL) ? PropertySelection.ALL_PROPERTIES : selection(constraintProps);
         captureRelationshipState(id, type, startNode, endNode, selection);
 
-        final var position = changesChannel.position();
+        final var position = changesChannel.size();
         relCursor.single(id, startNode, type, endNode);
 
         final var changesFlag = entityProperties(relCursor, added, changed, removed);
@@ -337,6 +337,11 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
             // and clear so we don't re-enter
             participants.clear();
+            // also flip all the buffers ready for the command creation
+            participantsChannel.flip();
+            detailsChannel.flip();
+            changesChannel.flip();
+            valuesChannel.flip();
             return true;
         }
 
@@ -344,7 +349,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
     }
 
     private boolean setNodeChangeType(long id, DeltaType deltaType) {
-        final var beforePos = detailsChannel.position();
+        final var beforePos = detailsChannel.size();
         final var position = nodePositions.getIfAbsentPut(id, beforePos);
         if (position == beforePos) {
             // new entry at end of the channel
@@ -392,9 +397,9 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
     private void setRelationshipChangeType(long id, DeltaType deltaType, int type, int sourcePos, int targetPos) {
         // relationships entries are always appended at end of the channel
-        participants.add(createParticipant(EntityType.RELATIONSHIP, deltaType, id, detailsChannel.position()));
+        participants.add(createParticipant(EntityType.RELATIONSHIP, deltaType, id, detailsChannel.size()));
 
-        relationshipPositions.put(id, detailsChannel.position());
+        relationshipPositions.put(id, detailsChannel.size());
         detailsChannel
                 .putLong(id)
                 .put(EntityType.RELATIONSHIP.id())
@@ -455,7 +460,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
         var constraintsAdded = 0;
         final var constraintProps = IntSets.mutable.empty();
-        final var constraintsPosition = changesChannel.position();
+        final var constraintsPosition = changesChannel.size();
         for (var label : labels) {
             final var properties = store.constraintsGetPropertyTokensForLogicalKey(label, EntityType.NODE);
             if (!properties.isEmpty()) {
@@ -492,7 +497,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
     private IntSet captureRelTypeConstraints(long id, int relType) {
         final var properties = store.constraintsGetPropertyTokensForLogicalKey(relType, EntityType.RELATIONSHIP);
         if (!properties.isEmpty()) {
-            final var constraintsPosition = changesChannel.position();
+            final var constraintsPosition = changesChannel.size();
             changesChannel.putInt(relType).putInt(properties.size());
             properties.forEach(changesChannel::putInt);
 
@@ -508,7 +513,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             return UNKNOWN_POSITION;
         }
 
-        final var position = changesChannel.position();
+        final var position = changesChannel.size();
         while (iterator.hasNext()) {
             final var property = iterator.next();
             final var propertyKeyId = property.propertyKeyId();
@@ -525,7 +530,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             return UNKNOWN_POSITION;
         }
 
-        final var position = changesChannel.position();
+        final var position = changesChannel.size();
         while (iterator.hasNext()) {
             final var property = iterator.next();
             captureProperty(property.propertyKeyId(), property.value());
@@ -546,7 +551,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             propertiesCursor.initRelationshipProperties(relCursor, selection);
         }
 
-        final var position = changesChannel.position();
+        final var position = changesChannel.size();
         var captured = 0;
         while (propertiesCursor.next()) {
             final var property = propertiesCursor.propertyKey();
@@ -568,7 +573,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
     }
 
     private int addLabels(int... labels) {
-        final var position = changesChannel.position();
+        final var position = changesChannel.size();
         changesChannel.putInt(labels.length);
         for (var label : labels) {
             changesChannel.putInt(label);

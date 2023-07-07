@@ -89,7 +89,7 @@ public class OutputStreamWritableChannel implements FlushableChannel {
     @Override
     public FlushableChannel putAll(ByteBuffer src) throws IOException {
         if (src.hasArray()) {
-            dataOutputStream.write(src.array());
+            dataOutputStream.write(src.array(), src.position(), src.remaining());
         } else {
             while (src.hasRemaining()) {
                 dataOutputStream.writeByte(src.get());

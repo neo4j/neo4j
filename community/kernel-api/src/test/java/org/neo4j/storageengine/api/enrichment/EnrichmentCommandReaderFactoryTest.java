@@ -174,10 +174,10 @@ public class EnrichmentCommandReaderFactoryTest {
 
         return new Enrichment.Write(
                 TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L),
-                entities,
-                details,
-                changes,
-                values);
+                entities.flip(),
+                details.flip(),
+                changes.flip(),
+                values.flip());
     }
 
     private static void assertContents(ByteBuffer buffer, long[] values) {

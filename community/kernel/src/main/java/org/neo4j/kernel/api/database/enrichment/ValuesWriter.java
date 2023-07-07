@@ -41,7 +41,7 @@ import org.neo4j.values.utils.TemporalUtil;
  */
 public record ValuesWriter(WriteEnrichmentChannel channel) implements ValueWriter<RuntimeException> {
     public int write(Value value) {
-        final var position = channel.position();
+        final var position = channel.size();
         if (value == null) {
             channel.put(ValuesReader.NO_VALUE.id());
         } else {

@@ -52,7 +52,7 @@ class ValuesReadWriteTest {
                 positions[i] = writer.write(value);
             }
 
-            var buffer = BufferBackedChannel.fill(writeChannel);
+            var buffer = BufferBackedChannel.fill(writeChannel.flip());
             for (var i = 0; i < positions.length; i++) {
                 final var reader = ValuesReader.BY_ID.get(buffer.get());
                 assertThat(reader.read(buffer)).isEqualTo(value);
@@ -69,7 +69,7 @@ class ValuesReadWriteTest {
     private record BufferBackedChannel(ByteBuffer buffer) implements WritableChannel {
 
         static ByteBuffer fill(WriteEnrichmentChannel channel) throws IOException {
-            final var buffer = ByteBuffer.allocate(channel.position()).order(ByteOrder.LITTLE_ENDIAN);
+            final var buffer = ByteBuffer.allocate(channel.size()).order(ByteOrder.LITTLE_ENDIAN);
             try (var bufferChannel = new BufferBackedChannel(buffer)) {
                 channel.serialize(bufferChannel);
                 return buffer.flip();

@@ -191,21 +191,17 @@ public abstract sealed class Enrichment {
          * @return the expected size (in bytes) that will be written when the enrichment is serialized
          */
         public long totalSize() {
-            return (Integer.BYTES * 4)
-                    + entities.position()
-                    + details.position()
-                    + changes.position()
-                    + values.position();
+            return (Integer.BYTES * 4) + entities.size() + details.size() + changes.size() + values.size();
         }
 
         @Override
         public void serialize(WritableChannel channel) throws IOException {
             metadata.serialize(channel);
             // write out the sizes making it easy(er) to skip the actual content
-            channel.putInt(entities.position());
-            channel.putInt(details.position());
-            channel.putInt(changes.position());
-            channel.putInt(values.position());
+            channel.putInt(entities.size());
+            channel.putInt(details.size());
+            channel.putInt(changes.size());
+            channel.putInt(values.size());
             // now write out the content
             entities.serialize(channel);
             details.serialize(channel);

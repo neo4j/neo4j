@@ -82,7 +82,9 @@ public class InputStreamReadableChannel implements ReadableChannel {
     public int read(ByteBuffer dst) throws IOException {
         int remaining = dst.remaining();
         if (dst.hasArray()) {
-            return dataInputStream.read(dst.array(), dst.position(), remaining);
+            final var read = dataInputStream.read(dst.array(), dst.position(), remaining);
+            dst.position(dst.position() + read);
+            return read;
         }
 
         while (dst.hasRemaining()) {

@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel.CHUNK_SIZE;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -93,20 +95,20 @@ class WriteEnrichmentChannelTest {
         final var bytes = random.nextBytes(new byte[CHUNK_SIZE]);
 
         try (var channel = channel()) {
-            assertThat(channel.position()).isEqualTo(0L);
+            assertThat(channel.size()).isEqualTo(0L);
 
             channel.putLong(42L);
-            assertThat(channel.position()).isEqualTo(Long.BYTES);
+            assertThat(channel.size()).isEqualTo(Long.BYTES);
 
             channel.putLong(43L);
-            assertThat(channel.position()).isEqualTo(2 * Long.BYTES);
+            assertThat(channel.size()).isEqualTo(2 * Long.BYTES);
 
             channel.put(bytes);
-            assertThat(channel.position()).isEqualTo(CHUNK_SIZE + (2 * Long.BYTES));
+            assertThat(channel.size()).isEqualTo(CHUNK_SIZE + (2 * Long.BYTES));
 
             channel.put(bytes);
             channel.putLong(44L);
-            assertThat(channel.position()).isEqualTo((CHUNK_SIZE * 2) + (3 * Long.BYTES));
+            assertThat(channel.size()).isEqualTo((CHUNK_SIZE * 2) + (3 * Long.BYTES));
         }
     }
 
@@ -118,10 +120,10 @@ class WriteEnrichmentChannelTest {
 
         try (var channel = channel()) {
             channel.put(bytes);
-            assertThat(channel.position()).isEqualTo(bytesSize);
+            assertThat(channel.size()).isEqualTo(bytesSize);
 
             channel.putAll(buffer);
-            assertThat(channel.position()).isEqualTo(bytesSize * 2);
+            assertThat(channel.size()).isEqualTo(bytesSize * 2);
         }
     }
 
@@ -131,13 +133,13 @@ class WriteEnrichmentChannelTest {
         final var bytes = random.nextBytes(new byte[bytesSize]);
 
         try (var channel = channel()) {
-            assertThat(channel.position()).isEqualTo(0L);
+            assertThat(channel.size()).isEqualTo(0L);
 
             channel.put(bytes);
-            assertThat(channel.position()).isEqualTo(bytesSize);
+            assertThat(channel.size()).isEqualTo(bytesSize);
 
             channel.putLong(44L);
-            assertThat(channel.position()).isEqualTo(bytesSize + Long.BYTES);
+            assertThat(channel.size()).isEqualTo(bytesSize + Long.BYTES);
         }
     }
 
@@ -150,9 +152,7 @@ class WriteEnrichmentChannelTest {
             channel.put(bytes);
 
             assertThat(channel.peek(dataAndIndex.ix)).isEqualTo(bytes[dataAndIndex.ix]);
-            assertThat(channel.position())
-                    .as("position should not have changed")
-                    .isEqualTo(dataAndIndex.dataSize);
+            assertThat(channel.size()).as("position should not have changed").isEqualTo(dataAndIndex.dataSize);
 
             assertThatThrownBy(() -> channel.peek(dataAndIndex.dataSize))
                     .as("peeking outside of the channel's contents is an error")
@@ -171,9 +171,7 @@ class WriteEnrichmentChannelTest {
             assertThat(channel.peekChar(dataAndIndex.ix))
                     .isEqualTo(fillForPrimitive(Character.BYTES, bytes, dataAndIndex.ix)
                             .getChar());
-            assertThat(channel.position())
-                    .as("position should not have changed")
-                    .isEqualTo(dataAndIndex.dataSize);
+            assertThat(channel.size()).as("position should not have changed").isEqualTo(dataAndIndex.dataSize);
 
             assertThatThrownBy(() -> channel.peekChar(dataAndIndex.dataSize))
                     .as("peeking outside of the channel's contents is an error")
@@ -192,9 +190,7 @@ class WriteEnrichmentChannelTest {
             assertThat(channel.peekShort(dataAndIndex.ix))
                     .isEqualTo(fillForPrimitive(Short.BYTES, bytes, dataAndIndex.ix)
                             .getShort());
-            assertThat(channel.position())
-                    .as("position should not have changed")
-                    .isEqualTo(dataAndIndex.dataSize);
+            assertThat(channel.size()).as("position should not have changed").isEqualTo(dataAndIndex.dataSize);
 
             assertThatThrownBy(() -> channel.peekShort(dataAndIndex.dataSize))
                     .as("peeking outside of the channel's contents is an error")
@@ -213,9 +209,7 @@ class WriteEnrichmentChannelTest {
             assertThat(channel.peekInt(dataAndIndex.ix))
                     .isEqualTo(fillForPrimitive(Integer.BYTES, bytes, dataAndIndex.ix)
                             .getInt());
-            assertThat(channel.position())
-                    .as("position should not have changed")
-                    .isEqualTo(dataAndIndex.dataSize);
+            assertThat(channel.size()).as("position should not have changed").isEqualTo(dataAndIndex.dataSize);
 
             assertThatThrownBy(() -> channel.peekInt(dataAndIndex.dataSize))
                     .as("peeking outside of the channel's contents is an error")
@@ -234,9 +228,7 @@ class WriteEnrichmentChannelTest {
             assertThat(channel.peekLong(dataAndIndex.ix))
                     .isEqualTo(
                             fillForPrimitive(Long.BYTES, bytes, dataAndIndex.ix).getLong());
-            assertThat(channel.position())
-                    .as("position should not have changed")
-                    .isEqualTo(dataAndIndex.dataSize);
+            assertThat(channel.size()).as("position should not have changed").isEqualTo(dataAndIndex.dataSize);
 
             assertThatThrownBy(() -> channel.peekLong(dataAndIndex.dataSize))
                     .as("peeking outside of the channel's contents is an error")
@@ -261,9 +253,7 @@ class WriteEnrichmentChannelTest {
                 assertThat(actual).isEqualTo(expected);
             }
 
-            assertThat(channel.position())
-                    .as("position should not have changed")
-                    .isEqualTo(dataAndIndex.dataSize);
+            assertThat(channel.size()).as("position should not have changed").isEqualTo(dataAndIndex.dataSize);
 
             assertThatThrownBy(() -> channel.peekFloat(dataAndIndex.dataSize))
                     .as("peeking outside of the channel's contents is an error")
@@ -288,9 +278,7 @@ class WriteEnrichmentChannelTest {
                 assertThat(actual).isEqualTo(expected);
             }
 
-            assertThat(channel.position())
-                    .as("position should not have changed")
-                    .isEqualTo(dataAndIndex.dataSize);
+            assertThat(channel.size()).as("position should not have changed").isEqualTo(dataAndIndex.dataSize);
 
             assertThatThrownBy(() -> channel.peekDouble(dataAndIndex.dataSize))
                     .as("peeking outside of the channel's contents is an error")
@@ -377,6 +365,16 @@ class WriteEnrichmentChannelTest {
     }
 
     @Test
+    void serializeRequiresFlippedChannel() {
+        try (var channel = channel();
+                var buffer = new ChannelBuffer(channel.size())) {
+            assertThatThrownBy(() -> channel.serialize(buffer))
+                    .isInstanceOf(IOException.class)
+                    .hasMessage("Please ensure that the channel has been flipped");
+        }
+    }
+
+    @Test
     void serialize() throws IOException {
         final var lines = Lists.mutable.<PrimitiveLine>empty();
         for (int i = 0, length = random.nextInt(1, 5000); i < length; i++) {
@@ -394,8 +392,17 @@ class WriteEnrichmentChannelTest {
                         .putDouble(line.d);
             }
 
-            try (var buffer = new ChannelBuffer(channel.position())) {
-                channel.serialize(buffer);
+            final var sizeBeforeFlip = channel.size();
+            try (var buffer = new ChannelBuffer(sizeBeforeFlip)) {
+                final var flipped = channel.flip();
+                assertThat(flipped.size())
+                        .as("size should remain the same after a flip")
+                        .isEqualTo(sizeBeforeFlip);
+                flipped.serialize(buffer);
+                assertThat(flipped.size())
+                        .as("size should remain the same after a serialize")
+                        .isEqualTo(sizeBeforeFlip);
+
                 buffer.flip();
 
                 PrimitiveLine currentLine = null;
@@ -419,6 +426,36 @@ class WriteEnrichmentChannelTest {
 
                 assertThat(lines.isEmpty()).as("should have read all the data").isTrue();
             }
+        }
+    }
+
+    @Test
+    void serializeShouldBeAbleToRunConcurrently() {
+        final var count = 13;
+        try (var channel = channel()) {
+            for (var i = 0L; i < count; i++) {
+                channel.putLong(i);
+            }
+
+            channel.flip();
+
+            final var race = new Race();
+            race.addContestants(
+                    count,
+                    () -> {
+                        try (var buffer = new ChannelBuffer(channel.size())) {
+                            channel.serialize(buffer);
+                            buffer.flip();
+
+                            for (var i = 0L; i < count; i++) {
+                                assertThat(buffer.getLong()).isEqualTo(i);
+                            }
+                        } catch (IOException ex) {
+                            throw new UncheckedIOException(ex);
+                        }
+                    },
+                    666);
+            race.goUnchecked();
         }
     }
 

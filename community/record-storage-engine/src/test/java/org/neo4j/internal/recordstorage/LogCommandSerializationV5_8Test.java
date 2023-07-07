@@ -81,7 +81,7 @@ public class LogCommandSerializationV5_8Test {
         for (var entity : DUMMY_DATA) {
             dataChannel.putLong(entity);
         }
-        return dataChannel;
+        return dataChannel.flip();
     }
 
     static TxMetadata metadata() {

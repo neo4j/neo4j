@@ -38,7 +38,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
     private final MemoryTracker memoryTracker;
 
     private ByteBuffer currentChunk;
-    private boolean isClosed;
+    private State state = State.APPENDING;
 
     public WriteEnrichmentChannel(MemoryTracker memoryTracker) {
         this.memoryTracker = requireNonNull(memoryTracker);
@@ -46,12 +46,31 @@ public class WriteEnrichmentChannel implements WritableChannel {
     }
 
     /**
+     * Flips the state of this channel from write mode to read mode. For example, building up the enrichment data
+     * before serializing that data to some other {@link WritableChannel}
+     * @return this channel
+     */
+    public WriteEnrichmentChannel flip() {
+        if (state != State.FLIPPED) {
+            state = State.FLIPPED;
+            chunks.forEach(ByteBuffer::flip);
+        }
+        return this;
+    }
+
+    /**
+     * Serialize the enrichment content to the provided channel. Before this call, {@link WriteEnrichmentChannel#flip()}
+     * <strong>MUST</strong> be called and further data <strong>MUST NOT</strong> be appended.
      * @param channel the channel to write the data to
-     * @throws IOException if unable to write the data
+     * @throws IOException if unable to write the data or the channel has not been flipped
      */
     public void serialize(WritableChannel channel) throws IOException {
+        if (state != State.FLIPPED) {
+            throw new IOException("Please ensure that the channel has been flipped");
+        }
+
         for (var chunk : chunks) {
-            channel.putAll(chunk.flip());
+            channel.putAll(chunk.slice().order(ByteOrder.LITTLE_ENDIAN));
         }
     }
 
@@ -63,19 +82,19 @@ public class WriteEnrichmentChannel implements WritableChannel {
     }
 
     /**
-     * @return the current position at the end of the channel
+     * @return the current size of the enrichment data within the channel
      */
-    public int position() {
+    public int size() {
         var pos = 0;
         for (final ByteBuffer chunk : chunks) {
-            pos += chunk.position();
+            pos += size(chunk);
         }
         return pos;
     }
 
     public byte peek(int position) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 return chunk.get(position);
             }
@@ -88,7 +107,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public char peekChar(int position) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 return chunk.getChar(position);
             }
@@ -101,7 +120,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public short peekShort(int position) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 return chunk.getShort(position);
             }
@@ -114,7 +133,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public int peekInt(int position) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 return chunk.getInt(position);
             }
@@ -127,7 +146,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public long peekLong(int position) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 return chunk.getLong(position);
             }
@@ -140,7 +159,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public float peekFloat(int position) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 return chunk.getFloat(position);
             }
@@ -153,7 +172,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public double peekDouble(int position) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 return chunk.getDouble(position);
             }
@@ -166,7 +185,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public WriteEnrichmentChannel put(int position, byte value) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 chunk.put(position, value);
                 return this;
@@ -180,7 +199,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public WriteEnrichmentChannel putShort(int position, short value) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 chunk.putShort(position, value);
                 return this;
@@ -194,7 +213,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public WriteEnrichmentChannel putInt(int position, int value) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 chunk.putInt(position, value);
                 return this;
@@ -208,7 +227,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public WriteEnrichmentChannel putLong(int position, long value) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 chunk.putLong(position, value);
                 return this;
@@ -222,7 +241,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public WriteEnrichmentChannel putFloat(int position, float value) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 chunk.putFloat(position, value);
                 return this;
@@ -236,7 +255,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     public WriteEnrichmentChannel putDouble(int position, double value) {
         for (var chunk : chunks) {
-            final var endOfChunk = chunk.position();
+            final var endOfChunk = size(chunk);
             if (position < endOfChunk) {
                 chunk.putDouble(position, value);
                 return this;
@@ -349,13 +368,13 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     @Override
     public boolean isOpen() {
-        return !isClosed;
+        return state != State.CLOSED;
     }
 
     @Override
     public void close() {
-        if (!isClosed) {
-            isClosed = true;
+        if (state != State.CLOSED) {
+            state = State.CLOSED;
             memoryTracker.releaseHeap((long) chunks.size() * CHUNK_SIZE);
             chunks.close();
         }
@@ -378,5 +397,15 @@ public class WriteEnrichmentChannel implements WritableChannel {
         currentChunk = ByteBuffer.allocate(CHUNK_SIZE).order(ByteOrder.LITTLE_ENDIAN);
         chunks.add(currentChunk);
         return currentChunk;
+    }
+
+    private int size(ByteBuffer buffer) {
+        return (state == State.FLIPPED) ? buffer.limit() : buffer.position();
+    }
+
+    private enum State {
+        APPENDING,
+        FLIPPED,
+        CLOSED
     }
 }

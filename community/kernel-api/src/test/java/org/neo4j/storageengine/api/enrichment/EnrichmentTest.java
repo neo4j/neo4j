@@ -178,8 +178,12 @@ class EnrichmentTest {
             changesChannel.put(changesData);
             valuesChannel.put(valuesData);
 
-            final var enrichment =
-                    new Enrichment.Write(metadata, entitiesChannel, detailsChannel, changesChannel, valuesChannel);
+            final var enrichment = new Enrichment.Write(
+                    metadata,
+                    entitiesChannel.flip(),
+                    detailsChannel.flip(),
+                    changesChannel.flip(),
+                    valuesChannel.flip());
 
             final var capacity = 4096;
             try (var channel = new ChannelBuffer(capacity)) {
