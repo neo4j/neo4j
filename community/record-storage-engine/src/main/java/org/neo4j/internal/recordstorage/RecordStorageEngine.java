@@ -324,7 +324,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                         contextFactory,
                         pageCacheTracer,
                         getOpenOptions(),
-                        new RecordCountsBuilder(internalLogProvider, pageCache, contextFactory, layout));
+                        new RecordCountsBuilder(internalLogProvider, pageCache, contextFactory, layout),
+                        false);
     }
 
     private RelationshipGroupDegreesStore openDegreesStore(

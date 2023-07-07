@@ -830,7 +830,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         contextFactory,
                         pageCacheTracer,
                         openOptions,
-                        builder);
+                        builder,
+                        false);
     }
 
     @Override

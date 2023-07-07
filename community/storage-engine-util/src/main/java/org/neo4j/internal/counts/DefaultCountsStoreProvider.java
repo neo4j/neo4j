@@ -50,7 +50,8 @@ public class DefaultCountsStoreProvider implements CountsStoreProvider {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions,
-            CountsBuilder initialCountsBuilder) {
+            CountsBuilder initialCountsBuilder,
+            boolean readOnly) {
         try {
             return new GBPTreeCountsStore(
                     pageCache,
@@ -58,7 +59,7 @@ public class DefaultCountsStoreProvider implements CountsStoreProvider {
                     fs,
                     recoveryCleanupWorkCollector,
                     initialCountsBuilder,
-                    false,
+                    readOnly,
                     GBPTreeGenericCountsStore.NO_MONITOR,
                     layout.getDatabaseName(),
                     config.get(counts_store_max_cached_entries),

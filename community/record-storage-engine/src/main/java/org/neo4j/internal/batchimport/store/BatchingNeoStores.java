@@ -559,7 +559,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                         contextFactory,
                         pageCacheTracer,
                         getOpenOptions(),
-                        builder);
+                        builder,
+                        false);
     }
 
     @Override

@@ -319,7 +319,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         return maxKeyCount;
     }
 
-    private boolean reasonableKeyCount(int keyCount) {
+    protected boolean reasonableKeyCount(int keyCount) {
         return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
@@ -846,7 +846,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
             }
 
             // Verify no overlap between alloc space and active keys
-            int lowestActiveKeyOffset = lowestActiveKeyOffset(cursor, keyCount);
+            int lowestActiveKeyOffset = lowestActiveKeyOffset(cursor, keyCount, payloadSize);
             if (lowestActiveKeyOffset < allocOffset) {
                 hasInconsistency = true;
                 joiner.add(format(
@@ -877,7 +877,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     @Override
     public <ROOT_KEY> void deepVisitValue(PageCursor cursor, int pos, GBPTreeVisitor<ROOT_KEY, KEY, VALUE> visitor) {}
 
-    private int lowestActiveKeyOffset(PageCursor cursor, int keyCount) {
+    protected static int lowestActiveKeyOffset(PageCursor cursor, int keyCount, int payloadSize) {
         int lowestOffsetSoFar = payloadSize;
         for (int pos = 0; pos < keyCount; pos++) {
             // Set cursor to correct place in offset array

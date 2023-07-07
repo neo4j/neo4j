@@ -47,7 +47,8 @@ public interface CountsStoreProvider extends PrioritizedService {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions,
-            CountsBuilder initialCountsBuilder);
+            CountsBuilder initialCountsBuilder,
+            boolean readOnly);
 
     static CountsStoreProvider getInstance() {
         return CountsStoreProviderHolder.COUNTS_STORE_PROVIDER;

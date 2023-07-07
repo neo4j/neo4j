@@ -52,10 +52,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.CountsStoreProvider;
 import org.neo4j.internal.counts.DegreeStoreProvider;
 import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.counts.DegreesRebuilder;
-import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -402,34 +402,33 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         }
 
         try (var cursorContext = contextFactory.create(COUNT_STORE_CONSISTENCY_CHECKER_TAG);
-                var countsStore = new GBPTreeCountsStore(
-                        pageCache,
-                        databaseLayout.countStore(),
-                        fileSystem,
-                        RecoveryCleanupWorkCollector.ignore(),
-                        new CountsBuilder() {
-                            @Override
-                            public void initialize(
-                                    CountsAccessor.Updater updater,
-                                    CursorContext cursorContext,
-                                    MemoryTracker memoryTracker) {
-                                throw new UnsupportedOperationException(
-                                        "Counts store needed rebuild, consistency checker will instead report broken or missing store");
-                            }
+                var countsStore = CountsStoreProvider.getInstance()
+                        .openCountsStore(
+                                pageCache,
+                                fileSystem,
+                                databaseLayout,
+                                NullLogProvider.getInstance(),
+                                RecoveryCleanupWorkCollector.ignore(),
+                                Config.defaults(counts_store_max_cached_entries, 100),
+                                contextFactory,
+                                cacheTracer,
+                                neoStores.getOpenOptions(),
+                                new CountsBuilder() {
+                                    @Override
+                                    public void initialize(
+                                            CountsAccessor.Updater updater,
+                                            CursorContext cursorContext,
+                                            MemoryTracker memoryTracker) {
+                                        throw new UnsupportedOperationException(
+                                                "Counts store needed rebuild, consistency checker will instead report broken or missing store");
+                                    }
 
-                            @Override
-                            public long lastCommittedTxId() {
-                                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-                            }
-                        },
-                        true,
-                        GBPTreeCountsStore.NO_MONITOR,
-                        databaseLayout.getDatabaseName(),
-                        100,
-                        NullLogProvider.getInstance(),
-                        contextFactory,
-                        cacheTracer,
-                        neoStores.getOpenOptions());
+                                    @Override
+                                    public long lastCommittedTxId() {
+                                        return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                                    }
+                                },
+                                true);
                 var checker = observedCounts.checker(reporter)) {
             if (consistencyFlags.checkStructure()) {
                 consistencyCheckSingleCheckable(report, ProgressListener.NONE, countsStore, RecordType.COUNTS);
