@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.collector
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.GraphDatabaseTestSupport
 
 import java.util.concurrent.TimeUnit
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 trait SampleGraphs {
-  self: ExecutionEngineFunSuite =>
+  self: GraphDatabaseTestSupport =>
 
   protected def createSteelfaceGraph(): Unit = {
     graph.withTx(tx => {

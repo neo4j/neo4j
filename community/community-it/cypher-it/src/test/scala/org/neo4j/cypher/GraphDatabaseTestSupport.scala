@@ -157,6 +157,12 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
+  def selectDatabase(name: String): Unit = {
+    graphOps = managementService.database(name)
+    graph = new GraphDatabaseCypherService(graphOps)
+    onNewGraphDatabase()
+  }
+
   final protected def graphDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder = {
     val factory = createDatabaseFactory(databaseRootDir)
     this match {

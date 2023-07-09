@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher.CacheCounts
-import org.neo4j.cypher.CountingCacheTracer
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.CachingPreParser
@@ -51,6 +49,8 @@ import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WI
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.util.CountingCacheTracer
+import org.neo4j.cypher.util.CountingCacheTracer.CacheCounts
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider

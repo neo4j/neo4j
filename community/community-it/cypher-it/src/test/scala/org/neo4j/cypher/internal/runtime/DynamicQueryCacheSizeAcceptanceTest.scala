@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher.CountingCacheTracer
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
+import org.neo4j.cypher.util.CountingCacheTracer
 import org.neo4j.graphdb.config.Setting
 import org.scalatest.concurrent.Eventually.eventually
 
