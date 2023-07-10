@@ -207,7 +207,7 @@ public class FabricLocalExecutor {
             // so it is not possible to come up with a reasonable status code here.
             // The error is wrapped into a generic one
             // and a proper status code will be added later.
-            throw new TransactionFailureException("Unable to complete transaction.", e, Status.Database.Unknown);
+            throw new TransactionFailureException("Unable to complete transaction.", e, Status.General.UnknownError);
         }
     }
 

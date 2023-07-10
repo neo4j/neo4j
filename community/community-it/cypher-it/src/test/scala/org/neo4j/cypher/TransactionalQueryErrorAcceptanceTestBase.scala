@@ -27,7 +27,6 @@ import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService.TestApiKind
 import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
@@ -53,7 +52,7 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
     testApiKind match {
 
       case TestApiKind.Embedded =>
-        the[TransactionFailureException]
+        the[CypherExecutorException]
           .thrownBy(code)
           .getMessage.should(include(
             "can only be executed in an implicit transaction, but tried to execute in an explicit transaction."
