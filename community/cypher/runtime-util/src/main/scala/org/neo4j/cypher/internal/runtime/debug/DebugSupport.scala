@@ -57,7 +57,7 @@ object DebugSupport {
   final val SCHEDULING = new DebugLog(DEBUG_SCHEDULING, Cyan)
   final val ASM = new DebugLog(DEBUG_ASM, "")
   final val TRANSACTIONAL_CONTEXT = new DebugLog(DEBUG_TRANSACTIONAL_CONTEXT, Green)
-  final val MEMORY_TRACKING = new DebugLog(DEBUG_MEMORY_TRACKING, Red)
+  final val MEMORY_TRACKING = new DebugLog(DEBUG_MEMORY_TRACKING, Yellow)
   final val PROGRESS = new DebugLog(DEBUG_PROGRESS, Bold + Underline)
 
   /** COLORS AND FORMATTING **/
