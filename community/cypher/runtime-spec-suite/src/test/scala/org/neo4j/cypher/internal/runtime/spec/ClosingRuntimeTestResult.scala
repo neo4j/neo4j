@@ -92,7 +92,7 @@ class ClosingRuntimeTestResult(
               throw e
 
             case NonFatalCypherError(e) =>
-              // Ignore
+            // Ignore
           }
 
         case _ =>

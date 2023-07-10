@@ -166,6 +166,7 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
  * Tracks the heap high water mark for one Cypher query running with the parallel runtime.
  */
 class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
+
   private[this] val debugMemoryTracker = if (DEBUG_MEMORY_TRACKING) {
     new DebugMemoryTracker(new WorkerThreadDelegatingMemoryTracker)
   } else {
@@ -276,8 +277,15 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
   }
 }
 
-class DebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorProvider) extends MemoryTracker with MemoryTrackerForOperatorProvider {
-  private case class Allocation(allocationCount: Long, releaseCount: Long, allocations: Set[String], releases: Set[String])
+class DebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorProvider) extends MemoryTracker
+    with MemoryTrackerForOperatorProvider {
+
+  private case class Allocation(
+    allocationCount: Long,
+    releaseCount: Long,
+    allocations: Set[String],
+    releases: Set[String]
+  )
 
   private[this] val allocations = new ConcurrentHashMap[Long, Allocation]()
 
@@ -285,16 +293,23 @@ class DebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorPr
   override def estimatedHeapMemory(): Long = delegate.estimatedHeapMemory()
   override def allocateNative(bytes: Long): Unit = delegate.allocateNative(bytes)
   override def releaseNative(bytes: Long): Unit = delegate.releaseNative(bytes)
+
   override def allocateHeap(bytes: Long): Unit = {
-    allocations.compute(bytes, (_: Long, oldAllocation: Allocation) => {
-      val allocation = if (oldAllocation != null) {
-        oldAllocation
-      } else {
-        val newAllocation = Allocation(0, 0, Set.empty, Set.empty)
-        newAllocation
+    allocations.compute(
+      bytes,
+      (_: Long, oldAllocation: Allocation) => {
+        val allocation = if (oldAllocation != null) {
+          oldAllocation
+        } else {
+          val newAllocation = Allocation(0, 0, Set.empty, Set.empty)
+          newAllocation
+        }
+        allocation.copy(
+          allocationCount = allocation.allocationCount + 1,
+          allocations = allocation.allocations + stackTraceKey(new Throwable(s"allocateHeap($bytes)"))
+        )
       }
-      allocation.copy(allocationCount = allocation.allocationCount + 1, allocations = allocation.allocations + stackTraceKey(new Throwable(s"allocateHeap($bytes)")))
-    })
+    )
     delegate.allocateHeap(bytes)
   }
 
@@ -309,7 +324,10 @@ class DebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorPr
             val newAllocation = Allocation(0, 0, Set.empty, Set.empty)
             newAllocation
           }
-        allocation.copy(releaseCount = allocation.releaseCount + 1, releases = allocation.releases + stackTraceKey(new Throwable(s"releaseHeap($bytes)")))
+        allocation.copy(
+          releaseCount = allocation.releaseCount + 1,
+          releases = allocation.releases + stackTraceKey(new Throwable(s"releaseHeap($bytes)"))
+        )
       }
     )
     delegate.releaseHeap(bytes)
@@ -344,7 +362,14 @@ class DebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorPr
     allocations.forEach((bytes, allocation) => {
       if (allocation.allocationCount != allocation.releaseCount) {
         foundMismatch = true
-        printf("* Mismatched heap allocation of %s bytes: allocationCount=%s releaseCount=%s\n  Allocations:\n%s\n\n  Releases:\n%s\n\n", bytes, allocation.allocationCount, allocation.releaseCount, allocation.allocations.mkString("\n--------\n"), allocation.releases.mkString("\n--------\n"))
+        printf(
+          "* Mismatched heap allocation of %s bytes: allocationCount=%s releaseCount=%s\n  Allocations:\n%s\n\n  Releases:\n%s\n\n",
+          bytes,
+          allocation.allocationCount,
+          allocation.releaseCount,
+          allocation.allocations.mkString("\n--------\n"),
+          allocation.releases.mkString("\n--------\n")
+        )
       }
     })
     if (!foundMismatch) {
