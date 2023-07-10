@@ -240,8 +240,10 @@ final case class QuantifiedPathPattern(
     s"Not all singleton relationship variables ${relationshipVariableGroupings.map(_.singletonName)} were relationship names"
   )
 
-  private def singletonToGroup(groupings: Set[VariableGrouping], singleton: String): Option[String] =
-    groupings.find(_.singletonName == singleton).map(_.groupName)
+  private def singletonToGroup(groupings: Set[VariableGrouping], singletonName: String): Option[String] =
+    groupings.collectFirst {
+      case VariableGrouping(`singletonName`, groupName) => groupName
+    }
 
   override val left: String = leftBinding.outer
   override val right: String = rightBinding.outer

@@ -587,7 +587,7 @@ object expandSolverStep {
     )
   }
 
-  private def convertFromIr: SelectivePathPattern.Selector => StatefulShortestPath.Selector = {
+  private val convertFromIr: SelectivePathPattern.Selector => StatefulShortestPath.Selector = {
     // for now we will implement ANY via SHORTEST.
     case SelectivePathPattern.Selector.Any(k)            => StatefulShortestPath.Selector.Shortest(k)
     case SelectivePathPattern.Selector.ShortestGroups(k) => StatefulShortestPath.Selector.ShortestGroups(k)
