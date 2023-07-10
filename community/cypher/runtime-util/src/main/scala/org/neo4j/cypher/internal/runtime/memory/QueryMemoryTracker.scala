@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.memory
 
+import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap
 import org.neo4j.cypher.internal.config.CUSTOM_MEMORY_TRACKING
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING
 import org.neo4j.cypher.internal.config.MemoryTracking
 import org.neo4j.cypher.internal.config.NO_TRACKING
 import org.neo4j.cypher.internal.runtime.GrowingArray
+import org.neo4j.cypher.internal.runtime.debug.DebugSupport.DEBUG_MEMORY_TRACKING
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.MemoryTrackerPerOperator
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.OperatorMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
@@ -55,6 +57,8 @@ trait QueryMemoryTracker
    * tracked by this [[QueryMemoryTracker]].
    */
   def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker): MemoryTrackerForOperatorProvider
+
+  def debugPrintSummary(): Unit = {}
 }
 
 object QueryMemoryTracker {
@@ -162,6 +166,12 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
  * Tracks the heap high water mark for one Cypher query running with the parallel runtime.
  */
 class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
+  private[this] val debugMemoryTracker = if (DEBUG_MEMORY_TRACKING) {
+    new DebugMemoryTracker(new WorkerThreadDelegatingMemoryTracker)
+  } else {
+    null
+  }
+
   override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override def allocateHeap(bytes: Long): Unit = ???
@@ -169,11 +179,23 @@ class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
   override def releaseHeap(bytes: Long): Unit = ???
 
   override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
-    : MemoryTrackerForOperatorProvider = new WorkerThreadDelegatingMemoryTracker
+    : MemoryTrackerForOperatorProvider = {
+    if (DEBUG_MEMORY_TRACKING) {
+      debugMemoryTracker
+    } else {
+      new WorkerThreadDelegatingMemoryTracker
+    }
+  }
 
   override def heapHighWaterMarkOfOperator(operatorId: Int): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker = ???
+
+  override def debugPrintSummary(): Unit = {
+    if (DEBUG_MEMORY_TRACKING) {
+      debugMemoryTracker.debugPrintSummary()
+    }
+  }
 }
 
 /**
@@ -251,6 +273,83 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
 
   override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit = {
     _initializationMemoryTracker = memoryTracker
+  }
+}
+
+class DebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorProvider) extends MemoryTracker with MemoryTrackerForOperatorProvider {
+  private case class Allocation(allocationCount: Long, releaseCount: Long, allocations: Set[String], releases: Set[String])
+
+  private[this] val allocations = new ConcurrentHashMap[Long, Allocation]()
+
+  override def usedNativeMemory(): Long = delegate.usedNativeMemory()
+  override def estimatedHeapMemory(): Long = delegate.estimatedHeapMemory()
+  override def allocateNative(bytes: Long): Unit = delegate.allocateNative(bytes)
+  override def releaseNative(bytes: Long): Unit = delegate.releaseNative(bytes)
+  override def allocateHeap(bytes: Long): Unit = {
+    allocations.compute(bytes, (_: Long, oldAllocation: Allocation) => {
+      val allocation = if (oldAllocation != null) {
+        oldAllocation
+      } else {
+        val newAllocation = Allocation(0, 0, Set.empty, Set.empty)
+        newAllocation
+      }
+      allocation.copy(allocationCount = allocation.allocationCount + 1, allocations = allocation.allocations + stackTraceKey(new Throwable(s"allocateHeap($bytes)")))
+    })
+    delegate.allocateHeap(bytes)
+  }
+
+  override def releaseHeap(bytes: Long): Unit = {
+    allocations.compute(
+      bytes,
+      (_: Long, oldAllocation: Allocation) => {
+        val allocation =
+          if (oldAllocation != null) {
+            oldAllocation
+          } else {
+            val newAllocation = Allocation(0, 0, Set.empty, Set.empty)
+            newAllocation
+          }
+        allocation.copy(releaseCount = allocation.releaseCount + 1, releases = allocation.releases + stackTraceKey(new Throwable(s"releaseHeap($bytes)")))
+      }
+    )
+    delegate.releaseHeap(bytes)
+  }
+  override def heapHighWaterMark(): Long = delegate.heapHighWaterMark()
+  override def reset(): Unit = delegate.reset()
+  override def getScopedMemoryTracker: MemoryTracker = delegate.getScopedMemoryTracker
+
+  private def stackTraceKey(t: Throwable): String = {
+    // Make a key of the stack trace
+    // Do not include suppressed or intermediate causes
+    val nl = System.lineSeparator()
+    val sb = new StringBuilder()
+    sb ++= t.getClass.getCanonicalName
+    sb ++= nl
+    sb ++= t.getMessage.hashCode.toString
+    sb ++= nl
+    sb ++= t.getStackTrace.mkString(nl)
+    sb.result()
+  }
+
+  override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = {
+    this
+  }
+
+  override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit = {
+    delegate.setInitializationMemoryTracker(memoryTracker)
+  }
+
+  def debugPrintSummary(): Unit = {
+    var foundMismatch = false
+    allocations.forEach((bytes, allocation) => {
+      if (allocation.allocationCount != allocation.releaseCount) {
+        foundMismatch = true
+        printf("* Mismatched heap allocation of %s bytes: allocationCount=%s releaseCount=%s\n  Allocations:\n%s\n\n  Releases:\n%s\n\n", bytes, allocation.allocationCount, allocation.releaseCount, allocation.allocations.mkString("\n--------\n"), allocation.releases.mkString("\n--------\n"))
+      }
+    })
+    if (!foundMismatch) {
+      print("Heap allocations OK\n")
+    }
   }
 }
 
