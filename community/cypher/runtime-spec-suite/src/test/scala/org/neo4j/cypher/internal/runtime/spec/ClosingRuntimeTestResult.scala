@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.cypher.internal.NonFatalCypherError
 import org.neo4j.cypher.internal.result.AsyncCleanupOnClose
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.exceptions.QueryExecutionTimeoutException
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -51,6 +53,8 @@ class ClosingRuntimeTestResult(
   private var _pageCacheMisses: Long = -1L
   private var _isClosed: Boolean = _
 
+  txContext.statement().registerCloseableResource(this)
+
   @VisibleForTesting
   def getInner: RuntimeResult = inner
 
@@ -66,6 +70,8 @@ class ClosingRuntimeTestResult(
 
   override def close(): Unit = {
     if (!_isClosed) {
+      _isClosed = true
+      txContext.statement().unregisterCloseableResource(this)
       inner.close()
       // TODO: Consider sharing implementation with StandardInternalExecutionResult
       inner match {
@@ -75,13 +81,24 @@ class ClosingRuntimeTestResult(
           }
           result.registerOnFinishedCallback(onFinishedCallback)
           inner.cancel()
-          inner.awaitCleanup()
+          try {
+            inner.awaitCleanup()
+          } catch {
+            // For some reason await() throws the same error that has already been passed to onError()
+            // in case an error has occurred on request() or cancel().
+            // We need to ignore it here, _except_ when there is a timeout we are interested as it could be a
+            // problem with the await itself
+            case e: QueryExecutionTimeoutException =>
+              throw e
+
+            case NonFatalCypherError(e) =>
+              // Ignore
+          }
 
         case _ =>
           inner.cancel()
           closeResources()
       }
-      _isClosed = true
       assertAllReleased()
     }
   }
