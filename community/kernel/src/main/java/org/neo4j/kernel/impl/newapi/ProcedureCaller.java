@@ -331,8 +331,7 @@ public abstract class ProcedureCaller {
                 // That is actually a quite expensive operation to do for every update call of an aggregation function.
                 // Since only read operations are currently supported during parallel execution,
                 // the expensive access mode restricting is not needed for execution context API.
-                return procedureView.createAggregationFunction(
-                        prepareContext(securityContext(), context), id);
+                return procedureView.createAggregationFunction(prepareContext(securityContext(), context), id);
             }
         }
 

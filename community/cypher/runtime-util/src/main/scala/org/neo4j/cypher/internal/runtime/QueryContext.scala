@@ -453,7 +453,7 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   override def dataRead: Read = transactionalContext.dataRead
 
-  override def databaseId(): NamedDatabaseId = transactionalContext.databaseId
+  override def databaseIdOrNull(): NamedDatabaseId = transactionalContext.databaseId
 }
 
 trait WriteQueryContext {

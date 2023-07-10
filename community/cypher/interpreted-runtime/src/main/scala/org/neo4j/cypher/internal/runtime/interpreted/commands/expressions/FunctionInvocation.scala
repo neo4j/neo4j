@@ -51,22 +51,36 @@ abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array
   protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue
 
   override def toString = s"${signature.name}(${input.mkString(",")})"
+
+  protected def procedureCallContext(query: QueryContext, runtimeUsed: String): ProcedureCallContext = {
+    val databaseId = query.databaseIdOrNull()
+    if (databaseId != null) {
+      new ProcedureCallContext(
+        signature.id,
+        Array.empty,
+        true,
+        databaseId.name(),
+        databaseId.isSystemDatabase,
+        runtimeUsed
+      )
+    } else {
+      new ProcedureCallContext(
+        signature.id,
+        Array.empty,
+        true,
+        "",
+        false,
+        runtimeUsed
+      )
+    }
+  }
 }
 
 case class BuiltInFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression], runtimeUsed: String)
     extends FunctionInvocation(signature, input) {
 
   override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = {
-    val databaseId = query.transactionalContext.databaseId
-    val context = new ProcedureCallContext(
-      signature.id,
-      Array.empty,
-      true,
-      databaseId.name(),
-      databaseId.isSystemDatabase,
-      runtimeUsed
-    )
-    query.callBuiltInFunction(signature.id, argValues, context)
+    query.callBuiltInFunction(signature.id, argValues, procedureCallContext(query, runtimeUsed))
   }
 
   override def rewrite(f: Expression => Expression): Expression =
@@ -77,16 +91,7 @@ case class UserFunctionInvocation(signature: UserFunctionSignature, input: Array
     extends FunctionInvocation(signature, input) {
 
   override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = {
-    val databaseId = query.transactionalContext.databaseId
-    val context = new ProcedureCallContext(
-      signature.id,
-      Array.empty,
-      true,
-      databaseId.name(),
-      databaseId.isSystemDatabase,
-      runtimeUsed
-    )
-    query.callFunction(signature.id, argValues, context)
+    query.callFunction(signature.id, argValues, procedureCallContext(query, runtimeUsed))
   }
 
   override def rewrite(f: Expression => Expression): Expression =

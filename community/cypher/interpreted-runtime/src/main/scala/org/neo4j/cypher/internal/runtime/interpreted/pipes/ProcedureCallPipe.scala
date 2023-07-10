@@ -61,15 +61,26 @@ case class ProcedureCallPipe(
   private def createProcedureCallContext(qtx: QueryContext): ProcedureCallContext = {
     // getting the original name of the yielded variable
     val originalVariables = resultIndices.map(_._2._2).toArray
-    val databaseId = qtx.transactionalContext.databaseId
-    new ProcedureCallContext(
-      signature.id,
-      originalVariables,
-      true,
-      databaseId.name(),
-      databaseId.isSystemDatabase,
-      rowFactory.runtimeName
-    )
+    val databaseId = qtx.databaseIdOrNull()
+    if (databaseId != null) {
+      new ProcedureCallContext(
+        signature.id,
+        originalVariables,
+        true,
+        databaseId.name(),
+        databaseId.isSystemDatabase,
+        rowFactory.runtimeName
+      )
+    } else {
+      new ProcedureCallContext(
+        signature.id,
+        originalVariables,
+        true,
+        "",
+        false,
+        rowFactory.runtimeName
+      )
+    }
   }
 
   override protected def internalCreateResults(

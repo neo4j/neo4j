@@ -209,5 +209,5 @@ public interface DbAccess extends EntityById {
 
     Read dataRead();
 
-    NamedDatabaseId databaseId();
+    NamedDatabaseId databaseIdOrNull();
 }

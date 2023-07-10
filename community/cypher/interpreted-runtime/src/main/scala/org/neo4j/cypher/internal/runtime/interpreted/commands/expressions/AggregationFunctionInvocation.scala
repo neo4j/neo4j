@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -74,6 +75,29 @@ abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
   override def children: Seq[AstNode[_]] = arguments
 
   protected def call(state: QueryState): UserAggregationReducer
+
+  protected def procedureCallContext(query: QueryContext, fcnId: Int, runtimeUsed: String): ProcedureCallContext = {
+    val databaseId = query.databaseIdOrNull()
+    if (databaseId != null) {
+      new ProcedureCallContext(
+        fcnId,
+        Array.empty,
+        true,
+        databaseId.name(),
+        databaseId.isSystemDatabase,
+        runtimeUsed
+      )
+    } else {
+      new ProcedureCallContext(
+        fcnId,
+        Array.empty,
+        true,
+        "",
+        false,
+        runtimeUsed
+      )
+    }
+  }
 }
 
 object AggregationFunctionInvocation {
@@ -104,16 +128,7 @@ case class UserAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[E
     f(UserAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f)), runtimeUsed))
 
   override protected def call(state: QueryState): UserAggregationReducer = {
-    val databaseId = state.query.transactionalContext.databaseId
-    val context = new ProcedureCallContext(
-      fcnId,
-      Array.empty,
-      true,
-      databaseId.name(),
-      databaseId.isSystemDatabase,
-      runtimeUsed
-    )
-    state.query.aggregateFunction(fcnId, context)
+    state.query.aggregateFunction(fcnId, procedureCallContext(state.query, fcnId, runtimeUsed))
   }
 }
 
@@ -124,15 +139,6 @@ case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSe
     f(BuiltInAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f)), runtimeUsed))
 
   override protected def call(state: QueryState): UserAggregationReducer = {
-    val databaseId = state.query.transactionalContext.databaseId
-    val context = new ProcedureCallContext(
-      fcnId,
-      Array.empty,
-      true,
-      databaseId.name(),
-      databaseId.isSystemDatabase,
-      runtimeUsed
-    )
-    state.query.builtInAggregateFunction(fcnId, context)
+    state.query.builtInAggregateFunction(fcnId, procedureCallContext(state.query, fcnId, runtimeUsed))
   }
 }

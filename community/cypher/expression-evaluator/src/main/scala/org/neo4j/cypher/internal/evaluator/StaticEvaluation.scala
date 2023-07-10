@@ -66,6 +66,7 @@ import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.index.IndexUsageStats
+import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.logging.InternalLogProvider
@@ -612,6 +613,8 @@ object StaticEvaluation {
     override def getConfig: Config = notAvailable()
 
     override def entityTransformer: EntityTransformer = notAvailable()
+
+    override def databaseIdOrNull(): NamedDatabaseId = null
   }
 
 }
