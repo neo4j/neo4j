@@ -556,8 +556,8 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
     extends ExceptionTranslatingReadQueryContext(inner)
     with QueryContext with ExceptionTranslationSupport {
 
-  override def createParallelQueryContext(): QueryContext = {
-    new ExceptionTranslatingQueryContext(inner.createParallelQueryContext())
+  override def createParallelQueryContext(initialHeapMemory: Long): QueryContext = {
+    new ExceptionTranslatingQueryContext(inner.createParallelQueryContext(initialHeapMemory))
   }
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
