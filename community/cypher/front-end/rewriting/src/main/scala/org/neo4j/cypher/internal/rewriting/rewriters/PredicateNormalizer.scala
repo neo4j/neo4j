@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -52,7 +52,7 @@ trait PredicateNormalizer {
   final def extractAllFrom(pattern: AnyRef): Seq[Expression] =
     pattern.folder.treeFold(Vector.empty[Expression]) {
       case _: QuantifiedPath | _: ExistsExpression | _: CountExpression => acc => SkipChildren(acc)
-      case PatternPartWithSelector(selector, _) if !selector.isInstanceOf[PatternPart.AllPaths] =>
+      case PatternPartWithSelector(_: SelectiveSelector, _) =>
         acc => SkipChildren(acc)
       case patternElement: AnyRef if extract.isDefinedAt(patternElement) =>
         acc => TraverseChildren(acc ++ extract(patternElement))
@@ -64,9 +64,9 @@ trait PredicateNormalizer {
       topDown(
         Rewriter.lift(replace),
         stopper = {
-          case _: QuantifiedPath                    => true
-          case PatternPartWithSelector(selector, _) => !selector.isInstanceOf[PatternPart.AllPaths]
-          case _                                    => false
+          case _: QuantifiedPath                                => true
+          case PatternPartWithSelector(_: SelectiveSelector, _) => true
+          case _                                                => false
         }
       )
     )

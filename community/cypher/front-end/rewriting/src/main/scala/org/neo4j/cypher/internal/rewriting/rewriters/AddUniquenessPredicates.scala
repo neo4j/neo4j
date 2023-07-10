@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.Range
@@ -120,7 +121,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
       val rels: Seq[NodeConnection] = collectRelationships(pattern)
       val newWhere = withPredicates(m, rels, where)
       m.copy(where = newWhere)(m.position)
-    case part: PatternPartWithSelector if !part.selector.isInstanceOf[PatternPart.AllPaths] =>
+    case part @ PatternPartWithSelector(_: SelectiveSelector, _) =>
       part.element match {
         case path: ParenthesizedPath =>
           val relationships = collectRelationships(path.part.element)
@@ -180,7 +181,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
       case _: ScopeExpression =>
         acc => SkipChildren(acc)
 
-      case PatternPartWithSelector(selector, _) if !selector.isInstanceOf[PatternPart.AllPaths] =>
+      case PatternPartWithSelector(_: SelectiveSelector, _) =>
         acc => SkipChildren(acc)
 
       case qpp: QuantifiedPath =>

@@ -126,7 +126,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     part match {
       case x: PatternPartWithSelector =>
         check(ctx)(x.part) chain
-          when(!x.selector.isInstanceOf[PatternPart.AllPaths]) {
+          when(x.isSelective) {
             checkContext(ctx, s"Path selectors such as `${x.selector.prettified}`", x.selector.position) chain
               whenState(!_.features.contains(SemanticFeature.GpmShortestPath)) {
                 error(s"Path selectors such as `${x.selector.prettified}` are not supported yet", x.selector.position)

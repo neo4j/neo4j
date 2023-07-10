@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
@@ -90,7 +90,7 @@ case class normalizePredicates(normalizer: PredicateNormalizer) extends Rewriter
         predicate = newPredicate
       )(p.position, p.computedIntroducedVariables, p.computedScopeDependencies)
 
-    case part: PatternPartWithSelector if !part.selector.isInstanceOf[PatternPart.AllPaths] =>
+    case part @ PatternPartWithSelector(_: SelectiveSelector, _) =>
       part.element match {
         case path: ParenthesizedPath =>
           val predicates = normalizer.extractAllFrom(path.part.element) ++ path.optionalWhereClause
