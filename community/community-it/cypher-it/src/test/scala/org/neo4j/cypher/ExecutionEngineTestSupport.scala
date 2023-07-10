@@ -73,6 +73,10 @@ trait ExecutionEngineTestSupport extends ExecutionEngineHelper {
     eengine = null
   }
 
+  override protected def onSelectDatabase(): Unit = {
+    eengine = createEngine(graph)
+  }
+
   override def executeScalar[T](q: String, params: (String, Any)*): T =
     try {
       super.executeScalar[T](q, params: _*)

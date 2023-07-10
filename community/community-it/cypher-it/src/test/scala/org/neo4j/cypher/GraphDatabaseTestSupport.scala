@@ -125,6 +125,7 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
 
   protected def onNewGraphDatabase(): Unit = ()
   protected def onDeletedGraphDatabase(): Unit = ()
+  protected def onSelectDatabase(): Unit = ()
 
   protected def beginTransaction(`type`: KernelTransaction.Type, loginContext: LoginContext): InternalTransaction = {
     if (tx != null) {
@@ -160,7 +161,7 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
   def selectDatabase(name: String): Unit = {
     graphOps = managementService.database(name)
     graph = new GraphDatabaseCypherService(graphOps)
-    onNewGraphDatabase()
+    onSelectDatabase()
   }
 
   final protected def graphDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder = {
