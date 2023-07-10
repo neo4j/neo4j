@@ -233,6 +233,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should kill partial sort query before it runs out of memory") {
+    assume(!isParallel)
+
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -418,7 +420,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val (nodes, _) = circleGraph(1)
+    val (nodes, _) = given { circleGraph(1) }
     val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, Some(_ => Array(nodes.head, nodes.head)))
 
     // then
@@ -637,6 +639,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should kill partial top query before it runs out of memory") {
+    assume(!isParallel)
+
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -654,6 +658,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not kill partial top query with distinct ordered rows") {
+    assume(!isParallel)
+
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -726,7 +732,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val (nodes, _) = circleGraph(1) // Just for size estimation
+    val (nodes, _) = given { circleGraph(1) } // Just for size estimation
     val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
 
     // then
