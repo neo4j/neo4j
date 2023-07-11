@@ -643,8 +643,27 @@ object ReadFinder {
         ) =>
         processShortestPaths(relationship, types)
 
-      case StatefulShortestPath(_, sourceNode, targetNode, nfa, _, pathNodes, pathRels, singleNodes, _, _) =>
-        processStatefulShortest(sourceNode, targetNode, nfa, pathNodes, pathRels, singleNodes)
+      case StatefulShortestPath(
+          _,
+          sourceNode,
+          targetNode,
+          nfa,
+          _,
+          nodeVariableGroupings,
+          relationshipVariableGroupings,
+          singletonVariables,
+          _,
+          _
+        ) =>
+        processStatefulShortest(
+          sourceNode,
+          targetNode,
+          nfa,
+          nodeVariableGroupings,
+          relationshipVariableGroupings,
+          singletonVariables,
+          semanticTable
+        )
 
       case ProduceResult(_, columns) =>
         // A ProduceResult can reference entities. These must be captured with
@@ -962,9 +981,10 @@ object ReadFinder {
     sourceNode: LogicalVariable,
     targetNode: LogicalVariable,
     nfa: NFA,
-    pathNodes: Set[Trail.VariableGrouping],
-    pathRels: Set[Trail.VariableGrouping],
-    singleNodes: Set[LogicalVariable]
+    nodeVariableGroupings: Set[Trail.VariableGrouping],
+    relationshipVariableGroupings: Set[Trail.VariableGrouping],
+    singletonVariables: Set[LogicalVariable],
+    semanticTable: SemanticTable
   ): PlanReads = {
 
     def getExpressions(nfa: NFA): (Set[Expand.VariablePredicate], Set[Expand.VariablePredicate]) = {
@@ -986,13 +1006,20 @@ object ReadFinder {
     val initialRead = PlanReads()
       .withReferencedNodeVariable(sourceNode)
       .withIntroducedNodeVariable(targetNode)
-    val readWithPathNodes = pathNodes.foldLeft(initialRead) { (acc, pathNode) =>
+    val readWithPathNodes = nodeVariableGroupings.foldLeft(initialRead) { (acc, pathNode) =>
       acc.withIntroducedNodeVariable(pathNode.singletonName)
     }
-    val readWithAllNodes = singleNodes.foldLeft(readWithPathNodes) { (acc, singleNode) =>
-      acc.withIntroducedNodeVariable(singleNode)
+    val readWithAllNodes = singletonVariables.foldLeft(readWithPathNodes) { (acc, singletonVariable) =>
+      var res = acc
+      if (semanticTable.typeFor(singletonVariable).couldBe(CTNode)) {
+        res = res.withIntroducedNodeVariable(singletonVariable)
+      }
+      if (semanticTable.typeFor(singletonVariable).couldBe(CTRelationship)) {
+        res = res.withIntroducedRelationshipVariable(singletonVariable)
+      }
+      res
     }
-    val readWithPathRels = pathRels.foldLeft(readWithAllNodes) { (acc, pathRel) =>
+    val readWithPathRels = relationshipVariableGroupings.foldLeft(readWithAllNodes) { (acc, pathRel) =>
       acc.withIntroducedRelationshipVariable(pathRel.singletonName)
     }
     val (nodeExpr, relExpr) = getExpressions(nfa)

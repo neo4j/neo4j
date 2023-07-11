@@ -7068,6 +7068,52 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("Insert eager between shortest path pattern and create relationship") {
+    val nfa = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a)-[r]->(b)")
+      .addFinalState(1)
+      .build()
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createRelationship("r2", "a", "REL", "b"))
+      .statefulShortestPath(
+        "a",
+        "b",
+        "SHORTEST 1 ((a)-[r]->(b))",
+        None,
+        Set(),
+        Set(),
+        singletonVariables = Set("a", "r", "b"),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa
+      )
+      .nodeByLabelScan("a", "A")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .create(createRelationship("r2", "a", "REL", "b"))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("REL")).withConflict(Conflict(Id(1), Id(2)))))
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a)-[r]->(b))",
+          None,
+          Set(),
+          Set(),
+          singletonVariables = Set("a", "r", "b"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
   test("Insert eager between shortest path pattern and delete") {
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
