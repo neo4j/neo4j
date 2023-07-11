@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -73,7 +72,6 @@ import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -179,13 +177,11 @@ import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters.ShortestPathsConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.DeleteOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.LegacyShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.RemoveLabelsOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
@@ -239,7 +235,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.IntersectionNodeByLab
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LegacyShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSelectOrSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
@@ -1246,38 +1241,6 @@ case class InterpretedPipeMapper(
           maxDepth,
           single && !withFallBack
         )(id)
-
-      case LegacyFindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
-        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(
-          id,
-          shortestPathPattern.name.map(_.name),
-          expressionConverters,
-          anonymousVariableNameGenerator
-        ).head
-        val pathVariables = Set(legacyShortestPath.pathName, legacyShortestPath.relIterator.getOrElse(""))
-
-        def noDependency(expression: internal.expressions.Expression) =
-          (expression.dependencies.map(_.name) intersect pathVariables).isEmpty
-
-        val (perStepPredicates, fullPathPredicates) = predicates.partition {
-          case p: IterablePredicateExpression =>
-            noDependency(
-              p.innerPredicate.getOrElse(throw new InternalException("This should have been handled in planning"))
-            )
-          case e => noDependency(e)
-        }
-        val commandPerStepPredicates = perStepPredicates.map(p => buildPredicate(id, p))
-        val commandFullPathPredicates = fullPathPredicates.map(p => buildPredicate(id, p))
-
-        val commandExpression = LegacyShortestPathExpression(
-          legacyShortestPath,
-          commandPerStepPredicates,
-          commandFullPathPredicates,
-          withFallBack,
-          disallowSameNode,
-          id
-        )
-        LegacyShortestPathPipe(source, commandExpression)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable.name)(id = id)

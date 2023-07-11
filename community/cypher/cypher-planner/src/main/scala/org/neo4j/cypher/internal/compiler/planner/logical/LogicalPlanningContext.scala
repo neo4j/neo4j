@@ -128,7 +128,6 @@ object LogicalPlanningContext {
     csvBufferSize: Int = GraphDatabaseSettings.csv_buffer_size.defaultValue().intValue(),
     planningIntersectionScansEnabled: Boolean =
       GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
-    useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue(),
     eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default
   ) {
 
@@ -152,7 +151,6 @@ object LogicalPlanningContext {
           legacyCsvQuoteEscaping: Boolean,
           csvBufferSize: Int,
           planningIntersectionScansEnabled: Boolean,
-          useLegacyShortestPath: Boolean,
           eagerAnalyzer: CypherEagerAnalyzerOption
         ) =>
         val builder = Seq.newBuilder[Any]

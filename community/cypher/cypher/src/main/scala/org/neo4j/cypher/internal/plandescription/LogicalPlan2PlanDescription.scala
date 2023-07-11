@@ -130,7 +130,6 @@ import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -1495,41 +1494,6 @@ case class LogicalPlan2PlanDescription(
           "ShortestPath",
           children,
           Seq(Details(pretty"$pathPrefix$patternRelationshipInfo$predicatesDescription")),
-          variables,
-          withRawCardinalities
-        )
-
-      case LegacyFindShortestPaths(
-          _,
-          ShortestRelationshipPattern(
-            maybePathName,
-            PatternRelationship(relName, (fromName, toName), dir, relTypes, patternLength: PatternLength),
-            isSingle
-          ),
-          predicates,
-          _,
-          _
-        ) =>
-        val patternRelationshipInfo =
-          expandExpressionDescription(fromName, Some(relName), relTypes.map(_.name), toName, dir, patternLength)
-
-        val predicatesInfo =
-          if (predicates.isEmpty) {
-            pretty""
-          } else {
-            pretty" WHERE ${predicates.map(asPrettyString(_)).mkPrettyString(" AND ")}"
-          }
-
-        val pathName = maybePathName match {
-          case Some(p) => pretty"${asPrettyString(p)} = "
-          case _       => pretty""
-        }
-
-        PlanDescriptionImpl(
-          id,
-          "LegacyShortestPath",
-          children,
-          Seq(Details(pretty"$pathName$patternRelationshipInfo$predicatesInfo")),
           variables,
           withRawCardinalities
         )

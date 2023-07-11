@@ -26,14 +26,11 @@ import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityTransformer
-import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
-import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -45,9 +42,7 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
-import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
@@ -73,7 +68,6 @@ import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.logging.InternalLogProvider
-import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -411,26 +405,6 @@ object StaticEvaluation {
     override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = notAvailable()
 
     override def asObject(value: AnyValue): AnyRef = notAvailable()
-
-    override def singleShortestPath(
-      left: Long,
-      right: Long,
-      depth: Int,
-      expander: Expander,
-      pathPredicate: KernelPredicate[Path],
-      filters: Seq[KernelPredicate[Entity]],
-      memoryTracker: MemoryTracker
-    ): Option[Path] = notAvailable()
-
-    override def allShortestPath(
-      left: Long,
-      right: Long,
-      depth: Int,
-      expander: Expander,
-      pathPredicate: KernelPredicate[Path],
-      filters: Seq[KernelPredicate[Entity]],
-      memoryTracker: MemoryTracker
-    ): ClosingIterator[Path] = notAvailable()
 
     override def nodeCountByCountStore(labelId: Int): Long = notAvailable()
 

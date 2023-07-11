@@ -27,13 +27,10 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.EntityTransformer
-import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
-import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -48,9 +45,7 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
-import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
@@ -74,7 +69,6 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.InternalLogProvider
-import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -434,34 +428,6 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
     translateException(tokenNameLookup, inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey))
-
-  override def singleShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker
-  ): Option[Path] =
-    translateException(
-      tokenNameLookup,
-      inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker)
-    )
-
-  override def allShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker
-  ): ClosingIterator[Path] =
-    translateException(
-      tokenNameLookup,
-      inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker)
-    )
 
   override def nodeCountByCountStore(labelId: Int): Long =
     translateException(tokenNameLookup, inner.nodeCountByCountStore(labelId))

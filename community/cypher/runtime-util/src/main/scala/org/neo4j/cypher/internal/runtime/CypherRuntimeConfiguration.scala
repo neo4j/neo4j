@@ -40,7 +40,6 @@ object CypherRuntimeConfiguration {
       executionPlanCacheSize = config.executionPlanCacheSize,
       renderPlanDescription = config.renderPlanDescription,
       varExpandRelationshipIdSetThreshold = config.varExpandRelationshipIdSetThreshold,
-      useLegacyShortestPath = config.useLegacyShortestPath,
       compiledExpressionMethodLimit = config.compiledExpressionMethodLimit,
       operatorFusingMethodLimit = config.operatorFusingMethodLimit
     )
@@ -61,7 +60,6 @@ case class CypherRuntimeConfiguration(
   executionPlanCacheSize: Int,
   renderPlanDescription: Boolean,
   varExpandRelationshipIdSetThreshold: Int,
-  useLegacyShortestPath: Boolean,
   compiledExpressionMethodLimit: Int,
   operatorFusingMethodLimit: Int
 ) {

@@ -31,7 +31,6 @@ import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.IndexReadSession
@@ -75,7 +74,6 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.InternalLogProvider
-import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.PropertySelection
 import org.neo4j.storageengine.api.Reference
@@ -261,26 +259,6 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean
 
   def asObject(value: AnyValue): AnyRef
-
-  def singleShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE
-  ): Option[Path]
-
-  def allShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE
-  ): ClosingIterator[Path]
 
   def lockNodes(nodeIds: Long*): Unit
 

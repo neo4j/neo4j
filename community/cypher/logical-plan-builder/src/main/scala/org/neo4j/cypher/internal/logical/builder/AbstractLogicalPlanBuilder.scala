@@ -118,7 +118,6 @@ import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -516,23 +515,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       disallowSameNode
     )
 
-  def legacyShortestPath(
-    pattern: String,
-    pathName: Option[String] = None,
-    all: Boolean = false,
-    predicates: Seq[String] = Seq.empty,
-    withFallback: Boolean = false,
-    disallowSameNode: Boolean = true
-  ): IMPL =
-    legacyShortestPathSolver(
-      pattern,
-      pathName,
-      all,
-      predicates.map(parseExpression),
-      withFallback,
-      disallowSameNode
-    )
-
   def shortestPathExpr(
     pattern: String,
     pathName: Option[String] = None,
@@ -639,58 +621,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         nodePredicates,
         relationshipPredicates,
         pathPredicates,
-        withFallback,
-        disallowSameNode
-      )(_)
-    ))
-  }
-
-  private def legacyShortestPathSolver(
-    pattern: String,
-    pathName: Option[String],
-    all: Boolean,
-    predicates: Seq[Expression],
-    withFallback: Boolean,
-    disallowSameNode: Boolean
-  ): IMPL = {
-    val p = patternParser.parse(pattern)
-    newRelationship(varFor(p.relName))
-
-    val length = p.length match {
-      case SimplePatternLength => None
-      case VarPatternLength(min, max) => Some(Some(Range(
-          Some(UnsignedDecimalIntegerLiteral(min.toString)(pos)),
-          max.map(i => UnsignedDecimalIntegerLiteral(i.toString)(pos))
-        )(pos)))
-    }
-
-    appendAtCurrentIndent(UnaryOperator(lp =>
-      LegacyFindShortestPaths(
-        lp,
-        ShortestRelationshipPattern(
-          pathName.map(varFor),
-          PatternRelationship(varFor(p.relName), (varFor(p.from), varFor(p.to)), p.dir, p.relTypes, p.length),
-          !all
-        )(ShortestPathsPatternPart(
-          RelationshipChain(
-            NodePattern(Some(varFor(p.from)), None, None, None)(
-              pos
-            ), // labels, properties and predicates are not used at runtime
-            RelationshipPattern(
-              Some(varFor(p.relName)),
-              disjoinRelTypesToLabelExpression(p.relTypes),
-              length,
-              None, // properties are not used at runtime
-              None,
-              p.dir
-            )(pos),
-            NodePattern(Some(varFor(p.to)), None, None, None)(
-              pos
-            ) // labels, properties and predicates are not used at runtime
-          )(pos),
-          !all
-        )(pos)),
-        predicates,
         withFallback,
         disallowSameNode
       )(_)

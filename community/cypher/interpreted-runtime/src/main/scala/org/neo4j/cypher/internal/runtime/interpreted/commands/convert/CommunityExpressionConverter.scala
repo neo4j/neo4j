@@ -247,15 +247,9 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.LogicalProperty    => toCommandProperty(id, e, self)
       case ParameterFromSlot(offset, name, _)         => commands.expressions.ParameterFromSlot(offset, name)
       case e: internal.expressions.CaseExpression     => caseExpression(id, e, self)
-      case e: internal.expressions.ShortestPathExpression if (!runtimeConfig.useLegacyShortestPath) =>
+      case e: internal.expressions.ShortestPathExpression =>
         commands.expressions
           .ShortestPathExpression(
-            e.pattern.asLegacyPatterns(id, None, self, anonymousVariableNameGenerator).head,
-            operatorId = id
-          )
-      case e: internal.expressions.ShortestPathExpression if (runtimeConfig.useLegacyShortestPath) =>
-        commands.expressions
-          .LegacyShortestPathExpression(
             e.pattern.asLegacyPatterns(id, None, self, anonymousVariableNameGenerator).head,
             operatorId = id
           )

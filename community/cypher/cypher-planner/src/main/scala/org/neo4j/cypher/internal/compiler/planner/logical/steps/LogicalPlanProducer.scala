@@ -164,7 +164,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -2289,36 +2288,6 @@ case class LogicalPlanProducer(
       ),
       solved,
       providedOrders.get(rewrittenSource.id).fromLeft,
-      context
-    )
-  }
-
-  @deprecated(
-    "Uses the old shortest path implementation. Available for feature toggle. use planShortestRelationship instead.",
-    since = "5.3.0"
-  )
-  def planLegacyShortestRelationship(
-    inner: LogicalPlan,
-    shortestRelationship: ShortestRelationshipPattern,
-    predicates: Seq[Expression],
-    withFallBack: Boolean,
-    disallowSameNode: Boolean = true,
-    context: LogicalPlanningContext
-  ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
-      _.addShortestRelationship(shortestRelationship).addPredicates(predicates: _*)
-    )
-    val (rewrittenPredicates, rewrittenInner) = SubqueryExpressionSolver.ForMulti.solve(inner, predicates, context)
-    annotate(
-      LegacyFindShortestPaths(
-        rewrittenInner,
-        org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern.from(shortestRelationship),
-        rewrittenPredicates,
-        withFallBack,
-        disallowSameNode
-      ),
-      solved,
-      providedOrders.get(rewrittenInner.id).fromLeft,
       context
     )
   }

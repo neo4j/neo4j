@@ -5432,26 +5432,6 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  test("Should be eager in read/create conflict with LegacyShortestPath") {
-    val planBuilder = new LogicalPlanBuilder()
-      .produceResults("r")
-      .create(createRelationship("r", "n", "R1", "m"))
-      .legacyShortestPath("(n)-[r]->(m)")
-      .allNodeScan("n")
-    val plan = planBuilder.build()
-    val result = eagerizePlan(planBuilder, plan)
-
-    result should equal(
-      new LogicalPlanBuilder()
-        .produceResults("r")
-        .create(createRelationship("r", "n", "R1", "m"))
-        .eager(ListSet(TypeReadSetConflict(relTypeName("R1")).withConflict(Conflict(Id(1), Id(2)))))
-        .legacyShortestPath("(n)-[r]->(m)")
-        .allNodeScan("n")
-        .build()
-    )
-  }
-
   test("Should be eager in read/create conflict with returning a full relationship entity") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")

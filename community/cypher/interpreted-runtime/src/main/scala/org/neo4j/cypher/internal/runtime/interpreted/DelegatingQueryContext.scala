@@ -30,9 +30,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.EntityTransformer
-import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
-import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -48,7 +46,6 @@ import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
@@ -558,28 +555,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def lockNodes(nodeIds: Long*): Unit = inner.lockNodes(nodeIds: _*)
 
   override def lockRelationships(relIds: Long*): Unit = inner.lockRelationships(relIds: _*)
-
-  override def singleShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker
-  ): Option[Path] =
-    singleDbHit(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
-
-  override def allShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker
-  ): ClosingIterator[Path] =
-    manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
   override def callReadOnlyProcedure(
     id: Int,

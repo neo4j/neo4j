@@ -75,7 +75,6 @@ import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -446,17 +445,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
         acc: Accumulator =>
           SkipChildren(acc) // Do not traverse the logical plan tree! We are only looking at the given lp
-
-      case LegacyFindShortestPaths(_, shortestPathPattern, _, _, _) =>
-        acc: Accumulator => {
-          allocateShortestRelationshipPattern(
-            shortestPathPattern,
-            slots,
-            nullable,
-            anonymousVariableNameGenerator
-          )
-          TraverseChildren(acc)
-        }
 
       case ProjectEndpoints(_, _, start, startInScope, end, endInScope, _, _, _) =>
         acc: Accumulator => {
@@ -875,11 +863,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         slots.newReference(pathName, nullable, CTPath)
         slots.newReference(relsName, nullable, CTList(CTRelationship))
-
-      // Because of the way the interpreted pipe works, we already have to do the necessary allocations in allocateExpressions(), before the pipeline breaking.
-      // Legacy interpreted pipes write directly to the incoming context, so to support pipeline breaking, the slots have to be allocated
-      // on the source slot configuration.
-      case _: LegacyFindShortestPaths =>
 
       case Foreach(_, variableName, listExpression, mutations) =>
         mutations.foreach {

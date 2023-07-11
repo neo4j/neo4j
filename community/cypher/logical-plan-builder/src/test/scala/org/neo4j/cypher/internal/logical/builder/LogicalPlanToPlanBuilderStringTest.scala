@@ -342,29 +342,6 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
-    "legacyShortestPath",
-    new TestPlanBuilder()
-      .produceResults("x")
-      .legacyShortestPath("(x)<-[r]-(y)")
-      .legacyShortestPath("(x)-[r*0..0]->(y)", pathName = Some("path"))
-      .legacyShortestPath("(x)<-[r*0..1]-(y)")
-      .legacyShortestPath("(x)-[r*2..5]-(y)", all = true)
-      .legacyShortestPath("(x)-[r:REL*1..2]-(y)", predicates = Seq("all(n IN nodes(path) WHERE id(n) <> 5)"))
-      .legacyShortestPath("(x)-[r:REL|LER*1..2]-(y)")
-      .legacyShortestPath("(x)-[r*1..2]-(y)")
-      .legacyShortestPath(
-        "(x)-[r*1..2]->(y)",
-        pathName = Some("path"),
-        all = true,
-        predicates = Seq("all(n IN nodes(path) WHERE id(n) <> 5)", "all(rel IN relationships(path) WHERE id(rel) <> 7)")
-      )
-      .legacyShortestPath("(x)-[r*1..2]->(y)", disallowSameNode = false)
-      .legacyShortestPath("(x)-[r*1..3]->(y)", withFallback = true)
-      .argument()
-      .build()
-  )
-
-  testPlan(
     "pruningVarExpand",
     new TestPlanBuilder()
       .produceResults("x")

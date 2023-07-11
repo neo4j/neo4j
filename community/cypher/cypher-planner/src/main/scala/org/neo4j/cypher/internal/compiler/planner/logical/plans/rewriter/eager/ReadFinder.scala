@@ -93,7 +93,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -646,15 +645,6 @@ object ReadFinder {
 
       case StatefulShortestPath(_, sourceNode, targetNode, nfa, _, pathNodes, pathRels, singleNodes, _, _) =>
         processStatefulShortest(sourceNode, targetNode, nfa, pathNodes, pathRels, singleNodes)
-
-      case LegacyFindShortestPaths(
-          _,
-          ShortestRelationshipPattern(_, PatternRelationship(relationship, _, _, types, _), _),
-          _,
-          _,
-          _
-        ) =>
-        processShortestPaths(relationship, types)
 
       case ProduceResult(_, columns) =>
         // A ProduceResult can reference entities. These must be captured with

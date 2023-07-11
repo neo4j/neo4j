@@ -36,13 +36,11 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.EntityTransformer
-import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.asKernelIndexOrder
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.isImpossibleIndexQuery
-import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeValueHit
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadQueryContext
@@ -56,26 +54,16 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.PrimitiveCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipTypeCursorIterator
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.OnlyDirectionExpander
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TypeAndDirectionExpander
 import org.neo4j.cypher.operations.CursorUtils
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.FailedIndexException
-import org.neo4j.graphalgo.BasicEvaluationContext
-import org.neo4j.graphalgo.impl.path.ShortestPath
-import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
-import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.NotFoundException
-import org.neo4j.graphdb.Path
-import org.neo4j.graphdb.PathExpanderBuilder
 import org.neo4j.graphdb.Relationship
-import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
@@ -131,7 +119,6 @@ import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.internal.LogService
-import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
@@ -1545,38 +1532,6 @@ private[internal] class TransactionBoundReadQueryContext(
     relIds.sorted
       .foreach(transactionalContext.locks.acquireExclusiveRelationshipLock(_))
 
-  override def singleShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker
-  ): Option[Path] = {
-    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters, memoryTracker)
-
-    // could probably do without node proxies here
-    Option(pathFinder.findSinglePath(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right)))
-  }
-
-  override def allShortestPath(
-    left: Long,
-    right: Long,
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker
-  ): ClosingIterator[Path] = {
-    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters, memoryTracker)
-
-    pathFinder.findAllPathsAutoCloseableIterator(
-      entityAccessor.newNodeEntity(left),
-      entityAccessor.newNodeEntity(right)
-    )
-  }
-
   override def callReadOnlyProcedure(
     id: Int,
     args: Array[AnyValue],
@@ -1616,49 +1571,6 @@ private[internal] class TransactionBoundReadQueryContext(
 
   override def builtInAggregateFunction(id: Int): UserAggregationReducer =
     CallSupport.builtInAggregateFunction(transactionalContext.procedures, id)
-
-  private def buildPathFinder(
-    depth: Int,
-    expander: Expander,
-    pathPredicate: KernelPredicate[Path],
-    filters: Seq[KernelPredicate[Entity]],
-    memoryTracker: MemoryTracker
-  ): ShortestPath = {
-    val startExpander = expander match {
-      case OnlyDirectionExpander(_, _, dir) =>
-        PathExpanderBuilder.allTypes(toGraphDb(dir))
-      case TypeAndDirectionExpander(_, _, typDirs) =>
-        typDirs.foldLeft(PathExpanderBuilder.empty()) {
-          case (acc, (typ, dir)) => acc.add(RelationshipType.withName(typ), toGraphDb(dir))
-        }
-    }
-
-    val expanderWithNodeFilters = expander.nodeFilters.foldLeft(startExpander) {
-      case (acc, filter) => acc.addNodeFilter((t: Entity) => filter.test(t))
-    }
-    val expanderWithAllPredicates = expander.relFilters.foldLeft(expanderWithNodeFilters) {
-      case (acc, filter) => acc.addRelationshipFilter((t: Entity) => filter.test(t))
-    }
-    val shortestPathPredicate = new ShortestPathPredicate {
-      override def test(path: Path): Boolean = pathPredicate.test(path)
-    }
-
-    new ShortestPath(
-      new BasicEvaluationContext(
-        null /* ShortestPath does not need transaction */,
-        null /* or GraphDatabaseService */
-      ),
-      depth,
-      expanderWithAllPredicates.build(),
-      shortestPathPredicate,
-      memoryTracker
-    ) {
-      override protected def filterNextLevelNodes(nextNode: Node): Node =
-        if (filters.isEmpty) nextNode
-        else if (filters.forall(filter => filter test nextNode)) nextNode
-        else null
-    }
-  }
 
   override def assertShowIndexAllowed(): Unit = {
     val ktx = transactionalContext.kernelTransaction

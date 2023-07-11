@@ -121,7 +121,6 @@ class CypherConfiguration private (val config: Config) {
   // dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
   private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)
-  private var _legacyShortestPath: Boolean = config.get(GraphDatabaseInternalSettings.use_legacy_shortest_path)
 
   private var _parallelRuntimeSupport: CypherParallelRuntimeSupportOption =
     CypherParallelRuntimeSupportOption.fromConfig(config)
@@ -145,11 +144,6 @@ class CypherConfiguration private (val config: Config) {
   )
 
   config.addListener[java.lang.Boolean](
-    GraphDatabaseInternalSettings.use_legacy_shortest_path,
-    (_: java.lang.Boolean, newValue: java.lang.Boolean) => _legacyShortestPath = newValue
-  )
-
-  config.addListener[java.lang.Boolean](
     GraphDatabaseSettings.cypher_render_plan_descriptions,
     (_: java.lang.Boolean, newValue: java.lang.Boolean) => _renderPlanDescription = newValue
   )
@@ -158,7 +152,6 @@ class CypherConfiguration private (val config: Config) {
     features.filter(s => config.get(s._1)).values.toSet
 
   def obfuscateLiterals: Boolean = _obfuscateLiterals
-  def useLegacyShortestPath: Boolean = _legacyShortestPath
   def renderPlanDescription: Boolean = _renderPlanDescription
   def parallelRuntimeSupport: CypherParallelRuntimeSupportOption = _parallelRuntimeSupport
 }

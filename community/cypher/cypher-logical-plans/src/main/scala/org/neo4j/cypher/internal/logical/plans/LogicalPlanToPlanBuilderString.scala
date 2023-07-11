@@ -151,7 +151,6 @@ object LogicalPlanToPlanBuilderString {
       case _: SimulatedSelection            => "simulatedFilter"
       case _: UnwindCollection              => "unwind"
       case _: FindShortestPaths             => "shortestPath"
-      case _: LegacyFindShortestPaths       => "legacyShortestPath"
       case _: NodeIndexScan                 => "nodeIndexOperator"
       case _: DirectedRelationshipIndexScan => "relationshipIndexOperator"
       case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _) =>
@@ -352,28 +351,7 @@ object LogicalPlanToPlanBuilderString {
               ) + ")"
             s""" "(${from.name})$dirStrA[${relName.name}$typeStr$lenStr]$dirStrB(${to.name})"$pNameStr$allStr$nPredStr$rPredStr$pPredStr$fbStr$dsnStr """.trim
         }
-      case LegacyFindShortestPaths(_, shortestPath, predicates, withFallBack, disallowSameNode) =>
-        val fbStr = if (withFallBack) ", withFallback = true" else ""
-        val dsnStr = if (!disallowSameNode) ", disallowSameNode = false" else ""
-        shortestPath match {
-          case ShortestRelationshipPattern(
-              maybePathName,
-              PatternRelationship(relName, (from, to), dir, types, length),
-              single
-            ) =>
-            val lenStr = length match {
-              case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
-              case SimplePatternLength        => ""
-            }
-            val (dirStrA, dirStrB) = arrows(dir)
-            val typeStr = relTypeStr(types)
-            val pNameStr = maybePathName.map(p => s", pathName = Some(${wrapInQuotations(p)})").getOrElse("")
-            val allStr = if (single) "" else ", all = true"
-            val predStr =
-              if (predicates.isEmpty) ""
-              else ", predicates = Seq(" + wrapInQuotationsAndMkString(predicates.map(expressionStringifier(_))) + ")"
-            s""" "(${from.name})$dirStrA[${relName.name}$typeStr$lenStr]$dirStrB(${to.name})"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
-        }
+
       case StatefulShortestPath(
           _,
           from,

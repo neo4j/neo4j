@@ -394,12 +394,6 @@ class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, In
 class InterpretedProcedureCallTest extends ProcedureCallTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedShortestPathTest extends ShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
-class InterpretedLegacyShortestPathTest extends ShortestPathTestBase(
-      COMMUNITY.EDITION.copyWith((GraphDatabaseInternalSettings.use_legacy_shortest_path, java.lang.Boolean.TRUE)),
-      InterpretedRuntime,
-      SIZE_HINT
-    )
-
 class InterpretedUnionTest extends UnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOrderedUnionTest extends OrderedUnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSemiApplyTest extends SemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

@@ -239,11 +239,6 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => config.extractLiterals
   }
 
-  val useLegacyShortestPath: () => Boolean = {
-    // Is dynamic, but documented to not affect caching.
-    () => config.useLegacyShortestPath
-  }
-
   val useParameterSizeHint: () => Boolean = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_size_hint_parameters.dynamic()

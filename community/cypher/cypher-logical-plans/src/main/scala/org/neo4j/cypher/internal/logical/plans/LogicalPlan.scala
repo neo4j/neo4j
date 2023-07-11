@@ -2001,26 +2001,6 @@ case class LeftOuterHashJoin(
 }
 
 /**
- * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
- * row containing the source row and the found path.
- */
-case class LegacyFindShortestPaths(
-  override val source: LogicalPlan,
-  pattern: shortest.ShortestRelationshipPattern,
-  predicates: Seq[Expression] = Seq.empty,
-  withFallBack: Boolean = false,
-  disallowSameNode: Boolean = true
-)(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) {
-
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-
-  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ pattern.availableSymbols
-
-  override val distinctness: Distinctness = NotDistinct
-}
-
-/**
  * Like LetSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will be set to true without
  * executing right.
  *

@@ -147,15 +147,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("This is used to disable the new shortest path implementation and instead use the old one."
-            + "Changing the setting will not affect queries that are cached. So, if you want the switch "
-            + "to have immediate effect, you must also call `CALL db.clearQueryCaches()`.")
-    public static final Setting<Boolean> use_legacy_shortest_path = newBuilder(
-                    "internal.cypher.use_legacy_shortest_path", BOOL, false)
-            .dynamic()
-            .build();
-
-    @Internal
     @Description("Choose the expression engine. The default is to only compile expressions that are hot, if 'COMPILED' "
             + "is chosen all expressions will be compiled directly and if 'INTERPRETED' is chosen expressions will "
             + "never be compiled.")
@@ -1097,10 +1088,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description(
             """
-            Ask page cache to close memory allocator on shutdown to clear native memory allocated for page cache pages.
-            WARNING: This setting is dangerous and must only be enabled if you completely confident that there are no leaked page cursors.
-            Otherwise it can result in VM crashes
-            """)
+                    Ask page cache to close memory allocator on shutdown to clear native memory allocated for page cache pages.
+                    WARNING: This setting is dangerous and must only be enabled if you completely confident that there are no leaked page cursors.
+                    Otherwise it can result in VM crashes
+                    """)
     public static final Setting<Boolean> close_allocator_on_shutdown = newBuilder(
                     "internal.dbms.page_cache_close_allocator_on_shutdown", BOOL, false)
             .build();
