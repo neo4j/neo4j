@@ -27,12 +27,16 @@ public interface VersionStorage extends AutoCloseable {
     int NEXT_REFERENCE_OFFSET = Long.BYTES;
 
     VersionStorage EMPTY_STORAGE = new VersionStorage() {
+        private static final long EMPTY_PAGE_REFERENCE = 0;
+
         @Override
         public void loadReadSnapshot(MuninnPageCursor pageCursor, VersionContext versionContext, PinEvent pinEvent) {}
 
         @Override
-        public void createPageSnapshot(
-                MuninnPageCursor pageCursor, VersionContext versionContext, long chainHeadVersion, PinEvent pinEvent) {}
+        public long createPageSnapshot(
+                MuninnPageCursor pageCursor, VersionContext versionContext, long chainHeadVersion, PinEvent pinEvent) {
+            return EMPTY_PAGE_REFERENCE;
+        }
 
         @Override
         public long size() {
@@ -59,14 +63,14 @@ public interface VersionStorage extends AutoCloseable {
 
     /**
      * Create version snapshot of the page provided by page cursor. Newly created version will be offloaded to version storage
-     * and stored as the next page version in a version chain.
+     * and reference to that page returned as result of this call.
      *
      * @param pageCursor     user supplied cursor to write snapshot page updates
      * @param versionContext version context with information about ongoing version changes
      * @param chainHeadVersion    page chain head version
      * @param pinEvent       tracing event
      */
-    void createPageSnapshot(
+    long createPageSnapshot(
             MuninnPageCursor pageCursor, VersionContext versionContext, long chainHeadVersion, PinEvent pinEvent);
 
     /**

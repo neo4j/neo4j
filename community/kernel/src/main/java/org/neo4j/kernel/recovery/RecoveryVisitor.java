@@ -25,12 +25,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
-import org.neo4j.kernel.impl.api.chunk.CommandChunk;
-import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.storageengine.api.CommandBatchToApply;
-import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -60,18 +57,11 @@ final class RecoveryVisitor implements RecoveryApplier {
     }
 
     private CommandBatchToApply commandToApply(CommittedCommandBatch batch) {
-        if (batch instanceof CommittedTransactionRepresentation) {
-            return new TransactionToApply(batch, cursorContext, storeCursors);
-        } else {
-            ChunkedTransaction transaction = new ChunkedTransaction(
-                    cursorContext,
-                    batch.txId(),
-                    storeCursors,
-                    Commitment.NO_COMMITMENT,
-                    TransactionIdGenerator.EXTERNAL_ID);
-            transaction.init((CommandChunk) batch.commandBatch());
-            return transaction;
-        }
+        var commandsToApply = batch instanceof CommittedTransactionRepresentation
+                ? new TransactionToApply(batch, cursorContext, storeCursors)
+                : new ChunkedTransaction(batch, cursorContext, storeCursors);
+        cursorContext.getVersionContext().initWrite(commandsToApply.transactionId());
+        return commandsToApply;
     }
 
     @Override

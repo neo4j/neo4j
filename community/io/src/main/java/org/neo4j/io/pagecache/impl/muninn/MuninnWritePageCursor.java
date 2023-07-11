@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.NEXT_REFERENCE_OFFSET;
 import static org.neo4j.util.FeatureToggles.flag;
 
 import java.io.IOException;
@@ -193,9 +194,14 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         // be closed and the page lock will be released.
         assertCursorOpenFileMappedAndGetIdOfLastPage();
         if (multiVersioned) {
-            long headVersion = getLongAt(pointer, littleEndian);
+            long pagePointer = pointer;
+            long headVersion = getLongAt(pagePointer, littleEndian);
             if (isOldHead(versionContext, headVersion)) {
-                versionStorage.createPageSnapshot(this, versionContext, headVersion, pinEvent);
+                long copyPageReference = versionStorage.createPageSnapshot(this, versionContext, headVersion, pinEvent);
+
+                // update from current to next copied page
+                putLongAt(pagePointer + NEXT_REFERENCE_OFFSET, copyPageReference, littleEndian);
+                putLongAt(pagePointer, versionContext.committingTransactionId(), littleEndian);
             }
         } else {
             PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());

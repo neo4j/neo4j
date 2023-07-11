@@ -27,6 +27,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandBatchToApply;
@@ -60,6 +61,13 @@ public class ChunkedTransaction implements CommandBatchToApply {
         this.storeCursors = storeCursors;
         this.commitment = commitment;
         this.transactionIdGenerator = transactionIdGenerator;
+    }
+
+    public ChunkedTransaction(
+            CommittedCommandBatch committedCommandBatch, CursorContext cursorContext, StoreCursors storeCursors) {
+        this(cursorContext, -1, storeCursors, Commitment.NO_COMMITMENT, TransactionIdGenerator.EXTERNAL_ID);
+        this.transactionId = committedCommandBatch.txId();
+        init((CommandChunk) committedCommandBatch.commandBatch());
     }
 
     public void init(CommandChunk chunk) {
