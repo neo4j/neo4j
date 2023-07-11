@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -68,8 +69,8 @@ class LogTruncationTest {
         permutations.put(Command.NodeCommand.class, new Command[] {
             new Command.NodeCommand(
                     serialization,
-                    new NodeRecord(12).initialize(false, 13, false, 13, 0),
-                    new NodeRecord(0).initialize(false, 0, false, 0, 0))
+                    new NodeRecord(12).initialize(true, 13, false, 13, 0),
+                    new NodeRecord(12).initialize(true, 0, false, 0, 0))
         });
         RelationshipRecord relationship = new RelationshipRecord(1);
         relationship.setLinks(2, 3, 4);
@@ -160,7 +161,7 @@ class LogTruncationTest {
         int bytesSuccessfullyWritten = inMemoryChannel.writerPosition();
         try {
             StorageCommand command = serialization.read(inMemoryChannel);
-            assertEquals(cmd, command);
+            assertThat(cmd).isEqualTo(command);
         } catch (Exception e) {
             throw new AssertionError("Failed to deserialize " + cmd + ", because: ", e);
         }

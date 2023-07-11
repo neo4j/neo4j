@@ -27,10 +27,11 @@ public interface NeoCommandType {
     byte REL_COMMAND = (byte) 3;
     byte REL_TYPE_COMMAND = (byte) 4;
     byte PROP_INDEX_COMMAND = (byte) 5;
-    byte NEOSTORE_COMMAND = (byte) 6; // Command type of graph property commands. No longer used as of 4.0.
-    byte LEGACY_SCHEMA_RULE_COMMAND = (byte)
-            7; // Command type of previous (legacy) schema commands. No longer used as of 4.0. Use SCHEMA_RULE_COMMAND
-    // instead.
+    // Command type of graph property commands. No longer used as of 4.0.
+    byte NEOSTORE_COMMAND = (byte) 6;
+    // Command type of previous (legacy) schema commands. No longer used as of 4.0. Use SCHEMA_RULE_COMMAND instead.
+    byte LEGACY_SCHEMA_RULE_COMMAND = (byte) 7;
+
     byte LABEL_KEY_COMMAND = (byte) 8;
     byte REL_GROUP_COMMAND = (byte) 9;
 
@@ -49,6 +50,15 @@ public interface NeoCommandType {
     byte UPDATE_GROUP_DEGREE_COMMAND = (byte) 20;
 
     byte REL_GROUP_EXTENDED_COMMAND = (byte) 21; // Relationship group with 3 byte type id
+
+    byte CREATE_NODE_COMMAND = (byte) 22;
+    byte DELETE_NODE_COMMAND = (byte) 23;
+
+    byte CREATE_PROP_COMMAND = (byte) 24;
+    byte DELETE_PROP_COMMAND = (byte) 25;
+
+    byte CREATE_REL_COMMAND = (byte) 26;
+    byte DELETE_REL_COMMAND = (byte) 27;
 
     byte ENRICHMENT_COMMAND = EnrichmentCommand.COMMAND_CODE;
 }

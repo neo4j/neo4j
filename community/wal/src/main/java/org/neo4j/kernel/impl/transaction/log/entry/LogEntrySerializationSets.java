@@ -40,6 +40,7 @@ public class LogEntrySerializationSets {
         SERIALIZATION_SETS.put(KernelVersion.V5_8, new LogEntrySerializationSetV5_8());
         SERIALIZATION_SETS.put(KernelVersion.V5_9, new LogEntrySerializationSetV5_9());
         SERIALIZATION_SETS.put(KernelVersion.V5_10, new LogEntrySerializationSetV5_10());
+        SERIALIZATION_SETS.put(KernelVersion.V5_11, new LogEntrySerializationSetV5_11());
     }
 
     /**

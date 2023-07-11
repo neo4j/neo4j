@@ -185,7 +185,11 @@ public abstract class Command implements StorageCommand {
 
         @Override
         public void serialize(WritableChannel channel) throws IOException {
-            serialization.writeNodeCommand(channel, this);
+            switch (getMode()) {
+                case CREATE -> serialization.writeCreatedNodeCommand(channel, this);
+                case DELETE -> serialization.writeDeletedNodeCommand(channel, this);
+                case UPDATE -> serialization.writeNodeCommand(channel, this);
+            }
         }
 
         @Override
@@ -213,7 +217,11 @@ public abstract class Command implements StorageCommand {
 
         @Override
         public void serialize(WritableChannel channel) throws IOException {
-            serialization.writeRelationshipCommand(channel, this);
+            switch (getMode()) {
+                case CREATE -> serialization.writeCreatedRelationshipCommand(channel, this);
+                case DELETE -> serialization.writeDeletedRelationshipCommand(channel, this);
+                case UPDATE -> serialization.writeRelationshipCommand(channel, this);
+            }
         }
 
         @Override
@@ -281,7 +289,11 @@ public abstract class Command implements StorageCommand {
 
         @Override
         public void serialize(WritableChannel channel) throws IOException {
-            serialization.writePropertyCommand(channel, this);
+            switch (getMode()) {
+                case CREATE -> serialization.writeCreatedPropertyCommand(channel, this);
+                case DELETE -> serialization.writeDeletedPropertyCommand(channel, this);
+                case UPDATE -> serialization.writePropertyCommand(channel, this);
+            }
         }
 
         public long getEntityId() {

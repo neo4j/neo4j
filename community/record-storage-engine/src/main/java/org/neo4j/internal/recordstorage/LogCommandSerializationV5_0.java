@@ -445,7 +445,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
         return new Command.PropertyCommand(this, before, after);
     }
 
-    private static PropertyRecord readPropertyRecord(long id, ReadableChannel channel) throws IOException {
+    static PropertyRecord readPropertyRecord(long id, ReadableChannel channel) throws IOException {
         var record = new PropertyRecord(id);
         byte flags = channel.get(); // 1
 
@@ -528,7 +528,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
         writePropertyRecord(channel, command.getAfter());
     }
 
-    private static void writePropertyRecord(WritableChannel channel, PropertyRecord record) throws IOException {
+    static void writePropertyRecord(WritableChannel channel, PropertyRecord record) throws IOException {
         assert !record.hasSecondaryUnitId() : "secondary units are not supported for property records";
         byte flags = bitFlags(
                 bitFlag(record.inUse(), Record.IN_USE.byteValue()),
@@ -589,7 +589,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
         writeNodeRecord(channel, command.getAfter());
     }
 
-    private static void writeNodeRecord(WritableChannel channel, NodeRecord record) throws IOException {
+    static void writeNodeRecord(WritableChannel channel, NodeRecord record) throws IOException {
         byte flags = bitFlags(
                 bitFlag(record.inUse(), Record.IN_USE.byteValue()),
                 bitFlag(record.isCreated(), Record.CREATED_IN_TX),
@@ -619,7 +619,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
         return new Command.NodeCommand(this, before, after);
     }
 
-    private static NodeRecord readNodeRecord(long id, ReadableChannel channel) throws IOException {
+    static NodeRecord readNodeRecord(long id, ReadableChannel channel) throws IOException {
         byte flags = channel.get();
         boolean inUse = bitFlag(flags, Record.IN_USE.byteValue());
         boolean isCreated = bitFlag(flags, Record.CREATED_IN_TX);
@@ -660,7 +660,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
         writeRelationshipRecord(channel, command.getAfter());
     }
 
-    private static void writeRelationshipRecord(WritableChannel channel, RelationshipRecord record) throws IOException {
+    static void writeRelationshipRecord(WritableChannel channel, RelationshipRecord record) throws IOException {
         byte flags = bitFlags(
                 bitFlag(record.inUse(), Record.IN_USE.byteValue()),
                 bitFlag(record.isCreated(), Record.CREATED_IN_TX),
@@ -698,7 +698,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
         return new Command.RelationshipCommand(this, before, after);
     }
 
-    private static RelationshipRecord readRelationshipRecord(long id, ReadableChannel channel) throws IOException {
+    static RelationshipRecord readRelationshipRecord(long id, ReadableChannel channel) throws IOException {
         byte flags = channel.get();
         boolean inUse = bitFlag(flags, Record.IN_USE.byteValue());
         boolean isCreated = bitFlag(flags, Record.CREATED_IN_TX);
@@ -934,5 +934,39 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
             result[i] = channel.getLong();
         }
         return result;
+    }
+
+    @Override
+    public void writeDeletedNodeCommand(WritableChannel channel, Command.NodeCommand command) throws IOException {
+        writeNodeCommand(channel, command);
+    }
+
+    @Override
+    public void writeCreatedNodeCommand(WritableChannel channel, Command.NodeCommand command) throws IOException {
+        writeNodeCommand(channel, command);
+    }
+
+    @Override
+    public void writeCreatedRelationshipCommand(WritableChannel channel, Command.RelationshipCommand command)
+            throws IOException {
+        writeRelationshipCommand(channel, command);
+    }
+
+    @Override
+    public void writeDeletedRelationshipCommand(WritableChannel channel, Command.RelationshipCommand command)
+            throws IOException {
+        writeRelationshipCommand(channel, command);
+    }
+
+    @Override
+    public void writeCreatedPropertyCommand(WritableChannel channel, Command.PropertyCommand command)
+            throws IOException {
+        writePropertyCommand(channel, command);
+    }
+
+    @Override
+    public void writeDeletedPropertyCommand(WritableChannel channel, Command.PropertyCommand command)
+            throws IOException {
+        writePropertyCommand(channel, command);
     }
 }

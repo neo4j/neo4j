@@ -31,9 +31,19 @@ public abstract class LogCommandSerialization extends BaseCommandReader {
     public final Command read(byte commandType, ReadableChannel channel) throws IOException {
         return switch (commandType) {
             case NeoCommandType.NODE_COMMAND -> readNodeCommand(channel);
+            case NeoCommandType.CREATE_NODE_COMMAND -> readCreatedNodeCommand(channel);
+            case NeoCommandType.DELETE_NODE_COMMAND -> readDeletedNodeCommand(channel);
+
             case NeoCommandType.PROP_COMMAND -> readPropertyCommand(channel);
+            case NeoCommandType.CREATE_PROP_COMMAND -> readCreatedPropertyCommand(channel);
+            case NeoCommandType.DELETE_PROP_COMMAND -> readDeletedPropertyCommand(channel);
+
             case NeoCommandType.PROP_INDEX_COMMAND -> readPropertyKeyTokenCommand(channel);
+
             case NeoCommandType.REL_COMMAND -> readRelationshipCommand(channel);
+            case NeoCommandType.CREATE_REL_COMMAND -> readCreatedRelationshipCommand(channel);
+            case NeoCommandType.DELETE_REL_COMMAND -> readDeletedRelationshipCommand(channel);
+
             case NeoCommandType.REL_TYPE_COMMAND -> readRelationshipTypeTokenCommand(channel);
             case NeoCommandType.LABEL_KEY_COMMAND -> readLabelTokenCommand(channel);
             case NeoCommandType.REL_GROUP_COMMAND -> readRelationshipGroupCommand(channel);
@@ -106,6 +116,14 @@ public abstract class LogCommandSerialization extends BaseCommandReader {
         throw unsupportedInThisVersionException();
     }
 
+    protected Command readCreatedRelationshipCommand(ReadableChannel channel) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    protected Command readDeletedRelationshipCommand(ReadableChannel channel) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
     protected Command readPropertyKeyTokenCommand(ReadableChannel channel) throws IOException {
         throw unsupportedInThisVersionException();
     }
@@ -114,7 +132,23 @@ public abstract class LogCommandSerialization extends BaseCommandReader {
         throw unsupportedInThisVersionException();
     }
 
+    protected Command readDeletedPropertyCommand(ReadableChannel channel) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    protected Command readCreatedPropertyCommand(ReadableChannel channel) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
     protected Command readNodeCommand(ReadableChannel channel) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    protected Command readDeletedNodeCommand(ReadableChannel channel) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    protected Command readCreatedNodeCommand(ReadableChannel channel) throws IOException {
         throw unsupportedInThisVersionException();
     }
 
@@ -150,12 +184,40 @@ public abstract class LogCommandSerialization extends BaseCommandReader {
         throw unsupportedInThisVersionException();
     }
 
+    public void writeDeletedNodeCommand(WritableChannel channel, Command.NodeCommand command) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    public void writeCreatedNodeCommand(WritableChannel channel, Command.NodeCommand command) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
     public void writeRelationshipCommand(WritableChannel channel, Command.RelationshipCommand command)
             throws IOException {
         throw unsupportedInThisVersionException();
     }
 
+    public void writeCreatedRelationshipCommand(WritableChannel channel, Command.RelationshipCommand command)
+            throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    public void writeDeletedRelationshipCommand(WritableChannel channel, Command.RelationshipCommand command)
+            throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
     public void writePropertyCommand(WritableChannel channel, Command.PropertyCommand command) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    public void writeDeletedPropertyCommand(WritableChannel channel, Command.PropertyCommand command)
+            throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    public void writeCreatedPropertyCommand(WritableChannel channel, Command.PropertyCommand command)
+            throws IOException {
         throw unsupportedInThisVersionException();
     }
 
