@@ -4005,6 +4005,38 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "Eager for DELETE conflict must be placed after the last predicate on matched relationship, even if higher cardinality"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteRelationship("r").withCardinality(30)
+      .filter("r:REL").withCardinality(30) // Filter can crash if executed on deleted relationship.
+      .unwind("[1,2,3] AS j").withCardinality(45)
+      .apply().withCardinality(15)
+      .|.allRelationshipsScan("(n)-[r]->(m)").withCardinality(5)
+      .unwind("[1,2,3] AS i").withCardinality(3)
+      .argument().withCardinality(1)
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteRelationship("r")
+        .eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3)))))
+        .filter("r:REL") // Filter can crash if executed on deleted relationship.
+        .unwind("[1,2,3] AS j")
+        .apply()
+        .|.allRelationshipsScan("(n)-[r]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test(
     "Eager for DELETE conflict must be placed after the last reference to matched node, even if higher cardinality"
   ) {
     val planBuilder = new LogicalPlanBuilder()
