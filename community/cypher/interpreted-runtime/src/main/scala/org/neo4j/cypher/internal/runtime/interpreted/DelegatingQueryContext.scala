@@ -81,6 +81,7 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.ExecutionContext
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -626,6 +627,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
     inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey)
+
+  override def getTransactionType: KernelTransaction.Type = inner.getTransactionType
 
   override def contextWithNewTransaction(): QueryContext = inner.contextWithNewTransaction()
 

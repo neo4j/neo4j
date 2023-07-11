@@ -104,6 +104,7 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
@@ -1600,6 +1601,8 @@ private[internal] class TransactionBoundReadQueryContext(
   override def getConfig: Config = {
     transactionalContext.config
   }
+
+  override def getTransactionType: KernelTransaction.Type = transactionalContext.kernelTransaction.transactionType()
 
   override def contextWithNewTransaction(): TransactionBoundQueryContext = {
     val newTransactionalContext = transactionalContext.contextWithNewTransaction

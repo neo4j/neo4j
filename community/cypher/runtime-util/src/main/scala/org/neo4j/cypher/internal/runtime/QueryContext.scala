@@ -67,6 +67,7 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.ExecutionContext
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
@@ -419,6 +420,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
       case Some(bool) => Optional.of(bool)
     }
   }
+
+  def getTransactionType: KernelTransaction.Type
 
   /**
    * Opens a new transaction and create a new `QueryContext` bound to this new transaction.

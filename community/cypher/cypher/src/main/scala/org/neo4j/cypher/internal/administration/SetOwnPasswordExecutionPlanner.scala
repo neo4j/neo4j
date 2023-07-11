@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.Continue
 import org.neo4j.cypher.internal.procs.InitAndFinallyFunctions
+import org.neo4j.cypher.internal.procs.NonTransactionalUpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.ThrowException
-import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.exceptions.CypherExecutionException
@@ -71,7 +71,7 @@ case class SetOwnPasswordExecutionPlanner(
          |SET user.passwordChangeRequired = false
          |RETURN oldCredentials""".stripMargin
 
-    UpdatingSystemCommandExecutionPlan(
+    NonTransactionalUpdatingSystemCommandExecutionPlan(
       "AlterCurrentUserSetPassword",
       normalExecutionEngine,
       securityAuthorizationHandler,

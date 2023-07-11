@@ -822,20 +822,6 @@ class Neo4jTransactionalContextIT {
     }
 
     @Test
-    void contextWithNewTransactionShouldThrowIfOuterTransactionIsExplicit() {
-        // Given
-        var outerTx = graph.beginTransaction(EXPLICIT, LoginContext.AUTH_DISABLED);
-        var ctx = createTransactionContext(outerTx);
-
-        // Then
-        //noinspection Convert2MethodRef
-        assertThrows(
-                TransactionFailureException.class,
-                // When
-                () -> ctx.contextWithNewTransaction());
-    }
-
-    @Test
     void contextWithNewTransactionProcedureCalledFromInnerContextShouldUseInnerTransaction() throws ProcedureException {
         // Given
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);

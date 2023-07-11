@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.query;
 import java.io.Closeable;
 import java.util.function.Consumer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
@@ -271,11 +270,6 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     @Override
     public Neo4jTransactionalContext contextWithNewTransaction() {
         checkNotTerminated();
-        if (transactionType != KernelTransaction.Type.IMPLICIT) {
-            throw new TransactionFailureException(
-                    "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, "
-                            + "but tried to execute in an explicit transaction.");
-        }
 
         // Create new InternalTransaction, creates new KernelTransaction
         InternalTransaction newTransaction = null;

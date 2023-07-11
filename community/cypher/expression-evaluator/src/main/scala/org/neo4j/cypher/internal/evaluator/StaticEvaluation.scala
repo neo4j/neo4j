@@ -63,6 +63,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
@@ -592,6 +593,8 @@ object StaticEvaluation {
     override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value = notAvailable()
 
     override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = notAvailable()
+
+    override def getTransactionType: KernelTransaction.Type = notAvailable()
 
     override def contextWithNewTransaction(): QueryContext = notAvailable()
 

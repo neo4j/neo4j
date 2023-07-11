@@ -44,10 +44,36 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.util.Using
 
+case class UpdatingSystemCommandExecutionPlan(
+  name: String,
+  normalExecutionEngine: ExecutionEngine,
+  securityAuthorizationHandler: SecurityAuthorizationHandler,
+  query: String,
+  systemParams: MapValue,
+  queryHandler: QueryHandler,
+  source: Option[ExecutionPlan] = None,
+  checkCredentialsExpired: Boolean = true,
+  initAndFinally: InitAndFinally = NoInitAndFinally,
+  parameterTransformer: ParameterTransformer = ParameterTransformer(),
+  assertPrivilegeAction: Transaction => Unit = _ => {}
+) extends UpdatingSystemCommandExecutionPlanBase(
+      name,
+      normalExecutionEngine,
+      securityAuthorizationHandler,
+      query,
+      systemParams,
+      queryHandler,
+      source,
+      checkCredentialsExpired,
+      initAndFinally,
+      parameterTransformer,
+      assertPrivilegeAction
+    )
+
 /**
  * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
  */
-case class UpdatingSystemCommandExecutionPlan(
+abstract class UpdatingSystemCommandExecutionPlanBase(
   name: String,
   normalExecutionEngine: ExecutionEngine,
   securityAuthorizationHandler: SecurityAuthorizationHandler,

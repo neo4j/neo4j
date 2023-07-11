@@ -65,6 +65,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
@@ -448,6 +449,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def assertShowConstraintAllowed(): Unit =
     translateException(tokenNameLookup, inner.assertShowConstraintAllowed())
+
+  override def getTransactionType: KernelTransaction.Type = inner.getTransactionType
 
   override def contextWithNewTransaction(): QueryContext =
     new ExceptionTranslatingQueryContext(inner.contextWithNewTransaction())
