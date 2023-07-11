@@ -494,8 +494,8 @@ public class ConsistencyCheckService {
                     false,
                     config::configStringLookup));
             life.add(onShutdown(reportLogProvider::close));
-            final var reportLog = reportLogProvider.getLog(getClass());
-            final var log = new DuplicatingLog(outLog, reportLog);
+            final var reportFileLog = reportLogProvider.getLog(getClass());
+            final var reportLog = new DuplicatingLog(outLog, reportFileLog);
 
             // instantiate kernel extensions and the StaticIndexProviderMapFactory thing
             final var jobScheduler = life.add(JobSchedulerFactory.createInitialisedScheduler());
@@ -556,7 +556,7 @@ public class ConsistencyCheckService {
                         pageCacheTracer,
                         openOptions);
                 life.add(statisticsStore);
-                consistencyCheckOnStatisticsStore(log, summary, statisticsStore);
+                consistencyCheckOnStatisticsStore(reportLog, summary, statisticsStore);
             }
 
             final var logTailExtractor =
@@ -568,7 +568,8 @@ public class ConsistencyCheckService {
                     config,
                     pageCache,
                     indexProviders,
-                    log,
+                    reportLog,
+                    outLog,
                     summary,
                     numberOfThreads,
                     offHeapCachingMemory,
@@ -580,8 +581,8 @@ public class ConsistencyCheckService {
                     logTailExtractor.getTailMetadata(databaseLayout, memoryTracker));
 
             if (!summary.isConsistent()) {
-                log.warn("Inconsistencies found: " + summary);
-                log.warn("See '%s' for a detailed consistency report.", reportFile);
+                reportLog.warn("Inconsistencies found: " + summary);
+                outLog.warn("See '%s' for a detailed consistency report.", reportFile);
                 return Result.failure(reportFile, summary);
             }
             return Result.success(reportFile, summary);

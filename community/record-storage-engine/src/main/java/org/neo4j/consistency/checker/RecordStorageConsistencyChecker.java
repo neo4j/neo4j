@@ -109,7 +109,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     private final IdGeneratorFactory idGeneratorFactory;
     private final ConsistencySummaryStatistics summary;
     private final ProgressMonitorFactory progressFactory;
-    private final InternalLog log;
     private final ConsistencyFlags consistencyFlags;
     private final CursorContextFactory contextFactory;
     private final PageCacheTracer cacheTracer;
@@ -134,7 +133,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             ProgressMonitorFactory progressFactory,
             Config config,
             int numberOfThreads,
-            InternalLog log,
+            InternalLog reportLog,
+            InternalLog verboseLog,
             boolean verbose,
             ConsistencyFlags consistencyFlags,
             EntityBasedMemoryLimiter.Factory memoryLimit,
@@ -148,7 +148,6 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         this.idGeneratorFactory = idGeneratorFactory;
         this.summary = summary;
         this.progressFactory = progressFactory;
-        this.log = log;
         this.consistencyFlags = consistencyFlags;
         this.contextFactory = contextFactory;
         this.cacheTracer = cacheTracer;
@@ -164,8 +163,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         }
         TokenHolders tokenHolders = safeLoadTokens(neoStores, contextFactory);
         this.report = new InconsistencyReport(
-                new InconsistencyMessageLogger(log, moreDescriptiveRecordToStrings(neoStores, tokenHolders)), summary);
-        this.reporter = new ConsistencyReporter(report, monitor);
+                new InconsistencyMessageLogger(reportLog, moreDescriptiveRecordToStrings(neoStores, tokenHolders)),
+                summary);
+        this.reporter = new ConsistencyReporter(this.report, monitor);
         ParallelExecution execution = new ParallelExecution(
                 numberOfThreads,
                 exception -> cancel("Unexpected exception"), // Exceptions should interrupt all threads to exit faster
@@ -190,7 +190,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                 progress,
                 pageCache,
                 memoryTracker,
-                log,
+                verboseLog,
                 verbose,
                 consistencyFlags,
                 contextFactory);
@@ -213,10 +213,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     public void check() throws ConsistencyCheckIncompleteException {
-        if (consistencyFlags.checkPropertyOwners()
-                && progressFactory != ProgressMonitorFactory.NONE
-                && context.isVerbose()) {
-            System.err.println("The consistency checker has been configured to check property ownership. "
+        if (consistencyFlags.checkPropertyOwners()) {
+            context.error("The consistency checker has been configured to check property ownership. "
                     + "This feature is currently unavailable for this database format. "
                     + "The check will continue as if it were disabled.");
         }
@@ -432,8 +430,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             }
             countsStore.accept(checker, cursorContext);
         } catch (Exception e) {
-            log.error("Counts store is missing, broken or of an older format and will not be consistency checked", e);
+            report.error("Counts store is missing, broken or of an older format and will not be consistency checked");
             summary.genericError("Counts store is missing, broken or of an older format");
+            context.error(
+                    "Counts store is missing, broken or of an older format and will not be consistency checked", e);
         }
     }
 
@@ -470,10 +470,12 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             consistencyCheckSingleCheckable(
                     report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP);
         } catch (Exception e) {
-            log.error(
+            report.error(
+                    "Relationship group degrees is missing, broken or of an older format and will not be consistency checked");
+            summary.genericError("Relationship group degrees store is missing, broken or of an older format");
+            context.error(
                     "Relationship group degrees is missing, broken or of an older format and will not be consistency checked",
                     e);
-            summary.genericError("Relationship group degrees store is missing, broken or of an older format");
         }
     }
 

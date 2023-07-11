@@ -408,7 +408,8 @@ public interface StorageEngineFactory {
      * @param config configuration to use.
      * @param pageCache page cache to load pages into.
      * @param indexProviders index providers for accessing indexes to check against the store.
-     * @param log to log inconsistencies/warnings to.
+     * @param reportLog to log inconsistencies/warnings to.
+     * @param verboseLog to log verbose debug info
      * @param summary to update when finding inconsistencies.
      * @param numberOfThreads max number of threads to use.
      * @param maxOffHeapCachingMemory max amount of off-heap memory that the checker can allocate for caching data.
@@ -426,7 +427,8 @@ public interface StorageEngineFactory {
             Config config,
             PageCache pageCache,
             IndexProviderMap indexProviders,
-            InternalLog log,
+            InternalLog reportLog,
+            InternalLog verboseLog,
             ConsistencySummaryStatistics summary,
             int numberOfThreads,
             long maxOffHeapCachingMemory,

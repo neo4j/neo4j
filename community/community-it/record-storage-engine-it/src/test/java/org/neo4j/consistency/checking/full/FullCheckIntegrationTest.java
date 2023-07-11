@@ -3078,6 +3078,7 @@ public class FullCheckIntegrationTest {
                 config(),
                 4,
                 logProvider.getLog("test"),
+                logProvider.getLog("verbose"),
                 false,
                 ConsistencyFlags.ALL,
                 memoryLimiter,

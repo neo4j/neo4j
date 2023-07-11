@@ -252,6 +252,12 @@ class CheckerContext {
         }
     }
 
+    void error(String format, Object... params) {
+        if (verbose) {
+            log.error(format, params);
+        }
+    }
+
     ProgressListener progressReporter(Checker checker, String name, long totalCount) {
         int nbrRanges =
                 checker.isNodeBasedCheck() ? limiter.numberOfNodeRanges() : limiter.numberOfRelationshipRanges();
