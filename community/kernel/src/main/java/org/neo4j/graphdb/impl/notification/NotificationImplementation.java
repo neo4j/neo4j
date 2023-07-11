@@ -60,9 +60,11 @@ public final class NotificationImplementation implements Notification {
     public static class NotificationBuilder {
         private final NotificationCodeWithDescription notificationCodeWithDescription;
         private String title;
-        private String description;
+        private final String description;
         private InputPosition position;
-        private String message;
+        private final String message;
+        private String[] messageParameters;
+        private String[] notificationDetails;
 
         public NotificationBuilder(NotificationCodeWithDescription notificationCodeWithDescription) {
             this.notificationCodeWithDescription = notificationCodeWithDescription;
@@ -85,20 +87,27 @@ public final class NotificationImplementation implements Notification {
         }
 
         public NotificationBuilder setNotificationDetails(String... details) {
-            if (details.length > 0) {
-                this.description = String.format(description, (Object[]) details);
-            }
+            this.notificationDetails = details;
             return this;
         }
 
         public NotificationBuilder setMessageParameters(String... parameters) {
-            this.message = String.format(message, (Object[]) parameters);
+            this.messageParameters = parameters;
             return this;
         }
 
         public NotificationImplementation build() {
+            var detailedDescription = description;
+            if (notificationDetails != null) {
+                detailedDescription = String.format(description, (Object[]) notificationDetails);
+            }
+            var detailedMessage = message;
+            if (messageParameters != null) {
+                detailedMessage = String.format(message, (Object[]) messageParameters);
+            }
+
             return new NotificationImplementation(
-                    notificationCodeWithDescription, position, title, description, message);
+                    notificationCodeWithDescription, position, title, detailedDescription, detailedMessage);
         }
     }
 
