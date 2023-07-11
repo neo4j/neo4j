@@ -19,15 +19,75 @@
  */
 package org.neo4j.values;
 
-/**
- * Conversion to and from internal "storage" IDs to external element IDs.
- */
-public interface ElementIdMapper {
-    String nodeElementId(long nodeId);
+import static java.lang.String.format;
 
-    long nodeId(String id);
+import java.util.UUID;
+import org.neo4j.common.EntityType;
 
-    String relationshipElementId(long relationshipId);
+public abstract class ElementIdMapper {
 
-    long relationshipId(String id);
+    protected byte ELEMENT_ID_FORMAT_VERSION = 1;
+
+    protected record ElementId(UUID databaseId, long entityId, EntityType entityType) {}
+
+    protected ElementId decode(String id, EntityType expectedType) {
+        try {
+            var parts = readParts(id);
+            var header = Byte.parseByte(parts[0]);
+            verifyVersion(id, header);
+
+            var databaseId = UUID.fromString(parts[1]);
+            var entityId = Long.parseLong(parts[2]);
+            var entityType = decodeEntityType(id, header, expectedType);
+            return new ElementId(databaseId, entityId, entityType);
+        } catch (IllegalArgumentException iae) {
+            throw iae;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id), e);
+        }
+    }
+
+    private String[] readParts(String id) {
+        String[] parts = id.split(":");
+        if (parts.length != 3) {
+            throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id));
+        }
+        return parts;
+    }
+
+    private void verifyVersion(String id, byte header) {
+        byte version = (byte) (header >>> 2);
+        if (version != ELEMENT_ID_FORMAT_VERSION) {
+            throw new IllegalArgumentException(format("Element ID %s has an unexpected version %d", id, version));
+        }
+    }
+
+    private EntityType decodeEntityType(String id, byte header, EntityType expectedType) {
+        byte entityTypeId = (byte) (header & 0x3);
+        var actualType =
+                switch (entityTypeId) {
+                    case 0 -> EntityType.NODE;
+                    case 1 -> EntityType.RELATIONSHIP;
+                    default -> throw new IllegalArgumentException(
+                            format("Element ID %s has unknown entity type ID %s", id, entityTypeId));
+                };
+        verifyEntityType(id, actualType, expectedType);
+
+        return actualType;
+    }
+
+    private void verifyEntityType(String id, EntityType actual, EntityType expected) {
+        if (actual != expected) {
+            throw new IllegalArgumentException(
+                    format("Element ID %s has unexpected entity type %s, was expecting %s", id, actual, expected));
+        }
+    }
+
+    public abstract String nodeElementId(long nodeId);
+
+    public abstract long nodeId(String id);
+
+    public abstract String relationshipElementId(long relationshipId);
+
+    public abstract long relationshipId(String id);
 }

@@ -28,14 +28,12 @@ import org.neo4j.values.ElementIdMapper;
 
 /**
  * Produces element IDs which includes version, entity type, database ID and the internal storage entity ID.
- * The data is encoded into a {@code }byte[]} and converted into a String using base64.
  */
-public class DefaultElementIdMapperV1 implements ElementIdMapper {
-    private static final byte ELEMENT_ID_FORMAT_VERSION = 1;
+public class DefaultElementIdMapper extends ElementIdMapper {
 
     private final UUID databaseId;
 
-    public DefaultElementIdMapperV1(NamedDatabaseId databaseId) {
+    public DefaultElementIdMapper(NamedDatabaseId databaseId) {
         this.databaseId = databaseId.databaseId().uuid();
     }
 
@@ -69,13 +67,9 @@ public class DefaultElementIdMapperV1 implements ElementIdMapper {
 
     private long decodeElementId(String id, EntityType entityType) {
         try {
-            String[] elements = id.split(":");
-            if (elements.length != 3) {
-                throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id));
-            }
-            verifyHeader(id, elements[0], entityType);
-            verifyDatabaseId(elements[1], id);
-            return Long.parseLong(elements[2]);
+            var elementId = decode(id, entityType);
+            verifyDatabaseId(elementId.databaseId(), id);
+            return elementId.entityId();
         } catch (IllegalArgumentException iae) {
             throw iae;
         } catch (Exception e) {
@@ -83,35 +77,10 @@ public class DefaultElementIdMapperV1 implements ElementIdMapper {
         }
     }
 
-    private void verifyHeader(String id, String headerString, EntityType entityType) {
-        byte header = Byte.parseByte(headerString);
-        byte version = (byte) (header >>> 2);
-        if (version != ELEMENT_ID_FORMAT_VERSION) {
-            throw new IllegalArgumentException(format("Element ID %s has an unexpected version %d", id, version));
-        }
-        verifyEntityType(id, header, entityType);
-    }
-
-    private void verifyDatabaseId(String providedDatabaseId, String id) {
-        UUID uuid = UUID.fromString(providedDatabaseId);
-        if (!databaseId.equals(uuid)) {
+    private void verifyDatabaseId(UUID providedDatabaseId, String id) {
+        if (!databaseId.equals(providedDatabaseId)) {
             throw new IllegalArgumentException(
                     format("Element ID %s does not belong to the current database %s.", id, databaseId));
-        }
-    }
-
-    private void verifyEntityType(String id, byte header, EntityType expected) {
-        byte entityTypeId = (byte) (header & 0x3);
-        EntityType entityType =
-                switch (entityTypeId) {
-                    case 0 -> EntityType.NODE;
-                    case 1 -> EntityType.RELATIONSHIP;
-                    default -> throw new IllegalArgumentException(
-                            format("Element ID %s has unknown entity type ID %s", id, entityTypeId));
-                };
-        if (entityType != expected) {
-            throw new IllegalArgumentException(
-                    format("Element ID %s has unexpected entity type %s, was expecting %s", id, entityType, expected));
         }
     }
 

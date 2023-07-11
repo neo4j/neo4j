@@ -26,12 +26,12 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.database.DatabaseIdHelper;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-class DefaultElementIdMapperV1Test {
+class DefaultElementIdMapperTest {
 
     @Test
     void elementIdForEntity() {
         var databaseId = DatabaseIdHelper.randomNamedDatabaseId();
-        var idMapper = new DefaultElementIdMapperV1(databaseId);
+        var idMapper = new DefaultElementIdMapper(databaseId);
         String databaseUUID = databaseId.databaseId().uuid().toString();
         assertEquals("5:" + databaseUUID + ":1", idMapper.relationshipElementId(1));
         assertEquals("5:" + databaseUUID + ":17857", idMapper.relationshipElementId(17857));
@@ -45,7 +45,7 @@ class DefaultElementIdMapperV1Test {
 
     @Test
     void entityIdFromElementId() {
-        var idMapper = new DefaultElementIdMapperV1(DatabaseIdHelper.randomNamedDatabaseId());
+        var idMapper = new DefaultElementIdMapper(DatabaseIdHelper.randomNamedDatabaseId());
         long relationshipId = 17857;
         long nodeId = 784512;
         var relElementId = idMapper.relationshipElementId(relationshipId);
@@ -58,7 +58,7 @@ class DefaultElementIdMapperV1Test {
     @Test
     void failToDecodeIdsFromAnotherDatabase() {
         NamedDatabaseId expectedId = DatabaseIdHelper.randomNamedDatabaseId();
-        var idMapper = new DefaultElementIdMapperV1(expectedId);
+        var idMapper = new DefaultElementIdMapper(expectedId);
 
         String nonExpectedDbId =
                 DatabaseIdHelper.randomNamedDatabaseId().databaseId().uuid().toString();
