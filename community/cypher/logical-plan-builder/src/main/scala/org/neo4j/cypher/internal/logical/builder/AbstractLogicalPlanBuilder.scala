@@ -2366,9 +2366,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   protected def newAlias(variable: LogicalVariable, expression: Expression): Unit = {
-    val typeInfo = semanticTable.types.get(expression).orElse(findTypeIgnoringPosition(expression))
-    val spec = typeInfo.map(_.actual).getOrElse(CTAny.invariant)
-    semanticTable = semanticTable.addTypeInfo(variable, spec)
+    if (!semanticTable.types.contains(variable)) {
+      val typeInfo = semanticTable.types.get(expression).orElse(findTypeIgnoringPosition(expression))
+      val spec = typeInfo.map(_.actual).getOrElse(CTAny.invariant)
+      semanticTable = semanticTable.addTypeInfo(variable, spec)
+    }
   }
 
   private def findTypeIgnoringPosition(expr: Expression) =

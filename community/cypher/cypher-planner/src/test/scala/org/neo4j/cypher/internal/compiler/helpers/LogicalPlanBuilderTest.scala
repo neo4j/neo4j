@@ -227,29 +227,6 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     }
   }
 
-  test("should correctly insert HasLabels/HasTypes/HasLabelsOrTypes in .filter for shadowed vars") {
-    val plan = new LogicalPlanBuilder()
-      .produceResults("n")
-      .filter("n:N", "r:R", "v:V")
-      .projection("1 AS n", "1 AS r", "1 AS v")
-      .input(nodes = Seq("n"), relationships = Seq("r"), variables = Seq("v"))
-      .build()
-
-    plan should beLike {
-      case ProduceResult(
-          Selection(
-            Ands(SetExtractor(
-              HasLabelsOrTypes(Variable("n"), Seq(LabelOrRelTypeName("N"))),
-              HasLabelsOrTypes(Variable("r"), Seq(LabelOrRelTypeName("R"))),
-              HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
-            )),
-            _
-          ),
-          _
-        ) =>
-    }
-  }
-
   test("should correctly insert HasLabels/HasTypes/HasLabelsOrTypes in .projection") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n2", "r2", "v2")
