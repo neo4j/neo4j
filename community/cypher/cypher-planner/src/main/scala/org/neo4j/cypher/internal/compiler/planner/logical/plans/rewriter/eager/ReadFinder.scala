@@ -847,17 +847,15 @@ object ReadFinder {
         // Do not traverse the logical plan tree! We are only looking at expressions of the given plan
         acc => SkipChildren(acc)
 
-      case v: Variable
-        // If v could be a node
-        if semanticTable.typeFor(v).couldBe(CTNode) =>
-        acc =>
-          SkipChildren(acc.withReferencedNodeVariable(v))
-
-      case v: Variable
-        // If v could be a relationship
-        if semanticTable.typeFor(v).couldBe(CTRelationship) =>
-        acc =>
-          SkipChildren(acc.withReferencedRelationshipVariable(v))
+      case v: Variable => acc =>
+          var res = acc
+          if (semanticTable.typeFor(v).couldBe(CTNode)) {
+            res = res.withReferencedNodeVariable(v)
+          }
+          if (semanticTable.typeFor(v).couldBe(CTRelationship)) {
+            res = res.withReferencedRelationshipVariable(v)
+          }
+          SkipChildren(res)
 
       case Property(expr, propertyName) =>
         acc =>
