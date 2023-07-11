@@ -100,8 +100,7 @@ class CaseExpressionTest
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
-      CypherRuntimeConfiguration.defaultConfiguration,
-      "test"
+      CypherRuntimeConfiguration.defaultConfiguration
     ))
 
   override def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =

@@ -94,8 +94,7 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         CommunityExpressionConverter(
           context.tokenContext,
           context.anonymousVariableNameGenerator,
-          context.config,
-          SlottedRuntimeName.name
+          context.config
         )
       )
 

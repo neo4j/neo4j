@@ -52,7 +52,7 @@ public class CompilerInfo {
     }
 
     public String runtime() {
-        return runtime.toLowerCase();
+        return runtime.toLowerCase(Locale.ROOT);
     }
 
     public List<SchemaIndexUsage> indexes() {

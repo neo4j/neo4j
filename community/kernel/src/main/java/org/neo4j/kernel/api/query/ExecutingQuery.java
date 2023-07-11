@@ -422,6 +422,10 @@ public class ExecutingQuery {
                 logicalPlanCacheUsage);
     }
 
+    public String cypherRuntime() {
+        return this.compilerInfo == null ? "" : this.compilerInfo.runtime();
+    }
+
     // basic methods
 
     @Override

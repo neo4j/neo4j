@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
@@ -209,5 +208,7 @@ public interface DbAccess extends EntityById {
 
     Read dataRead();
 
-    NamedDatabaseId databaseIdOrNull();
+    ProcedureCallContext procedureCallContext(int fcnId);
+
+    ProcedureCallContext procedureCallContext(int procId, String[] originalFieldNames);
 }

@@ -146,8 +146,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       CommunityExpressionConverter(
         ReadTokenContext.EMPTY,
         anonymousVariableNameGenerator,
-        CypherRuntimeConfiguration.defaultConfiguration,
-        "test"
+        CypherRuntimeConfiguration.defaultConfiguration
       )
     )
 

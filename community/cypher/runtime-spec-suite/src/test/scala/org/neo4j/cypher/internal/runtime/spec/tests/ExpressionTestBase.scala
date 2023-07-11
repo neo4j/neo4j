@@ -1009,7 +1009,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toUpperCase(Locale.ROOT))
+    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toLowerCase(Locale.ROOT))
   }
 
   test("should be able to access what runtime that was used in a UDAF") {
@@ -1025,7 +1025,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toUpperCase(Locale.ROOT))
+    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toLowerCase(Locale.ROOT))
   }
 }
 

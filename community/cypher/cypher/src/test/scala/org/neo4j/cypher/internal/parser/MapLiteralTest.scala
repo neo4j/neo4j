@@ -67,8 +67,7 @@ class MapLiteralTest
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
-      CypherRuntimeConfiguration.defaultConfiguration,
-      "test"
+      CypherRuntimeConfiguration.defaultConfiguration
     ))
 
   def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =

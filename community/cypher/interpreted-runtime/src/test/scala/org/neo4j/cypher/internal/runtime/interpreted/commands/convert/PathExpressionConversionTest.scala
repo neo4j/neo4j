@@ -50,8 +50,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
-      CypherRuntimeConfiguration.defaultConfiguration,
-      "test"
+      CypherRuntimeConfiguration.defaultConfiguration
     ))
 
   val pos = DummyPosition(0)

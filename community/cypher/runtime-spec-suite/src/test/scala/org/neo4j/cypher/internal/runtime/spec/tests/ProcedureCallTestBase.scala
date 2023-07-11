@@ -488,6 +488,6 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toUpperCase(Locale.ROOT))
+    runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toLowerCase(Locale.ROOT))
   }
 }

@@ -27,6 +27,9 @@ import java.util.stream.Stream;
  * skip calculating and returning the unused fields.
  */
 public class ProcedureCallContext {
+
+    public static String[] EMPTY_OUTPUT_FIELDNAMES = new String[0];
+
     private final int id;
     private final String[] outputFieldNames;
     private final boolean calledFromCypher;
@@ -34,6 +37,11 @@ public class ProcedureCallContext {
     private final boolean isSystemDatabase;
 
     private final String runtimeUsed;
+
+    public ProcedureCallContext(
+            int id, boolean calledFromCypher, String database, boolean isSystemDatabase, String runtimeUsed) {
+        this(id, EMPTY_OUTPUT_FIELDNAMES, calledFromCypher, database, isSystemDatabase, runtimeUsed);
+    }
 
     public ProcedureCallContext(
             int id,
@@ -76,7 +84,7 @@ public class ProcedureCallContext {
 
     /* should only be used for testing purposes */
     public static final ProcedureCallContext EMPTY =
-            new ProcedureCallContext(-1, new String[] {}, false, "", false, "");
+            new ProcedureCallContext(-1, EMPTY_OUTPUT_FIELDNAMES, false, "", false, "");
 
     public int id() {
         return id;

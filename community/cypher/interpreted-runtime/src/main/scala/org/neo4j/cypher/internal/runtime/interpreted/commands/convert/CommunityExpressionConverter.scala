@@ -153,8 +153,7 @@ import org.neo4j.values.storable.Values.intValue
 case class CommunityExpressionConverter(
   tokenContext: ReadTokenContext,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-  runtimeConfig: CypherRuntimeConfiguration,
-  runtimeName: String
+  runtimeConfig: CypherRuntimeConfiguration
 ) extends ExpressionConverter {
 
   override def toCommandProjection(
@@ -412,11 +411,11 @@ case class CommunityExpressionConverter(
           }
         val signature = e.fcnSignature.get
         if (signature.isAggregate)
-          commands.expressions.AggregationFunctionInvocation(signature, callArgumentCommands, runtimeName)
+          commands.expressions.AggregationFunctionInvocation(signature, callArgumentCommands)
         else if (signature.builtIn) {
-          commands.expressions.BuiltInFunctionInvocation(signature, callArgumentCommands.toArray, runtimeName)
+          commands.expressions.BuiltInFunctionInvocation(signature, callArgumentCommands.toArray)
         } else
-          commands.expressions.UserFunctionInvocation(signature, callArgumentCommands.toArray, runtimeName)
+          commands.expressions.UserFunctionInvocation(signature, callArgumentCommands.toArray)
 
       case _: internal.expressions.MapProjection =>
         throw new InternalException("`MapProjection` should have been rewritten away")

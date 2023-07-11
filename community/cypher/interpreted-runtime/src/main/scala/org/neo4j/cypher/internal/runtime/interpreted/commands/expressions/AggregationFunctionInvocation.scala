@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstanceWithObjectReferences
@@ -75,40 +73,16 @@ abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
   override def children: Seq[AstNode[_]] = arguments
 
   protected def call(state: QueryState): UserAggregationReducer
-
-  protected def procedureCallContext(query: QueryContext, fcnId: Int, runtimeUsed: String): ProcedureCallContext = {
-    val databaseId = query.databaseIdOrNull()
-    if (databaseId != null) {
-      new ProcedureCallContext(
-        fcnId,
-        Array.empty,
-        true,
-        databaseId.name(),
-        databaseId.isSystemDatabase,
-        runtimeUsed
-      )
-    } else {
-      new ProcedureCallContext(
-        fcnId,
-        Array.empty,
-        true,
-        "",
-        false,
-        runtimeUsed
-      )
-    }
-  }
 }
 
 object AggregationFunctionInvocation {
 
   def apply(
     signature: UserFunctionSignature,
-    arguments: IndexedSeq[Expression],
-    runtimeUsed: String
+    arguments: IndexedSeq[Expression]
   ): AggregationFunctionInvocation = {
-    if (signature.builtIn) BuiltInAggregationFunctionInvocation(signature.id, arguments, runtimeUsed)
-    else UserAggregationFunctionInvocation(signature.id, arguments, runtimeUsed)
+    if (signature.builtIn) BuiltInAggregationFunctionInvocation(signature.id, arguments)
+    else UserAggregationFunctionInvocation(signature.id, arguments)
   }
 
   // AggregationFunction instances are usually created from nested anonymous classes with some outer context:
@@ -121,24 +95,26 @@ object AggregationFunctionInvocation {
       ) // UserAggregator: 2 refs + 1 this$0 (one is a new SecurityContext, but not counted)
 }
 
-case class UserAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression], runtimeUsed: String)
+case class UserAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression])
     extends AggregationFunctionInvocation(arguments) {
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(UserAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f)), runtimeUsed))
+    f(UserAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
 
   override protected def call(state: QueryState): UserAggregationReducer = {
-    state.query.aggregateFunction(fcnId, procedureCallContext(state.query, fcnId, runtimeUsed))
+    val query = state.query
+    query.aggregateFunction(fcnId, query.procedureCallContext(fcnId))
   }
 }
 
-case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression], runtimeUsed: String)
+case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression])
     extends AggregationFunctionInvocation(arguments) {
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(BuiltInAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f)), runtimeUsed))
+    f(BuiltInAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
 
   override protected def call(state: QueryState): UserAggregationReducer = {
-    state.query.builtInAggregateFunction(fcnId, procedureCallContext(state.query, fcnId, runtimeUsed))
+    val query = state.query
+    query.builtInAggregateFunction(fcnId, query.procedureCallContext(fcnId))
   }
 }
