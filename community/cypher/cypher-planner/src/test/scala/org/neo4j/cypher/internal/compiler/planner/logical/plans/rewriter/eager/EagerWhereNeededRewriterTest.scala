@@ -72,6 +72,8 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.StorableType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
@@ -3980,7 +3982,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n").withCardinality(30)
       .filter("m:M").withCardinality(30) // Filter can crash if executed on deleted node.
-      .unwind("[1,2,3] AS i").withCardinality(60)
+      .unwind("[1,2,3] AS i").withCardinality(60).newVar("i", CTInteger)
       .expand("(n)-[r]->(m)").withCardinality(20)
       .allNodeScan("n").withCardinality(10)
     val plan = planBuilder.build()
@@ -4044,7 +4046,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n").withCardinality(60)
       .projection("m.prop AS prop").withCardinality(60) // Property projection can crash if executed on deleted node.
-      .unwind("[1,2,3] AS i").withCardinality(60)
+      .unwind("[1,2,3] AS i").withCardinality(60).newVar("i", CTInteger)
       .expand("(n)-[r]->(m)").withCardinality(20)
       .allNodeScan("n").withCardinality(10)
     val plan = planBuilder.build()
@@ -4227,12 +4229,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n").withCardinality(40)
       .projection(Map("props" -> nestedPlanExpression)).withCardinality(60)
-      .unwind("[1,2,3] AS i").withCardinality(60)
+      .unwind("[1,2,3] AS i").withCardinality(60).newVar("i", CTInteger)
       .expand("(n)-[r]->(m)").withCardinality(20)
       .allNodeScan("n").withCardinality(10)
 
     // This makes sure we do not mistake prop for a potential node
-    planBuilder.newVariable(prop, CTList(CTAny))
+    planBuilder.newVariable(prop, StorableType.storableType)
     val plan = planBuilder.build()
     val result = eagerizePlan(planBuilder, plan)
 
@@ -4286,6 +4288,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
       .foreach("x", "[1]", Seq(createPattern(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))))
+      .newVar("x", CTInteger)
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
@@ -4311,6 +4314,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
       .foreach("x", "[1]", Seq(removeLabel("n", "N")))
+      .newVar("x", CTInteger)
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
@@ -4333,6 +4337,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
       .foreach("x", "[1]", Seq(setLabel("n", "N")))
+      .newVar("x", CTInteger)
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
@@ -4355,6 +4360,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
       .foreach("x", "[1]", Seq(setNodeProperties("n", "prop" -> "5")))
+      .newVar("x", CTInteger)
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
@@ -4377,6 +4383,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
       .foreach("x", "[1]", Seq(setNodePropertiesFromMap("n", "{prop: 5}", removeOtherProps = false)))
+      .newVar("x", CTInteger)
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
@@ -4388,6 +4395,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .detachDeleteNode("n")
         .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3)))))
         .foreach("x", "[1]", Seq(setNodePropertiesFromMap("n", "{prop: 5}", removeOtherProps = false)))
+        .newVar("x", CTInteger)
         .nodeByLabelScan("n", "A")
         .build()
     )
@@ -4399,6 +4407,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
       .foreach("x", "[1]", Seq(setNodeProperty("n", "prop", "5")))
+      .newVar("x", CTInteger)
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
@@ -6503,7 +6512,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       // Placed Sort on RHS of Apply. Sort is Eager, so if it was on top, we would not need an Eager.
       .|.sort("n DESC")
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
@@ -6535,7 +6544,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .partialSort(Seq("x ASC"), Seq("n DESC"))
       .apply()
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger).newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
@@ -6568,7 +6577,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       // Placed Top on RHS of Apply. Top is Eager, so if it was on top, we would not need an Eager.
       .|.top(1, "n DESC")
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
@@ -6601,7 +6610,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       // Placed Top on RHS of Apply. Top is Eager, so if it was on top, we would not need an Eager.
       .|.top1WithTies("n DESC")
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
@@ -6694,7 +6703,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .apply()
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
@@ -6728,7 +6737,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .apply()
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
@@ -6758,12 +6767,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
-      .rollUpApply("list", "n")
+      .rollUpApply("list", "n").newVar("list", CTList(CTNode))
       .|.expand("(n)-[r]->(m)")
       .|.argument("n")
       .apply()
       .|.nodeByLabelScan("n", "A")
-      .unwind("[1,2,3] AS x")
+      .unwind("[1,2,3] AS x").newVar("x", CTInteger)
       .argument()
     val plan = planBuilder.build()
 
