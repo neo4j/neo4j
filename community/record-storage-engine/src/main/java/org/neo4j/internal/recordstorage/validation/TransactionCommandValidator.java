@@ -192,6 +192,12 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     }
 
     @Override
+    public boolean visitSchemaRuleCommand(Command.SchemaRuleCommand command) throws IOException {
+        checkStore(command.getAfter().getId(), getCursor(StoreType.SCHEMA), StoreType.SCHEMA);
+        return false;
+    }
+
+    @Override
     public boolean visitRelationshipTypeTokenCommand(Command.RelationshipTypeTokenCommand command) throws IOException {
         return false;
     }
@@ -203,11 +209,6 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
 
     @Override
     public boolean visitPropertyKeyTokenCommand(Command.PropertyKeyTokenCommand command) throws IOException {
-        return false;
-    }
-
-    @Override
-    public boolean visitSchemaRuleCommand(Command.SchemaRuleCommand command) throws IOException {
         return false;
     }
 

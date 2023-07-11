@@ -117,7 +117,7 @@ public final class ChunkCommitter implements TransactionCommitter {
             boolean commit)
             throws KernelException {
         List<StorageCommand> extractedCommands = ktx.extractCommands(memoryTracker);
-        if (!extractedCommands.isEmpty() || commit) {
+        if (!extractedCommands.isEmpty() || (commit && transactionPayload != null)) {
             if (kernelVersion == null) {
                 this.kernelVersion = kernelVersionProvider.kernelVersion();
                 this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;

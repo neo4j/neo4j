@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -595,17 +596,17 @@ public class TransactionRecordState implements RecordState {
     }
 
     void schemaRuleDelete(long ruleId, SchemaRule rule) {
+        // Index schema rules may be deleted twice, if they were owned by a constraint; once for dropping the index, and
+        // then again as part of
+        // dropping the constraint. So we keep this method idempotent.
         RecordProxy<SchemaRecord, SchemaRule> proxy =
-                recordChangeSet.getSchemaRuleChanges().getOrLoad(ruleId, rule);
+                recordChangeSet.getSchemaRuleChanges().getOrLoad(ruleId, rule, RecordLoad.CHECK);
         SchemaRecord record = proxy.forReadingData();
         if (record.inUse()) {
             record = proxy.forChangingData();
             record.setInUse(false);
             getAndDeletePropertyChain(record);
         }
-        // Index schema rules may be deleted twice, if they were owned by a constraint; once for dropping the index, and
-        // then again as part of
-        // dropping the constraint. So we keep this method idempotent.
     }
 
     void schemaRuleSetProperty(long ruleId, int propertyKeyId, Value value, SchemaRule rule) {
