@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.util;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,8 +62,8 @@ public class ExportTestUtilities {
     }
 
     public static class ControlledProgressListener extends ProgressListener.Adapter {
-        long progress;
-        boolean closeCalled;
+        public long progress;
+        public boolean closeCalled;
 
         @Override
         public void add(long progress) {

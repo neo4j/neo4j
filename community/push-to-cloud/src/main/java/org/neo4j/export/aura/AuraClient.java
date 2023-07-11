@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.aura;
 
 import static java.lang.Long.min;
 import static java.lang.String.format;
@@ -24,6 +24,7 @@ import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_GATEWAY_TIMEOUT;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -35,9 +36,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.compress.utils.IOUtils.toByteArray;
 import static org.neo4j.export.UploadCommand.bytesToGibibytes;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +49,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.export.CommandResponseHandler;
+import org.neo4j.export.aura.AuraJsonMapper.ErrorBody;
+import org.neo4j.export.aura.AuraJsonMapper.SignedURIBodyResponse;
+import org.neo4j.export.aura.AuraJsonMapper.StatusBody;
+import org.neo4j.export.aura.AuraJsonMapper.UploadStatusResponse;
+import org.neo4j.export.util.IOCommon;
+import org.neo4j.export.util.ProgressTrackingOutputStream;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.time.Clocks;
@@ -64,7 +70,7 @@ public class AuraClient {
 
     private static final long DEFAULT_MAXIMUM_RETRIES = 50;
     private static final long DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS = SECONDS.toMillis(64);
-    private final String consoleURL;
+    private final AuraConsole auraConsole;
     private final String username;
     private final char[] password;
     private final boolean consentConfirmed;
@@ -73,12 +79,12 @@ public class AuraClient {
     private final ProgressListenerFactory progressListenerFactory;
     private final CommandResponseHandler commandResponseHandler;
     private final ExecutionContext ctx;
-    private final Sleeper sleeper;
+    private final IOCommon.Sleeper sleeper;
     private boolean verbose;
 
-    public AuraClient(org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder) {
+    public AuraClient(AuraClientBuilder auraClientBuilder) {
         this.ctx = auraClientBuilder.ctx;
-        this.consoleURL = auraClientBuilder.consoleURL;
+        this.auraConsole = auraClientBuilder.auraConsole;
         this.username = auraClientBuilder.username;
         this.password = auraClientBuilder.password;
         this.consentConfirmed = auraClientBuilder.consentConfirmed;
@@ -89,8 +95,8 @@ public class AuraClient {
         this.commandResponseHandler = auraClientBuilder.commandResponseHandler;
     }
 
-    public String getConsoleURL() {
-        return consoleURL;
+    public AuraConsole getAuraConsole() {
+        return auraConsole;
     }
 
     public String authenticate(boolean verbose) throws CommandFailedException {
@@ -105,16 +111,17 @@ public class AuraClient {
     /**
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
-    public AuraResponse.SignedURIBody initatePresignedUpload(
-            long crc32Sum, long size, String bearerToken, String version) {
-        URL importURL = Util.safeUrl(consoleURL + "/import");
-        AuraResponse.SignedURIBody signedURIBody =
-                retryOnUnavailable(() -> doInitatePresignedUpload(crc32Sum, size, bearerToken, version, importURL));
-        return signedURIBody;
+    public SignedURIBodyResponse initatePresignedUpload(
+            long crc32Sum, long dumpSize, long fullStoreSize, String bearerToken, String version) {
+        URL importURL = auraConsole.getImportUrl();
+        SignedURIBodyResponse signedURIBodyResponse = retryOnUnavailable(
+                () -> doInitatePresignedUpload(crc32Sum, dumpSize, fullStoreSize, bearerToken, version, importURL));
+        return signedURIBodyResponse;
     }
 
-    private AuraResponse.SignedURIBody doInitatePresignedUpload(
-            long crc32Sum, long size, String bearerToken, String version, URL importURL) throws IOException {
+    private SignedURIBodyResponse doInitatePresignedUpload(
+            long crc32Sum, long dumpSize, long fullSize, String bearerToken, String version, URL importURL)
+            throws IOException {
 
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
         String bearerHeader = "Bearer " + bearerToken;
@@ -127,8 +134,9 @@ public class AuraClient {
             connection.setRequestProperty("Neo4j-Version", version);
             connection.setDoOutput(true);
             try (OutputStream postData = connection.getOutputStream()) {
-                postData.write(String.format("{\"Crc32\":%d, \"FullSize\":%d}", crc32Sum, size)
-                        .getBytes(UTF_8));
+                postData.write(
+                        String.format("{\"Crc32\":%d, \"DumpSize\": %d, \"FullSize\":%d}", crc32Sum, dumpSize, fullSize)
+                                .getBytes(UTF_8));
             }
 
             // Read the response
@@ -142,7 +150,7 @@ public class AuraClient {
                 case HTTP_UNAUTHORIZED:
                     throw errorResponse(verbose, connection, "The given authorization token is invalid or has expired");
                 case HTTP_UNPROCESSABLE_ENTITY:
-                    throw validationFailureErrorResponse(connection, size);
+                    throw validationFailureErrorResponse(connection, fullSize);
                 case HTTP_GATEWAY_TIMEOUT:
                 case HTTP_BAD_GATEWAY:
                 case HTTP_UNAVAILABLE:
@@ -158,21 +166,21 @@ public class AuraClient {
         }
     }
 
-    private AuraResponse.SignedURIBody extractSignedURIFromResponse(boolean verbose, HttpURLConnection connection)
+    private SignedURIBodyResponse extractSignedURIFromResponse(boolean verbose, HttpURLConnection connection)
             throws IOException {
         try (InputStream responseData = connection.getInputStream()) {
             String json = new String(toByteArray(responseData), UTF_8);
             commandResponseHandler.debug(verbose, "Got json '" + json + "' back expecting to contain the signed URL");
-            return Util.parseJsonUsingJacksonParser(json, AuraResponse.SignedURIBody.class);
+            return IOCommon.parseJsonUsingJacksonParser(json, AuraJsonMapper.SignedURIBodyResponse.class);
         }
     }
 
     private String doAuthenticate(boolean verbose) throws IOException {
-        URL url = Util.safeUrl(consoleURL + "/import/auth");
+        URL url = auraConsole.getAuthenticateUrl();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         try (Closeable c = connection::disconnect) {
             connection.setRequestMethod("POST");
-            connection.setRequestProperty("Authorization", "Basic " + Util.base64Encode(username, password));
+            connection.setRequestProperty("Authorization", "Basic " + IOCommon.base64Encode(username, password));
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("Confirmed", String.valueOf(consentConfirmed));
             int responseCode = connection.getResponseCode();
@@ -197,17 +205,23 @@ public class AuraClient {
                 case HTTP_GATEWAY_TIMEOUT:
                 case HTTP_BAD_GATEWAY:
                 case HTTP_UNAVAILABLE:
-                    throw new SignedUploadURLFactory.RetryableHttpException(
+                    throw new RetryableHttpException(
                             commandResponseHandler.unexpectedResponse(verbose, connection, "Authorization"));
                 case HTTP_OK:
                     try (InputStream responseData = connection.getInputStream()) {
                         String json = new String(toByteArray(responseData), UTF_8);
-                        commandResponseHandler.debug(true, "Got json response back from authorize request");
-                        return Util.parseJsonUsingJacksonParser(json, AuraClient.TokenBody.class).Token;
+                        commandResponseHandler.debug(true, "Successfully authenticated with Aura.");
+                        return IOCommon.parseJsonUsingJacksonParser(json, AuraClient.TokenBody.class).Token;
                     }
                 default:
                     throw commandResponseHandler.unexpectedResponse(verbose, connection, "Authorization");
             }
+        }
+    }
+
+    static class RetryableHttpException extends RuntimeException {
+        RetryableHttpException(CommandFailedException e) {
+            super(e);
         }
     }
 
@@ -247,13 +261,14 @@ public class AuraClient {
     }
 
     private void doCheckSize(boolean verbose, long size, String bearerToken) throws IOException {
-        URL url = Util.safeUrl(consoleURL + "/import/size");
+        URL url = auraConsole.getSizeUrl();
         String bearerTokenHeader = "Bearer " + bearerToken;
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         try (Closeable c = connection::disconnect) {
             connection.setDoOutput(true);
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Authorization", bearerTokenHeader);
+            connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("Content-Type", "application/json");
             try (OutputStream postData = connection.getOutputStream()) {
                 postData.write(String.format("{\"FullSize\":%d}", size).getBytes(UTF_8));
@@ -292,11 +307,10 @@ public class AuraClient {
         commandResponseHandler.debug(
                 verbose,
                 format(
-                        "Rough guess for how long dump file import will take: %.0f minutes; file size is %.1f GB (%d bytes)",
+                        "Rough guess for how long dump file import will take: %.0f minutes; store size on disk is %.1f GB (%d bytes)",
                         importTimeEstimateMinutes, bytesToGibibytes(fileSize), fileSize));
         while (!statusProgress.isDone()) {
-            StatusBody statusBody =
-                    getDatabaseStatus(verbose, Util.safeUrl(consoleURL + "/import/status"), bearerTokenHeader);
+            StatusBody statusBody = getDatabaseStatus(verbose, auraConsole.getStatusUrl(), bearerTokenHeader);
             switch (statusBody.Status) {
                 case "running":
                     // It could happen that the very first call of this method is so fast, that the database is still in
@@ -347,7 +361,7 @@ public class AuraClient {
         }
     }
 
-    int importStatusProgressEstimate(String databaseStatus, long elapsed, long importTimeEstimateMillis) {
+    public int importStatusProgressEstimate(String databaseStatus, long elapsed, long importTimeEstimateMillis) {
         switch (databaseStatus) {
             case "running":
                 return 0;
@@ -380,11 +394,13 @@ public class AuraClient {
                     try (InputStream responseData = connection.getInputStream()) {
                         String json = new String(toByteArray(responseData), UTF_8);
                         // debugResponse( verbose, json, connection, false );
-                        return Util.parseJsonUsingJacksonParser(json, org.neo4j.export.AuraClient.StatusBody.class);
+                        return IOCommon.parseJsonUsingJacksonParser(json, AuraJsonMapper.StatusBody.class);
                     }
                 case HTTP_GATEWAY_TIMEOUT:
+                case HTTP_INTERNAL_ERROR:
                 case HTTP_BAD_GATEWAY:
                 case HTTP_UNAVAILABLE:
+                    ctx.err().println("Received HTTP 5xx error polling status. Retrying...");
                     throw new RetryableHttpException(commandResponseHandler.unexpectedResponse(
                             verbose, connection, "Trigger import/restore after successful upload"));
                 default:
@@ -394,10 +410,62 @@ public class AuraClient {
         }
     }
 
-    public void triggerImportProtocol(boolean verbose, Path source, long crc32Sum, String bearerToken)
+    public UploadStatusResponse uploadStatus(boolean verbose, long crc32Sum, String uploadId, String bearerToken)
+            throws IOException {
+        URL uploadStatusUrl = auraConsole.getUploadStatusUrl();
+        HttpURLConnection connection = (HttpURLConnection) uploadStatusUrl.openConnection();
+        String bearerHeader = "Bearer " + bearerToken;
+
+        try (Closeable c = connection::disconnect; ) {
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Authorization", bearerHeader);
+            connection.setDoOutput(true);
+        }
+        try (OutputStream postData = connection.getOutputStream()) {
+            postData.write(String.format("{\"Crc32\":%d, \"UploadID\": \"%s\"}", crc32Sum, uploadId)
+                    .getBytes(UTF_8));
+        }
+
+        try (InputStream responseData = connection.getInputStream()) {
+            String json = new String(toByteArray(responseData), UTF_8);
+            // debugResponse( verbose, json, connection, false );
+
+            UploadStatusResponse uploadStatusResponse =
+                    IOCommon.parseJsonUsingJacksonParser(json, AuraJsonMapper.UploadStatusResponse.class);
+            return uploadStatusResponse;
+        }
+    }
+
+    public void triggerGCPImportProtocol(
+            boolean verbose, Path source, long crc32Sum, String bearerToken, UploadStatusResponse uploadStatusResponse)
             throws IOException {
 
-        URL completeImportURL = Util.safeUrl(consoleURL + "/import/upload-complete");
+        URL completeImportURL = auraConsole.getUploadCompleteUrl();
+        HttpURLConnection connection = (HttpURLConnection) completeImportURL.openConnection();
+        String bearerHeader = "Bearer " + bearerToken;
+        try (Closeable c = connection::disconnect) {
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Authorization", bearerHeader);
+            connection.setDoOutput(true);
+            try (OutputStream postData = connection.getOutputStream()) {
+
+                AuraJsonMapper.TriggerImportRequest triggerImportRequest = new AuraJsonMapper.TriggerImportRequest();
+                triggerImportRequest.uploadStatusResponse = uploadStatusResponse;
+                triggerImportRequest.Crc32 = crc32Sum;
+                String json = IOCommon.SerializeWithJackson(triggerImportRequest);
+                postData.write(json.getBytes(UTF_8));
+            }
+
+            checkTriggerImportResponseCode(verbose, source, connection);
+        }
+    }
+
+    public void triggerGCPImportProtocol(boolean verbose, Path source, long crc32Sum, String bearerToken)
+            throws IOException {
+
+        URL completeImportURL = auraConsole.getUploadCompleteUrl();
         HttpURLConnection connection = (HttpURLConnection) completeImportURL.openConnection();
         String bearerHeader = "Bearer " + bearerToken;
         try (Closeable c = connection::disconnect) {
@@ -409,26 +477,31 @@ public class AuraClient {
                 postData.write(String.format("{\"Crc32\":%d}", crc32Sum).getBytes(UTF_8));
             }
 
-            int responseCode = connection.getResponseCode();
+            checkTriggerImportResponseCode(verbose, source, connection);
+        }
+    }
 
-            switch (responseCode) {
-                case HTTP_NOT_FOUND:
-                    // fallthrough
-                case HTTP_MOVED_PERM:
-                    throw updatePluginErrorResponse(connection);
-                case HTTP_TOO_MANY_REQUESTS:
-                    throw resumePossibleErrorResponse(connection, source);
-                case HTTP_CONFLICT:
-                    throw errorResponse(
-                            verbose,
-                            connection,
-                            "The target database contained data and consent to overwrite the data was not given. Aborting");
-                case HTTP_OK:
-                    // All good, we managed to trigger the import protocol after our completed upload
-                    break;
-                default:
-                    throw resumePossibleErrorResponse(connection, source);
-            }
+    private void checkTriggerImportResponseCode(boolean verbose, Path source, HttpURLConnection connection)
+            throws IOException {
+        int responseCode = connection.getResponseCode();
+
+        switch (responseCode) {
+            case HTTP_NOT_FOUND:
+                // fallthrough
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse(connection);
+            case HTTP_TOO_MANY_REQUESTS:
+                throw resumePossibleErrorResponse(connection, source);
+            case HTTP_CONFLICT:
+                throw errorResponse(
+                        verbose,
+                        connection,
+                        "The target database contained data and consent to overwrite the data was not given. Aborting");
+            case HTTP_OK:
+                // All good, we managed to trigger the import protocol after our completed upload
+                break;
+            default:
+                throw resumePossibleErrorResponse(connection, source);
         }
     }
 
@@ -476,23 +549,20 @@ public class AuraClient {
         try (InputStream responseData = connection.getErrorStream()) {
             String responseString = new String(toByteArray(responseData), UTF_8);
             commandResponseHandler.debugResponse(responseString, connection, true);
-            ErrorBody errorBody = Util.parseJsonUsingJacksonParser(responseString, ErrorBody.class);
+            ErrorBody errorBody = IOCommon.parseJsonUsingJacksonParser(responseString, ErrorBody.class);
 
             String message = errorBody.getMessage();
 
             // No special treatment required
             if (ERROR_REASON_EXCEEDS_MAX_SIZE.equals(errorBody.getReason())) {
                 String trimmedMessage = StringUtils.removeEnd(message, ".");
-                message =
-                        format("%s. Minimum storage space required: %s", trimmedMessage, UploadCommand.sizeText(size));
+                message = String.format(
+                        "%s. Minimum storage space required: %s",
+                        trimmedMessage, org.neo4j.export.UploadCommand.sizeText(size));
             }
 
             return formatCommandFailedExceptionError(message, errorBody.getUrl());
         }
-    }
-
-    interface Sleeper {
-        void sleep(long millis) throws InterruptedException;
     }
 
     public interface ProgressListenerFactory {
@@ -503,15 +573,9 @@ public class AuraClient {
         T get() throws IOException;
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    static class StatusBody {
-        public String Status;
-        public ErrorBody Error = new ErrorBody();
-    }
-
     public static class AuraClientBuilder {
         ExecutionContext ctx;
-        private String consoleURL;
+        private AuraConsole auraConsole;
 
         private String username;
 
@@ -523,7 +587,7 @@ public class AuraClient {
 
         private Clock clock;
 
-        private Sleeper sleeper;
+        private IOCommon.Sleeper sleeper;
 
         private ProgressListenerFactory progressListenerFactory;
 
@@ -533,54 +597,52 @@ public class AuraClient {
             this.ctx = ctx;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withConsoleURL(String consoleURL) {
-            this.consoleURL = consoleURL;
+        public AuraClientBuilder withAuraConsole(AuraConsole auraConsole) {
+            this.auraConsole = auraConsole;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withUserName(String username) {
+        public AuraClientBuilder withUserName(String username) {
             this.username = username;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withPassword(char[] password) {
+        public AuraClientBuilder withPassword(char[] password) {
             this.password = password;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withConsent(boolean consentConfirmed) {
+        public AuraClientBuilder withConsent(boolean consentConfirmed) {
             this.consentConfirmed = consentConfirmed;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withBoltURI(String boltURI) {
+        public AuraClientBuilder withBoltURI(String boltURI) {
             this.boltURI = boltURI;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withClock(Clock clock) {
+        public AuraClientBuilder withClock(Clock clock) {
             this.clock = clock;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withSleeper(Sleeper sleeper) {
+        public AuraClientBuilder withSleeper(IOCommon.Sleeper sleeper) {
             this.sleeper = sleeper;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withCommandResponseHandler(
-                CommandResponseHandler commandResponseHandler) {
+        public AuraClientBuilder withCommandResponseHandler(CommandResponseHandler commandResponseHandler) {
             this.commandResponseHandler = commandResponseHandler;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withProgressListenerFactory(
-                ProgressListenerFactory progressListenerFactory) {
+        public AuraClientBuilder withProgressListenerFactory(ProgressListenerFactory progressListenerFactory) {
             this.progressListenerFactory = progressListenerFactory;
             return this;
         }
 
-        public org.neo4j.export.AuraClient.AuraClientBuilder withDefaults() {
+        public AuraClientBuilder withDefaults() {
             if (this.sleeper == null) {
                 this.sleeper = Thread::sleep;
             }
@@ -601,48 +663,5 @@ public class AuraClient {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class TokenBody {
         public String Token;
-    }
-
-    static class RetryableHttpException extends RuntimeException {
-        RetryableHttpException(CommandFailedException e) {
-            super(e);
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    static class ErrorBody {
-        private static final String DEFAULT_MESSAGE =
-                "an unexpected problem ocurred, please contact customer support for assistance";
-        private static final String DEFAULT_REASON = "UnknownError";
-
-        private final String message;
-        private final String reason;
-        private final String url;
-
-        ErrorBody() {
-            this(null, null, null);
-        }
-
-        @JsonCreator
-        ErrorBody(
-                @JsonProperty("Message") String message,
-                @JsonProperty("Reason") String reason,
-                @JsonProperty("Url") String url) {
-            this.message = message;
-            this.reason = reason;
-            this.url = url;
-        }
-
-        public String getMessage() {
-            return StringUtils.defaultIfBlank(this.message, DEFAULT_MESSAGE);
-        }
-
-        public String getReason() {
-            return StringUtils.defaultIfBlank(this.reason, DEFAULT_REASON);
-        }
-
-        public String getUrl() {
-            return this.url;
-        }
     }
 }

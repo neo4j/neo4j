@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.providers;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -51,7 +51,10 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.export.SignedUploadGCP.ProgressListenerFactory;
+import org.neo4j.export.CommandResponseHandler;
+import org.neo4j.export.UploadCommand;
+import org.neo4j.export.providers.SignedUploadGCP.ProgressListenerFactory;
+import org.neo4j.export.util.ExportTestUtilities;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;

@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.export.aura.AuraConsole;
+import org.neo4j.export.aura.AuraURLFactory;
 
 public class AuraURLFactoryTest {
 
@@ -61,9 +63,11 @@ public class AuraURLFactoryTest {
         // given
         boolean devMode = false;
         // when
-        String consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", devMode);
+        AuraConsole consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", devMode);
         // then
-        assertEquals("https://console.neo4j.io/v1/databases/rogue", consoleUrl);
+        assertEquals(
+                "https://console.neo4j.io/v2/databases/rogue/import",
+                consoleUrl.getImportUrl().toString());
     }
 
     @Test
@@ -71,9 +75,11 @@ public class AuraURLFactoryTest {
         // given
         boolean devMode = true;
         // when
-        String consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-abc.io", devMode);
+        AuraConsole consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-abc.io", devMode);
         // then
-        assertEquals("https://console-env.neo4j-abc.io/v1/databases/rogue", consoleUrl);
+        assertEquals(
+                "https://console-env.neo4j-abc.io/v2/databases/rogue/import",
+                consoleUrl.getImportUrl().toString());
     }
 
     @Test
@@ -82,9 +88,12 @@ public class AuraURLFactoryTest {
         boolean devMode = false;
 
         // when
-        String consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue.production-orch-0001.neo4j.io", devMode);
+        AuraConsole consoleUrl =
+                auraURLFactory.buildConsoleURI("neo4j+s://rogue.production-orch-0001.neo4j.io", devMode);
         // then
-        assertEquals("https://console.neo4j.io/v1/databases/rogue", consoleUrl);
+        assertEquals(
+                "https://console.neo4j.io/v2/databases/rogue/import",
+                consoleUrl.getImportUrl().toString());
     }
 
     @Test
@@ -93,16 +102,20 @@ public class AuraURLFactoryTest {
         boolean devMode = false;
 
         // when
-        String consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue.env-orch-0001.neo4j-abc.io", devMode);
+        AuraConsole consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue.env-orch-0001.neo4j-abc.io", devMode);
 
         // then
-        assertEquals("https://console-env.neo4j-abc.io/v1/databases/rogue", consoleUrl);
+        assertEquals(
+                "https://console-env.neo4j-abc.io/v2/databases/rogue/import",
+                consoleUrl.getImportUrl().toString());
 
         // when
         consoleUrl = auraURLFactory.buildConsoleURI("neo4j+s://rogue.staging-orch-0001.neo4j.io", devMode);
 
         // then
-        assertEquals("https://console-staging.neo4j.io/v1/databases/rogue", consoleUrl);
+        assertEquals(
+                "https://console-staging.neo4j.io/v2/databases/rogue/import",
+                consoleUrl.getImportUrl().toString());
 
         // when
         CommandFailedException exception = assertThrows(
@@ -132,9 +145,11 @@ public class AuraURLFactoryTest {
     public void shouldRecognizeBothEnvironmentAndDatabaseIdFromBoltURI() throws CommandFailedException {
         // given
         boolean devMode = false;
-        String consoleURL =
+        AuraConsole consoleURL =
                 auraURLFactory.buildConsoleURI("bolt+routing://mydbid-testenvironment.databases.neo4j.io", devMode);
         // when
-        assertEquals("https://console-testenvironment.neo4j.io/v1/databases/mydbid", consoleURL);
+        assertEquals(
+                "https://console-testenvironment.neo4j.io/v2/databases/mydbid/import",
+                consoleURL.getImportUrl().toString());
     }
 }

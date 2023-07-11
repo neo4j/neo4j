@@ -22,6 +22,9 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.export.aura.AuraClient;
+import org.neo4j.export.aura.AuraURLFactory;
+import org.neo4j.export.providers.SignedUploadURLFactory;
 
 @ServiceProvider
 public class UploadCommandProvider implements CommandProvider {
@@ -29,7 +32,7 @@ public class UploadCommandProvider implements CommandProvider {
     public UploadCommand createCommand(ExecutionContext ctx) {
         return new UploadCommand(
                 ctx,
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx),
+                new AuraClient.AuraClientBuilder(ctx),
                 new AuraURLFactory(),
                 new SignedUploadURLFactory(),
                 PushToCloudCLI.realConsole());

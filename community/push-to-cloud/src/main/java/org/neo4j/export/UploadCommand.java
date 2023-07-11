@@ -34,6 +34,14 @@ import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.export.aura.AuraClient;
+import org.neo4j.export.aura.AuraConsole;
+import org.neo4j.export.aura.AuraJsonMapper.SignedURIBodyResponse;
+import org.neo4j.export.aura.AuraJsonMapper.UploadStatusResponse;
+import org.neo4j.export.aura.AuraURLFactory;
+import org.neo4j.export.providers.SignedUpload;
+import org.neo4j.export.providers.SignedUploadURLFactory;
+import org.neo4j.export.util.IOCommon;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.NativeScopedBuffer;
@@ -54,7 +62,11 @@ public class UploadCommand extends AbstractAdminCommand {
     private static final String DEV_MODE_VAR_NAME = "P2C_DEV_MODE";
     private static final String ENV_NEO4J_USERNAME = "NEO4J_USERNAME";
     private static final String ENV_NEO4J_PASSWORD = "NEO4J_PASSWORD";
+    private static final String TO_PASSWORD = "--to-password";
     private final PushToCloudCLI pushToCloudCLI;
+    private final AuraClient.AuraClientBuilder clientBuilder;
+    private final AuraURLFactory auraURLFactory;
+    private final UploadURLFactory uploadURLFactory;
 
     @Parameters(
             paramLabel = "<database>",
@@ -87,8 +99,6 @@ public class UploadCommand extends AbstractAdminCommand {
                             + "Alternatively, the " + ENV_NEO4J_USERNAME + " environment variable can be used.")
     private String username;
 
-    private static final String TO_PASSWORD = "--to-password";
-
     @Option(
             names = TO_PASSWORD,
             defaultValue = "${" + ENV_NEO4J_PASSWORD + "}",
@@ -114,15 +124,9 @@ public class UploadCommand extends AbstractAdminCommand {
             showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
     private String to;
 
-    private final org.neo4j.export.AuraClient.AuraClientBuilder clientBuilder;
-
-    private final AuraURLFactory auraURLFactory;
-
-    private final UploadURLFactory uploadURLFactory;
-
     public UploadCommand(
             ExecutionContext ctx,
-            org.neo4j.export.AuraClient.AuraClientBuilder clientBuilder,
+            AuraClient.AuraClientBuilder clientBuilder,
             AuraURLFactory auraURLFactory,
             UploadURLFactory uploadURLFactory,
             PushToCloudCLI pushToCloudCLI) {
@@ -142,6 +146,14 @@ public class UploadCommand extends AbstractAdminCommand {
             throw new CommandFailedException("Unable to check size of database dump.", e);
         }
         return Long.parseLong(metaData.byteCount());
+    }
+
+    public static String sizeText(long size) {
+        return format("%.1f GB", bytesToGibibytes(size));
+    }
+
+    public static double bytesToGibibytes(long sizeInBytes) {
+        return sizeInBytes / (double) (1024 * 1024 * 1024);
     }
 
     public long readSizeFromTarMetaData(ExecutionContext ctx, Path tar, String dbName) {
@@ -172,14 +184,6 @@ public class UploadCommand extends AbstractAdminCommand {
         }
     }
 
-    public static String sizeText(long size) {
-        return format("%.1f GB", bytesToGibibytes(size));
-    }
-
-    public static double bytesToGibibytes(long sizeInBytes) {
-        return sizeInBytes / (double) (1024 * 1024 * 1024);
-    }
-
     @Override
     public void execute() {
         try {
@@ -206,10 +210,10 @@ public class UploadCommand extends AbstractAdminCommand {
 
             boolean devMode = pushToCloudCLI.readDevMode(DEV_MODE_VAR_NAME);
 
-            String consoleURL = auraURLFactory.buildConsoleURI(boltURI, devMode);
+            AuraConsole auraConsole = auraURLFactory.buildConsoleURI(boltURI, devMode);
 
             AuraClient auraClient = clientBuilder
-                    .withConsoleURL(consoleURL)
+                    .withAuraConsole(auraConsole)
                     .withUserName(username)
                     .withPassword(pass)
                     .withConsent(overwrite)
@@ -221,7 +225,7 @@ public class UploadCommand extends AbstractAdminCommand {
 
             uploader.process(auraClient);
         } catch (Exception e) {
-            throw new CommandFailedException(e.getMessage());
+            throw new CommandFailedException(e.getMessage(), e);
         }
     }
 
@@ -297,13 +301,13 @@ public class UploadCommand extends AbstractAdminCommand {
         @Override
         void process(AuraClient auraClient) {
             // Check size of dump (reading actual database size from dump header)
-            verbose("Checking database size %s fits at %s\n", sizeText(size()), auraClient.getConsoleURL());
-
+            String consoleURL = auraClient.getAuraConsole().baseURL();
+            verbose("Checking database size %s fits at %s\n", sizeText(size()), consoleURL);
             String bearerToken = auraClient.authenticate(verbose);
             auraClient.checkSize(verbose, size(), bearerToken);
 
             // Upload dumpFile
-            verbose("Uploading data of %s to %s\n", sizeText(size()), auraClient.getConsoleURL());
+            verbose("Uploading data of %s to %s\n", sizeText(size()), consoleURL);
 
             String version = getClass().getPackage().getImplementationVersion();
             long crc32Sum;
@@ -311,17 +315,18 @@ public class UploadCommand extends AbstractAdminCommand {
                 crc32Sum = source.crc32Sum();
 
             } catch (IOException e) {
-                throw new CommandFailedException("Failed to calculate CRC32 checksum of dump file", e);
+                throw new CommandFailedException("Failed to process dump file", e);
             }
 
-            AuraResponse.SignedURIBody signedURIBody =
-                    auraClient.initatePresignedUpload(crc32Sum, size(), bearerToken, version);
-            SignedUpload signedUpload = uploadURLFactory.fromAuraResponse(signedURIBody, ctx, boltURI);
+            long dumpSize = IOCommon.getFileSize(source, ctx);
+            SignedURIBodyResponse signedURIBodyResponse =
+                    auraClient.initatePresignedUpload(crc32Sum, dumpSize, size(), bearerToken, version);
+            SignedUpload signedUpload = uploadURLFactory.fromAuraResponse(signedURIBodyResponse, ctx, boltURI);
+
             signedUpload.copy(verbose, source);
 
             try {
-                ctx.out().println("Triggering import");
-                auraClient.triggerImportProtocol(verbose, source.path(), crc32Sum, bearerToken);
+                triggerImportForDB(auraClient, bearerToken, crc32Sum, signedURIBodyResponse);
                 verbose("Polling status\n");
                 auraClient.doStatusPolling(verbose, bearerToken, source.size());
             } catch (IOException e) {
@@ -332,6 +337,19 @@ public class UploadCommand extends AbstractAdminCommand {
 
             ctx.out().println("Dump successfully uploaded to Aura");
             ctx.out().println(String.format("Your dump at %s can now be deleted.", source.path()));
+        }
+
+        private void triggerImportForDB(
+                AuraClient auraClient, String bearerToken, long crc32Sum, SignedURIBodyResponse signedURIBodyResponse)
+                throws IOException {
+            if (signedURIBodyResponse.Provider.equalsIgnoreCase(String.valueOf(SignedUploadURLFactory.Provider.AWS))) {
+                UploadStatusResponse uploadStatusResponse =
+                        auraClient.uploadStatus(verbose, crc32Sum, signedURIBodyResponse.UploadID, bearerToken);
+                auraClient.triggerGCPImportProtocol(
+                        verbose, source.path(), crc32Sum, bearerToken, uploadStatusResponse);
+            } else {
+                auraClient.triggerGCPImportProtocol(verbose, source.path(), crc32Sum, bearerToken);
+            }
         }
     }
 }

@@ -26,7 +26,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static java.io.OutputStream.nullOutputStream;
 import static java.lang.String.format;
@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.export.AuraClient.HTTP_UNPROCESSABLE_ENTITY;
 import static wiremock.org.hamcrest.CoreMatchers.allOf;
 import static wiremock.org.hamcrest.CoreMatchers.containsString;
 import static wiremock.org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +63,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.export.AuraClient.ErrorBody;
+import org.neo4j.export.aura.AuraClient;
+import org.neo4j.export.aura.AuraConsole;
+import org.neo4j.export.aura.AuraJsonMapper;
+import org.neo4j.export.util.ExportTestUtilities;
+import org.neo4j.export.util.IOCommon;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
@@ -79,9 +82,10 @@ public class AuraClientTest {
 
     private static final int TEST_PORT = 8080;
     private static final String TEST_CONSOLE_URL = "http://localhost:" + TEST_PORT;
-    private static final String STATUS_POLLING_PASSED_FIRST_CALL = "Passed first";
     private static final String STATUS_POLLING_PASSED_SECOND_CALL = "Passed second";
     private static final AuraClient.ProgressListenerFactory NO_OP_PROGRESS = (name, length) -> ProgressListener.NONE;
+    private static final int HTTP_UNPROCESSABLE_ENTITY = 422;
+    static final String ERROR_REASON_EXCEEDS_MAX_SIZE = "ImportExceedsMaxSize";
 
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     WireMockServer wireMock;
@@ -118,8 +122,9 @@ public class AuraClientTest {
 
     public AuraClient buildTestAuraClient(boolean consentConfirmed) {
 
-        org.neo4j.export.AuraClient.AuraClientBuilder builder = new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
-        return builder.withConsoleURL(TEST_CONSOLE_URL)
+        AuraClient.AuraClientBuilder builder = new AuraClient.AuraClientBuilder(ctx);
+        AuraConsole testConsole = new AuraConsole(TEST_CONSOLE_URL, "deadbeef");
+        return builder.withAuraConsole(testConsole)
                 .withConsent(consentConfirmed)
                 .withUserName("username")
                 .withPassword("password".toCharArray())
@@ -132,9 +137,10 @@ public class AuraClientTest {
     }
 
     public AuraClient buildTestAuraClientWithMockSleeper(boolean consentConfirmed) {
-        var sleeper = mock(AuraClient.Sleeper.class);
-        org.neo4j.export.AuraClient.AuraClientBuilder builder = new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
-        return builder.withConsoleURL(TEST_CONSOLE_URL)
+        var sleeper = mock(IOCommon.Sleeper.class);
+        AuraClient.AuraClientBuilder builder = new AuraClient.AuraClientBuilder(ctx);
+        AuraConsole testConsole = new AuraConsole(TEST_CONSOLE_URL, "deadbeef");
+        return builder.withAuraConsole(testConsole)
                 .withConsent(consentConfirmed)
                 .withUserName("username")
                 .withPassword("password".toCharArray())
@@ -148,8 +154,9 @@ public class AuraClientTest {
 
     public AuraClient buildTestAuraClientWithProgressListenerFactory(
             boolean consentConfirmed, AuraClient.ProgressListenerFactory progressListenerFactory) {
-        org.neo4j.export.AuraClient.AuraClientBuilder builder = new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
-        return builder.withConsoleURL(TEST_CONSOLE_URL)
+        AuraClient.AuraClientBuilder builder = new AuraClient.AuraClientBuilder(ctx);
+        AuraConsole testConsole = new AuraConsole(TEST_CONSOLE_URL, "deadbeef");
+        return builder.withAuraConsole(testConsole)
                 .withConsent(consentConfirmed)
                 .withUserName("username")
                 .withPassword("password".toCharArray())
@@ -194,23 +201,24 @@ public class AuraClientTest {
         //        // when
         auraClient.authenticate(true);
         auraClient.checkSize(true, dbSize, authorizationTokenResponse);
-        auraClient.initatePresignedUpload(crc32Sum, dbSize, authorizationTokenResponse, "5.7.0");
+        auraClient.initatePresignedUpload(crc32Sum, dbSize, dbSize, authorizationTokenResponse, "5.7.0");
         auraClient.doStatusPolling(true, authorizationTokenResponse, dbSize);
-        auraClient.triggerImportProtocol(true, source, crc32Sum, authorizationTokenResponse);
+        auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse);
         //
         //        // then
-        verify(postRequestedFor(urlEqualTo("/import/auth")));
-        verify(postRequestedFor(urlEqualTo("/import/size"))
+        verify(postRequestedFor(urlMatching(".*?/import/auth$")));
+        verify(postRequestedFor(urlMatching(".*?/import/size$"))
                 .withRequestBody(matchingJsonPath("FullSize", equalTo(String.valueOf(dbSize)))));
 
-        verify(postRequestedFor(urlEqualTo("/import"))
+        verify(postRequestedFor(urlMatching(".*?/import$"))
                 .withRequestBody(matchingJsonPath("FullSize", equalTo(String.valueOf(dbSize)))));
 
-        verify(postRequestedFor(urlEqualTo("/import/upload-complete")));
+        verify(postRequestedFor(urlMatching(".*?/import/upload-complete$")));
 
         assertTrue(progressListener.closeCalled);
         assertEquals(100, progressListener.progress);
         assertTrue(fs.fileExists(source));
+        progressListener.close();
     }
 
     @Test
@@ -257,7 +265,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 containsString("please contact support"),
-                () -> auraClient.triggerImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
+                () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
     }
 
     @Test
@@ -278,7 +286,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 containsString("You can re-try using the existing dump by running this command"),
-                () -> auraClient.triggerImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
+                () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
     }
 
     @Test
@@ -299,7 +307,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 containsString("please contact support"),
-                () -> auraClient.triggerImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
+                () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
     }
 
     @Test
@@ -327,7 +335,7 @@ public class AuraClientTest {
         wireMock.stubFor(initiateSizeRequest("fakeToken", 100000000).willReturn(response));
         // when/then
         auraClient.checkSize(false, 100000000, "fakeToken");
-        verify(postRequestedFor(urlEqualTo("/import/size")));
+        verify(postRequestedFor(urlMatching(".*?/import/size$")));
     }
 
     @Test
@@ -375,7 +383,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 containsString("authorization token is invalid"),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
     }
 
     @Test
@@ -393,7 +401,7 @@ public class AuraClientTest {
         String errorMessage = "Dump file rejected for some reason.";
         String errorReason = "some-kind-of-error-reason-code-goes-here";
         String errorUrl = "https://example.com/heres-how-to-fix-this-error";
-        ErrorBody errorBody = new ErrorBody(errorMessage, errorReason, errorUrl);
+        AuraJsonMapper.ErrorBody errorBody = new AuraJsonMapper.ErrorBody(errorMessage, errorReason, errorUrl);
         wireMock.stubFor(authenticationRequest(false).willReturn(successfulAuthorizationResponse(token)));
         wireMock.stubFor(initiateUploadTargetRequest(token)
                 .willReturn(aResponse()
@@ -409,7 +417,7 @@ public class AuraClientTest {
                         containsString(errorUrl),
                         not(containsString(errorReason)),
                         not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
     }
 
     @Test
@@ -426,7 +434,7 @@ public class AuraClientTest {
         String token = "abc";
         String errorMessage = "Something bad happened, but we don't have a URL to share with more information.";
         String errorReason = "the-bad-thing-happened";
-        ErrorBody errorBody = new ErrorBody(errorMessage, errorReason, null);
+        AuraJsonMapper.ErrorBody errorBody = new AuraJsonMapper.ErrorBody(errorMessage, errorReason, null);
         wireMock.stubFor(authenticationRequest(false).willReturn(successfulAuthorizationResponse(token)));
         wireMock.stubFor(initiateUploadTargetRequest(token)
                 .willReturn(aResponse()
@@ -438,7 +446,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 not(containsString("null")),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
     }
 
     @Test
@@ -462,7 +470,7 @@ public class AuraClientTest {
                         containsString("No content to map due to end-of-input"),
                         not(containsString("null")),
                         not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
     }
 
     @Test
@@ -480,7 +488,7 @@ public class AuraClientTest {
         // ...and a short error message with no capitalisation or punctuation
         String errorMessage = "something bad happened";
         String errorUrl = "https://example.com/";
-        ErrorBody errorBody = new ErrorBody(errorMessage, null, errorUrl);
+        AuraJsonMapper.ErrorBody errorBody = new AuraJsonMapper.ErrorBody(errorMessage, null, errorUrl);
         // ...and
         wireMock.stubFor(initiateUploadTargetRequest(token)
                 .willReturn(aResponse()
@@ -492,7 +500,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 containsString("Error: something bad happened. See: https://example.com/"),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
     }
 
     @Test
@@ -510,7 +518,8 @@ public class AuraClientTest {
         String errorMessage = "There is insufficient space in your Neo4j Aura instance to upload your data. "
                 + "Please use the Console to increase the size of your database.";
         String errorUrl = "https://console.neo4j.io/";
-        ErrorBody errorBody = new ErrorBody(errorMessage, AuraClient.ERROR_REASON_EXCEEDS_MAX_SIZE, errorUrl);
+        AuraJsonMapper.ErrorBody errorBody =
+                new AuraJsonMapper.ErrorBody(errorMessage, ERROR_REASON_EXCEEDS_MAX_SIZE, errorUrl);
         wireMock.stubFor(authenticationRequest(false).willReturn(successfulAuthorizationResponse(token)));
         wireMock.stubFor(initiateUploadTargetRequest(token)
                 .willReturn(aResponse()
@@ -526,7 +535,7 @@ public class AuraClientTest {
                         containsString("Minimum storage space required: 0"),
                         containsString("See: https://console.neo4j.io"),
                         not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
     }
 
     @Test
@@ -549,8 +558,8 @@ public class AuraClientTest {
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user
         // consent
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withHeader("Confirmed", equalTo("false")));
-        verify(0, postRequestedFor(urlEqualTo("/import/auth")).withHeader("Confirmed", equalTo("true")));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$")).withHeader("Confirmed", equalTo("false")));
+        verify(0, postRequestedFor(urlMatching(".*?/import/auth$")).withHeader("Confirmed", equalTo("true")));
     }
 
     @Test
@@ -569,11 +578,14 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 allOf(containsString("Unexpected response"), containsString("Initiating upload target")),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, authorizationTokenResponse, "5.7.0"));
+                () -> auraClient.initatePresignedUpload(
+                        crc32Sum, dbSize, sourceLength, authorizationTokenResponse, "5.7.0"));
 
         // 1 initial call plus 2 retries are 3 expected calls
         wireMock.verify(
-                51, new RequestPatternBuilder(RequestMethod.ANY, UrlPattern.fromOneOf("/import", null, null, null)));
+                51,
+                new RequestPatternBuilder(
+                        RequestMethod.ANY, UrlPattern.fromOneOf("/v2/databases/deadbeef/import", null, null, null)));
     }
 
     @Test
@@ -598,7 +610,7 @@ public class AuraClientTest {
     }
 
     private MappingBuilder initiateUploadTargetRequest(String authorizationTokenResponse) {
-        return post(urlEqualTo("/import"))
+        return post(urlMatching(".*?/import$"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withHeader("Accept", equalTo("application/json"))
@@ -608,14 +620,14 @@ public class AuraClientTest {
     }
 
     private MappingBuilder sizeCheckTargetRequest(String authorizationTokenResponse, long dbSize) {
-        return post(urlEqualTo("/import/size"))
+        return post(urlMatching(".*?/import/size$"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withRequestBody(equalToJson("{\"FullSize\": " + dbSize + "}"));
     }
 
     private MappingBuilder completeUploadTargetRequest(String authorizationTokenResponse, long crc32) {
-        return post(urlEqualTo("/import/upload-complete"))
+        return post(urlMatching(".*?/import/upload-complete$"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withRequestBody(equalToJson("{\"Crc32\":" + crc32 + "}"));
@@ -634,7 +646,7 @@ public class AuraClientTest {
     }
 
     private MappingBuilder initiateSizeRequest(String authorizationTokenResponse, long size) {
-        return post(urlEqualTo("/import/size"))
+        return post(urlMatching(".*?/import/size$"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withHeader("Content-Type", equalTo("application/json"));
     }
@@ -649,7 +661,7 @@ public class AuraClientTest {
     }
 
     private MappingBuilder authenticationRequest(boolean userConsent) {
-        return post(urlEqualTo("/import/auth"))
+        return post(urlMatching(".*?/import/auth$"))
                 .withHeader("Authorization", matching("^Basic .*"))
                 .withHeader("Accept", equalTo("application/json"))
                 .withHeader("Confirmed", equalTo(userConsent ? "true" : "false"));
@@ -660,7 +672,7 @@ public class AuraClientTest {
     }
 
     private MappingBuilder triggerImportRequest(String authorizationTokenResponse) {
-        return post(urlEqualTo("/import/upload-complete"))
+        return post(urlMatching(".*?/import/upload-complete$"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withRequestBody(containing("Crc32"));
@@ -675,7 +687,7 @@ public class AuraClientTest {
     }
 
     private MappingBuilder firstStatusPollingRequest(String authorizationTokenResponse) {
-        return get(urlEqualTo("/import/status"))
+        return get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .willReturn(firstSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
@@ -684,7 +696,7 @@ public class AuraClientTest {
     }
 
     private MappingBuilder secondStatusPollingRequest(String authorizationTokenResponse) {
-        return get(urlEqualTo("/import/status"))
+        return get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .willReturn(secondSuccessfulDatabaseRunningResponse())
                 .inScenario("test")

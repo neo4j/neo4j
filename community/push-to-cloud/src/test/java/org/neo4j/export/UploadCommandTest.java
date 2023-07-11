@@ -30,6 +30,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static java.lang.String.format;
@@ -46,13 +47,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.BasicCredentials;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
@@ -64,8 +66,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import org.junit.jupiter.api.AfterEach;
@@ -74,9 +78,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.export.AuraResponse.SignedURIBody;
+import org.neo4j.export.aura.AuraClient;
+import org.neo4j.export.aura.AuraConsole;
+import org.neo4j.export.aura.AuraJsonMapper;
+import org.neo4j.export.aura.AuraURLFactory;
+import org.neo4j.export.providers.SignedUpload;
+import org.neo4j.export.providers.SignedUploadAWS;
+import org.neo4j.export.util.ExportTestUtilities;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
@@ -85,8 +96,6 @@ import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.SystemNanoClock;
 import picocli.CommandLine;
-import wiremock.com.fasterxml.jackson.core.JsonProcessingException;
-import wiremock.com.fasterxml.jackson.databind.ObjectMapper;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(TestDirectorySupportExtension.class)
@@ -102,6 +111,9 @@ public class UploadCommandTest {
     private static final String STATUS_POLLING_PASSED_SECOND_CALL = "Passed second";
     private static final String INITATE_PRESIGNED_UPLOAD_LOCATION = "/initiate-presigned";
     private static final String UPLOAD_PRESIGNED_LOCATION = "/upload-presigned";
+    private static final String[] signedLinks = {
+        MOCK_BASE_URL + "/signed1", MOCK_BASE_URL + "/signed2", MOCK_BASE_URL + "/signed3"
+    };
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     WireMockServer wireMockServer;
@@ -150,12 +162,13 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void happyPathUploadCommandTest() {
+    public void happyPathGCPUploadCommandTest() {
 
         String authResponse = "token";
-        createHappyPathWireMockStubs(authResponse);
-
-        wireMockServer.stubFor(get(urlEqualTo("/import/status"))
+        createAuraHappyPathStubs(authResponse);
+        createGCPHappyPathWireMockStubs(authResponse);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authResponse))
                 .willReturn(firstSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
@@ -163,16 +176,17 @@ public class UploadCommandTest {
                 .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
-        UploadCommand command = new UploadCommand(
-                ctx,
-                auraClientBuilder,
-                auraURLFactory,
-                new FakeUploadURLFactory(),
-                PushToCloudCLI.fakeCLI("username", "password", false));
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        UploadCommand command = buildUploadCommand(auraURLFactory);
+        String[] args = getNormalRuntimeArgs();
 
+        assertDoesNotThrow(() -> new CommandLine(command).execute(args));
+
+        verifyCommonConsoleUrls();
+        verifyGCPPresignedEndpoints();
+    }
+
+    private String[] getNormalRuntimeArgs() {
         String[] args = {
             DBNAME,
             "--from-path",
@@ -182,31 +196,91 @@ public class UploadCommandTest {
             "--to-password",
             "password"
         };
-        assertDoesNotThrow(() -> new CommandLine(command).execute(args));
+        return args;
+    }
 
-        verify(postRequestedFor(urlEqualTo("/import/auth")));
-        verify(postRequestedFor(urlEqualTo("/import/size")));
-        verify(postRequestedFor(urlEqualTo("/import")));
-        verify(postRequestedFor(urlEqualTo("/import/upload-complete")));
-        verify(getRequestedFor(urlEqualTo("/import/status")));
+    private UploadCommand buildUploadCommand(AuraURLFactory auraURLFactory) {
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
+        UploadCommand command = new UploadCommand(
+                ctx,
+                auraClientBuilder,
+                auraURLFactory,
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                PushToCloudCLI.fakeCLI("username", "password", false));
+        return command;
+    }
+
+    private static void verifyGCPPresignedEndpoints() {
         verify(postRequestedFor(urlEqualTo(INITATE_PRESIGNED_UPLOAD_LOCATION)));
         verify(putRequestedFor(urlEqualTo(UPLOAD_PRESIGNED_LOCATION)));
+    }
+
+    private static void verifyCommonConsoleUrls() {
+        verify(postRequestedFor(urlMatching(".*?/import/auth$")));
+        verify(postRequestedFor(urlMatching(".*?/import/size$")));
+        verify(postRequestedFor(urlMatching(".*?/import$")));
+        verify(postRequestedFor(urlMatching(".*?/import/upload-complete$")));
+        verify(getRequestedFor(urlMatching(".*?/import/status$")));
+    }
+
+    @Test
+    public void happyPathAWSUploadCommandTest() {
+
+        String authResponse = "token";
+        createAuraHappyPathStubs(authResponse);
+
+        wireMockServer.stubFor(
+                initiateUploadTargetRequest(authResponse).willReturn(successfulInitiateUploadTargetAWSResponse()));
+
+        wireMockServer.stubFor(uploadRequest().willReturn(aResponse().withStatus(HTTP_OK)));
+
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
+                .withHeader("Authorization", equalTo("Bearer " + authResponse))
+                .willReturn(firstSuccessfulDatabaseRunningResponse())
+                .inScenario("test")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
+
+        wireMockServer.stubFor(getMultiPartStatusRequest().willReturn(successfulMultiPartStatusResponse()));
+
+        AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
+        UploadCommand command = new UploadCommand(
+                ctx,
+                auraClientBuilder,
+                auraURLFactory,
+                new UploadCommandTest.FakeAWSUploadURLFactory(),
+                PushToCloudCLI.fakeCLI("username", "password", false));
+
+        String[] args = getNormalRuntimeArgs();
+        assertDoesNotThrow(() -> new CommandLine(command).execute(args));
+
+        verifyCommonConsoleUrls();
+
+        verify(putRequestedFor(urlEqualTo("/signed1")));
+        verify(putRequestedFor(urlEqualTo("/signed2")));
+        verify(putRequestedFor(urlEqualTo("/signed3")));
     }
 
     @Test
     public void shouldHandleUploadStartTimeoutFailure() {
 
         String authResponse = "token";
-        createHappyPathWireMockStubs(authResponse);
+        createAuraHappyPathStubs(authResponse);
+        createGCPHappyPathWireMockStubs(authResponse);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
 
-        wireMockServer.stubFor(get(urlEqualTo("/import/status"))
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authResponse))
                 .willReturn(secondSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
 
-        wireMockServer.stubFor(get(urlEqualTo("/import/status"))
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authResponse))
                 .willReturn(secondSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
@@ -214,9 +288,8 @@ public class UploadCommandTest {
                 .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         SystemNanoClock clockMock = mock(SystemNanoClock.class);
         auraClientBuilder.withClock(clockMock);
 
@@ -225,61 +298,34 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("username", "password", false));
 
-        String[] args = {
-            DBNAME,
-            "--from-path",
-            dumpDir.toAbsolutePath().toString(),
-            "--to-uri",
-            SOME_EXAMPLE_BOLT_URI,
-            "--to-password",
-            "password"
-        };
+        String[] args = getNormalRuntimeArgs();
         CommandLine.populateCommand(command, args);
 
         var exception = assertThrows(CommandFailedException.class, () -> command.execute());
         assertThat(exception.getMessage()).contains("Timed out waiting for database load to start");
 
-        verify(postRequestedFor(urlEqualTo("/import/auth")));
-        verify(postRequestedFor(urlEqualTo("/import/size")));
-        verify(postRequestedFor(urlEqualTo("/import")));
-        verify(postRequestedFor(urlEqualTo("/import/upload-complete")));
-        verify(getRequestedFor(urlEqualTo("/import/status")));
-        verify(postRequestedFor(urlEqualTo(INITATE_PRESIGNED_UPLOAD_LOCATION)));
-        verify(putRequestedFor(urlEqualTo(UPLOAD_PRESIGNED_LOCATION)));
+        verifyCommonConsoleUrls();
+        verifyGCPPresignedEndpoints();
     }
 
     @Test
     void shouldHandleConflictOnTriggerImportAfterUpload() {
         // given
         String authResponse = "token";
-        createHappyPathWireMockStubs(authResponse);
+        createAuraHappyPathStubs(authResponse);
+        createGCPHappyPathWireMockStubs(authResponse);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
 
         wireMockServer.stubFor(
                 triggerImportRequest(authResponse).willReturn(aResponse().withStatus(HTTP_CONFLICT)));
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        UploadCommand command = buildUploadCommand(auraURLFactory);
 
-        UploadCommand command = new UploadCommand(
-                ctx,
-                auraClientBuilder,
-                auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
-                PushToCloudCLI.fakeCLI("username", "password", false));
-
-        String[] args = {
-            DBNAME,
-            "--from-path",
-            dumpDir.toAbsolutePath().toString(),
-            "--to-uri",
-            SOME_EXAMPLE_BOLT_URI,
-            "--to-password",
-            "password"
-        };
+        String[] args = getNormalRuntimeArgs();
         CommandLine.populateCommand(command, args);
 
         var exception = assertThrows(CommandFailedException.class, () -> command.execute());
@@ -292,29 +338,24 @@ public class UploadCommandTest {
     public void shouldHandleFailedImport() throws JsonProcessingException {
 
         String authResponse = "token";
-        createHappyPathWireMockStubs(authResponse);
+        createAuraHappyPathStubs(authResponse);
+        createGCPHappyPathWireMockStubs(authResponse);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
-        UploadCommand command = new UploadCommand(
-                ctx,
-                auraClientBuilder,
-                auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
-                PushToCloudCLI.fakeCLI("username", "password", false));
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        UploadCommand command = buildUploadCommand(auraURLFactory);
 
-        AuraClient.StatusBody statusBody = new AuraClient.StatusBody();
+        AuraJsonMapper.StatusBody statusBody = new AuraJsonMapper.StatusBody();
         statusBody.Status = "loading failed";
         String errorMessage = "The uploaded dump file contains deprecated indexes, "
                 + "which we are unable to import in the current version of Neo4j Aura. "
                 + "Please upgrade to the recommended index provider.";
         String errorUrl = "https://aura.support.neo4j.com/";
-        statusBody.Error = new AuraClient.ErrorBody(errorMessage, ERROR_REASON_UNSUPPORTED_INDEXES, errorUrl);
+        statusBody.Error = new AuraJsonMapper.ErrorBody(errorMessage, ERROR_REASON_UNSUPPORTED_INDEXES, errorUrl);
         ObjectMapper mapper = new ObjectMapper();
 
-        wireMockServer.stubFor(get(urlEqualTo("/import/status"))
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authResponse))
                 .willReturn(aResponse()
                         .withBody(mapper.writeValueAsString(statusBody))
@@ -323,15 +364,7 @@ public class UploadCommandTest {
                 .inScenario("test")
                 .whenScenarioStateIs(STATUS_POLLING_PASSED_FIRST_CALL));
 
-        String[] args = {
-            DBNAME,
-            "--from-path",
-            dumpDir.toAbsolutePath().toString(),
-            "--to-uri",
-            SOME_EXAMPLE_BOLT_URI,
-            "--to-password",
-            "password"
-        };
+        String[] args = getNormalRuntimeArgs();
         CommandLine.populateCommand(command, args);
         var exception = assertThrows(CommandFailedException.class, () -> command.execute());
         String message = exception.getMessage();
@@ -339,44 +372,34 @@ public class UploadCommandTest {
         assertFalse(message.contains(ERROR_REASON_UNSUPPORTED_INDEXES));
         assertFalse(message.contains(".."));
 
-        verify(postRequestedFor(urlEqualTo("/import/auth")));
-        verify(postRequestedFor(urlEqualTo("/import/size")));
-        verify(postRequestedFor(urlEqualTo("/import")));
-        verify(postRequestedFor(urlEqualTo("/import/upload-complete")));
-        verify(getRequestedFor(urlEqualTo("/import/status")));
-        verify(postRequestedFor(urlEqualTo(INITATE_PRESIGNED_UPLOAD_LOCATION)));
-        verify(putRequestedFor(urlEqualTo(UPLOAD_PRESIGNED_LOCATION)));
+        verifyCommonConsoleUrls();
+        verifyGCPPresignedEndpoints();
     }
 
     @Test
     void shouldHandleFailedImportStatusFromPreviousLoad() throws IOException, CommandFailedException {
         // given
         String authResponse = "token";
-        createHappyPathWireMockStubs(authResponse);
+        createAuraHappyPathStubs(authResponse);
+        createGCPHappyPathWireMockStubs(authResponse);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
-        UploadCommand command = new UploadCommand(
-                ctx,
-                auraClientBuilder,
-                auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
-                PushToCloudCLI.fakeCLI("username", "password", false));
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        UploadCommand command = buildUploadCommand(auraURLFactory);
 
         // ...and
 
-        AuraClient.StatusBody statusBody = new AuraClient.StatusBody();
+        AuraJsonMapper.StatusBody statusBody = new AuraJsonMapper.StatusBody();
         statusBody.Status = "loading failed";
         String errorMessage = "The uploaded dump file contains deprecated indexes, "
                 + "which we are unable to import in the current version of Neo4j Aura. "
                 + "Please upgrade to the recommended index provider.";
         String errorUrl = "https://aura.support.neo4j.com/";
-        statusBody.Error = new AuraClient.ErrorBody(errorMessage, ERROR_REASON_UNSUPPORTED_INDEXES, errorUrl);
+        statusBody.Error = new AuraJsonMapper.ErrorBody(errorMessage, ERROR_REASON_UNSUPPORTED_INDEXES, errorUrl);
         ObjectMapper mapper = new ObjectMapper();
 
-        wireMockServer.stubFor(get(urlEqualTo("/import/status"))
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authResponse))
                 .willReturn(aResponse()
                         .withBody(mapper.writeValueAsString(statusBody))
@@ -386,51 +409,45 @@ public class UploadCommandTest {
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
 
-        wireMockServer.stubFor(get(urlEqualTo("/import/status"))
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authResponse))
                 .willReturn(firstSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
                 .whenScenarioStateIs(STATUS_POLLING_PASSED_FIRST_CALL)
                 .willSetStateTo(STATUS_POLLING_PASSED_SECOND_CALL));
 
-        wireMockServer.stubFor(get(urlEqualTo("/import/status"))
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authResponse))
                 .willReturn(secondSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
                 .whenScenarioStateIs(STATUS_POLLING_PASSED_SECOND_CALL));
 
         // when
-        String[] args = {
-            DBNAME,
-            "--from-path",
-            dumpDir.toAbsolutePath().toString(),
-            "--to-uri",
-            SOME_EXAMPLE_BOLT_URI,
-            "--to-password",
-            "password"
-        };
+        String[] args = getNormalRuntimeArgs();
         int exitCode = new CommandLine(command).execute(args);
 
         // then
         assertEquals(0, exitCode);
-        verify(postRequestedFor(urlEqualTo("/import/auth")));
-        verify(postRequestedFor(urlEqualTo("/import"))
+        verify(postRequestedFor(urlMatching(".*?/import/auth$")));
+        verify(postRequestedFor(urlMatching(".*?/import$"))
                 .withRequestBody(matchingJsonPath("$.FullSize", equalTo(String.valueOf(dbFullSize)))));
-        verify(postRequestedFor(urlEqualTo(INITATE_PRESIGNED_UPLOAD_LOCATION)));
-        verify(putRequestedFor(urlEqualTo(UPLOAD_PRESIGNED_LOCATION)));
-        verify(postRequestedFor(urlEqualTo("/import/upload-complete")));
+        verifyGCPPresignedEndpoints();
+        verify(postRequestedFor(urlMatching(".*?/import/upload-complete$")));
     }
 
-    private void createHappyPathWireMockStubs(String authResponse) {
+    public void createAuraHappyPathStubs(String authResponse) {
         wireMockServer.stubFor(authenticationRequest().willReturn(successfulAuthorizationResponse("token")));
         wireMockServer.stubFor(sizeCheckTargetRequest("token").willReturn(successfulSizeCheckTargetResponse()));
-        wireMockServer.stubFor(initiateUploadTargetRequest(authResponse)
-                .willReturn(successfulInitiateUploadTargetResponse(INITATE_PRESIGNED_UPLOAD_LOCATION)));
         wireMockServer.stubFor(triggerImportRequest(authResponse).willReturn(successfulTriggerImportResponse()));
         wireMockServer.stubFor(firstStatusPollingRequest(authResponse));
         wireMockServer.stubFor(secondStatusPollingRequest(authResponse));
-        wireMockServer.stubFor(initatePreSignedUpload().willReturn(successfulInitatePresignedResponse()));
+    }
 
+    private void createGCPHappyPathWireMockStubs(String authResponse) {
+
+        wireMockServer.stubFor(initiateUploadTargetRequest(authResponse)
+                .willReturn(successfulInitiateUploadTargetResponse(INITATE_PRESIGNED_UPLOAD_LOCATION)));
+        wireMockServer.stubFor(initatePreSignedUpload().willReturn(successfulInitatePresignedResponse()));
         wireMockServer.stubFor(uploadToPreSignedUrl().willReturn(successfulUploadPresignedResponse()));
     }
 
@@ -440,17 +457,17 @@ public class UploadCommandTest {
         String username = "neo4j";
         String password = "abc";
 
-        wireMockServer.stubFor(authenticationRequest().willReturn(successfulAuthorizationResponse("token")));
+        createGCPHappyPathWireMockStubs("token");
 
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
 
         // when
@@ -458,25 +475,30 @@ public class UploadCommandTest {
         new CommandLine(command).execute(args);
 
         // then
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials(username, password)));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$"))
+                .withBasicAuth(new BasicCredentials(username, password)));
     }
 
     @Test
     public void shouldUseNeo4jAsDefaultUsernameIfUserHitsEnter() {
         // given
-        wireMockServer.stubFor(authenticationRequest().willReturn(successfulAuthorizationResponse("token")));
+        createGCPHappyPathWireMockStubs("token");
         PushToCloudCLI pushToCloudCLI = mock(PushToCloudCLI.class);
         when(pushToCloudCLI.readLine(anyString(), anyString())).thenReturn("");
         String defaultUsername = "neo4j";
         String password = "super-secret-password";
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
 
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
-                ctx, auraClientBuilder, auraURLFactory, new UploadCommandTest.FakeUploadURLFactory(), pushToCloudCLI);
+                ctx,
+                auraClientBuilder,
+                auraURLFactory,
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                pushToCloudCLI);
 
         // when
         String[] args = {
@@ -485,26 +507,27 @@ public class UploadCommandTest {
         new CommandLine(command).execute(args);
 
         // then
-        verify(pushToCloudCLI).readLine("%s", format("Neo4j aura username (default: %s):", defaultUsername));
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials("neo4j", password)));
+        Mockito.verify(pushToCloudCLI).readLine("%s", format("Neo4j aura username (default: %s):", defaultUsername));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$"))
+                .withBasicAuth(new BasicCredentials("neo4j", password)));
     }
 
     @Test
     public void shouldAcceptPasswordViaArgAndPromptForUsername() throws CommandFailedException {
         // given
         String username = "neo4juserviacli";
-        wireMockServer.stubFor(authenticationRequest().willReturn(successfulAuthorizationResponse("token")));
+        createGCPHappyPathWireMockStubs("token");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
 
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, "tomte", false));
 
         // when
@@ -514,19 +537,20 @@ public class UploadCommandTest {
         new CommandLine(command).execute(args);
 
         // then
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials(username, "pass")));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$")).withBasicAuth(new BasicCredentials(username, "pass")));
     }
 
     @Test
     public void shouldAcceptPasswordViaEnvAndPromptForUsername() {
         // given
         String username = "neo4juserviacli";
+        createGCPHappyPathWireMockStubs("token");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
 
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
 
         String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
         var environment = Map.of("NEO4J_USERNAME", "", "NEO4J_PASSWORD", "pass");
@@ -535,7 +559,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, "tomte", false));
 
         // when
@@ -544,8 +568,8 @@ public class UploadCommandTest {
                 .execute(args);
 
         // then
-        wireMockServer.verify(
-                postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials(username, "pass")));
+        wireMockServer.verify(postRequestedFor(urlMatching(".*?/import/auth$"))
+                .withBasicAuth(new BasicCredentials(username, "pass")));
     }
 
     @Test
@@ -553,17 +577,18 @@ public class UploadCommandTest {
         // given
         String username = "neo4j";
         String password = "abc";
+        createGCPHappyPathWireMockStubs("token");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
 
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
         // when
         String[] args = {
@@ -573,7 +598,7 @@ public class UploadCommandTest {
 
         // then
         assertTrue(Files.exists(dump));
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials("user", password)));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$")).withBasicAuth(new BasicCredentials("user", password)));
     }
 
     @Test
@@ -582,15 +607,16 @@ public class UploadCommandTest {
         String username = "neo4jcliuser";
         String password = "abc";
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        createGCPHappyPathWireMockStubs("token");
 
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
         // when
         String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
@@ -600,7 +626,7 @@ public class UploadCommandTest {
                 .setResourceBundle(new MapResourceBundle(environment))
                 .execute(args);
         assertTrue(Files.exists(dump));
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials("user", password)));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$")).withBasicAuth(new BasicCredentials("user", password)));
     }
 
     @Test
@@ -608,17 +634,18 @@ public class UploadCommandTest {
         // given
         String username = "neo4jcliuser";
         String password = "abc";
+        createGCPHappyPathWireMockStubs("token");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
 
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
 
         // when
@@ -635,7 +662,8 @@ public class UploadCommandTest {
         };
         new CommandLine(command).execute(args);
 
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials("neo4jarg", "passcli")));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$"))
+                .withBasicAuth(new BasicCredentials("neo4jarg", "passcli")));
     }
 
     @Test
@@ -643,17 +671,18 @@ public class UploadCommandTest {
         // given
         String username = "neo4jcliuser";
         String password = "abc";
+        createGCPHappyPathWireMockStubs("token");
 
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
 
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
 
         // when
@@ -663,22 +692,23 @@ public class UploadCommandTest {
                 .setResourceBundle(new MapResourceBundle(environment))
                 .execute(args);
 
-        verify(postRequestedFor(urlEqualTo("/import/auth")).withBasicAuth(new BasicCredentials("neo4jenv", "passenv")));
+        verify(postRequestedFor(urlMatching(".*?/import/auth$"))
+                .withBasicAuth(new BasicCredentials("neo4jenv", "passenv")));
     }
 
     @Test
     public void shouldFailOnDumpPointingToMissingFile() throws CommandFailedException {
         // given
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         String[] args = {"otherdbname", "--from-path", dumpDir.toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("neo4j", "abc", false));
         CommandLine.populateCommand(command, args);
         final var assertFailure = assertThatThrownBy(command::execute).isInstanceOf(CommandFailedException.class);
@@ -689,15 +719,15 @@ public class UploadCommandTest {
     @Test
     public void shouldFailOnWrongDumpPath() throws CommandFailedException {
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
-        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(MOCK_BASE_URL);
-        org.neo4j.export.AuraClient.AuraClientBuilder auraClientBuilder =
-                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         String[] args = {DBNAME, "--from-path", dump.toAbsolutePath().toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
         UploadCommand command = new UploadCommand(
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeUploadURLFactory(),
+                new UploadCommandTest.FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("neo4j", "abc", false));
         CommandLine.populateCommand(command, args);
         final var assertFailure = assertThatThrownBy(command::execute).isInstanceOf(CommandFailedException.class);
@@ -709,14 +739,14 @@ public class UploadCommandTest {
     }
 
     private MappingBuilder authenticationRequest() {
-        return post(urlEqualTo("/import/auth"))
+        return post(urlMatching(".*?/import/auth$"))
                 .withHeader("Authorization", matching("^Basic .*"))
                 .withHeader("Accept", equalTo("application/json"))
                 .withHeader("Confirmed", equalTo("false"));
     }
 
     private MappingBuilder sizeCheckTargetRequest(String authorizationTokenResponse) {
-        return post(urlEqualTo("/import/size"))
+        return post(urlMatching(".*?/import/size$"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withRequestBody(equalToJson("{\"FullSize\": " + dbFullSize + "}"));
@@ -727,7 +757,7 @@ public class UploadCommandTest {
     }
 
     private MappingBuilder initiateUploadTargetRequest(String authorizationTokenResponse) {
-        return post(urlEqualTo("/import"))
+        return post(urlMatching(".*?/import$"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withHeader("Accept", equalTo("application/json"))
@@ -751,12 +781,61 @@ public class UploadCommandTest {
         return aResponse()
                 .withStatus(HTTP_ACCEPTED)
                 .withBody(format(
-                        "{\"SignedURI\":\"%s\", \"expiration_date\":\"Fri, 04 Oct 2019 08:21:59 GMT\"}",
+                        "{\"SignedURI\":\"%s\", \"expiration_date\":\"Fri, 04 Oct 2019 08:21:59 GMT\", \"Provider\": \"GCP\"}",
                         MOCK_BASE_URL + signedURIPath));
     }
 
+    private ResponseDefinitionBuilder successfulInitiateUploadTargetAWSResponse() {
+        AuraJsonMapper.SignedURIBodyResponse signedURIBodyResponse = new AuraJsonMapper.SignedURIBodyResponse();
+        signedURIBodyResponse.SignedLinks = signedLinks;
+        signedURIBodyResponse.UploadID = "uploadID";
+        signedURIBodyResponse.Provider = "AWS";
+        signedURIBodyResponse.TotalParts = 3;
+        String json;
+        try {
+            json = new ObjectMapper().writeValueAsString(signedURIBodyResponse);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return aResponse().withStatus(HTTP_ACCEPTED).withBody(json);
+    }
+
+    private MappingBuilder getMultiPartStatusRequest() {
+        return post(urlMatching(".*?/import/multipart-upload-status"));
+    }
+
+    private ResponseDefinitionBuilder successfulMultiPartStatusResponse() {
+
+        List<AuraJsonMapper.PartEtag> etags = new ArrayList<>();
+        etags.add(getEtagFor(1));
+        etags.add(getEtagFor(2));
+        etags.add(getEtagFor(3));
+
+        AuraJsonMapper.UploadStatusResponse uploadStatusBodyResponse = new AuraJsonMapper.UploadStatusResponse();
+        uploadStatusBodyResponse.UploadID = "uploadID";
+        uploadStatusBodyResponse.Provider = "AWS";
+        uploadStatusBodyResponse.Parts = etags;
+
+        String json;
+        try {
+            json = new ObjectMapper().writeValueAsString(uploadStatusBodyResponse);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return aResponse().withStatus(HTTP_ACCEPTED).withBody(json);
+    }
+
+    private AuraJsonMapper.PartEtag getEtagFor(int partNumber) {
+        AuraJsonMapper.PartEtag etag = new AuraJsonMapper.PartEtag();
+        etag.PartNumber = partNumber;
+        etag.ETag = String.format("etag%d", partNumber);
+        return etag;
+    }
+
     private MappingBuilder triggerImportRequest(String authorizationTokenResponse) {
-        return post(urlEqualTo("/import/upload-complete"))
+        return post(urlMatching(".*?/import/upload-complete$"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .withRequestBody(containing("Crc32"));
@@ -767,7 +846,7 @@ public class UploadCommandTest {
     }
 
     private MappingBuilder firstStatusPollingRequest(String authorizationTokenResponse) {
-        return get(urlEqualTo("/import/status"))
+        return get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .willReturn(firstSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
@@ -776,7 +855,7 @@ public class UploadCommandTest {
     }
 
     private MappingBuilder secondStatusPollingRequest(String authorizationTokenResponse) {
-        return get(urlEqualTo("/import/status"))
+        return get(urlMatching(".*?/import/status$"))
                 .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
                 .willReturn(secondSuccessfulDatabaseRunningResponse())
                 .inScenario("test")
@@ -819,12 +898,13 @@ public class UploadCommandTest {
         }
     }
 
-    private class FakeUploadURLFactory implements UploadURLFactory {
+    private class FakeGCPUploadURLFactory implements UploadURLFactory {
         private final String signedURIPath = MOCK_BASE_URL + INITATE_PRESIGNED_UPLOAD_LOCATION;
 
         @Override
-        public SignedUpload fromAuraResponse(SignedURIBody signedURIBody, ExecutionContext ctx, String boltURI) {
-            return new SignedUploadGCP(
+        public SignedUpload fromAuraResponse(
+                AuraJsonMapper.SignedURIBodyResponse signedURIBodyResponse, ExecutionContext ctx, String boltURI) {
+            return new org.neo4j.export.providers.SignedUploadGCP(
                     null,
                     signedURIPath,
                     ctx,
@@ -833,5 +913,18 @@ public class UploadCommandTest {
                     millis -> {},
                     new CommandResponseHandler(ctx));
         }
+    }
+
+    private class FakeAWSUploadURLFactory implements UploadURLFactory {
+
+        @Override
+        public SignedUpload fromAuraResponse(
+                AuraJsonMapper.SignedURIBodyResponse signedURIBodyResponse, ExecutionContext ctx, String boltURI) {
+            return new SignedUploadAWS(signedLinks, "MyUploadID", 3, ctx, "bolt-uri", millis -> {});
+        }
+    }
+
+    private MappingBuilder uploadRequest() {
+        return put(urlMatching("/signed([0-9]*)"));
     }
 }

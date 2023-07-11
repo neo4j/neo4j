@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.providers;
 
 import static java.lang.Long.min;
 import static java.lang.String.format;
@@ -40,6 +40,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.compress.utils.IOUtils;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.export.CommandResponseHandler;
+import org.neo4j.export.UploadCommand;
+import org.neo4j.export.util.IOCommon;
+import org.neo4j.export.util.ProgressTrackingOutputStream;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
@@ -88,11 +92,8 @@ public class SignedUploadGCP implements SignedUpload {
         this.commandResponseHandler = commandResponseHandler;
     }
 
-    private static void safeSkip(InputStream sourceStream, long position) throws IOException {
-        long toSkip = position;
-        while (toSkip > 0) {
-            toSkip -= sourceStream.skip(position);
-        }
+    public interface Sleeper {
+        void sleep(long millis) throws InterruptedException;
     }
 
     /**
@@ -128,7 +129,7 @@ public class SignedUploadGCP implements SignedUpload {
             int responseCode = connection.getResponseCode();
             switch (responseCode) {
                 case HTTP_CREATED:
-                    return Util.safeUrl(connection.getHeaderField("Location"));
+                    return IOCommon.safeUrl(connection.getHeaderField("Location"));
                 case HTTP_GATEWAY_TIMEOUT:
                 case HTTP_BAD_GATEWAY:
                 case HTTP_UNAVAILABLE:
@@ -145,19 +146,19 @@ public class SignedUploadGCP implements SignedUpload {
         try {
             dest = initiateResumableUpload(verbose);
         } catch (IOException e) {
-            ctx.out().println("Failed to initiate a resumable upload");
+            ctx.err().println("Failed to initiate a resumable upload");
             throw new CommandFailedException("Failed to initiate resumable upload", e);
         }
         transfer(verbose, source, dest);
     }
 
-    URL getCorrectVersionedEndpoint() {
+    public URL getCorrectVersionedEndpoint() {
         URL dest;
         // V1
-        if (signedLinks != null && signedLinks.length > 0) dest = Util.safeUrl(signedLinks[0]);
+        if (signedLinks != null && signedLinks.length > 0) dest = IOCommon.safeUrl(signedLinks[0]);
         // V2
         else {
-            dest = Util.safeUrl(signedURI);
+            dest = IOCommon.safeUrl(signedURI);
         }
         return dest;
     }
@@ -214,7 +215,7 @@ public class SignedUploadGCP implements SignedUpload {
      */
     private boolean resumeUpload(
             boolean verbose,
-            java.nio.file.Path source,
+            Path source,
             long sourceLength,
             long position,
             URL uploadLocation,
@@ -240,7 +241,7 @@ public class SignedUploadGCP implements SignedUpload {
             uploadProgress.rewindTo(position);
             try (InputStream sourceStream = Files.newInputStream(source);
                     OutputStream targetStream = connection.getOutputStream()) {
-                safeSkip(sourceStream, position);
+                IOCommon.safeSkip(sourceStream, position);
                 IOUtils.copy(
                         new BufferedInputStream(sourceStream),
                         new ProgressTrackingOutputStream(targetStream, uploadProgress));
@@ -300,10 +301,6 @@ public class SignedUploadGCP implements SignedUpload {
                             verbose, connection, "Acquire resumable upload position");
             }
         }
-    }
-
-    interface Sleeper {
-        void sleep(long millis) throws InterruptedException;
     }
 
     public interface ProgressListenerFactory {

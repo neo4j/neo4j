@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.aura;
 
+import static java.util.Arrays.stream;
+
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.neo4j.cli.CommandFailedException;
 
 public class AuraURLFactory {
 
-    String buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
+    public AuraConsole buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
         ConsoleUrlMatcher[] matchers = devMode
                 ? new ConsoleUrlMatcher[] {
                     new ConsoleUrlMatcher.DevMatcher(),
@@ -31,11 +34,11 @@ public class AuraURLFactory {
                 }
                 : new ConsoleUrlMatcher[] {new ConsoleUrlMatcher.ProdMatcher(), new ConsoleUrlMatcher.PrivMatcher()};
 
-        return java.util.Arrays.stream(matchers)
+        return stream(matchers)
                 .filter(m -> m.match(boltURI))
                 .findFirst()
                 .orElseThrow(() -> new CommandFailedException("Invalid Bolt URI '" + boltURI + "'"))
-                .consoleUrl();
+                .getConsole();
     }
 
     abstract static class ConsoleUrlMatcher {
@@ -67,12 +70,12 @@ public class AuraURLFactory {
         //                    │      └──────────── environment
         //                    └─────────────────── database id
 
-        protected java.util.regex.Matcher matcher;
+        protected Matcher matcher;
         protected String url;
 
         protected abstract Pattern pattern();
 
-        public abstract String consoleUrl();
+        public abstract AuraConsole getConsole();
 
         public boolean match(String url) {
             this.url = url;
@@ -88,13 +91,13 @@ public class AuraURLFactory {
             }
 
             @Override
-            public String consoleUrl() {
+            public AuraConsole getConsole() {
                 String databaseId = matcher.group(1);
                 String environment = matcher.group(2);
 
-                return String.format(
-                        "https://console%s.neo4j.io/v1/databases/%s",
-                        environment == null ? "" : environment, databaseId);
+                return new AuraConsole(
+                        String.format("https://console%s.neo4j.io", environment == null ? "" : environment),
+                        databaseId);
             }
         }
 
@@ -106,7 +109,7 @@ public class AuraURLFactory {
             }
 
             @Override
-            public String consoleUrl() {
+            public AuraConsole getConsole() {
                 String databaseId = matcher.group(1);
                 String environment = matcher.group(2);
                 String domain = "";
@@ -119,7 +122,8 @@ public class AuraURLFactory {
                     domain = matcher.group(4);
                 }
 
-                return String.format("https://console%s.neo4j%s.io/v1/databases/%s", environment, domain, databaseId);
+                String baseURL = String.format("https://console%s.neo4j%s.io", environment, domain);
+                return new AuraConsole(baseURL, databaseId);
             }
         }
 
@@ -131,7 +135,7 @@ public class AuraURLFactory {
             }
 
             @Override
-            public String consoleUrl() {
+            public AuraConsole getConsole() {
                 String databaseId = matcher.group(1);
                 String environment = matcher.group(2);
                 String domain = "";
@@ -147,8 +151,8 @@ public class AuraURLFactory {
                         domain = matcher.group(4);
                     }
                 }
-
-                return String.format("https://console%s.neo4j%s.io/v1/databases/%s", environment, domain, databaseId);
+                String baseURL = String.format("https://console%s.neo4j%s.io", environment, domain);
+                return new AuraConsole(baseURL, databaseId);
             }
         }
     }

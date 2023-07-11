@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 
-public class UtilTest {
+public class IOCommonTest {
 
     @Test
     void testBase64Encode() {
         String username = "mrbutcher";
         char[] password = "sausage".toCharArray();
-        String out = Util.base64Encode(username, password);
+        String out = IOCommon.base64Encode(username, password);
         assertEquals("bXJidXRjaGVyOnNhdXNhZ2U=", out);
         String decoded = new String(Base64.getDecoder().decode(out));
         assertEquals(decoded, "mrbutcher:sausage");

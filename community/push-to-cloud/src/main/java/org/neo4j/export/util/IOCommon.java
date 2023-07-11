@@ -15,17 +15,25 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Base64;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
+import org.neo4j.export.UploadCommand;
 
-public final class Util {
+public final class IOCommon {
 
-    private Util() {}
+    private IOCommon() {}
+
+    public interface Sleeper {
+        void sleep(long millis) throws InterruptedException;
+    }
 
     public static URL safeUrl(String urlString) {
         try {
@@ -47,5 +55,27 @@ public final class Util {
      */
     public static <T> T parseJsonUsingJacksonParser(String json, Class<T> type) throws IOException {
         return new ObjectMapper().readValue(json, type);
+    }
+
+    public static String SerializeWithJackson(Object pojo) throws IOException {
+        return new ObjectMapper().writeValueAsString(pojo);
+    }
+
+    public static void safeSkip(InputStream sourceStream, long position) throws IOException {
+        long toSkip = position;
+        while (toSkip > 0) {
+            toSkip -= sourceStream.skip(position);
+        }
+    }
+
+    public static long getFileSize(UploadCommand.Source src, ExecutionContext ctx) {
+        long fileSize;
+        try {
+            fileSize = src.fs().getFileSize(src.path());
+        } catch (IOException e) {
+            ctx.err().println(String.format("Failed to determine size of file at location: %s", src.path()));
+            throw new CommandFailedException(e.getMessage());
+        }
+        return fileSize;
     }
 }

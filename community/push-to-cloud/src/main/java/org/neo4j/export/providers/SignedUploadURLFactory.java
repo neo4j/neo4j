@@ -15,21 +15,45 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.providers;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.export.CommandResponseHandler;
+import org.neo4j.export.UploadURLFactory;
+import org.neo4j.export.aura.AuraJsonMapper.SignedURIBodyResponse;
 
 public class SignedUploadURLFactory implements UploadURLFactory {
+
+    public enum Provider {
+        AWS("AWS"),
+        GCP("GCP");
+        private final String name;
+
+        Provider(String name) {
+            this.name = name;
+        }
+    }
 
     public SignedUploadURLFactory() {}
 
     // This will eventually become more complicated as we add more providers
     public SignedUpload fromAuraResponse(
-            AuraResponse.SignedURIBody signedURIBody, ExecutionContext ctx, String boltURI) {
-
+            SignedURIBodyResponse signedURIBodyResponse, ExecutionContext ctx, String boltURI) {
+        if (signedURIBodyResponse.Provider.equalsIgnoreCase(SignedUploadURLFactory.Provider.AWS.name)) {
+            return new org.neo4j.export.providers.SignedUploadAWS(
+                    signedURIBodyResponse.SignedLinks,
+                    signedURIBodyResponse.UploadID,
+                    signedURIBodyResponse.TotalParts,
+                    ctx,
+                    boltURI);
+        }
         return new SignedUploadGCP(
-                signedURIBody.SignedLinks, signedURIBody.SignedURI, ctx, boltURI, new CommandResponseHandler(ctx));
+                signedURIBodyResponse.SignedLinks,
+                signedURIBodyResponse.SignedURI,
+                ctx,
+                boltURI,
+                new CommandResponseHandler(ctx));
     }
 
     static class RetryableHttpException extends RuntimeException {

@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package org.neo4j.export;
+package org.neo4j.export.providers;
 
-interface SignedUpload {
+import org.neo4j.export.UploadCommand;
 
-    void copy(boolean verbose, org.neo4j.export.UploadCommand.Source src);
+public interface SignedUpload {
+
+    void copy(boolean verbose, UploadCommand.Source src);
 }

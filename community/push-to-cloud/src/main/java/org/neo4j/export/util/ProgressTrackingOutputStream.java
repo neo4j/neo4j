@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.export;
+package org.neo4j.export.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 
-class ProgressTrackingOutputStream extends OutputStream {
+public class ProgressTrackingOutputStream extends OutputStream {
     private final OutputStream actual;
     private final Progress progress;
 
-    ProgressTrackingOutputStream(OutputStream actual, Progress progress) {
+    public ProgressTrackingOutputStream(OutputStream actual, Progress progress) {
         this.actual = actual;
         this.progress = progress;
     }
@@ -51,7 +51,7 @@ class ProgressTrackingOutputStream extends OutputStream {
         progress.add(1);
     }
 
-    static class Progress {
+    public static class Progress {
         private final ProgressListener uploadProgress;
         // Why have this as a separate field here? Because we will track local progress while streaming the file,
         // i.e. how much we send. But if the upload gets aborted we may take a small step backwards after asking about
@@ -69,14 +69,14 @@ class ProgressTrackingOutputStream extends OutputStream {
          * where the upload will continue from. This is separate from temporary failure where the upload will be retried after some back-off.
          * That logic will instead make use of {@link #rewindTo(long)}.
          */
-        Progress(ProgressListener progressListener, long position) {
+        public Progress(ProgressListener progressListener, long position) {
             uploadProgress = progressListener;
             if (position > 0) {
                 uploadProgress.add(position);
             }
         }
 
-        void add(int increment) {
+        public void add(int increment) {
             progress += increment;
             if (progress > highestReportedProgress) {
                 uploadProgress.add(progress - highestReportedProgress);
@@ -84,18 +84,18 @@ class ProgressTrackingOutputStream extends OutputStream {
             }
         }
 
-        void rewindTo(long absoluteProgress) {
+        public void rewindTo(long absoluteProgress) {
             // May be lower than what we're at, but that's fine
             progress = absoluteProgress;
             // highestReportedProgress will be kept as it is so that we know when we're caught up to it once more
         }
 
-        void done() {
+        public void done() {
             done = true;
             uploadProgress.close();
         }
 
-        boolean isDone() {
+        public boolean isDone() {
             return done;
         }
     }

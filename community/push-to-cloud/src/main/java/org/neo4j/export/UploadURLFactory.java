@@ -18,8 +18,10 @@
 package org.neo4j.export;
 
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.export.aura.AuraJsonMapper.SignedURIBodyResponse;
+import org.neo4j.export.providers.SignedUpload;
 
 public interface UploadURLFactory {
 
-    SignedUpload fromAuraResponse(AuraResponse.SignedURIBody signedURIBody, ExecutionContext ctx, String boltURI);
+    SignedUpload fromAuraResponse(SignedURIBodyResponse signedURIBodyResponse, ExecutionContext ctx, String boltURI);
 }
