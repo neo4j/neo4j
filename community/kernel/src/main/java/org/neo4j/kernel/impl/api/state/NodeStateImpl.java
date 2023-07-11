@@ -174,6 +174,9 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
             if (relationshipsAdded.removeRelationship(relId, typeId, direction)) {
                 // This was a rel that was added in this tx, no need to add it to the remove list, instead we just
                 // remove it from added relationships.
+                if (relationshipsAdded.isEmpty()) {
+                    relationshipsAdded = null;
+                }
                 return;
             }
         }
@@ -228,11 +231,11 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
     }
 
     boolean hasAddedRelationships() {
-        return relationshipsAdded != null && !relationshipsAdded.isEmpty();
+        return relationshipsAdded != null;
     }
 
     public boolean hasAddedRelationships(int type) {
-        return relationshipsAdded.hasRelationships(type);
+        return relationshipsAdded != null && relationshipsAdded.hasRelationships(type);
     }
 
     boolean hasRemovedRelationships() {
