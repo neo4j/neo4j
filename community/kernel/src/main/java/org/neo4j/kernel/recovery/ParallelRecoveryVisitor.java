@@ -22,8 +22,8 @@ package org.neo4j.kernel.recovery;
 import static java.lang.Integer.max;
 import static org.neo4j.util.Preconditions.checkState;
 
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -78,7 +78,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
                 numAppliers,
                 1,
                 TimeUnit.HOURS,
-                new ArrayBlockingQueue<>(numAppliers),
+                new LinkedBlockingQueue<>(numAppliers),
                 new ThreadPoolExecutor.CallerRunsPolicy());
         this.stride = mode.isReverseStep() ? -1 : 1;
     }
