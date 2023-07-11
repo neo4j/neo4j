@@ -354,6 +354,16 @@ public class ExecutingQuery {
         this.status = SimpleState.parsing();
     }
 
+    /**
+     * ONLY FOR TESTING
+     *
+     * sets compiler info without asserting we maintain the integrity of the status field
+     */
+    @VisibleForTesting
+    public void setCompilerInfoForTesting(CompilerInfo compilerInfo) {
+        this.compilerInfo = compilerInfo;
+    }
+
     public LockTracer lockTracer() {
         return lockTracer;
     }

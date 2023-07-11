@@ -60,6 +60,7 @@ import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.locking.LockManager
 import org.neo4j.kernel.impl.query.ChainableQuerySubscriberProbe
@@ -79,6 +80,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 import java.io.PrintStream
+import java.util.Collections
 import java.util.concurrent.ConcurrentLinkedQueue
 
 import scala.collection.mutable.ArrayBuffer
@@ -681,11 +683,17 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     tx: InternalTransaction,
     txContext: TransactionalContext
   ): RESULT = {
+    txContext.executingQuery().setCompilerInfoForTesting(new CompilerInfo(
+      "NO PLANNER",
+      executableQuery.runtimeName.name,
+      Collections.emptyList()
+    ))
     val queryContext = newQueryContext(txContext, readOnly, executableQuery.threadSafeExecutionResources())
     val runtimeContext = newRuntimeContext(queryContext)
 
     val executionMode = if (profile) ProfileMode else NormalMode
-    val (keys, values) = parameters.mapValues(Values.of).unzip match { case (a, b) => (a.toArray, b.toArray[AnyValue]) }
+    val (keys, values) =
+      parameters.mapValues(Values.of).unzip match { case (a, b) => (a.toArray, b.toArray[AnyValue]) }
     val paramsMap = VirtualValues.map(keys, values)
     val result =
       executableQuery.run(queryContext, executionMode, paramsMap, prePopulateResults = true, input, subscriber)
