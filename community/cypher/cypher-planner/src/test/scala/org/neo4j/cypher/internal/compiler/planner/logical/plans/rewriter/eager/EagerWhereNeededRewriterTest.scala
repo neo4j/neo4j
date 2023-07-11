@@ -7013,7 +7013,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   // SHORTEST TESTS
   test("Insert eager between shortest path pattern and create") {
-    val expectedNfa = new TestNFABuilder(0, "u")
+    val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
@@ -7037,7 +7037,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        expectedNfa
+        nfa
       )
       .nodeByLabelScan("u", "User")
 
@@ -7061,7 +7061,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          expectedNfa
+          nfa
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7069,7 +7069,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test("Insert eager between shortest path pattern and delete") {
-    val expectedNfa = new TestNFABuilder(0, "u")
+    val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
@@ -7093,7 +7093,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        expectedNfa
+        nfa
       )
       .nodeByLabelScan("u", "User")
 
@@ -7122,7 +7122,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          expectedNfa
+          nfa
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7130,7 +7130,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test("Insert eager between shortest path pattern and detach delete") {
-    val expectedNfa = new TestNFABuilder(0, "u")
+    val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
@@ -7154,7 +7154,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        expectedNfa
+        nfa
       )
       .nodeByLabelScan("u", "User")
 
@@ -7185,7 +7185,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          expectedNfa
+          nfa
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7193,7 +7193,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test("Insert eager between shortest path pattern and set property") {
-    val expectedNfa = new TestNFABuilder(0, "u")
+    val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
@@ -7217,7 +7217,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        expectedNfa
+        nfa
       )
       .nodeByLabelScan("u", "User")
 
@@ -7239,7 +7239,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          expectedNfa
+          nfa
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7247,7 +7247,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test("Do not insert eager between shortest path pattern and create when there is no overlap") {
-    val expectedNfa = new TestNFABuilder(0, "u")
+    val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r WHERE r:A]->(b WHERE b:A)")
       .addTransition(2, 1, "(b) (a WHERE a:A)")
@@ -7272,7 +7272,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        expectedNfa
+        nfa
       )
       .nodeByLabelScan("u", "User")
 
@@ -7293,7 +7293,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          expectedNfa
+          nfa
         )
         .nodeByLabelScan("u", "User")
         .build()
