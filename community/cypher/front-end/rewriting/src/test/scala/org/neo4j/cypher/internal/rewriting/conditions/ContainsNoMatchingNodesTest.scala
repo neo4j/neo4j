@@ -51,7 +51,7 @@ class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTes
     ) _
 
     condition(ast) should equal(
-      Seq("Expected none but found ReturnItems(includeExisting = true, ...) at position line 1, column 0 (offset: 0)")
+      Seq("Expected none but found ReturnItems(includeExisting = true, ...) at position line 0, column 0 (offset: 0)")
     )
   }
 }

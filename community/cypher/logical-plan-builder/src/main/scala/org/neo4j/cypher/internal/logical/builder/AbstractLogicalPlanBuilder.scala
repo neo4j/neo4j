@@ -2472,7 +2472,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 }
 
 object AbstractLogicalPlanBuilder {
-  val pos: InputPosition = new InputPosition(0, 1, 0)
+  val pos: InputPosition = InputPosition.NONE
 
   case class Predicate(entity: String, predicate: String) {
 

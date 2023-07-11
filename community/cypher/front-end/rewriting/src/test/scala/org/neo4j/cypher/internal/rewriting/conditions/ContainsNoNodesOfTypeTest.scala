@@ -53,7 +53,7 @@ class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestS
     ) _
 
     condition(ast) should equal(
-      Seq("Expected none but found UnaliasedReturnItem at position line 1, column 0 (offset: 0)")
+      Seq("Expected none but found UnaliasedReturnItem at position line 0, column 0 (offset: 0)")
     )
   }
 }

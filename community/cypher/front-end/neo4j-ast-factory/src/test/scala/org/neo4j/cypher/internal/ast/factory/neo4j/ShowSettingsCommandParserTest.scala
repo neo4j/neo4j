@@ -198,7 +198,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
             variableReturnItem("description"),
             variableReturnItem("value")
           )
-        )((1, 1, 1)),
+        )((1, 20, 19)),
         where = Some(where(
           eq(
             varFor("name"),

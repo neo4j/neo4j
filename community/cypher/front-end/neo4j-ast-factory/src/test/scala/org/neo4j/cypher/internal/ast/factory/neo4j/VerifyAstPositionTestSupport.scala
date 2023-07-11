@@ -81,7 +81,7 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
 
     astWithPosition(javaCCAstNode).zip(astWithPosition(expectedAstNode))
       .foreach {
-        case ((_, _), (_, InputPosition(a, 1, b))) if a == b => // Ignore DummyPositions
+        case ((_, _), (_, InputPosition(a, 0, b))) if a == b => // Ignore DummyPositions
         case ((astChildNode1, pos1), (_, pos2)) =>
           withClue(s"AST node $astChildNode1 was parsed with different positions:") {
             pos1 shouldBe pos2
