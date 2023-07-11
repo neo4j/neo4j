@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver)
     extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
@@ -72,6 +73,16 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
   }
 
   def newVar(name: String, inputPosition: InputPosition, typ: CypherType): LogicalPlanBuilder = {
+    val variable = Variable(name)(inputPosition)
+    newVariable(variable, typ)
+    this
+  }
+
+  def newVar(name: String, typ: TypeSpec): LogicalPlanBuilder = {
+    newVar(name, pos, typ)
+  }
+
+  def newVar(name: String, inputPosition: InputPosition, typ: TypeSpec): LogicalPlanBuilder = {
     val variable = Variable(name)(inputPosition)
     newVariable(variable, typ)
     this
