@@ -48,6 +48,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final LogProvider logProvider;
     private final Set<LocalMemoryTracker> memoryTrackers = ConcurrentHashMap.newKeySet();
     private final LocalMemoryTracker transactionTracker;
+    private boolean hasExecutionContextMemoryTrackers = false;
 
     static final long DEFAULT_EXECUTION_CONTEXT_MEMORY_TRACKER_INITIAL_CREDIT = 0;
 
@@ -88,6 +89,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
 
     public MemoryTracker getExecutionContextPoolMemoryTracker(long grabSize, long maxGrabSize, long initialCredit) {
         if (config.get(memory_tracking)) {
+            hasExecutionContextMemoryTrackers = true;
             return createExecutionContextMemoryTracker(grabSize, maxGrabSize, initialCredit);
         } else {
             return EmptyMemoryTracker.INSTANCE;
@@ -162,6 +164,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
 
     public void reset() {
         transactionTracker.reset();
+        // NOTE: ExecutionContextMemoryTrackers are not stored in memoryTrackers
         if (!memoryTrackers.isEmpty()) {
             for (LocalMemoryTracker memoryTracker : memoryTrackers) {
                 memoryTracker.checkAllocatedNativeBytes();
@@ -169,7 +172,14 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
             releaseHeap(usedHeap());
 
             memoryTrackers.clear();
+        } else if (hasExecutionContextMemoryTrackers) {
+            long usedHeap = usedHeap();
+            if (usedHeap > 0L) {
+                releaseHeap(usedHeap);
+            }
+            hasExecutionContextMemoryTrackers = false;
         }
+
         assert usedNative() == 0
                 : "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has "
                         + usedNative();
