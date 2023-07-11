@@ -987,7 +987,7 @@ object ReadFinder {
     semanticTable: SemanticTable
   ): PlanReads = {
 
-    def getExpressions(nfa: NFA): (Set[Expand.VariablePredicate], Set[Expand.VariablePredicate]) = {
+    val (nodeExpr, relExpr) = {
       nfa.transitions.foldLeft((Set[Expand.VariablePredicate](), Set[Expand.VariablePredicate]())) { (acc, trans) =>
         trans match {
           case (_, transition) => transition match {
@@ -1006,30 +1006,31 @@ object ReadFinder {
     val initialRead = PlanReads()
       .withReferencedNodeVariable(sourceNode)
       .withIntroducedNodeVariable(targetNode)
-    val readWithPathNodes = nodeVariableGroupings.foldLeft(initialRead) { (acc, pathNode) =>
-      acc.withIntroducedNodeVariable(pathNode.singletonName)
-    }
-    val readWithAllNodes = singletonVariables.foldLeft(readWithPathNodes) { (acc, singletonVariable) =>
-      var res = acc
-      if (semanticTable.typeFor(singletonVariable).couldBe(CTNode)) {
-        res = res.withIntroducedNodeVariable(singletonVariable)
-      }
-      if (semanticTable.typeFor(singletonVariable).couldBe(CTRelationship)) {
-        res = res.withIntroducedRelationshipVariable(singletonVariable)
-      }
-      res
-    }
-    val readWithPathRels = relationshipVariableGroupings.foldLeft(readWithAllNodes) { (acc, pathRel) =>
-      acc.withIntroducedRelationshipVariable(pathRel.singletonName)
-    }
-    val (nodeExpr, relExpr) = getExpressions(nfa)
-    val additionalNodeExpr = nodeExpr.foldLeft(readWithPathRels)((acc, pred) =>
-      acc.withAddedNodeFilterExpression(pred.variable, pred.predicate)
-    )
 
-    relExpr.foldLeft(additionalNodeExpr)((acc, pred) =>
-      acc.withAddedRelationshipFilterExpression(pred.variable, pred.predicate)
-    )
+    Function.chain[PlanReads](Seq(
+      nodeVariableGroupings.foldLeft(_) { (acc, pathNode) =>
+        acc.withIntroducedNodeVariable(pathNode.singletonName)
+      },
+      singletonVariables.foldLeft(_) { (acc, singletonVariable) =>
+        var res = acc
+        if (semanticTable.typeFor(singletonVariable).couldBe(CTNode)) {
+          res = res.withIntroducedNodeVariable(singletonVariable)
+        }
+        if (semanticTable.typeFor(singletonVariable).couldBe(CTRelationship)) {
+          res = res.withIntroducedRelationshipVariable(singletonVariable)
+        }
+        res
+      },
+      relationshipVariableGroupings.foldLeft(_) { (acc, pathRel) =>
+        acc.withIntroducedRelationshipVariable(pathRel.singletonName)
+      },
+      nodeExpr.foldLeft(_)((acc, pred) =>
+        acc.withAddedNodeFilterExpression(pred.variable, pred.predicate)
+      ),
+      relExpr.foldLeft(_)((acc, pred) =>
+        acc.withAddedRelationshipFilterExpression(pred.variable, pred.predicate)
+      )
+    ))(initialRead)
   }
 
   private def processShortestPaths(
