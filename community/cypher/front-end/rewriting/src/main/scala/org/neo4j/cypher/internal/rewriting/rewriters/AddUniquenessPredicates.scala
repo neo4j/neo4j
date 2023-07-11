@@ -112,7 +112,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
   override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipUniquenessPredicatesInMatchAndMerge)
 
   override val rewriter: Rewriter = bottomUp(Rewriter.lift {
-    case m @ Match(_, _, pattern: Pattern, _, where) =>
+    case m @ Match(_, matchMode, pattern: Pattern, _, where) if matchMode.requiresDifferentRelationships =>
       val rels: Seq[NodeConnection] = collectRelationships(pattern)
       val newWhere = withPredicates(m, rels, where)
       m.copy(where = newWhere)(m.position)
