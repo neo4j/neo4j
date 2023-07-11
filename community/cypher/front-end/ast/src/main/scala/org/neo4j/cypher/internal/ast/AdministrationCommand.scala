@@ -1113,6 +1113,8 @@ sealed abstract class DropDatabaseAdditionalAction(val name: String)
 case object DumpData extends DropDatabaseAdditionalAction("DUMP DATA")
 case object DestroyData extends DropDatabaseAdditionalAction("DESTROY DATA")
 
+// Alias commands
+
 final case class ShowAliases(
   aliasName: Option[DatabaseName],
   override val yieldOrWhere: YieldOrWhere,
@@ -1146,6 +1148,7 @@ object ShowAliases {
     val showColumns = List(
       // (column, brief)
       (ShowColumn("name")(position), true),
+      (ShowColumn("composite")(position), true),
       (ShowColumn("database")(position), true),
       (ShowColumn("location")(position), true),
       (ShowColumn("url")(position), true),

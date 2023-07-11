@@ -49,7 +49,6 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PROPERTIES
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.USERNAME_PROPERTY
-import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.database.DatabaseReference
@@ -78,7 +77,7 @@ case class ShowAliasesExecutionPlanner(
     yields: Option[Yield],
     returns: Option[Return]
   ): ExecutionPlan = {
-    // name | database | location | url | driver
+    // name | composite | database | location | url | user | driver | properties
     val returnStatement = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
     val verboseColumns = if (verbose) ", driverSettings{.*} as driver, properties{.*} as properties" else ""
     val (aliasNameFields, aliasPropertyFilter) = filterAliasByName(aliasName)
@@ -90,6 +89,10 @@ case class ShowAliasesExecutionPlanner(
          |OPTIONAL MATCH (aliasNode)-[:$CONNECTS_WITH]->(driverSettings:$DRIVER_SETTINGS)
          |OPTIONAL MATCH (aliasNode)-[:$PROPERTIES]->(properties:$ALIAS_PROPERTIES)
          |WITH alias.$DISPLAY_NAME_PROPERTY as name,
+         |CASE alias.$NAMESPACE_PROPERTY
+         | WHEN '$DEFAULT_NAMESPACE' THEN null
+         | ELSE alias.$NAMESPACE_PROPERTY
+         |END as composite,
          |alias.database as database,
          |alias.location as location,
          |aliasNode.$URL_PROPERTY as url,
@@ -105,7 +108,7 @@ case class ShowAliasesExecutionPlanner(
       aliasNameFields.map(anf => VirtualValues.map(anf.keys, anf.values)).getOrElse(VirtualValues.EMPTY_MAP),
       source = sourcePlan,
       parameterTransformer =
-        ParameterTransformer(generateVisibleAliases).convert(
+        ParameterTransformer((_, sc) => generateVisibleAliases(sc)).convert(
           aliasNameFields.map(_.nameConverter).getOrElse(IdentityConverter)
         )
           .validate(aliasNameFields.map(checkNamespaceExists).getOrElse((_, p) => (p, Set.empty)))
@@ -131,7 +134,7 @@ case class ShowAliasesExecutionPlanner(
     (aliasNameFields, aliasPropertyFilter)
   }
 
-  private def generateVisibleAliases(tx: Transaction, sc: SecurityContext): MapValue = {
+  private def generateVisibleAliases(sc: SecurityContext): MapValue = {
 
     def referencesToAlias(alias: DatabaseReference): Iterable[Alias] = alias match {
       case a: DatabaseReferenceImpl.External => Seq(Alias(
