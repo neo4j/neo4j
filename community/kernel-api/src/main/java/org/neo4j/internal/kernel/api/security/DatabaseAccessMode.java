@@ -24,9 +24,16 @@ import org.neo4j.kernel.database.DatabaseReference;
 public interface DatabaseAccessMode {
     boolean canSeeDatabase(DatabaseReference database);
 
+    boolean canAccessDatabase(DatabaseReference database);
+
     DatabaseAccessMode FULL = new DatabaseAccessMode() {
         @Override
         public boolean canSeeDatabase(DatabaseReference database) {
+            return true;
+        }
+
+        @Override
+        public boolean canAccessDatabase(DatabaseReference database) {
             return true;
         }
     };

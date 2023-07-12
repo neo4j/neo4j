@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.fabric.eval.Catalog.normalize
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Errors.show
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NormalizedDatabaseName
@@ -172,10 +173,13 @@ case class Catalog(
   def resolveViewOption(name: CatalogName, args: Seq[AnyValue]): Option[Catalog.Graph] =
     views.get(normalize(name)).map(v => v.eval(args, this))
 
-  def graphNamesIn(namespace: String): Array[String] =
+  def graphNamesIn(namespace: String, securityContext: SecurityContext): Array[String] =
     graphs.collect {
-      case (cn @ CatalogName(List(`namespace`, name)), _: Catalog.Graph) => cn.qualifiedNameString
+      case (cn @ CatalogName(List(`namespace`, name)), graph: Catalog.Graph)
+        if securityContext.databaseAccessMode().canAccessDatabase(graph.reference) =>
+        cn.qualifiedNameString
     }.toArray
 
   def ++(that: Catalog): Catalog = Catalog(this.graphs ++ that.graphs, this.views ++ that.views)
+
 }
