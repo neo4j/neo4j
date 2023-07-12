@@ -29,7 +29,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.io.ByteUnit.bytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.util.ArrayList;
@@ -110,13 +109,15 @@ public class ExecutionContextIT {
                         .findFirst()
                         .orElseThrow();
                 assertEquals(
-                        kibiBytes(128 * NUMBER_OF_WORKERS), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
+                        kibiBytes(128 * NUMBER_OF_WORKERS),
+                        transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
                 assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
 
                 closeAllUnchecked(contexts);
 
                 assertEquals(
-                        bytes(5 * 10 * NUMBER_OF_WORKERS), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
+                        bytes(5 * 10 * NUMBER_OF_WORKERS),
+                        transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
                 assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
 
                 transaction.close();
