@@ -49,6 +49,7 @@ import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.InternalLogProvider;
 
 public class Dumper {
@@ -173,7 +174,8 @@ public class Dumper {
     }
 
     private void writeFile(Path file, ArchiveOutputStream archiveStream) throws IOException {
-        try (InputStream in = Files.newInputStream(file)) {
+        try (var fs = new DefaultFileSystemAbstraction();
+                var in = fs.openAsInputStream(file)) {
             copy(in, archiveStream, progressPrinter);
         }
     }
