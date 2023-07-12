@@ -197,6 +197,10 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public void releaseNative(long bytes) {
+        if (bytes == 0) {
+            return;
+        }
+        assert openCheck.getAsBoolean() : "Tracker should be open to allow releasing native memory.";
         this.allocatedBytesNative -= bytes;
         this.memoryPool.releaseNative(bytes);
     }
@@ -207,7 +211,6 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
             return;
         }
         requirePositive(bytes);
-        assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
 
         allocatedBytesHeap += bytes;
         clientCallsSinceLastPoolInteraction++;
@@ -240,6 +243,9 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public void releaseHeap(long bytes) {
+        if (bytes == 0) {
+            return;
+        }
         requireNonNegative(bytes);
         allocatedBytesHeap -= bytes;
         localHeapPool += bytes;
@@ -273,11 +279,14 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public void reset() {
-        long localHeapToRelease = localHeapPool - initialCredit;
-        if (localHeapToRelease > 0L) {
-            memoryPool.releaseHeap(localHeapToRelease);
-        } else if (localHeapToRelease < 0L) {
-            memoryPool.reserveHeap(-localHeapToRelease);
+        // Only release or reserve heap if the transaction is still open
+        if (openCheck.getAsBoolean()) {
+            long localHeapToRelease = localHeapPool - initialCredit;
+            if (localHeapToRelease > 0L) {
+                memoryPool.releaseHeap(localHeapToRelease);
+            } else if (localHeapToRelease < 0L) {
+                memoryPool.reserveHeap(-localHeapToRelease);
+            }
         }
         localHeapPool = 0;
         allocatedBytesHeap = 0;
@@ -302,21 +311,27 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
      * @throws MemoryLimitExceededException if not enough free memory
      */
     private void reserveHeapFromPool(long size) {
-        if (clientCallsSinceLastPoolInteraction < CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD) {
-            increaseGrabSize(size);
+        // Only reserve heap if the transaction is still open
+        if (openCheck.getAsBoolean()) {
+            if (clientCallsSinceLastPoolInteraction < CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD) {
+                increaseGrabSize(size);
+            }
+            memoryPool.reserveHeap(size);
+            localHeapPool += size;
+            clientCallsSinceLastPoolInteraction = 0;
         }
-        memoryPool.reserveHeap(size);
-        localHeapPool += size;
-        clientCallsSinceLastPoolInteraction = 0;
     }
 
     private void releaseHeapToPool(long size) {
-        if (clientCallsSinceLastPoolInteraction < CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD) {
-            increaseGrabSize(size);
+        // Only release heap if the transaction is still open
+        if (openCheck.getAsBoolean()) {
+            if (clientCallsSinceLastPoolInteraction < CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD) {
+                increaseGrabSize(size);
+            }
+            memoryPool.releaseHeap(size);
+            localHeapPool -= size;
+            clientCallsSinceLastPoolInteraction = 0;
         }
-        memoryPool.releaseHeap(size);
-        localHeapPool -= size;
-        clientCallsSinceLastPoolInteraction = 0;
     }
 
     private void increaseGrabSize(long size) {
