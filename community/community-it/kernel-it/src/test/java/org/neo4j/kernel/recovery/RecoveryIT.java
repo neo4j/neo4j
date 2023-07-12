@@ -888,7 +888,7 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( layout ) );
 
         Config config = defaults( Map.of( GraphDatabaseSettings.keep_logical_logs, "keep_none" ));
-        performRecoveryWithLogPruning( fileSystem, pageCache, EMPTY, config, layout, INSTANCE );
+        performRecoveryWithLogPruning( fileSystem, pageCache, EMPTY, config, layout, INSTANCE, NullLogProvider.getInstance() );
         assertThat( Arrays.stream( fileSystem.listFiles( layout.getTransactionLogsDirectory() ) ).filter( path -> path.toString().contains( "transaction.db" ) )
                 .count() ).isEqualTo( 2 );
     }

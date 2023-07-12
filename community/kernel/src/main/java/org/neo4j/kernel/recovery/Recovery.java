@@ -258,7 +258,7 @@ public final class Recovery
      * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecoveryWithLogPruning( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
-            Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
+            Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker, LogProvider logProvider ) throws IOException
     {
         StorageEngineFactory storageEngineFactory = selectStorageEngine( fs, databaseLayout, pageCache, config );
         requireNonNull( fs );
@@ -269,7 +269,7 @@ public final class Recovery
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
         performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, storageEngineFactory, false,
-                NullLogProvider.getInstance(), new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock(),
+                logProvider, new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock(),
                 RecoveryPredicate.ALL, true );
     }
 
