@@ -259,10 +259,6 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
         //       If any other threads than the owner thread or the worker threads are interacting
         //       with this memory tracker concurrently, that would not be safe from race conditions,
         //       but that is generally not supported with the execution state in the parallel runtime and not expected.
-        require(
-          _initializationMemoryTracker != null,
-          s"An initialization memory tracker needs to be set on ${getClass.getSimpleName} before first use"
-        )
         _initializationMemoryTracker
     }
   }
