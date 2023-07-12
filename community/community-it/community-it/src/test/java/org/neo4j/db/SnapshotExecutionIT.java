@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric;
+package org.neo4j.db;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +27,8 @@ import static org.neo4j.kernel.api.exceptions.Status.Statement.ArithmeticError;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.SyntaxError;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -37,7 +39,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.ConnectorType;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -46,6 +51,7 @@ import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.types.Path;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -60,7 +66,7 @@ import reactor.core.publisher.Mono;
 
 @BoltDbmsExtension(configurationCallback = "configure")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SnapshotExecutionTest {
+class SnapshotExecutionIT {
     @Inject
     private static GraphDatabaseAPI graphDatabase;
 
@@ -79,7 +85,7 @@ class SnapshotExecutionTest {
 
     @BeforeAll
     static void beforeAll() throws KernelException {
-        driver = DriverUtils.createDriver(connectorPortRegister);
+        driver = createDriver(connectorPortRegister);
         procedureRegistry.registerProcedure(ConcurrentQuery.class);
     }
 
@@ -219,6 +225,25 @@ class SnapshotExecutionTest {
                 .block()
                 .size();
         assertEquals(50, receivedRecords);
+    }
+
+    public static Driver createDriver(ConnectorPortRegister portRegister) {
+        return GraphDatabase.driver(
+                getBoltUri(portRegister),
+                AuthTokens.none(),
+                org.neo4j.driver.Config.builder()
+                        .withoutEncryption()
+                        .withMaxConnectionPoolSize(3)
+                        .build());
+    }
+
+    private static URI getBoltUri(ConnectorPortRegister portRegister) {
+        HostnamePort hostPort = portRegister.getLocalAddress(ConnectorType.BOLT);
+        try {
+            return new URI("neo4j", null, hostPort.getHost(), hostPort.getPort(), null, null, null);
+        } catch (URISyntaxException x) {
+            throw new IllegalArgumentException(x.getMessage(), x);
+        }
     }
 
     public static class ConcurrentQuery {
