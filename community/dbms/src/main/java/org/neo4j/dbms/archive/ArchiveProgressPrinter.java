@@ -21,48 +21,40 @@ package org.neo4j.dbms.archive;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.function.Supplier;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
 
 class ArchiveProgressPrinter {
-    private final AtomicBoolean printUpdate;
+
+    public static final Duration PRINT_INTERVAL = Duration.ofSeconds(60);
     private final OutputProgressPrinter progressPrinter;
+    private final Supplier<Instant> timeSource;
+
     private long currentBytes;
     private long currentFiles;
     private boolean done;
-    long maxBytes;
-    long maxFiles;
+    private long maxBytes;
+    private long maxFiles;
 
-    ArchiveProgressPrinter(OutputProgressPrinter progressPrinter) {
-        requireNonNull(progressPrinter);
-        this.progressPrinter = progressPrinter;
-        this.printUpdate = new AtomicBoolean();
+    private boolean force;
+    private Deadline deadline = null;
+    private PercentageCondition percentage = null;
+
+    ArchiveProgressPrinter(OutputProgressPrinter progressPrinter, Supplier<Instant> timeSource) {
+        this.progressPrinter = requireNonNull(progressPrinter);
+        this.timeSource = requireNonNull(timeSource);
     }
 
     Resource startPrinting() {
-        ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
-        ScheduledFuture<?> timerFuture =
-                timer.scheduleAtFixedRate(this::printOnNextUpdate, 0, 100, TimeUnit.MILLISECONDS);
+        deadline = new Deadline(Instant.EPOCH, PRINT_INTERVAL);
         return () -> {
-            timerFuture.cancel(false);
-            timer.shutdown();
-            try {
-                timer.awaitTermination(10, TimeUnit.SECONDS);
-            } catch (InterruptedException ignore) {
-            }
             done();
             printProgress();
         };
-    }
-
-    void printOnNextUpdate() {
-        printUpdate.set(true);
     }
 
     void reset() {
@@ -70,17 +62,50 @@ class ArchiveProgressPrinter {
         maxFiles = 0;
         currentBytes = 0;
         currentFiles = 0;
+        deadline = null;
+        percentage = null;
+    }
+
+    void maxBytes(long value) {
+        maxBytes = value;
+        percentage = new PercentageCondition(value);
+    }
+
+    long maxBytes() {
+        return maxBytes;
+    }
+
+    void maxFiles(long value) {
+        maxFiles = value;
+    }
+
+    long maxFiles() {
+        return maxFiles;
     }
 
     void beginFile() {
         currentFiles++;
     }
 
+    void printOnNextUpdate() {
+        force = true;
+    }
+
     void addBytes(long n) {
         currentBytes += n;
-        if (printUpdate.get()) {
+
+        var when = timeSource.get();
+        var deadlineReached = (deadline != null && deadline.reached(when));
+        var percentageReached = (percentage != null && percentage.reached(currentBytes));
+
+        if (force || deadlineReached || percentageReached) {
             printProgress();
-            printUpdate.set(false);
+
+            // If we manage to print, for whatever reason, move the deadline into the future.
+            if (deadline != null) {
+                deadline.next();
+            }
+            force = false;
         }
     }
 
@@ -103,6 +128,41 @@ class ArchiveProgressPrinter {
                     "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format("%4.1f%%", progress));
         } else {
             progressPrinter.print("Files: " + currentFiles + "/?" + ", data: ??.?%");
+        }
+    }
+
+    static class Deadline {
+        private final Duration interval;
+        private Instant target;
+
+        Deadline(Instant now, Duration interval) {
+            this.interval = interval;
+            this.target = increment(now, interval);
+        }
+
+        boolean reached(Instant when) {
+            return when.isAfter(target);
+        }
+
+        void next() {
+            target = increment(target, interval);
+        }
+
+        private static Instant increment(Instant target, Duration duration) {
+            return target.plusMillis(duration.toMillis());
+        }
+    }
+
+    static class PercentageCondition {
+        final long bucket;
+
+        PercentageCondition(long maxBytes) {
+            bucket = maxBytes / 100;
+        }
+
+        boolean reached(long currentBytes) {
+            // If we have less than 100 bytes, disable the check
+            return (bucket > 0 && currentBytes % bucket == 0);
         }
     }
 }

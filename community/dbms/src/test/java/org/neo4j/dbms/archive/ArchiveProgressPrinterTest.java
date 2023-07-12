@@ -19,72 +19,84 @@
  */
 package org.neo4j.dbms.archive;
 
+import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import org.junit.jupiter.api.Test;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringJoiner;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.time.Clocks;
 
 class ArchiveProgressPrinterTest {
-    @Test
-    void printProgressStreamOutput() {
+
+    record Workload(Function<OutputProgressPrinter, List<String>> generator) {}
+
+    private static Stream<Workload> workloads() {
+        return Stream.of(
+                new Workload(ArchiveProgressPrinterTest::executeSomeWork),
+                new Workload(ArchiveProgressPrinterTest::executeSlowWorkload));
+    }
+
+    @ParameterizedTest
+    @MethodSource("workloads")
+    void printProgressStreamOutput(Workload workload) {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(bout);
         OutputProgressPrinter outputPrinter = printStreamPrinter(printStream);
 
-        executeSomeWork(outputPrinter);
-
+        var expected = workload.generator.apply(outputPrinter);
         printStream.flush();
-        String output = bout.toString();
-        assertEquals(
-                output,
-                "\nFiles: 1/10, data: " + String.format("%4.1f%%", 0.5) + "\nFiles: 2/10, data: "
-                        + String.format("%4.1f%%", 20.5) + "\nFiles: 2/10, data: "
-                        + String.format("%4.1f%%", 20.5) + "\nFiles: 3/10, data: "
-                        + String.format("%4.1f%%", 30.5) + "\nFiles: 3/10, data: "
-                        + String.format("%4.1f%%", 30.5) + "\nDone: 3 files, 305B processed."
-                        + System.lineSeparator());
+        var actual = bout.toString().lines().collect(Collectors.toList());
+
+        // pop ending empty entries due to the PrintStreamOutputPrinter
+        actual.removeIf((s) -> s.equals(""));
+
+        assertEachLineContains(actual, expected);
     }
 
-    @Test
-    void printProgressEmptyReporter() {
+    @ParameterizedTest
+    @MethodSource("workloads")
+    void printProgressEmptyReporter(Workload workload) {
         OutputProgressPrinter outputPrinter = ProgressPrinters.emptyPrinter();
-        assertDoesNotThrow(() -> executeSomeWork(outputPrinter));
+        assertDoesNotThrow(() -> workload.generator.apply(outputPrinter));
     }
 
-    @Test
-    void printProgressLogger() {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        InternalLog providerLog = logProvider.getLog(ArchiveProgressPrinterTest.class);
-        OutputProgressPrinter outputPrinter = ProgressPrinters.logProviderPrinter(providerLog);
+    @ParameterizedTest
+    @MethodSource("workloads")
+    void printProgressLogger(Workload workload) {
+        try (AssertableLogProvider logProvider = new AssertableLogProvider()) {
+            InternalLog providerLog = logProvider.getLog(ArchiveProgressPrinterTest.class);
+            OutputProgressPrinter outputPrinter = ProgressPrinters.logProviderPrinter(providerLog);
 
-        executeSomeWork(outputPrinter);
-
-        assertEquals(
-                logProvider.serialize(),
-                "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 1/10, data: "
-                        + String.format("%4.1f%%", 0.5) + "\n"
-                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: "
-                        + String.format("%4.1f%%", 20.5) + "\n"
-                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: "
-                        + String.format("%4.1f%%", 20.5) + "\n"
-                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: "
-                        + String.format("%4.1f%%", 30.5) + "\n"
-                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: "
-                        + String.format("%4.1f%%", 30.5) + "\n"
-                        + "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Done: 3 files, 305B processed.\n");
+            var expected = workload.generator.apply(outputPrinter);
+            var actual = logProvider.serialize().lines().toList();
+            assertEachLineContains(actual, expected);
+        }
     }
 
-    private static void executeSomeWork(OutputProgressPrinter outputPrinter) {
-        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter(outputPrinter);
-        progressPrinter.maxBytes = 1000;
-        progressPrinter.maxFiles = 10;
+    private static List<String> executeSomeWork(OutputProgressPrinter outputPrinter) {
+        List<String> expected = new ArrayList<>();
+        var clock = Clocks.fakeClock();
+        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter(outputPrinter, clock::instant);
+
+        progressPrinter.maxBytes(1000);
+        progressPrinter.maxFiles(10);
 
         progressPrinter.beginFile();
         progressPrinter.addBytes(5);
@@ -101,5 +113,75 @@ class ArchiveProgressPrinterTest {
         progressPrinter.endFile();
         progressPrinter.done();
         progressPrinter.printProgress();
+
+        expected.add(line(1, 10, 0.5)); // endFile
+        expected.add(line(2, 10, 20.5)); // printOnNextUpdate
+        expected.add(line(2, 10, 20.5)); // endFile
+        expected.add(line(3, 10, 30.5)); // printOnNextUpdate
+        expected.add(line(3, 10, 30.5)); // endFile
+        expected.add(done(3, 305)); // done
+
+        return expected;
+    }
+
+    private static List<String> executeSlowWorkload(OutputProgressPrinter outputProgressPrinter) {
+        List<String> expected = new ArrayList<>();
+        var clock = Clocks.fakeClock();
+        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter(outputProgressPrinter, clock::instant);
+        var numFiles = 10;
+        var numBytes = 10_000;
+
+        try (var ignored = progressPrinter.startPrinting()) {
+            progressPrinter.maxBytes(numBytes);
+            progressPrinter.maxFiles(numFiles);
+
+            progressPrinter.beginFile();
+            // This disk is really slow
+            for (int i = 0; i < numBytes; i++) {
+                clock.forward(Duration.ofMillis(10));
+                progressPrinter.addBytes(1);
+            }
+            progressPrinter.endFile();
+        }
+
+        for (int i = 1; i <= 100; i++) {
+            expected.add(line(1, 10, i));
+        }
+        expected.add(line(1, 10, 100));
+        expected.add(done(1, numBytes));
+        return expected;
+    }
+
+    private static String line(int nFiles, int maxFiles, double percentage) {
+        return format("Files: %d/%d, data: %4.1f%%", nFiles, maxFiles, percentage);
+    }
+
+    private static String done(int nFiles, int nBytes) {
+        return format("Done: %d files, %s processed.", nFiles, ByteUnit.bytesToString(nBytes));
+    }
+
+    private static String niceMessage(String message, List<String> actual, List<String> expected) {
+        var niceActual = new StringJoiner("\n\t,", "\t[", "\n\t]");
+        actual.forEach(niceActual::add);
+
+        var niceExpected = new StringJoiner("\n\t,", "\t[", "\n\t]");
+        expected.forEach(niceExpected::add);
+        return format(
+                "%s\n\nExpected (size: %d): \n%s\nbut was (size: %d)\n%s\n",
+                message, expected.size(), niceExpected.toString(), actual.size(), niceActual.toString());
+    }
+
+    private static void assertEachLineContains(List<String> actual, List<String> expected) {
+        if (actual.size() != expected.size()) {
+            fail(niceMessage("Different size.", actual, expected));
+        }
+
+        try {
+            for (int i = 0; i < actual.size(); ++i) {
+                assertThat(actual.get(i)).contains(expected.get(i));
+            }
+        } catch (AssertionError err) {
+            fail(niceMessage(err.getMessage(), actual, expected));
+        }
     }
 }

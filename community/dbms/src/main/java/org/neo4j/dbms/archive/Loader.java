@@ -33,6 +33,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.time.Instant;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -63,7 +64,7 @@ public class Loader {
 
     public Loader(FileSystemAbstraction filesystem, OutputProgressPrinter progressPrinter) {
         this.filesystem = filesystem;
-        this.progressPrinter = new ArchiveProgressPrinter(progressPrinter);
+        this.progressPrinter = new ArchiveProgressPrinter(progressPrinter, Instant::now);
     }
 
     public void load(DatabaseLayout databaseLayout, ThrowingSupplier<InputStream, IOException> streamSupplier)
@@ -141,8 +142,8 @@ public class Loader {
                 format = "Neo4j ZSTD Dump.";
                 // Important: Only the ZSTD compressed archives have any archive metadata.
                 readArchiveMetadata(decompressor);
-                files = String.valueOf(progressPrinter.maxFiles);
-                bytes = String.valueOf(progressPrinter.maxBytes);
+                files = String.valueOf(progressPrinter.maxFiles());
+                bytes = String.valueOf(progressPrinter.maxBytes());
             }
             return new DumpMetaData(format, files, bytes);
         }
@@ -232,8 +233,8 @@ public class Loader {
                 new DataInputStream(stream); // Unbuffered. Will not play naughty tricks with the file position.
         int version = metadata.readInt();
         if (version == 1) {
-            progressPrinter.maxFiles = metadata.readLong();
-            progressPrinter.maxBytes = metadata.readLong();
+            progressPrinter.maxFiles(metadata.readLong());
+            progressPrinter.maxBytes(metadata.readLong());
         } else {
             throw new IOException(
                     "Cannot read archive meta-data. I don't recognise this archive version: " + version + ".");

@@ -36,6 +36,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -71,7 +72,7 @@ public class Dumper {
     private Dumper(OutputProgressPrinter progressPrinter) {
         requireNonNull(progressPrinter);
         this.operations = new ArrayList<>();
-        this.progressPrinter = new ArchiveProgressPrinter(progressPrinter);
+        this.progressPrinter = new ArchiveProgressPrinter(progressPrinter, Instant::now);
     }
 
     public void dump(Path path, Path archive, CompressionFormat format) throws IOException {
@@ -112,8 +113,8 @@ public class Dumper {
 
         progressPrinter.reset();
         for (ArchiveOperation operation : operations) {
-            progressPrinter.maxBytes += operation.size;
-            progressPrinter.maxFiles += operation.isFile ? 1 : 0;
+            progressPrinter.maxBytes(progressPrinter.maxBytes() + operation.size);
+            progressPrinter.maxFiles(progressPrinter.maxFiles() + (operation.isFile ? 1 : 0));
         }
 
         try (ArchiveOutputStream stream = wrapArchiveOut(out, format);
@@ -154,8 +155,8 @@ public class Dumper {
     void writeArchiveMetadata(OutputStream stream) throws IOException {
         DataOutputStream metadata = new DataOutputStream(stream); // Unbuffered. No need for flushing.
         metadata.writeInt(1); // Archive format version. Increment whenever the metadata format changes.
-        metadata.writeLong(progressPrinter.maxFiles);
-        metadata.writeLong(progressPrinter.maxBytes);
+        metadata.writeLong(progressPrinter.maxFiles());
+        metadata.writeLong(progressPrinter.maxBytes());
     }
 
     private void dumpFile(Path root, Path file) throws IOException {
