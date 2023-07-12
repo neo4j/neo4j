@@ -239,10 +239,9 @@ public final class CommunityTopologyGraphDbmsModelUtil {
     }
 
     static Optional<DatabaseReference> getExternalDatabaseReference(Transaction tx, String databaseName) {
-        return Optional.ofNullable(tx.findNode(
-                        TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL,
-                        TopologyGraphDbmsModel.NAME_PROPERTY,
-                        databaseName))
+        var aliasNode = findAliasNodeInDefaultNamespace(tx, databaseName);
+        return aliasNode
+                .filter(node -> node.hasLabel(TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL))
                 .flatMap(CommunityTopologyGraphDbmsModelUtil::createExternalReference);
     }
 
