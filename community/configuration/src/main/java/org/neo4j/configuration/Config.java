@@ -321,7 +321,8 @@ public class Config implements Configuration
                     fromConfig, log, expandCommands );
         }
 
-        private static void validateFilePermissionForCommandExpansion( List<Path> files )
+        // Public so APOC can use this for its command expansion
+        public static void validateFilePermissionForCommandExpansion( List<Path> files )
         {
             if ( files.isEmpty() )
             {
@@ -802,10 +803,17 @@ public class Config implements Configuration
         return entry;
     }
 
-    private static boolean isCommand( String entry )
+    // Public so APOC can use this for its command expansion
+    public static boolean isCommand( String entry )
     {
         String str = entry.trim();
         return str.length() > 3 && str.charAt( 0 ) == '$' && str.charAt( 1 ) == '(' && str.charAt( str.length() - 1 ) == ')';
+    }
+
+    // Needed for APOC to be able to check for command expansion
+    public boolean expandCommands()
+    {
+        return this.expandCommands;
     }
 
     private static String executeCommand( String command, Duration timeout )
