@@ -435,10 +435,12 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
 
     @Override
     public void closeInternal() {
-        firstChunk = null;
-        lastChunk = null;
-        secondLastChunk = null;
-        scopedMemoryTracker.close();
+        if (!isClosed()) {
+            firstChunk = null;
+            lastChunk = null;
+            secondLastChunk = null;
+            scopedMemoryTracker.close();
+        }
     }
 
     @Override
