@@ -74,7 +74,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable {
      * @return a new heap tracking array list with the specified initial size
      */
     public static <T> HeapTrackingArrayList<T> newArrayList(int initialSize, MemoryTracker memoryTracker) {
-        return newArrayListWithInitialTrackedSize(1, memoryTracker, 0L);
+        return newArrayListWithInitialTrackedSize(initialSize, memoryTracker, 0L);
     }
 
     /**
