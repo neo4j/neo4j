@@ -1776,6 +1776,55 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
   }
 
+  test("should project optional path as null") {
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
+      .optional()
+      .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
+      .|.filterExpression(isRepeatTrailUnique("r_inner"))
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build()
+
+    // when
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("path").withSingleRow(null)
+  }
+
+  test("should project optional path with value") {
+    val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
+      .optional()
+      .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
+      .|.filterExpression(isRepeatTrailUnique("r_inner"))
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build()
+
+    // when
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("path").withRows(
+      inAnyOrder(
+        Seq(
+          Array(pathReference(Array(n1.getId), Array.empty[Long])),
+          Array(pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+          Array(pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId)))
+        )
+      )
+    )
+  }
+
   protected def listOf(values: AnyRef*): util.List[AnyRef] = TrailTestBase.listOf(values: _*)
 
   //  (n0:START)                                                  (n6:LOOP)

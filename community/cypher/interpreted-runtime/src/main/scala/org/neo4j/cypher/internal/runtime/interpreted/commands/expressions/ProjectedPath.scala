@@ -27,6 +27,7 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -160,7 +161,11 @@ object ProjectedPath {
       extends Projector {
 
     def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
-      val listValues = variables.map(ctx.getByName(_).asInstanceOf[ListValue]).map(_.asScala).transpose.flatten
+      val listValues = variables.map(ctx.getByName(_) match {
+        case value: ListValue   => value
+        case x if x eq NO_VALUE => VirtualValues.EMPTY_LIST
+        case value              => throw new CypherTypeException(s"Expected ListValue but got ${value}")
+      }).map(_.asScala).transpose.flatten
 
       if (listValues.nonEmpty) {
         // Skip first element via `.tail`, since that is equal to the node added in the last Projector

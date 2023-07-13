@@ -208,7 +208,13 @@ object SlottedProjectedPath {
        * And therefore:
        * path = [from/a_1 , r1_1, b_1, r2_1, a_2, r1_2, b_2, r2_2, to]
        */
-      val values = groupVariables.map(_.apply(ctx, state).asInstanceOf[ListValue])
+      val values = groupVariables.map(
+        _.apply(ctx, state) match {
+          case value: ListValue   => value
+          case x if x eq NO_VALUE => VirtualValues.EMPTY_LIST
+          case value              => throw new CypherTypeException(s"Expected ListValue but got ${value.getTypeName}")
+        }
+      )
       val patternSize = values.size
       val repetitions = values.head.size()
       if (patternSize * repetitions > 0) {
