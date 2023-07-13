@@ -417,7 +417,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         case e: Throwable =>
           QuerySubscriber.safelyOnError(subscriber, e)
           taskCloser.close(Error(e))
-          transactionalContext.rollback()
+          // NOTE: We leave it up to outer layers to rollback on failure
           outerCloseable.close()
           new FailedExecutionResult(columnNames(logicalPlan), internalQueryType, subscriber)
       }
