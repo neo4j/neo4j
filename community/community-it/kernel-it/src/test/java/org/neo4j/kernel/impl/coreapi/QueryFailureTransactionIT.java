@@ -53,7 +53,7 @@ class QueryFailureTransactionIT {
     }
 
     @Test
-    void failedQueryExecutionRollbackTransaction() {
+    void failedQueryExecutionMarksTransactionAsTerminated() {
         try (var transaction = databaseAPI.beginTx()) {
             assertThrows(Exception.class, () -> transaction.execute("CREATE (n:evilNode {v:0}) WITH (n) RETURN 1/n.v"));
 
@@ -67,12 +67,12 @@ class QueryFailureTransactionIT {
             assertThrows(Exception.class, () -> transaction.execute("CREATE (n:evilNode {v:0}) WITH (n) RETURN 1/n.v"));
             transaction.rollback();
 
-            checkFailToCommit(transaction);
+            checkFailToCommitAfterRollback(transaction);
         }
     }
 
     @Test
-    void incorrectQueryRollbacksTransaction() {
+    void incorrectQueryMarksTransactionAsTerminated() {
         try (var transaction = databaseAPI.beginTx()) {
             assertThrows(Exception.class, () -> transaction.execute("rollback everything!"));
 
@@ -89,14 +89,18 @@ class QueryFailureTransactionIT {
                     result.next();
                 }
             });
-            assertThatThrownBy(transaction::commit)
-                    .isInstanceOf(TransactionFailureException.class)
-                    .rootCause()
-                    .isInstanceOf(TransactionTerminatedException.class);
+            checkFailToCommit(transaction);
         }
     }
 
     private static void checkFailToCommit(Transaction transaction) {
+        assertThatThrownBy(transaction::commit)
+                .isInstanceOf(TransactionFailureException.class)
+                .rootCause()
+                .isInstanceOf(TransactionTerminatedException.class);
+    }
+
+    private static void checkFailToCommitAfterRollback(Transaction transaction) {
         assertThatThrownBy(transaction::commit)
                 .isInstanceOf(TransactionFailureException.class)
                 .rootCause()

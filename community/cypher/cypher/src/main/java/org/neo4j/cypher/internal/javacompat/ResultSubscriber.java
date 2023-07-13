@@ -81,10 +81,15 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
         assertNoErrors();
     }
 
-    public void materialize(QueryExecution execution) {
+    // This is a called from a QueryExecution to demand a ResultSubscriber to drive a full materialization of the result
+    public void materialize(QueryExecution execution) throws Exception {
         this.execution = execution;
         this.materializeResult = new ArrayList<>();
-        fetchResults(Long.MAX_VALUE);
+        // NOTE: We do no call fetchResults() here, since in case of an exception that would close the
+        // result as successful without recording the error status (and also convert the expression),
+        // whereas this is called from a QueryExecution that will need the original exception to
+        // close the result with the correct error status code.
+        doFetchResults(Long.MAX_VALUE);
     }
 
     // QuerySubscriber part
@@ -313,13 +318,17 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
 
     private void fetchResults(long numberOfResults) {
         try {
-            execution.request(numberOfResults);
-            assertNoErrors();
-            execution.await();
+            doFetchResults(numberOfResults);
         } catch (Exception e) {
             close();
             throw converted(e);
         }
+    }
+
+    private void doFetchResults(long numberOfResults) throws Exception {
+        execution.request(numberOfResults);
+        assertNoErrors();
+        execution.await();
     }
 
     private Map<String, Object> createPublicRecord() {

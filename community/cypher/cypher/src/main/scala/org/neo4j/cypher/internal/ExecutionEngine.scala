@@ -33,6 +33,8 @@ import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.kernel.impl.query.QueryExecution
@@ -184,9 +186,16 @@ abstract class ExecutionEngine(
   private def closing[T](context: TransactionalContext, traceEvent: QueryCompilationEvent)(code: => T): T =
     try code
     catch {
+      case e: HasStatus =>
+        context.kernelTransaction().markForTermination(e.status())
+        context.close()
+        throw e;
+
       case t: Throwable =>
-        context.rollback()
+        context.kernelTransaction().markForTermination(Status.Transaction.QueryExecutionFailedOnTransaction)
+        context.close()
         throw t
+
     } finally traceEvent.close()
 
   private def doExecute(

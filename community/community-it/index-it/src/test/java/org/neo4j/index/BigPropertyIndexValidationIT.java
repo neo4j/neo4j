@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -59,7 +59,7 @@ class BigPropertyIndexValidationIT {
         createIndex(db, LABEL, propertyKey);
 
         // We expect this transaction to fail due to the huge property
-        assertThrows(TransactionFailureException.class, () -> {
+        assertThrows(TransientTransactionFailureException.class, () -> {
             try (Transaction tx = db.beginTx()) {
                 assertThrows(
                         IllegalArgumentException.class,
@@ -80,7 +80,7 @@ class BigPropertyIndexValidationIT {
         createIndex(db, LABEL, propertyKey);
 
         // We expect this transaction to fail due to the huge property
-        assertThrows(TransactionFailureException.class, () -> {
+        assertThrows(TransientTransactionFailureException.class, () -> {
             try (Transaction tx = db.beginTx()) {
                 tx.execute("CREATE (n:" + LABEL + ")");
                 assertThrows(
@@ -102,7 +102,7 @@ class BigPropertyIndexValidationIT {
         createIndex(db, LABEL, propertyKey);
 
         // We expect this transaction to fail due to the huge property
-        assertThrows(TransactionFailureException.class, () -> {
+        assertThrows(TransientTransactionFailureException.class, () -> {
             try (Transaction tx = db.beginTx()) {
                 String otherLabel = "SomethingElse";
                 tx.execute("CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})");
