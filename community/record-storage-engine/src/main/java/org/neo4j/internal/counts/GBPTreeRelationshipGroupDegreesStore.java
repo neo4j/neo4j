@@ -179,14 +179,6 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
                 openOptions);
     }
 
-    public static final DegreeUpdater NO_OP_UPDATER = new DegreeUpdater() {
-        @Override
-        public void close() {}
-
-        @Override
-        public void increment(long groupId, RelationshipDirection direction, long delta) {}
-    };
-
     private static class RebuilderWrapper implements Rebuilder {
         private final DegreesRebuilder rebuilder;
 

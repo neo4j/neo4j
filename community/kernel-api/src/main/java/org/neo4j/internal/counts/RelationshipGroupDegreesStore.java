@@ -29,6 +29,19 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  * Store for degrees of relationship chains for dense nodes. Relationship group record ID plus relationship direction forms the key for the counts.
  */
 public interface RelationshipGroupDegreesStore extends CountsStorage<DegreeUpdater> {
+
+    DegreeUpdater NO_OP_UPDATER = new DegreeUpdater() {
+        @Override
+        public void close() {}
+
+        @Override
+        public void increment(long groupId, RelationshipDirection direction, long delta) {}
+    };
+
+    default DegreeUpdater reverseUpdater(long txId, CursorContext cursorContext) {
+        return NO_OP_UPDATER;
+    }
+
     /**
      * @param groupId the relationship group ID to look for.
      * @param direction the direction to look for.

@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.ID;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.NAME;
@@ -75,6 +74,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -292,10 +292,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         if (mode.needsCacheInvalidationOnUpdates()) {
             appliers.add(new CacheInvalidationTransactionApplierFactory(neoStores, cacheAccess));
         }
-        if (mode.needsAuxiliaryStores()) {
+        if (isMultiVersionedFormat()) {
+            // in mvcc all modes apply count stores
+            appliers.add(new MultiversionCountsStoreTransactionApplierFactory(mode, countsStore, groupDegreesStore));
+        } else if (mode.needsAuxiliaryStores()) {
             // Counts store application
-            appliers.add(new CountsStoreTransactionApplierFactory(mode, countsStore, groupDegreesStore));
-
+            appliers.add(new CountsStoreTransactionApplierFactory(countsStore, groupDegreesStore));
+        }
+        if (mode.needsAuxiliaryStores()) {
             // Schema index application
             appliers.add(new IndexTransactionApplierFactory(mode, indexUpdateListener));
         }
@@ -383,11 +387,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public TransactionValidatorFactory createTransactionValidatorFactory(
             StorageEngineFactory storageEngineFactory, Config config, SystemNanoClock clock) {
-        if (!"multiversion".equals(config.get(db_format))) {
+        if (!isMultiVersionedFormat()) {
             return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
         return new TransactionCommandValidatorFactory(
                 neoStores, storageEngineFactory, config, clock, internalLogProvider);
+    }
+
+    private boolean isMultiVersionedFormat() {
+        return neoStores.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED);
     }
 
     @Override

@@ -19,4 +19,11 @@
  */
 package org.neo4j.counts;
 
-public interface CountsStore extends CountsStorage<CountsAccessor.Updater>, CountsAccessor {}
+import org.neo4j.io.pagecache.context.CursorContext;
+
+public interface CountsStore extends CountsStorage<CountsAccessor.Updater>, CountsAccessor {
+
+    default Updater reverseUpdater(long txId, CursorContext cursorContext) {
+        return NO_OP_UPDATER;
+    }
+}

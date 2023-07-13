@@ -33,7 +33,6 @@ import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
 
@@ -47,8 +46,8 @@ class CountsStoreTransactionApplierTest {
         final RelationshipGroupDegreesStore groupDegreesStore = mock(RelationshipGroupDegreesStore.class);
         when(groupDegreesStore.apply(anyLong(), anyBoolean(), any(CursorContext.class)))
                 .thenReturn(mock(DegreeUpdater.class));
-        final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory(
-                TransactionApplicationMode.INTERNAL, counts, groupDegreesStore);
+        final CountsStoreTransactionApplierFactory applier =
+                new CountsStoreTransactionApplierFactory(counts, groupDegreesStore);
 
         // WHEN
         try (TransactionApplier txApplier =

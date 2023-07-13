@@ -30,7 +30,6 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CommandBatchToApply commandsBatch;
-    private final CountTransformer countTransformer;
     private CountsAccessor.Updater countsUpdater;
     private DegreeUpdater degreesUpdater;
     private boolean haveUpdates;
@@ -40,12 +39,10 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     CountsStoreTransactionApplier(
             CountsStore countsStore,
             RelationshipGroupDegreesStore groupDegreesStore,
-            CommandBatchToApply commandsBatch,
-            CountTransformer countTransformer) {
+            CommandBatchToApply commandsBatch) {
         this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;
         this.commandsBatch = commandsBatch;
-        this.countTransformer = countTransformer;
     }
 
     @Override
@@ -70,7 +67,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     @Override
     public boolean visitNodeCountsCommand(Command.NodeCountsCommand command) {
         haveUpdates = true;
-        countsUpdater().incrementNodeCount(command.labelId(), countTransformer.transform(command.delta()));
+        countsUpdater().incrementNodeCount(command.labelId(), command.delta());
         return false;
     }
 
@@ -104,10 +101,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
         haveUpdates = true;
         countsUpdater()
                 .incrementRelationshipCount(
-                        command.startLabelId(),
-                        command.typeId(),
-                        command.endLabelId(),
-                        countTransformer.transform(command.delta()));
+                        command.startLabelId(), command.typeId(), command.endLabelId(), command.delta());
         return false;
     }
 
@@ -127,7 +121,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     @Override
     public boolean visitGroupDegreeCommand(Command.GroupDegreeCommand command) {
         haveUpdates = true;
-        degreesUpdater().increment(command.groupId(), command.direction(), countTransformer.transform(command.delta()));
+        degreesUpdater().increment(command.groupId(), command.direction(), command.delta());
         return false;
     }
 }
