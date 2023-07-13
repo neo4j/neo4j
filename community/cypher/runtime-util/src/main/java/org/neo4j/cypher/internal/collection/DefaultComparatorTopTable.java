@@ -64,7 +64,7 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T>
     }
 
     public DefaultComparatorTopTable(Comparator<? super T> comparator, long totalCount, MemoryTracker memoryTracker) {
-        this(comparator, (int) Math.min(totalCount, 1024), memoryTracker, 0L);
+        this(comparator, totalCount, memoryTracker, 0L);
     }
 
     public DefaultComparatorTopTable(
