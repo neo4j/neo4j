@@ -168,7 +168,7 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
 
   private[this] val debugMemoryTracker = if (DEBUG_MEMORY_TRACKING) {
-    new DebugMemoryTracker(new WorkerThreadDelegatingMemoryTracker)
+    new ParallelDebugMemoryTracker(new WorkerThreadDelegatingMemoryTracker)
   } else {
     null
   }
@@ -273,7 +273,7 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
   }
 }
 
-class DebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorProvider) extends MemoryTracker
+class ParallelDebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorProvider) extends MemoryTracker
     with MemoryTrackerForOperatorProvider {
 
   private case class Allocation(
