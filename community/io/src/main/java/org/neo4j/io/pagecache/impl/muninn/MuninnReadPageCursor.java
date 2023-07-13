@@ -39,7 +39,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         if (pinnedPageRef != 0) {
             tracer.unpin(loadPlainCurrentPageId(), swapper);
         }
-        unmapSnapshot();
+        if (versionState != null) {
+            unmapSnapshot();
+        }
         lockStamp = 0; // make sure not to accidentally keep a lock state around
         clearPageCursorState();
         storeCurrentPageId(UNBOUND_PAGE_ID);
