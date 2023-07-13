@@ -55,7 +55,6 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T>
     private static final long SHALLOW_INSTANCE_SIZE = shallowSizeOfInstance(DefaultComparatorTopTable.class);
 
     private long totalCount;
-    private long shallowSize;
     private boolean heapified;
     private boolean isSorted;
 
@@ -69,14 +68,8 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T>
 
     public DefaultComparatorTopTable(
             Comparator<? super T> comparator, long totalCount, MemoryTracker memoryTracker, long extraShallowSize) {
-        super(comparator, (int) Math.min(totalCount, 1024), memoryTracker);
+        super(comparator, (int) Math.min(totalCount, 1024), memoryTracker, SHALLOW_INSTANCE_SIZE + extraShallowSize);
         this.totalCount = totalCount;
-        this.shallowSize = SHALLOW_INSTANCE_SIZE + extraShallowSize;
-    }
-
-    @Override
-    protected long shallowInstanceSize() {
-        return shallowSize;
     }
 
     public boolean add(T e) {

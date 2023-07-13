@@ -39,12 +39,7 @@ public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T> {
     }
 
     public DefaultComparatorSortTable(Comparator<? super T> comparator, int initialSize, MemoryTracker memoryTracker) {
-        super(comparator.reversed(), initialSize, memoryTracker);
-    }
-
-    @Override
-    protected long shallowInstanceSize() {
-        return SHALLOW_INSTANCE_SIZE;
+        super(comparator.reversed(), initialSize, memoryTracker, SHALLOW_INSTANCE_SIZE);
     }
 
     public int getSize() {

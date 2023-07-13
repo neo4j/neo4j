@@ -49,20 +49,16 @@ abstract class MemoryTrackingHeap<T> extends DefaultCloseListenable implements A
     protected T[] heap;
 
     @SuppressWarnings("unchecked")
-    protected MemoryTrackingHeap(Comparator<? super T> comparator, int initialSize, MemoryTracker memoryTracker) {
+    protected MemoryTrackingHeap(
+            Comparator<? super T> comparator, int initialSize, MemoryTracker memoryTracker, long shallowSize) {
         this.comparator = requireNonNull(comparator);
         this.memoryTracker = memoryTracker;
         checkArgument(initialSize > 0, "Table size must be greater than 0");
 
-        trackedSize = shallowSizeOfObjectArray(initialSize);
-        memoryTracker.allocateHeap(shallowInstanceSize() + trackedSize);
+        trackedSize = shallowSizeOfObjectArray(initialSize) + shallowSize;
+        memoryTracker.allocateHeap(trackedSize);
         heap = (T[]) new Object[initialSize];
     }
-
-    /**
-     * The shallow size of an instance of the implementing class
-     */
-    protected abstract long shallowInstanceSize();
 
     /**
      * Insert a new element in the heap
@@ -113,7 +109,7 @@ abstract class MemoryTrackingHeap<T> extends DefaultCloseListenable implements A
     @Override
     public void closeInternal() {
         if (heap != null) {
-            memoryTracker.releaseHeap(shallowInstanceSize() + trackedSize);
+            memoryTracker.releaseHeap(trackedSize);
             heap = null;
         }
     }
