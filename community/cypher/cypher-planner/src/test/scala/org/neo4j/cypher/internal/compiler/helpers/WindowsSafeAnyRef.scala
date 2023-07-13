@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.scalactic.Equality
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
+import org.scalactic.Equality
 
 class WindowsSafeAnyRef[T <: AnyRef] extends Equality[T] {
 
