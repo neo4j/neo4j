@@ -26,18 +26,7 @@ import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
  * An override is injected using thread local values, in order to avoid interference between tests executed in parallel.
  */
 public class TestOverrides {
-    public static final InheritableThreadLocal<Boolean> MULTI_GRAPH_EVERYWHERE = new InheritableThreadLocal<>();
     public static final InheritableThreadLocal<RoutingContext> ROUTING_CONTEXT = new InheritableThreadLocal<>();
-
-    public static boolean multiGraphCapabilitiesEnabledForAllDatabases(boolean originalValue) {
-        var overriddenValue = MULTI_GRAPH_EVERYWHERE.get();
-
-        if (overriddenValue != null) {
-            return overriddenValue;
-        }
-
-        return originalValue;
-    }
 
     public static RoutingContext routingContext(RoutingContext originalValue) {
         var overriddenValue = ROUTING_CONTEXT.get();

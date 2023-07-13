@@ -36,6 +36,7 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.fabric.bookmark.BookmarkFormat;
+import org.neo4j.fabric.bootstrap.TestOverrides;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -114,7 +115,7 @@ public class QueryRouterBoltSpi {
                         txTimeout,
                         accessMode,
                         txMetadata,
-                        routingContext,
+                        TestOverrides.routingContext(routingContext),
                         queryExecutionConfiguration);
             }
 
@@ -127,7 +128,7 @@ public class QueryRouterBoltSpi {
                     txTimeout,
                     accessMode,
                     txMetadata,
-                    routingContext,
+                    TestOverrides.routingContext(routingContext),
                     queryExecutionConfiguration);
 
             return new Transaction(queryRouter, queryRouter.beginTransaction(transactionInfo));
