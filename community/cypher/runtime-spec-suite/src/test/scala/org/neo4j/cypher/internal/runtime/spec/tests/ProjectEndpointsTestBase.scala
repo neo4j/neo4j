@@ -1033,13 +1033,13 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // ~ sizeHint n.o paths of length 4 not starting from aNode_1
     val relLists = for {
       n1 <- aNodes.tail
-      r1 <- n1.getRelationships(OUTGOING).asScala.take(Math.pow(sizeHint, 1.0 / 4).toInt)
+      r1 <- n1.getRelationships(OUTGOING).asScala.toList.take(Math.pow(sizeHint, 1.0 / 4).toInt)
       n2 = r1.getOtherNode(n1)
-      r2 <- n2.getRelationships(OUTGOING).asScala.take(Math.pow(sizeHint, 1.0 / 4).toInt)
+      r2 <- n2.getRelationships(OUTGOING).asScala.toList.take(Math.pow(sizeHint, 1.0 / 4).toInt)
       n3 = r2.getOtherNode(n2)
-      r3 <- n3.getRelationships(OUTGOING).asScala.take(Math.pow(sizeHint, 1.0 / 4).toInt)
+      r3 <- n3.getRelationships(OUTGOING).asScala.toList.take(Math.pow(sizeHint, 1.0 / 4).toInt)
       n4 = r3.getOtherNode(n3)
-      r4 <- n4.getRelationships(OUTGOING).asScala.take(Math.pow(sizeHint, 1.0 / 4).toInt)
+      r4 <- n4.getRelationships(OUTGOING).asScala.toList.take(Math.pow(sizeHint, 1.0 / 4).toInt)
     } yield {
       Seq(r1, r2, r3, r4).asJava
     }
