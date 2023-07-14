@@ -24,6 +24,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCacheTest.QueryCacheUsageQueue
 import org.neo4j.cypher.internal.QueryCacheTest.TC
 import org.neo4j.cypher.internal.QueryCacheTest.alwaysStale
 import org.neo4j.cypher.internal.QueryCacheTest.compiled
@@ -38,17 +39,22 @@ import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.api.query.ExecutingQuery
+import org.neo4j.kernel.api.query.QueryCacheUsage
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatestplus.mockito.MockitoSugar
+
+import scala.collection.mutable
 
 class QueryCacheTest extends CypherFunSuite {
 
   test("size 0 cache should never 'hit' or 'miss' and never compile with expression code generation") {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer, size = 0)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, size = 0, queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -59,6 +65,7 @@ class QueryCacheTest extends CypherFunSuite {
     val o = Mockito.inOrder(tracer)
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
+    queryTracer.queueIsEmmpty shouldBe true
 
     // When
     val v2 = cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
@@ -67,12 +74,15 @@ class QueryCacheTest extends CypherFunSuite {
     v2.compiledWithExpressionCodeGen should equal(false)
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test("first time accessing the cache should be a cache miss") {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -86,12 +96,16 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).cacheMiss(key, "")
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test("accessing the cache with two different keys should both result in cache misses") {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, queryTracer = queryTracer)
     val key1 = newKey("key1")
     val key2 = newKey("key2")
 
@@ -106,6 +120,9 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).compute(key1, "")
     verifyNoMoreInteractions(tracer)
 
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
+
     // When
     val value2FromCache =
       cache.computeIfAbsentOrStale(key2, TC, compilerWithExpressionCodeGenOption(key2), CypherReplanOption.default)
@@ -115,12 +132,16 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).cacheMiss(key2, "")
     o.verify(tracer).compute(key2, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test("second time accessing the cache should be a cache hit") {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -131,6 +152,9 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
+
     // When
     val valueFromCache =
       cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
@@ -139,6 +163,9 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
     o.verify(tracer).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.HIT
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test(
@@ -146,7 +173,8 @@ class QueryCacheTest extends CypherFunSuite {
   ) {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -160,6 +188,9 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
 
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
+
     // When
     val valueFromCache2 =
       cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.force)
@@ -169,13 +200,17 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).cacheHit(key, "")
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.HIT
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test("if item is stale we should recalculate") {
     // Given
     val tracer = newTracer()
     val secondsSinceReplan = 17
-    val cache = newCache(tracer, alwaysStale(secondsSinceReplan))
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, alwaysStale(secondsSinceReplan), queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -185,6 +220,9 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).cacheMiss(key, "")
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
 
     // When
     val valueFromCache =
@@ -197,13 +235,17 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).cacheHit(key, "")
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.HIT
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test("accessing the cache with replan=skip if item is stale we should hit the cache") {
     // Given
     val tracer = newTracer()
     val secondsSinceReplan = 17
-    val cache = newCache(tracer, alwaysStale(secondsSinceReplan))
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, alwaysStale(secondsSinceReplan), queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -214,6 +256,9 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
+
     // When
     val valueFromCache =
       cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
@@ -223,12 +268,16 @@ class QueryCacheTest extends CypherFunSuite {
 
     o.verify(tracer).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.HIT
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test("should trigger recompile when hot") {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -248,6 +297,8 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer, times(3)).cacheHit(key, "")
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueAllCacheUsage() shouldEqual (QueryCacheUsage.MISS +: Seq.fill(3)(QueryCacheUsage.HIT))
   }
 
   test(
@@ -256,7 +307,8 @@ class QueryCacheTest extends CypherFunSuite {
     // Given
     val tracer = newTracer()
     val secondsSinceReplan = 17
-    val cache = newCache(tracer, staleAfterNTimes(secondsSinceReplan, 3))
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, staleAfterNTimes(secondsSinceReplan, 3), queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -275,6 +327,9 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.MISS
+    queryTracer.queueIsEmmpty shouldBe true
+
     // When
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // hit
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default) // hit
@@ -292,6 +347,8 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
 
+    queryTracer.dequeueAllCacheUsage() shouldEqual Seq.fill(3)(QueryCacheUsage.HIT)
+
     // When
     val v3 =
       cache.computeIfAbsentOrStale(
@@ -307,12 +364,16 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).cacheHit(key, "")
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.HIT
+    queryTracer.queueIsEmmpty shouldBe true
   }
 
   test("accessing the cache with replan=skip should not recompile hot queries") {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -331,12 +392,15 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).compute(key, "")
     o.verify(tracer, times(3)).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueAllCacheUsage() shouldEqual (QueryCacheUsage.MISS +: Seq.fill(3)(QueryCacheUsage.HIT))
   }
 
   test("should only trigger recompile once") {
     // Given
     val tracer = newTracer()
-    val cache = newCache(tracer)
+    val queryTracer = new QueryCacheUsageQueue()
+    val cache = newCache(tracer, queryTracer = queryTracer)
     val key = newKey("foo")
 
     // When
@@ -352,6 +416,8 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
     o.verify(tracer, times(96)).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
+
+    queryTracer.dequeueAllCacheUsage() shouldEqual (QueryCacheUsage.MISS +: Seq.fill(99)(QueryCacheUsage.HIT))
   }
 
   test("parameterTypeMap should equal if same parameters") {
@@ -465,9 +531,16 @@ object QueryCacheTest extends MockitoSugar {
   def newCache(
     tracer: Tracer = newTracer(),
     stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(),
-    size: Int = 10
+    size: Int = 10,
+    queryTracer: ExecutingQueryTracer = ExecutingQueryTracer.NoOp
   ): QueryCache[CacheKey[String], MyValue] = {
-    new QueryCache[CacheKey[String], MyValue](cacheFactory, CacheSize.Static(size), stalenessCaller, tracer)
+    new QueryCache[CacheKey[String], MyValue](
+      cacheFactory,
+      CacheSize.Static(size),
+      stalenessCaller,
+      tracer,
+      queryTracer
+    )
   }
 
   def newTracer(): Tracer = mock[Tracer]
@@ -490,4 +563,18 @@ object QueryCacheTest extends MockitoSugar {
 
   private def compiledWithExpressionCodeGen(key: Key): MyValue =
     MyValue(key.queryRep)(compiledWithExpressionCodeGen = true)
+
+  class QueryCacheUsageQueue() extends ExecutingQueryTracer {
+    private val cacheUsage = new mutable.Queue[QueryCacheUsage]()
+
+    def dequeueCacheUsage(): QueryCacheUsage = cacheUsage.dequeue()
+
+    def dequeueAllCacheUsage(): Seq[QueryCacheUsage] = cacheUsage.dequeueAll(_ => true)
+
+    def queueIsEmmpty: Boolean = cacheUsage.isEmpty
+
+    override def cacheHit(executingQuery: ExecutingQuery): Unit = cacheUsage.enqueue(QueryCacheUsage.HIT)
+
+    override def cacheMiss(executingQuery: ExecutingQuery): Unit = cacheUsage.enqueue(QueryCacheUsage.MISS)
+  }
 }

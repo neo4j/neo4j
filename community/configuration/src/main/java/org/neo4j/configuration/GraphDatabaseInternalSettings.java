@@ -1128,4 +1128,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> trace_internal_transaction_errors = newBuilder(
                     "internal.db.transaction.trace_internal_errors", BOOL, false)
             .build();
+
+    @Internal
+    @Description("Log whether the query plan served from one of the query caches.")
+    public static final Setting<Boolean> log_query_cache_usage = newBuilder(
+                    "internal.dbms.logs.query.query_cache_usage", BOOL, false)
+            .build();
 }

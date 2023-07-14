@@ -51,6 +51,8 @@ public class QuerySnapshot {
     private final long transactionId;
     private final long parentTransactionId;
     private final String parentDbName;
+    private final QueryCacheUsage executableQueryCacheUsage;
+    private final QueryCacheUsage logicalPlanCacheUsage;
 
     QuerySnapshot(
             ExecutingQuery query,
@@ -70,7 +72,9 @@ public class QuerySnapshot {
             Optional<MapValue> obfuscatedQueryParameters,
             long outerTransactionId,
             String parentDbName,
-            long parentTransactionId) {
+            long parentTransactionId,
+            QueryCacheUsage executableQueryCacheUsage,
+            QueryCacheUsage logicalPlanCacheUsage) {
         this.query = query;
         this.compilerInfo = compilerInfo;
         this.pageHits = pageHits;
@@ -89,6 +93,8 @@ public class QuerySnapshot {
         this.transactionId = outerTransactionId;
         this.parentDbName = parentDbName;
         this.parentTransactionId = parentTransactionId;
+        this.executableQueryCacheUsage = executableQueryCacheUsage;
+        this.logicalPlanCacheUsage = logicalPlanCacheUsage;
     }
 
     public long internalQueryId() {
@@ -260,5 +266,13 @@ public class QuerySnapshot {
 
     public long parentTransactionId() {
         return parentTransactionId;
+    }
+
+    public Optional<QueryCacheUsage> executableQueryCacheUsage() {
+        return Optional.ofNullable(executableQueryCacheUsage);
+    }
+
+    public Optional<QueryCacheUsage> logicalPlanCacheUsage() {
+        return Optional.ofNullable(logicalPlanCacheUsage);
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.cache
 import org.neo4j.cypher.internal.CacheabilityInfo
 import org.neo4j.cypher.internal.DefaultPlanStalenessCaller
 import org.neo4j.cypher.internal.ExecutableQuery
+import org.neo4j.cypher.internal.ExecutingQueryTracer
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.PlanStalenessCaller
@@ -53,6 +54,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.function.Observable
+import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryCacheStatistics
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
@@ -208,6 +210,11 @@ object CypherQueryCaches {
       override val shouldBeCached: Boolean
     ) extends CacheabilityInfo
 
+    object LogicalPlanCacheQueryTracer extends ExecutingQueryTracer {
+      override def cacheHit(executingQuery: ExecutingQuery): Unit = executingQuery.logicalPlanCacheHit()
+      override def cacheMiss(executingQuery: ExecutingQuery): Unit = executingQuery.logicalPlanCacheMiss()
+    }
+
     class Cache(
       cacheFactory: CacheFactory,
       maximumSize: CacheSize,
@@ -217,7 +224,8 @@ object CypherQueryCaches {
           cacheFactory.resolveCacheKind(kind),
           maximumSize,
           stalenessCaller,
-          tracer
+          tracer,
+          LogicalPlanCacheQueryTracer
         ) with CacheCommon {
       def companion: CacheCompanion = LogicalPlanCache
     }
@@ -251,6 +259,11 @@ object CypherQueryCaches {
     type Key = CacheKey[InputQuery.CacheKey]
     type Value = ExecutableQuery
 
+    object ExecutableQueryCacheQueryTracer extends ExecutingQueryTracer {
+      override def cacheHit(executingQuery: ExecutingQuery): Unit = executingQuery.executableQueryCacheHit()
+      override def cacheMiss(executingQuery: ExecutingQuery): Unit = executingQuery.executableQueryCacheMiss()
+    }
+
     class Cache(
       cacheFactory: CacheFactory,
       maximumSize: CacheSize,
@@ -260,7 +273,8 @@ object CypherQueryCaches {
           cacheFactory.resolveCacheKind(kind),
           maximumSize,
           stalenessCaller,
-          tracer
+          tracer,
+          ExecutableQueryCacheQueryTracer
         ) with CacheCommon {
       def companion: CacheCompanion = ExecutableQueryCache
     }

@@ -126,6 +126,9 @@ public class ExecutingQuery {
      */
     private long parentTransactionId = -1L;
 
+    private QueryCacheUsage executableQueryCacheUsage;
+    private QueryCacheUsage logicalPlanCacheUsage;
+
     public ExecutingQuery(
             long queryId,
             ClientConnectionInfo clientConnection,
@@ -414,7 +417,9 @@ public class ExecutingQuery {
                 Optional.ofNullable(queryParameters),
                 outerTransactionId,
                 parentDbName,
-                parentTransactionId);
+                parentTransactionId,
+                executableQueryCacheUsage,
+                logicalPlanCacheUsage);
     }
 
     // basic methods
@@ -554,5 +559,21 @@ public class ExecutingQuery {
 
     public long pageFaultsOfClosedTransactionCommits() {
         return pageFaultsOfClosedTransactionCommits;
+    }
+
+    public void executableQueryCacheHit() {
+        this.executableQueryCacheUsage = QueryCacheUsage.HIT;
+    }
+
+    public void executableQueryCacheMiss() {
+        this.executableQueryCacheUsage = QueryCacheUsage.MISS;
+    }
+
+    public void logicalPlanCacheHit() {
+        this.logicalPlanCacheUsage = QueryCacheUsage.HIT;
+    }
+
+    public void logicalPlanCacheMiss() {
+        this.logicalPlanCacheUsage = QueryCacheUsage.MISS;
     }
 }
