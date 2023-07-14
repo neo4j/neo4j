@@ -19,25 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.function.Predicate;
-import org.neo4j.internal.helpers.collection.LfuCache;
+import java.util.function.BooleanSupplier;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.string.Globbing;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.token.TokenHolders;
 
 class TokenHoldersIdLookup implements LoginContext.IdLookup {
-    private static final int LOOKUP_CACHE_SIZE = 100;
     private final TokenHolders tokens;
-    private final GlobalProcedures globalProcedures;
-    private final LfuCache<String, int[]> proceduresLookupCache = new LfuCache<>("procedures", LOOKUP_CACHE_SIZE);
-    private final LfuCache<String, int[]> functionsLookupCache = new LfuCache<>("functions", LOOKUP_CACHE_SIZE);
-    private final LfuCache<String, int[]> aggregationFunctionsLookupCache =
-            new LfuCache<>("aggregationFunctions", LOOKUP_CACHE_SIZE);
+    private final ProcedureView view;
 
-    TokenHoldersIdLookup(TokenHolders tokens, GlobalProcedures globalProcedures) {
+    private final BooleanSupplier isStale;
+
+    TokenHoldersIdLookup(TokenHolders tokens, ProcedureView view, BooleanSupplier isStale) {
         this.tokens = tokens;
-        this.globalProcedures = globalProcedures;
+        this.view = view;
+        this.isStale = isStale;
     }
 
     @Override
@@ -57,50 +53,31 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup {
 
     @Override
     public int[] getProcedureIds(String procedureGlobbing) {
-        int[] cachedResult = proceduresLookupCache.get(procedureGlobbing);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-        Predicate<String> matcherPredicate = Globbing.globPredicate(procedureGlobbing);
-        int[] data = globalProcedures.getIdsOfProceduresMatching(
-                p -> matcherPredicate.test(p.signature().name().toString()));
-        proceduresLookupCache.put(procedureGlobbing, data);
-        return data;
+        return view.getProcedureIds(procedureGlobbing);
     }
 
     @Override
     public int[] getAdminProcedureIds() {
-        return globalProcedures.getIdsOfProceduresMatching(p -> p.signature().admin());
+        return view.getAdminProcedureIds();
     }
 
     @Override
     public int[] getFunctionIds(String functionGlobbing) {
-        int[] cachedResult = functionsLookupCache.get(functionGlobbing);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
-        int[] data = globalProcedures.getIdsOfFunctionsMatching(
-                f -> matcherPredicate.test(f.signature().name().toString()));
-        functionsLookupCache.put(functionGlobbing, data);
-        return data;
+        return view.getFunctionIds(functionGlobbing);
     }
 
     @Override
     public int[] getAggregatingFunctionIds(String functionGlobbing) {
-        int[] cachedResult = aggregationFunctionsLookupCache.get(functionGlobbing);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
-        int[] data = globalProcedures.getIdsOfAggregatingFunctionsMatching(
-                f -> matcherPredicate.test(f.signature().name().toString()));
-        aggregationFunctionsLookupCache.put(functionGlobbing, data);
-        return data;
+        return view.getAggregatingFunctionIds(functionGlobbing);
     }
 
     @Override
     public boolean isCachableLookup() {
         return true;
+    }
+
+    @Override
+    public boolean isStale() {
+        return isStale.getAsBoolean();
     }
 }

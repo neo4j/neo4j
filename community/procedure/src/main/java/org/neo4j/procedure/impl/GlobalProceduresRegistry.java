@@ -266,6 +266,26 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     }
 
     @Override
+    public int[] getProcedureIds(String procedureGlobbing) {
+        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
+    }
+
+    @Override
+    public int[] getAdminProcedureIds() {
+        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
+    }
+
+    @Override
+    public int[] getFunctionIds(String functionGlobbing) {
+        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
+    }
+
+    @Override
+    public int[] getAggregatingFunctionIds(String functionGlobbing) {
+        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
+    }
+
+    @Override
     public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
         return currentProcedureView.procedure(name);
     }

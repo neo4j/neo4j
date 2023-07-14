@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.LinkedQueuePool;
@@ -154,7 +155,6 @@ public class KernelTransactions extends LifecycleAdapter
     private final MonitoredTransactionPool txPool;
     private final ConstraintSemantics constraintSemantics;
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
-    private final TokenHoldersIdLookup tokenHoldersIdLookup;
     private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final AbstractSecurityLog securityLog;
     private final boolean multiVersioned;
@@ -233,7 +233,6 @@ public class KernelTransactions extends LifecycleAdapter
         this.databaseHealth = databaseHealth;
         this.transactionValidatorFactory = transactionValidatorFactory;
         this.internalLogProvider = internalLogProvider;
-        this.tokenHoldersIdLookup = new TokenHoldersIdLookup(tokenHolders, globalProcedures);
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
         this.indexStatisticsStore = indexStatisticsStore;
@@ -263,9 +262,11 @@ public class KernelTransactions extends LifecycleAdapter
             ClientConnectionInfo clientInfo,
             TransactionTimeout timeout) {
         assertCurrentThreadIsNotBlockingNewTransactions();
+
         ProcedureView procedureView = globalProcedures.getCurrentView();
-        SecurityContext securityContext =
-                loginContext.authorize(tokenHoldersIdLookup, namedDatabaseId.name(), securityLog);
+        BooleanSupplier isStale = () -> !globalProcedures.getCurrentView().equals(procedureView);
+        SecurityContext securityContext = loginContext.authorize(
+                new TokenHoldersIdLookup(tokenHolders, procedureView, isStale), namedDatabaseId.name(), securityLog);
         try {
             while (!newTransactionsLock.readLock().tryLock(1, TimeUnit.SECONDS)) {
                 assertRunning();

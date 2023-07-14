@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -38,13 +39,21 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.ProcedureView;
+import org.neo4j.string.Globbing;
 import org.neo4j.values.AnyValue;
 
 public class ProcedureViewImpl implements ProcedureView {
 
+    private static final int LOOKUP_CACHE_SIZE = 100;
+
     private final ProcedureRegistry registry;
     private final ComponentRegistry safeComponents;
     private final ComponentRegistry allComponents;
+
+    private final LfuCache<String, int[]> proceduresLookupCache = new LfuCache<>("procedures", LOOKUP_CACHE_SIZE);
+    private final LfuCache<String, int[]> functionsLookupCache = new LfuCache<>("functions", LOOKUP_CACHE_SIZE);
+    private final LfuCache<String, int[]> aggregationFunctionsLookupCache =
+            new LfuCache<>("aggregationFunctions", LOOKUP_CACHE_SIZE);
 
     public ProcedureViewImpl(
             ProcedureRegistry registryView, ComponentRegistry safeComponents, ComponentRegistry allComponents) {
@@ -124,5 +133,49 @@ public class ProcedureViewImpl implements ProcedureView {
     @Override
     public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
         return registry.createAggregationFunction(ctx, id);
+    }
+
+    @Override
+    public int[] getProcedureIds(String procedureGlobbing) {
+        int[] cachedResult = proceduresLookupCache.get(procedureGlobbing);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+        Predicate<String> matcherPredicate = Globbing.globPredicate(procedureGlobbing);
+        int[] data = getIdsOfProceduresMatching(
+                p -> matcherPredicate.test(p.signature().name().toString()));
+        proceduresLookupCache.put(procedureGlobbing, data);
+        return data;
+    }
+
+    @Override
+    public int[] getAdminProcedureIds() {
+        return getIdsOfProceduresMatching(p -> p.signature().admin());
+    }
+
+    @Override
+    public int[] getFunctionIds(String functionGlobbing) {
+        int[] cachedResult = functionsLookupCache.get(functionGlobbing);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
+        int[] data = getIdsOfFunctionsMatching(
+                f -> matcherPredicate.test(f.signature().name().toString()));
+        functionsLookupCache.put(functionGlobbing, data);
+        return data;
+    }
+
+    @Override
+    public int[] getAggregatingFunctionIds(String functionGlobbing) {
+        int[] cachedResult = aggregationFunctionsLookupCache.get(functionGlobbing);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
+        int[] data = getIdsOfAggregatingFunctionsMatching(
+                f -> matcherPredicate.test(f.signature().name().toString()));
+        aggregationFunctionsLookupCache.put(functionGlobbing, data);
+        return data;
     }
 }

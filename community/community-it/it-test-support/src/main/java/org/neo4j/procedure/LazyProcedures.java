@@ -230,6 +230,26 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
+    public int[] getProcedureIds(String procedureGlobbing) {
+        return lazyProcedureView.getProcedureIds(procedureGlobbing);
+    }
+
+    @Override
+    public int[] getAdminProcedureIds() {
+        return lazyProcedureView.getAdminProcedureIds();
+    }
+
+    @Override
+    public int[] getFunctionIds(String functionGlobbing) {
+        return lazyProcedureView.getFunctionIds(functionGlobbing);
+    }
+
+    @Override
+    public int[] getAggregatingFunctionIds(String functionGlobbing) {
+        return lazyProcedureView.getAggregatingFunctionIds(functionGlobbing);
+    }
+
+    @Override
     public void unregister(QualifiedName name) {
         var procedures = globalProcedures;
         if (procedures != null) {
@@ -361,6 +381,30 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
                 Class<T> cls, boolean safe) {
             initView();
             return view.lookupComponentProvider(cls, safe);
+        }
+
+        @Override
+        public int[] getProcedureIds(String procedureGlobbing) {
+            initView();
+            return view.getProcedureIds(procedureGlobbing);
+        }
+
+        @Override
+        public int[] getAdminProcedureIds() {
+            initView();
+            return view.getAdminProcedureIds();
+        }
+
+        @Override
+        public int[] getFunctionIds(String functionGlobbing) {
+            initView();
+            return view.getFunctionIds(functionGlobbing);
+        }
+
+        @Override
+        public int[] getAggregatingFunctionIds(String functionGlobbing) {
+            initView();
+            return view.getAggregatingFunctionIds(functionGlobbing);
         }
     }
 }

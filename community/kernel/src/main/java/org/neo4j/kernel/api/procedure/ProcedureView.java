@@ -62,4 +62,12 @@ public interface ProcedureView {
     UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException;
 
     <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe);
+
+    int[] getProcedureIds(String procedureGlobbing);
+
+    int[] getAdminProcedureIds();
+
+    int[] getFunctionIds(String functionGlobbing);
+
+    int[] getAggregatingFunctionIds(String functionGlobbing);
 }

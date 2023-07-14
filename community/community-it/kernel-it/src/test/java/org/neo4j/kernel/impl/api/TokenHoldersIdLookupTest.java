@@ -70,7 +70,7 @@ class TokenHoldersIdLookupTest {
             UserFunctionHandle function = procs.aggregationFunction(name);
             funcName2id.put(name.toString(), function.id());
         });
-        idLookup = new TokenHoldersIdLookup(mockedTokenHolders(), procs);
+        idLookup = new TokenHoldersIdLookup(mockedTokenHolders(), procs.getCurrentView(), () -> false);
     }
 
     private static TokenHolders mockedTokenHolders() {

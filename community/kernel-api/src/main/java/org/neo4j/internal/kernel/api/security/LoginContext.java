@@ -103,6 +103,8 @@ public abstract class LoginContext {
 
         boolean isCachableLookup();
 
+        boolean isStale();
+
         IdLookup EMPTY = new IdLookup() {
             @Override
             public int getPropertyKeyId(String name) {
@@ -142,6 +144,11 @@ public abstract class LoginContext {
             @Override
             public boolean isCachableLookup() {
                 return false;
+            }
+
+            @Override
+            public boolean isStale() {
+                return true;
             }
         };
     }
