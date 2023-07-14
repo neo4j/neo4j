@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipException;
@@ -40,12 +41,14 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.string.Globbing;
 
 /**
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
  * instances.
  */
 class ProcedureJarLoader {
+
     private final ProcedureCompiler compiler;
     private final InternalLog log;
 
@@ -55,6 +58,10 @@ class ProcedureJarLoader {
     }
 
     Callables loadProceduresFromDir(Path root) throws IOException, KernelException {
+        return loadProceduresFromDir(root, Globbing.MATCH_ALL);
+    }
+
+    Callables loadProceduresFromDir(Path root, Predicate<String> methodNameFilter) throws IOException, KernelException {
         if (root == null || Files.notExists(root)) {
             return Callables.empty();
         }
@@ -85,7 +92,7 @@ class ProcedureJarLoader {
 
         Callables out = new Callables();
         for (Path jarFile : jarFiles) {
-            loadProcedures(jarFile, loader, out);
+            loadProcedures(jarFile, loader, out, methodNameFilter);
         }
         return out;
     }
@@ -100,17 +107,19 @@ class ProcedureJarLoader {
         }
     }
 
-    private Callables loadProcedures(Path jar, ClassLoader loader, Callables target)
+    private void loadProcedures(Path jar, ClassLoader loader, Callables target, Predicate<String> methodNameFilter)
             throws IOException, KernelException {
+
+        // Load all classes from JAR into classloader, to attempt to ensure that we
+        // load as many dependencies as we can.
         RawIterator<Class<?>, IOException> classes = listClassesIn(jar, loader);
 
         while (classes.hasNext()) {
             Class<?> next = classes.next();
-            target.addAllProcedures(compiler.compileProcedure(next, false, loader));
-            target.addAllFunctions(compiler.compileFunction(next, false, loader));
-            target.addAllAggregationFunctions(compiler.compileAggregationFunction(next, loader));
+            target.addAllProcedures(compiler.compileProcedure(next, false, loader, methodNameFilter));
+            target.addAllFunctions(compiler.compileFunction(next, false, loader, methodNameFilter));
+            target.addAllAggregationFunctions(compiler.compileAggregationFunction(next, loader, methodNameFilter));
         }
-        return target;
     }
 
     private URL toURL(Path f) {

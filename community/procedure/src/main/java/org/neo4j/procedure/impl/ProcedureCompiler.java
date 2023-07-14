@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
@@ -56,11 +57,13 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.string.Globbing;
 
 /**
  * Handles converting a class into one or more callable {@link CallableProcedure}.
  */
 class ProcedureCompiler {
+
     private final ProcedureOutputSignatureCompiler outputSignatureCompiler;
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections safeFieldInjections;
@@ -106,7 +109,11 @@ class ProcedureCompiler {
         this.restrictions = restrictions;
     }
 
-    List<CallableUserFunction> compileFunction(Class<?> fcnDefinition, boolean isBuiltin, ClassLoader parentClassLoader)
+    List<CallableUserFunction> compileFunction(
+            Class<?> fcnDefinition,
+            boolean isBuiltin,
+            ClassLoader parentClassLoader,
+            Predicate<String> methodNameFilter)
             throws ProcedureException {
         try {
             List<Method> functionMethods = Arrays.stream(fcnDefinition.getDeclaredMethods())
@@ -125,6 +132,11 @@ class ProcedureCompiler {
                 String valueName = method.getAnnotation(UserFunction.class).value();
                 String definedName = method.getAnnotation(UserFunction.class).name();
                 QualifiedName funcName = extractName(fcnDefinition, method, valueName, definedName);
+
+                if (!methodNameFilter.test(funcName.toString())) {
+                    continue;
+                }
+
                 if (isBuiltin || config.isWhitelisted(funcName.toString())) {
                     out.add(compileFunction(fcnDefinition, method, funcName, parentClassLoader));
                 } else {
@@ -146,7 +158,8 @@ class ProcedureCompiler {
     }
 
     List<CallableUserAggregationFunction> compileAggregationFunction(
-            Class<?> fcnDefinition, ClassLoader parentClassLoader) throws ProcedureException {
+            Class<?> fcnDefinition, ClassLoader parentClassLoader, Predicate<String> methodNameFilter)
+            throws ProcedureException {
         try {
             List<Method> methods = Arrays.stream(fcnDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(UserAggregationFunction.class))
@@ -165,6 +178,10 @@ class ProcedureCompiler {
                 String definedName =
                         method.getAnnotation(UserAggregationFunction.class).name();
                 QualifiedName funcName = extractName(fcnDefinition, method, valueName, definedName);
+
+                if (!methodNameFilter.test(funcName.toString())) {
+                    continue;
+                }
 
                 if (config.isWhitelisted(funcName.toString())) {
                     out.add(compileAggregationFunction(fcnDefinition, method, funcName, parentClassLoader));
@@ -186,7 +203,11 @@ class ProcedureCompiler {
         }
     }
 
-    List<CallableProcedure> compileProcedure(Class<?> procDefinition, boolean fullAccess, ClassLoader parentClassLoader)
+    List<CallableProcedure> compileProcedure(
+            Class<?> procDefinition,
+            boolean fullAccess,
+            ClassLoader parentClassLoader,
+            Predicate<String> methodNameFilter)
             throws ProcedureException {
         try {
             List<Method> procedureMethods = Arrays.stream(procDefinition.getDeclaredMethods())
@@ -203,6 +224,10 @@ class ProcedureCompiler {
                 String valueName = method.getAnnotation(Procedure.class).value();
                 String definedName = method.getAnnotation(Procedure.class).name();
                 QualifiedName procName = extractName(procDefinition, method, valueName, definedName);
+
+                if (!methodNameFilter.test(procName.toString())) {
+                    continue;
+                }
 
                 if (fullAccess || config.isWhitelisted(procName.toString())) {
                     out.add(compileProcedure(procDefinition, method, fullAccess, procName, parentClassLoader));
@@ -292,15 +317,18 @@ class ProcedureCompiler {
     }
 
     List<CallableProcedure> compileProcedure(Class<?> procDefinition, boolean fullAccess) throws ProcedureException {
-        return compileProcedure(procDefinition, fullAccess, CallableUserFunction.class.getClassLoader());
+        return compileProcedure(
+                procDefinition, fullAccess, CallableUserFunction.class.getClassLoader(), Globbing.MATCH_ALL);
     }
 
     List<CallableUserAggregationFunction> compileAggregationFunction(Class<?> fcnDefinition) throws ProcedureException {
-        return compileAggregationFunction(fcnDefinition, CallableUserFunction.class.getClassLoader());
+        return compileAggregationFunction(
+                fcnDefinition, CallableUserFunction.class.getClassLoader(), Globbing.MATCH_ALL);
     }
 
     List<CallableUserFunction> compileFunction(Class<?> fcnDefinition, boolean isBuiltin) throws ProcedureException {
-        return compileFunction(fcnDefinition, isBuiltin, CallableUserFunction.class.getClassLoader());
+        return compileFunction(
+                fcnDefinition, isBuiltin, CallableUserFunction.class.getClassLoader(), Globbing.MATCH_ALL);
     }
 
     private String describeAndLogLoadFailure(QualifiedName name) {

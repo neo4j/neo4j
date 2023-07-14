@@ -58,6 +58,9 @@ import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -72,6 +75,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.string.Globbing;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.jar.JarBuilder;
@@ -498,6 +502,34 @@ public class ProcedureJarLoaderTest {
         assertEquals(0, callables.procedures().size() + callables.functions().size());
     }
 
+    static Stream<Arguments> namespaceLimits() {
+        return Stream.of(
+                Arguments.of(List.of(), List.of(), List.of()), // restrictive defaults
+                Arguments.of(List.of("*"), List.of(), List.of("A.a", "B.b")),
+                Arguments.of(List.of("*"), List.of("*"), List.of()), // exclude takes precedence
+                Arguments.of(List.of("A.*"), List.of(), List.of("A.a")),
+                Arguments.of(List.of("*"), List.of("A.*"), List.of("B.b")),
+                Arguments.of(List.of("*"), List.of("A.a"), List.of("B.b")), // exclude takes precedence
+                Arguments.of(List.of("A.a"), List.of("*"), List.of()) // exclude takes precedence
+                );
+    }
+
+    @ParameterizedTest
+    @MethodSource("namespaceLimits")
+    void shouldBeAbleToLimitLoadedNamespaces(List<String> include, List<String> exclude, List<String> expected)
+            throws Exception {
+        // Given
+        URL jar = createJarFor(ClassWithProcedureNamespaces.class);
+        var methodNameFilter = Globbing.compose(include, exclude);
+
+        // when
+        var procedures = jarloader.loadProceduresFromDir(parentDir(jar), methodNameFilter).procedures().stream()
+                .map(p -> p.signature().name().toString())
+                .toList();
+
+        assertThat(procedures).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
     private org.neo4j.kernel.api.procedure.Context prepareContext() {
         return buildContext(dependencyResolver, valueMapper).context();
     }
@@ -575,6 +607,21 @@ public class ProcedureJarLoaderTest {
     public static class ClassWithOneProcedure {
         @Procedure
         public Stream<Output> myProcedure() {
+            return Stream.of(new Output());
+        }
+    }
+
+    public static class ClassWithProcedureNamespaces {
+        public static final String PROCEDURE_NAME_A = "A.a";
+        public static final String PROCEDURE_NAME_B = "B.b";
+
+        @Procedure(name = PROCEDURE_NAME_A)
+        public Stream<Output> a() {
+            return Stream.of(new Output());
+        }
+
+        @Procedure(name = PROCEDURE_NAME_B)
+        public Stream<Output> b() {
             return Stream.of(new Output());
         }
     }

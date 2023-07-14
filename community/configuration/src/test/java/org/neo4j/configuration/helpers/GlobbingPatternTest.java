@@ -25,7 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.string.Globbing;
 
 class GlobbingPatternTest {
     @Test
@@ -65,6 +69,7 @@ class GlobbingPatternTest {
         GlobbingPattern empty = new GlobbingPattern("");
         GlobbingPattern space = new GlobbingPattern(" ");
         GlobbingPattern noGlobbing = new GlobbingPattern("full.name");
+        GlobbingPattern all = new GlobbingPattern("*");
 
         assertTrue(empty.matches(""));
         assertFalse(empty.matches(" "));
@@ -74,10 +79,38 @@ class GlobbingPatternTest {
         assertTrue(space.matches(" "));
         assertFalse(space.matches("a"));
 
+        assertTrue(all.matches(""));
+        assertTrue(all.matches(" "));
+        assertTrue(all.matches("a"));
+
         assertTrue(noGlobbing.matches("full.name"));
         assertFalse(noGlobbing.matches(""));
         assertFalse(noGlobbing.matches("fullAname"));
         assertFalse(noGlobbing.matches("Afull.name"));
         assertFalse(noGlobbing.matches("full.nameA"));
+    }
+
+    private record Combination(List<String> include, List<String> exclude, List<String> expected) {
+        static final List<String> INPUTS =
+                List.of("", " ", "a", "A", "fulla", "fullA", "something.a", "something.A", "b", "fullb");
+    }
+
+    private static Stream<Combination> combinations() {
+        return Stream.of(
+                new Combination(List.of(), List.of(), List.of()), // at least one include must be matched
+                new Combination(List.of("*"), List.of(), Combination.INPUTS),
+                new Combination(List.of("*"), List.of("*"), List.of()), // exclude takes precedence
+                new Combination(
+                        List.of("*a"), List.of(), List.of("a", "A", "fulla", "fullA", "something.a", "something.A")),
+                new Combination(List.of("*a"), List.of("fulla"), List.of("a", "A", "something.a", "something.A")),
+                new Combination(List.of("*b"), List.of("*a"), List.of("b", "fullb")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("combinations")
+    void testCompose(Combination combination) {
+        var predicate = Globbing.compose(combination.include(), combination.exclude());
+        var actual = Combination.INPUTS.stream().filter(predicate).toList();
+        assertThat(actual).isEqualTo(combination.expected());
     }
 }
