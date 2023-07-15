@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -34,10 +33,6 @@ public class DropConstraintFailureException extends SchemaKernelException {
         super(Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint: " + cause.getMessage());
         this.constraint = constraint;
         this.nameOrSchema = null;
-    }
-
-    public DropConstraintFailureException(SchemaDescriptor constraint, Throwable cause) {
-        this(() -> constraint, cause);
     }
 
     public DropConstraintFailureException(String nameOrSchema, Throwable cause) {
