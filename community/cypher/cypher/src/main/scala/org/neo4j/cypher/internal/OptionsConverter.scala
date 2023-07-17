@@ -61,6 +61,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
+import java.lang.Boolean.FALSE
 import java.util.Collections
 import java.util.Locale
 import java.util.UUID
@@ -197,9 +198,9 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
 trait OptionValidator[T] {
 
   val KEY: String
-  protected def validate(value: AnyValue)(implicit operation: String): T
+  protected def validate(value: AnyValue, config: Option[Config])(implicit operation: String): T
 
-  def findIn(optionsMap: MapValue)(implicit operation: String): Option[T] = {
+  def findIn(optionsMap: MapValue, config: Option[Config])(implicit operation: String): Option[T] = {
     optionsMap
       .find(_._1.equalsIgnoreCase(KEY))
       .map(_._2)
@@ -207,18 +208,18 @@ trait OptionValidator[T] {
         case _: NoValue => None
         case value      => Some(value)
       }
-      .map(validate)
+      .map(validate(_, config))
   }
 }
 
 trait StringOptionValidator extends OptionValidator[String] {
 
-  protected def validateContent(value: String)(implicit operation: String): Unit
+  protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit
 
-  override protected def validate(value: AnyValue)(implicit operation: String): String = {
+  override protected def validate(value: AnyValue, config: Option[Config])(implicit operation: String): String = {
     value match {
       case textValue: TextValue =>
-        validateContent(textValue.stringValue())
+        validateContent(textValue.stringValue(), config)
         textValue.stringValue()
       case _ =>
         throw new InvalidArgumentsException(s"Could not $operation with specified $KEY '$value', String expected.")
@@ -233,10 +234,10 @@ object ExistingDataOption extends StringOptionValidator {
   val VALID_VALUE = "use"
 
   // override to keep legacy behaviour. ExistingDataOption is parsed to lowercase, other options keep input casing.
-  override protected def validate(value: AnyValue)(implicit operation: String): String =
-    super.validate(value).toLowerCase(Locale.ROOT)
+  override protected def validate(value: AnyValue, config: Option[Config])(implicit operation: String): String =
+    super.validate(value, config).toLowerCase(Locale.ROOT)
 
-  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit = {
     if (!value.equalsIgnoreCase(VALID_VALUE)) {
       throw new InvalidArgumentsException(
         s"Could not $operation with specified $KEY '$value'. Expected '$VALID_VALUE'."
@@ -248,7 +249,7 @@ object ExistingDataOption extends StringOptionValidator {
 object ExistingSeedInstanceOption extends StringOptionValidator {
   override val KEY: String = "existingDataSeedInstance"
 
-  override protected def validateContent(value: String)(implicit operation: String): Unit =
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit =
     try {
       UUID.fromString(value)
     } catch {
@@ -262,13 +263,16 @@ object ExistingSeedInstanceOption extends StringOptionValidator {
 object StoreFormatOption extends StringOptionValidator {
   override val KEY: String = "storeFormat"
 
-  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit = {
     try {
       // Validate the format by looking for a storage engine that supports it - will throw if none was found
-      StorageEngineFactory.selectStorageEngine(Config.defaults(
-        GraphDatabaseSettings.db_format,
-        value
-      ))
+      val versionsUnderDev =
+        config.fold(FALSE)(_.get(GraphDatabaseInternalSettings.include_versions_under_development))
+      val selectEngineConfig = Config.newBuilder()
+        .set(GraphDatabaseSettings.db_format, value)
+        .set(GraphDatabaseInternalSettings.include_versions_under_development, versionsUnderDev)
+        .build();
+      StorageEngineFactory.selectStorageEngine(selectEngineConfig)
     } catch {
       case _: Exception =>
         val allFormats = allAvailableStorageEngines().asScala
@@ -285,7 +289,7 @@ object StoreFormatOption extends StringOptionValidator {
 object SeedURIOption extends StringOptionValidator {
   override val KEY: String = "seedURI"
 
-  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit = {
     // no content validation, any string is accepted
   }
 }
@@ -293,7 +297,7 @@ object SeedURIOption extends StringOptionValidator {
 object SeedCredentialsOption extends StringOptionValidator {
   override val KEY: String = "seedCredentials"
 
-  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit = {
     // no content validation, any string is accepted
   }
 }
@@ -301,7 +305,7 @@ object SeedCredentialsOption extends StringOptionValidator {
 object SeedConfigOption extends StringOptionValidator {
   override val KEY: String = "seedConfig"
 
-  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit = {
     // no content validation, any string is accepted
   }
 }
@@ -315,10 +319,10 @@ object LogEnrichmentOption extends StringOptionValidator {
   private val validValues = Seq(FULL, DIFF, OFF)
 
   // override to normalize to uppercase.
-  override protected def validate(value: AnyValue)(implicit operation: String): String =
-    super.validate(value).toUpperCase(Locale.ROOT)
+  override protected def validate(value: AnyValue, config: Option[Config])(implicit operation: String): String =
+    super.validate(value, config).toUpperCase(Locale.ROOT)
 
-  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit = {
     if (!validValues.exists(value.equalsIgnoreCase)) {
       throw new InvalidArgumentsException(
         s"Could not $operation with specified $KEY '$value', Expected one of ${validValues.mkString("'", "', '", "'")}"
@@ -356,7 +360,7 @@ case object AlterDatabaseOptionsConverter extends OptionsConverter[AlterDatabase
 
     // Keys must be kept in sync with expectedKeys above!
     AlterDatabaseOptions(
-      txLogEnrichment = LogEnrichmentOption.findIn(optionsMap)
+      txLogEnrichment = LogEnrichmentOption.findIn(optionsMap, config)
     )
   }
 
@@ -420,13 +424,13 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
 
     // Keys must be kept in sync with expectedKeys above!
     CreateDatabaseOptions(
-      existingData = ExistingDataOption.findIn(optionsMap),
-      databaseSeed = ExistingSeedInstanceOption.findIn(optionsMap),
-      storeFormatNewDb = StoreFormatOption.findIn(optionsMap),
-      seedURI = SeedURIOption.findIn(optionsMap),
-      seedCredentials = SeedCredentialsOption.findIn(optionsMap),
-      seedConfig = SeedConfigOption.findIn(optionsMap),
-      txLogEnrichment = LogEnrichmentOption.findIn(optionsMap)
+      existingData = ExistingDataOption.findIn(optionsMap, config),
+      databaseSeed = ExistingSeedInstanceOption.findIn(optionsMap, config),
+      storeFormatNewDb = StoreFormatOption.findIn(optionsMap, config),
+      seedURI = SeedURIOption.findIn(optionsMap, config),
+      seedCredentials = SeedCredentialsOption.findIn(optionsMap, config),
+      seedConfig = SeedConfigOption.findIn(optionsMap, config),
+      txLogEnrichment = LogEnrichmentOption.findIn(optionsMap, config)
     )
   }
 
