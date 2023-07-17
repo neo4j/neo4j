@@ -18,10 +18,13 @@ package org.neo4j.cypher.internal.util.test_helpers
 
 import org.scalactic.Equality
 
-// Makes it easy to compare strings without having to worry about new lines
+/**
+ * Makes it easy to compare strings without having to worry about new lines
+ * This is a more specialized version of WindowsSafeAnyRef.
+ */
 object WindowsStringSafe extends Equality[String] {
 
-  override def areEqual(a: String, b: Any) = b match {
+  override def areEqual(a: String, b: Any): Boolean = b match {
     case b: String =>
       a.replaceAll("\r\n", "\n") equals b.replaceAll("\r\n", "\n")
     case _ => false

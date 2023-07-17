@@ -24,6 +24,11 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 import org.scalactic.Equality
 
+/**
+ * Makes it easy to compare any objects that contain Strings without having to worry about new lines.
+ * This is a more general version of WindowsStringSafe.
+ * This one uses our rewriting framework, though, so it drags along more dependencies.
+ */
 class WindowsSafeAnyRef[T <: AnyRef] extends Equality[T] {
 
   override def areEqual(a: T, b: Any): Boolean = b match {
