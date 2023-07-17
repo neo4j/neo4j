@@ -27,6 +27,7 @@ import org.neo4j.fabric.util.Errors.show
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceImpl
+import org.neo4j.kernel.database.DatabaseReferenceImpl.External
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.StringValue
@@ -129,7 +130,7 @@ object Catalog {
     )
   }
 
-  class ByNameView() extends View1(Arg("name", classOf[StringValue])) {
+  private class ByNameView() extends View1(Arg("name", classOf[StringValue])) {
 
     override def eval(arg: StringValue, catalog: Catalog): Graph =
       catalog.resolveGraphByNameString(arg.stringValue())
@@ -157,12 +158,23 @@ case class Catalog(
   def resolveGraphOption(name: CatalogName): Option[Catalog.Graph] =
     graphs.get(normalize(name))
 
+  // TODO: Parse the argument with quoting rules instead, to allow more cases
   def resolveGraphByNameString(name: String): Catalog.Graph =
     resolveGraphOptionByNameString(name)
       .getOrElse(Errors.entityNotFound("Graph", name))
 
-  // TODO: Parse the argument with quoting rules instead, to allow more cases
-  def resolveGraphOptionByNameString(name: String): Option[Catalog.Graph] = {
+  def resolveGraphByNameString(name: String, securityContext: SecurityContext): Catalog.Graph =
+    resolveGraphOptionByNameString(name, securityContext)
+      .getOrElse(Errors.entityNotFound("Graph", name))
+
+  private def resolveGraphOptionByNameString(name: String, securityContext: SecurityContext): Option[Catalog.Graph] = {
+    val normalizedName = Catalog.normalize(name)
+    graphs.collectFirst {
+      case (cn, graph) if cn.qualifiedNameString == normalizedName && canAccessDatabase(graph, securityContext) => graph
+    }
+  }
+
+  private def resolveGraphOptionByNameString(name: String): Option[Catalog.Graph] = {
     val normalizedName = Catalog.normalize(name)
     graphs.collectFirst { case (cn, graph) if cn.qualifiedNameString == normalizedName => graph }
   }
@@ -170,15 +182,30 @@ case class Catalog(
   def resolveView(name: CatalogName, args: Seq[AnyValue]): Catalog.Graph =
     resolveViewOption(name, args).getOrElse(Errors.entityNotFound("View", show(name)))
 
-  def resolveViewOption(name: CatalogName, args: Seq[AnyValue]): Option[Catalog.Graph] =
+  private def resolveViewOption(name: CatalogName, args: Seq[AnyValue]): Option[Catalog.Graph] =
     views.get(normalize(name)).map(v => v.eval(args, this))
 
-  def graphNamesIn(namespace: String, securityContext: SecurityContext): Array[String] =
+  def graphNamesIn(namespace: String, securityContext: SecurityContext): Array[String] = {
     graphs.collect {
-      case (cn @ CatalogName(List(`namespace`, name)), graph: Catalog.Graph)
-        if securityContext.databaseAccessMode().canAccessDatabase(graph.reference) =>
+      case (cn @ CatalogName(List(`namespace`, _)), graph: Catalog.Graph)
+        if canAccessDatabase(graph, securityContext) =>
         cn.qualifiedNameString
     }.toArray
+  }
+
+  private def canAccessDatabase(graph: Catalog.Graph, securityContext: SecurityContext): Boolean = {
+    val hasAccessToDb = ref => securityContext.databaseAccessMode.canAccessDatabase(ref)
+
+    graph.reference.isInstanceOf[External] && hasAccessToDb(graph.reference) || findPrimaryAlias(
+      graph.reference.id
+    ).exists(hasAccessToDb)
+  }
+
+  private def findPrimaryAlias(uuid: UUID): Option[DatabaseReference] = {
+    graphs
+      .map { case (_, graph) => graph.reference }
+      .find { ref => ref.id().equals(uuid) && ref.isPrimary }
+  }
 
   def ++(that: Catalog): Catalog = Catalog(this.graphs ++ that.graphs, this.views ++ that.views)
 
