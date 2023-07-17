@@ -46,8 +46,8 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
@@ -735,8 +735,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         var countsUpToDate = new MutableBoolean(true);
         var countsBuilder = new CountsBuilder() {
             @Override
-            public void initialize(
-                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 countsUpToDate.setFalse();
             }
 
@@ -758,10 +757,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         openOptions);
                 var context = contextFactory.create("update counts store");
                 var flushEvent = pageCacheTracer.beginFileFlush()) {
-            countsStore.start(context, StoreCursors.NULL, memoryTracker);
+            countsStore.start(context, memoryTracker);
             if (countsUpToDate.isTrue()) {
                 for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
-                    countsStore.apply(txId, true, context).close();
+                    countsStore.updater(txId, true, context).close();
                 }
                 countsStore.checkpoint(flushEvent, context);
             }
@@ -794,10 +793,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                                 false);
                 var context = contextFactory.create("update group degrees store");
                 var flushEvent = pageCacheTracer.beginFileFlush()) {
-            degreesStore.start(context, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
+            degreesStore.start(context, EmptyMemoryTracker.INSTANCE);
             if (degreesUpToDate.isTrue()) {
                 for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
-                    degreesStore.apply(txId, true, context).close();
+                    degreesStore.updater(txId, true, context).close();
                 }
                 degreesStore.checkpoint(flushEvent, context);
             }

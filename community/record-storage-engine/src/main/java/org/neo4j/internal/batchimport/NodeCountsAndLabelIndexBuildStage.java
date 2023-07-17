@@ -23,7 +23,7 @@ import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
@@ -49,7 +49,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
             NodeLabelsCache cache,
             NodeStore nodeStore,
             int highLabelId,
-            CountsAccessor.Updater countsUpdater,
+            CountsUpdater countsUpdater,
             ProgressReporter progressReporter,
             IndexImporterFactory indexImporterFactory,
             long fromNodeId,

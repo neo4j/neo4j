@@ -42,8 +42,8 @@ import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.Configuration;
@@ -596,11 +596,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     @Override
     public void start() throws Exception {
-        try (var cursorContext = contextFactory.create(STORAGE_ENGINE_START_TAG);
-                var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
+        try (var cursorContext = contextFactory.create(STORAGE_ENGINE_START_TAG)) {
             neoStores.start(cursorContext);
-            countsStore.start(cursorContext, storeCursors, otherMemoryTracker);
-            groupDegreesStore.start(cursorContext, storeCursors, otherMemoryTracker);
+            countsStore.start(cursorContext, otherMemoryTracker);
+            groupDegreesStore.start(cursorContext, otherMemoryTracker);
         }
     }
 
@@ -696,7 +695,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public CountsAccessor countsAccessor() {
+    public CountsStore countsAccessor() {
         return countsStore;
     }
 
@@ -764,8 +763,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         }
 
         @Override
-        public void initialize(
-                CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
             log.warn("Missing counts store, rebuilding it.");
             new CountsComputer(neoStores, pageCache, contextFactory, layout, memoryTracker, log)
                     .initialize(updater, cursorContext, memoryTracker);

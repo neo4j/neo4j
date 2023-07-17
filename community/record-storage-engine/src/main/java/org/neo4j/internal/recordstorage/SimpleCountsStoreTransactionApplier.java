@@ -20,20 +20,20 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.function.Supplier;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.counts.DegreeUpdater;
 
 /**
  * It's simple because it doesn't open updates if they are not required and avoids other hacks of {@link CountsStoreTransactionApplier}
  */
 class SimpleCountsStoreTransactionApplier extends TransactionApplier.Adapter {
-    private final Supplier<CountsAccessor.Updater> counstUpdaterSupplier;
+    private final Supplier<CountsUpdater> counstUpdaterSupplier;
     private final Supplier<DegreeUpdater> degreeUpdaterSupplier;
-    private CountsAccessor.Updater countsUpdater;
+    private CountsUpdater countsUpdater;
     private DegreeUpdater degreesUpdater;
 
     SimpleCountsStoreTransactionApplier(
-            Supplier<CountsAccessor.Updater> countsUpdaterSupplier, Supplier<DegreeUpdater> degreeUpdaterSupplier) {
+            Supplier<CountsUpdater> countsUpdaterSupplier, Supplier<DegreeUpdater> degreeUpdaterSupplier) {
         this.counstUpdaterSupplier = countsUpdaterSupplier;
         this.degreeUpdaterSupplier = degreeUpdaterSupplier;
     }
@@ -68,7 +68,7 @@ class SimpleCountsStoreTransactionApplier extends TransactionApplier.Adapter {
         }
     }
 
-    private CountsAccessor.Updater countsUpdater() {
+    private CountsUpdater countsUpdater() {
         if (countsUpdater == null) {
             countsUpdater = counstUpdaterSupplier.get();
         }

@@ -74,7 +74,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -396,7 +395,7 @@ class CsvInputBatchImportIT {
             RecordStorageEngine storageEngine =
                     ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(RecordStorageEngine.class);
             NeoStores neoStores = storageEngine.testAccessNeoStores();
-            CountsAccessor counts = storageEngine.countsAccessor();
+            var counts = storageEngine.countsAccessor();
             Function<String, Integer> labelTranslationTable =
                     translationTable(neoStores.getLabelTokenStore(), ANY_LABEL, storageEngine);
             for (Pair<Integer, Long> count : allNodeCounts(labelTranslationTable, expectedNodeCounts)) {

@@ -21,24 +21,13 @@ package org.neo4j.internal.counts;
 
 import org.neo4j.storageengine.api.RelationshipDirection;
 
-public interface DegreeUpdater extends AutoCloseable {
-    DegreeUpdater NO_OP_UPDATER = new DegreeUpdater() {
-        @Override
-        public void close() {}
-
-        @Override
-        public void increment(long groupId, RelationshipDirection direction, long delta) {}
-    };
-
-    @Override
-    void close();
-
+public interface GroupDegreeVisitor {
     /**
-     * Changes the degree of the given groupId and direction.
+     * Receives data about a degree.
      *
-     * @param groupId   the relationship group ID to make the change for.
-     * @param direction the direction to make the change for.
-     * @param delta     delta value to apply, can be either positive or negative.
+     * @param groupId   relationship group ID of the degree.
+     * @param direction direction of the degree.
+     * @param degree    the absolute degree for the group and direction.
      */
-    void increment(long groupId, RelationshipDirection direction, long delta);
+    void degree(long groupId, RelationshipDirection direction, long degree);
 }

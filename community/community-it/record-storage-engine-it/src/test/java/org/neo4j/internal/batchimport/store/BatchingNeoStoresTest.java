@@ -50,7 +50,7 @@ import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -411,7 +411,7 @@ class BatchingNeoStoresTest {
                 CONTEXT_FACTORY,
                 PageCacheTracer.NULL,
                 openOptions)) {
-            countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            countsStore.start(NULL_CONTEXT, INSTANCE);
             countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
@@ -434,9 +434,7 @@ class BatchingNeoStoresTest {
 
                         @Override
                         public void initialize(
-                                CountsAccessor.Updater updater,
-                                CursorContext cursorContext,
-                                MemoryTracker memoryTracker) {
+                                CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                             updater.incrementNodeCount(1, 10);
                             updater.incrementNodeCount(2, 20);
                             updater.incrementRelationshipCount(ANY_LABEL, 1, 2, 30);
@@ -449,7 +447,6 @@ class BatchingNeoStoresTest {
                         }
                     },
                     CONTEXT_FACTORY,
-                    StoreCursors.NULL,
                     INSTANCE);
         }
 

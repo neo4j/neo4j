@@ -50,7 +50,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.counts.CountsBuilder;
@@ -99,7 +99,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -393,8 +392,7 @@ class RecordStorageMigratorIT {
         var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions(fs, pageCache, databaseLayout, contextFactory);
         var noCountsRebuildAssertion = new CountsBuilder() {
             @Override
-            public void initialize(
-                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 throw new IllegalStateException("Rebuild should not be required");
             }
 
@@ -406,7 +404,7 @@ class RecordStorageMigratorIT {
         try (var countsStore =
                 openCountsStore(cacheTracer, contextFactory, migratedStoreOpenOptions, noCountsRebuildAssertion)) {
             // The rebuild would happen here in start and will throw exception (above) if invoked
-            countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            countsStore.start(NULL_CONTEXT, INSTANCE);
 
             // The counts store should now have been updated to be at the txIdAfterMigration
             assertEquals(txIdAfterMigration, countsStore.txId());
@@ -425,7 +423,7 @@ class RecordStorageMigratorIT {
         try (var groupDegreesStore = openGroupDegreesStore(
                 cacheTracer, contextFactory, migratedStoreOpenOptions, noGroupsRebuildAssertion)) {
             // The rebuild would happen here in start and will throw exception (above) if invoked
-            groupDegreesStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            groupDegreesStore.start(NULL_CONTEXT, INSTANCE);
 
             // The group degrees store should now have been updated to be at the txIdAfterMigration
             assertEquals(txIdAfterMigration, groupDegreesStore.txId());
@@ -500,8 +498,7 @@ class RecordStorageMigratorIT {
         var countsStoreNeedsRebuild = new MutableBoolean();
         var countsRebuildAssertion = new CountsBuilder() {
             @Override
-            public void initialize(
-                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 countsStoreNeedsRebuild.setTrue();
             }
 
@@ -512,7 +509,7 @@ class RecordStorageMigratorIT {
         };
         try (var countsStore =
                 openCountsStore(cacheTracer, contextFactory, migratedStoreOpenOptions, countsRebuildAssertion)) {
-            countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            countsStore.start(NULL_CONTEXT, INSTANCE);
         }
         var groupDegreesStoreNeedsRebuild = new MutableBoolean();
         var groupsRebuildAssertion = new DegreesRebuilder() {
@@ -528,7 +525,7 @@ class RecordStorageMigratorIT {
         };
         try (var groupDegreesStore =
                 openGroupDegreesStore(cacheTracer, contextFactory, migratedStoreOpenOptions, groupsRebuildAssertion)) {
-            groupDegreesStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            groupDegreesStore.start(NULL_CONTEXT, INSTANCE);
         }
 
         // THEN
@@ -672,8 +669,7 @@ class RecordStorageMigratorIT {
             long fromTxId, long toTxId, ImmutableSet<OpenOption> openOptions) throws IOException {
         try (var store = openCountsStore(PageCacheTracer.NULL, NULL_CONTEXT_FACTORY, openOptions, new CountsBuilder() {
             @Override
-            public void initialize(
-                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 // Do nothing
             }
 
@@ -682,9 +678,9 @@ class RecordStorageMigratorIT {
                 return fromTxId;
             }
         })) {
-            store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            store.start(NULL_CONTEXT, INSTANCE);
             for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
-                store.apply(txId, true, NULL_CONTEXT).close();
+                store.updater(txId, true, NULL_CONTEXT).close();
             }
             store.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
@@ -701,9 +697,9 @@ class RecordStorageMigratorIT {
                         return fromTxId;
                     }
                 })) {
-            store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            store.start(NULL_CONTEXT, INSTANCE);
             for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
-                store.apply(txId, true, NULL_CONTEXT).close();
+                store.updater(txId, true, NULL_CONTEXT).close();
             }
             store.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }

@@ -48,7 +48,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
-import org.neo4j.counts.CountsStorage;
 import org.neo4j.counts.InvalidCountException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -67,9 +66,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
@@ -77,7 +76,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
  * A "counts store" backed by {@link GBPTree}. It solves the problem of incrementing/decrementing counts for arbitrary keys, while at the same time
  * being persistent and minimizing contention from concurrent writers.
  *
- * Updates that are {@link #updater(long, boolean, CursorContext) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
+ * Updates that are {@link #updaterImpl(long, boolean, CursorContext) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
  * Multiple transactions can update counts concurrently where counts are CAS:ed to minimize contention.
  * Updates between {@link #checkpoint(FileFlushEvent, CursorContext) checkpoints} are kept in an internal {@link CountsChanges} map and only written
  * as part of a checkpoint. Checkpoint has a very short critical section where it switches over to a new {@link CountsChanges} instance
@@ -87,7 +86,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
  * Data flow wise updates are accumulated and written in each checkpoint. Reads are served from the tree or directly from {@link CountsChanges}
  * if there's changes to that particular key.
  */
-public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
+public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyCheckable {
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
     private static final String OPEN_COUNT_STORE_TAG = "openCountStore";
@@ -236,9 +235,7 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
 
     // === Life cycle ===
 
-    @Override
-    public void start(CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker)
-            throws IOException {
+    public void start(CursorContext cursorContext, MemoryTracker memoryTracker) throws IOException {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create
         // it
         if (needsRebuild || rebuilder.lastCommittedTxId() != idSequence.getHighestGapFreeNumber()) {
@@ -261,7 +258,7 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
 
     // === Writes ===
 
-    protected CountUpdater updater(long txId, boolean isLast, CursorContext cursorContext) {
+    protected CountUpdater updaterImpl(long txId, boolean isLast, CursorContext cursorContext) {
         // In order to keep the cache limited then check if we need to flush to the tree
         if (txId % 10 == 0) {
             // Although it's somewhat costly to check map size so only do it every N transaction.
@@ -328,7 +325,6 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
         }
     }
 
-    @Override
     public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         // Do an explicit read-only check here because in this store checkpoint implies also writing
         if (readOnly) {

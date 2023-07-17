@@ -42,7 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -81,7 +81,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -133,7 +132,7 @@ class CountsComputerTest {
             var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
             var cursorContext = contextFactory.create("tracePageCacheAccessOnInitialization");
 
-            countsStore.start(cursorContext, StoreCursors.NULL, INSTANCE);
+            countsStore.start(cursorContext, INSTANCE);
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             softly.assertThat(cursorTracer.pins()).as("Pins").isEqualTo(1);
@@ -155,7 +154,7 @@ class CountsComputerTest {
         rebuildCounts(lastCommittedTransactionId, progressReporter);
 
         try (var store = createCountsStore(matchingBuilder(lastCommittedTransactionId), getDBOpenOptions(db))) {
-            store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            store.start(NULL_CONTEXT, INSTANCE);
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
             store.accept(new AssertEmptyCountStoreVisitor(), NULL_CONTEXT);
         }
@@ -174,7 +173,7 @@ class CountsComputerTest {
         rebuildCounts(lastCommittedTransactionId);
 
         try (var store = createCountsStore(matchingBuilder(lastCommittedTransactionId), getDBOpenOptions(db))) {
-            store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            store.start(NULL_CONTEXT, INSTANCE);
             softly.assertThat(store.txId()).as("Store Transaction id").isEqualTo(lastCommittedTransactionId);
             store.accept(new AssertEmptyCountStoreVisitor(), NULL_CONTEXT);
         }
@@ -614,7 +613,7 @@ class CountsComputerTest {
                     CONTEXT_FACTORY,
                     INSTANCE);
             try (var countsStore = createCountsStore(countsComputer, neoStores.getOpenOptions())) {
-                countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+                countsStore.start(NULL_CONTEXT, INSTANCE);
                 countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -625,8 +624,7 @@ class CountsComputerTest {
     private CountsBuilder matchingBuilder(long lastCommittedTransactionId) {
         return new CountsBuilder() {
             @Override
-            public void initialize(
-                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 throw new UnsupportedOperationException(
                         "Expected a matching transaction ID " + lastCommittedTransactionId);
             }

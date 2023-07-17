@@ -44,9 +44,9 @@ class MultiversionCountsStoreTransactionApplierFactory implements TransactionApp
                     () -> groupDegreesStore.reverseUpdater(transaction.transactionId(), transaction.cursorContext()));
         }
         return new SimpleCountsStoreTransactionApplier(
-                () -> countsStore.apply(
+                () -> countsStore.updater(
                         transaction.transactionId(), transaction.commandBatch().isLast(), transaction.cursorContext()),
-                () -> groupDegreesStore.apply(
+                () -> groupDegreesStore.updater(
                         transaction.transactionId(), transaction.commandBatch().isLast(), transaction.cursorContext()));
     }
 }

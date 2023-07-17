@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.counts;
 
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -28,14 +28,13 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  * Provides counts data for building a counts store from scratch.
  */
 public interface CountsBuilder {
-    void initialize(CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker);
+    void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker);
 
     long lastCommittedTxId();
 
     CountsBuilder EMPTY = new CountsBuilder() {
         @Override
-        public void initialize(
-                CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {}
+        public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {}
 
         @Override
         public long lastCommittedTxId() {

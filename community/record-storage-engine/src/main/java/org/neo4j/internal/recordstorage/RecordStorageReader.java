@@ -29,7 +29,7 @@ import java.util.function.Function;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -63,7 +63,7 @@ public class RecordStorageReader implements StorageReader {
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore relationshipGroupStore;
     private final PropertyStore propertyStore;
-    private final CountsAccessor counts;
+    private final CountsStore counts;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final SchemaCache schemaCache;
 
@@ -72,7 +72,7 @@ public class RecordStorageReader implements StorageReader {
     RecordStorageReader(
             TokenHolders tokenHolders,
             NeoStores neoStores,
-            CountsAccessor counts,
+            CountsStore counts,
             RelationshipGroupDegreesStore groupDegreesStore,
             SchemaCache schemaCache) {
         this.tokenHolders = tokenHolders;

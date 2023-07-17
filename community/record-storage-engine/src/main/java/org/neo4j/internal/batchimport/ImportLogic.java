@@ -44,7 +44,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -579,74 +579,65 @@ public class ImportLogic implements Closeable {
      * Builds the counts store and lookup indexes. Requires that {@link #importNodes()} and {@link #importRelationships()} has run.
      */
     public void buildAuxiliaryStores(long fromNodeId) {
-        try (var cursorContext = contextFactory.create(IMPORT_COUNT_STORE_REBUILD_TAG);
-                var storeCursors = new CachedStoreCursors(neoStore.getNeoStores(), cursorContext)) {
-            neoStore.buildCountsStore(
-                    new CountsBuilder() {
-                        @Override
-                        public void initialize(
-                                CountsAccessor.Updater updater,
-                                CursorContext cursorContext,
-                                MemoryTracker memoryTracker) {
-                            MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-                            var labelTokenStore = neoStore.getNeoStores().getLabelTokenStore();
-                            int highLabelId =
-                                    toIntExact(labelTokenStore.getIdGenerator().getHighId());
-                            var relTypeTokenStore = neoStore.getNeoStores().getRelationshipTypeTokenStore();
-                            int highRelationshipTypeId = toIntExact(
-                                    relTypeTokenStore.getIdGenerator().getHighId());
-                            var nodeStore = neoStore.getNodeStore();
-                            nodeLabelsCache = new NodeLabelsCache(
-                                    numberArrayFactory,
-                                    nodeStore.getIdGenerator().getHighId(),
-                                    highLabelId,
-                                    memoryTracker);
-                            MemoryUsageStatsProvider memoryUsageStats =
-                                    new MemoryUsageStatsProvider(neoStore, nodeLabelsCache);
-                            Function<CursorContext, StoreCursors> storeCursorsFactory =
-                                    context -> new CachedStoreCursors(neoStore.getNeoStores(), context);
-                            executeStage(new NodeCountsAndLabelIndexBuildStage(
-                                    config,
-                                    neoStore,
-                                    nodeLabelsCache,
-                                    neoStore.getNodeStore(),
-                                    highLabelId,
-                                    updater,
-                                    progressMonitor.startSection("Nodes"),
-                                    indexImporterFactory,
-                                    fromNodeId,
-                                    contextFactory,
-                                    pageCacheTracer,
-                                    storeCursorsFactory,
-                                    memoryTracker,
-                                    memoryUsageStats));
-                            // Count label-[type]->label
-                            executeStage(new RelationshipCountsAndTypeIndexBuildStage(
-                                    config,
-                                    neoStore,
-                                    nodeLabelsCache,
-                                    neoStore.getRelationshipStore(),
-                                    highLabelId,
-                                    highRelationshipTypeId,
-                                    updater,
-                                    numberArrayFactory,
-                                    progressMonitor.startSection("Relationships"),
-                                    indexImporterFactory,
-                                    contextFactory,
-                                    pageCacheTracer,
-                                    storeCursorsFactory,
-                                    memoryTracker));
-                        }
+        neoStore.buildCountsStore(
+                new CountsBuilder() {
+                    @Override
+                    public void initialize(
+                            CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+                        var labelTokenStore = neoStore.getNeoStores().getLabelTokenStore();
+                        int highLabelId =
+                                toIntExact(labelTokenStore.getIdGenerator().getHighId());
+                        var relTypeTokenStore = neoStore.getNeoStores().getRelationshipTypeTokenStore();
+                        int highRelationshipTypeId =
+                                toIntExact(relTypeTokenStore.getIdGenerator().getHighId());
+                        var nodeStore = neoStore.getNodeStore();
+                        nodeLabelsCache = new NodeLabelsCache(
+                                numberArrayFactory, nodeStore.getIdGenerator().getHighId(), highLabelId, memoryTracker);
+                        MemoryUsageStatsProvider memoryUsageStats =
+                                new MemoryUsageStatsProvider(neoStore, nodeLabelsCache);
+                        Function<CursorContext, StoreCursors> storeCursorsFactory =
+                                context -> new CachedStoreCursors(neoStore.getNeoStores(), context);
+                        executeStage(new NodeCountsAndLabelIndexBuildStage(
+                                config,
+                                neoStore,
+                                nodeLabelsCache,
+                                neoStore.getNodeStore(),
+                                highLabelId,
+                                updater,
+                                progressMonitor.startSection("Nodes"),
+                                indexImporterFactory,
+                                fromNodeId,
+                                contextFactory,
+                                pageCacheTracer,
+                                storeCursorsFactory,
+                                memoryTracker,
+                                memoryUsageStats));
+                        // Count label-[type]->label
+                        executeStage(new RelationshipCountsAndTypeIndexBuildStage(
+                                config,
+                                neoStore,
+                                nodeLabelsCache,
+                                neoStore.getRelationshipStore(),
+                                highLabelId,
+                                highRelationshipTypeId,
+                                updater,
+                                numberArrayFactory,
+                                progressMonitor.startSection("Relationships"),
+                                indexImporterFactory,
+                                contextFactory,
+                                pageCacheTracer,
+                                storeCursorsFactory,
+                                memoryTracker));
+                    }
 
-                        @Override
-                        public long lastCommittedTxId() {
-                            return neoStore.getLastCommittedTransactionId();
-                        }
-                    },
-                    contextFactory,
-                    storeCursors,
-                    memoryTracker);
-        }
+                    @Override
+                    public long lastCommittedTxId() {
+                        return neoStore.getLastCommittedTransactionId();
+                    }
+                },
+                contextFactory,
+                memoryTracker);
     }
 
     public void success() {

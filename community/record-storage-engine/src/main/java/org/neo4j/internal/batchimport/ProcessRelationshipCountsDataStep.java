@@ -24,7 +24,7 @@ import static java.lang.Math.toIntExact;
 
 import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -46,7 +46,7 @@ public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<Relat
             Configuration config,
             int highLabelId,
             int highRelationshipTypeId,
-            CountsAccessor.Updater countsUpdater,
+            CountsUpdater countsUpdater,
             NumberArrayFactory cacheFactory,
             ProgressReporter progressReporter,
             CursorContextFactory contextFactory,

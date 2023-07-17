@@ -484,7 +484,7 @@ class OnlineIndexUpdatesTest {
         return new LifecycleAdapter() {
             @Override
             public void start() throws IOException {
-                countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+                countsStore.start(NULL_CONTEXT, INSTANCE);
             }
 
             @Override

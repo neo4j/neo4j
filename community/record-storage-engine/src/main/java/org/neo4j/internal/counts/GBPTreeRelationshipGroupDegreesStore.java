@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.RelationshipDirection;
  * {@link RelationshipGroupDegreesStore} backed by the {@link GBPTree}.
  * @see GBPTreeGenericCountsStore
  */
-public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore<DegreeUpdater>
+public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore
         implements RelationshipGroupDegreesStore {
     private static final String NAME = "Relationship group degrees store";
     static final byte TYPE_DEGREE = (byte) 3;
@@ -81,9 +81,9 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     }
 
     @Override
-    public DegreeUpdater apply(long txId, boolean isLast, CursorContext cursorContext) {
-        CountUpdater updater = updater(txId, isLast, cursorContext);
-        return updater != null ? new TreeUpdater(updater) : NO_OP_UPDATER;
+    public DegreeUpdater updater(long txId, boolean isLast, CursorContext cursorContext) {
+        CountUpdater updater = updaterImpl(txId, isLast, cursorContext);
+        return updater != null ? new TreeUpdater(updater) : DegreeUpdater.NO_OP_UPDATER;
     }
 
     @Override
@@ -103,6 +103,11 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     @Override
     public void accept(GroupDegreeVisitor visitor, CursorContext cursorContext) {
         visitAllCounts((key, count) -> visitor.degree(groupIdOf(key), directionOf(key), count), cursorContext);
+    }
+
+    @Override
+    public void start(CursorContext cursorContext, MemoryTracker memoryTracker) throws IOException {
+        super.start(cursorContext, memoryTracker);
     }
 
     private static class TreeUpdater implements DegreeUpdater, AutoCloseable {

@@ -31,7 +31,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
@@ -91,7 +91,7 @@ class ProcessRelationshipCountsDataStepTest {
                 config,
                 highLabelId,
                 highRelationshipTypeId,
-                mock(CountsAccessor.Updater.class),
+                mock(CountsUpdater.class),
                 NumberArrayFactories.OFF_HEAP,
                 ProgressReporter.SILENT,
                 new CursorContextFactory(PageCacheTracer.NULL, EMPTY),

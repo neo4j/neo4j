@@ -20,26 +20,32 @@
 package org.neo4j.internal.counts;
 
 import java.io.IOException;
-import org.neo4j.counts.CountsStorage;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
  * Store for degrees of relationship chains for dense nodes. Relationship group record ID plus relationship direction forms the key for the counts.
  */
-public interface RelationshipGroupDegreesStore extends CountsStorage<DegreeUpdater> {
+public interface RelationshipGroupDegreesStore extends AutoCloseable, ConsistencyCheckable {
 
-    DegreeUpdater NO_OP_UPDATER = new DegreeUpdater() {
-        @Override
-        public void close() {}
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @param cursorContext underlying page cursor context
+     * @return an updater where count deltas are being applied onto.
+     */
+    DegreeUpdater updater(long txId, boolean isLast, CursorContext cursorContext);
 
-        @Override
-        public void increment(long groupId, RelationshipDirection direction, long delta) {}
-    };
-
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @param cursorContext underlying page cursor context
+     * @return an updater where to process count deltas during reverse recovery
+     */
     default DegreeUpdater reverseUpdater(long txId, CursorContext cursorContext) {
-        return NO_OP_UPDATER;
+        return DegreeUpdater.NO_OP_UPDATER;
     }
 
     /**
@@ -51,23 +57,32 @@ public interface RelationshipGroupDegreesStore extends CountsStorage<DegreeUpdat
     long degree(long groupId, RelationshipDirection direction, CursorContext cursorContext);
 
     /**
+     * Puts the counts store in started state, i.e. after potentially recovery has been made. Any changes
+     * before this call is made are considered recovery repairs from a previous non-clean shutdown.
+     * @throws IOException any type of error happening when transitioning to started state.
+     */
+    void start(CursorContext cursorContext, MemoryTracker memoryTracker) throws IOException;
+
+    /**
      * Accepts a visitor observing all entries in this store.
      * @param visitor to receive the entries.
      * @param cursorContext page cache access context.
      */
     void accept(GroupDegreeVisitor visitor, CursorContext cursorContext);
 
+    /**
+     * Checkpoints changes made up until this point so that they are available even after next restart.
+     *
+     * @param flushEvent page file flush event
+     * @param cursorContext page cache access context.
+     * @throws IOException on I/O error.
+     */
+    void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
+
     default DegreeUpdater directApply(CursorContext cursorContext) throws IOException {
-        return apply(TransactionIdStore.BASE_TX_ID, true, cursorContext);
+        return updater(TransactionIdStore.BASE_TX_ID, true, cursorContext);
     }
 
-    interface GroupDegreeVisitor {
-        /**
-         * Receives data about a degree.
-         * @param groupId relationship group ID of the degree.
-         * @param direction direction of the degree.
-         * @param degree the absolute degree for the group and direction.
-         */
-        void degree(long groupId, RelationshipDirection direction, long degree);
-    }
+    @Override
+    void close();
 }

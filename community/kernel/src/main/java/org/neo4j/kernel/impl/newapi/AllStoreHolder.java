@@ -243,7 +243,7 @@ public abstract class AllStoreHolder extends Read {
                     txState.accept(countingVisitor);
                 }
                 if (counts.hasChanges()) {
-                    count += counts.nodeCount(labelId, cursorContext());
+                    count += counts.nodeCount(labelId);
                 }
             } catch (KernelException e) {
                 throw new IllegalArgumentException("Unexpected error: " + e.getMessage());
@@ -369,7 +369,7 @@ public abstract class AllStoreHolder extends Read {
                     txState.accept(countingVisitor);
                 }
                 if (counts.hasChanges()) {
-                    count += counts.relationshipCount(startLabelId, typeId, endLabelId, cursorContext());
+                    count += counts.relationshipCount(startLabelId, typeId, endLabelId);
                 }
             } catch (KernelException e) {
                 throw new IllegalArgumentException("Unexpected error: " + e.getMessage());

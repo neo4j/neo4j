@@ -46,7 +46,7 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.statistics.Counts;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.cache.ByteArray;
@@ -411,7 +411,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                                 new CountsBuilder() {
                                     @Override
                                     public void initialize(
-                                            CountsAccessor.Updater updater,
+                                            CountsUpdater updater,
                                             CursorContext cursorContext,
                                             MemoryTracker memoryTracker) {
                                         throw new UnsupportedOperationException(

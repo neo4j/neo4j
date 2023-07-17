@@ -23,7 +23,7 @@ import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
@@ -49,7 +49,7 @@ public class RelationshipCountsStage extends Stage {
             RelationshipStore relationshipStore,
             int highLabelId,
             int highRelationshipTypeId,
-            CountsAccessor.Updater countsUpdater,
+            CountsUpdater countsUpdater,
             NumberArrayFactory cacheFactory,
             ProgressReporter progressReporter,
             CursorContextFactory contextFactory,

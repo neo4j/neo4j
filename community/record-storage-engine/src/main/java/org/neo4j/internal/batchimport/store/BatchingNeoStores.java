@@ -99,7 +99,6 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 
 /**
@@ -483,10 +482,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     public void buildCountsStore(
-            CountsBuilder builder,
-            CursorContextFactory contextFactory,
-            StoreCursors storeCursors,
-            MemoryTracker memoryTracker) {
+            CountsBuilder builder, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
         try {
             deleteCountsStore();
         } catch (IOException e) {
@@ -503,7 +499,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                         contextFactory,
                         pageCacheTracer);
                 var cursorContext = contextFactory.create("buildCountsStore")) {
-            countsStore.start(cursorContext, storeCursors, memoryTracker);
+            countsStore.start(cursorContext, memoryTracker);
             try (var flushEvent = pageCacheTracer.beginFileFlush()) {
                 countsStore.checkpoint(flushEvent, cursorContext);
             }
@@ -529,7 +525,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                                 openOptions,
                                 false);
                 var cursorContext = contextFactory.create("buildRelationshipDegreesStore")) {
-            groupDegreesStore.start(cursorContext, storeCursors, memoryTracker);
+            groupDegreesStore.start(cursorContext, memoryTracker);
             try (var flushEvent = pageCacheTracer.beginFileFlush()) {
                 groupDegreesStore.checkpoint(flushEvent, cursorContext);
             }

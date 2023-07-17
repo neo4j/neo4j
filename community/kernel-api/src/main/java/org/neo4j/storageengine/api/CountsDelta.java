@@ -25,38 +25,31 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
-import org.neo4j.counts.CountsAccessor;
-import org.neo4j.counts.CountsVisitor;
-import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * An in-memory single-threaded counts holder useful for modifying and reading counts transaction state.
  */
-public class CountsDelta implements CountsAccessor, CountsAccessor.Updater {
+public class CountsDelta {
     private static final long DEFAULT_COUNT = 0;
     protected final LongLongHashMap nodeCounts = new LongLongHashMap();
     protected final MutableMap<RelationshipKey, MutableLong> relationshipCounts = UnifiedMap.newMap();
 
-    @Override
-    public long nodeCount(int labelId, CursorContext cursorContext) {
+    public long nodeCount(int labelId) {
         return nodeCounts.getIfAbsent(labelId, DEFAULT_COUNT);
     }
 
-    @Override
     public void incrementNodeCount(long labelId, long delta) {
         if (delta != 0) {
             nodeCounts.updateValue(labelId, DEFAULT_COUNT, l -> l + delta);
         }
     }
 
-    @Override
-    public long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
+    public long relationshipCount(int startLabelId, int typeId, int endLabelId) {
         RelationshipKey relationshipKey = new RelationshipKey(startLabelId, typeId, endLabelId);
         MutableLong counts = relationshipCounts.get(relationshipKey);
         return counts == null ? 0 : counts.longValue();
     }
 
-    @Override
     public void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta) {
         if (delta != 0) {
             RelationshipKey relationshipKey =
@@ -67,13 +60,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater {
         }
     }
 
-    @Override
-    public void close() {
-        // this is close() of CountsAccessor.Updater - do nothing.
-    }
-
-    @Override
-    public void accept(CountsVisitor visitor, CursorContext cursorContext) {
+    public void accept(Visitor visitor) {
         nodeCounts.forEachKeyValue((id, count) -> visitor.visitNodeCount(toIntExact(id), count));
         relationshipCounts.forEachKeyValue((k, count) ->
                 visitor.visitRelationshipCount(k.startLabelId, k.typeId, k.endLabelId, count.longValue()));
@@ -84,4 +71,10 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater {
     }
 
     public record RelationshipKey(int startLabelId, int typeId, int endLabelId) {}
+
+    public interface Visitor {
+        void visitNodeCount(int labelId, long count);
+
+        void visitRelationshipCount(int startLabelId, int typeId, int endLabelId, long count);
+    }
 }

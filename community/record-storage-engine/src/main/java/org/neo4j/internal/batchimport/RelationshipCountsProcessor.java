@@ -25,7 +25,7 @@ import static org.neo4j.internal.recordstorage.RelationshipCounter.wildcardCount
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -42,7 +42,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     private final LongArray wildcardCounts;
 
     // and grows on demand
-    private final CountsAccessor.Updater countsUpdater;
+    private final CountsUpdater countsUpdater;
     private final long anyLabel;
     private final long anyRelationshipType;
     private final RelationshipCounter counter;
@@ -51,7 +51,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
             NodeLabelsCache nodeLabelCache,
             int highLabelId,
             int highRelationshipTypeId,
-            CountsAccessor.Updater countsUpdater,
+            CountsUpdater countsUpdater,
             NumberArrayFactory cacheFactory,
             MemoryTracker memoryTracker) {
         this.countsUpdater = countsUpdater;

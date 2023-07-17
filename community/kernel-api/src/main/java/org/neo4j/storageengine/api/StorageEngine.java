@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.neo4j.configuration.Config;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
@@ -201,7 +201,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      */
     MetadataProvider metadataProvider();
 
-    CountsAccessor countsAccessor();
+    CountsStore countsAccessor();
 
     /**
      * @return a {@link StoreEntityCounters}, providing access to underlying store entity counters.

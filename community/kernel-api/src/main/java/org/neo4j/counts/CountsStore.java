@@ -19,11 +19,69 @@
  */
 package org.neo4j.counts;
 
+import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
+import org.neo4j.memory.MemoryTracker;
 
-public interface CountsStore extends CountsStorage<CountsAccessor.Updater>, CountsAccessor {
+public interface CountsStore extends AutoCloseable, ConsistencyCheckable {
 
-    default Updater reverseUpdater(long txId, CursorContext cursorContext) {
-        return NO_OP_UPDATER;
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @param cursorContext underlying page cursor context
+     * @return an updater where count deltas are being applied onto.
+     */
+    CountsUpdater updater(long txId, boolean isLast, CursorContext cursorContext);
+
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @param cursorContext underlying page cursor context
+     * @return an updater where to process count deltas during reverse recovery
+     */
+    default CountsUpdater reverseUpdater(long txId, CursorContext cursorContext) {
+        return CountsUpdater.NO_OP_UPDATER;
     }
+
+    /**
+     * @param labelId node label token id to get count for.
+     * @param cursorContext underlying page cursor context
+     * @return the count for the label token id, i.e. number of nodes with that label.
+     */
+    long nodeCount(int labelId, CursorContext cursorContext);
+
+    /**
+     * @param startLabelId node label token id of start node.
+     * @param typeId relationship type token id of relationship.
+     * @param endLabelId node label token id of end node.
+     * @param cursorContext underlying page cursor context
+     * @return the count for the start/end node label and relationship type combination.
+     */
+    long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext);
+
+    /**
+     * Puts the counts store in started state, i.e. after potentially recovery has been made. Any changes
+     * before this call is made are considered recovery repairs from a previous non-clean shutdown.
+     * @throws IOException any type of error happening when transitioning to started state.
+     */
+    void start(CursorContext cursorContext, MemoryTracker memoryTracker) throws IOException;
+
+    /**
+     * Accepts a visitor observing all entries in this store.
+     * @param visitor to receive the entries.
+     * @param cursorContext page cache access context.
+     */
+    void accept(CountsVisitor visitor, CursorContext cursorContext);
+
+    /**
+     * Checkpoints changes made up until this point so that they are available even after next restart.
+     *
+     * @param flushEvent page file flush event
+     * @param cursorContext page cache access context.
+     * @throws IOException on I/O error.
+     */
+    void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
+
+    @Override
+    void close();
 }

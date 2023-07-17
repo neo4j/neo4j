@@ -31,7 +31,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -43,7 +43,7 @@ class RelationshipCountsProcessorTest {
 
     private static final int ANY = -1;
     private final NodeLabelsCache nodeLabelCache = mock(NodeLabelsCache.class);
-    private final CountsAccessor.Updater countsUpdater = mock(CountsAccessor.Updater.class);
+    private final CountsUpdater countsUpdater = mock(CountsUpdater.class);
 
     @Test
     void shouldHandleBigNumberOfLabelsAndRelationshipTypes() {

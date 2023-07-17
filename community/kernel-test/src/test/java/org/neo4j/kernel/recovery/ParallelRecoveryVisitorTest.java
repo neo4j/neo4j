@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.WritableChannel;
@@ -413,7 +413,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public CountsAccessor countsAccessor() {
+        public CountsStore countsAccessor() {
             throw new UnsupportedOperationException();
         }
 

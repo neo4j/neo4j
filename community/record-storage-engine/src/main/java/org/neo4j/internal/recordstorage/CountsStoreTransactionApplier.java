@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
@@ -30,7 +30,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CommandBatchToApply commandsBatch;
-    private CountsAccessor.Updater countsUpdater;
+    private CountsUpdater countsUpdater;
     private DegreeUpdater degreesUpdater;
     private boolean haveUpdates;
     private boolean countsUpdaterClosed;
@@ -76,9 +76,9 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
      * affects the window of time that all counts-updating transactions will need to block during a checkpoint. So instead of opening this updater
      * when the transaction starts to apply then open it when it gets to changing counts, if at all.
      */
-    private CountsAccessor.Updater countsUpdater() {
+    private CountsUpdater countsUpdater() {
         if (countsUpdater == null) {
-            countsUpdater = countsStore.apply(
+            countsUpdater = countsStore.updater(
                     commandsBatch.transactionId(),
                     commandsBatch.commandBatch().isLast(),
                     commandsBatch.cursorContext());
@@ -88,7 +88,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
 
     private DegreeUpdater degreesUpdater() {
         if (degreesUpdater == null) {
-            degreesUpdater = groupDegreesStore.apply(
+            degreesUpdater = groupDegreesStore.updater(
                     commandsBatch.transactionId(),
                     commandsBatch.commandBatch().isLast(),
                     commandsBatch.cursorContext());

@@ -44,7 +44,7 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -53,7 +53,6 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -90,11 +89,11 @@ class GBPTreeCountsStoreTest {
     void failToApplySameTransactionTwice() {
         long txId = BASE_TX_ID + 1;
 
-        try (var updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+        try (var updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, 10);
         }
         assertThatThrownBy(() -> {
-                    try (var updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+                    try (var updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
                         updater.incrementNodeCount(LABEL_ID_1, 10);
                     }
                 })
@@ -108,12 +107,12 @@ class GBPTreeCountsStoreTest {
 
         assertDoesNotThrow(() -> {
             for (int i = 0; i < 100; i++) {
-                try (var updater = countsStore.apply(txId, false, NULL_CONTEXT)) {
+                try (var updater = countsStore.updater(txId, false, NULL_CONTEXT)) {
                     updater.incrementNodeCount(LABEL_ID_1, 10);
                 }
             }
 
-            try (var updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+            try (var updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
                 updater.incrementNodeCount(LABEL_ID_1, 10);
             }
         });
@@ -123,12 +122,12 @@ class GBPTreeCountsStoreTest {
     void shouldUpdateAndReadSomeCounts() throws IOException {
         // given
         long txId = BASE_TX_ID;
-        try (CountsAccessor.Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
+        try (CountsUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, 10);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7);
         }
-        try (CountsAccessor.Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
+        try (CountsUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, 5); // now at 15
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2); // now at 5
         }
@@ -141,7 +140,7 @@ class GBPTreeCountsStoreTest {
         assertEquals(7, countsStore.relationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, NULL_CONTEXT));
 
         // and when
-        try (CountsAccessor.Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
+        try (CountsUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, -7);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, -5);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, -2);
@@ -166,8 +165,7 @@ class GBPTreeCountsStoreTest {
         // when
         TestableCountsBuilder builder = new TestableCountsBuilder(rebuiltAtTransactionId) {
             @Override
-            public void initialize(
-                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 super.initialize(updater, cursorContext, memoryTracker);
                 updater.incrementNodeCount(labelId, 10);
                 updater.incrementRelationshipCount(labelId, relationshipTypeId, labelId2, 14);
@@ -197,7 +195,7 @@ class GBPTreeCountsStoreTest {
     void shouldDumpCountsStore() throws IOException {
         // given
         long txId = BASE_TX_ID + 1;
-        try (CountsAccessor.Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+        try (CountsUpdater updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, 10);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7);
@@ -228,7 +226,7 @@ class GBPTreeCountsStoreTest {
     }
 
     private void incrementNodeCount(long txId, int labelId, int delta) {
-        try (CountsAccessor.Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+        try (CountsUpdater updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(labelId, delta);
         }
     }
@@ -249,7 +247,7 @@ class GBPTreeCountsStoreTest {
 
     private void openCountsStore(CountsBuilder builder) throws IOException {
         instantiateCountsStore(builder, false, NO_MONITOR);
-        countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+        countsStore.start(NULL_CONTEXT, INSTANCE);
     }
 
     private void instantiateCountsStore(
@@ -281,8 +279,7 @@ class GBPTreeCountsStoreTest {
         }
 
         @Override
-        public void initialize(
-                CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        public void initialize(CountsUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
             initializeCalled = true;
         }
 

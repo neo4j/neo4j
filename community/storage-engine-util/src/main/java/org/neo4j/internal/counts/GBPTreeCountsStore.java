@@ -27,8 +27,8 @@ import java.io.PrintStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -44,11 +44,11 @@ import org.neo4j.memory.MemoryTracker;
 /**
  * Counts store build on top of the {@link GBPTree}.
  * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(FileFlushEvent, CursorContext)}.
- * Multiple {@link #apply(long, boolean, CursorContext)} appliers} can run concurrently in a lock-free manner.
+ * Multiple {@link #updater(long, boolean, CursorContext)} appliers} can run concurrently in a lock-free manner.
  * Checkpoint will acquire a write lock, wait for currently active appliers to close while at the same time blocking new appliers to start,
  * but doesn't wait for appliers that haven't even started yet, i.e. it doesn't require a gap-free transaction sequence to be completed.
  */
-public class GBPTreeCountsStore extends GBPTreeGenericCountsStore<CountsAccessor.Updater> implements CountsStore {
+public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements CountsStore {
     private static final String NAME = "Counts store";
 
     private static final byte TYPE_NODE = 1;
@@ -122,14 +122,14 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore<CountsAccessor
     }
 
     @Override
-    public CountsAccessor.Updater apply(long txId, boolean isLast, CursorContext cursorContext) {
-        CountUpdater updater = updater(txId, isLast, cursorContext);
-        return updater != null ? new Incrementer(updater) : NO_OP_UPDATER;
+    public CountsUpdater updater(long txId, boolean isLast, CursorContext cursorContext) {
+        CountUpdater updater = updaterImpl(txId, isLast, cursorContext);
+        return updater != null ? new Incrementer(updater) : CountsUpdater.NO_OP_UPDATER;
     }
 
-    public CountsAccessor.Updater directApply(boolean deltas, CursorContext cursorContext) throws IOException {
+    public CountsUpdater directApply(boolean deltas, CursorContext cursorContext) throws IOException {
         CountUpdater updater = directUpdater(deltas, cursorContext);
-        return updater != null ? new Incrementer(updater) : NO_OP_UPDATER;
+        return updater != null ? new Incrementer(updater) : CountsUpdater.NO_OP_UPDATER;
     }
 
     @Override
@@ -140,6 +140,11 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore<CountsAccessor
     @Override
     public long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
         return read(relationshipKey(startLabelId, typeId, endLabelId), cursorContext);
+    }
+
+    @Override
+    public void start(CursorContext cursorContext, MemoryTracker memoryTracker) throws IOException {
+        super.start(cursorContext, memoryTracker);
     }
 
     @Override
@@ -191,7 +196,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore<CountsAccessor
                 openOptions);
     }
 
-    private static class Incrementer implements CountsAccessor.Updater {
+    private static class Incrementer implements CountsUpdater {
         private final CountUpdater actual;
 
         Incrementer(CountUpdater actual) {

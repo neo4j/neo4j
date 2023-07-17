@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -39,7 +39,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
     private final ProgressReporter progressReporter;
     private final NodeLabelsCache cache;
     private final long fromNodeId;
-    private final CountsAccessor.Updater counts;
+    private final CountsUpdater counts;
     private final int anyLabel;
     private final NodeLabelsCache.Client cacheClient;
 
@@ -48,7 +48,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
             NodeLabelsCache cache,
             int highLabelId,
             long fromNodeId,
-            CountsAccessor.Updater counts,
+            CountsUpdater counts,
             ProgressReporter progressReporter) {
         this.nodeStore = nodeStore;
         this.cache = cache;

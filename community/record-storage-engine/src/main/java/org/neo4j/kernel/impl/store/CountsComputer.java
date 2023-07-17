@@ -24,7 +24,7 @@ import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superv
 
 import java.util.function.Function;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.NodeCountsStage;
 import org.neo4j.internal.batchimport.RelationshipCountsStage;
@@ -122,8 +122,7 @@ public class CountsComputer implements CountsBuilder {
     }
 
     @Override
-    public void initialize(
-            CountsAccessor.Updater countsUpdater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+    public void initialize(CountsUpdater countsUpdater, CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (hasNotEmptyNodesOrRelationshipsStores(cursorContext)) {
             progressMonitor.start(nodes.getHighestPossibleIdInUse(cursorContext)
                     + relationships.getHighestPossibleIdInUse(cursorContext));
@@ -137,7 +136,7 @@ public class CountsComputer implements CountsBuilder {
                 || (relationships.getHighestPossibleIdInUse(cursorContext) != -1);
     }
 
-    private void populateCountStore(CountsAccessor.Updater countsUpdater) {
+    private void populateCountStore(CountsUpdater countsUpdater) {
         try (NodeLabelsCache cache = new NodeLabelsCache(
                 numberArrayFactory, nodes.getIdGenerator().getHighId(), highLabelId, memoryTracker)) {
             Configuration configuration = Configuration.defaultConfiguration();
