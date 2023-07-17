@@ -59,7 +59,6 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.util.UUID
@@ -106,7 +105,7 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
       case (_, Some(path)) =>
         (graphDatabaseFactory(path), DEFAULT_DATABASE_NAME)
       case _ =>
-        (graphDatabaseFactory(Files.createTempDirectory("test").getParent).impermanent(), DEFAULT_DATABASE_NAME)
+        (graphDatabaseFactory(Path.of("root")).impermanent(), DEFAULT_DATABASE_NAME)
     }
 
     val updatedDatabaseFactory = maybeProvider match {
