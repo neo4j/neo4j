@@ -816,7 +816,8 @@ public class Config implements Configuration
         return this.expandCommands;
     }
 
-    private static String executeCommand( String command, Duration timeout )
+    // Public so APOC can use this for its command expansion
+    public static String executeCommand( String command, Duration timeout )
     {
         Process process = null;
         try
