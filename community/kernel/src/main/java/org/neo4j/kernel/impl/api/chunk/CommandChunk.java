@@ -99,4 +99,9 @@ public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMet
     public Iterator<StorageCommand> iterator() {
         return commands.iterator();
     }
+
+    @Override
+    public int commandCount() {
+        return commands.size();
+    }
 }

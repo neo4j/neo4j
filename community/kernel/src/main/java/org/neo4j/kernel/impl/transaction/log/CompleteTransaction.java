@@ -185,6 +185,7 @@ public class CompleteTransaction implements CommandBatch {
         return commands.iterator();
     }
 
+    @Override
     public int commandCount() {
         return commands.size();
     }

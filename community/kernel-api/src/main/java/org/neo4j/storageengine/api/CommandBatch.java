@@ -80,4 +80,9 @@ public interface CommandBatch extends CommandStream, KernelVersionProvider {
      * True if command batch is a rollback batch for one of the transactions.
      */
     boolean isRollback();
+
+    /**
+     * Number of commands in a batch
+     */
+    int commandCount();
 }
