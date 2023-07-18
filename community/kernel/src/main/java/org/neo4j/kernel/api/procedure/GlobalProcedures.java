@@ -32,28 +32,15 @@ public interface GlobalProcedures extends ProcedureView {
 
     void register(CallableUserAggregationFunction function) throws ProcedureException;
 
-    void register(CallableUserFunction function, boolean overrideCurrentImplementation) throws ProcedureException;
-
     void registerBuiltIn(CallableUserFunction function) throws ProcedureException;
 
-    void register(CallableUserAggregationFunction function, boolean overrideCurrentImplementation)
-            throws ProcedureException;
-
-    void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException;
-
     void registerProcedure(Class<?> proc) throws ProcedureException;
-
-    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException;
 
     void registerBuiltInFunctions(Class<?> func) throws ProcedureException;
 
     void registerFunction(Class<?> func) throws ProcedureException;
 
-    void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation) throws ProcedureException;
-
     void registerAggregationFunction(Class<?> func) throws ProcedureException;
-
-    void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws ProcedureException;
 
     void registerType(Class<?> javaClass, Neo4jTypes.AnyType type);
 

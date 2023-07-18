@@ -89,7 +89,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableProcedure proc) throws ProcedureException {
-        register(proc, false);
+        registry.register(proc, false);
     }
 
     /**
@@ -98,7 +98,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableUserFunction function) throws ProcedureException {
-        register(function, false);
+        registry.register(function, false, false);
     }
 
     /**
@@ -107,17 +107,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableUserAggregationFunction function) throws ProcedureException {
-        register(function, false);
-    }
-
-    /**
-     * Register a new function. This method must not be called concurrently with {@link #function(QualifiedName)}.
-     * @param function the function.
-     */
-    @Override
-    public void register(CallableUserFunction function, boolean overrideCurrentImplementation)
-            throws ProcedureException {
-        registry.register(function, overrideCurrentImplementation, false);
+        registry.register(function, false, false);
     }
 
     /**
@@ -130,42 +120,13 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     }
 
     /**
-     * Register a new aggregation function. This method must not be called concurrently with {@link #aggregationFunction(QualifiedName)}.
-     * @param function the function.
-     */
-    @Override
-    public void register(CallableUserAggregationFunction function, boolean overrideCurrentImplementation)
-            throws ProcedureException {
-        registry.register(function, overrideCurrentImplementation, false);
-    }
-
-    /**
-     * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
-     * @param proc the procedure.
-     */
-    @Override
-    public void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException {
-        registry.register(proc, overrideCurrentImplementation);
-    }
-
-    /**
      * Register a new internal procedure defined with annotations on a java class.
      * @param proc the procedure class
      */
     @Override
     public void registerProcedure(Class<?> proc) throws ProcedureException {
-        registerProcedure(proc, false);
-    }
-
-    /**
-     * Register a new internal procedure defined with annotations on a java class.
-     * @param proc the procedure class
-     * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
-     */
-    @Override
-    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException {
         for (CallableProcedure procedure : compiler.compileProcedure(proc, true)) {
-            register(procedure, overrideCurrentImplementation);
+            register(procedure);
         }
     }
 
@@ -177,28 +138,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     public void registerBuiltInFunctions(Class<?> func) throws ProcedureException {
         for (CallableUserFunction function :
                 compiler.withoutNamingRestrictions().compileFunction(func, true)) {
-            register(function, false);
-        }
-    }
-
-    /**
-     * Register a new function defined with annotations on a java class.
-     * @param func the function class
-     */
-    @Override
-    public void registerFunction(Class<?> func) throws ProcedureException {
-        registerFunction(func, false);
-    }
-
-    /**
-     * Register a new aggregation function defined with annotations on a java class.
-     * @param func the function class
-     */
-    @Override
-    public void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation)
-            throws ProcedureException {
-        for (CallableUserAggregationFunction function : compiler.compileAggregationFunction(func)) {
-            register(function, overrideCurrentImplementation);
+            register(function);
         }
     }
 
@@ -208,7 +148,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerAggregationFunction(Class<?> func) throws ProcedureException {
-        registerAggregationFunction(func, false);
+        for (CallableUserAggregationFunction function : compiler.compileAggregationFunction(func)) {
+            register(function);
+        }
     }
 
     /**
@@ -216,9 +158,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws ProcedureException {
+    public void registerFunction(Class<?> func) throws ProcedureException {
         for (CallableUserFunction function : compiler.compileFunction(func, false)) {
-            register(function, overrideCurrentImplementation);
+            register(function);
         }
     }
 

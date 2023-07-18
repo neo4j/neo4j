@@ -63,7 +63,7 @@ class CypherQueryObfuscatorFactory {
     procedures.registerComponent(cls, _ => cls.cast(null), true)
 
   def registerProcedure[T](cls: Class[T]): Unit =
-    procedures.registerProcedure(cls, true)
+    procedures.registerProcedure(cls)
 
   private val procedures = new GlobalProceduresRegistry()
 

@@ -82,41 +82,15 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
-    public void register(CallableUserFunction function, boolean overrideCurrentImplementation)
-            throws ProcedureException {
-        init();
-        globalProcedures.register(function, overrideCurrentImplementation);
-    }
-
-    @Override
     public void registerBuiltIn(CallableUserFunction function) throws ProcedureException {
         init();
         globalProcedures.registerBuiltIn(function);
     }
 
     @Override
-    public void register(CallableUserAggregationFunction function, boolean overrideCurrentImplementation)
-            throws ProcedureException {
-        init();
-        globalProcedures.register(function, overrideCurrentImplementation);
-    }
-
-    @Override
-    public void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException {
-        init();
-        globalProcedures.register(proc, overrideCurrentImplementation);
-    }
-
-    @Override
     public void registerProcedure(Class<?> proc) throws ProcedureException {
         init();
         globalProcedures.registerProcedure(proc);
-    }
-
-    @Override
-    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException {
-        init();
-        globalProcedures.registerProcedure(proc, overrideCurrentImplementation);
     }
 
     @Override
@@ -132,22 +106,9 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
-    public void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation)
-            throws ProcedureException {
-        init();
-        globalProcedures.registerAggregationFunction(func, overrideCurrentImplementation);
-    }
-
-    @Override
     public void registerAggregationFunction(Class<?> func) throws ProcedureException {
         init();
         globalProcedures.registerAggregationFunction(func);
-    }
-
-    @Override
-    public void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws ProcedureException {
-        init();
-        globalProcedures.registerFunction(func, overrideCurrentImplementation);
     }
 
     @Override

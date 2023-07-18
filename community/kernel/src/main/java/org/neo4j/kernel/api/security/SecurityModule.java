@@ -27,7 +27,7 @@ import org.neo4j.logging.InternalLog;
 public abstract class SecurityModule implements SecurityProvider {
     protected static void registerProcedure(GlobalProcedures globalProcedures, InternalLog log, Class procedureClass) {
         try {
-            globalProcedures.registerProcedure(procedureClass, true);
+            globalProcedures.registerProcedure(procedureClass);
         } catch (ProcedureException e) {
             String message = "Failed to register security procedures: " + e.getMessage();
             log.error(message, e);
