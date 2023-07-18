@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import java.util.Arrays;
 import java.util.List;
 
 // Simple structs for mapping JSON to objects, used by the jackson parser which Neo4j happens to depend on anyway
@@ -41,10 +42,11 @@ public class AuraJsonMapper {
         public int TotalParts;
         public String Provider;
 
+        @Override
         public String toString() {
             return String.format(
                     "SignedLinks %s, SignedURI %s, UploadID %s, TotalParts %s, Provider %s",
-                    SignedLinks, SignedURI, UploadID, TotalParts, Provider);
+                    Arrays.toString(SignedLinks), SignedURI, UploadID, TotalParts, Provider);
         }
     }
 
@@ -54,6 +56,7 @@ public class AuraJsonMapper {
         public int PartNumber;
         public String ETag;
 
+        @Override
         public String toString() {
             return String.format("[%d:%s]", PartNumber, ETag);
         }
@@ -66,8 +69,8 @@ public class AuraJsonMapper {
         public String UploadID;
         public String Provider;
 
+        @Override
         public String toString() {
-
             return String.format("UploadID %s, Provider %s Parts: %s", UploadID, Provider, Parts.toString());
         }
     }
@@ -90,7 +93,7 @@ public class AuraJsonMapper {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ErrorBody {
         private static final String DEFAULT_MESSAGE =
-                "an unexpected problem ocurred, please contact customer support for assistance";
+                "an unexpected problem occurred, please contact customer support for assistance";
         private static final String DEFAULT_REASON = "UnknownError";
 
         private final String message;

@@ -47,13 +47,13 @@ public class SignedUploadAWS implements SignedUpload {
     private static final int RETRIES_COUNT = 5;
     private static final long DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS = SECONDS.toMillis(64);
 
-    private String[] signedLinks;
+    private final String[] signedLinks;
     private String uploadID;
 
-    private String boltURI;
-    private int totalParts;
-    private IOCommon.Sleeper sleeper;
-    private ExecutionContext ctx;
+    private final String boltURI;
+    private final int totalParts;
+    private final IOCommon.Sleeper sleeper;
+    private final ExecutionContext ctx;
 
     public SignedUploadAWS(
             String[] signedLinks, String uploadID, int totalParts, ExecutionContext ctx, String boltURI) {

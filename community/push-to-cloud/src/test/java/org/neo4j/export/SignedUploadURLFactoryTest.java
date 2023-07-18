@@ -18,6 +18,7 @@
 package org.neo4j.export;
 
 import static java.io.OutputStream.nullOutputStream;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -48,7 +49,7 @@ public class SignedUploadURLFactoryTest {
 
         SignedUpload expectedAWSSignedUpload =
                 new SignedUploadURLFactory().fromAuraResponse(signedURIbodyResponse, ctx, "sausage");
-        assert expectedAWSSignedUpload.getClass() == SignedUploadAWS.class;
+        assertThat(expectedAWSSignedUpload).isInstanceOf(SignedUploadAWS.class);
     }
 
     @Test
@@ -61,6 +62,6 @@ public class SignedUploadURLFactoryTest {
 
         SignedUpload expectedGCPSignedUpload =
                 new SignedUploadURLFactory().fromAuraResponse(signedURIbodyResponse, ctx, "sausage");
-        assert expectedGCPSignedUpload.getClass() == SignedUploadGCP.class;
+        assertThat(expectedGCPSignedUpload).isInstanceOf(SignedUploadGCP.class);
     }
 }

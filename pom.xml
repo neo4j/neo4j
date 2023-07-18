@@ -862,7 +862,8 @@
                   -Xep:BoxedPrimitiveEquality:WARN -Xep:BanJNDI:WARN -Xep:CanIgnoreReturnValueSuggester:OFF \
                   -Xep:ByteBufferBackingArray:OFF -Xep:LongDoubleConversion:OFF -Xep:NarrowCalculation:OFF \
                   -Xep:JavaUtilDate:OFF -Xep:JavaTimeDefaultTimeZone:OFF -Xep:SameNameButDifferent:OFF \
-                  -Xep:EmptyCatch:OFF -Xep:TypeParameterUnusedInFormals:OFF \
+                  -Xep:EmptyCatch:OFF -Xep:TypeParameterUnusedInFormals:OFF -Xep:ThreadPriorityCheck:OFF \
+                  -Xep:NonApiType:OFF \
                   -XepExcludedPaths:.*/target/generated-sources/.*</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>

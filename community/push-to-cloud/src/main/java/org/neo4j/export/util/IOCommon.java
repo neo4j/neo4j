@@ -31,6 +31,7 @@ public final class IOCommon {
 
     private IOCommon() {}
 
+    @FunctionalInterface
     public interface Sleeper {
         void sleep(long millis) throws InterruptedException;
     }
