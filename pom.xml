@@ -112,7 +112,7 @@
 
     <jamm.version>0.3.3</jamm.version>
     <lucene.version>8.11.2</lucene.version>
-    <bouncycastle.version>1.69</bouncycastle.version>
+    <bouncycastle.version>1.75</bouncycastle.version>
     <jetty.version>9.4.51.v20230217</jetty.version>
     <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
     <scala.version>2.12.13</scala.version>
@@ -1439,12 +1439,12 @@
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk15on</artifactId>
+        <artifactId>bcprov-jdk18on</artifactId>
         <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk15on</artifactId>
+        <artifactId>bcpkix-jdk18on</artifactId>
         <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
