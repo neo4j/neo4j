@@ -63,7 +63,8 @@ class SecurityProcedureQueryTypeTest {
                 ((GraphDatabaseFacade) databaseManagementService.database("system")).getDependencyResolver();
 
         planner = dependencyResolver.resolveDependency(FabricPlanner.class);
-        signatures = SignatureResolver.from(dependencyResolver.resolveDependency(GlobalProcedures.class));
+        signatures = SignatureResolver.from(
+                dependencyResolver.resolveDependency(GlobalProcedures.class).getCurrentView());
     }
 
     @AfterAll

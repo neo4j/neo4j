@@ -21,21 +21,11 @@ package org.neo4j.procedure.impl;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
-import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
-import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -47,14 +37,13 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.util.VisibleForTesting;
-import org.neo4j.values.AnyValue;
 
 /**
  * This is the coordinating service for procedures in the DBMS. It loads procedures from a specified
  * directory at startup, but also allows programmatic registration of them - and then, of course, allows
  * invoking procedures.
  */
-public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures, ProcedureView {
+public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures {
     private ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeCheckers typeCheckers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
@@ -194,98 +183,6 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
 
     public ProcedureView getCurrentView() {
         return currentProcedureView;
-    }
-
-    /**
-     * Lookup registered component providers functions that capable to provide user requested type in scope of procedure invocation context
-     * @param cls the type of registered component
-     * @param safe set to false if desired component can bypass security, true if it respects security
-     * @return registered provider function if registered, null otherwise
-     */
-    @Override
-    public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe) {
-        return currentProcedureView.lookupComponentProvider(cls, safe);
-    }
-
-    @Override
-    public int[] getProcedureIds(String procedureGlobbing) {
-        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
-    }
-
-    @Override
-    public int[] getAdminProcedureIds() {
-        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
-    }
-
-    @Override
-    public int[] getFunctionIds(String functionGlobbing) {
-        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
-    }
-
-    @Override
-    public int[] getAggregatingFunctionIds(String functionGlobbing) {
-        throw new AssertionError("These are only for compatibility, use ProcedureView instead");
-    }
-
-    @Override
-    public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        return currentProcedureView.procedure(name);
-    }
-
-    @Override
-    public UserFunctionHandle function(QualifiedName name) {
-        return currentProcedureView.function(name);
-    }
-
-    @Override
-    public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        return currentProcedureView.aggregationFunction(name);
-    }
-
-    @Override
-    public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-        return currentProcedureView.getIdsOfFunctionsMatching(predicate);
-    }
-
-    @Override
-    public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-        return currentProcedureView.getIdsOfAggregatingFunctionsMatching(predicate);
-    }
-
-    @Override
-    public Set<ProcedureSignature> getAllProcedures() {
-        return currentProcedureView.getAllProcedures();
-    }
-
-    @Override
-    public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-        return currentProcedureView.getIdsOfProceduresMatching(predicate);
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-        return currentProcedureView.getAllNonAggregatingFunctions();
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-        return currentProcedureView.getAllAggregatingFunctions();
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> callProcedure(
-            Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
-        return currentProcedureView.callProcedure(ctx, id, input, resourceMonitor);
-    }
-
-    @Override
-    public AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException {
-        return currentProcedureView.callFunction(ctx, id, input);
-    }
-
-    @Override
-    public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
-        return currentProcedureView.createAggregationFunction(ctx, id);
     }
 
     @Override

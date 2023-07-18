@@ -49,10 +49,11 @@ class TokenHoldersIdLookupTest {
 
     @BeforeAll
     static void setup() throws KernelException {
-        GlobalProcedures procs = new GlobalProceduresRegistry();
-        procs.registerProcedure(TestProcedures.class);
-        procs.registerFunction(TestProcedures.class);
-        procs.registerAggregationFunction(TestProcedures.class);
+        GlobalProcedures reg = new GlobalProceduresRegistry();
+        reg.registerProcedure(TestProcedures.class);
+        reg.registerFunction(TestProcedures.class);
+        reg.registerAggregationFunction(TestProcedures.class);
+        var procs = reg.getCurrentView();
         procName2id = new HashMap<>();
         for (ProcedureSignature signature : procs.getAllProcedures()) {
             QualifiedName name = signature.name();
@@ -70,7 +71,7 @@ class TokenHoldersIdLookupTest {
             UserFunctionHandle function = procs.aggregationFunction(name);
             funcName2id.put(name.toString(), function.id());
         });
-        idLookup = new TokenHoldersIdLookup(mockedTokenHolders(), procs.getCurrentView(), () -> false);
+        idLookup = new TokenHoldersIdLookup(mockedTokenHolders(), procs, () -> false);
     }
 
     private static TokenHolders mockedTokenHolders() {

@@ -431,7 +431,7 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
     val procs = graph.getDependencyResolver.resolveDependency(classOf[GlobalProcedures])
-    procs.function(new QualifiedName(namespace, name))
+    procs.getCurrentView.function(new QualifiedName(namespace, name))
   }
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])

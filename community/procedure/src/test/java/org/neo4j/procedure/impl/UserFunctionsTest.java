@@ -58,9 +58,10 @@ class UserFunctionsTest {
     void shouldGetRegisteredFunction() throws Throwable {
         // When
         procs.register(function);
+        var view = procs.getCurrentView();
 
         // Then
-        assertThat(procs.function(signature.name()).signature()).isEqualTo(signature);
+        assertThat(view.function(signature.name()).signature()).isEqualTo(signature);
     }
 
     @Test
@@ -72,10 +73,11 @@ class UserFunctionsTest {
                 functionSignature("org", "myproc2").out(Neo4jTypes.NTAny).build()));
         procs.register(function(
                 functionSignature("org", "myproc3").out(Neo4jTypes.NTAny).build()));
+        var view = procs.getCurrentView();
 
         // Then
         List<UserFunctionSignature> signatures =
-                Iterables.asList(procs.getAllNonAggregatingFunctions().collect(Collectors.toSet()));
+                Iterables.asList(view.getAllNonAggregatingFunctions().collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(
                         functionSignature("org", "myproc1")
@@ -89,7 +91,7 @@ class UserFunctionsTest {
                                 .build());
 
         // And
-        signatures = Iterables.asList(procs.getAllAggregatingFunctions().collect(Collectors.toSet()));
+        signatures = Iterables.asList(view.getAllAggregatingFunctions().collect(Collectors.toSet()));
         assertThat(signatures).isEmpty();
     }
 
@@ -102,10 +104,11 @@ class UserFunctionsTest {
                 functionSignature("org", "myfunc2").out(Neo4jTypes.NTAny).build()));
         procs.register(aggregationFunction(
                 functionSignature("org", "myaggrfunc1").out(Neo4jTypes.NTAny).build()));
+        var view = procs.getCurrentView();
 
         // Then
         List<UserFunctionSignature> signatures =
-                Iterables.asList(procs.getAllNonAggregatingFunctions().collect(Collectors.toSet()));
+                Iterables.asList(view.getAllNonAggregatingFunctions().collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(
                         functionSignature("org", "myfunc1")
@@ -116,7 +119,7 @@ class UserFunctionsTest {
                                 .build());
 
         // And
-        signatures = Iterables.asList(procs.getAllAggregatingFunctions().collect(Collectors.toSet()));
+        signatures = Iterables.asList(view.getAllAggregatingFunctions().collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(functionSignature("org", "myaggrfunc1")
                         .out(Neo4jTypes.NTAny)
@@ -127,10 +130,11 @@ class UserFunctionsTest {
     void shouldCallRegisteredFunction() throws Throwable {
         // Given
         procs.register(function);
-        int functionId = procs.function(signature.name()).id();
+        var view = procs.getCurrentView();
+        int functionId = view.function(signature.name()).id();
 
         // When
-        Object result = procs.callFunction(prepareContext(), functionId, new AnyValue[] {numberValue(1337)});
+        Object result = view.callFunction(prepareContext(), functionId, new AnyValue[] {numberValue(1337)});
 
         // Then
         assertThat(result).isEqualTo(Values.of(1337));
@@ -138,10 +142,11 @@ class UserFunctionsTest {
 
     @Test
     void shouldNotAllowCallingNonExistingFunction() {
-        UserFunctionHandle functionHandle = procs.function(signature.name());
+        var view = procs.getCurrentView();
+        UserFunctionHandle functionHandle = view.function(signature.name());
         ProcedureException exception = assertThrows(
                 ProcedureException.class,
-                () -> procs.callFunction(
+                () -> view.callFunction(
                         prepareContext(),
                         functionHandle != null ? functionHandle.id() : -1,
                         new AnyValue[] {numberValue(1337)}));
@@ -162,7 +167,7 @@ class UserFunctionsTest {
     @Test
     void shouldSignalNonExistingFunction() {
         // When
-        assertThat(procs.function(signature.name())).isNull();
+        assertThat(procs.getCurrentView().function(signature.name())).isNull();
     }
 
     @Test
@@ -174,12 +179,13 @@ class UserFunctionsTest {
                 return Values.stringValue(ctx.thread().getName());
             }
         });
+        var view = procs.getCurrentView();
 
         Context ctx = prepareContext();
-        int functionId = procs.function(signature.name()).id();
+        int functionId = view.function(signature.name()).id();
 
         // When
-        Object result = procs.callFunction(ctx, functionId, new AnyValue[0]);
+        Object result = view.callFunction(ctx, functionId, new AnyValue[0]);
 
         // Then
         assertThat(result).isEqualTo(Values.stringValue(Thread.currentThread().getName()));

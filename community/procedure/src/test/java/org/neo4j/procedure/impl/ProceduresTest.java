@@ -63,7 +63,8 @@ class ProceduresTest {
         procs.register(procedure);
 
         // Then
-        assertThat(procs.procedure(signature.name()).signature()).isEqualTo(signature);
+        assertThat(procs.getCurrentView().procedure(signature.name()).signature())
+                .isEqualTo(signature);
     }
 
     @Test
@@ -75,9 +76,10 @@ class ProceduresTest {
                 procedureSignature("org", "myproc2").out("age", NTInteger).build()));
         procs.register(procedure(
                 procedureSignature("org", "myproc3").out("age", NTInteger).build()));
+        var view = procs.getCurrentView();
 
         // Then
-        List<ProcedureSignature> signatures = Iterables.asList(procs.getAllProcedures());
+        List<ProcedureSignature> signatures = Iterables.asList(view.getAllProcedures());
         assertThat(signatures)
                 .contains(
                         procedureSignature("org", "myproc1")
@@ -95,10 +97,11 @@ class ProceduresTest {
     void shouldCallRegisteredProcedure() throws Throwable {
         // Given
         procs.register(procedure);
-        ProcedureHandle procHandle = procs.procedure(signature.name());
+        var view = procs.getCurrentView();
+        ProcedureHandle procHandle = view.procedure(signature.name());
 
         // When
-        RawIterator<AnyValue[], ProcedureException> result = procs.callProcedure(
+        RawIterator<AnyValue[], ProcedureException> result = view.callProcedure(
                 buildContext(dependencyResolver, valueMapper).context(),
                 procHandle.id(),
                 new AnyValue[] {longValue(1337)},
@@ -110,7 +113,8 @@ class ProceduresTest {
 
     @Test
     void shouldNotAllowCallingNonExistingProcedure() {
-        ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.procedure(signature.name()));
+        ProcedureException exception = assertThrows(
+                ProcedureException.class, () -> procs.getCurrentView().procedure(signature.name()));
         assertThat(exception.getMessage())
                 .isEqualTo(
                         "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the "
@@ -155,7 +159,8 @@ class ProceduresTest {
 
     @Test
     void shouldSignalNonExistingProcedure() {
-        ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.procedure(signature.name()));
+        ProcedureException exception = assertThrows(
+                ProcedureException.class, () -> procs.getCurrentView().procedure(signature.name()));
         assertThat(exception.getMessage())
                 .isEqualTo(
                         "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the "
@@ -174,13 +179,14 @@ class ProceduresTest {
                         new AnyValue[] {stringValue(ctx.thread().getName())});
             }
         });
+        var view = procs.getCurrentView();
 
         Context ctx = prepareContext();
-        ProcedureHandle procedureHandle = procs.procedure(signature.name());
+        ProcedureHandle procedureHandle = view.procedure(signature.name());
 
         // When
         RawIterator<AnyValue[], ProcedureException> result =
-                procs.callProcedure(ctx, procedureHandle.id(), new AnyValue[0], EMPTY_RESOURCE_TRACKER);
+                view.callProcedure(ctx, procedureHandle.id(), new AnyValue[0], EMPTY_RESOURCE_TRACKER);
 
         // Then
         assertThat(asList(result))

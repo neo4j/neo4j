@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.util.VisibleForTesting;
 
-public interface GlobalProcedures extends ProcedureView {
+public interface GlobalProcedures {
     void register(CallableProcedure proc) throws ProcedureException;
 
     void register(CallableUserFunction function) throws ProcedureException;

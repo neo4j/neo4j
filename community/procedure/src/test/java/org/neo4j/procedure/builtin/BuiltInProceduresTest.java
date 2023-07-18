@@ -189,14 +189,15 @@ class BuiltInProceduresTest {
 
     @Test
     void lookupComponentProviders() {
-        assertNotNull(procs.lookupComponentProvider(Transaction.class, true));
-        assertNotNull(procs.lookupComponentProvider(Transaction.class, false));
+        var view = procs.getCurrentView();
+        assertNotNull(view.lookupComponentProvider(Transaction.class, true));
+        assertNotNull(view.lookupComponentProvider(Transaction.class, false));
 
-        assertNull(procs.lookupComponentProvider(Statement.class, true));
-        assertNull(procs.lookupComponentProvider(Statement.class, false));
+        assertNull(view.lookupComponentProvider(Statement.class, true));
+        assertNull(view.lookupComponentProvider(Statement.class, false));
 
-        assertNull(procs.lookupComponentProvider(DependencyResolver.class, true));
-        assertNotNull(procs.lookupComponentProvider(DependencyResolver.class, false));
+        assertNull(view.lookupComponentProvider(DependencyResolver.class, true));
+        assertNotNull(view.lookupComponentProvider(DependencyResolver.class, false));
     }
 
     @Test
@@ -613,9 +614,10 @@ class BuiltInProceduresTest {
         when(schemaReadCore.indexGetPopulationProgress(any(IndexDescriptor.class)))
                 .thenReturn(PopulationProgress.DONE);
         AnyValue[] input = Arrays.stream(args).map(ValueUtils::of).toArray(AnyValue[]::new);
-        int procId = procs.procedure(ProcedureSignature.procedureName(name.split("\\.")))
+        var view = procs.getCurrentView();
+        int procId = view.procedure(ProcedureSignature.procedureName(name.split("\\.")))
                 .id();
-        List<AnyValue[]> anyValues = Iterators.asList(procs.callProcedure(ctx, procId, input, EMPTY_RESOURCE_TRACKER));
+        List<AnyValue[]> anyValues = Iterators.asList(view.callProcedure(ctx, procId, input, EMPTY_RESOURCE_TRACKER));
         List<Object[]> toReturn = new ArrayList<>(anyValues.size());
         for (AnyValue[] anyValue : anyValues) {
             Object[] values = new Object[anyValue.length];
