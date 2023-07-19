@@ -30,7 +30,6 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
@@ -146,8 +145,7 @@ abstract class IndexPopulationStressTest {
     }
 
     IndexDirectoryStructure.Factory directory() {
-        return directoriesBySubProvider(
-                directoriesByProvider(testDirectory.homePath()).forProvider(PROVIDER));
+        return directoriesByProvider(testDirectory.homePath());
     }
 
     @BeforeEach

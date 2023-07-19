@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.index;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -42,20 +41,6 @@ class IndexDirectoryStructureTest {
                 baseIndexDirectory
                         .resolve(provider.getKey() + "-" + provider.getVersion())
                         .resolve(String.valueOf(indexId)));
-    }
-
-    @Test
-    void shouldSeeCorrectDirectoriesForSubProvider() {
-        IndexDirectoryStructure parentStructure =
-                directoriesByProvider(databaseStoreDir).forProvider(provider);
-        IndexProviderDescriptor subProvider = new IndexProviderDescriptor("sub", "0.3");
-        assertCorrectDirectories(
-                directoriesBySubProvider(parentStructure).forProvider(subProvider),
-                baseIndexDirectory.resolve(provider.getKey() + "-" + provider.getVersion()),
-                baseIndexDirectory
-                        .resolve(provider.getKey() + "-" + provider.getVersion())
-                        .resolve(String.valueOf(indexId))
-                        .resolve(subProvider.getKey() + "-" + subProvider.getVersion()));
     }
 
     @Test

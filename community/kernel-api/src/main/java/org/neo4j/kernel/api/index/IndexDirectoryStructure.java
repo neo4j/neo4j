@@ -92,30 +92,6 @@ public abstract class IndexDirectoryStructure {
         return descriptor -> directoryStructure;
     }
 
-    /**
-     * Useful when combining multiple IndexProvider into one.
-     *
-     * @param parentStructure {@link IndexDirectoryStructure} of the parent.
-     * @return {@link Factory} creating {@link IndexDirectoryStructure} looking something like:
-     *
-     * <pre>
-     * &lt;db&gt;/schema/index/.../&lt;indexId&gt;/&lt;childProviderKey&gt;-&lt;childProviderVersion&gt;/
-     * </pre>
-     */
-    public static Factory directoriesBySubProvider(IndexDirectoryStructure parentStructure) {
-        return descriptor -> new IndexDirectoryStructure() {
-            @Override
-            public Path rootDirectory() {
-                return parentStructure.rootDirectory();
-            }
-
-            @Override
-            public Path directoryForIndex(long indexId) {
-                return parentStructure.directoryForIndex(indexId).resolve(fileNameFriendly(descriptor));
-            }
-        };
-    }
-
     public static String fileNameFriendly(String name) {
         return name.replaceAll("\\+", "_");
     }
