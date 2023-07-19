@@ -89,7 +89,7 @@ public class ProcedureRegistry {
      *
      * @param function the function.
      */
-    public void register(CallableUserFunction function, boolean overrideCurrentImplementation, boolean builtIn)
+    public void register(CallableUserFunction function, boolean overrideCurrentImplementation)
             throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
@@ -116,8 +116,7 @@ public class ProcedureRegistry {
      *
      * @param function the function.
      */
-    public void register(
-            CallableUserAggregationFunction function, boolean overrideCurrentImplementation, boolean builtIn)
+    public void register(CallableUserAggregationFunction function, boolean overrideCurrentImplementation)
             throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();

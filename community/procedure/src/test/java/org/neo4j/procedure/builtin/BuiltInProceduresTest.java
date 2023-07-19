@@ -99,6 +99,8 @@ import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeAlwaysAllowed;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
+import org.neo4j.procedure.impl.ProcedureConfig;
+import org.neo4j.procedure.impl.temporal.TemporalFunction;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
@@ -556,6 +558,17 @@ class BuiltInProceduresTest {
         assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
         assertThat(status).contains(Status.REQUIRES_UPGRADE.name());
         assertThat(result).contains("Failed: [component_D] Upgrade failed because this is a test");
+    }
+
+    @Test
+    void temporalFunctionsShouldBeBuiltin() throws Exception {
+        GlobalProcedures reg = new GlobalProceduresRegistry();
+        TemporalFunction.registerTemporalFunctions(reg, ProcedureConfig.DEFAULT);
+        var view = reg.getCurrentView();
+        assertThat(view.getAllNonAggregatingFunctions().filter(f -> !f.isBuiltIn()))
+                .isEmpty();
+        assertThat(view.getAllAggregatingFunctions().filter(f -> !f.isBuiltIn()))
+                .isEmpty();
     }
 
     private static Object[] record(Object... fields) {

@@ -82,21 +82,9 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
-    public void registerBuiltIn(CallableUserFunction function) throws ProcedureException {
-        init();
-        globalProcedures.registerBuiltIn(function);
-    }
-
-    @Override
     public void registerProcedure(Class<?> proc) throws ProcedureException {
         init();
         globalProcedures.registerProcedure(proc);
-    }
-
-    @Override
-    public void registerBuiltInFunctions(Class<?> func) throws ProcedureException {
-        init();
-        globalProcedures.registerBuiltInFunctions(func);
     }
 
     @Override

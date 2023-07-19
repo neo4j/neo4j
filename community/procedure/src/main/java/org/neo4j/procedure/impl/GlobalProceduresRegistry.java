@@ -87,7 +87,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableUserFunction function) throws ProcedureException {
-        registry.register(function, false, false);
+        registry.register(function, false);
     }
 
     /**
@@ -96,16 +96,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableUserAggregationFunction function) throws ProcedureException {
-        registry.register(function, false, false);
-    }
-
-    /**
-     * Register a new built in function. This method must not be called concurrently with {@link #function(QualifiedName)}.
-     * @param function the function.
-     */
-    @Override
-    public void registerBuiltIn(CallableUserFunction function) throws ProcedureException {
-        registry.register(function, false, true);
+        registry.register(function, false);
     }
 
     /**
@@ -116,18 +107,6 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     public void registerProcedure(Class<?> proc) throws ProcedureException {
         for (CallableProcedure procedure : compiler.compileProcedure(proc, true)) {
             register(procedure);
-        }
-    }
-
-    /**
-     * Register a new function defined with annotations on a java class.
-     * @param func the function class
-     */
-    @Override
-    public void registerBuiltInFunctions(Class<?> func) throws ProcedureException {
-        for (CallableUserFunction function :
-                compiler.withoutNamingRestrictions().compileFunction(func, true)) {
-            register(function);
         }
     }
 

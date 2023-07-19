@@ -71,7 +71,7 @@ public class ProcedureConfig {
         return Pattern.compile(procedure.replaceAll("\\*", ".*"));
     }
 
-    static final ProcedureConfig DEFAULT = new ProcedureConfig();
+    public static final ProcedureConfig DEFAULT = new ProcedureConfig();
 
     public ZoneId getDefaultTemporalTimeZone() {
         return defaultTemporalTimeZone;

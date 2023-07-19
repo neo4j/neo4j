@@ -32,11 +32,7 @@ public interface GlobalProcedures {
 
     void register(CallableUserAggregationFunction function) throws ProcedureException;
 
-    void registerBuiltIn(CallableUserFunction function) throws ProcedureException;
-
     void registerProcedure(Class<?> proc) throws ProcedureException;
-
-    void registerBuiltInFunctions(Class<?> func) throws ProcedureException;
 
     void registerFunction(Class<?> func) throws ProcedureException;
 
