@@ -32,6 +32,7 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
@@ -69,7 +70,8 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.Try
 
-trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
+trait GraphDatabaseTestSupport
+    extends GraphIcing with BeforeAndAfterEach {
   self: CypherFunSuite =>
 
   var graphOps: GraphDatabaseService = _
@@ -77,6 +79,59 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
   var managementService: DatabaseManagementService = _
   var nodes: List[Node] = _
   protected var tx: InternalTransaction = _
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    startGraphDatabase()
+  }
+
+  protected def resetGraphDatabase(): Unit = {
+    if (tx != null) {
+      tx.close()
+      tx = null
+    }
+
+    // Don't clear any "real" databases!
+    if (externalDatabase.nonEmpty)
+      return
+
+    clearDatabase()
+  }
+
+  private def clearDatabase(): Unit = {
+    // always re-creating lookup indexes turned out to be expensive
+    var nodeLookupIsMissing = true
+    var relLookupIsMissing = true
+    withTx { tx =>
+      tx.schema().getConstraints().forEach(_.drop())
+      tx.schema().getIndexes().forEach { i =>
+        if (i.getIndexType != IndexType.LOOKUP) {
+          i.drop()
+        } else if (i.isNodeIndex) {
+          nodeLookupIsMissing = false
+        } else {
+          relLookupIsMissing = false
+        }
+      }
+    }
+    deleteAllEntities()
+    if (nodeLookupIsMissing) {
+      graph.createLookupIndex(isNodeIndex = true)
+    }
+    if (relLookupIsMissing) {
+      graph.createLookupIndex(isNodeIndex = false)
+    }
+  }
+
+  protected def restartDatabase(): Unit = {
+    if (tx != null) {
+      tx.close()
+    }
+    if (managementService != null) {
+      managementService.shutdown()
+    }
+    startGraphDatabase()
+  }
 
   def databaseConfig(): Map[Setting[_], Object] = Map(
     GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15)
@@ -88,11 +143,6 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
    * @return Some(url, databaseName) to load an existing database instead of creating an impermanent test database
    */
   def externalDatabase: Option[(String, String)] = None
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-    startGraphDatabase()
-  }
 
   protected def startGraphDatabase(
     config: Map[Setting[_], Object] = databaseConfig(),
@@ -288,7 +338,7 @@ trait GraphDatabaseTestSupport extends GraphIcing with BeforeAndAfterEach {
 
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
-  def deleteAllEntities() = {
+  def deleteAllEntities(): Unit = {
     withTx(tx => {
       val relationships = tx.getAllRelationships
       try {

@@ -20,6 +20,64 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.config.Setting
+import org.scalatest.BeforeAndAfterAll
+
+import java.nio.file.Path
 
 abstract class ExecutionEngineFunSuite
-    extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport
+    extends CypherFunSuite
+    with GraphDatabaseTestSupport
+    with ExecutionEngineTestSupport
+    with QueryPlanTestSupport
+
+abstract class ExecutionEngineWithoutRestartFunSuite
+    extends ExecutionEngineFunSuite
+    with BeforeAndAfterAll {
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    startGraphDatabase()
+  }
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    if (managementService != null) {
+      managementService.shutdown()
+    }
+  }
+
+  override protected def beforeEach(): Unit = {
+    // not calling super.beforeEach() to avoid restarting the database
+  }
+
+  override protected def afterEach(): Unit = {
+    resetGraphDatabase()
+    eengine.clearQueryCaches()
+  }
+
+  final override protected def restartWithConfig(
+    config: Map[Setting[_], Object],
+    maybeExternalPath: Option[Path]
+  ): Unit = {
+    fail {
+      s"""restartWithConfig is not safe to use with ${classOf[
+          ExecutionEngineWithoutRestartFunSuite
+        ].getSimpleName} tests.
+         |Use restartWithConfigScoped instead, or create a new test suite and override databaseConfig.""".stripMargin
+    }
+  }
+
+  /**
+   * Restarts the database with `config`.
+   * After `runTest` is finished, restarts the database for the next test using the default config.
+   */
+  protected def restartWithConfigScoped(config: Map[Setting[_], Object])(runTest: => Unit): Unit = {
+    try {
+      super.restartWithConfig(config)
+      runTest
+    } finally {
+      super.restartWithConfig()
+    }
+  }
+}
