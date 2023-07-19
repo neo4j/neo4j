@@ -55,7 +55,12 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
             return false;
         }
 
-        return RecordFormatSelector.selectForStoreVersionIdentifier(currentVersion)
+        return isStoreVersionFullySupported(currentVersion, cursorContext);
+    }
+
+    @Override
+    public boolean isStoreVersionFullySupported(StoreVersionIdentifier storeVersion, CursorContext cursorContext) {
+        return RecordFormatSelector.selectForStoreVersionIdentifier(storeVersion)
                 .map(format -> !format.onlyForMigration())
                 .orElse(false);
     }
@@ -116,6 +121,17 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
 
         return new MigrationCheckResult(
                 MigrationOutcome.MIGRATION_POSSIBLE, currentVersion, versionIdentifier(formatToMigrateTo), null);
+    }
+
+    @Override
+    public StoreVersionIdentifier getCurrentVersion(CursorContext cursorContext) throws IOException, IllegalArgumentException, IllegalStateException {
+        RecordFormats formatToMigrateFrom;
+        StoreVersionIdentifier currentVersion;
+        currentVersion = readVersion(cursorContext);
+        formatToMigrateFrom = RecordFormatSelector.selectForStoreVersionIdentifier(currentVersion)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown store version '" + currentVersion.getStoreVersionUserString() + "'"));
+        return versionIdentifier(formatToMigrateFrom);
     }
 
     @Override
