@@ -29,12 +29,15 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.TransactionInfo;
@@ -89,11 +92,30 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
                 transactionInfo.loginContext(),
                 transactionInfo.clientInfo(),
                 transactionInfo.txTimeout().toMillis(),
-                TimeUnit.MILLISECONDS);
+                TimeUnit.MILLISECONDS,
+                status -> {},
+                this::transformTerminalOperationError);
 
         internalTransaction.setMetaData(transactionInfo.txMetadata());
 
         return internalTransaction;
+    }
+
+    private RuntimeException transformTerminalOperationError(Exception e) {
+        // The main purpose of this is mapping of checked exceptions
+        // while preserving status codes
+        if (e instanceof Status.HasStatus se) {
+            if (e instanceof RuntimeException re) {
+                return re;
+            }
+            return new QueryRouterException(se.status(), e.getMessage(), e);
+        }
+
+        // We don't know what operation is being executed,
+        // so it is not possible to come up with a reasonable status code here.
+        // The error is wrapped into a generic one
+        // and a proper status code will be added later.
+        throw new TransactionFailureException("Unable to complete transaction.", e);
     }
 
     private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
