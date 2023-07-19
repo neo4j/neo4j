@@ -37,6 +37,7 @@ import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.QualifiedName
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.schema.IndexProviderDescriptor
@@ -65,6 +66,7 @@ import java.nio.file.Path
 import java.time.Duration
 import java.util.UUID
 
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -79,6 +81,7 @@ trait GraphDatabaseTestSupport
   var managementService: DatabaseManagementService = _
   var nodes: List[Node] = _
   protected var tx: InternalTransaction = _
+  private val registeredCallables: ArrayBuffer[QualifiedName] = ArrayBuffer.empty
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -96,6 +99,7 @@ trait GraphDatabaseTestSupport
       return
 
     clearDatabase()
+    clearProcedures()
   }
 
   private def clearDatabase(): Unit = {
@@ -121,6 +125,12 @@ trait GraphDatabaseTestSupport
     if (relLookupIsMissing) {
       graph.createLookupIndex(isNodeIndex = false)
     }
+  }
+
+  private def clearProcedures(): Unit = {
+    val procs = globalProcedures
+    registeredCallables.foreach(procs.unregister)
+    registeredCallables.clear()
   }
 
   protected def restartDatabase(): Unit = {
@@ -262,6 +272,7 @@ trait GraphDatabaseTestSupport
       graph = null
       managementService = null
       nodes = null
+      registeredCallables.clear()
       onDeletedGraphDatabase()
     }
   }
@@ -439,6 +450,7 @@ trait GraphDatabaseTestSupport
     val builder = ProcedureSignature.procedureSignature(namespace.toArray, name)
     val proc = f(builder)
     kernelAPI.registerProcedure(proc)
+    registeredCallables.addOne(proc.signature().name())
     proc
   }
 
@@ -466,6 +478,7 @@ trait GraphDatabaseTestSupport
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
     val func = f(builder)
     kernelAPI.registerUserFunction(func)
+    registeredCallables.addOne(func.signature().name())
     func
   }
 
@@ -475,18 +488,20 @@ trait GraphDatabaseTestSupport
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
     val func = f(builder)
     kernelAPI.registerUserAggregationFunction(func)
+    registeredCallables.addOne(func.signature().name())
     func
   }
 
-  def getUserFunctionHandle(qualifiedName: String) = {
+  def getUserFunctionHandle(qualifiedName: String): UserFunctionHandle = {
     val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
-    val procs = graph.getDependencyResolver.resolveDependency(classOf[GlobalProcedures])
+    val procs = globalProcedures
     procs.getCurrentView.function(new QualifiedName(namespace, name))
   }
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
+  def globalProcedures: GlobalProcedures = graph.getDependencyResolver.resolveDependency(classOf[GlobalProcedures])
 
   private def kernelAPI: Kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel])
 
