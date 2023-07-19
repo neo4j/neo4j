@@ -128,6 +128,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
+import org.neo4j.cypher.internal.logical.plans.AtMostOneRow
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
@@ -148,6 +149,8 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.DistinctColumns
+import org.neo4j.cypher.internal.logical.plans.Distinctness
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
@@ -3051,23 +3054,20 @@ case class LogicalPlanProducer(
       providedOrders.get(sourcePlan.id).fromLeft
     }
 
-  /**
-   * Plans with an empty argument on the lhs maintains the ordering of the rhs. In that case, this method returns the order coming from the rhs.
-   * Plans with a rhs may invalidate the provided order coming from the lhs. If this is the case, this method returns an empty provided order.
-   * In any other case (i.e. lhs is not a single argument, and rhs is not invalidating lhs ordering), it forwards the provided order from the left.
-   */
   private def providedOrderOfApply(
     left: LogicalPlan,
     right: LogicalPlan,
     executionModel: ExecutionModel
   ): ProvidedOrder = {
-    (left, right) match {
-      case (Argument(args), rhs) if args.isEmpty =>
-        providedOrders.get(rhs.id).fromRight
-      case (_, rhs) if invalidatesProvidedOrderRecursive(rhs, executionModel) =>
-        ProvidedOrder.empty
-      case (lhs, _) => // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-        providedOrders.get(lhs.id).fromLeft
+    // Plans with a rhs may invalidate the provided order coming from the lhs. If this is the case, this method returns an empty provided order.
+    if (invalidatesProvidedOrderRecursive(right, executionModel)) {
+      ProvidedOrder.empty
+    } else {
+      val leftProvidedOrder = providedOrders.get(left.id)
+      val rightProvidedOrder = providedOrders.get(right.id)
+      val leftDistinctness = left.distinctness
+
+      LogicalPlanProducer.providedOrderOfApply(leftProvidedOrder, rightProvidedOrder, leftDistinctness)
     }
   }
 
@@ -3311,6 +3311,47 @@ case class LogicalPlanProducer(
           lp.rhs.isEmpty,
           "We assume that there is no two-child plan leveraging but destroying ordering."
         )
+    }
+  }
+}
+
+object LogicalPlanProducer {
+
+  /**
+   * This method assumes that no invalidation of provided order happens on the RHS.
+   * It combines the leftProvidedOrder and rightProvidedOrder taking into account
+   * leftDistinctness, describing if and how the LHS rows are distinct.
+   */
+  private[steps] def providedOrderOfApply(
+    leftProvidedOrder: ProvidedOrder,
+    rightProvidedOrder: ProvidedOrder,
+    leftDistinctness: Distinctness
+  ): ProvidedOrder = {
+    // To combine two orders, we concatenate their columns, if both orders are non-empty.
+    def combinedOrder: ProvidedOrder = {
+      if (leftProvidedOrder.isEmpty) {
+        rightProvidedOrder.fromRight
+      } else if (rightProvidedOrder.isEmpty) {
+        leftProvidedOrder.fromLeft
+      } else {
+        leftProvidedOrder.followedBy(rightProvidedOrder).fromBoth
+      }
+    }
+
+    def leftProvidedOrderPrefixes: Iterator[Set[Expression]] =
+      for (l <- (1 to leftProvidedOrder.columns.length).iterator) yield {
+        leftProvidedOrder.columns.take(l).map(_.expression).toSet
+      }
+
+    leftDistinctness match {
+      case AtMostOneRow =>
+        combinedOrder
+      case DistinctColumns(columns) if leftProvidedOrderPrefixes.contains(columns) =>
+        // We can use the combined order if a prefix of the leftProvidedOrder is distinct
+        combinedOrder
+      case _ =>
+        // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+        leftProvidedOrder.fromLeft
     }
   }
 }

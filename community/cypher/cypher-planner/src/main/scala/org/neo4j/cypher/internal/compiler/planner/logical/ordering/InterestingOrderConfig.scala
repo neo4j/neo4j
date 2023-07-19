@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
@@ -39,6 +40,13 @@ final case class InterestingOrderConfig(
    */
   def addInterestingOrderCandidate(candidate: InterestingOrderCandidate): InterestingOrderConfig =
     InterestingOrderConfig(orderToReport, orderToSolve.interesting(candidate))
+
+  /**
+   * Adapt the order to solve to the given query graph.
+   * Leave order to report untouched.
+   */
+  def forQueryGraph(queryGraph: QueryGraph): InterestingOrderConfig =
+    InterestingOrderConfig(orderToReport, orderToSolve.forQueryGraph(queryGraph))
 }
 
 object InterestingOrderConfig {

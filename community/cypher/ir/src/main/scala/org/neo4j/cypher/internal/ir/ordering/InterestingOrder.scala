@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
@@ -82,6 +83,24 @@ case class InterestingOrder(
     if (requiredOrderCandidate.isEmpty) this
     else
       InterestingOrder(RequiredOrderCandidate.empty, interestingOrderCandidates :+ requiredOrderCandidate.asInteresting)
+
+  def mapOrderCandidates(f: Seq[ColumnOrder] => Seq[ColumnOrder]): InterestingOrder =
+    copy(
+      requiredOrderCandidate.copy(f(requiredOrderCandidate.order)),
+      interestingOrderCandidates.map(ioc => ioc.copy(f(ioc.order)))
+    )
+
+  /**
+   * For each candidate, keep only the columns that are solvable by the query graph
+   * and which are not arguments (because those should have been solved before)
+   * @return
+   */
+  def forQueryGraph(queryGraph: QueryGraph): InterestingOrder = this.mapOrderCandidates {
+    _.filter { columnOrder =>
+      columnOrder.dependencies.map(_.name)
+        .subsetOf(queryGraph.allCoveredIds -- queryGraph.argumentIds)
+    }
+  }
 
   def withReverseProjectedColumns(
     projectExpressions: Map[String, Expression],

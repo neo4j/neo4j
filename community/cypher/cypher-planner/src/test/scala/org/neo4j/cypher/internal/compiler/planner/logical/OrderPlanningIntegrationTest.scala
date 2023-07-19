@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
+import org.scalatest.Assertion
 
 class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
 
@@ -78,6 +79,15 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   override def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
       .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
+
+  private def shouldNotSort(plan: LogicalPlan): Assertion = {
+    withClue(plan) {
+      plan.folder.treeCount {
+        case _: Sort        => true
+        case _: PartialSort => true
+      } shouldBe 0
+    }
+  }
 
   test("ORDER BY previously unprojected column in WITH") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._1
@@ -984,10 +994,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a
-    plan.folder.treeCount {
-      case _: Sort        => true
-      case _: PartialSort => true
-    } shouldBe 0
+    shouldNotSort(plan)
   }
 
   test(
@@ -1012,10 +1019,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a
-    plan.folder.treeCount {
-      case _: Sort        => true
-      case _: PartialSort => true
-    } shouldBe 0
+    shouldNotSort(plan)
   }
 
   test(
@@ -1043,10 +1047,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     // It should maintain the
     // order from a
-    plan.folder.treeCount {
-      case _: Sort        => true
-      case _: PartialSort => true
-    } shouldBe 0
+    shouldNotSort(plan)
   }
 
   test("Should not expand from lowest cardinality point, if sorting can be avoided, when sorting on 2 variables.") {
@@ -1534,12 +1535,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .plan(query)
       .stripProduceResults
 
-    withClue(plan) {
-      plan.folder.treeCount {
-        case _: Sort        => true
-        case _: PartialSort => true
-      } shouldBe 0
-    }
+    shouldNotSort(plan)
 
     plan should beLike {
       case _: OrderedDistinct => ()
@@ -1559,12 +1555,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .plan(query)
       .stripProduceResults
 
-    withClue(plan) {
-      plan.folder.treeCount {
-        case _: Sort        => true
-        case _: PartialSort => true
-      } shouldBe 0
-    }
+    shouldNotSort(plan)
   }
 
   test("Should sort before widening expands, when sorting after horizon with updates.") {
@@ -1612,12 +1603,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .plan(query)
       .stripProduceResults
 
-    withClue(plan) {
-      plan.folder.treeCount {
-        case _: Sort        => true
-        case _: PartialSort => true
-      } shouldBe 0
-    }
+    shouldNotSort(plan)
   }
 
   test(
@@ -1636,12 +1622,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .plan(query)
       .stripProduceResults
 
-    withClue(plan) {
-      plan.folder.treeCount {
-        case _: Sort        => true
-        case _: PartialSort => true
-      } shouldBe 0
-    }
+    shouldNotSort(plan)
   }
 
   test(
@@ -1666,12 +1647,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .plan(query)
       .stripProduceResults
 
-    withClue(plan) {
-      plan.folder.treeCount {
-        case _: Sort        => true
-        case _: PartialSort => true
-      } shouldBe 0
-    }
+    shouldNotSort(plan)
   }
 
   private val wideningExpandConfig: StatisticsBackedLogicalPlanningConfiguration = {
@@ -2362,5 +2338,180 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .build()
 
     plan shouldEqual expectedPlan
+  }
+
+  test("should not sort if order of two MATCHes combined (RHS token index order) gives the desired order") {
+    val query =
+      """MATCH (a:A)
+        |  WHERE a.p1 IS NOT NULL AND a.p2 IS NOT NULL
+        |WITH DISTINCT a.p1 AS p1, a.p2 AS p2
+        |MATCH (b:B)
+        |RETURN *
+        |  ORDER BY p1, p2, b
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .addNodeIndex("A", Seq("p1", "p2"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    shouldNotSort(plan)
+  }
+
+  test("should not sort if order of two MATCHes combined (RHS range index order) gives the desired order") {
+    val query =
+      """MATCH (a:A)
+        |  WHERE a.p1 IS NOT NULL AND a.p2 IS NOT NULL
+        |WITH DISTINCT a.p1 AS p1, a.p2 AS p2
+        |MATCH (b:B)
+        |  WHERE b.p IS NOT NULL
+        |RETURN *
+        |  ORDER BY p1, p2, b.p
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .addNodeIndex("A", Seq("p1", "p2"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("B", Seq("p"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    shouldNotSort(plan)
+  }
+
+  test("should not sort if order of two nodes combined gives the desired order.") {
+    val query =
+      """MATCH (a:A), (b:B)
+        |RETURN *
+        |  ORDER BY a, b
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 25)
+      .setLabelCardinality("B", 50)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    shouldNotSort(plan)
+  }
+
+  test("should not sort if order of two nodes (reversed) combined gives the desired order.") {
+    assume(
+      queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents,
+      "This test requires the IDP connect components planner"
+    )
+
+    val query =
+      """MATCH (a:A), (b:B)
+        |RETURN *
+        |  ORDER BY b, a
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 25)
+      .setLabelCardinality("B", 50)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    shouldNotSort(plan)
+  }
+
+  test("should not sort if order of two components joined with a nested index join gives the desired order") {
+    val query =
+      """MATCH (a:A), (b:B)
+        |  WHERE b.p = a.p
+        |RETURN *
+        |  ORDER BY a, b.p
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .addNodeIndex("B", Seq("p"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    shouldNotSort(plan)
+  }
+
+  test("should not sort if order of a MATCH and an OPTIONAL MATCH combined gives the desired order") {
+    val query =
+      """MATCH (a:A)
+        |OPTIONAL MATCH (b:B)
+        |  WHERE b.p IS NOT NULL
+        |RETURN *
+        |  ORDER BY a, b.p
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .addNodeIndex("B", Seq("p"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    println(plan)
+
+    shouldNotSort(plan)
+  }
+
+  test("should push sort of prefix of sort columns into a component") {
+    assume(
+      queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents,
+      "This test requires the IDP connect components planner"
+    )
+
+    val query =
+      """MATCH (a), (b)
+        |RETURN *
+        |  ORDER BY a, b
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(
+      cfg.subPlanBuilder()
+        .partialSort(Seq("a ASC"), Seq("b ASC")) // And just complete with a PartialSort
+        .cartesianProduct()
+        .|.allNodeScan("b")
+        .sort("a ASC") // Should already sort here before CartesianProduct
+        .allNodeScan("a")
+        .build()
+    )
   }
 }

@@ -59,16 +59,18 @@ case class SingleComponentPlanner(
     kit: QueryPlannerKit,
     interestingOrderConfig: InterestingOrderConfig
   ): BestPlans = {
+    val componentInterestingOrderConfig = interestingOrderConfig.forQueryGraph(qg)
     val bestLeafPlansPerAvailableSymbol =
-      leafPlanFinder(context.plannerState.config, qg, interestingOrderConfig, context)
+      leafPlanFinder(context.plannerState.config, qg, componentInterestingOrderConfig, context)
 
     val qppInnerPlans = new PrecomputedQPPInnerPlans(qg, context)
 
     val bestPlans =
       if (qg.nodeConnections.nonEmpty) {
-        val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
+        val orderRequirement = extraRequirementForInterestingOrder(context, componentInterestingOrderConfig)
         val generators = solverConfig.solvers(qppInnerPlans).map(_(qg))
-        val generator = IDPQueryGraphSolver.composeSolverSteps(qg, interestingOrderConfig, kit, context, generators)
+        val generator =
+          IDPQueryGraphSolver.composeSolverSteps(qg, componentInterestingOrderConfig, kit, context, generators)
 
         val solver = new IDPSolver[NodeConnection, LogicalPlan, LogicalPlanningContext](
           generator = generator,
@@ -81,7 +83,8 @@ case class SingleComponentPlanner(
         )
 
         monitor.initTableFor(qg)
-        val seed = initTable(qg, kit, bestLeafPlansPerAvailableSymbol, qppInnerPlans, context, interestingOrderConfig)
+        val seed =
+          initTable(qg, kit, bestLeafPlansPerAvailableSymbol, qppInnerPlans, context, componentInterestingOrderConfig)
         monitor.startIDPIterationFor(qg)
         val result = solver(seed, qg.nodeConnections.toSeq, context)
         monitor.endIDPIterationFor(qg, result.bestResult)

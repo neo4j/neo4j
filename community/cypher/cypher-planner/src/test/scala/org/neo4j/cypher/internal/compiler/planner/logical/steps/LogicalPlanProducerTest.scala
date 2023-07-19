@@ -52,7 +52,10 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.AtMostOneRow
+import org.neo4j.cypher.internal.logical.plans.DistinctColumns
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NotDistinct
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
@@ -63,10 +66,12 @@ import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
+import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.immutable.ListSet
 
-class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
+class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp
+    with TableDrivenPropertyChecks {
 
   test("should rename provided order of property columns in projection if property projected") {
     new given().withLogicalPlanningContext { (_, context) =>
@@ -1269,6 +1274,45 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         previouslyBoundRelationshipGroups = Set.empty,
         reverseGroupVariableProjections = false
       ) should have message "The provided inner plan doesn't conform with the quantified path pattern being planned"
+    }
+  }
+
+  test("providedOrderOfApply: is correct") {
+    val po_empty = ProvidedOrder.empty
+    val po_a = ProvidedOrder.asc(varFor("a"))
+    val po_b = ProvidedOrder.asc(varFor("b"))
+    val po_c = ProvidedOrder.asc(varFor("c"))
+    val po_ab = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))
+    val po_abc = ProvidedOrder.asc(varFor("a")).asc(varFor("b")).asc(varFor("c"))
+    val d_a = DistinctColumns(varFor("a"))
+    val d_ab = DistinctColumns(varFor("a"), varFor("b"))
+
+    val providedOrderOfApplyTest = Table(
+      ("leftProvidedOrder", "rightProvidedOrder", "leftDistinctness", "expectedProvidedOrder"),
+      // NotDistinct
+      (po_empty, po_empty, NotDistinct, po_empty),
+      (po_a, po_empty, NotDistinct, po_a.fromLeft),
+      (po_empty, po_a, NotDistinct, po_empty),
+      (po_a, po_b, NotDistinct, po_a.fromLeft),
+      // AtMostOneRow
+      (po_empty, po_empty, AtMostOneRow, po_empty),
+      (po_a, po_empty, AtMostOneRow, po_a.fromLeft),
+      (po_empty, po_a, AtMostOneRow, po_a.fromRight),
+      (po_a, po_b, AtMostOneRow, po_ab.fromBoth),
+      // Distinct columns
+      (po_a, po_b, d_a, po_ab.fromBoth),
+      (po_ab, po_c, d_a, po_abc.fromBoth),
+      (po_a, po_b, d_ab, po_a.fromLeft),
+      (po_ab, po_c, d_ab, po_abc.fromBoth)
+    )
+
+    forAll(providedOrderOfApplyTest) {
+      case (leftProvidedOrder, rightProvidedOrder, leftDistinctness, expectedProvidedOrder) =>
+        LogicalPlanProducer.providedOrderOfApply(
+          leftProvidedOrder,
+          rightProvidedOrder,
+          leftDistinctness
+        ) should equal(expectedProvidedOrder)
     }
   }
 }

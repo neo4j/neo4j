@@ -64,10 +64,16 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     singleComponentPlanner: SingleComponentPlannerTrait
   ): BestPlans = {
 
-    // kit.select plans predicates and shortest path patterns. If nothing is left in this area, we can skip IDP.
+    // kit.select plans predicates and shortest path patterns. If nothing is left in this area, and no ORDER BY, we can skip IDP.
     val allSolved = components.flatMap(_.queryGraph.selections.predicates)
     val notYetSolved = queryGraph.selections.predicates -- allSolved
-    if (notYetSolved.isEmpty && queryGraph.optionalMatches.isEmpty && queryGraph.shortestRelationshipPatterns.isEmpty) {
+    val canUseHeuristic =
+      notYetSolved.isEmpty &&
+        queryGraph.optionalMatches.isEmpty &&
+        queryGraph.shortestRelationshipPatterns.isEmpty &&
+        interestingOrderConfig.orderToSolve.isEmpty
+
+    if (canUseHeuristic) {
       if (components.size == 1) {
         // If there is only 1 component and no optional matches there is nothing we need to do.
         components.head.plan

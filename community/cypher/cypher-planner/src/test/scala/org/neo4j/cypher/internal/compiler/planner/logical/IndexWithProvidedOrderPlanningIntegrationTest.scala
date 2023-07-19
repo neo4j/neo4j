@@ -144,6 +144,36 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(
+      s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH that introduces variable used in subsequent WHERE"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setLabelCardinality("Awesome", 10)
+        .addNodeIndex("Awesome", Seq("prop"), 1.0, 0.1, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner.plan(
+        s"""
+           |WITH $$param AS x
+           |MATCH (n:Awesome)
+           |WHERE n.prop > x
+           |RETURN n.prop AS prop
+           |ORDER BY n.prop $cypherToken""".stripMargin
+      ).stripProduceResults
+
+      plan should equal(
+        planner.subPlanBuilder()
+          .projection(Seq("n.prop AS prop"), discard = Set("x", "n"))
+          .apply()
+          .|.nodeIndexOperator("n:Awesome(prop > x)", indexOrder = plannedOrder, argumentIds = Set("x"))
+          .projection("$param AS x")
+          .argument()
+          .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order") {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
@@ -1244,7 +1274,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "b:B(prop > ???)",
                 paramExpr = Some(cachedNodePropFromStore("a", "prop")),
                 labelId = 1,
-                argumentIds = Set("a")
+                argumentIds = Set("a"),
+                indexOrder = plannedOrder
               )
             ),
             Set.empty,
