@@ -99,6 +99,26 @@ enum FileOperation {
                 fs.deleteFile(file);
             }
         }
+    },
+    DELETE_INCLUDING_DIRS {
+        @Override
+        public void perform(
+                FileSystemAbstraction fs,
+                String fileName,
+                Path directory,
+                boolean skipNonExistentFromFile,
+                Path unusedFile,
+                ExistingTargetStrategy unused)
+                throws IOException {
+            Path file = fromFile(fs, directory, fileName, skipNonExistentFromFile);
+            if (file != null) {
+                if (fs.isDirectory(file)) {
+                    fs.deleteRecursively(file);
+                } else {
+                    fs.deleteFile(file);
+                }
+            }
+        }
     };
 
     public abstract void perform(

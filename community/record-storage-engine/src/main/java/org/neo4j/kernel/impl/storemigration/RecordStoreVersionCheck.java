@@ -124,7 +124,8 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
     }
 
     @Override
-    public StoreVersionIdentifier getCurrentVersion(CursorContext cursorContext) throws IOException, IllegalArgumentException, IllegalStateException {
+    public StoreVersionIdentifier getCurrentVersion(CursorContext cursorContext)
+            throws IOException, IllegalArgumentException, IllegalStateException {
         RecordFormats formatToMigrateFrom;
         StoreVersionIdentifier currentVersion;
         currentVersion = readVersion(cursorContext);

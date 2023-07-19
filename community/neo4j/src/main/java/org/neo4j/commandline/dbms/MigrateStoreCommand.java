@@ -42,6 +42,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -212,6 +213,13 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                                     currentStorageEngineFactory, fs, databaseLayout, pageCache, contextFactory);
                         }
 
+                        StorageEngineFactory targetStorageEngineFactory = formatForDb == null
+                                ? currentStorageEngineFactory
+                                : StorageEngineFactory.selectStorageEngine(Config.newBuilder()
+                                        .fromConfig(config)
+                                        .set(GraphDatabaseSettings.db_format, formatForDb)
+                                        .build());
+
                         var indexProviderMap = getIndexProviderMap(
                                 fs,
                                 databaseLayout,
@@ -236,6 +244,7 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                                 jobScheduler,
                                 databaseLayout,
                                 currentStorageEngineFactory,
+                                targetStorageEngineFactory,
                                 indexProviderMap,
                                 memoryTracker,
                                 Suppliers.lazySingleton(() -> loadLogTail(

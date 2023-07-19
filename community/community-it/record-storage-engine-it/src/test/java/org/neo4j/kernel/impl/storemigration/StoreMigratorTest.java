@@ -559,6 +559,7 @@ class StoreMigratorTest {
                 jobScheduler,
                 databaseLayout,
                 storageEngineFactory,
+                storageEngineFactory,
                 indexProviderMap,
                 INSTANCE,
                 supplier);

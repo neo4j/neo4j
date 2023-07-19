@@ -46,8 +46,7 @@ import org.neo4j.token.TokenHolders;
 
 public class SchemaMigrator {
 
-    private SchemaMigrator() {
-    }
+    private SchemaMigrator() {}
 
     public static void migrateSchemaRules(
             StorageEngineFactory fromStorage,

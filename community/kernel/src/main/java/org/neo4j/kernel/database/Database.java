@@ -799,6 +799,7 @@ public class Database extends AbstractDatabase {
                 scheduler,
                 databaseLayout,
                 storageEngineFactory,
+                storageEngineFactory,
                 indexProviderMap,
                 memoryTracker,
                 logTailSupplier);

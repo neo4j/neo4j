@@ -32,7 +32,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.StoreVersionCheck.MigrationOutcome.MIGRATION_POSSIBLE;
+import static org.neo4j.storageengine.api.MigrationStoreVersionCheck.MigrationOutcome.MIGRATION_POSSIBLE;
 import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 
 import java.io.IOException;

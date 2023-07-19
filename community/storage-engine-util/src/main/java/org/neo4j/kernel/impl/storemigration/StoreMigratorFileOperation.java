@@ -55,6 +55,18 @@ final class StoreMigratorFileOperation {
         }
     }
 
+    static void fileOperation(
+            FileOperation operation,
+            FileSystemAbstraction fs,
+            DatabaseLayout fromLayout,
+            DatabaseLayout toLayout,
+            Path[] files,
+            boolean allowSkipNonExistentFiles,
+            ExistingTargetStrategy existingTargetStrategy)
+            throws IOException {
+        perform(operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, files);
+    }
+
     private static void perform(
             FileOperation operation,
             FileSystemAbstraction fs,

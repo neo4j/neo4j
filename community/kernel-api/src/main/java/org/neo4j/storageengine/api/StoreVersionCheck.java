@@ -26,7 +26,8 @@ public interface StoreVersionCheck extends MigrationStoreVersionCheck {
     /**
      * Gets the current version or throws on any failure to get the version.
      */
-    StoreVersionIdentifier getCurrentVersion(CursorContext cursorContext) throws IOException, IllegalArgumentException, IllegalStateException;
+    StoreVersionIdentifier getCurrentVersion(CursorContext cursorContext)
+            throws IOException, IllegalArgumentException, IllegalStateException;
 
     boolean isCurrentStoreVersionFullySupported(CursorContext cursorContext);
 
