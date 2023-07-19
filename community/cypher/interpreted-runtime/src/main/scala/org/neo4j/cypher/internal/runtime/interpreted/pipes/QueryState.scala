@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.utils.InCache
@@ -180,7 +181,8 @@ class QueryState(
   def withNewTransaction(): QueryState = {
     if (query.getTransactionType != KernelTransaction.Type.IMPLICIT) {
       throw new TransactionFailureException(
-        "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, " + "but tried to execute in an explicit transaction."
+        "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, " + "but tried to execute in an explicit transaction.",
+        Status.Transaction.TransactionStartFailed
       )
     }
     val newQuery = query.contextWithNewTransaction()

@@ -28,7 +28,7 @@ public class TransactionStatusFailureException extends TransactionFailureExcepti
     private final Status status;
 
     public TransactionStatusFailureException(Status status, String message, Exception exception) {
-        super(message, exception);
+        super(message, exception, status);
         this.status = status;
     }
 

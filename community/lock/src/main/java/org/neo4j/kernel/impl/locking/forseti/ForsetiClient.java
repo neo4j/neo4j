@@ -43,6 +43,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
@@ -787,7 +788,9 @@ public class ForsetiClient implements LockManager.Client {
                 if (e instanceof DeadlockDetectedException || e instanceof LockClientStoppedException) {
                     throw (RuntimeException) e;
                 }
-                throw new TransactionFailureException("Failed to upgrade shared lock to exclusive: " + sharedLock, e);
+                var status =
+                        (e instanceof Status.HasStatus) ? ((Status.HasStatus) e).status() : Status.Database.Unknown;
+                throw new TransactionFailureException("Failed to upgrade shared lock to exclusive: " + sharedLock, e, status);
             } finally {
                 if (waitEvent != null) {
                     waitEvent.close();
