@@ -104,8 +104,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NFA
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransitions
-import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransitions
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -994,21 +994,18 @@ object ReadFinder {
     semanticTable: SemanticTable
   ): PlanReads = {
 
-    val (nodeExpr, relExpr) = {
-      nfa.transitions.foldLeft((Set[Expand.VariablePredicate](), Set[Expand.VariablePredicate]())) { (acc, trans) =>
-        trans match {
-          case (_, transition) => transition match {
-              case NodeJuxtapositionTransitions(transitions) =>
-                val newPred = transitions.flatMap(_.predicate.variablePredicates) ++ acc._1
-                (newPred, acc._2)
-              case RelationshipExpansionTransitions(transitions) =>
-                val newNodePred = transitions.flatMap(_.predicate.nodePred) ++ acc._1
-                val newRelPred = transitions.flatMap(_.predicate.relPred) ++ acc._2
-                (newNodePred, newRelPred)
-            }
+    val (nodeExpr, relExpr) =
+      nfa.transitions
+        .values
+        .flatten
+        .foldLeft((Set[Expand.VariablePredicate](), Set[Expand.VariablePredicate]())) { (acc, transition) =>
+          transition.predicate match {
+            case RelationshipExpansionPredicate(_, relPred, _, _, nodePred) =>
+              (acc._1 ++ nodePred, acc._2 ++ relPred)
+            case NodeJuxtapositionPredicate(variablePredicate) =>
+              (acc._1 ++ variablePredicate, acc._2)
+          }
         }
-      }
-    }
 
     val initialRead = PlanReads()
       .withReferencedNodeVariable(sourceNode)

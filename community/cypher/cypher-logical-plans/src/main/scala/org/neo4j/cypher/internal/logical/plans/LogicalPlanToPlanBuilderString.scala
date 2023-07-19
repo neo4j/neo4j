@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
-import org.neo4j.cypher.internal.logical.plans.NFA.Transitions
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
 import org.neo4j.cypher.internal.logical.plans.create.CreateNode
@@ -1186,7 +1185,7 @@ object LogicalPlanToPlanBuilderString {
     val constructor =
       s"new TestNFABuilder(${start.id}, ${wrapInQuotations(start.variable.name)})"
     val transitions = nfa.transitions.toSeq.sortBy(_._1.id).flatMap {
-      case (from, Transitions(transitions)) =>
+      case (from, transitions) =>
         transitions.toSeq.sortBy(_.end.id).map(t => transitionString(from, t.predicate, t.end))
     }
     val finalStates = nfa.finalStates.map(fs => s".addFinalState(${fs.id})")
