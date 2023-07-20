@@ -205,7 +205,8 @@ object NotificationWrapping {
       )
     case HomeDatabaseNotPresent(name) => NotificationCodeWithDescription.homeDatabaseNotPresent(
         InputPosition.NONE.asInputPosition,
-        s"HOME DATABASE: $name"
+        s"HOME DATABASE: $name",
+        name
       )
     case FixedLengthRelationshipInShortestPath(pos) =>
       NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship(

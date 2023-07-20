@@ -132,7 +132,8 @@ public enum NotificationCodeWithDescription {
                     + "Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version."),
     HOME_DATABASE_NOT_PRESENT(
             Status.Database.HomeDatabaseNotFound,
-            "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created. (%s)"),
+            "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created. (%s)",
+            "The database `%s` does not exist. Verify that the spelling is correct or create the database for the command to take effect."),
     DEPRECATED_DATABASE_NAME(
             Status.Statement.FeatureDeprecationWarning,
             "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
@@ -302,8 +303,10 @@ public enum NotificationCodeWithDescription {
         return UNION_RETURN_ORDER.notification(position);
     }
 
-    public static NotificationImplementation homeDatabaseNotPresent(InputPosition position, String param) {
-        return HOME_DATABASE_NOT_PRESENT.notification(position, param);
+    public static NotificationImplementation homeDatabaseNotPresent(
+            InputPosition position, String oldDetail, String missingDb) {
+        return HOME_DATABASE_NOT_PRESENT.notificationWithMessage(
+                position, new String[] {oldDetail}, new String[] {missingDb});
     }
 
     public static NotificationImplementation deprecatedDatabaseName(InputPosition position, String param) {

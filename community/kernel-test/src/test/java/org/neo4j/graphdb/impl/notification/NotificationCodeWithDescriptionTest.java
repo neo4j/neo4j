@@ -537,7 +537,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_HOME_DATABASE_NOT_PRESENT() {
-        NotificationImplementation notification = homeDatabaseNotPresent(InputPosition.empty, "db");
+        NotificationImplementation notification = homeDatabaseNotPresent(InputPosition.empty, "db", "db");
 
         verifyNotification(
                 notification,
@@ -547,7 +547,7 @@ class NotificationCodeWithDescriptionTest {
                 "The home database provided does not currently exist in the DBMS. "
                         + "This command will not take effect until this database is created. (db)",
                 NotificationCategory.UNRECOGNIZED,
-                null);
+                "The database `db` does not exist. Verify that the spelling is correct or create the database for the command to take effect.");
     }
 
     @Test
