@@ -17,24 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage.validation;
+package org.neo4j.storageengine.api.txstate.validation;
 
 import java.util.Arrays;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.store.StoreType;
 
 public class TransactionConflictException extends RuntimeException implements Status.HasStatus {
 
     private static final String GENERIC_MESSAGE = "Transaction conflict validation failed.";
-    private StoreType storeType;
+    private DatabaseFile databaseFile;
     private long observedVersion;
     private long highestClosed;
     private long[] nonVisibleTransactions;
     private final String message;
 
-    public TransactionConflictException(StoreType type, VersionContext versionContext) {
-        this.storeType = type;
+    public TransactionConflictException(DatabaseFile databaseFile, VersionContext versionContext) {
+        this.databaseFile = databaseFile;
         this.observedVersion = versionContext.chainHeadVersion();
         this.highestClosed = versionContext.highestClosed();
         this.nonVisibleTransactions = versionContext.notVisibleTransactionIds();
@@ -51,8 +51,8 @@ public class TransactionConflictException extends RuntimeException implements St
         return message;
     }
 
-    public StoreType getStoreType() {
-        return storeType;
+    public DatabaseFile getDatabaseFile() {
+        return databaseFile;
     }
 
     public long getObservedVersion() {
@@ -74,7 +74,7 @@ public class TransactionConflictException extends RuntimeException implements St
 
     private String createMessage() {
         return "Concurrent modification exception. Page in "
-                + storeType.getDatabaseFile().getName() + " store is modified already by transaction "
+                + databaseFile.getName() + " store is modified already by transaction "
                 + observedVersion + ", while ongoing transaction highest visible is: " + highestClosed
                 + ", with not yet visible transaction ids are: " + Arrays.toString(nonVisibleTransactions) + ".";
     }

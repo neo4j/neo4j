@@ -58,6 +58,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidationResource;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
@@ -269,7 +270,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         var versionContext = cursorContext.getVersionContext();
         if (pageCursor.next(pageId)) {
             if (versionContext.invisibleHeadObserved()) {
-                throw new TransactionConflictException(storeType, versionContext);
+                throw new TransactionConflictException(storeType.getDatabaseFile(), versionContext);
             }
         }
         checkedStorePages.add(pageId);

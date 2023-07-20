@@ -202,6 +202,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
     private final TransactionMemoryPool transactionMemoryPool;
+    private final LogProvider logProvider;
     private CursorContext cursorContext;
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
@@ -312,6 +313,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LogProvider logProvider,
             TransactionValidatorFactory transactionValidatorFactory,
             boolean multiVersioned) {
+        this.logProvider = logProvider;
         this.closed = true;
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
@@ -1464,7 +1466,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         clocks,
                         storageEngine,
                         transactionStore,
-                        transactionValidator)
+                        transactionValidator,
+                        logProvider)
                 : new DefaultCommitter(
                         this,
                         commitmentFactory,

@@ -50,12 +50,15 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
 public final class ChunkCommitter implements TransactionCommitter {
@@ -74,6 +77,7 @@ public final class ChunkCommitter implements TransactionCommitter {
     private final StorageEngine storageEngine;
     private final LogicalTransactionStore transactionStore;
     private final TransactionValidator transactionValidator;
+    private final Log log;
     private long lastTransactionIdWhenStarted;
     private long startTimeMillis;
     private LeaseClient leaseClient;
@@ -89,7 +93,8 @@ public final class ChunkCommitter implements TransactionCommitter {
             TransactionClockContext clocks,
             StorageEngine storageEngine,
             LogicalTransactionStore transactionStore,
-            TransactionValidator transactionValidator) {
+            TransactionValidator transactionValidator,
+            LogProvider logProvider) {
         this.ktx = ktx;
         this.commitmentFactory = commitmentFactory;
         this.kernelVersionProvider = kernelVersionProvider;
@@ -101,6 +106,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         this.storageEngine = storageEngine;
         this.transactionStore = transactionStore;
         this.transactionValidator = transactionValidator;
+        this.log = logProvider.getLog(ChunkCommitter.class);
     }
 
     @Override
@@ -157,6 +163,11 @@ public final class ChunkCommitter implements TransactionCommitter {
                 validationResource.chunkAppended(chunkNumber, transactionPayload.transactionId());
                 transactionWriteEvent.chunkAppended(
                         chunkNumber, ktx.getTransactionSequenceNumber(), transactionPayload.transactionId());
+            } catch (TransactionConflictException tce) {
+                throw tce;
+            } catch (Exception e) {
+                log.debug("Transaction chunk commit failure.", e);
+                throw e;
             }
             previousBatchLogPosition = transactionPayload.lastBatchLogPosition();
             chunkNumber++;
