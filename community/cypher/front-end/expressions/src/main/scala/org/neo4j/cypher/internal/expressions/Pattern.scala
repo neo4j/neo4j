@@ -132,6 +132,10 @@ case class PathPatternPart(element: PatternElement) extends AnonymousPatternPart
   override def position: InputPosition = element.position
   override def isBounded: Boolean = element.isBounded
   override def isFixedLength: Boolean = element.isFixedLength
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    PathPatternPart(children.head.asInstanceOf[PatternElement]).asInstanceOf[this.type]
+  }
 }
 
 case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)

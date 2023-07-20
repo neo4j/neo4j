@@ -3468,6 +3468,55 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual expected
   }
 
+  test("should plan set property with entity expressed through lazy subquery expression") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    val query = "SET (CASE WHEN EXISTS { MATCH () } THEN null END).prop = false"
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .allNodeScan("`anon_0`")
+      .build()
+
+    val npeExpression = NestedPlanExistsExpression(expectedNestedPlan, s"EXISTS { MATCH (`anon_0`) }")(pos)
+    val caseExp = caseExpression(None, None, npeExpression -> nullLiteral)
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .setPropertyExpression(caseExp, "prop", "false")
+        .argument()
+        .build()
+    )
+  }
+
+  test("should plan set properties with entity expressed through lazy subquery expression") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    val query =
+      "SET (CASE WHEN EXISTS { MATCH () } THEN null END).prop = false, (CASE WHEN EXISTS { MATCH () } THEN null END).prop2 = true"
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .allNodeScan("`anon_0`")
+      .build()
+
+    val npeExpression = NestedPlanExistsExpression(expectedNestedPlan, s"EXISTS { MATCH (`anon_0`) }")(pos)
+    val caseExp = caseExpression(None, None, npeExpression -> nullLiteral)
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .setPropertiesExpression(caseExp, ("prop", "false"), ("prop2", "true"))
+        .argument()
+        .build()
+    )
+  }
+
   object VariableSet {
 
     def unapplySeq(s: Set[LogicalVariable]): Option[Seq[String]] = {

@@ -1140,6 +1140,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "setPropertyExpression",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setPropertyExpression(varFor("x"), "prop", "42")
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "setNodeProperty",
     new TestPlanBuilder()
       .produceResults("x", "y")
@@ -1162,6 +1171,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setProperties("x", ("p1", "42"), ("p1", "42"))
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "setPropertiesExpression",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setPropertiesExpression(varFor("x"), ("p1", "42"), ("p1", "42"))
       .argument()
       .build()
   )

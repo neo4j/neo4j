@@ -1991,6 +1991,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
+  def setPropertyExpression(entity: Expression, propertyKey: String, value: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetProperty(source, entity, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
+    ))
+  }
+
   def setNodeProperty(node: String, propertyKey: String, value: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetNodeProperty(source, varFor(node), PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
@@ -2021,6 +2027,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       SetProperties(
         source,
         parseExpression(entity),
+        items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
+      )(_)
+    ))
+  }
+
+  def setPropertiesExpression(entity: Expression, items: (String, String)*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetProperties(
+        source,
+        entity,
         items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
       )(_)
     ))
