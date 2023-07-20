@@ -124,6 +124,37 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
+  test("should handle RHS with R/W dependencies - with Filter on LHS of Apply, Sort on RHS, and Sort on top") {
+    // given
+    val sizeHint = 16
+    val inputVals = (0 until sizeHint).toArray
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort("x ASC")
+      .apply()
+      .|.sort("y ASC")
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.allNodeScan("y", "x")
+      .filter(s"x%2=0")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = inputVals.filter(_ % 2 == 0).flatMap(i => (0 until Math.pow(2, i / 2).toInt).map(_ => i))
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
+  }
+
   test("should handle node creation in nested apply - with Filter on RHS") {
     // given
     val sizeHint = 16
