@@ -42,6 +42,7 @@ import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -66,18 +67,22 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.DbStatistics;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.ZippedStore;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.SchemaRule44;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.StoreVersionIdentifier;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -147,9 +152,19 @@ public abstract class DatabaseMigrationITBase {
         consistencyCheck(homeDir, DEFAULT_DATABASE_NAME, includeExperimental);
     }
 
-    protected RecordFormats expectedFormat(GraphDatabaseService db, String toRecordFormat) {
-        Config config = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(Config.class);
-        return RecordFormatSelector.findLatestFormatInFamily(toRecordFormat, config);
+    protected StoreVersionIdentifier expectedFormat(GraphDatabaseService db, String toRecordFormat) {
+        GraphDatabaseAPI api = (GraphDatabaseAPI) db;
+        DependencyResolver dependencyResolver = api.getDependencyResolver();
+        Config config = dependencyResolver.resolveDependency(Config.class);
+        StorageEngineFactory storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
+        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck(
+                directory.getFileSystem(),
+                api.databaseLayout(),
+                config,
+                dependencyResolver.resolveDependency(PageCache.class),
+                NullLogService.getInstance(),
+                CursorContextFactory.NULL_CONTEXT_FACTORY);
+        return storeVersionCheck.findLatestVersion(toRecordFormat);
     }
 
     protected void doShouldMigrateSystemDatabaseAndOthers(SystemDbMigration systemDbMigration)
@@ -272,13 +287,17 @@ public abstract class DatabaseMigrationITBase {
                 : 0;
     }
 
-    protected void verifyStoreFormat(GraphDatabaseService db, RecordFormats expectedFormat) {
+    protected void verifyStoreFormat(GraphDatabaseService db, StoreVersionIdentifier expectedFormat)
+            throws IOException {
         GraphDatabaseAPI database = (GraphDatabaseAPI) db;
-        MetaDataStore metaDataStore = database.getDependencyResolver().resolveDependency(MetaDataStore.class);
-        var storeId = metaDataStore.getStoreId();
-        assertEquals(expectedFormat.getFormatFamily().name(), storeId.getFormatName());
-        assertEquals(expectedFormat.majorVersion(), storeId.getMajorVersion());
-        assertEquals(expectedFormat.minorVersion(), storeId.getMinorVersion());
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        PageCache pageCache = dependencyResolver.resolveDependency(PageCache.class);
+        StorageEngineFactory storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
+        var storeId = storageEngineFactory.retrieveStoreId(
+                directory.getFileSystem(), database.databaseLayout(), pageCache, CursorContext.NULL_CONTEXT);
+        assertEquals(expectedFormat.getFormatName(), storeId.getFormatName());
+        assertEquals(expectedFormat.getMajorVersion(), storeId.getMajorVersion());
+        assertEquals(expectedFormat.getMinorVersion(), storeId.getMinorVersion());
     }
 
     protected static void verifyTokenIndexes(GraphDatabaseService db) {
