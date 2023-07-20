@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -667,6 +668,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan(
+    "setPropertyExpression",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setPropertyExpression(varFor("x"), "prop", "42")
+      .argument()
+      .build()
+  )
+
   testPlan("setNodeProperty",
     new TestPlanBuilder()
       .produceResults("x", "y")
@@ -687,6 +697,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .setProperties("x", ("p1", "42"), ("p1", "42"))
       .argument()
       .build())
+
+  testPlan(
+    "setPropertiesExpression",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setPropertiesExpression(varFor("x"), ("p1", "42"), ("p1", "42"))
+      .argument()
+      .build()
+  )
 
   testPlan("setNodeProperties",
     new TestPlanBuilder()

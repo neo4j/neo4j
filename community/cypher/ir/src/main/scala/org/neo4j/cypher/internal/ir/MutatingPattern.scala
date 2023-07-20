@@ -52,7 +52,12 @@ sealed trait SetMutatingPattern extends SimpleMutatingPattern with NoSymbols
 case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern
   with HasMappableExpressions[SetPropertyPattern] {
   override def dependencies: Set[String] = (entityExpression.dependencies ++ expression.dependencies).map(_.name)
-  override def mapExpressions(f: Expression => Expression): SetPropertyPattern = copy(expression = f(expression))
+
+  override def mapExpressions(f: Expression => Expression): SetPropertyPattern =
+    copy(
+      entityExpression = f(entityExpression),
+      expression = f(expression)
+    )
 }
 
 case class SetPropertiesPattern(entityExpression: Expression, items: Seq[(PropertyKeyName, Expression)])
@@ -60,11 +65,13 @@ case class SetPropertiesPattern(entityExpression: Expression, items: Seq[(Proper
 
   override def dependencies: Set[String] = items.map(_._2).flatMap(deps).toSet ++ entityExpression.dependencies.map(_.name)
 
-  override def mapExpressions(f: Expression => Expression): SetPropertiesPattern = {
-    copy(items = items.map {
-      case (k, e) => (k, f(e))
-    })
-  }
+  override def mapExpressions(f: Expression => Expression): SetPropertiesPattern =
+    copy(
+      entityExpression = f(entityExpression),
+      items = items.map {
+        case (k, e) => (k, f(e))
+      }
+    )
 }
 
 case class SetRelationshipPropertyPattern(idName: String, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
