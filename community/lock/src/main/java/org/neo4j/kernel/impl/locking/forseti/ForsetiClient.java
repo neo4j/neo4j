@@ -788,9 +788,9 @@ public class ForsetiClient implements LockManager.Client {
                 if (e instanceof DeadlockDetectedException || e instanceof LockClientStoppedException) {
                     throw (RuntimeException) e;
                 }
-                var status =
-                        (e instanceof Status.HasStatus) ? ((Status.HasStatus) e).status() : Status.Database.Unknown;
-                throw new TransactionFailureException("Failed to upgrade shared lock to exclusive: " + sharedLock, e, status);
+                var status = (e instanceof Status.HasStatus se) ? se.status() : Status.Database.Unknown;
+                throw new TransactionFailureException(
+                        "Failed to upgrade shared lock to exclusive: " + sharedLock, e, status);
             } finally {
                 if (waitEvent != null) {
                     waitEvent.close();

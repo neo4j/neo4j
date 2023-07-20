@@ -35,8 +35,11 @@ public class TransactionTerminatedException extends TransactionFailureException 
     }
 
     protected TransactionTerminatedException(Status status, String additionalInfo) {
-        super("The transaction has been terminated. Retry your operation in a new transaction, "
-                + "and you should see a successful result. " + status.code().description() + " " + additionalInfo, status);
+        super(
+                "The transaction has been terminated. Retry your operation in a new transaction, "
+                        + "and you should see a successful result. "
+                        + status.code().description() + " " + additionalInfo,
+                status);
         this.status = status;
     }
 

@@ -39,8 +39,7 @@ public class TransactionFailureException extends RuntimeException implements Sta
     @Deprecated
     public TransactionFailureException(String msg, Throwable cause) {
         super(msg, cause);
-        this.status =
-                (cause instanceof Status.HasStatus) ? ((Status.HasStatus) cause).status() : Status.Database.Unknown;
+        this.status = (cause instanceof Status.HasStatus se) ? se.status() : Status.Database.Unknown;
     }
 
     public TransactionFailureException(String msg, Status status) {

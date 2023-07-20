@@ -30,6 +30,6 @@ public class MaximumTransactionLimitExceededException extends TransactionFailure
                     + max_concurrent_transactions.name();
 
     MaximumTransactionLimitExceededException() {
-        super(MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE, Status.Transaction.MaximumTransactionLimitReached );
+        super(MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE, Status.Transaction.MaximumTransactionLimitReached);
     }
 }
