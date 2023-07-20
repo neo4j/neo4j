@@ -22,9 +22,8 @@ package org.neo4j.bolt.protocol.common.message.request.authentication;
 
 import java.util.Map;
 import java.util.Objects;
-import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 
-public final class LogonMessage implements RequestMessage {
+public final class LogonMessage implements AuthenticationMessage {
     public static final byte SIGNATURE = 0x6A;
 
     private final Map<String, Object> authToken;
@@ -34,10 +33,6 @@ public final class LogonMessage implements RequestMessage {
     }
 
     @Override
-    public boolean safeToProcessInAnyState() {
-        return false;
-    }
-
     public Map<String, Object> authToken() {
         return authToken;
     }

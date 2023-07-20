@@ -32,6 +32,6 @@ public class TransactionCreationException extends TransactionException {
     }
 
     public TransactionCreationException(Throwable cause) {
-        super(cause);
+        super(cause.getMessage(), cause);
     }
 }

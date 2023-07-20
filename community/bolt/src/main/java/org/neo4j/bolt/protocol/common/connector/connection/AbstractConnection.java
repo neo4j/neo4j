@@ -32,11 +32,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.response.NetworkResponseHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
@@ -237,7 +237,7 @@ public abstract class AbstractConnection implements Connection {
         this.features.set(Collections.unmodifiableSet(protocol.features()));
 
         // allocate a new state machine for the desired protocol version to prepare the connection for handling requests
-        var fsm = protocol.createStateMachine(this);
+        var fsm = protocol.stateMachine().createInstance(this, this.logService);
         this.fsm = fsm;
 
         // last notify any registered listeners to let them prepare the state machine if necessary
@@ -418,27 +418,7 @@ public abstract class AbstractConnection implements Connection {
 
     @Override
     public void impersonate(String userToImpersonate) throws AuthenticationException {
-        if (userToImpersonate == null) {
-            // ignore the call entirely if there is no impersonation currently present on this connection to avoid any
-            // unnecessary notifications to the application log as well as connection-level listeners
-            if (this.impersonationContext == null) {
-                return;
-            }
-
-            log.debug("[%s] Disabling impersonation", this.id);
-            this.impersonationContext = null;
-
-            var defaultDatabase = this.defaultDatabase;
-            var impersonatedDefaultDatabase = this.impersonatedDefaultDatabase;
-            this.impersonatedDefaultDatabase = null;
-
-            if (!Objects.equals(impersonatedDefaultDatabase, defaultDatabase)) {
-                this.notifyListeners(listener -> listener.onDefaultDatabaseSelected(defaultDatabase));
-            }
-
-            this.notifyListeners(ConnectionListener::onUserImpersonationCleared);
-            return;
-        }
+        Objects.requireNonNull(userToImpersonate, "userToImpersonate cannot be null");
 
         var loginContext = this.loginContext.get();
         if (loginContext == null) {
@@ -451,6 +431,28 @@ public abstract class AbstractConnection implements Connection {
         this.resolveDefaultDatabase();
 
         this.notifyListeners(listener -> listener.onUserImpersonated(this.impersonationContext));
+    }
+
+    @Override
+    public void clearImpersonation() {
+        // ignore the call entirely if there is no impersonation currently present on this connection to avoid any
+        // unnecessary notifications to the application log as well as connection-level listeners
+        if (this.impersonationContext == null) {
+            return;
+        }
+
+        log.debug("[%s] Disabling impersonation", this.id);
+        this.impersonationContext = null;
+
+        var defaultDatabase = this.defaultDatabase;
+        var impersonatedDefaultDatabase = this.impersonatedDefaultDatabase;
+        this.impersonatedDefaultDatabase = null;
+
+        if (!Objects.equals(impersonatedDefaultDatabase, defaultDatabase)) {
+            this.notifyListeners(listener -> listener.onDefaultDatabaseSelected(defaultDatabase));
+        }
+
+        this.notifyListeners(ConnectionListener::onUserImpersonationCleared);
     }
 
     @Override

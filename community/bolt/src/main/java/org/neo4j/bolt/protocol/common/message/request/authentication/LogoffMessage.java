@@ -33,7 +33,8 @@ public final class LogoffMessage implements RequestMessage {
     }
 
     @Override
-    public boolean safeToProcessInAnyState() {
+    @SuppressWarnings("removal")
+    public boolean isIgnoredWhenFailed() {
         return false;
     }
 

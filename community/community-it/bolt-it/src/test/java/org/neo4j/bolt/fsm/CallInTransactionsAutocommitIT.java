@@ -26,7 +26,6 @@ import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.asser
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.values.storable.Values.longValue;
 
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Authenticated;

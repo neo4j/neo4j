@@ -41,11 +41,6 @@ public abstract sealed class AbstractStreamingMessage implements RequestMessage 
     }
 
     @Override
-    public boolean safeToProcessInAnyState() {
-        return false;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;

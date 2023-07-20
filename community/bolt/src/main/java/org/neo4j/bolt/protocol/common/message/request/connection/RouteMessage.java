@@ -21,10 +21,10 @@ package org.neo4j.bolt.protocol.common.message.request.connection;
 
 import java.util.List;
 import java.util.Objects;
-import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.bolt.protocol.common.message.request.ImpersonationRequestMessage;
 import org.neo4j.values.virtual.MapValue;
 
-public final class RouteMessage implements RequestMessage {
+public final class RouteMessage implements ImpersonationRequestMessage {
 
     public static final byte SIGNATURE = 0x66;
 
@@ -40,6 +40,7 @@ public final class RouteMessage implements RequestMessage {
         this.impersonatedUser = impersonatedUser;
     }
 
+    @Override
     public String impersonatedUser() {
         return impersonatedUser;
     }
@@ -54,11 +55,6 @@ public final class RouteMessage implements RequestMessage {
 
     public String getDatabaseName() {
         return databaseName;
-    }
-
-    @Override
-    public boolean safeToProcessInAnyState() {
-        return true;
     }
 
     @Override

@@ -24,22 +24,20 @@ import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
 import org.neo4j.bolt.protocol.v50.message.decoder.transaction.BeginMessageDecoderV50;
-import org.neo4j.bolt.protocol.v51.fsm.StateMachineV51;
 import org.neo4j.bolt.protocol.v51.message.decoder.authentication.HelloMessageDecoderV51;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 
-public class BoltProtocolV51 extends AbstractBoltProtocol {
+public final class BoltProtocolV51 extends AbstractBoltProtocol {
+    private static final BoltProtocolV51 INSTANCE = new BoltProtocolV51();
     public static final ProtocolVersion VERSION = new ProtocolVersion(5, 1);
 
-    public BoltProtocolV51(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    private BoltProtocolV51() {}
+
+    public static BoltProtocolV51 getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -60,12 +58,5 @@ public class BoltProtocolV51 extends AbstractBoltProtocol {
                 // Transaction
                 .register(BeginMessageDecoderV50.getInstance())
                 .register(RunMessageDecoderV44.getInstance());
-    }
-
-    @Override
-    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
-        connection.memoryTracker().allocateHeap(StateMachineV51.SHALLOW_SIZE);
-
-        return new StateMachineV51(stateMachineSPI, connection, clock);
     }
 }

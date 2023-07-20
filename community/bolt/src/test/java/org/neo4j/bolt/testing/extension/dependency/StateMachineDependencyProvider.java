@@ -24,6 +24,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.time.SystemNanoClock;
 
 public interface StateMachineDependencyProvider {
@@ -73,6 +74,10 @@ public interface StateMachineDependencyProvider {
      * @return a transaction identifier or an empty optional.
      */
     default Optional<Long> lastTransactionId(ExtensionContext ctx) {
+        return Optional.empty();
+    }
+
+    default Optional<TransactionManager> transactionManager() {
         return Optional.empty();
     }
 

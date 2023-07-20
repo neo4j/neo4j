@@ -25,19 +25,20 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.protocol.v41.message.decoder.authentication.HelloMessageDecoderV41;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 
 /**
  * Bolt protocol V4.1 It hosts all the components that are specific to BoltV4.1
  */
 public class BoltProtocolV41 extends BoltProtocolV40 {
+    private static final BoltProtocolV41 INSTANCE = new BoltProtocolV41();
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 1);
 
-    public BoltProtocolV41(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    protected BoltProtocolV41() {}
+
+    public static BoltProtocolV41 getInstance() {
+        return INSTANCE;
     }
 
     @Override

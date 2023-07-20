@@ -25,11 +25,9 @@ import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertTha
 import static org.neo4j.values.storable.BooleanValue.TRUE;
 import static org.neo4j.values.storable.Values.longValue;
 
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Autocommit;
@@ -55,7 +53,7 @@ class AutoCommitStateIT {
                 .containsKey("bookmark")
                 .containsKey("db"));
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 
     /**
@@ -83,7 +81,7 @@ class AutoCommitStateIT {
                 .containsKey("bookmark")
                 .containsKey("db"));
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 
     /**
@@ -99,7 +97,7 @@ class AutoCommitStateIT {
                 .hasSuccessResponse(
                         meta -> assertThat(meta).containsKey("bookmark").containsKey("db"));
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 
     /**
@@ -127,7 +125,7 @@ class AutoCommitStateIT {
                 .containsKey("bookmark")
                 .containsKey("db"));
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 
     /**
@@ -141,14 +139,14 @@ class AutoCommitStateIT {
     @StateMachineTest
     void shouldMoveFromAutoCommitToInterruptedOnInterrupt(
             @Autocommit StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         fsm.connection().interrupt();
 
         fsm.process(messages.run("RETURN 1"), recorder);
 
         assertThat(recorder).hasIgnoredResponse();
 
-        assertThat(fsm).isInState(InterruptedState.class);
+        assertThat(fsm).isInterrupted();
     }
 
     /**
@@ -239,9 +237,7 @@ class AutoCommitStateIT {
 
     private void shouldCloseConnectionInAutoCommitOnMessage(
             StateMachine fsm, ResponseRecorder recorder, RequestMessage message) {
-        assertThat(fsm)
-                .shouldKillConnection(it -> it.process(message, recorder))
-                .isInInvalidState();
+        assertThat(fsm).shouldKillConnection(it -> it.process(message, recorder));
 
         assertThat(recorder).hasFailureResponse(Status.Request.Invalid);
     }

@@ -76,6 +76,12 @@ public final class BeginMessage extends AbstractTransactionInitiatingMessage {
     }
 
     @Override
+    @SuppressWarnings("removal")
+    public boolean isIgnoredWhenFailed() {
+        return false;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;

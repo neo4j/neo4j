@@ -20,30 +20,30 @@
 package org.neo4j.bolt.protocol.v50;
 
 import java.util.Set;
+import org.neo4j.bolt.fsm.StateMachineConfiguration.Factory;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
+import org.neo4j.bolt.protocol.common.fsm.States;
+import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTransition;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogoffMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogonMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.bolt.protocol.v41.message.decoder.authentication.HelloMessageDecoderV41;
-import org.neo4j.bolt.protocol.v44.fsm.StateMachineV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
 import org.neo4j.bolt.protocol.v50.message.decoder.transaction.BeginMessageDecoderV50;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 
-public class BoltProtocolV50 extends AbstractBoltProtocol {
+public final class BoltProtocolV50 extends AbstractBoltProtocol {
+    private static final BoltProtocolV50 INSTANCE = new BoltProtocolV50();
     public static final ProtocolVersion VERSION = new ProtocolVersion(5, 0);
 
-    public BoltProtocolV50(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    public static BoltProtocolV50 getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -54,6 +54,18 @@ public class BoltProtocolV50 extends AbstractBoltProtocol {
     @Override
     public Set<Feature> features() {
         return Set.of(Feature.UTC_DATETIME);
+    }
+
+    @Override
+    protected Factory createStateMachine() {
+        // 5.0 is the only version which does not support dropping a connection back to its
+        // un-authenticated state thus requiring separate configuration within this version in
+        // order to restore 4.x authentication behavior
+        return super.createStateMachine()
+                .withoutState(States.NEGOTIATION)
+                .withInitialState(
+                        States.AUTHENTICATION,
+                        HelloStateTransition.getInstance().andThen(AuthenticationStateTransition.getInstance()));
     }
 
     @Override
@@ -69,12 +81,5 @@ public class BoltProtocolV50 extends AbstractBoltProtocol {
                 .register(HelloMessageDecoderV41.getInstance())
                 .register(BeginMessageDecoderV50.getInstance())
                 .register(RunMessageDecoderV44.getInstance());
-    }
-
-    @Override
-    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
-        connection.memoryTracker().allocateHeap(StateMachineV44.SHALLOW_SIZE);
-
-        return new StateMachineV44(stateMachineSPI, connection, clock);
     }
 }

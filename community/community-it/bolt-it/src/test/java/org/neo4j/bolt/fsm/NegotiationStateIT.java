@@ -20,12 +20,11 @@
 
 package org.neo4j.bolt.fsm;
 
-import static org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl.BOLT_SERVER_VERSION_PREFIX;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.assertions.MapValueAssertions;
@@ -39,15 +38,15 @@ public class NegotiationStateIT {
 
     @StateMachineTest(since = @org.neo4j.bolt.testing.annotation.Version(major = 5, minor = 1))
     void shouldHandleHelloMessageAndMoveToAuthenticatedState(
-            StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
+            StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws StateMachineException {
         // When
         fsm.process(messages.hello(), recorder);
 
         // Then
         assertThat(recorder).hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
-                .containsEntry("server", stringValue(BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion()))
+                .containsEntry("server", stringValue("Neo4j/" + Version.getNeo4jVersion()))
                 .containsEntry("connection_id", stringValue("bolt-test")));
 
-        StateMachineAssertions.assertThat(fsm).isInState(AuthenticationState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.AUTHENTICATION);
     }
 }

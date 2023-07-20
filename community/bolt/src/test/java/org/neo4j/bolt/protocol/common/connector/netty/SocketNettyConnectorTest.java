@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
+import java.time.Clock;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
@@ -81,6 +82,7 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 ConnectorType.BOLT,
                 connectorPortRegister,
                 memoryPool,
+                Clock.systemUTC(),
                 allocator,
                 bossGroup,
                 workerGroup,

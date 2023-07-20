@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import org.neo4j.bolt.tx.error.TransactionCreationException;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.bolt.tx.error.statement.StatementException;
 import org.neo4j.exceptions.KernelException;
@@ -124,17 +125,29 @@ class Invocation {
         try {
             transactionHandle.ensureActiveTransaction();
             transactionNotificationState = TransactionNotificationState.OPEN;
-        } catch (AuthorizationViolationException se) {
-            handleNeo4jError(se.status(), se);
-            return false;
         } catch (Exception e) {
+            Throwable rootCause = e;
+
+            // unpack TransactionCreationException instances as they typically do not occur on their
+            // own but are representations of issues reported further down the stack
+            if (e instanceof TransactionCreationException) {
+                var cause = e.getCause();
+                if (cause != null) {
+                    rootCause = cause;
+                }
+            }
+
+            if (rootCause instanceof AuthorizationViolationException se) {
+                handleNeo4jError(se.status(), se);
+                return false;
+            }
 
             if (!transactionHandle.hasTransactionContext()) {
-                log.error("Failed to start transaction", e);
-                handleNeo4jError(Status.Transaction.TransactionStartFailed, e);
+                log.error("Failed to start transaction", rootCause);
+                handleNeo4jError(Status.Transaction.TransactionStartFailed, rootCause);
             } else {
-                log.error("Failed to resume transaction", e);
-                handleNeo4jError(Status.Transaction.TransactionNotFound, e);
+                log.error("Failed to resume transaction", rootCause);
+                handleNeo4jError(Status.Transaction.TransactionNotFound, rootCause);
             }
 
             return false;

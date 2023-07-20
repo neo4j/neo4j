@@ -25,15 +25,11 @@ import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertTha
 import static org.neo4j.values.storable.BooleanValue.TRUE;
 import static org.neo4j.values.storable.Values.longValue;
 
+import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.response.NoopResponseHandler;
-import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
-import org.neo4j.bolt.protocol.v40.fsm.state.InTransactionState;
-import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Authenticated;
@@ -52,46 +48,47 @@ public class InTransactionStateIT {
     @StateMachineTest
     void shouldTransitionToInTransaction(
             @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         fsm.process(messages.begin(), recorder);
 
         assertThat(recorder).hasSuccessResponse();
 
-        assertThat(fsm).isInState(InTransactionState.class);
+        assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 
     @StateMachineTest
     void shouldReturnToReadyOnCommit(@Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws Throwable {
+            throws StateMachineException {
         fsm.process(messages.commit(), recorder);
 
         assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta).containsKey("bookmark"));
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 
     @StateMachineTest
     void shouldReturnToReadyOnRollback(@Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws Throwable {
+            throws StateMachineException {
         fsm.process(messages.rollback(), recorder);
 
         assertThat(recorder)
                 .hasSuccessResponse(
                         meta -> assertThat(meta).doesNotContainKey("bookmark").doesNotContainKey("db"));
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 
     @StateMachineTest
     void shouldRemainInStateWhenStatementClosesViaDiscard(
-            @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
+            @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
+            throws StateMachineException {
         fsm.process(messages.discard(100L), recorder);
 
         assertThat(recorder)
                 .hasSuccessResponse(
                         meta -> assertThat(meta).doesNotContainKey("bookmark").containsKey("db"));
 
-        assertThat(fsm).isInState(InTransactionState.class);
+        assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 
     @StateMachineTest
@@ -99,7 +96,7 @@ public class InTransactionStateIT {
             @Streaming("UNWIND [1, 2, 3] AS n RETURN n") StateMachine fsm,
             BoltMessages messages,
             ResponseRecorder recorder)
-            throws Throwable {
+            throws StateMachineException {
         fsm.process(messages.discard(2), recorder);
 
         assertThat(recorder)
@@ -115,12 +112,13 @@ public class InTransactionStateIT {
                 .containsKey("db")
                 .doesNotContainKey("has_more"));
 
-        assertThat(fsm).isInState(InTransactionState.class);
+        assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 
     @StateMachineTest
     void shouldRemainInStateWhenStatementClosesViaPull(
-            @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
+            @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
+            throws StateMachineException {
         fsm.process(messages.pull(100), recorder);
 
         assertThat(recorder).hasRecord().hasSuccessResponse(meta -> assertThat(meta)
@@ -129,7 +127,7 @@ public class InTransactionStateIT {
                 .doesNotContainKey("bookmark")
                 .containsKey("db"));
 
-        assertThat(fsm).isInState(InTransactionState.class);
+        assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 
     @StateMachineTest
@@ -137,7 +135,7 @@ public class InTransactionStateIT {
             @Streaming("UNWIND [1, 2, 3] AS n RETURN n") StateMachine fsm,
             BoltMessages messages,
             ResponseRecorder recorder)
-            throws Throwable {
+            throws StateMachineException {
         fsm.process(messages.pull(2), recorder);
 
         assertThat(recorder).hasRecord(longValue(1)).hasRecord(longValue(2)).hasSuccessResponse(meta -> assertThat(meta)
@@ -152,22 +150,22 @@ public class InTransactionStateIT {
                 .doesNotContainKey("bookmark")
                 .containsKey("db"));
 
-        assertThat(fsm).isInState(InTransactionState.class);
+        assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 
     @StateMachineTest
     void shouldSupportMultipleStatements(@Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws Throwable {
+            throws StateMachineException {
         fsm.process(messages.run("MATCH (n) RETURN n LIMIT 1"), recorder);
 
         assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta).doesNotContainKey("bookmark"));
 
-        assertThat(fsm).isInState(InTransactionState.class);
+        assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 
     @StateMachineTest
     void shouldReceiveBookmarkOnCommit(@Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         fsm.process(messages.commit(), recorder);
 
         assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
@@ -179,7 +177,8 @@ public class InTransactionStateIT {
 
     @StateMachineTest
     void shouldNotReceiveBookmarkOnRollback(
-            @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
+            @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
+            throws StateMachineException {
         fsm.process(messages.rollback(), recorder);
 
         // Then
@@ -188,12 +187,16 @@ public class InTransactionStateIT {
 
     @StateMachineTest
     void shouldCloseTransactionEvenIfCommitFails(
-            @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Exception {
-        fsm.process(messages.begin(), NoopResponseHandler.getInstance());
+            @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
+            throws StateMachineException {
+        fsm.process(messages.begin(), recorder);
         fsm.process(messages.run("X"), recorder);
         fsm.process(messages.pull(), recorder);
 
-        assertThat(recorder).hasFailureResponse(Status.Statement.SyntaxError).hasIgnoredResponse();
+        assertThat(recorder)
+                .hasSuccessResponse()
+                .hasFailureResponse(Status.Statement.SyntaxError)
+                .hasIgnoredResponse();
 
         // The tx shall still be open.
         ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
@@ -202,15 +205,12 @@ public class InTransactionStateIT {
         fsm.process(messages.commit(), recorder);
 
         assertThat(recorder).hasIgnoredResponse();
-
-        reset(fsm, messages);
-
-        ConnectionAssertions.assertThat(fsm.connection()).hasNoTransaction();
     }
 
     @StateMachineTest
     void shouldCloseTransactionOnRollbackAfterFailure(
-            @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Exception {
+            @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
+            throws StateMachineException {
         fsm.process(messages.begin(), NoopResponseHandler.getInstance());
         fsm.process(messages.run("X"), recorder);
         fsm.process(messages.pull(), recorder);
@@ -224,26 +224,21 @@ public class InTransactionStateIT {
         fsm.process(messages.rollback(), recorder);
 
         assertThat(recorder).hasIgnoredResponse();
-
-        reset(fsm, messages);
-
-        ConnectionAssertions.assertThat(fsm.connection()).hasNoTransaction();
     }
 
     @StateMachineTest
     void shouldReportTerminationError(@InTransaction StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws Throwable {
+            throws StateMachineException {
         var tx = fsm.connection()
                 .transaction()
                 .orElseThrow(() -> new AssertionError("No transaction active in connection"));
 
         tx.interrupt();
-        fsm.validateTransaction();
 
         fsm.process(messages.run("RETURN 1"), recorder);
 
         assertThat(recorder).hasFailureResponse(Status.Transaction.Terminated);
-        assertThat(fsm).isInState(FailedState.class);
+        assertThat(fsm).hasFailed();
 
         // ensure that the transaction remains associated until the client explicitly resets
         ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
@@ -261,7 +256,7 @@ public class InTransactionStateIT {
         fsm.process(messages.run("RETURN 1"), recorder);
 
         ResponseRecorderAssertions.assertThat(recorder).hasFailureResponse(Status.Transaction.Terminated);
-        assertThat(fsm).isInState(FailedState.class);
+        assertThat(fsm).hasFailed();
 
         // ensure that the transaction remains associated until the client explicitly resets
         ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
@@ -273,18 +268,18 @@ public class InTransactionStateIT {
         fsm.process(messages.run("✨✨✨ INVALID QUERY STRING ✨✨✨"), recorder);
 
         // Then
-        assertThat(fsm).isInState(FailedState.class);
+        assertThat(fsm).hasFailed();
     }
 
     @StateMachineTest
-    void shouldTerminateOnInterrupt(@Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws Throwable {
-        fsm.connection().interrupt();
+    void shouldRespondWithIgnoredWhileInterrupted(
+            @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
+        fsm.interrupt();
 
         fsm.process(messages.pull(), recorder);
         assertThat(recorder).hasIgnoredResponse();
 
-        assertThat(fsm).isInState(InterruptedState.class);
+        assertThat(fsm).isInterrupted();
     }
 
     private void shouldTerminateConnectionOnMessage(StateMachine fsm, RequestMessage message) {
@@ -318,7 +313,7 @@ public class InTransactionStateIT {
     @StateMachineTest
     void shouldAllowUserControlledRollbackOnExplicitTxFailure(
             @Authenticated StateMachine fsm, ResponseRecorder recorder, BoltMessages messages, Connection connection)
-            throws Throwable {
+            throws StateMachineException {
         // Given whenever en explicit transaction has a failure,
         // it is more natural for drivers to see the failure, acknowledge it
         // and send a `RESET`, because that means that all failures in the
@@ -337,21 +332,6 @@ public class InTransactionStateIT {
 
         // This result in an illegal state change, and closes all open statement by default.
         ConnectionAssertions.assertThat(connection).hasTransaction();
-        assertThat(fsm).isInState(FailedState.class);
-
-        // And when I reset that failure, and the tx should be rolled back
-        reset(fsm, messages);
-
-        // and there should be no remaining open statements
-        ConnectionAssertions.assertThat(connection).hasNoTransaction();
-    }
-
-    private static void reset(StateMachine machine, BoltMessages messages) throws BoltConnectionFatality {
-        var recorder = new ResponseRecorder();
-
-        machine.connection().interrupt();
-        machine.process(messages.reset(), recorder);
-
-        assertThat(recorder).hasSuccessResponse();
+        assertThat(fsm).hasFailed();
     }
 }

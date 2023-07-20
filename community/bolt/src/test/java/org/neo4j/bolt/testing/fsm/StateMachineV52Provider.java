@@ -24,8 +24,6 @@ import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
 import org.neo4j.bolt.testing.messages.BoltMessages;
 import org.neo4j.bolt.testing.messages.BoltV52Messages;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.time.SystemNanoClock;
 
 public class StateMachineV52Provider implements StateMachineProvider {
     private static final StateMachineProvider INSTANCE = new StateMachineV52Provider();
@@ -47,7 +45,7 @@ public class StateMachineV52Provider implements StateMachineProvider {
     }
 
     @Override
-    public BoltProtocol protocol(SystemNanoClock clock, LogService logging) {
-        return new BoltProtocolV52(clock, logging);
+    public BoltProtocol protocol() {
+        return BoltProtocolV52.getInstance();
     }
 }

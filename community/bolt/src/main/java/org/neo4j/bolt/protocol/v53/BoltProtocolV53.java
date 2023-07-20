@@ -22,19 +22,17 @@ package org.neo4j.bolt.protocol.v53;
 import java.util.Set;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
-import org.neo4j.bolt.protocol.v51.fsm.StateMachineV51;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.time.SystemNanoClock;
 
 public class BoltProtocolV53 extends AbstractBoltProtocol {
     public static final ProtocolVersion VERSION = new ProtocolVersion(5, 3);
 
-    public BoltProtocolV53(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    private static final BoltProtocolV53 INSTANCE = new BoltProtocolV53();
+
+    private BoltProtocolV53() {}
+
+    public static BoltProtocolV53 getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -45,11 +43,5 @@ public class BoltProtocolV53 extends AbstractBoltProtocol {
     @Override
     public Set<Feature> features() {
         return Set.of(Feature.UTC_DATETIME);
-    }
-
-    @Override
-    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
-        connection.memoryTracker().allocateHeap(StateMachineV51.SHALLOW_SIZE);
-        return new StateMachineV51(stateMachineSPI, connection, clock);
     }
 }

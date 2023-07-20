@@ -21,14 +21,8 @@ package org.neo4j.bolt.tx.error.statement;
 
 public class StatementExecutionException extends StatementException {
 
-    public StatementExecutionException() {}
-
     public StatementExecutionException(String message) {
-        super(message);
-    }
-
-    public StatementExecutionException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, null);
     }
 
     public StatementExecutionException(Throwable cause) {

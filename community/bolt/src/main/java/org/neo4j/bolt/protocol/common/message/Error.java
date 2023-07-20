@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.common.message;
 
 import java.util.Objects;
 import java.util.UUID;
+import org.neo4j.bolt.fsm.error.ConnectionTerminating;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -103,63 +104,38 @@ public class Error {
                 + reference + '}';
     }
 
-    public static Status codeFromString(String codeStr) {
-        String[] parts = codeStr.split("\\.");
-        if (parts.length != 4) {
-            return Status.General.UnknownError;
-        }
-
-        String category = parts[2];
-        String error = parts[3];
-
-        // Note: the input string may contain arbitrary input data, using reflection would open network attack vector
-        return switch (category) {
-            case "Schema" -> Status.Schema.valueOf(error);
-            case "General" -> Status.General.valueOf(error);
-            case "Statement" -> Status.Statement.valueOf(error);
-            case "Transaction" -> Status.Transaction.valueOf(error);
-            case "Request" -> Status.Request.valueOf(error);
-            case "Security" -> Status.Security.valueOf(error);
-            default -> Status.General.UnknownError;
-        };
-    }
-
-    private static Error fromThrowable(Throwable any, boolean isFatal) {
-        for (Throwable cause = any; cause != null; cause = cause.getCause()) {
-            Long queryId = null;
-            if (cause instanceof HasQuery) {
-                queryId = ((HasQuery) cause).query();
-            }
-            if (cause instanceof DatabaseShutdownException) {
-                return new Error(Status.General.DatabaseUnavailable, cause, isFatal, queryId);
-            }
-            if (cause instanceof Status.HasStatus) {
-                return new Error(((Status.HasStatus) cause).status(), cause.getMessage(), any, isFatal, queryId);
-            }
-            if (cause instanceof OutOfMemoryError) {
-                return new Error(Status.General.OutOfMemoryError, cause, isFatal, queryId);
-            }
-            if (cause instanceof StackOverflowError) {
-                return new Error(Status.General.StackOverFlowError, cause, isFatal, queryId);
-            }
-        }
-
-        // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
-        // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
-
-        return new Error(Status.General.UnknownError, any != null ? any.getMessage() : null, any, isFatal, null);
-    }
-
     public static Error from(Status status, String message) {
         return new Error(status, message, false);
     }
 
     public static Error from(Throwable any) {
-        return fromThrowable(any, false);
-    }
+        var fatal = false;
 
-    public static Error fatalFrom(Throwable any) {
-        return fromThrowable(any, true);
+        for (Throwable cause = any; cause != null; cause = cause.getCause()) {
+            Long queryId = null;
+            if (cause instanceof ConnectionTerminating) {
+                fatal = true;
+            }
+            if (cause instanceof HasQuery) {
+                queryId = ((HasQuery) cause).query();
+            }
+            if (cause instanceof DatabaseShutdownException) {
+                return new Error(Status.General.DatabaseUnavailable, cause, fatal, queryId);
+            }
+            if (cause instanceof Status.HasStatus) {
+                return new Error(((Status.HasStatus) cause).status(), cause.getMessage(), any, false, queryId);
+            }
+            if (cause instanceof OutOfMemoryError) {
+                return new Error(Status.General.OutOfMemoryError, cause, fatal, queryId);
+            }
+            if (cause instanceof StackOverflowError) {
+                return new Error(Status.General.StackOverFlowError, cause, fatal, queryId);
+            }
+        }
+
+        // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
+        // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
+        return new Error(Status.General.UnknownError, any != null ? any.getMessage() : null, any, fatal, null);
     }
 
     public static Error fatalFrom(Status status, String message) {

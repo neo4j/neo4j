@@ -21,24 +21,22 @@ package org.neo4j.bolt.protocol.v43;
 
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.LegacyRouteMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
-import org.neo4j.bolt.protocol.v43.fsm.StateMachineV43;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 
 /**
  * Bolt protocol V4.3 It hosts all the components that are specific to BoltV4.3
  */
 public class BoltProtocolV43 extends BoltProtocolV42 {
+    private static final BoltProtocolV43 INSTANCE = new BoltProtocolV43();
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 3);
 
-    public BoltProtocolV43(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    protected BoltProtocolV43() {}
+
+    public static BoltProtocolV43 getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -49,12 +47,5 @@ public class BoltProtocolV43 extends BoltProtocolV42 {
     @Override
     protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
         return super.createRequestMessageRegistry().register(LegacyRouteMessageDecoder.getInstance());
-    }
-
-    @Override
-    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
-        connection.memoryTracker().allocateHeap(StateMachineV43.SHALLOW_SIZE);
-
-        return new StateMachineV43(stateMachineSPI, connection, clock);
     }
 }

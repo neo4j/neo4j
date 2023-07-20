@@ -29,6 +29,7 @@ import io.netty.channel.ServerChannel;
 import io.netty.handler.ssl.SslContext;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -65,6 +66,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             ConnectorType connectorType,
             ConnectorPortRegister portRegister,
             MemoryPool memoryPool,
+            Clock clock,
             ByteBufAllocator allocator,
             EventLoopGroup bossGroup,
             EventLoopGroup workerGroup,
@@ -89,6 +91,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 id,
                 bindAddress,
                 memoryPool,
+                clock,
                 connectionFactory,
                 connectionTracker,
                 encryptionRequired,
@@ -126,6 +129,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             ConnectorType connectorType,
             ConnectorPortRegister portRegister,
             MemoryPool memoryPool,
+            Clock clock,
             ByteBufAllocator allocator,
             EventLoopGroup eventLoopGroup,
             ConnectorTransport transport,
@@ -152,6 +156,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 connectorType,
                 portRegister,
                 memoryPool,
+                clock,
                 allocator,
                 eventLoopGroup,
                 eventLoopGroup,

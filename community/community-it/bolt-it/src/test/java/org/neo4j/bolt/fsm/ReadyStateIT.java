@@ -19,21 +19,12 @@
  */
 package org.neo4j.bolt.fsm;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
 
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
-import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
-import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
-import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
-import org.neo4j.bolt.protocol.v40.fsm.state.InTransactionState;
-import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
@@ -50,24 +41,21 @@ class ReadyStateIT {
     @StateMachineTest
     void shouldMoveToInterruptedOnInterrupt(
             @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         fsm.connection().interrupt();
 
         fsm.process(messages.run("RETURN 1"), recorder);
         assertThat(recorder).hasIgnoredResponse();
 
-        assertThat(fsm).isInState(InterruptedState.class);
+        assertThat(fsm).isInterrupted();
     }
 
     private void shouldCloseConnectionOnMessage(StateMachine fsm, RequestMessage message) {
         var recorder = new ResponseRecorder();
 
-        assertThat(fsm)
-                .shouldKillConnection(it -> it.process(message, recorder))
-                .isInInvalidState();
+        assertThat(fsm).shouldKillConnection(it -> it.process(message, recorder));
 
         assertThat(recorder).hasFailureResponse(Status.Request.Invalid);
-        assertThat(fsm).isInInvalidState();
     }
 
     @StateMachineTest
@@ -106,7 +94,7 @@ class ReadyStateIT {
                 .containsKey("fields")
                 .containsKey("t_first"));
 
-        StateMachineAssertions.assertThat(fsm).isInState(AutoCommitState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.AUTO_COMMIT);
     }
 
     @StateMachineTest
@@ -118,45 +106,12 @@ class ReadyStateIT {
         // Then
         assertThat(recorder).hasSuccessResponse();
 
-        StateMachineAssertions.assertThat(fsm).isInState(InTransactionState.class);
-    }
-
-    @StateMachineTest
-    void shouldMoveToFailedStateOnRun_fail(
-            @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
-        // Given
-        var runMessage = mock(RunMessage.class);
-        when(runMessage.databaseName()).thenReturn(null);
-        when(runMessage.statement()).thenThrow(new RuntimeException("Fail"));
-
-        // When
-        fsm.process(runMessage, recorder);
-
-        // Then
-        assertThat(recorder).hasFailureResponse(Status.General.UnknownError);
-        StateMachineAssertions.assertThat(fsm).isInState(FailedState.class);
-    }
-
-    @StateMachineTest
-    void shouldMoveToFailedStateOnBegin_fail(
-            @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
-        // Given
-        var beginMessage = mock(BeginMessage.class);
-        when(beginMessage.databaseName()).thenReturn(null);
-        when(beginMessage.bookmarks()).thenThrow(new RuntimeException("Fail"));
-
-        // When
-        fsm.process(beginMessage, recorder);
-
-        // Then
-        assertThat(recorder).hasFailureResponse(Status.General.UnknownError);
-
-        StateMachineAssertions.assertThat(fsm).isInState(FailedState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 
     @StateMachineTest(since = @Version(major = 5, minor = 1))
     void shouldMoveBackToAuthenticationStateAfterALogoffMessage(
-            StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws BoltConnectionFatality {
+            StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws StateMachineException {
         // Given
         fsm.process(messages.hello(), recorder);
         fsm.process(messages.logon(), recorder);
@@ -167,6 +122,6 @@ class ReadyStateIT {
         // Then
         assertThat(recorder).hasSuccessResponse();
 
-        StateMachineAssertions.assertThat(fsm).isInState(AuthenticationState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.AUTHENTICATION);
     }
 }

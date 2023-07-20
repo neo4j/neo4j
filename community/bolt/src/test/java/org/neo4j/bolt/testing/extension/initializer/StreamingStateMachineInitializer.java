@@ -21,9 +21,9 @@ package org.neo4j.bolt.testing.extension.initializer;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v40.fsm.state.InTransactionState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Streaming;
 import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;
 import org.neo4j.bolt.testing.assertions.StateMachineAssertions;
@@ -40,7 +40,7 @@ public class StreamingStateMachineInitializer implements StateMachineInitializer
             StateMachineDependencyProvider dependencyProvider,
             StateMachineProvider provider,
             StateMachine fsm)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         var recorder = new ResponseRecorder();
 
         var annotation = parameterContext
@@ -53,6 +53,6 @@ public class StreamingStateMachineInitializer implements StateMachineInitializer
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
-        StateMachineAssertions.assertThat(fsm).isInState(InTransactionState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
 }

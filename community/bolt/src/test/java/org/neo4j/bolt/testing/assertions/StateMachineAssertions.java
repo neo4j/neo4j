@@ -25,14 +25,10 @@ import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactory;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
-import org.neo4j.bolt.protocol.common.fsm.State;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.message.request.connection.ResetMessage;
-import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.testing.response.ResponseRecorder;
+import org.neo4j.bolt.fsm.Context;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.fsm.state.StateReference;
 import org.neo4j.function.ThrowingConsumer;
 
 public final class StateMachineAssertions extends AbstractAssert<StateMachineAssertions, StateMachine> {
@@ -49,71 +45,87 @@ public final class StateMachineAssertions extends AbstractAssert<StateMachineAss
         return new InstanceOfAssertFactory<>(StateMachine.class, StateMachineAssertions::new);
     }
 
-    @SuppressWarnings("ConstantConditions")
-    private AbstractStateMachine toAbstractStateMachine() {
+    public StateMachineAssertions stateSatisfies(Consumer<StateReference> assertions) {
         this.isNotNull();
 
-        if (!(this.actual instanceof AbstractStateMachine)) {
-            failWithMessage("Expected state machine to implement AbstractStateMachine");
-        }
-
-        return (AbstractStateMachine) this.actual;
-    }
-
-    public StateMachineAssertions stateSatisfies(Consumer<State> assertions) {
-        this.isNotNull();
-
-        var fsm = this.toAbstractStateMachine();
-        assertions.accept(fsm.state());
+        assertions.accept(((Context) this.actual).state());
 
         return this;
     }
 
-    public StateMachineAssertions isInState(Class<? extends State> type) {
+    public StateMachineAssertions defaultStateSatisfies(Consumer<StateReference> assertions) {
+        this.isNotNull();
+
+        assertions.accept(this.actual.defaultState());
+
+        return this;
+    }
+
+    public StateMachineAssertions isInState(StateReference reference) {
         return this.stateSatisfies(state -> Assertions.assertThat(state)
-                .as("is in state %s", type.getSimpleName())
-                .isInstanceOf(type));
+                .as("is in state %s", reference.name())
+                .isEqualTo(reference));
     }
 
-    public StateMachineAssertions isNotInState(Class<? extends State> type) {
+    public StateMachineAssertions isNotInState(StateReference reference) {
         return this.stateSatisfies(state -> Assertions.assertThat(state)
-                .as("is not in state %s", type.getSimpleName())
-                .isNotInstanceOf(type));
+                .as("is not in state %s", reference.name())
+                .isEqualTo(reference));
     }
 
-    public StateMachineAssertions isInInvalidState() {
-        return this.stateSatisfies(state ->
-                Assertions.assertThat(state).as("is not in a valid state").isNull());
+    public StateMachineAssertions hasDefaultState(StateReference reference) {
+        return this.defaultStateSatisfies(state -> Assertions.assertThat(state)
+                .as("is not configured with default state %s", reference.name())
+                .isEqualTo(reference));
     }
 
-    public StateMachineAssertions canReset(Connection connection) {
-        try {
-            var recorder = new ResponseRecorder();
+    public StateMachineAssertions isInterrupted() {
+        this.isNotNull();
 
-            connection.interrupt();
-            this.actual.process(ResetMessage.getInstance(), recorder);
-
-            ResponseRecorderAssertions.assertThat(recorder)
-                    .as(this.descriptionText())
-                    .hasSuccessResponse();
-
-            this.isInState(ReadyState.class);
-        } catch (BoltConnectionFatality ex) {
-            fail("Failed to reset state machine", ex);
+        if (!this.actual.isInterrupted()) {
+            this.failWithMessage("Expected state machine to be interrupted");
         }
 
         return this;
     }
 
-    public StateMachineAssertions shouldKillConnection(
-            ThrowingConsumer<StateMachine, BoltConnectionFatality> consumer) {
+    public StateMachineAssertions isNotInterrupted() {
+        this.isNotNull();
+
+        if (this.actual.isInterrupted()) {
+            this.failWithMessage("Expected state machine to not be interrupted");
+        }
+
+        return this;
+    }
+
+    public StateMachineAssertions hasFailed() {
+        this.isNotNull();
+
+        if (!this.actual.hasFailed()) {
+            failWithMessage("Expected state machine to be marked failed");
+        }
+
+        return this;
+    }
+
+    public StateMachineAssertions hasNotFailed() {
+        this.isNotNull();
+
+        if (this.actual.hasFailed()) {
+            failWithMessage("Expected state machine to not be marked failed");
+        }
+
+        return this;
+    }
+
+    public StateMachineAssertions shouldKillConnection(ThrowingConsumer<StateMachine, StateMachineException> consumer) {
         this.isNotNull();
 
         try {
             consumer.accept(this.actual);
             fail("should have killed the connection");
-        } catch (BoltConnectionFatality ignore) {
-            // TODO: Exception likely no longer sensible
+        } catch (StateMachineException ignore) {
         }
 
         return this;

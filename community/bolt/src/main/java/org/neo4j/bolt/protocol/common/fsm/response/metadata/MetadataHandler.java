@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Handles the protocol specific conversion of statement generated metadata.
@@ -104,6 +105,14 @@ public interface MetadataHandler {
      * @param hasRemaining true if results remain for consumption, false otherwise.
      */
     void onResultsRemaining(MetadataConsumer consumer, boolean hasRemaining);
+
+    /**
+     * Notifies the handler about the routing table generated as a result of a routing table query.
+     *
+     * @param databaseName the database for which the routing table is valid.
+     * @param routingTable a routing table.
+     */
+    void onRoutingTable(MetadataConsumer consumer, String databaseName, MapValue routingTable);
 
     /**
      * Consumes a bookmark generated as a result of committing a transaction.

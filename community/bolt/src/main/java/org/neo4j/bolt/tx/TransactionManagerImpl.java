@@ -28,10 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.tx.error.DatabaseUnavailableTransactionCreationException;
 import org.neo4j.bolt.tx.error.NoSuchDatabaseTransactionCreationException;
+import org.neo4j.bolt.tx.error.TransactionCreationException;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -101,16 +103,22 @@ public class TransactionManagerImpl implements TransactionManager {
                 : QueryExecutionConfiguration.DEFAULT_CONFIG;
 
         var id = "bolt-" + this.nextTransactionId.getAndIncrement();
-        var tx = databaseService.beginTransaction(
-                kernelType,
-                owner.loginContext(),
-                owner.info(),
-                bookmarks,
-                timeout,
-                mode,
-                metadata,
-                owner.routingContext(),
-                executionConfig);
+
+        BoltTransaction tx;
+        try {
+            tx = databaseService.beginTransaction(
+                    kernelType,
+                    owner.loginContext(),
+                    owner.info(),
+                    bookmarks,
+                    timeout,
+                    mode,
+                    metadata,
+                    owner.routingContext(),
+                    executionConfig);
+        } catch (Exception ex) {
+            throw new TransactionCreationException(ex);
+        }
 
         var handle = new TransactionImpl(id, type, databaseService.getDatabaseReference(), this.clock, tx);
         handle.registerListener(this.cleanupListener);

@@ -40,13 +40,13 @@ import java.util.function.Supplier;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
+import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
@@ -304,7 +304,9 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         this.withAnswer(Connection::isInterrupted, invocation -> captor.get() != 0);
 
         this.withAnswer(Connection::interrupt, invocation -> {
-            captor.incrementAndGet();
+            if (captor.incrementAndGet() == 1) {
+                ((Connection) invocation.getMock()).fsm().interrupt();
+            }
             return null; // void function
         });
 
@@ -319,7 +321,9 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                     newValue = oldValue - 1;
 
                     if (newValue == 0) {
-                        ((Connection) invocation.getMock()).closeTransaction();
+                        var connection = ((Connection) invocation.getMock());
+                        connection.closeTransaction();
+                        connection.fsm().reset();
                     }
                 }
             } while (!captor.compareAndSet(oldValue, newValue));

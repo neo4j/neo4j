@@ -33,11 +33,6 @@ public final class ResetMessage implements RequestMessage {
     }
 
     @Override
-    public boolean safeToProcessInAnyState() {
-        return true;
-    }
-
-    @Override
     public String toString() {
         return "RESET";
     }

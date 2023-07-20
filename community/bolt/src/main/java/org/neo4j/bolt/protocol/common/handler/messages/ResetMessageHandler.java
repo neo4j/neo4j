@@ -51,7 +51,5 @@ public class ResetMessageHandler extends SimpleChannelInboundHandler<ResetMessag
     protected void channelRead0(ChannelHandlerContext ctx, ResetMessage msg) throws Exception {
         log.debug("Interrupted state machine");
         this.connection.interrupt();
-
-        ctx.fireChannelRead(msg);
     }
 }

@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Objects;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
-import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.bolt.protocol.common.message.request.ImpersonationRequestMessage;
 import org.neo4j.bolt.tx.TransactionType;
 
-public abstract sealed class AbstractTransactionInitiatingMessage implements RequestMessage
+public abstract sealed class AbstractTransactionInitiatingMessage implements ImpersonationRequestMessage
         permits BeginMessage, RunMessage {
     private final List<String> bookmarks;
     private final Duration txTimeout;
@@ -79,6 +79,7 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
         return databaseName;
     }
 
+    @Override
     public String impersonatedUser() {
         return impersonatedUser;
     }
@@ -87,11 +88,6 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
 
     public NotificationsConfig notificationsConfig() {
         return notificationsConfig;
-    }
-
-    @Override
-    public boolean safeToProcessInAnyState() {
-        return false;
     }
 
     @Override

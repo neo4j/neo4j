@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.protocol.common.message.request.connection;
 
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 
 /**
@@ -38,8 +37,9 @@ public final class GoodbyeMessage implements RequestMessage {
     }
 
     @Override
-    public boolean safeToProcessInAnyState() {
-        return true;
+    @SuppressWarnings("removal")
+    public boolean isIgnoredWhenFailed() {
+        return false;
     }
 
     @Override

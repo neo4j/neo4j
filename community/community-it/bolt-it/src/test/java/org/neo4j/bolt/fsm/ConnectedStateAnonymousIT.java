@@ -19,14 +19,12 @@
  */
 package org.neo4j.bolt.fsm;
 
-import static org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl.BOLT_SERVER_VERSION_PREFIX;
 import static org.neo4j.bolt.testing.assertions.MapValueAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.messages.BoltMessages;
@@ -42,9 +40,9 @@ class ConnectedStateAnonymousIT {
 
         // Then
         assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
-                .containsEntry("server", stringValue(BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion()))
+                .containsEntry("server", stringValue("Neo4j/" + Version.getNeo4jVersion()))
                 .containsEntry("connection_id", stringValue("bolt-test")));
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 }

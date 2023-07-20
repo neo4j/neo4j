@@ -19,26 +19,24 @@
  */
 package org.neo4j.bolt.testing.extension.dependency;
 
+import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
+import org.neo4j.bolt.testing.mock.TransactionManagerMockFactory;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.time.FakeClock;
 
 public class MockStateMachineDependencyProvider implements StateMachineDependencyProvider {
-    private final BoltGraphDatabaseManagementServiceSPI spi;
-    private final FakeClock clock;
-    private final Connection connection;
-
-    public MockStateMachineDependencyProvider() {
-        this.spi = Mockito.mock(BoltGraphDatabaseManagementServiceSPI.class);
-        this.clock = new FakeClock();
-        this.connection = ConnectionMockFactory.newFactory()
-                .withTransactionManager(Mockito.mock(TransactionManager.class, Mockito.RETURNS_MOCKS))
-                .build();
-    }
+    private final BoltGraphDatabaseManagementServiceSPI spi = Mockito.mock(BoltGraphDatabaseManagementServiceSPI.class);
+    ;
+    private final FakeClock clock = new FakeClock();
+    private TransactionManager transactionManager = TransactionManagerMockFactory.newInstance();
+    private Connection connection = ConnectionMockFactory.newFactory()
+            .withTransactionManager(transactionManager)
+            .build();
 
     @Override
     public BoltGraphDatabaseManagementServiceSPI spi(ExtensionContext context) {
@@ -53,5 +51,16 @@ public class MockStateMachineDependencyProvider implements StateMachineDependenc
     @Override
     public Connection connection(ExtensionContext context) {
         return this.connection;
+    }
+
+    @Override
+    public Optional<TransactionManager> transactionManager() {
+        return Optional.ofNullable(this.transactionManager);
+    }
+
+    @Override
+    public void close(ExtensionContext context) {
+        this.connection = null;
+        this.transactionManager = null;
     }
 }

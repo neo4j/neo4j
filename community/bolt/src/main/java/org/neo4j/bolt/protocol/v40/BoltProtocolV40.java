@@ -20,13 +20,15 @@
 package org.neo4j.bolt.protocol.v40;
 
 import java.util.function.Predicate;
+import org.neo4j.bolt.fsm.StateMachineConfiguration.Factory;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.LegacyMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
+import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTransition;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogoffMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogonMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultGoodbyeMessageDecoder;
@@ -46,24 +48,24 @@ import org.neo4j.bolt.protocol.io.reader.TimeReader;
 import org.neo4j.bolt.protocol.io.reader.legacy.LegacyDateTimeReader;
 import org.neo4j.bolt.protocol.io.reader.legacy.LegacyDateTimeZoneIdReader;
 import org.neo4j.bolt.protocol.io.writer.LegacyStructWriter;
-import org.neo4j.bolt.protocol.v40.fsm.StateMachineV40;
 import org.neo4j.bolt.protocol.v40.message.decoder.authentication.HelloMessageDecoderV40;
 import org.neo4j.bolt.protocol.v40.message.decoder.transaction.BeginMessageDecoderV40;
 import org.neo4j.bolt.protocol.v40.message.decoder.transaction.RunMessageDecoderV40;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.storable.Value;
 
 /**
  * Bolt protocol V4. It hosts all the components that are specific to BoltV4
  */
 public class BoltProtocolV40 extends AbstractBoltProtocol {
+    private static final BoltProtocolV40 INSTANCE = new BoltProtocolV40();
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 0);
 
-    public BoltProtocolV40(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    protected BoltProtocolV40() {}
+
+    public static BoltProtocolV40 getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -78,10 +80,14 @@ public class BoltProtocolV40 extends AbstractBoltProtocol {
     }
 
     @Override
-    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
-        connection.memoryTracker().allocateHeap(StateMachineV40.SHALLOW_SIZE);
-
-        return new StateMachineV40(stateMachineSPI, connection, clock);
+    protected Factory createStateMachine() {
+        // within 4.x series protocol versions, authentication is performed as part of the
+        // negotiation stage thus requiring us to emulate this behavior on the state machine
+        return super.createStateMachine()
+                .withoutState(States.NEGOTIATION)
+                .withInitialState(
+                        States.AUTHENTICATION,
+                        HelloStateTransition.getInstance().andThen(AuthenticationStateTransition.getInstance()));
     }
 
     @Override

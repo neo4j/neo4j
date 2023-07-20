@@ -20,5 +20,19 @@
 package org.neo4j.bolt.protocol.common.message.request;
 
 public interface RequestMessage {
-    boolean safeToProcessInAnyState();
+
+    /**
+     * Indicates whether this message may be ignored when the state machine is in a failed state.
+     * <p />
+     * Receiving this message while a state machine is in failed state will result in the connection
+     * being killed when this method returns false.
+     *
+     * @return true if permitted while in failure state, false otherwise.
+     * @deprecated This functionality no longer serves a purpose and is to be removed within the
+     *             next possible major release.
+     */
+    @Deprecated(forRemoval = true)
+    default boolean isIgnoredWhenFailed() {
+        return true;
+    }
 }

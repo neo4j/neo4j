@@ -23,8 +23,6 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.testing.messages.BoltMessages;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.time.SystemNanoClock;
 
 public interface StateMachineProvider {
 
@@ -46,5 +44,5 @@ public interface StateMachineProvider {
 
     BoltMessages messages();
 
-    BoltProtocol protocol(SystemNanoClock clock, LogService logging);
+    BoltProtocol protocol();
 }

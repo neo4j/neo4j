@@ -22,14 +22,15 @@ package org.neo4j.bolt.testing.extension.initializer;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.platform.commons.util.AnnotationUtils;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.response.NoopResponseHandler;
-import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Autocommit;
+import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;
 import org.neo4j.bolt.testing.assertions.StateMachineAssertions;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
 import org.neo4j.bolt.testing.fsm.StateMachineProvider;
+import org.neo4j.bolt.testing.response.ResponseRecorder;
 
 public class AutocommitStateMachineInitializer implements StateMachineInitializer {
 
@@ -40,14 +41,17 @@ public class AutocommitStateMachineInitializer implements StateMachineInitialize
             StateMachineDependencyProvider dependencyProvider,
             StateMachineProvider provider,
             StateMachine fsm)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
+        var recorder = new ResponseRecorder();
+
         var query = AnnotationUtils.findAnnotation(parameterContext.getParameter(), Autocommit.class)
                 .map(annotation -> annotation.value())
                 .filter(q -> !q.isBlank())
                 .orElse("CREATE (n {k:'k'}) RETURN n.k");
 
-        fsm.process(provider.messages().run(query), NoopResponseHandler.getInstance());
+        fsm.process(provider.messages().run(query), recorder);
 
-        StateMachineAssertions.assertThat(fsm).isInState(AutoCommitState.class);
+        ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
+        StateMachineAssertions.assertThat(fsm).isInState(States.AUTO_COMMIT);
     }
 }

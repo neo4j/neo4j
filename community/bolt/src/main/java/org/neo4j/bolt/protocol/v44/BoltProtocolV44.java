@@ -21,28 +21,26 @@ package org.neo4j.bolt.protocol.v44;
 
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultRouteMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
-import org.neo4j.bolt.protocol.v44.fsm.StateMachineV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.BeginMessageDecoderV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 
 /**
  * Bolt protocol V4.4 It hosts all the components that are specific to Bolt V4.4
  */
-public class BoltProtocolV44 extends BoltProtocolV43 {
+public final class BoltProtocolV44 extends BoltProtocolV43 {
+    private static final BoltProtocolV44 INSTANCE = new BoltProtocolV44();
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 4);
 
-    public BoltProtocolV44(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    private BoltProtocolV44() {}
+
+    public static BoltProtocolV44 getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -61,12 +59,5 @@ public class BoltProtocolV44 extends BoltProtocolV43 {
     @Override
     public MetadataHandler metadataHandler() {
         return DefaultMetadataHandler.getInstance();
-    }
-
-    @Override
-    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
-        connection.memoryTracker().allocateHeap(StateMachineV44.SHALLOW_SIZE);
-
-        return new StateMachineV44(stateMachineSPI, connection, clock);
     }
 }

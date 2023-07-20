@@ -33,11 +33,6 @@ public final class RollbackMessage implements RequestMessage {
     }
 
     @Override
-    public boolean safeToProcessInAnyState() {
-        return false;
-    }
-
-    @Override
     public String toString() {
         return "ROLLBACK";
     }

@@ -22,6 +22,7 @@ package org.neo4j.bolt.testing.extension;
 import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.extension.Extension;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
@@ -37,6 +38,7 @@ import org.neo4j.bolt.testing.extension.provider.TransactionIdProvider;
 import org.neo4j.bolt.testing.fsm.StateMachineProvider;
 import org.neo4j.bolt.testing.messages.BoltMessages;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
+import org.neo4j.bolt.tx.TransactionManager;
 
 public class StateMachineInvocationContext implements TestTemplateInvocationContext {
     private final StateMachineDependencyProvider dependencyProvider;
@@ -57,7 +59,7 @@ public class StateMachineInvocationContext implements TestTemplateInvocationCont
     @Override
     public List<Extension> getAdditionalExtensions() {
         return List.of(
-                new StateMachineDependencyProviderLifecycleListener(this.dependencyProvider),
+                new StateMachineDependencyProviderLifecycleListener(this.dependencyProvider, this.connectionRegistry),
                 new SupplierParameterResolver<>(
                         BoltGraphDatabaseManagementServiceSPI.class, this.dependencyProvider::spi),
                 new SupplierParameterResolver<>(Clock.class, this.dependencyProvider::clock),
@@ -68,6 +70,10 @@ public class StateMachineInvocationContext implements TestTemplateInvocationCont
                 new StaticParameterResolver<>(ConnectionProvider.class, this.connectionRegistry),
                 new SupplierParameterResolver<>(ResponseRecorder.class, () -> new ResponseRecorder()),
                 new SupplierParameterResolver<>(
-                        TransactionIdProvider.class, ctx -> new TransactionIdProvider(ctx, this.dependencyProvider)));
+                        TransactionIdProvider.class, ctx -> new TransactionIdProvider(ctx, this.dependencyProvider)),
+                new SupplierParameterResolver(TransactionManager.class, ctx -> this.dependencyProvider
+                        .transactionManager()
+                        .orElseThrow(() -> new ParameterResolutionException(
+                                "TransactionManager is not exposed by this dependency provider"))));
     }
 }

@@ -19,14 +19,13 @@
  */
 package org.neo4j.bolt.testing.extension.parameter;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.mockito.Mockito;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
 import org.neo4j.bolt.testing.extension.initializer.StateMachineInitializer;
 import org.neo4j.bolt.testing.extension.provider.StateMachineConnectionRegistry;
@@ -37,8 +36,6 @@ public class StateMachineParameterResolver implements ParameterResolver {
     private final StateMachineDependencyProvider dependencyProvider;
     private final StateMachineProvider fsmProvider;
     private final StateMachineConnectionRegistry connectionRegistry;
-
-    private final List<StateMachine> instances = new ArrayList<>();
 
     public StateMachineParameterResolver(
             StateMachineDependencyProvider dependencyProvider,
@@ -59,11 +56,11 @@ public class StateMachineParameterResolver implements ParameterResolver {
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        var protocol = this.fsmProvider.protocol(
-                this.dependencyProvider.clock(extensionContext), NullLogService.getInstance());
+        var protocol = this.fsmProvider.protocol();
         var connection = this.dependencyProvider.connection(extensionContext);
 
-        var fsm = protocol.createStateMachine(connection);
+        var fsm = protocol.stateMachine().createInstance(connection, NullLogService.getInstance());
+        Mockito.doReturn(fsm).when(connection).fsm();
         this.connectionRegistry.register(fsm, connection);
 
         var initializers = StateMachineInitializer.listProviders(parameterContext.getParameter());
@@ -72,11 +69,10 @@ public class StateMachineParameterResolver implements ParameterResolver {
                 initializer.initialize(
                         extensionContext, parameterContext, this.dependencyProvider, this.fsmProvider, fsm);
             }
-        } catch (BoltConnectionFatality ex) {
+        } catch (StateMachineException ex) {
             throw new ParameterResolutionException("Failed to initialize state machine", ex);
         }
 
-        this.instances.add(fsm);
         return fsm;
     }
 }

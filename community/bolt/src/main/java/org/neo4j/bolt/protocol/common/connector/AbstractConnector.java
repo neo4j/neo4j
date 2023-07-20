@@ -20,6 +20,7 @@
 package org.neo4j.bolt.protocol.common.connector;
 
 import io.netty.channel.Channel;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -42,6 +43,7 @@ import org.neo4j.server.config.AuthConfigProvider;
 public abstract class AbstractConnector implements Connector {
     private final String id;
     private final MemoryPool memoryPool;
+    private final Clock clock;
     private final Connection.Factory connectionFactory;
     private final boolean encryptionRequired;
     private final BoltProtocolRegistry protocolRegistry;
@@ -63,6 +65,7 @@ public abstract class AbstractConnector implements Connector {
     public AbstractConnector(
             String id,
             MemoryPool memoryPool,
+            Clock clock,
             Connection.Factory connectionFactory,
             NetworkConnectionTracker connectionTracker,
             boolean encryptionRequired,
@@ -77,6 +80,7 @@ public abstract class AbstractConnector implements Connector {
             RoutingService routingService,
             InternalLogProvider logging) {
         this.id = id;
+        this.clock = clock;
         this.memoryPool = memoryPool;
         this.connectionFactory = connectionFactory;
         this.encryptionRequired = encryptionRequired;
@@ -103,6 +107,11 @@ public abstract class AbstractConnector implements Connector {
     @Override
     public MemoryPool memoryPool() {
         return this.memoryPool;
+    }
+
+    @Override
+    public Clock clock() {
+        return this.clock;
     }
 
     @Override

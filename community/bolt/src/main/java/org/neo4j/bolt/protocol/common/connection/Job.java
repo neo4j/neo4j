@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.protocol.common.connection;
 
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 
 public interface Job {
-    void perform(StateMachine machine, ResponseHandler responseHandler) throws BoltConnectionFatality;
+    void perform(StateMachine machine, ResponseHandler responseHandler) throws StateMachineException;
 }

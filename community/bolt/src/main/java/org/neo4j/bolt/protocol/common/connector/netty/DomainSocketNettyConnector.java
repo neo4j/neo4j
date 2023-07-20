@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.BindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -70,6 +71,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             Path path,
             Config config,
             MemoryPool memoryPool,
+            Clock clock,
             ByteBufAllocator allocator,
             EventLoopGroup bossGroup,
             EventLoopGroup workerGroup,
@@ -91,6 +93,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 id,
                 new DomainSocketAddress(path.toFile()),
                 memoryPool,
+                clock,
                 connectionFactory,
                 connectionTracker,
                 false,
@@ -123,6 +126,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             Path path,
             Config config,
             MemoryPool memoryPool,
+            Clock clock,
             ByteBufAllocator allocator,
             EventLoopGroup eventLoopGroup,
             ConnectorTransport transport,
@@ -144,6 +148,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 path,
                 config,
                 memoryPool,
+                clock,
                 allocator,
                 eventLoopGroup,
                 eventLoopGroup,

@@ -20,7 +20,6 @@
 package org.neo4j.bolt.fsm;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
@@ -32,19 +31,10 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.response.NoopResponseHandler;
-import org.neo4j.bolt.protocol.common.fsm.response.RecordHandler;
-import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
-import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
-import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Authenticated;
@@ -53,16 +43,9 @@ import org.neo4j.bolt.testing.assertions.ConnectionAssertions;
 import org.neo4j.bolt.testing.assertions.MapValueAssertions;
 import org.neo4j.bolt.testing.messages.BoltMessages;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
-import org.neo4j.bolt.tx.TransactionType;
-import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryExecutionType;
-import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -74,7 +57,7 @@ public class AutocommitIT {
             throws Throwable {
         fsm.process(messages.run("CREATE (n {k:'k'}) RETURN n.k"), recorder);
 
-        assertThat(fsm).isInState(AutoCommitState.class);
+        assertThat(fsm).isInState(States.AUTO_COMMIT);
 
         fsm.process(messages.pull(), recorder);
 
@@ -85,7 +68,7 @@ public class AutocommitIT {
                 .hasRecord(stringValue("k"))
                 .hasSuccessResponse();
 
-        assertThat(fsm).isInState(ReadyState.class);
+        assertThat(fsm).isInState(States.READY);
     }
 
     @StateMachineTest
@@ -98,76 +81,6 @@ public class AutocommitIT {
         fsm.process(messages.discard(), recorder);
 
         assertThat(recorder).hasSuccessResponse().hasFailureResponse(Status.Schema.ConstraintValidationFailed);
-    }
-
-    @StateMachineTest
-    void shouldHandleFailureDuringResultPublishing(@Authenticated StateMachine fsm, BoltMessages messages)
-            throws Throwable {
-        var pullAllCallbackCalled = new CountDownLatch(1);
-        var failure = new AtomicReference<Error>();
-
-        // When something fails while publishing the result stream
-        fsm.process(messages.run(), NoopResponseHandler.getInstance());
-        fsm.process(messages.pull(), new ResponseHandler() {
-
-            @Override
-            public void onStatementPrepared(
-                    TransactionType transactionType,
-                    long statementId,
-                    long timeSpentPreparingResults,
-                    List<String> fieldNames) {}
-
-            @Override
-            public RecordHandler onBeginStreaming(List<String> fieldNames) {
-                throw new RuntimeException("Ooopsies!");
-            }
-
-            @Override
-            public void onStreamingMetadata(
-                    long timeSpentStreaming,
-                    QueryExecutionType executionType,
-                    DatabaseReference database,
-                    QueryStatistics statistics,
-                    Iterable<Notification> notifications) {}
-
-            @Override
-            public void onStreamingExecutionPlan(ExecutionPlanDescription plan) {}
-
-            @Override
-            public void onCompleteStreaming(boolean hasRemaining) {}
-
-            @Override
-            public void onBookmark(String encodedBookmark) {}
-
-            @Override
-            public void onFailure(Error error) {
-                failure.set(error);
-                pullAllCallbackCalled.countDown();
-            }
-
-            @Override
-            public void onIgnored() {
-                throw new RuntimeException("Ooopsies!");
-            }
-
-            @Override
-            public void onSuccess() {
-                throw new RuntimeException("Ooopsies!");
-            }
-
-            @Override
-            public void onMetadata(String key, AnyValue value) {
-                throw new RuntimeException("Ooopsies!");
-            }
-        });
-
-        // Then
-        assertTrue(pullAllCallbackCalled.await(30, TimeUnit.SECONDS));
-
-        var err = failure.get();
-
-        assertThat(err.status()).isEqualTo(Status.General.UnknownError);
-        assertThat(err.message()).contains("Ooopsies!");
     }
 
     @StateMachineTest
@@ -301,7 +214,7 @@ public class AutocommitIT {
     }
 
     static String createLocalIrisData(StateMachine machine, BoltMessages messages)
-            throws BoltConnectionFatality, IOException {
+            throws IOException, StateMachineException {
         for (String className : IRIS_CLASS_NAMES) {
             MapValue params = map("className", className);
             runAndPull(machine, messages, "CREATE (c:Class {name: $className}) RETURN c", params);
@@ -315,12 +228,12 @@ public class AutocommitIT {
         return tempFile.toUri().toURL().toExternalForm();
     }
 
-    private static void runAndPull(StateMachine machine, BoltMessages messages) throws BoltConnectionFatality {
+    private static void runAndPull(StateMachine machine, BoltMessages messages) throws StateMachineException {
         runAndPull(machine, messages, "RETURN 1", MapValue.EMPTY);
     }
 
     private static void runAndPull(StateMachine fsm, BoltMessages messages, String statement, MapValue params)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         var recorder = new ResponseRecorder();
 
         fsm.process(messages.run(statement, params), recorder);

@@ -83,6 +83,6 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
 
         // all status bearing errors are enqueued on the state machine for reporting (e.g. as a FAILURE message)
         var error = Error.from(cause);
-        connection.submit((fsm, responseHandler) -> fsm.handleExternalFailure(error, responseHandler));
+        connection.submit((fsm, responseHandler) -> responseHandler.onFailure(error));
     }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.testing.extension.provider;
 
+import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 
 public interface ConnectionProvider {
 

@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.common.connector;
 
 import io.netty.channel.Channel;
 import java.net.SocketAddress;
+import java.time.Clock;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
@@ -59,6 +60,14 @@ public interface Connector extends Lifecycle {
      * @return a memory pool.
      */
     MemoryPool memoryPool();
+
+    /**
+     * Retrieves the clock which shall provide the current date and time for operations within the
+     * scope of this connector.
+     *
+     * @return a clock.
+     */
+    Clock clock();
 
     /**
      * Retrieves the registry with which this connector registers all newly created connections.

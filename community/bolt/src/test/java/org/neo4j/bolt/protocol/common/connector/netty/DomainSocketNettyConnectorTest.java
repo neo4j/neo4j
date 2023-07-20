@@ -32,6 +32,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Assumptions;
@@ -97,6 +98,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 Path.of(((DomainSocketAddress) address).path()),
                 config,
                 memoryPool,
+                Clock.systemUTC(),
                 allocator,
                 bossGroup,
                 workerGroup,
@@ -159,6 +161,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                         Path.of(FILE_NAME),
                         config,
                         memoryPool,
+                        Clock.systemUTC(),
                         allocator,
                         bossGroup,
                         workerGroup,

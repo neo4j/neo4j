@@ -23,11 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.neo4j.bolt.fsm.StateMachineConfiguration;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -52,25 +52,23 @@ import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
 import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.storable.Value;
 
 public interface BoltProtocol {
 
-    static List<BoltProtocol> available(SystemNanoClock clock, LogService logging) {
+    static List<BoltProtocol> available() {
         return List.of(
-                new BoltProtocolV40(clock, logging),
-                new BoltProtocolV41(clock, logging),
-                new BoltProtocolV42(clock, logging),
-                new BoltProtocolV43(clock, logging),
-                new BoltProtocolV44(clock, logging),
-                new BoltProtocolV50(clock, logging),
-                new BoltProtocolV51(clock, logging),
-                new BoltProtocolV52(clock, logging),
-                new BoltProtocolV53(clock, logging));
+                BoltProtocolV40.getInstance(),
+                BoltProtocolV41.getInstance(),
+                BoltProtocolV42.getInstance(),
+                BoltProtocolV43.getInstance(),
+                BoltProtocolV44.getInstance(),
+                BoltProtocolV50.getInstance(),
+                BoltProtocolV51.getInstance(),
+                BoltProtocolV52.getInstance(),
+                BoltProtocolV53.getInstance());
     }
 
     /**
@@ -113,7 +111,7 @@ public interface BoltProtocol {
         return signal -> false;
     }
 
-    StateMachine createStateMachine(Connection connection);
+    StateMachineConfiguration stateMachine();
 
     /**
      * Retrieves the struct registry which provides read capabilities for request messages.

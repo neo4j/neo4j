@@ -21,17 +21,18 @@ package org.neo4j.bolt.protocol.v42;
 
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.time.SystemNanoClock;
 
 /**
  * Bolt protocol V4.2 It hosts all the components that are specific to BoltV4.2
  */
 public class BoltProtocolV42 extends BoltProtocolV41 {
+    private static final BoltProtocolV42 INSTANCE = new BoltProtocolV42();
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 2);
 
-    public BoltProtocolV42(SystemNanoClock clock, LogService logging) {
-        super(clock, logging);
+    protected BoltProtocolV42() {}
+
+    public static BoltProtocolV42 getInstance() {
+        return INSTANCE;
     }
 
     @Override

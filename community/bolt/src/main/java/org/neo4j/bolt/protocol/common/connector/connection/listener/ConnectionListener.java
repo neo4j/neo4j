@@ -20,8 +20,8 @@
 package org.neo4j.bolt.protocol.common.connector.connection.listener;
 
 import io.netty.channel.ChannelPipeline;
+import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.internal.kernel.api.security.LoginContext;

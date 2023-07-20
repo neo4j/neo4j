@@ -36,11 +36,13 @@ import org.neo4j.bolt.event.EventPublisher;
 import org.neo4j.bolt.tx.error.TransactionCloseException;
 import org.neo4j.bolt.tx.error.TransactionCompletionException;
 import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.bolt.tx.error.TransactionTerminationException;
 import org.neo4j.bolt.tx.error.statement.StatementException;
 import org.neo4j.bolt.tx.error.statement.StatementExecutionException;
 import org.neo4j.bolt.tx.statement.Statement;
 import org.neo4j.bolt.tx.statement.StatementImpl;
 import org.neo4j.bolt.tx.statement.StatementQuerySubscriber;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -215,10 +217,19 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public Optional<Status> validate() {
-        return this.transaction
+    public void validate() throws TransactionException {
+        var reason = this.transaction
                 .getReasonIfTerminated()
-                .filter(status -> status.code().classification().rollbackTransaction());
+                .filter(status -> status.code().classification().rollbackTransaction())
+                .orElse(null);
+
+        if (reason == null) {
+            return;
+        }
+
+        // TODO: We are wrapping TransactionTerminatedException for compatibility reasons - should
+        //       the text for this error condition live within Bolt?
+        throw new TransactionTerminationException(new TransactionTerminatedException(reason));
     }
 
     @Override

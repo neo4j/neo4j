@@ -24,7 +24,6 @@ import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.asser
 import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
 
 import java.util.Map;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;

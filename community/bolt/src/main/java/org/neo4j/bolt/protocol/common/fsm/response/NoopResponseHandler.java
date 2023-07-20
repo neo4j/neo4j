@@ -28,6 +28,7 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
 public final class NoopResponseHandler implements ResponseHandler {
     private static final NoopResponseHandler INSTANCE = new NoopResponseHandler();
@@ -66,6 +67,9 @@ public final class NoopResponseHandler implements ResponseHandler {
 
     @Override
     public void onCompleteStreaming(boolean hasRemaining) {}
+
+    @Override
+    public void onRoutingTable(String databaseName, MapValue routingTable) {}
 
     @Override
     public void onBookmark(String encodedBookmark) {}

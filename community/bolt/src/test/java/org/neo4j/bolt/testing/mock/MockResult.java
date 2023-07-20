@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
 import org.neo4j.bolt.protocol.common.fsm.response.RecordHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.values.AnyValue;
@@ -153,6 +154,18 @@ public class MockResult {
 
         public Factory withRecord(AnyValue... values) {
             return this.withRecord(Arrays.asList(values));
+        }
+
+        public Factory withSimpleRecords(int n, IntFunction<AnyValue> function) {
+            return this.withRecords(n, i -> List.of(function.apply(i)));
+        }
+
+        public Factory withRecords(int n, IntFunction<List<AnyValue>> function) {
+            for (var i = 0; i < n; ++i) {
+                this.withRecord(function.apply(i));
+            }
+
+            return this;
         }
 
         public Factory withMetadata(String key, AnyValue value) {

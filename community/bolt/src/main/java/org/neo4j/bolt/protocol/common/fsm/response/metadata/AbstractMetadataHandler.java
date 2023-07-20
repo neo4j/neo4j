@@ -38,6 +38,7 @@ import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
+import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -161,6 +162,11 @@ public abstract class AbstractMetadataHandler implements MetadataHandler {
         if (hasRemaining) {
             handler.onMetadata("has_more", BooleanValue.TRUE);
         }
+    }
+
+    @Override
+    public void onRoutingTable(MetadataConsumer consumer, String databaseName, MapValue routingTable) {
+        consumer.onMetadata("rt", routingTable);
     }
 
     @Override

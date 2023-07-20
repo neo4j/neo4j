@@ -24,7 +24,6 @@ import org.neo4j.bolt.tx.error.TransactionCloseException;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.bolt.tx.error.statement.StatementException;
 import org.neo4j.bolt.tx.statement.Statement;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
 
 public interface Transaction {
@@ -122,7 +121,7 @@ public interface Transaction {
      *
      * @return a termination status code or an empty optional
      */
-    Optional<Status> validate();
+    void validate() throws TransactionException;
 
     void close() throws TransactionCloseException;
 

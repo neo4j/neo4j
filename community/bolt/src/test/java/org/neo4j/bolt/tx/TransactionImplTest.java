@@ -30,7 +30,9 @@ import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.tx.error.TransactionCloseException;
 import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.bolt.tx.error.TransactionTerminationException;
 import org.neo4j.bolt.tx.error.statement.StatementException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -174,7 +176,11 @@ class TransactionImplTest {
         var transaction = new TransactionImpl(
                 "bolt-42", TransactionType.EXPLICIT, this.databaseReference, this.clock, this.boltTransaction);
 
-        Assertions.assertThat(transaction.validate()).isPresent().containsSame(Status.Transaction.Terminated);
+        Assertions.assertThatExceptionOfType(TransactionTerminationException.class)
+                .isThrownBy(() -> transaction.validate())
+                .withMessageContaining(
+                        "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result.")
+                .withCauseInstanceOf(TransactionTerminatedException.class);
     }
 
     @Test

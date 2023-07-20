@@ -24,10 +24,9 @@ import java.util.Map;
 import java.util.Objects;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
-import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 
-public final class HelloMessage implements RequestMessage {
+public final class HelloMessage implements AuthenticationMessage {
 
     public static final byte SIGNATURE = 0x01;
 
@@ -58,6 +57,7 @@ public final class HelloMessage implements RequestMessage {
         this(userAgent, features, routingContext, authToken, null, null);
     }
 
+    @Override
     public Map<String, Object> authToken() {
         return authToken;
     }
@@ -80,11 +80,6 @@ public final class HelloMessage implements RequestMessage {
 
     public NotificationsConfig notificationsConfig() {
         return this.notificationsConfig;
-    }
-
-    @Override
-    public boolean safeToProcessInAnyState() {
-        return false;
     }
 
     @Override

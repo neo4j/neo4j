@@ -19,8 +19,11 @@
  */
 package org.neo4j.bolt.protocol.common.fsm.response.metadata;
 
+import org.neo4j.bolt.protocol.common.fsm.response.MetadataConsumer;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 public final class DefaultMetadataHandler extends AbstractMetadataHandler {
@@ -42,5 +45,15 @@ public final class DefaultMetadataHandler extends AbstractMetadataHandler {
     protected void generateSystemQueryStatistics(MapValueBuilder metadata, QueryStatistics statistics) {
         metadata.add("contains-system-updates", BooleanValue.TRUE);
         super.generateSystemQueryStatistics(metadata, statistics);
+    }
+
+    @Override
+    public void onRoutingTable(MetadataConsumer consumer, String databaseName, MapValue routingTable) {
+        // from 4.4 onwards, the target database is included within the routing table response to
+        // facilitate resolving of the home database when connecting to a server without explicitly
+        // selecting the target database
+        routingTable = routingTable.updatedWith("db", Values.stringValue(databaseName));
+
+        super.onRoutingTable(consumer, databaseName, routingTable);
     }
 }

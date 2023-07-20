@@ -24,11 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 
 import org.assertj.core.api.Assertions;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
-import org.neo4j.bolt.protocol.v51.fsm.state.ReadyState;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
+import org.neo4j.bolt.fsm.error.StateMachineException;
+import org.neo4j.bolt.fsm.error.state.IllegalTransitionException;
+import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
@@ -41,30 +39,30 @@ public class AuthenticationStateIT {
 
     @StateMachineTest(since = @Version(major = 5, minor = 1))
     public void shouldAcceptLogonMessageAndMoveToReadyState(
-            StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws BoltConnectionFatality {
+            StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws StateMachineException {
         // Given
         fsm.process(messages.hello(), recorder);
         assertThat(recorder).hasSuccessResponse();
-        StateMachineAssertions.assertThat(fsm).isInState(AuthenticationState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.AUTHENTICATION);
 
         // When
         fsm.process(messages.logon(), recorder);
 
         // Then
         assertThat(recorder).hasSuccessResponse();
-        StateMachineAssertions.assertThat(fsm).isInState(ReadyState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.READY);
     }
 
     @StateMachineTest(since = @Version(major = 5, minor = 1))
     public void shouldNotAcceptBeginMessage(StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         // Given
         fsm.process(messages.hello(), recorder);
         assertThat(recorder).hasSuccessResponse();
-        StateMachineAssertions.assertThat(fsm).isInState(AuthenticationState.class);
+        StateMachineAssertions.assertThat(fsm).isInState(States.AUTHENTICATION);
 
         // Then
-        var e = assertThrows(BoltProtocolBreachFatality.class, () -> fsm.process(messages.begin(), recorder));
+        var e = assertThrows(IllegalTransitionException.class, () -> fsm.process(messages.begin(), recorder));
         Assertions.assertThat(e.getMessage()).contains("cannot be handled by a session in the AUTHENTICATION state.");
     }
 }

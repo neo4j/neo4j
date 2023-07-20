@@ -33,6 +33,7 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.server.http.cypher.CachingWriter;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
 public class SingleNodeResponseHandler implements ResponseHandler {
     private final CachingWriter cachingWriter;
@@ -71,6 +72,9 @@ public class SingleNodeResponseHandler implements ResponseHandler {
 
     @Override
     public void onCompleteStreaming(boolean hasRemaining) {}
+
+    @Override
+    public void onRoutingTable(String databaseName, MapValue routingTable) {}
 
     @Override
     public void onBookmark(String encodedBookmark) {}

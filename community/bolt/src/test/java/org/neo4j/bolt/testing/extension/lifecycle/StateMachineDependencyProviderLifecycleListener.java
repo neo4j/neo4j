@@ -30,13 +30,17 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
+import org.neo4j.bolt.testing.extension.provider.StateMachineConnectionRegistry;
 
 public class StateMachineDependencyProviderLifecycleListener
         implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
     private final StateMachineDependencyProvider dependencyProvider;
+    private final StateMachineConnectionRegistry connectionRegistry;
 
-    public StateMachineDependencyProviderLifecycleListener(StateMachineDependencyProvider dependencyProvider) {
+    public StateMachineDependencyProviderLifecycleListener(
+            StateMachineDependencyProvider dependencyProvider, StateMachineConnectionRegistry connectionRegistry) {
         this.dependencyProvider = dependencyProvider;
+        this.connectionRegistry = connectionRegistry;
     }
 
     private static Lifecycle getLifecycle(ExtensionContext context) {
@@ -61,6 +65,7 @@ public class StateMachineDependencyProviderLifecycleListener
     public void afterEach(ExtensionContext context) throws Exception {
         if (getLifecycle(context) == Lifecycle.PER_METHOD) {
             this.dependencyProvider.close(context);
+            this.connectionRegistry.close();
         }
     }
 
@@ -68,6 +73,7 @@ public class StateMachineDependencyProviderLifecycleListener
     public void afterAll(ExtensionContext context) throws Exception {
         if (getLifecycle(context) == Lifecycle.PER_CLASS) {
             this.dependencyProvider.close(context);
+            this.connectionRegistry.close();
         }
     }
 

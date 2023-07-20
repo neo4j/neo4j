@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +31,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -86,6 +87,16 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      * @return a connector.
      */
     Connector connector();
+
+    /**
+     * Retrieves the clock which provides the current date and time for operations within the scope
+     * of a given connection.
+     *
+     * @return a clock.
+     */
+    default Clock clock() {
+        return this.connector().clock();
+    }
 
     @Override
     default String connectorId() {
@@ -261,6 +272,13 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      * @throws AuthenticationException when the given user cannot be impersonated by the current user.
      */
     void impersonate(String userToImpersonate) throws AuthenticationException;
+
+    /**
+     * Clears any previously configured {@link #impersonate(String) impersonation}.
+     * <p />
+     * When no impersonation has been configured, this method acts as a NOOP.
+     */
+    void clearImpersonation();
 
     /**
      * Resolves the default database which shall be used in absence of an explicitly selected database.

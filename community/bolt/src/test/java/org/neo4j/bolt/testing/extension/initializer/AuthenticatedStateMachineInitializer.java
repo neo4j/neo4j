@@ -21,8 +21,8 @@ package org.neo4j.bolt.testing.extension.initializer;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
 import org.neo4j.bolt.testing.fsm.StateMachineProvider;
@@ -37,7 +37,7 @@ public class AuthenticatedStateMachineInitializer implements StateMachineInitial
             StateMachineDependencyProvider dependencyProvider,
             StateMachineProvider provider,
             StateMachine fsm)
-            throws BoltConnectionFatality {
+            throws StateMachineException {
         var messages = provider.messages();
         var recorder = new ResponseRecorder();
 

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.values.virtual.MapValue;
 
 public abstract class AbstractMetadataAwareResponseHandler implements ResponseHandler {
     protected final MetadataHandler metadataHandler;
@@ -74,6 +75,11 @@ public abstract class AbstractMetadataAwareResponseHandler implements ResponseHa
     @Override
     public void onCompleteStreaming(boolean hasRemaining) {
         this.metadataHandler.onResultsRemaining(this, hasRemaining);
+    }
+
+    @Override
+    public void onRoutingTable(String databaseName, MapValue routingTable) {
+        this.metadataHandler.onRoutingTable(this, databaseName, routingTable);
     }
 
     @Override

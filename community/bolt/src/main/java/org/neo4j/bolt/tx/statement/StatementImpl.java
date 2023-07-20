@@ -44,6 +44,7 @@ import org.neo4j.graphdb.QueryExecutionType.QueryType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
 public class StatementImpl implements Statement {
     // TODO: Is this really a good idea? Are we sure about that?
@@ -390,6 +391,11 @@ public class StatementImpl implements Statement {
         @Override
         public void onCompleteStreaming(boolean hasRemaining) {
             this.delegate.onCompleteStreaming(hasRemaining);
+        }
+
+        @Override
+        public void onRoutingTable(String databaseName, MapValue routingTable) {
+            // never occurs within this context
         }
 
         @Override

@@ -35,24 +35,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.error.AuthenticationStateTransitionException;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
-import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.tx.Transaction;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
-import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.logging.internal.LogService;
@@ -120,7 +119,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             try {
                 log.debug("[%s] Beginning execution of %s (queued for %d ms)", this.id, message, queuedForMillis);
                 fsm.process(message, responseHandler);
-            } catch (BoltConnectionFatality ex) {
+            } catch (StateMachineException ex) {
                 this.notifyListeners(listener -> listener.onRequestFailedProcessing(message, ex));
 
                 // re-throw the exception to let the scheduler handle the connection closure (if applicable)
@@ -313,16 +312,12 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                 if (job != null) {
                     this.executeJob(fsm, job);
                 } else {
-                    // first ensure that any open transactions within this connection remain valid and have not been
-                    // terminated
-                    // due to server settings in the meantime thus potentially clogging the thread pool for no reason
                     try {
-                        fsm.validateTransaction();
-                    } catch (KernelException ex) {
+                        this.fsm.validate();
+                    } catch (StateMachineException ex) {
                         // this case occurs specifically if something goes horribly wrong - if the transaction is deemed
                         // invalid, it will simply be removed from the FSM state and the loop will progress as usual in
-                        // order to
-                        // return FAILURE for the next transaction related command
+                        // order to return FAILURE for the next transaction related command
                         log.error("[" + this.id + "] Failed to validate transaction", ex);
                         this.close();
                         break;
@@ -342,16 +337,19 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
         try {
             job.perform(fsm, this.responseHandler);
-        } catch (BoltConnectionAuthFatality ex) {
+        } catch (AuthenticationStateTransitionException ex) {
             this.close();
 
-            if (ex.isLoggable()) {
-                userLog.warn(ex.getMessage());
+            if (!(ex.getCause() instanceof AuthorizationExpiredException)) {
+                userLog.warn("[" + this.id + "] " + ex.getMessage());
             }
-        } catch (BoltProtocolBreachFatality ex) {
+        } catch (StateMachineException ex) {
+            // when a state machine exception bubbles up to here, it is non-status bearing or has
+            // occurred when invoking a state machine method outside the scope of a request thus
+            // warranting connection termination
             this.close();
 
-            log.warn("[" + this.id + "] Terminating connection due to protocol breach", ex);
+            log.warn("[" + this.id + "] Terminating connection due to state machine error", ex);
         } catch (Throwable ex) {
             this.close();
 
@@ -437,14 +435,33 @@ public class AtomicSchedulingConnection extends AbstractConnection {
     public void interrupt() {
         // increment the interrupt timer internally in order to keep track on when we are supposed
         // to reset to a valid state
-        this.remainingInterrupts.incrementAndGet();
+        var previous = this.remainingInterrupts.getAndIncrement();
 
-        // if there is currently an active transaction, we'll interrupt it and all of its children
-        // in order to free up the worker threads immediately
-        var tx = this.transaction.get();
-        if (tx != null) {
-            tx.interrupt();
+        // interrupt the state machine and cancel any active transactions only when this is the
+        // first interrupt
+        if (previous == 0) {
+            // notify the state machine so that it no longer processes any further messages until
+            // explicitly reset
+            this.fsm.interrupt();
+
+            // if there is currently an active transaction, we'll interrupt it and all of its children
+            // in order to free up the worker threads immediately
+            var tx = this.transaction.get();
+            if (tx != null) {
+                tx.interrupt();
+            }
         }
+
+        // schedule a task with the FSM so that the connection is reset correctly once all prior
+        // messages have been handled
+        this.submit((fsm, responseHandler) -> {
+            if (this.reset()) {
+                fsm.reset();
+                responseHandler.onSuccess();
+            } else {
+                responseHandler.onIgnored();
+            }
+        });
     }
 
     @Override
@@ -471,6 +488,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             } catch (TransactionException ex) {
                 log.warn("Failed to gracefully terminate transaction during reset", ex);
             }
+
+            this.clearImpersonation();
 
             log.debug("[%s] Connection has been reset", this.id);
             return true;

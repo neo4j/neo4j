@@ -86,7 +86,6 @@ public class CommunityEditionStateMachineDependencyProvider implements StateMach
         return ConnectionMockFactory.newFactory("bolt-test")
                 .withSelectedDefaultDatabase(defaultDatabase)
                 .withAuthentication(authentication)
-                .withConnector(connector -> connector.withTransactionManager(transactionManager))
                 .withTransactionManager(transactionManager)
                 .withInterruptedCaptor(new AtomicInteger())
                 .build();
@@ -127,6 +126,11 @@ public class CommunityEditionStateMachineDependencyProvider implements StateMach
     @Override
     public void close(ExtensionContext context) {
         this.instanceContext.stop(context);
+
+        this.transactionManager = null;
+
+        // FIXME: Mockito is currently suffering from a memory leak within inline mocks which
+        //        requires us to clear all mocks at the end of execution in order to avoid OOMs
         Mockito.framework().clearInlineMocks();
     }
 }

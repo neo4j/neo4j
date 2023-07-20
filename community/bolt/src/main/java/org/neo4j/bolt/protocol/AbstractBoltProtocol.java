@@ -19,11 +19,23 @@
  */
 package org.neo4j.bolt.protocol;
 
+import org.neo4j.bolt.fsm.StateMachineConfiguration;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.fsm.States;
+import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.authentication.LogoffStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.ready.CreateAutocommitStatementStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.ready.CreateTransactionStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.ready.RouteStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.transaction.CommitTransactionalStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.transaction.CreateStatementStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.transaction.RollbackTransactionalStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.transaction.streaming.AutocommitDiscardStreamingStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.transaction.streaming.AutocommitPullStreamingStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.transaction.streaming.DiscardResultsStreamingStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.transaction.streaming.PullResultsStreamingStateTransition;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultHelloMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogoffMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogonMessageDecoder;
@@ -41,22 +53,16 @@ import org.neo4j.bolt.protocol.common.message.encoder.IgnoredMessageEncoder;
 import org.neo4j.bolt.protocol.common.message.encoder.SuccessMessageEncoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
-import org.neo4j.time.SystemNanoClock;
 
 public abstract class AbstractBoltProtocol implements BoltProtocol {
 
-    protected final SystemNanoClock clock;
-    protected final LogService logging;
-
+    private final StateMachineConfiguration stateMachine;
     private final StructRegistry<Connection, RequestMessage> requestMessageStructRegistry;
     private final StructRegistry<Connection, ResponseMessage> responseMessageStructRegistry;
 
-    protected AbstractBoltProtocol(SystemNanoClock clock, LogService logging) {
-        this.clock = clock;
-        this.logging = logging;
-
+    protected AbstractBoltProtocol() {
+        this.stateMachine = this.createStateMachine().build();
         this.requestMessageStructRegistry = this.createRequestMessageRegistry().build();
         this.responseMessageStructRegistry =
                 this.createResponseMessageRegistry().build();
@@ -73,18 +79,32 @@ public abstract class AbstractBoltProtocol implements BoltProtocol {
     }
 
     @Override
-    public final StateMachine createStateMachine(Connection connection) {
-        var stateMachineSPI = this.createStateMachineSPI(connection);
-        return this.createStateMachine(connection, stateMachineSPI);
+    public StateMachineConfiguration stateMachine() {
+        return this.stateMachine;
     }
 
-    protected StateMachineSPI createStateMachineSPI(Connection connection) {
-        connection.memoryTracker().allocateHeap(StateMachineSPIImpl.SHALLOW_SIZE);
-
-        return new StateMachineSPIImpl(logging);
+    protected StateMachineConfiguration.Factory createStateMachine() {
+        return StateMachineConfiguration.builder()
+                .withInitialState(States.NEGOTIATION, HelloStateTransition.getInstance())
+                .withState(States.AUTHENTICATION, AuthenticationStateTransition.getInstance())
+                .withState(
+                        States.READY,
+                        CreateTransactionStateTransition.getInstance(),
+                        RouteStateTransition.getInstance(),
+                        CreateAutocommitStatementStateTransition.getInstance(),
+                        LogoffStateTransition.getInstance())
+                .withState(
+                        States.AUTO_COMMIT,
+                        AutocommitDiscardStreamingStateTransition.getInstance(),
+                        AutocommitPullStreamingStateTransition.getInstance())
+                .withState(
+                        States.IN_TRANSACTION,
+                        CreateStatementStateTransition.getInstance(),
+                        DiscardResultsStreamingStateTransition.getInstance(),
+                        PullResultsStreamingStateTransition.getInstance(),
+                        CommitTransactionalStateTransition.getInstance(),
+                        RollbackTransactionalStateTransition.getInstance());
     }
-
-    protected abstract StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI);
 
     protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
         return StructRegistry.<Connection, RequestMessage>builder()

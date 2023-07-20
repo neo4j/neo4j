@@ -172,7 +172,7 @@ public class BoltServer extends LifecycleAdapter {
         this.log = logService.getInternalLog(BoltServer.class);
 
         this.protocolRegistry = BoltProtocolRegistry.builder()
-                .register(BoltProtocol.available(clock, logService))
+                .register(BoltProtocol.available())
                 .build();
     }
 
@@ -452,6 +452,7 @@ public class BoltServer extends LifecycleAdapter {
                 connectorType,
                 connectorPortRegister,
                 memoryPool,
+                clock,
                 allocator,
                 eventLoopGroup,
                 transport,
@@ -490,6 +491,7 @@ public class BoltServer extends LifecycleAdapter {
                 config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file),
                 config,
                 memoryPool,
+                clock,
                 allocator,
                 eventLoopGroup,
                 transport,

@@ -37,14 +37,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
+import org.neo4j.bolt.fsm.StateMachine;
+import org.neo4j.bolt.fsm.StateMachineConfiguration;
+import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.AuthenticationResult;
 import org.neo4j.bolt.security.error.AuthenticationException;
@@ -89,7 +90,8 @@ class AtomicSchedulingConnectionTest {
     private DefaultDatabaseResolver defaultDatabaseResolver;
 
     private BoltProtocol protocol;
-    private StateMachine fsm;
+    private StateMachineConfiguration fsm;
+    private StateMachine fsmInstance;
     private AuthenticationResult authenticationResult;
     private LoginContext loginContext;
     private AuthSubject authSubject;
@@ -124,9 +126,13 @@ class AtomicSchedulingConnectionTest {
         Mockito.doReturn(this.defaultDatabaseResolver).when(this.connector).defaultDatabaseResolver();
 
         this.protocol = Mockito.mock(BoltProtocol.class, Mockito.RETURNS_MOCKS);
-        this.fsm = Mockito.mock(StateMachine.class, Mockito.RETURNS_MOCKS);
+        this.fsmInstance = Mockito.mock(StateMachine.class, Mockito.RETURNS_MOCKS);
+        this.fsm = Mockito.mock(StateMachineConfiguration.class, Mockito.RETURNS_MOCKS);
 
-        Mockito.doReturn(this.fsm).when(this.protocol).createStateMachine(ArgumentMatchers.any());
+        Mockito.doReturn(this.fsm).when(this.protocol).stateMachine();
+        Mockito.doReturn(this.fsmInstance)
+                .when(this.fsm)
+                .createInstance(ArgumentMatchers.any(), ArgumentMatchers.any());
 
         this.authenticationResult = Mockito.mock(AuthenticationResult.class);
         this.loginContext = Mockito.mock(LoginContext.class, Mockito.RETURNS_MOCKS);
@@ -420,7 +426,7 @@ class AtomicSchedulingConnectionTest {
     }
 
     @Test
-    void shouldCloseFromWorkerThreadWhenScheduled() throws BoltConnectionFatality {
+    void shouldCloseFromWorkerThreadWhenScheduled() throws StateMachineException {
         var job1 = Mockito.mock(Job.class);
         var job2 = Mockito.mock(Job.class);
 
@@ -469,8 +475,8 @@ class AtomicSchedulingConnectionTest {
 
         // since the jobs had not been started when the connection was marked for closure, they will not
         // execute - it is the callers responsibility to not kill connections which remain active if possible
-        inOrder.verify(job1, Mockito.never()).perform(Mockito.eq(this.fsm), Mockito.any());
-        inOrder.verify(job2, Mockito.never()).perform(Mockito.eq(this.fsm), Mockito.any());
+        inOrder.verify(job1, Mockito.never()).perform(Mockito.eq(this.fsmInstance), Mockito.any());
+        inOrder.verify(job2, Mockito.never()).perform(Mockito.eq(this.fsmInstance), Mockito.any());
 
         inOrder.verify(listener).onIdle();
         inOrder.verify(listener).onConnectionClosed(true);
@@ -599,22 +605,25 @@ class AtomicSchedulingConnectionTest {
         this.selectProtocol();
 
         // a state machine should have been created for the selected protocol version
-        Mockito.verify(this.protocol).createStateMachine(this.connection);
+        Mockito.verify(this.protocol).stateMachine();
+        Mockito.verify(this.fsm).createInstance(Mockito.eq(this.connection), Mockito.any());
         Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
         Mockito.verify(this.protocol).metadataHandler();
+        Mockito.verifyNoMoreInteractions(this.fsm);
         Mockito.verifyNoMoreInteractions(this.protocol);
 
         // listeners should have been notified about the initialization of the state machine
-        Mockito.verify(listener).onStateMachineInitialized(this.fsm);
+        Mockito.verify(listener).onStateMachineInitialized(this.fsmInstance);
         Mockito.verifyNoMoreInteractions(listener);
     }
 
     @Test
     void selectProtocolShouldFailWithIllegalStateWhenInvokedTwice() {
         this.selectProtocol();
-        Mockito.verify(this.protocol).createStateMachine(this.connection);
+        Mockito.verify(this.protocol).stateMachine();
+        Mockito.verify(this.fsm).createInstance(Mockito.eq(this.connection), Mockito.any());
         Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
@@ -633,7 +642,7 @@ class AtomicSchedulingConnectionTest {
     void shouldIdentifyStateMachine() {
         this.selectProtocol();
 
-        Assertions.assertThat(this.connection.fsm()).isSameAs(this.fsm);
+        Assertions.assertThat(this.connection.fsm()).isSameAs(this.fsmInstance);
     }
 
     @Test
@@ -827,6 +836,19 @@ class AtomicSchedulingConnectionTest {
     }
 
     @Test
+    void shouldFailWithNullPointerExceptionWhenImpersonatedUserIsNull() throws AuthenticationException {
+        this.authenticate();
+
+        Mockito.verify(this.defaultDatabaseResolver).defaultDatabase(AUTHENTICATED_USER);
+        Mockito.verifyNoMoreInteractions(this.defaultDatabaseResolver);
+
+        Assertions.assertThatExceptionOfType(NullPointerException.class)
+                .isThrownBy(() -> this.connection.impersonate(null))
+                .withMessage("userToImpersonate cannot be null")
+                .withNoCause();
+    }
+
+    @Test
     void shouldClearImpersonatedUser() throws AuthenticationException {
         this.authenticate();
 
@@ -860,7 +882,7 @@ class AtomicSchedulingConnectionTest {
 
         Assertions.assertThat(this.connection.selectedDefaultDatabase()).isEqualTo(IMPERSONATED_DB);
 
-        this.connection.impersonate(null);
+        this.connection.clearImpersonation();
 
         // the login context should return to the originally authenticated context
         Assertions.assertThat(this.connection.loginContext())
@@ -896,7 +918,7 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(listener).onListenerAdded();
         Mockito.verifyNoMoreInteractions(listener);
 
-        this.connection.impersonate(null);
+        this.connection.clearImpersonation();
 
         Mockito.verifyNoMoreInteractions(this.defaultDatabaseResolver);
         Mockito.verifyNoMoreInteractions(listener);

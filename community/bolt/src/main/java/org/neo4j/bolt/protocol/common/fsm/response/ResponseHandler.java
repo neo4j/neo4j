@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Handles the conversion of state machine results to their network representation.
@@ -87,6 +88,14 @@ public interface ResponseHandler extends MetadataConsumer {
     void onCompleteStreaming(boolean hasRemaining);
 
     void onBookmark(String encodedBookmark);
+
+    /**
+     * Handles the routing table generated as a result of a {@code ROUTE} message.
+     *
+     * @param databaseName the database against which the routing table request has been executed.
+     * @param routingTable the resulting routing table.
+     */
+    void onRoutingTable(String databaseName, MapValue routingTable);
 
     /**
      * Handles an exceptional termination of the current operation.

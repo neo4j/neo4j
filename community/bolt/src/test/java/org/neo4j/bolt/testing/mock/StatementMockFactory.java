@@ -39,6 +39,10 @@ public final class StatementMockFactory extends AbstractMockFactory<Statement, S
 
         this.id = id;
         this.withStaticValue(Statement::id, id);
+
+        // configure an empty result by default so that tests do not need to explicitly configure
+        // results in cases where results are irrelevant to verifying functionality
+        this.withResults(MockResult.newFactory().build());
     }
 
     public static StatementMockFactory newFactory(long id) {
@@ -110,6 +114,7 @@ public final class StatementMockFactory extends AbstractMockFactory<Statement, S
 
     public StatementMockFactory withResults(MockResult result) {
         this.withAnswer(Statement::fieldNames, invocation -> result.fieldNames());
+        this.withAnswer(Statement::hasRemaining, invocation -> result.hasRemaining());
 
         this.with(statement -> {
             try {

@@ -28,6 +28,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import java.net.SocketAddress;
+import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.AbstractConnector;
@@ -57,6 +58,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
             String id,
             SocketAddress bindAddress,
             MemoryPool memoryPool,
+            Clock clock,
             Connection.Factory connectionFactory,
             NetworkConnectionTracker connectionTracker,
             boolean encryptionRequired,
@@ -74,6 +76,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
         super(
                 id,
                 memoryPool,
+                clock,
                 connectionFactory,
                 connectionTracker,
                 encryptionRequired,

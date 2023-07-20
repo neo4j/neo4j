@@ -19,14 +19,15 @@
  */
 package org.neo4j.bolt.testing.extension.provider;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 
-public class StateMachineConnectionRegistry implements ConnectionProvider {
+public class StateMachineConnectionRegistry implements ConnectionProvider, Closeable {
     private final Map<StateMachine, Connection> connectionMap = new HashMap<>();
 
     public void register(StateMachine fsm, Connection connection) {
@@ -45,5 +46,10 @@ public class StateMachineConnectionRegistry implements ConnectionProvider {
         }
 
         return connection;
+    }
+
+    @Override
+    public void close() {
+        this.connectionMap.clear();
     }
 }
