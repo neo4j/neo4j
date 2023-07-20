@@ -157,6 +157,21 @@ trait GraphDatabaseTestSupport
     }
   }
 
+  /**
+   * Runs a block of code in a new transaction bound to [[tx]].
+   * Calls to [[createNode]], [[relate]], etc will reuse that transaction.
+   */
+  protected def givenTx[T](f: => T): T = {
+    beginTransaction(Type.IMPLICIT, LoginContext.AUTH_DISABLED)
+    try {
+      try f
+      finally tx.commit()
+    } finally {
+      tx.close()
+      tx = null
+    }
+  }
+
   protected def startGraphDatabase(storeDir: Path): Unit = {
     managementService = graphDatabaseFactory(storeDir).impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
