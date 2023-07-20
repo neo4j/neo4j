@@ -32,7 +32,6 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
@@ -81,65 +80,10 @@ trait GraphDatabaseTestSupport
   var managementService: DatabaseManagementService = _
   var nodes: List[Node] = _
   protected var tx: InternalTransaction = _
-  private val registeredCallables: ArrayBuffer[QualifiedName] = ArrayBuffer.empty
+  protected val registeredCallables: ArrayBuffer[QualifiedName] = ArrayBuffer.empty
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    startGraphDatabase()
-  }
-
-  protected def resetGraphDatabase(): Unit = {
-    if (tx != null) {
-      tx.close()
-      tx = null
-    }
-
-    // Don't clear any "real" databases!
-    if (externalDatabase.nonEmpty)
-      return
-
-    clearDatabase()
-    clearProcedures()
-  }
-
-  private def clearDatabase(): Unit = {
-    // always re-creating lookup indexes turned out to be expensive
-    var nodeLookupIsMissing = true
-    var relLookupIsMissing = true
-    withTx { tx =>
-      tx.schema().getConstraints().forEach(_.drop())
-      tx.schema().getIndexes().forEach { i =>
-        if (i.getIndexType != IndexType.LOOKUP) {
-          i.drop()
-        } else if (i.isNodeIndex) {
-          nodeLookupIsMissing = false
-        } else {
-          relLookupIsMissing = false
-        }
-      }
-    }
-    deleteAllEntities()
-    if (nodeLookupIsMissing) {
-      graph.createLookupIndex(isNodeIndex = true)
-    }
-    if (relLookupIsMissing) {
-      graph.createLookupIndex(isNodeIndex = false)
-    }
-  }
-
-  private def clearProcedures(): Unit = {
-    val procs = globalProcedures
-    registeredCallables.foreach(procs.unregister)
-    registeredCallables.clear()
-  }
-
-  protected def restartDatabase(): Unit = {
-    if (tx != null) {
-      tx.close()
-    }
-    if (managementService != null) {
-      managementService.shutdown()
-    }
     startGraphDatabase()
   }
 

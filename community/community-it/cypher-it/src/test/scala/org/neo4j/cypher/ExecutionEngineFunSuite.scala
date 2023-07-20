@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.Path
@@ -79,5 +80,50 @@ abstract class ExecutionEngineWithoutRestartFunSuite
     } finally {
       super.restartWithConfig()
     }
+  }
+
+  private def resetGraphDatabase(): Unit = {
+    if (tx != null) {
+      tx.close()
+      tx = null
+    }
+
+    // Don't clear any "real" databases!
+    if (externalDatabase.nonEmpty)
+      return
+
+    clearDatabase()
+    clearProcedures()
+  }
+
+  private def clearDatabase(): Unit = {
+    // always re-creating lookup indexes turned out to be expensive
+    var nodeLookupIsMissing = true
+    var relLookupIsMissing = true
+    withTx { tx =>
+      tx.schema().getConstraints().forEach(_.drop())
+      tx.schema().getIndexes().forEach { i =>
+        if (i.getIndexType != IndexType.LOOKUP) {
+          i.drop()
+        } else if (i.isNodeIndex) {
+          nodeLookupIsMissing = false
+        } else {
+          relLookupIsMissing = false
+        }
+      }
+    }
+    deleteAllEntities()
+    if (nodeLookupIsMissing) {
+      graph.createLookupIndex(isNodeIndex = true)
+    }
+    if (relLookupIsMissing) {
+      graph.createLookupIndex(isNodeIndex = false)
+    }
+  }
+
+  private def clearProcedures(): Unit = {
+    val procs = globalProcedures
+    registeredCallables.foreach(procs.unregister)
+    registeredCallables.clear()
   }
 }
