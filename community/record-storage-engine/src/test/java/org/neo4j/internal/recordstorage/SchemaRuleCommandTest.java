@@ -67,7 +67,7 @@ class SchemaRuleCommandTest {
     private final MetaDataStore metaDataStore = mock(MetaDataStore.class);
     private final SchemaStore schemaStore = mock(SchemaStore.class);
     private final IndexUpdateListener indexUpdateListener = mock(IndexUpdateListener.class);
-    private NeoStoreTransactionApplierFactory storeApplier;
+    private LockGuardedNeoStoreTransactionApplierFactory storeApplier;
     private final IndexTransactionApplierFactory indexApplier =
             new IndexTransactionApplierFactory(INTERNAL, indexUpdateListener);
     private final LogCommandSerialization serialization =
@@ -80,7 +80,7 @@ class SchemaRuleCommandTest {
     void setup() {
         IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(mock(IdGenerator.class)));
-        storeApplier = new NeoStoreTransactionApplierFactory(
+        storeApplier = new LockGuardedNeoStoreTransactionApplierFactory(
                 INTERNAL, neoStores, mock(CacheAccessBackDoor.class), LockService.NO_LOCK_SERVICE);
     }
 

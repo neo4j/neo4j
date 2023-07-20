@@ -90,7 +90,7 @@ import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.token.api.NamedToken;
 
-class NeoStoreTransactionApplierTest {
+class LockGuardedNeoStoreTransactionApplierTest {
     private static final LogCommandSerialization LATEST_LOG_SERIALIZATION =
             RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
 
@@ -936,7 +936,7 @@ class NeoStoreTransactionApplierTest {
 
     private TransactionApplierFactory newApplier(boolean recovery) {
         TransactionApplierFactory applier =
-                new NeoStoreTransactionApplierFactory(INTERNAL, neoStores, cacheAccess, lockService);
+                new LockGuardedNeoStoreTransactionApplierFactory(INTERNAL, neoStores, cacheAccess, lockService);
         if (recovery) {
             applier = newApplierFacade(
                     new HighIdTransactionApplierFactory(neoStores),

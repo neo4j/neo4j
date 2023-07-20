@@ -71,7 +71,7 @@ class ConsistencyCheckingApplierTest {
 
     private NeoStores neoStores;
     private ConsistencyCheckingApplier checker;
-    private NeoStoreTransactionApplier applier;
+    private LockGuardedNeoStoreTransactionApplier applier;
     private TransactionApplier[] appliers;
     private CachedStoreCursors storeCursors;
 
@@ -97,7 +97,7 @@ class ConsistencyCheckingApplierTest {
         checker = new ConsistencyCheckingApplier(neoStores, CursorContext.NULL_CONTEXT);
         BatchContext batchContext = mock(BatchContext.class);
         when(batchContext.getLockGroup()).thenReturn(new LockGroup());
-        applier = new NeoStoreTransactionApplier(
+        applier = new LockGuardedNeoStoreTransactionApplier(
                 CommandVersion.AFTER,
                 neoStores,
                 mock(CacheAccessBackDoor.class),

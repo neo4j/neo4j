@@ -34,28 +34,15 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.lock.LockGroup;
-import org.neo4j.lock.LockService;
-import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.CommandVersion;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
-/**
- * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
- * What happens in here is what will happen in a "internal" transaction, i.e. a transaction that has been
- * forged in this database, with transaction state, a KernelTransaction and all that and is now committing.
- * <p>
- * For other modes of application, like recovery or external there are other, added functionality, decorated
- * outside this applier.
- */
 public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     private final CommandVersion version;
-    private final LockGroup lockGroup;
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
-    private final LockService lockService;
     private final IdUpdateListener idUpdateListener;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
@@ -64,13 +51,10 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
             CommandVersion version,
             NeoStores neoStores,
             CacheAccessBackDoor cacheAccess,
-            LockService lockService,
             BatchContext batchContext,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
         this.version = version;
-        this.lockGroup = batchContext.getLockGroup();
-        this.lockService = lockService;
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
         this.idUpdateListener = batchContext.getIdUpdateListener();
@@ -80,9 +64,6 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
 
     @Override
     public boolean visitNodeCommand(Command.NodeCommand command) {
-        // acquire lock
-        lockGroup.add(lockService.acquireNodeLock(command.getKey(), LockType.EXCLUSIVE));
-
         // update store
         updateStore(neoStores.getNodeStore(), command, NODE_CURSOR);
         return false;
@@ -90,24 +71,12 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
 
     @Override
     public boolean visitRelationshipCommand(Command.RelationshipCommand command) {
-        lockGroup.add(lockService.acquireRelationshipLock(command.getKey(), LockType.EXCLUSIVE));
-
         updateStore(neoStores.getRelationshipStore(), command, RELATIONSHIP_CURSOR);
         return false;
     }
 
     @Override
     public boolean visitPropertyCommand(Command.PropertyCommand command) {
-        // acquire lock
-        if (command.after.isNodeSet()) {
-            lockGroup.add(lockService.acquireNodeLock(command.getNodeId(), LockType.EXCLUSIVE));
-        } else if (command.after.isRelSet()) {
-            lockGroup.add(lockService.acquireRelationshipLock(command.getRelId(), LockType.EXCLUSIVE));
-        } else if (command.after.isSchemaSet()) {
-            lockGroup.add(lockService.acquireCustomLock(
-                    Command.RECOVERY_LOCK_TYPE_SCHEMA_RULE, command.getSchemaRuleId(), LockType.EXCLUSIVE));
-        }
-
         updateStore(neoStores.getPropertyStore(), command, PROPERTY_CURSOR);
         return false;
     }

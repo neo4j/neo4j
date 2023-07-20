@@ -281,7 +281,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             appliers.add(new ConsistencyCheckingApplierFactory(neoStores));
         }
         appliers.add(new KernelVersionTransactionApplier.Factory(kernelVersionRepository));
-        appliers.add(new NeoStoreTransactionApplierFactory(mode, neoStores, cacheAccess, lockService(mode)));
+        if (isMultiVersionedFormat()) {
+            appliers.add(new NeoStoreTransactionApplierFactory(mode, neoStores, cacheAccess));
+        } else {
+            appliers.add(
+                    new LockGuardedNeoStoreTransactionApplierFactory(mode, neoStores, cacheAccess, lockService(mode)));
+        }
         if (mode.rollbackIdProcessing()) {
             appliers.add((transaction, batchContext) ->
                     new IdRollbackTransactionApplier(idGeneratorFactory, transaction.cursorContext()));

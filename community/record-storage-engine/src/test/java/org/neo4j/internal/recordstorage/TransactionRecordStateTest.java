@@ -1855,7 +1855,7 @@ class TransactionRecordStateTest {
     private TransactionApplierFactory buildApplier(LockService noLockService) {
         IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
-        return new NeoStoreTransactionApplierFactory(
+        return new LockGuardedNeoStoreTransactionApplierFactory(
                 INTERNAL, neoStores, mock(CacheAccessBackDoor.class), noLockService);
     }
 
