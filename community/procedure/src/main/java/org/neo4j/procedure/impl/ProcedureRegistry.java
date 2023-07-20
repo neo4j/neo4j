@@ -60,7 +60,7 @@ public class ProcedureRegistry {
      *
      * @param proc the procedure.
      */
-    public void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException {
+    public void register(CallableProcedure proc) throws ProcedureException {
         ProcedureSignature signature = proc.signature();
         QualifiedName name = signature.name();
 
@@ -74,7 +74,7 @@ public class ProcedureRegistry {
                     "Procedures with zero output fields must be declared as VOID");
         }
 
-        if (procedures.contains(name) && !overrideCurrentImplementation) {
+        if (procedures.contains(name)) {
             throw new ProcedureException(
                     Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to register procedure, because the name `%s` is already in use.",
@@ -89,8 +89,7 @@ public class ProcedureRegistry {
      *
      * @param function the function.
      */
-    public void register(CallableUserFunction function, boolean overrideCurrentImplementation)
-            throws ProcedureException {
+    public void register(CallableUserFunction function) throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
@@ -101,7 +100,7 @@ public class ProcedureRegistry {
                     name);
         }
 
-        if (functions.contains(name) && !overrideCurrentImplementation) {
+        if (functions.contains(name)) {
             throw new ProcedureException(
                     Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to register function, because the name `%s` is already in use.",
@@ -116,8 +115,7 @@ public class ProcedureRegistry {
      *
      * @param function the function.
      */
-    public void register(CallableUserAggregationFunction function, boolean overrideCurrentImplementation)
-            throws ProcedureException {
+    public void register(CallableUserAggregationFunction function) throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
@@ -128,7 +126,7 @@ public class ProcedureRegistry {
                     name);
         }
 
-        if (aggregationFunctions.contains(name) && !overrideCurrentImplementation) {
+        if (aggregationFunctions.contains(name)) {
             throw new ProcedureException(
                     Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to register aggregation function, because the name `%s` is already in use.",

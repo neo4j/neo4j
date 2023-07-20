@@ -78,7 +78,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableProcedure proc) throws ProcedureException {
-        registry.register(proc, false);
+        registry.register(proc);
     }
 
     /**
@@ -87,7 +87,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableUserFunction function) throws ProcedureException {
-        registry.register(function, false);
+        registry.register(function);
     }
 
     /**
@@ -96,7 +96,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void register(CallableUserAggregationFunction function) throws ProcedureException {
-        registry.register(function, false);
+        registry.register(function);
     }
 
     /**
