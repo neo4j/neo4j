@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.IOException;
 import java.util.OptionalLong;
 import java.util.function.Function;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -66,12 +68,10 @@ public class SchemaMigrator {
                 fs, pageCache, pageCacheTracer, config, toLayout, contextFactory, EmptyMemoryTracker.INSTANCE)) {
             TokenRead tokenRead = new ReadOnlyTokenRead(tokenHolders);
 
+            LongObjectHashMap<IndexToConnect> indexesToConnect = new LongObjectHashMap<>();
+            LongObjectHashMap<ConstraintToConnect> constraintsToConnect = new LongObjectHashMap<>();
             // Write the rules to the new store.
             //  - Translating the tokens since their ids might be different
-            //  - Keeping the schema ids (almost - +1 because block format uses id 0 but not record)
-            //    to not have to keep track of connections between constraints and
-            //    their indexes - the writing of the rule should have updated that
-            //    id's used status
             for (var schemaRule : fromStorage.loadSchemaRules(
                     fs, pageCache, pageCacheTracer, config, from, true, Function.identity(), contextFactory)) {
                 if (schemaRule instanceof IndexDescriptor indexDescriptor) {
@@ -85,17 +85,23 @@ public class SchemaMigrator {
                     IndexPrototype newPrototype = indexDescriptor.isUnique()
                             ? IndexPrototype.uniqueForSchema(schema, indexDescriptor.getIndexProvider())
                             : IndexPrototype.forSchema(schema, indexDescriptor.getIndexProvider());
-                    IndexDescriptor newDescriptor = newPrototype
+                    newPrototype = newPrototype
                             .withName(indexDescriptor.getName())
                             .withIndexType(indexDescriptor.getIndexType())
-                            .withIndexConfig(indexDescriptor.getIndexConfig())
-                            .materialise(indexDescriptor.getId() + 1);
-                    OptionalLong owningConstraintId = indexDescriptor.getOwningConstraintId();
-                    if (owningConstraintId.isPresent()) {
-                        newDescriptor = newDescriptor.withOwningConstraintId(owningConstraintId.getAsLong() + 1);
-                    }
+                            .withIndexConfig(indexDescriptor.getIndexConfig());
 
-                    schemaRuleMigrationAccess.writeSchemaRule(newDescriptor);
+                    if (indexDescriptor.isUnique()) {
+                        // Handle constraint indexes later
+                        indexesToConnect.put(
+                                indexDescriptor.getId(),
+                                new IndexToConnect(
+                                        indexDescriptor.getId(),
+                                        indexDescriptor.getOwningConstraintId(),
+                                        newPrototype));
+                    } else {
+                        IndexDescriptor newDescriptor = newPrototype.materialise(schemaRuleMigrationAccess.nextId());
+                        schemaRuleMigrationAccess.writeSchemaRule(newDescriptor);
+                    }
                 } else if (schemaRule instanceof ConstraintDescriptor constraintDescriptor) {
                     SchemaDescriptor schema = translateToNewSchema(
                             constraintDescriptor.schema(), tokenRead, schemaRuleMigrationAccess.tokenHolders());
@@ -104,15 +110,13 @@ public class SchemaMigrator {
                                 case UNIQUE -> {
                                     IndexBackedConstraintDescriptor indexBacked =
                                             constraintDescriptor.asIndexBackedConstraint();
-                                    yield ConstraintDescriptorFactory.uniqueForSchema(schema, indexBacked.indexType())
-                                            .withOwnedIndexId(indexBacked.ownedIndexId() + 1);
+                                    yield ConstraintDescriptorFactory.uniqueForSchema(schema, indexBacked.indexType());
                                 }
                                 case EXISTS -> ConstraintDescriptorFactory.existsForSchema(schema);
                                 case UNIQUE_EXISTS -> {
                                     IndexBackedConstraintDescriptor indexBacked =
                                             constraintDescriptor.asIndexBackedConstraint();
-                                    yield ConstraintDescriptorFactory.keyForSchema(schema, indexBacked.indexType())
-                                            .withOwnedIndexId(indexBacked.ownedIndexId() + 1);
+                                    yield ConstraintDescriptorFactory.keyForSchema(schema, indexBacked.indexType());
                                 }
                                 case PROPERTY_TYPE -> ConstraintDescriptorFactory.typeForSchema(
                                         schema,
@@ -120,14 +124,57 @@ public class SchemaMigrator {
                                                 .asPropertyTypeConstraint()
                                                 .propertyType());
                             };
-                    descriptor = descriptor
-                            .withId(constraintDescriptor.getId() + 1)
-                            .withName(constraintDescriptor.getName());
-                    schemaRuleMigrationAccess.writeSchemaRule(descriptor);
+                    descriptor = descriptor.withName(constraintDescriptor.getName());
+
+                    if (descriptor.isIndexBackedConstraint()) {
+                        // Handle index-backed constraints later
+                        constraintsToConnect.put(
+                                constraintDescriptor.getId(),
+                                new ConstraintToConnect(
+                                        constraintDescriptor.getId(),
+                                        constraintDescriptor
+                                                .asIndexBackedConstraint()
+                                                .ownedIndexId(),
+                                        descriptor));
+                    } else {
+                        descriptor = descriptor.withId(schemaRuleMigrationAccess.nextId());
+                        schemaRuleMigrationAccess.writeSchemaRule(descriptor);
+                    }
                 }
+            }
+
+            // Time to handle constraint/index connections
+            for (ConstraintToConnect constraintToConnect : constraintsToConnect.values()) {
+                IndexToConnect indexToConnect = indexesToConnect.remove(constraintToConnect.indexId);
+                if (indexToConnect == null
+                        || (indexToConnect.oldConstraintId.isPresent()
+                                && indexToConnect.oldConstraintId.getAsLong() != constraintToConnect.oldId)) {
+                    throw new UnderlyingStorageException(
+                            "Encountered an inconsistent schema store - can not migrate. Affected rules have id "
+                                    + constraintToConnect.oldId
+                                    + (indexToConnect != null ? " and " + indexToConnect.oldId : ""));
+                }
+
+                long newIndexId = schemaRuleMigrationAccess.nextId();
+                long newConstraintId = schemaRuleMigrationAccess.nextId();
+                schemaRuleMigrationAccess.writeSchemaRule(
+                        indexToConnect.prototype.materialise(newIndexId).withOwningConstraintId(newConstraintId));
+                schemaRuleMigrationAccess.writeSchemaRule(
+                        constraintToConnect.prototype.withId(newConstraintId).withOwnedIndexId(newIndexId));
+            }
+
+            // There shouldn't be any really, but it can happen - for example when crashing in a constraint creation.
+            // Letting these through.
+            for (IndexToConnect indexToConnect : indexesToConnect) {
+                schemaRuleMigrationAccess.writeSchemaRule(
+                        indexToConnect.prototype.materialise(schemaRuleMigrationAccess.nextId()));
             }
         }
     }
+
+    record IndexToConnect(long oldId, OptionalLong oldConstraintId, IndexPrototype prototype) {}
+
+    record ConstraintToConnect(long oldId, long indexId, ConstraintDescriptor prototype) {}
 
     /**
      * Only to be used for expected types - no token indexes
