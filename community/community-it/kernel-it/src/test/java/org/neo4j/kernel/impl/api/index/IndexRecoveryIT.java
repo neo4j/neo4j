@@ -60,8 +60,9 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -88,18 +89,21 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-@Neo4jLayoutExtension
+@EphemeralNeo4jLayoutExtension
 class IndexRecoveryIT {
     @Inject
     private TestDirectory testDirectory;
 
     @Inject
     private DatabaseLayout databaseLayout;
+
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
 
     private GraphDatabaseAPI db;
     private final IndexProvider mockedIndexProvider = mock(IndexProvider.class);
@@ -180,8 +184,7 @@ class IndexRecoveryIT {
             var minimalIndexAccessor = mock(MinimalIndexAccessor.class);
             when(mockedIndexProvider.getMinimalIndexAccessor(any(), anyBoolean()))
                     .thenReturn(minimalIndexAccessor);
-            boolean recoveryRequired =
-                    Recovery.isRecoveryRequired(testDirectory.getFileSystem(), databaseLayout, defaults(), INSTANCE);
+            boolean recoveryRequired = Recovery.isRecoveryRequired(fs, databaseLayout, defaults(), INSTANCE);
             monitors.addMonitorListener(new MyRecoveryMonitor(recoverySemaphore));
             // When
             startDb();
@@ -210,8 +213,8 @@ class IndexRecoveryIT {
                             any(TokenNameLookup.class),
                             any(),
                             any());
-            verify(mockedIndexProvider, times(1)).getMinimalIndexAccessor(any(), anyBoolean());
-            verify(minimalIndexAccessor, times(1)).drop();
+            verify(mockedIndexProvider, times(recoveryRequired ? 2 : 1)).getMinimalIndexAccessor(any(), anyBoolean());
+            verify(minimalIndexAccessor, times(recoveryRequired ? 2 : 1)).drop();
         } finally {
             recoverySemaphore.release();
         }
@@ -427,7 +430,7 @@ class IndexRecoveryIT {
         }
 
         managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                .setFileSystem(testDirectory.getFileSystem())
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .addExtension(mockedIndexProviderFactory)
                 .noOpSystemGraphInitializer()
                 .setMonitors(monitors)
@@ -450,8 +453,8 @@ class IndexRecoveryIT {
     private void snapshotFs(Path snapshotDir) {
         try {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.copyDirectory(layout.databaseDirectory(), snapshotDir.resolve("data"));
-            FileUtils.copyDirectory(layout.getTransactionLogsDirectory(), snapshotDir.resolve("transactions"));
+            fs.copyRecursively(layout.databaseDirectory(), snapshotDir.resolve("data"));
+            fs.copyRecursively(layout.getTransactionLogsDirectory(), snapshotDir.resolve("transactions"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -460,11 +463,11 @@ class IndexRecoveryIT {
     private void restoreSnapshot(Path snapshotDir) {
         try {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.deleteDirectory(layout.databaseDirectory());
-            FileUtils.deleteDirectory(layout.getTransactionLogsDirectory());
-            FileUtils.copyDirectory(snapshotDir.resolve("data"), layout.databaseDirectory());
-            FileUtils.copyDirectory(snapshotDir.resolve("transactions"), layout.getTransactionLogsDirectory());
-            FileUtils.deleteDirectory(snapshotDir);
+            fs.deleteRecursively(layout.databaseDirectory());
+            fs.deleteRecursively(layout.getTransactionLogsDirectory());
+            fs.copyRecursively(snapshotDir.resolve("data"), layout.databaseDirectory());
+            fs.copyRecursively(snapshotDir.resolve("transactions"), layout.getTransactionLogsDirectory());
+            fs.deleteRecursively(snapshotDir);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
