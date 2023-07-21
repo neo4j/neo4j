@@ -22,13 +22,17 @@ package org.neo4j.internal.kernel.api.security;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.storageengine.api.PropertySelection;
 
 /**
  * Controls the capabilities of a KernelTransaction.
  */
 public interface AccessMode {
+
     enum Static implements AccessMode {
         /**
          * No reading or writing allowed.
@@ -129,6 +133,27 @@ public interface AccessMode {
         }
 
         @Override
+        public IntSet getTraverseSecurityProperties(long[] labels) {
+            return IntSets.immutable.empty();
+        }
+
+        @Override
+        public boolean hasApplicableTraverseAllowPropertyRules(long label) {
+            return read;
+        }
+
+        @Override
+        public boolean allowsTraverseNodeWithPropertyRules(
+                ReadSecurityPropertyProvider propertyProvider, long... labels) {
+            return read;
+        }
+
+        @Override
+        public boolean hasTraversePropertyRules() {
+            return false;
+        }
+
+        @Override
         public boolean allowsTraverseAllRelTypes() {
             return read;
         }
@@ -154,6 +179,23 @@ public interface AccessMode {
         }
 
         @Override
+        public boolean allowsReadNodeProperties(
+                Supplier<TokenSet> labels, int[] propertyKeys, ReadSecurityPropertyProvider propertyProvider) {
+            return read;
+        }
+
+        @Override
+        public boolean allowsReadNodeProperties(Supplier<TokenSet> labels, int[] propertyKeys) {
+            return read;
+        }
+
+        @Override
+        public boolean allowsReadNodeProperty(
+                Supplier<TokenSet> labels, int propertyKey, ReadSecurityPropertyProvider propertyProvider) {
+            return read;
+        }
+
+        @Override
         public boolean allowsReadNodeProperty(Supplier<TokenSet> labels, int propertyKey) {
             return read;
         }
@@ -169,8 +211,33 @@ public interface AccessMode {
         }
 
         @Override
+        public IntSet getAllReadSecurityProperties() {
+            return IntSets.immutable.empty();
+        }
+
+        @Override
+        public PropertySelection getSecurityPropertySelection(PropertySelection selection) {
+            return PropertySelection.NO_PROPERTIES;
+        }
+
+        @Override
         public boolean allowsSeePropertyKeyToken(int propertyKey) {
             return read;
+        }
+
+        @Override
+        public boolean hasPropertyReadRules() {
+            return false;
+        }
+
+        @Override
+        public boolean hasPropertyReadRules(int... propertyKeys) {
+            return false;
+        }
+
+        @Override
+        public IntSet getReadSecurityProperties(int propertyKey) {
+            return IntSets.immutable.empty();
         }
 
         @Override
@@ -272,7 +339,7 @@ public interface AccessMode {
     boolean allowsTraverseAllNodesWithLabel(long label);
 
     /**
-     * true if this label is blacklisted for traversal
+     * true if this label is deny-listed for traversal
      */
     boolean disallowsTraverseLabel(long label);
 
@@ -283,6 +350,37 @@ public interface AccessMode {
      *               the same as {@link #allowsTraverseAllLabels}
      */
     boolean allowsTraverseNode(long... labels);
+
+    /**
+     * Gets the keys of the operand properties (aka Security Properties) whose
+     * values are to be checked by the property rules of nodes having the {@code labels} supplied
+     * @param labels - the node labels which may have security rules on them
+     * @return the set of operand properties
+     */
+    IntSet getTraverseSecurityProperties(long[] labels);
+
+    /**
+     * checks whether there is potential for nodes with this label to be traversed subject of property-based
+     * GRANTS evaluating to true and not being precluded by label-based DENYs.
+     * @param label - the label to check permissions for
+     * @return true when nodes with this label could be traversable due to property-based GRANTS
+     */
+    boolean hasApplicableTraverseAllowPropertyRules(long label);
+
+    /**
+     * Uses the {@code propertyProvider} to get the node property values and the {@code labels} to get the relevant property rules,
+     * and then evaluates the property rules to determine whether the node can be traversed. Also checks label-based traverse rules.
+     * @param propertyProvider provider of the scrutinee node's properties
+     * @param labels the labels of the node. Used to determine which property rules need to be checked.
+     * @return {@code true} if traversal of this node is allowed
+     */
+    boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, long... labels);
+
+    /**
+     * Determines whether there are any property rules controlling traversal
+     * @return {@code true} when the authenticated principal's ability to traverse nodes could be subject to property rules
+     */
+    boolean hasTraversePropertyRules();
 
     /**
      * true if all relationships can be traversed
@@ -298,7 +396,7 @@ public interface AccessMode {
     boolean allowsTraverseRelType(int relType);
 
     /**
-     * true if the relType is blacklisted for traversal.
+     * true if the relType is deny-listed for traversal.
      *
      * @param relType the relationship type to check access for.
      */
@@ -308,6 +406,48 @@ public interface AccessMode {
 
     boolean disallowsReadPropertyForSomeLabel(int propertyKey);
 
+    /**
+     * determines whether the authenticated principal is allowed to read the specified {@code propertyKeys} according
+     * to the property-based RBAC read rules AND the label-based RBAC rules.
+     * Optimised for a multi-property reads.
+     * @param labels the labels of the node in question. Used to determine which RBAC rules are applicable.
+     * @param propertyKeys the properties which the principal is requesting to read
+     * @param propertyProvider the provider of the node's property values. Used as operands for the property rules.
+     * @return {@code true} if the principal is allowed to read ALL of the requested {@code propertyKeys}
+     */
+    boolean allowsReadNodeProperties(
+            Supplier<TokenSet> labels, int[] propertyKeys, ReadSecurityPropertyProvider propertyProvider);
+
+    /**
+     * determines whether the authenticated principal is allowed to read the specified {@code propertyKeys} according
+     * to label-based RBAC rules. For use in contexts where there are no property-based RBAC rules in place.
+     * Optimised for a multi-property reads.
+     * @param labels the labels of the node in question. Used to determine which RBAC rules are applicable.
+     * @param propertyKeys the properties which the principal is requesting to read
+     * @return {@code true} if the principal is allowed to read ALL of the requested {@code propertyKeys}
+     */
+    boolean allowsReadNodeProperties(Supplier<TokenSet> labels, int[] propertyKeys);
+
+    /**
+     * determines whether the authenticated principal is allowed to read the specified {@code propertyKey} according
+     * to the property-based RBAC read rules AND the label-based RBAC rules.
+     * Optimised for a single-property reads.
+     * @param labels the labels of the node in question. Used to determine which RBAC rules are applicable.
+     * @param propertyKey the property which the principal is requesting to read
+     * @param propertyProvider the provider of the node's property values. Used as operands for the property rules.
+     * @return {@code true} if the principal is allowed to read  the requested {@code propertyKey}
+     */
+    boolean allowsReadNodeProperty(
+            Supplier<TokenSet> labels, int propertyKey, ReadSecurityPropertyProvider propertyProvider);
+
+    /**
+     * determines whether the authenticated principal is allowed to read the specified {@code propertyKey} according
+     * to the label-based RBAC rules. For use in contexts where there are no property-based RBAC rules.
+     * Optimised for a single-property reads.
+     * @param labels the labels of the node in question. Used to determine which RBAC rules are applicable.
+     * @param propertyKey the property which the principal is requesting to read
+     * @return {@code true} if the principal is allowed to read  the requested {@code propertyKey}
+     */
     boolean allowsReadNodeProperty(Supplier<TokenSet> labels, int propertyKey);
 
     boolean allowsReadPropertyAllRelTypes(int propertyKey);
@@ -315,6 +455,39 @@ public interface AccessMode {
     boolean allowsReadRelationshipProperty(RelTypeSupplier relType, int propertyKey);
 
     boolean allowsSeePropertyKeyToken(int propertyKey);
+
+    /**
+     * Determines whether there are any property rules controlling the ability to read properties.
+     * @return {@code true} when the authenticated principal's ability to read node properties could be subject to property rules
+     */
+    boolean hasPropertyReadRules();
+
+    /**
+     * Determines whether there are any property rules controlling the ability to read the specified {@code propertyKeys}.
+     * @return {@code true} when the authenticated principal's ability to read any of the specified {@code propertyKeys}
+     * could be subject to property rules (further dependent on the labels of the node in question).
+     */
+    boolean hasPropertyReadRules(int... propertyKeys);
+
+    /**
+     * Get the keys of the properties which are used as operands for rules controlling the ability to read {@code propertyKey}
+     * @param propertyKey the key of the property whose reading is being restricted
+     * @return the list of keys of the properties which will be scrutinised in determining whether {@code propertyKey} can be read
+     */
+    IntSet getReadSecurityProperties(int propertyKey);
+
+    /**
+     * Get all keys of the properties which are used as operands for rules controlling the ability to read certain properties
+     * @return the list of keys of the properties which will be scrutinised in determining whether certain properties can be read
+     */
+    IntSet getAllReadSecurityProperties();
+
+    /**
+     * Given a PropertySelection get the PropertySelection for the corresponding security properties
+     * @param selection the properties to get the security properties for
+     * @return the security properties which are operands to the relevant property rules
+     */
+    PropertySelection getSecurityPropertySelection(PropertySelection selection);
 
     /**
      * Check if execution of a procedure is allowed

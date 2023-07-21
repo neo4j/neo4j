@@ -20,12 +20,17 @@
 package org.neo4j.kernel.impl.api.security;
 
 import java.util.function.Supplier;
+import org.eclipse.collections.api.factory.primitive.IntSets;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PermissionState;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
+import org.neo4j.internal.kernel.api.security.ReadSecurityPropertyProvider;
 import org.neo4j.messages.MessageUtil;
+import org.neo4j.storageengine.api.PropertySelection;
 
 /**
  * Access mode that restricts the original access mode with the restricting mode. Allows things that both the
@@ -87,6 +92,28 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     }
 
     @Override
+    public IntSet getTraverseSecurityProperties(long[] labels) {
+        return original.getTraverseSecurityProperties(labels).union(wrapping.getTraverseSecurityProperties(labels));
+    }
+
+    @Override
+    public boolean hasApplicableTraverseAllowPropertyRules(long label) {
+        return original.hasApplicableTraverseAllowPropertyRules(label)
+                || wrapping.hasApplicableTraverseAllowPropertyRules(label);
+    }
+
+    @Override
+    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, long... labels) {
+        return original.allowsTraverseNodeWithPropertyRules(propertyProvider, labels)
+                && wrapping.allowsTraverseNodeWithPropertyRules(propertyProvider, labels);
+    }
+
+    @Override
+    public boolean hasTraversePropertyRules() {
+        return original.hasTraversePropertyRules() || wrapping.hasTraversePropertyRules();
+    }
+
+    @Override
     public boolean allowsTraverseAllRelTypes() {
         return original.allowsTraverseAllRelTypes() && wrapping.allowsTraverseAllRelTypes();
     }
@@ -109,7 +136,27 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     @Override
     public boolean disallowsReadPropertyForSomeLabel(int propertyKey) {
         return original.disallowsReadPropertyForSomeLabel(propertyKey)
-                && wrapping.disallowsReadPropertyForSomeLabel(propertyKey);
+                || wrapping.disallowsReadPropertyForSomeLabel(propertyKey);
+    }
+
+    @Override
+    public boolean allowsReadNodeProperties(
+            Supplier<TokenSet> labels, int[] propertyKeys, ReadSecurityPropertyProvider propertyProvider) {
+        return original.allowsReadNodeProperties(labels, propertyKeys, propertyProvider)
+                && wrapping.allowsReadNodeProperties(labels, propertyKeys, propertyProvider);
+    }
+
+    @Override
+    public boolean allowsReadNodeProperties(Supplier<TokenSet> labels, int[] propertyKeys) {
+        return original.allowsReadNodeProperties(labels, propertyKeys)
+                && wrapping.allowsReadNodeProperties(labels, propertyKeys);
+    }
+
+    @Override
+    public boolean allowsReadNodeProperty(
+            Supplier<TokenSet> labels, int propertyKey, ReadSecurityPropertyProvider propertyProvider) {
+        return original.allowsReadNodeProperty(labels, propertyKey, propertyProvider)
+                && wrapping.allowsReadNodeProperty(labels, propertyKey, propertyProvider);
     }
 
     @Override
@@ -133,6 +180,43 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     @Override
     public boolean allowsSeePropertyKeyToken(int propertyKey) {
         return original.allowsSeePropertyKeyToken(propertyKey) && wrapping.allowsSeePropertyKeyToken(propertyKey);
+    }
+
+    @Override
+    public boolean hasPropertyReadRules() {
+        return original.hasPropertyReadRules() || wrapping.hasPropertyReadRules();
+    }
+
+    @Override
+    public boolean hasPropertyReadRules(int... propertyKeys) {
+        return original.hasPropertyReadRules(propertyKeys) || wrapping.hasPropertyReadRules(propertyKeys);
+    }
+
+    @Override
+    public IntSet getReadSecurityProperties(int propertyKey) {
+        return original.getReadSecurityProperties(propertyKey).union(wrapping.getReadSecurityProperties(propertyKey));
+    }
+
+    @Override
+    public IntSet getAllReadSecurityProperties() {
+        return original.getAllReadSecurityProperties().union(wrapping.getAllReadSecurityProperties());
+    }
+
+    @Override
+    public PropertySelection getSecurityPropertySelection(PropertySelection selection) {
+        MutableIntSet union = IntSets.mutable.empty();
+        var originalSelection = original.getSecurityPropertySelection(selection);
+        var wrappingSelection = wrapping.getSecurityPropertySelection(selection);
+
+        for (int i = 0; i < originalSelection.numberOfKeys(); i++) {
+            union.add(originalSelection.key(i));
+        }
+
+        for (int i = 0; i < wrappingSelection.numberOfKeys(); i++) {
+            union.add(wrappingSelection.key(i));
+        }
+
+        return PropertySelection.selection(union.toArray());
     }
 
     @Override

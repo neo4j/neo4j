@@ -20,8 +20,11 @@
 package org.neo4j.internal.kernel.api.security;
 
 import java.util.function.Supplier;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.storageengine.api.PropertySelection;
 
 public class TestAccessMode implements AccessMode {
     private final boolean allowRead;
@@ -87,6 +90,26 @@ public class TestAccessMode implements AccessMode {
     }
 
     @Override
+    public IntSet getTraverseSecurityProperties(long[] labels) {
+        return IntSets.immutable.empty();
+    }
+
+    @Override
+    public boolean hasApplicableTraverseAllowPropertyRules(long label) {
+        return allowRead;
+    }
+
+    @Override
+    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, long... labels) {
+        return allowRead;
+    }
+
+    @Override
+    public boolean hasTraversePropertyRules() {
+        return false;
+    }
+
+    @Override
     public boolean allowsTraverseAllRelTypes() {
         return allowReadAll;
     }
@@ -112,6 +135,23 @@ public class TestAccessMode implements AccessMode {
     }
 
     @Override
+    public boolean allowsReadNodeProperties(
+            Supplier<TokenSet> labels, int[] propertyKeys, ReadSecurityPropertyProvider propertyProvider) {
+        return allowRead;
+    }
+
+    @Override
+    public boolean allowsReadNodeProperties(Supplier<TokenSet> labels, int[] propertyKeys) {
+        return allowRead;
+    }
+
+    @Override
+    public boolean allowsReadNodeProperty(
+            Supplier<TokenSet> labels, int propertyKey, ReadSecurityPropertyProvider propertyProvider) {
+        return allowRead;
+    }
+
+    @Override
     public boolean allowsReadNodeProperty(Supplier<TokenSet> labels, int propertyKey) {
         return allowRead;
     }
@@ -129,6 +169,31 @@ public class TestAccessMode implements AccessMode {
     @Override
     public boolean allowsSeePropertyKeyToken(int propertyKey) {
         return allowRead;
+    }
+
+    @Override
+    public boolean hasPropertyReadRules() {
+        return false;
+    }
+
+    @Override
+    public boolean hasPropertyReadRules(int... propertyKeys) {
+        return false;
+    }
+
+    @Override
+    public IntSet getReadSecurityProperties(int propertyKey) {
+        return IntSets.immutable.empty();
+    }
+
+    @Override
+    public IntSet getAllReadSecurityProperties() {
+        return IntSets.immutable.empty();
+    }
+
+    @Override
+    public PropertySelection getSecurityPropertySelection(PropertySelection selection) {
+        return PropertySelection.NO_PROPERTIES;
     }
 
     @Override
