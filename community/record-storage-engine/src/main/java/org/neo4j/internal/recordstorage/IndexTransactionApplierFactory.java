@@ -116,7 +116,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         }
 
         private void processSchemaCommand(Command.Mode commandMode, SchemaRule schemaRule) throws IOException {
-            if (schemaRule instanceof IndexDescriptor indexRule) {
+            if (schemaRule instanceof IndexDescriptor indexDescriptor) {
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
                 // Assume there are some transactions creating or modifying nodes that may not be covered
@@ -130,23 +130,23 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
                     case UPDATE -> {
                         // Shouldn't we be more clear about that we are waiting for an index to come online here?
                         // right now we just assume that an update to index records means wait for it to be online.
-                        if (indexRule.isUnique()) {
+                        if (indexDescriptor.isUnique()) {
                             // Register activations into the IndexActivator instead of IndexingService to avoid deadlock
                             // that could ensue for applying batches of transactions where a previous transaction in the
                             // same
                             // batch acquires a low-level commit lock that prevents the very same index population to
                             // complete.
-                            indexActivator.activateIndex(indexRule);
+                            indexActivator.activateIndex(indexDescriptor);
                         }
                     }
                     case CREATE -> {
                         // Add to list so that all these indexes will be created in one call later
                         createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
-                        createdIndexes.add(indexRule);
+                        createdIndexes.add(indexDescriptor);
                     }
                     case DELETE -> {
-                        indexUpdateListener.dropIndex(indexRule);
-                        indexActivator.indexDropped(indexRule);
+                        indexUpdateListener.dropIndex(indexDescriptor);
+                        indexActivator.indexDropped(indexDescriptor);
                     }
                 }
             }

@@ -27,6 +27,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.io.pagecache.context.OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY;
 import static org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY;
+import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
@@ -626,7 +627,9 @@ public final class Recovery {
                 databaseLayout.getDatabaseName(),
                 readOnlyChecker,
                 clock,
-                recoveryMetaDataCache);
+                recoveryMetaDataCache,
+                fs,
+                EMPTY_VISIBILITY_PROVIDER);
 
         MetadataProvider metadataProvider = storageEngine.metadataProvider();
 

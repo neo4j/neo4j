@@ -33,6 +33,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
+import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.UncheckedIOException;
@@ -69,6 +70,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -378,7 +380,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     "",
                     writable(),
                     Clocks.nanoClock(),
-                    mock(KernelVersionProvider.class));
+                    mock(KernelVersionProvider.class),
+                    new DefaultFileSystemAbstraction(),
+                    EMPTY_VISIBILITY_PROVIDER);
             indexService.start();
 
             rules = createIndexRules(provider, indexType, labelNameIdMap, propertyId);

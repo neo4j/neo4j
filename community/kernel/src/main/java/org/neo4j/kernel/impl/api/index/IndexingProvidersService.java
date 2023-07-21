@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collection;
 import java.util.List;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -101,4 +102,9 @@ public interface IndexingProvidersService {
      * @return the point index provider for this instance.
      */
     IndexProviderDescriptor getPointIndexProvider();
+
+    /**
+     * Get all registered index providers
+     */
+    Collection<IndexProvider> getIndexProviders();
 }

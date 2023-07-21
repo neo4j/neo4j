@@ -29,6 +29,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 import java.io.IOException;
@@ -68,6 +69,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -78,6 +80,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
+import org.neo4j.kernel.impl.api.index.drop.DefaultIndexDropController;
+import org.neo4j.kernel.impl.api.index.drop.IndexDropController;
+import org.neo4j.kernel.impl.api.index.drop.MultiVersionIndexDropController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -137,6 +143,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexStoreView storeView;
     private final StorageEngineIndexingBehaviour storageEngineIndexingBehaviour;
     private final KernelVersionProvider kernelVersionProvider;
+    private final IndexDropController indexDropController;
 
     private volatile JobHandle<?> usageReportJob;
 
@@ -168,7 +175,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
             Config config,
-            KernelVersionProvider kernelVersionProvider) {
+            KernelVersionProvider kernelVersionProvider,
+            FileSystemAbstraction fs,
+            TransactionVisibilityProvider transactionVisibilityProvider) {
         this.storageEngineIndexingBehaviour = storageEngine.indexingBehaviour();
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -191,6 +200,17 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.openOptions = storageEngine.getOpenOptions();
         this.storeView = indexStoreViewFactory.createTokenIndexStoreView(indexMapRef::getIndexProxy);
         this.kernelVersionProvider = kernelVersionProvider;
+        this.indexDropController = createIndexDropController(internalLogProvider, transactionVisibilityProvider, fs);
+    }
+
+    private IndexDropController createIndexDropController(
+            InternalLogProvider internalLogProvider,
+            TransactionVisibilityProvider transactionVisibilityProvider,
+            FileSystemAbstraction fs) {
+        return openOptions.contains(MULTI_VERSIONED)
+                ? new MultiVersionIndexDropController(
+                        jobScheduler, transactionVisibilityProvider, this, fs, internalLogProvider)
+                : new DefaultIndexDropController(this);
     }
 
     /**
@@ -290,6 +310,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         samplingController.recoverIndexSamples();
         samplingController.start();
+
+        indexDropController.start();
 
         // So at this point we've started population of indexes that needs to be rebuilt in the background.
         // Indexes backing uniqueness constraints are normally built within the transaction creating the constraint
@@ -419,6 +441,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     @Override
     public void stop() throws Exception {
         usageReportJob.cancel();
+        indexDropController.stop();
         samplingController.stop();
         populationJobController.stop();
     }
@@ -450,6 +473,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     @Override
     public IndexProviderDescriptor getFulltextProvider() {
         return providerMap.getFulltextProvider().getProviderDescriptor();
+    }
+
+    @Override
+    public Collection<IndexProvider> getIndexProviders() {
+        var indexProviders = new ArrayList<IndexProvider>();
+        providerMap.accept(indexProviders::add);
+        return indexProviders;
     }
 
     @Override
@@ -552,17 +582,21 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public void dropIndex(IndexDescriptor rule) {
+    public void dropIndex(IndexDescriptor indexDescriptor) {
+        indexDropController.dropIndex(indexDescriptor);
+    }
+
+    public void internalIndexDrop(IndexDescriptor indexDescriptor) {
         Preconditions.checkState(
                 state == State.RUNNING || state == State.NOT_STARTED,
                 "Dropping index in unexpected state %s",
                 state.name());
         indexMapRef.modify(indexMap -> {
-            long indexId = rule.getId();
+            long indexId = indexDescriptor.getId();
             IndexProxy index = indexMap.removeIndexProxy(indexId);
 
             if (state == State.RUNNING) {
-                Preconditions.checkState(index != null, "Index %s doesn't exists", rule);
+                Preconditions.checkState(index != null, "Index %s doesn't exists", indexDescriptor);
                 index.drop();
             } else if (index != null) {
                 try {

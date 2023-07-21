@@ -26,8 +26,10 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -60,7 +62,9 @@ public final class IndexingServiceFactory {
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
             Clock clock,
-            KernelVersionProvider kernelVersionProvider) {
+            KernelVersionProvider kernelVersionProvider,
+            FileSystemAbstraction fs,
+            TransactionVisibilityProvider transactionVisibilityProvider) {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory(
@@ -102,6 +106,8 @@ public final class IndexingServiceFactory {
                 databaseName,
                 readOnlyChecker,
                 config,
-                kernelVersionProvider);
+                kernelVersionProvider,
+                fs,
+                transactionVisibilityProvider);
     }
 }

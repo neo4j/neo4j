@@ -112,6 +112,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionIdSequence;
 import org.neo4j.kernel.impl.api.TransactionRegistry;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
@@ -819,7 +820,9 @@ public class Database extends AbstractDatabase {
                 namedDatabaseId.name(),
                 readOnlyDatabaseChecker,
                 clock,
-                kernelVersionProvider));
+                kernelVersionProvider,
+                fs,
+                new KernelTransactionVisibilityProvider()));
     }
 
     /**
@@ -841,7 +844,9 @@ public class Database extends AbstractDatabase {
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
             Clock clock,
-            KernelVersionProvider kernelVersionProvider) {
+            KernelVersionProvider kernelVersionProvider,
+            FileSystemAbstraction fs,
+            TransactionVisibilityProvider transactionVisibilityProvider) {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService(
                 storageEngine,
                 config,
@@ -859,7 +864,9 @@ public class Database extends AbstractDatabase {
                 databaseName,
                 readOnlyChecker,
                 clock,
-                kernelVersionProvider);
+                kernelVersionProvider,
+                fs,
+                transactionVisibilityProvider);
         storageEngine.addIndexUpdateListener(indexingService);
         return indexingService;
     }
@@ -1257,5 +1264,22 @@ public class Database extends AbstractDatabase {
 
     private static boolean isNotMultiVersioned(DatabaseConfig databaseConfig) {
         return !"multiversion".equals(databaseConfig.get(db_format));
+    }
+
+    private class KernelTransactionVisibilityProvider implements TransactionVisibilityProvider {
+        @Override
+        public long oldestVisibleTransactionNumber() {
+            return kernelModule.kernelTransactions().oldestVisibleTransactionNumber();
+        }
+
+        @Override
+        public long oldestObservableHorizon() {
+            return kernelModule.kernelTransactions().oldestObservableHorizon();
+        }
+
+        @Override
+        public long youngestObservableHorizon() {
+            return kernelModule.kernelTransactions().youngestObservableHorizon();
+        }
     }
 }

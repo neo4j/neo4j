@@ -98,7 +98,10 @@ import org.neo4j.values.ElementIdMapper;
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
 public class KernelTransactions extends LifecycleAdapter
-        implements TransactionRegistry, Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition {
+        implements TransactionRegistry,
+                Supplier<IdController.TransactionSnapshot>,
+                IdController.IdFreeCondition,
+                TransactionVisibilityProvider {
     public static final long SYSTEM_TRANSACTION_ID = 0;
     private final LockManager lockManager;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -308,6 +311,7 @@ public class KernelTransactions extends LifecycleAdapter
                 .collect(toSet());
     }
 
+    @Override
     public long oldestVisibleTransactionNumber() {
         long oldestVisibleTransactionNumber = Long.MAX_VALUE;
         for (KernelTransactionImplementation transaction : allTransactions) {
@@ -320,6 +324,7 @@ public class KernelTransactions extends LifecycleAdapter
         return oldestVisibleTransactionNumber;
     }
 
+    @Override
     public long oldestObservableHorizon() {
         long oldestHorizon = Long.MAX_VALUE;
         for (KernelTransactionImplementation transaction : allTransactions) {
@@ -330,6 +335,18 @@ public class KernelTransactions extends LifecycleAdapter
             }
         }
         return oldestHorizon;
+    }
+
+    @Override
+    public long youngestObservableHorizon() {
+        long youngest = Long.MIN_VALUE;
+        for (KernelTransactionImplementation transaction : allTransactions) {
+            if (transaction.isOpen() && !transaction.isTerminated()) {
+                youngest = Math.max(
+                        youngest, transactionHorizon(transaction.cursorContext().getVersionContext()));
+            }
+        }
+        return youngest;
     }
 
     private long transactionHorizon(VersionContext versionContext) {
