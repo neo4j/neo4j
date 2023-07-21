@@ -61,6 +61,11 @@ public final class Conditions {
         return new Condition<>(v -> v.compareTo(value) >= 0, "Should be greater than or equal to " + value);
     }
 
+    public static <T extends Comparable<T>> Condition<T> lethThanOrEqualTo(T value) {
+        Objects.requireNonNull(value);
+        return new Condition<>(v -> v.compareTo(value) <= 0, "Should be less than or equal to " + value);
+    }
+
     public static <T> Condition<T> instanceOf(Class<?> type) {
         Objects.requireNonNull(type);
         return new Condition<>(type::isInstance, "Should be instance of " + type.getName());
