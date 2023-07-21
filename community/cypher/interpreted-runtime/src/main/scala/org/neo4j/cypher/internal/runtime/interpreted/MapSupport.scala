@@ -28,6 +28,8 @@ import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue.DirectNodeValue
+import org.neo4j.values.virtual.RelationshipValue.DirectRelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
@@ -51,7 +53,8 @@ trait MapSupport {
   def isMap(x: AnyValue): Boolean = castToMap.isDefinedAt(x)
 
   def castToMap: PartialFunction[AnyValue, QueryState => MapValue] = {
-    case x: MapValue => _ => x
+    case x: MapValue        => _ => x
+    case x: DirectNodeValue => _ => x.properties()
     case x: VirtualNodeValue => state =>
         new LazyMap(
           state.query,
@@ -60,6 +63,7 @@ trait MapSupport {
           state.cursors.propertyCursor,
           x.id()
         )
+    case x: DirectRelationshipValue => _ => x.properties()
     case x: VirtualRelationshipValue => state =>
         new LazyMap(
           state.query,

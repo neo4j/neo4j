@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.EMPTY_STRING
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.TRUE
@@ -51,6 +52,7 @@ import org.neo4j.values.storable.Values.doubleValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.Values.stringArray
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.VirtualValues.list
@@ -116,17 +118,25 @@ class CoerceToTest extends CypherFunSuite {
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
-  test("NODE") {
+  test("NODE without properties") {
     testedTypes
       .coerce(nodeValue(11L, "n", stringArray("L"), EMPTY_MAP))
       .to(CTAny).unchanged
       .to(CTNode).unchanged
-      // TODO: IsCollection/IsMap behaviour - Discuss
       .to(CTMap).changedButNotNull
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
-  test("RELATIONSHIP") {
+  test("NODE with properties") {
+    testedTypes
+      .coerce(nodeValue(11L, "n", stringArray("L"), VirtualValues.map(Array("prop"), Array(Values.longValue(44L)))))
+      .to(CTAny).unchanged
+      .to(CTNode).unchanged
+      .to(CTMap).changedTo(VirtualValues.map(Array("prop"), Array(Values.longValue(44L))))
+      .forRemainingTypes { typ => _.notTo(typ) }
+  }
+
+  test("RELATIONSHIP without properties") {
     testedTypes
       .coerce(relationshipValue(
         11L,
@@ -138,8 +148,23 @@ class CoerceToTest extends CypherFunSuite {
       ))
       .to(CTAny).unchanged
       .to(CTRelationship).unchanged
-      // TODO: IsCollection/IsMap behaviour - Discuss
       .to(CTMap).changedButNotNull
+      .forRemainingTypes { typ => _.notTo(typ) }
+  }
+
+  test("RELATIONSHIP with properties") {
+    testedTypes
+      .coerce(relationshipValue(
+        11L,
+        "r",
+        nodeValue(11L, "n1", stringArray("L"), EMPTY_MAP),
+        nodeValue(12L, "n2", stringArray("L"), EMPTY_MAP),
+        stringValue("T"),
+        VirtualValues.map(Array("prop"), Array(Values.longValue(44L)))
+      ))
+      .to(CTAny).unchanged
+      .to(CTRelationship).unchanged
+      .to(CTMap).changedTo(VirtualValues.map(Array("prop"), Array(Values.longValue(44L))))
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
