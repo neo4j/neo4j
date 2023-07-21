@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -43,7 +43,7 @@ trait MatchPredicateNormalizer {
    */
   final def extractAllFrom(pattern: Any): Seq[Expression] =
     pattern.folder.treeFold(Vector.empty[Expression]) {
-      case patternElement if patternElement.isInstanceOf[ExistsSubClause] =>
+      case _: ScopeExpression =>
         acc => SkipChildren(acc)
       case patternElement: AnyRef if extract.isDefinedAt(patternElement) =>
         acc => TraverseChildren(acc ++ extract(patternElement))

@@ -177,6 +177,33 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     }
   }
 
+  test("should get the right scope for pattern comprehension in node property value") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Foo", 10)
+      .setRelationshipCardinality("(:Foo)-[]->()", 15)
+      .setRelationshipCardinality("()-[]->()", 150)
+      .build()
+
+    val plan = planner.plan(
+      """MATCH (n {labeled_neighbours : size( [(:Foo)-[]->(n)|1] ) })
+        |RETURN n""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .filter("n.labeled_neighbours = size(anon_1)")
+        .rollUpApply("anon_1", "anon_0")
+        .|.projection("1 AS anon_0")
+        .|.filter("anon_2:Foo")
+        .|.expandAll("(n)<-[anon_3]-(anon_2)")
+        .|.argument("n")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   // Please look at the SemiApplyVsGetDegree benchmark.
   // GetDegree is slower on sparse nodes, but faster on dense nodes.
   // We heuristically always choose SemiApply, which will do better on average.

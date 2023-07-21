@@ -236,6 +236,52 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
       s"MATCH (n)-[$rel]->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
   }
 
+
+  test("should rewrite LABEL PREDICATE from pattern inside pattern comprehension inside WHERE CLAUSE to scope of pattern comprehension (only)") {
+    assertRewrite(
+      "MATCH (a WHERE size([(n:L)-[r]->(m) WHERE n.prop > 0 | n.foo]) > 1) RETURN *",
+      "MATCH (a) WHERE size([(n:L)-[r]->(m) WHERE n.prop > 0 | n.foo]) > 1 RETURN *"
+    )
+  }
+
+  test("should rewrite LABEL PREDICATE from pattern inside pattern comprehension inside PROPERTY to scope of pattern comprehension (only)") {
+    assertRewrite(
+      "MATCH (a { p: size([(n)-[r]->(m) WHERE n.prop > 0 | n.foo]) } ) RETURN *",
+      "MATCH (a) WHERE a.p = size([(n)-[r]->(m) WHERE n.prop > 0 | n.foo]) RETURN *"
+    )
+  }
+
+  test("should rewrite PROPERTY PREDICATE from pattern inside pattern comprehension inside PROPERTY to scope of pattern comprehension (only)") {
+    assertRewrite(
+      "MATCH (a { p: size([(n {prop:42})-[r]->(m) | n.foo]) } ) RETURN *",
+      "MATCH (a) WHERE a.p = size([(n {prop:42})-[r]->(m) | n.foo]) RETURN *"
+    )
+  }
+
+  test("should not rewrite LABEL predicate inside pattern expression") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(
+      "MATCH (n { p: exists( (:Label)--() ) }) RETURN *",
+      s"MATCH (n) WHERE n.p = exists( ($node1:Label)-[$rel]-($node2) ) RETURN *"
+    )
+  }
+
+  test("should not rewrite PROPERTY predicate inside pattern expression") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(
+      "MATCH (n { p: exists( (:Label {prop: 42})--() ) }) RETURN *",
+      s"MATCH (n) WHERE n.p = exists( ($node1:Label {prop: 42})-[$rel]-($node2) ) RETURN *"
+    )
+  }
+
   test("should move pattern predicates out of node in EXISTS clause") {
     assertRewrite("MATCH (n) WHERE EXISTS {MATCH (n WHERE n.prop = 1)} RETURN *",
     "MATCH (n) WHERE EXISTS { MATCH (n) WHERE n.prop = 1} RETURN *")
