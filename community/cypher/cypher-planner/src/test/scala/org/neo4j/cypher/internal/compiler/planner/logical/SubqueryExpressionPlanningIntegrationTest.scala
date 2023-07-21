@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
@@ -57,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
@@ -3513,6 +3515,42 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .emptyResult()
         .setPropertiesExpression(caseExp, ("prop", "false"), ("prop2", "true"))
         .argument()
+        .build()
+    )
+  }
+
+  test("should plan remote with entity expressed through lazy subquery expression") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (n) WITH * ORDER BY n.p ASC
+        |REMOVE ((COLLECT { MATCH (m) RETURN m })[0]).prop""".stripMargin
+
+    val nestedPlan = planner.subPlanBuilder()
+      .limit(add(literalInt(1), literalInt(0)))
+      .allNodeScan("m")
+      .build()
+
+    val solvedString =
+      """COLLECT { MATCH (m)
+        |RETURN m AS m }""".stripMargin
+    val collectExpression = NestedPlanCollectExpression(nestedPlan, varFor("m"), solvedString)(pos)
+    val indexExpression = containerIndex(collectExpression, 0)
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .setPropertyExpression(indexExpression, "prop", "NULL")
+        .sort("`n.p` ASC")
+        .projection("n.p AS `n.p`")
+        .allNodeScan("n")
         .build()
     )
   }
