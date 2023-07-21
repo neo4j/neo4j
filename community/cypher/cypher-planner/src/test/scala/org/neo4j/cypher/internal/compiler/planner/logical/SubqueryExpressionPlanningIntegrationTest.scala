@@ -441,6 +441,26 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
   }
 
+  test("should get the right scope for pattern comprehension in node property value") {
+    val plan = planner.plan(
+      """MATCH (n {labeled_neighbours : size( [(:Foo)-[]-(n)|1] ) })
+        |RETURN n""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .filter("n.labeled_neighbours = size(anon_3)")
+        .rollUpApply("anon_3", "anon_2")
+        .|.projection("1 AS anon_2")
+        .|.filter("anon_0:Foo")
+        .|.expandAll("(n)-[anon_1]-(anon_0)")
+        .|.argument("n")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   // Please look at the SemiApplyVsGetDegree benchmark.
   // GetDegree is faster than SemiApply.
 

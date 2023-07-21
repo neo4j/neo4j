@@ -16,12 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.CountExpression
-import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
+import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -51,7 +50,8 @@ trait PredicateNormalizer {
    */
   final def extractAllFrom(pattern: AnyRef): Seq[Expression] =
     pattern.folder.treeFold(Vector.empty[Expression]) {
-      case _: QuantifiedPath | _: ExistsExpression | _: CountExpression => acc => SkipChildren(acc)
+      case _: QuantifiedPath | _: ScopeExpression =>
+        acc => SkipChildren(acc)
       case PatternPartWithSelector(_: SelectiveSelector, _) =>
         acc => SkipChildren(acc)
       case patternElement: AnyRef if extract.isDefinedAt(patternElement) =>

@@ -568,6 +568,22 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     assertRewrite("MATCH (a) WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1 RETURN *")
   }
 
+  test("MATCH (a WHERE size([(n:L)-->() WHERE n.prop > 0 | n.foo]) > 1) RETURN *") {
+    assertRewrite("MATCH (a) WHERE size([(n)-->() WHERE n:L AND n.prop > 0 | n.foo]) > 1 RETURN *")
+  }
+
+  test("MATCH (a { p: size([(n)-->() WHERE n.prop > 0 | n.foo]) } ) RETURN *") {
+    assertRewrite("MATCH (a) WHERE a.p = size([(n)-->() WHERE n.prop > 0 | n.foo]) RETURN *")
+  }
+
+  test("MATCH (a { p: size([(n {prop:42})-->() | n.foo]) } ) RETURN *") {
+    assertRewrite("MATCH (a) WHERE a.p = size([(n)-->() WHERE n.prop = 42 | n.foo]) RETURN *")
+  }
+
+  test("MATCH (a { p: size([(n:L)-->() WHERE n.prop > 0 | n.foo]) } ) RETURN *") {
+    assertRewrite("MATCH (a) WHERE a.p = size([(n)-->() WHERE n:L AND n.prop > 0 | n.foo]) RETURN *")
+  }
+
   test("MATCH (n WHERE exists( (:Label)--() )) RETURN *") {
     val anonVarNameGen = new AnonymousVariableNameGenerator
     val node1 = s"`${anonVarNameGen.nextName}`"
@@ -575,6 +591,24 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     val node2 = s"`${anonVarNameGen.nextName}`"
 
     assertRewrite(s"MATCH (n) WHERE exists( ($node1:Label)-[$rel]-($node2) ) RETURN *")
+  }
+
+  test("MATCH (n { p: exists( (:Label)--() ) }) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n) WHERE n.p = exists( ($node1:Label)-[$rel]-($node2) ) RETURN *")
+  }
+
+  test("MATCH (n { p: exists( (:Label {prop: 42})--() ) }) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n) WHERE n.p = exists( ($node1:Label {prop: 42})-[$rel]-($node2) ) RETURN *")
   }
 
   test("MATCH (n)-[r WHERE exists( (:Label)--() )]->(m) RETURN *") {
