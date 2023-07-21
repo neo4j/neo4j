@@ -920,6 +920,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .produceResults("x", "y")
       .sort("x ASC", "y ASC")
       .sort("x DESC")
+      .sort("`n.p` ASC")
       .argument()
       .build()
   )

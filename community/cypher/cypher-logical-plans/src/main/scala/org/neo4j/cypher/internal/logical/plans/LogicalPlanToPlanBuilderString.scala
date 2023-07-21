@@ -1573,7 +1573,7 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def sortItemStr(si: ColumnOrder): String = {
-    s"\"${si.id.name} ${if (si.isAscending) "ASC" else "DESC"}\""
+    s"\"${escapeIdentifier(si.id.name)} ${if (si.isAscending) "ASC" else "DESC"}\""
   }
 
   private def conflictStr(conflict: EagernessReason.Conflict): String =
