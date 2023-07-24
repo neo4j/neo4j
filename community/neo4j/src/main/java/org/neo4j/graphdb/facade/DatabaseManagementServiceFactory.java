@@ -335,59 +335,62 @@ public class DatabaseManagementServiceFactory {
             GlobalProceduresRegistry globalProcedures =
                     new GlobalProceduresRegistry(builtInProcedures, proceduresDirectory, internalLog, procedureConfig);
 
-            globalProcedures.registerType(Node.class, NTNode);
-            globalProcedures.registerType(NodeValue.class, NTNode);
-            globalProcedures.registerType(Relationship.class, NTRelationship);
-            globalProcedures.registerType(RelationshipValue.class, NTRelationship);
-            globalProcedures.registerType(org.neo4j.graphdb.Path.class, NTPath);
-            globalProcedures.registerType(PathValue.class, NTPath);
-            globalProcedures.registerType(Geometry.class, NTGeometry);
-            globalProcedures.registerType(Point.class, NTPoint);
-            globalProcedures.registerType(PointValue.class, NTPoint);
+            try (var registry = globalProcedures.bulk()) {
+                registry.registerType(Node.class, NTNode);
+                registry.registerType(NodeValue.class, NTNode);
+                registry.registerType(Relationship.class, NTRelationship);
+                registry.registerType(RelationshipValue.class, NTRelationship);
+                registry.registerType(org.neo4j.graphdb.Path.class, NTPath);
+                registry.registerType(PathValue.class, NTPath);
+                registry.registerType(Geometry.class, NTGeometry);
+                registry.registerType(Point.class, NTPoint);
+                registry.registerType(PointValue.class, NTPoint);
 
-            // Below components are not public API, but are made available for internal
-            // procedures to call, and to provide temporary workarounds for the following
-            // patterns:
-            //  - Batch-transaction imports (GDAPI, needs to be real and passed to background processing threads)
-            //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
-            //                              combine lots of small ones)
-            //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-            globalProcedures.registerComponent(DependencyResolver.class, Context::dependencyResolver, false);
-            globalProcedures.registerComponent(KernelTransaction.class, Context::kernelTransaction, false);
-            globalProcedures.registerComponent(GraphDatabaseAPI.class, Context::graphDatabaseAPI, false);
-            globalProcedures.registerComponent(
-                    SystemGraphComponents.class, ctx -> editionModule.getSystemGraphComponents(), false);
-            globalProcedures.registerComponent(
-                    DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency(DataCollector.class), false);
+                // Below components are not public API, but are made available for internal
+                // procedures to call, and to provide temporary workarounds for the following
+                // patterns:
+                //  - Batch-transaction imports (GDAPI, needs to be real and passed to background processing threads)
+                //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
+                //                              combine lots of small ones)
+                //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
+                registry.registerComponent(DependencyResolver.class, Context::dependencyResolver, false);
+                registry.registerComponent(KernelTransaction.class, Context::kernelTransaction, false);
+                registry.registerComponent(GraphDatabaseAPI.class, Context::graphDatabaseAPI, false);
+                registry.registerComponent(
+                        SystemGraphComponents.class, ctx -> editionModule.getSystemGraphComponents(), false);
+                registry.registerComponent(
+                        DataCollector.class,
+                        ctx -> ctx.dependencyResolver().resolveDependency(DataCollector.class),
+                        false);
 
-            // Register injected public API components
-            globalProcedures.registerComponent(Log.class, ctx -> proceduresLog, true);
-            globalProcedures.registerComponent(Transaction.class, Context::transaction, true);
-            globalProcedures.registerComponent(
-                    org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true);
-            globalProcedures.registerComponent(
-                    StatusDetailsAccessor.class, new TransactionStatusDetailsProvider(), true);
-            globalProcedures.registerComponent(SecurityContext.class, Context::securityContext, true);
-            globalProcedures.registerComponent(ProcedureCallContext.class, Context::procedureCallContext, true);
-            globalProcedures.registerComponent(
-                    FulltextAdapter.class,
-                    ctx -> ctx.dependencyResolver().resolveDependency(FulltextAdapter.class),
-                    true);
-            globalProcedures.registerComponent(
-                    GraphDatabaseService.class,
-                    ctx -> new ProcedureGraphDatabaseAPI(
-                            ctx.graphDatabaseAPI(),
-                            new ProcedureLoginContextTransformer(ctx),
-                            ctx.dependencyResolver().resolveDependency(Config.class)),
-                    true);
-            globalProcedures.registerComponent(ValueMapper.class, Context::valueMapper, true);
+                // Register injected public API components
+                registry.registerComponent(Log.class, ctx -> proceduresLog, true);
+                registry.registerComponent(Transaction.class, Context::transaction, true);
+                registry.registerComponent(
+                        org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true);
+                registry.registerComponent(StatusDetailsAccessor.class, new TransactionStatusDetailsProvider(), true);
+                registry.registerComponent(SecurityContext.class, Context::securityContext, true);
+                registry.registerComponent(ProcedureCallContext.class, Context::procedureCallContext, true);
+                registry.registerComponent(
+                        FulltextAdapter.class,
+                        ctx -> ctx.dependencyResolver().resolveDependency(FulltextAdapter.class),
+                        true);
+                registry.registerComponent(
+                        GraphDatabaseService.class,
+                        ctx -> new ProcedureGraphDatabaseAPI(
+                                ctx.graphDatabaseAPI(),
+                                new ProcedureLoginContextTransformer(ctx),
+                                ctx.dependencyResolver().resolveDependency(Config.class)),
+                        true);
+                registry.registerComponent(ValueMapper.class, Context::valueMapper, true);
 
-            // Edition procedures
-            try {
-                editionModule.registerProcedures(
-                        globalProcedures, procedureConfig, globalModule, databaseContextProvider, routingService);
-            } catch (KernelException e) {
-                internalLog.error("Failed to register built-in edition procedures at start up: " + e.getMessage());
+                // Edition procedures
+                try {
+                    editionModule.registerProcedures(
+                            registry, procedureConfig, globalModule, databaseContextProvider, routingService);
+                } catch (KernelException e) {
+                    internalLog.error("Failed to register built-in edition procedures at start up: " + e.getMessage());
+                }
             }
             globalModule.getGlobalLife().add(globalProcedures);
 

@@ -29,9 +29,15 @@ import org.neo4j.kernel.api.procedure.Context;
  * Tracks components that can be injected into compiled procedures.
  */
 public class ComponentRegistry {
-    private final Map<Class<?>, ThrowingFunction<Context, ?, ProcedureException>> suppliers = new HashMap<>();
+    private final Map<Class<?>, ThrowingFunction<Context, ?, ProcedureException>> suppliers;
 
-    public ComponentRegistry() {}
+    public ComponentRegistry() {
+        this(new HashMap<>());
+    }
+
+    private ComponentRegistry(Map<Class<?>, ThrowingFunction<Context, ?, ProcedureException>> suppliers) {
+        this.suppliers = suppliers;
+    }
 
     @SuppressWarnings("unchecked")
     <T> ThrowingFunction<Context, T, ProcedureException> providerFor(Class<T> type) {
@@ -40,5 +46,9 @@ public class ComponentRegistry {
 
     public <T> void register(Class<T> cls, ThrowingFunction<Context, T, ProcedureException> supplier) {
         suppliers.put(cls, supplier);
+    }
+
+    public static ComponentRegistry copyOf(ComponentRegistry reg) {
+        return new ComponentRegistry(Map.copyOf(reg.suppliers));
     }
 }

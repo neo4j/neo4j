@@ -55,11 +55,28 @@ public class ProcedureViewImpl implements ProcedureView {
     private final LfuCache<String, int[]> aggregationFunctionsLookupCache =
             new LfuCache<>("aggregationFunctions", LOOKUP_CACHE_SIZE);
 
-    public ProcedureViewImpl(
+    private ProcedureViewImpl(
             ProcedureRegistry registryView, ComponentRegistry safeComponents, ComponentRegistry allComponents) {
         this.registry = registryView;
         this.safeComponents = safeComponents;
         this.allComponents = allComponents;
+    }
+
+    /**
+     *  Produces an immutable snapshot of the current registries
+     *
+     * @param procedureRegistry the registered procedures
+     * @param safeComponents the registered "safe" components
+     * @param allComponents  all registered components
+     *
+     * @return an immutable view of the registries
+     */
+    public static ProcedureView snapshot(
+            ProcedureRegistry registry, ComponentRegistry safeComponents, ComponentRegistry allComponents) {
+        return new ProcedureViewImpl(
+                ProcedureRegistry.copyOf(registry),
+                ComponentRegistry.copyOf(safeComponents),
+                ComponentRegistry.copyOf(allComponents));
     }
 
     /**

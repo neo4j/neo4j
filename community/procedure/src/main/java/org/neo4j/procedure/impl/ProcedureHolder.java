@@ -41,11 +41,24 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
  * @param <T> the type to be stored
  */
 class ProcedureHolder<T> {
-    private final Map<QualifiedName, Integer> nameToId = new HashMap<>();
-    private final Map<QualifiedName, Integer> caseInsensitiveName2Id = new HashMap<>();
-    private final List<Object> store = new ArrayList<>();
+    private final Map<QualifiedName, Integer> nameToId;
+    private final Map<QualifiedName, Integer> caseInsensitiveName2Id;
+    private final List<Object> store;
 
     private static final Object TOMBSTONE = new Object();
+
+    public ProcedureHolder() {
+        this(new HashMap<>(), new HashMap<>(), new ArrayList<>());
+    }
+
+    private ProcedureHolder(
+            Map<QualifiedName, Integer> nameToId,
+            Map<QualifiedName, Integer> caseInsensitiveName2Id,
+            List<Object> store) {
+        this.nameToId = nameToId;
+        this.caseInsensitiveName2Id = caseInsensitiveName2Id;
+        this.store = store;
+    }
 
     T get(QualifiedName name) {
         Integer id = name2Id(name);
@@ -162,5 +175,16 @@ class ProcedureHolder<T> {
         if (id != null) {
             store.set(id, TOMBSTONE);
         }
+    }
+    /**
+     * Create an immutable copy of the ProcedureHolder
+     *
+     * @param ref The source {@link ProcedureHolder} to copy.
+     *
+     * @return an immutable copy of the source
+     **/
+    public static <T> ProcedureHolder<T> copyOf(ProcedureHolder<T> ref) {
+        return new ProcedureHolder<>(
+                Map.copyOf(ref.nameToId), Map.copyOf(ref.caseInsensitiveName2Id), List.copyOf(ref.store));
     }
 }

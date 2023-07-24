@@ -51,9 +51,22 @@ import org.neo4j.values.AnyValue;
 
 public class ProcedureRegistry {
 
-    private final ProcedureHolder<CallableProcedure> procedures = new ProcedureHolder<>();
-    private final ProcedureHolder<CallableUserFunction> functions = new ProcedureHolder<>();
-    private final ProcedureHolder<CallableUserAggregationFunction> aggregationFunctions = new ProcedureHolder<>();
+    private final ProcedureHolder<CallableProcedure> procedures;
+    private final ProcedureHolder<CallableUserFunction> functions;
+    private final ProcedureHolder<CallableUserAggregationFunction> aggregationFunctions;
+
+    public ProcedureRegistry() {
+        this(new ProcedureHolder<>(), new ProcedureHolder<>(), new ProcedureHolder<>());
+    }
+
+    private ProcedureRegistry(
+            ProcedureHolder<CallableProcedure> procedures,
+            ProcedureHolder<CallableUserFunction> functions,
+            ProcedureHolder<CallableUserAggregationFunction> aggregationFunctions) {
+        this.procedures = procedures;
+        this.functions = functions;
+        this.aggregationFunctions = aggregationFunctions;
+    }
 
     /**
      * Register a new procedure.
@@ -308,5 +321,19 @@ public class ProcedureRegistry {
         procedures.unregister(name);
         functions.unregister(name);
         aggregationFunctions.unregister(name);
+    }
+
+    /**
+     * Create an immutable copy of the ProcedureRegistry
+     *
+     * @param ref The source {@link ProcedureRegistry} to copy.
+     *
+     * @return an immutable copy of the source
+     **/
+    public static ProcedureRegistry copyOf(ProcedureRegistry ref) {
+        return new ProcedureRegistry(
+                ProcedureHolder.copyOf(ref.procedures),
+                ProcedureHolder.copyOf(ref.functions),
+                ProcedureHolder.copyOf(ref.aggregationFunctions));
     }
 }

@@ -21,8 +21,11 @@ package org.neo4j.procedure.impl;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -44,7 +47,7 @@ import org.neo4j.util.VisibleForTesting;
  * invoking procedures.
  */
 public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures {
-    private ProcedureRegistry registry = new ProcedureRegistry();
+    private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeCheckers typeCheckers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
     private final ComponentRegistry allComponents = new ComponentRegistry();
@@ -53,7 +56,10 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     private final Path proceduresDirectory;
     private final InternalLog log;
 
-    private ProcedureView currentProcedureView = new ProcedureViewImpl(registry, safeComponents, allComponents);
+    private final RegistrationUpdater updater = new RegistrationUpdater();
+
+    private final AtomicReference<ProcedureView> currentProcedureView =
+            new AtomicReference<>(ProcedureViewImpl.snapshot(registry, safeComponents, allComponents));
 
     @VisibleForTesting
     public GlobalProceduresRegistry() {
@@ -73,30 +79,36 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     }
 
     /**
-     * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
+     * Register a new procedure.
      * @param proc the procedure.
      */
     @Override
     public void register(CallableProcedure proc) throws ProcedureException {
-        registry.register(proc);
+        try (var ignored = updater.acquire()) {
+            registry.register(proc);
+        }
     }
 
     /**
-     * Register a new function. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
+     * Register a new function.
      * @param function the function.
      */
     @Override
     public void register(CallableUserFunction function) throws ProcedureException {
-        registry.register(function);
+        try (var ignored = updater.acquire()) {
+            registry.register(function);
+        }
     }
 
     /**
-     * Register a new function. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
+     * Register a new function.
      * @param function the function.
      */
     @Override
     public void register(CallableUserAggregationFunction function) throws ProcedureException {
-        registry.register(function);
+        try (var ignored = updater.acquire()) {
+            registry.register(function);
+        }
     }
 
     /**
@@ -105,19 +117,10 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerProcedure(Class<?> proc) throws ProcedureException {
-        for (CallableProcedure procedure : compiler.compileProcedure(proc, true)) {
-            register(procedure);
-        }
-    }
-
-    /**
-     * Register a new aggregation function defined with annotations on a java class.
-     * @param func the function class
-     */
-    @Override
-    public void registerAggregationFunction(Class<?> func) throws ProcedureException {
-        for (CallableUserAggregationFunction function : compiler.compileAggregationFunction(func)) {
-            register(function);
+        try (var ignored = updater.acquire()) {
+            for (var procedure : compiler.compileProcedure(proc, true)) {
+                registry.register(procedure);
+            }
         }
     }
 
@@ -127,8 +130,23 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerFunction(Class<?> func) throws ProcedureException {
-        for (CallableUserFunction function : compiler.compileFunction(func, false)) {
-            register(function);
+        try (var ignored = updater.acquire()) {
+            for (var function : compiler.compileFunction(func, false)) {
+                registry.register(function);
+            }
+        }
+    }
+
+    /**
+     * Register a new aggregation function defined with annotations on a java class.
+     * @param func the function class
+     */
+    @Override
+    public void registerAggregationFunction(Class<?> func) throws ProcedureException {
+        try (var ignored = updater.acquire()) {
+            for (var aggregation : compiler.compileAggregationFunction(func)) {
+                registry.register(aggregation);
+            }
         }
     }
 
@@ -154,41 +172,183 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     @Override
     public <T> void registerComponent(
             Class<T> cls, ThrowingFunction<Context, T, ProcedureException> provider, boolean safe) {
-        if (safe) {
-            safeComponents.register(cls, provider);
+        try (var ignored = updater.acquire()) {
+            if (safe) {
+                safeComponents.register(cls, provider);
+            }
+            allComponents.register(cls, provider);
         }
-        allComponents.register(cls, provider);
     }
 
     public ProcedureView getCurrentView() {
-        return currentProcedureView;
+        return currentProcedureView.getAcquire();
     }
 
     @Override
     public void start() throws Exception {
-        ProcedureJarLoader loader = new ProcedureJarLoader(compiler, log);
-        ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir(proceduresDirectory);
-        for (CallableProcedure procedure : callables.procedures()) {
-            register(procedure);
-        }
+        try (var ignored = updater.acquire()) {
+            ProcedureJarLoader loader = new ProcedureJarLoader(compiler, log);
+            ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir(proceduresDirectory);
+            for (CallableProcedure procedure : callables.procedures()) {
+                registry.register(procedure);
+            }
 
-        for (CallableUserFunction function : callables.functions()) {
-            register(function);
-        }
+            for (CallableUserFunction function : callables.functions()) {
+                registry.register(function);
+            }
 
-        for (CallableUserAggregationFunction function : callables.aggregationFunctions()) {
-            register(function);
-        }
+            for (CallableUserAggregationFunction function : callables.aggregationFunctions()) {
+                registry.register(function);
+            }
 
-        // And register built-in procedures
-        for (var procedure : builtin.get()) {
-            register(procedure);
+            // And register built-in procedures
+            for (var procedure : builtin.get()) {
+                registry.register(procedure);
+            }
         }
     }
 
     @VisibleForTesting
     @Override
     public void unregister(QualifiedName name) {
-        registry.unregister(name);
+        try (var ignored = updater.acquire()) {
+            registry.unregister(name);
+        }
+    }
+
+    public BulkRegistration bulk() {
+        return new BulkRegistration(updater.acquire());
+    }
+
+    public class BulkRegistration implements GlobalProcedures, Resource {
+        final Resource onClose;
+
+        private BulkRegistration(Resource onClose) {
+            this.onClose = onClose;
+        }
+
+        /**
+         * Register a new procedure.
+         * @param proc the procedure.
+         */
+        @Override
+        public void register(CallableProcedure proc) throws ProcedureException {
+            registry.register(proc);
+        }
+
+        /**
+         * Register a new function.
+         * @param function the function.
+         */
+        @Override
+        public void register(CallableUserFunction function) throws ProcedureException {
+            registry.register(function);
+        }
+
+        /**
+         * Register a new function.
+         * @param function the function.
+         */
+        @Override
+        public void register(CallableUserAggregationFunction function) throws ProcedureException {
+            registry.register(function);
+        }
+
+        /**
+         * Register a new internal procedure defined with annotations on a java class.
+         * @param proc the procedure class
+         */
+        @Override
+        public void registerProcedure(Class<?> proc) throws ProcedureException {
+            for (var procedure : compiler.compileProcedure(proc, true)) {
+                registry.register(procedure);
+            }
+        }
+
+        /**
+         * Register a new function defined with annotations on a java class.
+         * @param func the function class
+         */
+        @Override
+        public void registerFunction(Class<?> func) throws ProcedureException {
+            for (var function : compiler.compileFunction(func, false)) {
+                registry.register(function);
+            }
+        }
+
+        /**
+         * Register a new aggregation function defined with annotations on a java class.
+         * @param func the function class
+         */
+        @Override
+        public void registerAggregationFunction(Class<?> func) throws ProcedureException {
+            for (var aggregation : compiler.compileAggregationFunction(func)) {
+                registry.register(aggregation);
+            }
+        }
+
+        /**
+         * Registers a type and its mapping to Neo4jTypes
+         *
+         * @param javaClass
+         *         the class of the native type
+         * @param type
+         *         the mapping to Neo4jTypes
+         */
+        @Override
+        public void registerType(Class<?> javaClass, Neo4jTypes.AnyType type) {
+            typeCheckers.registerType(javaClass, new TypeCheckers.DefaultValueConverter(type));
+        }
+
+        /**
+         * Registers a component, these become available in reflective procedures for injection.
+         * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
+         * @param provider a function that supplies the component, given the context of a procedure invocation
+         * @param safe set to false if this component can bypass security, true if it respects security
+         */
+        @Override
+        public <T> void registerComponent(
+                Class<T> cls, ThrowingFunction<Context, T, ProcedureException> provider, boolean safe) {
+            if (safe) {
+                safeComponents.register(cls, provider);
+            }
+            allComponents.register(cls, provider);
+        }
+
+        @VisibleForTesting
+        @Override
+        public void unregister(QualifiedName name) {
+            registry.unregister(name);
+        }
+
+        @Override
+        public ProcedureView getCurrentView() {
+            return currentProcedureView.getAcquire();
+        }
+
+        @Override
+        public void close() {
+            onClose.close();
+        }
+    }
+    /**
+     * The RegistrationLatch is responsible for protecting concurrent mutation
+     * of the internals of the GlobalProceduresRegistry, as well as generating
+     * new snapshots upon finishing mutations.
+     */
+    private class RegistrationUpdater {
+        private final ReentrantLock lock = new ReentrantLock();
+
+        Resource acquire() {
+            lock.lock();
+            return () -> {
+                try {
+                    currentProcedureView.setRelease(
+                            ProcedureViewImpl.snapshot(registry, safeComponents, allComponents));
+                } finally {
+                    lock.unlock();
+                }
+            };
+        }
     }
 }
