@@ -30,6 +30,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 import java.io.IOException;
@@ -207,7 +208,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             InternalLogProvider internalLogProvider,
             TransactionVisibilityProvider transactionVisibilityProvider,
             FileSystemAbstraction fs) {
-        return openOptions.contains(MULTI_VERSIONED)
+        return openOptions.contains(MULTI_VERSIONED) && !EMPTY_VISIBILITY_PROVIDER.equals(transactionVisibilityProvider)
                 ? new MultiVersionIndexDropController(
                         jobScheduler, transactionVisibilityProvider, this, fs, internalLogProvider)
                 : new DefaultIndexDropController(this);
