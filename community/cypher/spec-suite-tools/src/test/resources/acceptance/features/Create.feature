@@ -148,8 +148,8 @@ Feature: Create
       | ({count: 0, id: 1}) |
       | ({count: 0, id: 2}) |
     Examples:
-      | countExpression    |
-      | COUNT { MATCH () } |
+      | countExpression                             |
+      | COUNT { MATCH () }                          |
       | CASE WHEN true THEN COUNT {  MATCH () } END |
 
   Scenario: Creating patterns first evaluates all contained count expressions on all inputs
@@ -162,9 +162,9 @@ Feature: Create
       RETURN n
       """
     Then the result should be, in order:
-      | n                   |
-      | ({count: 2, id: 1}) |
-      | ({count: 2, id: 2}) |
+      | n                      |
+      | (:B {count: 2, id: 1}) |
+      | (:B {count: 2, id: 2}) |
 
   Scenario Outline: Creating patterns first evaluates all contained exists expressions
     Given an empty graph
@@ -175,9 +175,9 @@ Feature: Create
       RETURN n
       """
     Then the result should be, in order:
-      | n                      |
-      | ({prop: false, id: 1}) |
-      | ({prop: false, id: 2}) |
+      | n                         |
+      | (:N {prop: false, id: 1}) |
+      | (:N {prop: false, id: 2}) |
     Examples:
       | existsExpression                                                    |
       | EXISTS { MATCH () }                                                 |
