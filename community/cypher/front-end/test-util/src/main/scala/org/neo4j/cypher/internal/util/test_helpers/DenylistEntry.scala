@@ -70,18 +70,25 @@ object DenylistEntry {
   def apply(line: String): DenylistEntry = {
     if (line.startsWith("?") || line.startsWith("Feature")) {
       line match {
-        case entryPattern(questionMark, featureName, scenarioName, null) =>
-          ScenarioDenylistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
         case entryPattern(questionMark, featureName, scenarioName, exampleNumberOrName) =>
           ScenarioDenylistEntry(
             Some(featureName),
             scenarioName,
-            Some(exampleNumberOrName),
+            Option(exampleNumberOrName),
             isFlaky = questionMark.nonEmpty
           )
         case featurePattern(questionMark, featureName) =>
           FeatureDenylistEntry(featureName, isFlaky = questionMark.nonEmpty)
-        case other => throw new UnsupportedOperationException(s"Could not parse denylist entry $other")
+        case other => throw new UnsupportedOperationException(
+            s"""Could not pattern match denylist entry
+               |$other
+               |General format is:
+               |Feature "<featureName>": Scenario "<scenarioName>": Example "<exampleNumber>"
+               |
+               |Regexes:
+               |  ${entryPattern.pattern}
+               |  ${featurePattern.pattern}""".stripMargin
+          )
       }
 
     } else {
