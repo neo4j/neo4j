@@ -873,8 +873,8 @@ sealed trait ProjectionClause extends HorizonClause {
         returnItems.declareVariables(scopeInUse) chain
           orderBy.foldSemanticCheck(_.checkAmbiguousOrdering(returnItems, if (isReturn) "RETURN" else "WITH")) chain
           orderBy.semanticCheck chain
-          checkSkip chain
-          checkLimit chain
+          limit.semanticCheck chain
+          skip.semanticCheck chain
           where.semanticCheck) (innerState)
 
       // The two clauses ORDER BY and WHERE, following a WITH clause where there is no DISTINCT nor aggregation, have a special scope such that they
@@ -976,13 +976,6 @@ sealed trait ProjectionClause extends HorizonClause {
         s"In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: $name")
     }.getOrElse(error)
   }
-
-  // use an empty state when checking skip & limit, as these have entirely isolated context
-  private def checkSkip: SemanticState => Seq[SemanticErrorDef] =
-    _ => skip.semanticCheck(SemanticState.clean).errors
-
-  private def checkLimit: SemanticState => Seq[SemanticErrorDef] =
-    _ => limit.semanticCheck(SemanticState.clean).errors
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate
