@@ -20,6 +20,4 @@ Feature "Create": Scenario "Creating patterns first evaluates all contained patt
 Feature "Create": Scenario "Creating patterns first evaluates all contained pattern comprehensions"
 Feature "Create": Scenario "Creating patterns first evaluates all contained count expressions on all inputs"
 Feature "Create": Scenario "Creating patterns first evaluates all contained count expressions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained exists expressions": Example "0"
-Feature "Create": Scenario "Creating patterns first evaluates all contained exists expressions": Example "1"
-Feature "Create": Scenario "Creating patterns first evaluates all contained exists expressions": Example "2"
+Feature "Create": Scenario "Creating patterns first evaluates all contained exists expressions"

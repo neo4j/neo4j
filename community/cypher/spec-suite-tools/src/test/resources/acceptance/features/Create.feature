@@ -140,17 +140,22 @@ Feature: Create
     When executing query:
       """
       UNWIND [1, 2] as i
-      CREATE (n {id: i, count: <countExpression>})
+      CREATE (n:N {id: i, count: <countExpression>})
       RETURN n
       """
     Then the result should be, in order:
-      | n                   |
-      | ({count: 0, id: 1}) |
-      | ({count: 0, id: 2}) |
+      | n                      |
+      | (:N {count: 0, id: 1}) |
+      | (:N {count: 0, id: 2}) |
     Examples:
-      | countExpression                             |
-      | COUNT { MATCH () }                          |
-      | CASE WHEN true THEN COUNT {  MATCH () } END |
+      | countExpression                                                       |
+      | COUNT { MATCH () }                                                    |
+      | COUNT { MATCH (:N) }                                                  |
+      | COUNT { MATCH (m WHERE m.id IS NOT NULL) }                            |
+      | CASE WHEN true THEN COUNT {  MATCH () } END                           |
+      | CASE WHEN true THEN COUNT {  MATCH (:N) } END                         |
+      | CASE WHEN true THEN COUNT {  MATCH (m WHERE m.id IS NOT NULL) } END   |
+      | CASE WHEN true THEN COUNT {  MATCH (m:N WHERE m.id IS NOT NULL) } END |
 
   Scenario: Creating patterns first evaluates all contained count expressions on all inputs
     Given an empty graph
@@ -179,11 +184,14 @@ Feature: Create
       | (:N {prop: false, id: 1}) |
       | (:N {prop: false, id: 2}) |
     Examples:
-      | existsExpression                                                    |
-      | EXISTS { MATCH () }                                                 |
-      | CASE WHEN true THEN EXISTS {  MATCH () } END                        |
-      | CASE WHEN true THEN EXISTS {  MATCH (:N) } END                      |
-      | CASE WHEN true THEN EXISTS {  MATCH (m WHERE m.i IS NOT NULL) } END |
+      | existsExpression                                                       |
+      | EXISTS { MATCH () }                                                    |
+      | EXISTS { MATCH (:N) }                                                  |
+      | EXISTS { MATCH (m WHERE m.id IS NOT NULL) }                            |
+      | CASE WHEN true THEN EXISTS {  MATCH () } END                           |
+      | CASE WHEN true THEN EXISTS {  MATCH (:N) } END                         |
+      | CASE WHEN true THEN EXISTS {  MATCH (m WHERE m.id IS NOT NULL) } END   |
+      | CASE WHEN true THEN EXISTS {  MATCH (m:N WHERE m.id IS NOT NULL) } END |
 
   Scenario: Creating patterns first evaluates all contained pattern expressions
     Given an empty graph
