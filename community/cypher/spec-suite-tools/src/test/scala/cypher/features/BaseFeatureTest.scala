@@ -38,7 +38,7 @@ abstract class BaseFeatureTest extends FeatureTest with ScenarioTestHelper {
     ).filter(s =>
       featureToRun.isEmpty || s.featureName.contains(featureToRun)
     ).filter(s =>
-      featureToRun.isEmpty || s.name.contains(scenarioToRun)
+      scenarioToRun.isEmpty || s.name.contains(scenarioToRun)
     )
   }
 }
