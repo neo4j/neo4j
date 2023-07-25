@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Consumer;
 
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.LabelScanConsistencyReport;
@@ -331,6 +332,13 @@ class NodeCheckerTest extends CheckerTestBase
 
         // then
         expect( NodeConsistencyReport.class, NodeConsistencyReport::illegalLabel );
+    }
+
+    @Test
+    void shouldNotThrowOnCreation() throws Exception
+    {
+        NodeChecker checker = new NodeChecker( context( new ConsistencyFlags( false, true, false ) ), noMandatoryProperties );
+        checker.check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
     }
 
     // invalidLength of dynamic label record: (impossible, right?)

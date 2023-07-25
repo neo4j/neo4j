@@ -94,8 +94,8 @@ class NodeChecker implements Checker
         this.tokenHolders = context.tokenHolders;
         this.neoStores = context.neoStores;
         this.mandatoryProperties = mandatoryProperties;
-        this.nodeProgress = context.roundInsensitiveProgressReporter( this, "Nodes", neoStores.getNodeStore().getHighId() );
         this.smallIndexes = context.indexSizes.smallIndexes( NODE );
+        this.nodeProgress = context.roundInsensitiveProgressReporter( this, "Nodes", neoStores.getNodeStore().getHighId() );
     }
 
     @Override
