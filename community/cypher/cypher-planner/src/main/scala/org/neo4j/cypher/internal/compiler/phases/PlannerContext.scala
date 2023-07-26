@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
@@ -80,7 +82,8 @@ class PlannerContext(cypherExceptionFactory: CypherExceptionFactory,
                      val params: MapValue,
                      val executionModel: ExecutionModel,
                      cancellationChecker: CancellationChecker,
-                     val materializedEntitiesMode: Boolean
+                     val materializedEntitiesMode: Boolean,
+                     val log: Log
 ) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
 
 object PlannerContext {
@@ -101,7 +104,8 @@ object PlannerContext {
             evaluator: ExpressionEvaluator,
             params: MapValue,
             cancellationChecker: CancellationChecker,
-            materializedEntitiesMode: Boolean
+            materializedEntitiesMode: Boolean,
+            log: Log
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -122,7 +126,8 @@ object PlannerContext {
       params,
       executionModel,
       cancellationChecker,
-      materializedEntitiesMode
+      materializedEntitiesMode,
+      log
     )
   }
 }

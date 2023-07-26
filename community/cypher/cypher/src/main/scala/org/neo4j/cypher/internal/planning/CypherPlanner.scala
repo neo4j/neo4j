@@ -335,7 +335,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       simpleExpressionEvaluator,
       params,
       transactionalContextWrapper.cancellationChecker,
-      options.materializedEntitiesMode
+      options.materializedEntitiesMode,
+      log
     )
 
     // Prepare query for caching

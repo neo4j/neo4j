@@ -26,10 +26,9 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.TokensResolved
@@ -69,14 +68,6 @@ case object QueryPlanner
   }
 
   def getLogicalPlanningContext(from: LogicalPlanState, context: PlannerContext): LogicalPlanningContext = {
-    val printCostComparisons = context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
-
-    val costComparisonListener =
-      if (printCostComparisons)
-        SystemOutCostLogger
-      else
-        devNullListener
-
     val planningAttributes = from.planningAttributes
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
     LogicalPlanningContext(
@@ -92,7 +83,7 @@ case object QueryPlanner
       config = QueryPlannerConfiguration.default.withUpdateStrategy(context.updateStrategy),
       legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping,
       csvBufferSize = context.config.csvBufferSize,
-      costComparisonListener = costComparisonListener,
+      costComparisonListener = CostComparisonListener.givenDebugOptions(context.debugOptions, context.log),
       planningAttributes = planningAttributes,
       idGen = context.logicalPlanIdGen,
       executionModel = context.executionModel,

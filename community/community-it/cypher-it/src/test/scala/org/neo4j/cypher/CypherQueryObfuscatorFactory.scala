@@ -85,7 +85,8 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       CancellationChecker.NeverCancelled,
-      false
+      false,
+      null
     )
 
   private object PlanContextWithProceduresRegistry extends PlanContext {
