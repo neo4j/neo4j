@@ -1089,3 +1089,15 @@ Feature: CollectExpressionAcceptance
       }
       """
     Then a SyntaxError should be raised at compile time: *
+
+  Scenario: COLLECT subquery with empty node
+    Given an empty graph
+    When executing query:
+      """
+      MERGE (x:A)
+      RETURN COLLECT { MATCH () RETURN 1 } as result
+      ORDER BY x
+      """
+    Then the result should be, in any order:
+      | result             |
+      | [1, 1, 1, 1, 1, 1] |

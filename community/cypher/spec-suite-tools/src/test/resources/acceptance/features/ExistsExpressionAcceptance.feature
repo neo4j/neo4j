@@ -2468,3 +2468,15 @@ Feature: ExistsExpressionAcceptance
       | false  | 'zero'  |
       | true   | 'one'   |
       | true   | 'three' |
+
+  Scenario: EXISTS subquery with empty node
+    Given an empty graph
+    When executing query:
+      """
+      MERGE (x:A)
+      RETURN EXISTS { () } as result
+      ORDER BY x
+      """
+    Then the result should be, in any order:
+      | result |
+      | true   |

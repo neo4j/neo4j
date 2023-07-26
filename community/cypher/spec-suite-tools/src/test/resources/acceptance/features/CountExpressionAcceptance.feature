@@ -1420,3 +1420,15 @@ Feature: CountExpressionAcceptance
       | a.prop | b.name  |
       | 1      | 'one'   |
       | 3      | 'three' |
+
+  Scenario: COUNT subquery with empty node
+    Given an empty graph
+    When executing query:
+      """
+      MERGE (x:A)
+      RETURN COUNT { () } as result
+      ORDER BY x
+      """
+    Then the result should be, in any order:
+      | result |
+      | 7      |
