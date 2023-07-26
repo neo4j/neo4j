@@ -19,7 +19,9 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -33,19 +35,52 @@ import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+case class SemanticAnalysisResult(context: ErrorCollectingContext, state: BaseState) {
+  def errors: Seq[SemanticErrorDef] = context.errors
+
+  def errorMessages: Seq[String] = errors.map(_.msg)
+
+  def semanticTable: SemanticTable = state.semanticTable()
+}
+
 class SemanticAnalysisTest extends CypherFunSuite {
+
+  private val pipeline = pipelineWithSemanticFeatures()
+
+  type Pipeline = Transformer[BaseContext, BaseState, BaseState]
+
+  def runSemanticAnalysisWithPipelineAndState(pipeline: Pipeline, initialState: BaseState): SemanticAnalysisResult = {
+    val context = new ErrorCollectingContext()
+    val state = pipeline.transform(initialState, context)
+    SemanticAnalysisResult(context, state)
+  }
+
+  def initialStateWithQuery(query: String): InitialState =
+    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+
+  def expectErrorsFrom(
+                        query: String,
+                        expectedErrors: Set[SemanticError],
+                        pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
+                      ): Unit =
+    runSemanticAnalysisWithPipeline(pipeline, query).errors.toSet shouldEqual expectedErrors
+
+  def runSemanticAnalysisWithPipeline(pipeline: Pipeline, query: String): SemanticAnalysisResult =
+    runSemanticAnalysisWithPipelineAndState(pipeline, initialStateWithQuery(query))
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   private def pipelineWithSemanticFeatures(semanticFeatures: SemanticFeature*) =
-    OpenCypherJavaCCWithFallbackParsing andThen PreparatoryRewriting andThen SemanticAnalysis(warn = true, semanticFeatures:_*) andThen SemanticAnalysis(warn = false, semanticFeatures:_*)
-
-  private val pipeline = pipelineWithSemanticFeatures()
+    OpenCypherJavaCCWithFallbackParsing andThen
+      PreparatoryRewriting andThen
+      SemanticAnalysis(warn = true, semanticFeatures: _*) andThen
+      SemanticAnalysis(warn = false, semanticFeatures: _*)
 
   test("should fail for max() with no arguments") {
     val query = "RETURN max() AS max"
@@ -118,6 +153,50 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
         context.errors shouldBe Seq(SemanticError(s"Invalid use of DISTINCT with function '$func'", InputPosition(7, 1, 8)))
     }
+  }
+
+  test("Should not allow parameter maps in node pattern in MATCH") {
+    val query = "MATCH (n $foo) RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError(
+        "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        InputPosition(9, 1, 10)
+      ))
+    )
+  }
+
+  test("Should not allow parameter maps in node pattern in MERGE") {
+    val query = "MERGE (n $foo) RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError(
+        "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        InputPosition(9, 1, 10)
+      ))
+    )
+  }
+
+  test("Should not allow parameter maps in relationship pattern in MATCH") {
+    val query = "MATCH (n)-[r $foo]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError(
+        "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        InputPosition(13, 1, 14)
+      ))
+    )
+  }
+
+  test("Should not allow parameter maps in relationship pattern in MERGE") {
+    val query = "MERGE (n)-[r:R $foo]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError(
+        "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        InputPosition(15, 1, 16)
+      ))
+    )
   }
 
   test("Should allow parameter as valid predicate in FilteringExpression") {

@@ -200,6 +200,13 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
       "MATCH (n)-[r*]->(b) WHERE ALL(`  UNNAMED0` in r where `  UNNAMED0`.prop = 42 AND `  UNNAMED0`.p = 'aaa') RETURN n")
   }
 
+  test("empty parameter maps should not pose a problem but should simply be removed") {
+    assertRewrite(
+      "MATCH (n {})-[r* {}]->(b) RETURN n",
+      "MATCH (n)-[r*]->(b) RETURN n"
+    )
+  }
+
   test("varlength with labels") {
     assertRewrite(
       "MATCH (a:Artist)-[r:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *",

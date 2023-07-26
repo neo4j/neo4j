@@ -23,9 +23,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.FilterScope
-import org.neo4j.cypher.internal.expressions.In
-import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
@@ -373,5 +370,35 @@ class VarLengthPlanningIntegrationTest
         .allNodeScan("a")
         .build()
     }
+  }
+
+  test("should inline property predicates of var-length relationships") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    planner.plan("MATCH (a)-[r* {prop: 42}]->(b) RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .expand("(a)-[r*1..]->(b)", relationshipPredicate = Predicate("r_RELS", "r_RELS.prop = 42"))
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should be able to plan var-length relationships with empty property maps") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    planner.plan("MATCH (a {})-[r* {}]->(b) RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .expand("(a)-[r*1..]->(b)")
+        .allNodeScan("a")
+        .build()
+    )
   }
 }

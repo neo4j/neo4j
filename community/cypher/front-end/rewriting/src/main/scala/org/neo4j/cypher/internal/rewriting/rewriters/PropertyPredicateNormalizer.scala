@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
@@ -31,39 +30,34 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
 case class PropertyPredicateNormalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
-    case NodePattern(Some(id), _, Some(props), _) if !isParameter(props) =>
+    case NodePattern(Some(id), _, Some(props: MapExpression), _) =>
       propertyPredicates(id, props)
 
-    case RelationshipPattern(Some(id), _, None, Some(props), _, _) if !isParameter(props) =>
+    case RelationshipPattern(Some(id), _, None, Some(props: MapExpression), _, _) =>
       propertyPredicates(id, props)
 
-    case rp@RelationshipPattern(Some(id), _, Some(_), Some(props), _, _) if !isParameter(props) =>
+    case rp@RelationshipPattern(Some(id), _, Some(_), Some(props: MapExpression), _, _) if props.items.nonEmpty =>
       Vector(varLengthPropertyPredicates(id, props))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(_) ,_, Some(props), _) if !isParameter(props)                  => p.copy(properties = None)(p.position)
-    case p@RelationshipPattern(Some(_), _, _, Some(props), _, _) if !isParameter(props) => p.copy(properties = None)(p.position)
+    case p@NodePattern(Some(_) ,_, Some(_: MapExpression), _) =>
+      p.copy(properties = None)(p.position)
+    case NodePattern(Some(id), _, Some(_), _) =>
+      throw new IllegalStateException(s"Node pattern $id with non-map properties.")
+    case p@RelationshipPattern(Some(_), _, _, Some(_: MapExpression), _, _) => p.copy(properties = None)(p.position)
+    case RelationshipPattern(Some(id), _, _, Some(_), _, _) =>
+      throw new IllegalStateException(s"Relationship pattern $id with non-map properties.")
   }
 
-  private def isParameter(expr: Expression) = expr match {
-    case _: Parameter => true
-    case _            => false
-  }
-
-  private def propertyPredicates(id: LogicalVariable, props: Expression): IndexedSeq[Expression] = props match {
-    case mapProps: MapExpression =>
+  private def propertyPredicates(id: LogicalVariable, mapProps: MapExpression): IndexedSeq[Equals] =
       mapProps.items.map {
         // MATCH (a {a: 1, b: 2}) => MATCH (a) WHERE a.a = 1 AND a.b = 2
         case (propId, expression) => Equals(Property(id.copyId, propId)(mapProps.position), expression)(mapProps.position)
       }.toIndexedSeq
-    case expr: Expression =>
-      Vector(Equals(id.copyId, expr)(expr.position))
-    case _ =>
-      Vector.empty
-  }
 
-  private def varLengthPropertyPredicates(id: LogicalVariable, props: Expression): Expression = {
+
+  private def varLengthPropertyPredicates(id: LogicalVariable, props: MapExpression): Expression = {
     val idName = anonymousVariableNameGenerator.nextName
     val newId = Variable(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
