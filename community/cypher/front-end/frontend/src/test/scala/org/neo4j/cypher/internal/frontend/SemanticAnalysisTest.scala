@@ -103,7 +103,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     }
   }
 
-  test("Should not allow parameter maps in MATCH") {
+  test("Should not allow parameter maps in node pattern in MATCH") {
     val query = "MATCH (n $foo) RETURN 1"
     expectErrorsFrom(
       query,
@@ -114,13 +114,35 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
-  test("Should not allow parameter maps in MERGE") {
+  test("Should not allow parameter maps in node pattern in MERGE") {
     val query = "MERGE (n $foo) RETURN 1"
     expectErrorsFrom(
       query,
       Set(SemanticError(
         "Parameter maps cannot be used in `MERGE` patterns (use a literal map instead, e.g. `{id: $foo.id}`)",
         InputPosition(9, 1, 10)
+      ))
+    )
+  }
+
+  test("Should not allow parameter maps in relationship pattern in MATCH") {
+    val query = "MATCH (n)-[r $foo]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError(
+        "Parameter maps cannot be used in `MATCH` patterns (use a literal map instead, e.g. `{id: $foo.id}`)",
+        InputPosition(13, 1, 14)
+      ))
+    )
+  }
+
+  test("Should not allow parameter maps in relationship pattern in MERGE") {
+    val query = "MERGE (n)-[r:R $foo]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError(
+        "Parameter maps cannot be used in `MERGE` patterns (use a literal map instead, e.g. `{id: $foo.id}`)",
+        InputPosition(15, 1, 16)
       ))
     )
   }

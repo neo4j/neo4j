@@ -475,4 +475,34 @@ class VarLengthPlanningIntegrationTest
         .build()
     }
   }
+
+  test("should inline property predicates of var-length relationships") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    planner.plan("MATCH (a)-[r* {prop: 42}]->(b) RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("anon_0", "anon_0.prop = 42")))
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should be able to plan var-length relationships with empty property maps") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    planner.plan("MATCH (a {})-[r* {}]->(b) RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .expand("(a)-[r*1..]->(b)")
+        .allNodeScan("a")
+        .build()
+    )
+  }
 }

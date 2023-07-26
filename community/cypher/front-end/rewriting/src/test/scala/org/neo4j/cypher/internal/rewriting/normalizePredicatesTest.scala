@@ -173,6 +173,13 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     )
   }
 
+  // Empty parameter maps should not pose a problem but should simply be removed
+  test("MATCH (n {})-[r* {}]->(b) RETURN n") {
+    assertRewrite(
+      "MATCH (n)-[r*]->(b) RETURN n"
+    )
+  }
+
   test("MATCH (a:Artist)-[r:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
     assertRewrite(
       "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = 1988) AND b:Artist  RETURN *"
