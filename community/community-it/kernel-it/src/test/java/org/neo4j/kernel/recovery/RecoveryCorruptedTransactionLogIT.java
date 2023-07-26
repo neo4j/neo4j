@@ -736,9 +736,9 @@ class RecoveryCorruptedTransactionLogIT {
         assertEquals(numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
-        // during the setup and starting db as part of the test
+        // during the setup and starting db as part of the test, plus checkpoints on creation
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 3 * CHECKPOINT_RECORD_SIZE,
+                CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * CHECKPOINT_RECORD_SIZE,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
@@ -786,7 +786,7 @@ class RecoveryCorruptedTransactionLogIT {
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 3 * CHECKPOINT_RECORD_SIZE,
+                CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * CHECKPOINT_RECORD_SIZE,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
@@ -830,7 +830,7 @@ class RecoveryCorruptedTransactionLogIT {
         assertEquals(transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 6 * CHECKPOINT_RECORD_SIZE,
+                CURRENT_FORMAT_LOG_HEADER_SIZE + 7 * CHECKPOINT_RECORD_SIZE,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 

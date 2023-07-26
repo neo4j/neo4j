@@ -92,7 +92,7 @@ public class CheckpointLogFileRotationIT {
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoint for rotation test";
-        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES;
+        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE + 2 * RECORD_LENGTH_BYTES;
                 i < ROTATION_THRESHOLD;
                 i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(
@@ -108,7 +108,10 @@ public class CheckpointLogFileRotationIT {
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoint for rotation test";
-        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE; i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
+        // there is one post init checkpoint
+        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES;
+                i < ROTATION_THRESHOLD;
+                i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(
                     NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
         }

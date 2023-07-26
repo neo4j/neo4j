@@ -31,7 +31,6 @@ import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -329,7 +328,7 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
 
     protected abstract TransactionRegistry transactionRegistry();
 
-    protected abstract void postStartupInit() throws KernelException;
+    protected abstract void postStartupInit() throws Exception;
 
     protected abstract void safeCleanup() throws Exception;
 

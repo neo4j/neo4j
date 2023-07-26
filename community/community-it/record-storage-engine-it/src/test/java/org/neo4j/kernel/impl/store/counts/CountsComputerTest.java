@@ -135,9 +135,9 @@ class CountsComputerTest {
             countsStore.start(cursorContext, INSTANCE);
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            softly.assertThat(cursorTracer.pins()).as("Pins").isEqualTo(1);
-            softly.assertThat(cursorTracer.unpins()).as("Unpins").isEqualTo(1);
-            softly.assertThat(cursorTracer.hits()).as("hits").isEqualTo(1);
+            softly.assertThat(cursorTracer.pins()).as("Pins").isEqualTo(4);
+            softly.assertThat(cursorTracer.unpins()).as("Unpins").isEqualTo(4);
+            softly.assertThat(cursorTracer.hits()).as("hits").isEqualTo(3);
         } finally {
             managementService.shutdown();
         }

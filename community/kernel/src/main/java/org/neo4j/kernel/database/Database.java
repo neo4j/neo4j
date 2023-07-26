@@ -148,6 +148,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -606,7 +607,7 @@ public class Database extends AbstractDatabase {
     }
 
     @Override
-    protected void postStartupInit() throws KernelException {
+    protected void postStartupInit() throws Exception {
         if (!storageExists) {
             if (databaseConfig.get(GraphDatabaseInternalSettings.skip_default_indexes_on_creation)) {
                 return;
@@ -618,7 +619,13 @@ public class Database extends AbstractDatabase {
                 createLookupIndex(tx, EntityType.RELATIONSHIP);
                 tx.commit();
             }
+            checkpointAfterStartupInit();
         }
+    }
+
+    private void checkpointAfterStartupInit() throws IOException {
+        var checkPointer = databaseDependencies.resolveDependency(CheckPointerImpl.class);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("Database init completed."));
     }
 
     private void createLookupIndex(KernelTransaction tx, EntityType entityType) throws KernelException {

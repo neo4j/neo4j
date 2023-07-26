@@ -96,7 +96,10 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         createWriteTransaction(testDb);
         shutdownDbms();
 
+        // shutdown and init checkpoints
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
+        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
+
         assertFalse(logsContainCheckpoint(dbLayout, fileSystem));
 
         startDbms(this::configureGloriousFutureAsLatest, true);
@@ -121,7 +124,10 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         var config = Config.newBuilder()
                 .set(GraphDatabaseInternalSettings.latest_kernel_version, KernelVersion.GLORIOUS_FUTURE.version())
                 .build();
+        // shutdown and init checkpoints
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem, config);
+        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem, config);
+
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem, config);
         assertFalse(logsContainCheckpoint(dbLayout, fileSystem));
 

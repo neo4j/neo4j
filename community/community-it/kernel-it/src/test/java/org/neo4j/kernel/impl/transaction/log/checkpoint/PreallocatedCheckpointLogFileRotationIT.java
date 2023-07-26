@@ -55,7 +55,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoints in preallocated file";
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             checkpointAppender.checkPoint(
                     NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
         }
@@ -71,7 +71,9 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoint in preallocated file";
 
-        for (int fileCount = 1; fileCount < 6; fileCount++) {
+        checkpointFile.rotate();
+
+        for (int fileCount = 2; fileCount < 6; fileCount++) {
             for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE; i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
                 assertThat(checkpointFile.getDetachedCheckpointFiles())
                         .hasSize(fileCount)

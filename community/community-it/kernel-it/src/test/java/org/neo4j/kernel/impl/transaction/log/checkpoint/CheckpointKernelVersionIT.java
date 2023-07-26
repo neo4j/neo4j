@@ -26,7 +26,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.test.extension.DbmsExtension;
@@ -50,11 +49,11 @@ public class CheckpointKernelVersionIT {
         kernelVersionRepository.setKernelVersion(KernelVersion.V5_7);
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced " + kernelVersionRepository.kernelVersion()));
 
-        final var checkpoints = logFiles.getCheckpointFile().reachableCheckpoints().stream();
-        final var kernelVersions = checkpoints.map(KernelVersionProvider::kernelVersion);
-        assertThat(kernelVersions)
-                .as("kernel versions from checkpoints")
-                .containsExactly(kernelVersionRepository.kernelVersion());
+        final var checkpoint =
+                logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpoint.kernelVersion())
+                .as("kernel version from last checkpoint")
+                .isEqualTo(kernelVersionRepository.kernelVersion());
     }
 
     @Test

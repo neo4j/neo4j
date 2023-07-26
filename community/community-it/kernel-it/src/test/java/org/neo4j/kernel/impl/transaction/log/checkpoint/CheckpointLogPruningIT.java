@@ -72,7 +72,7 @@ public class CheckpointLogPruningIT {
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 6; i++) {
             checkPointer.forceCheckPoint(new SimpleTriggerInfo(reason));
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();

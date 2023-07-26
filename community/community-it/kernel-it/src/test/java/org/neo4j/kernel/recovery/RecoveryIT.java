@@ -210,6 +210,8 @@ class RecoveryIT {
         GraphDatabaseService database = createDatabase();
         generateSomeData(database);
         managementService.shutdown();
+        // shutdown and init checkpoints
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
         removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
 
         CheckpointTracer checkpointTracer = new CheckpointTracer();
@@ -264,6 +266,8 @@ class RecoveryIT {
         GraphDatabaseService database = createDatabase();
         generateSomeData(database);
         managementService.shutdown();
+        // shutdown and init checkpoints
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
         removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
 
         int removedFiles = 0;
@@ -954,7 +958,9 @@ class RecoveryIT {
         GraphDatabaseService database = createDatabase();
         generateSomeData(database);
         managementService.shutdown();
-        assertEquals(1, countCheckPointsInTransactionLogs());
+        assertEquals(2, countCheckPointsInTransactionLogs());
+        // shutdown and init checkpoints
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
         removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
 
         assertEquals(0, countCheckPointsInTransactionLogs());

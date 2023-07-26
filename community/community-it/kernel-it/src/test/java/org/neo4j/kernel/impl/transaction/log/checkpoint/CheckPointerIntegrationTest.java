@@ -241,11 +241,11 @@ class CheckPointerIntegrationTest {
         managementService = databaseManagementServiceBuilder.build();
         managementService.shutdown();
 
-        // then - 2 check points have been written in the log
+        // then - 2 check points have been written in the log + 1 checkpoint after init on db creation
         managementService = builder.build();
         try {
             var checkpoints = checkPointsInTxLog(managementService.database(DEFAULT_DATABASE_NAME));
-            assertEquals(2, checkpoints.size());
+            assertEquals(3, checkpoints.size());
         } finally {
             managementService.shutdown();
         }
