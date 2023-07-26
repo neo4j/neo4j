@@ -21,6 +21,8 @@ package org.neo4j.bolt.testing.client.websocket;
 
 import java.net.URI;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.neo4j.bolt.testing.client.TransportConnection;
@@ -39,11 +41,10 @@ public class SecureWebSocketConnection extends WebSocketConnection {
 
     @Override
     protected WebSocketClient createClient() {
-        var sslContextFactory = new SslContextFactory.Client(/* trustAll= */ true);
-        // remove extra filters added by jetty on cipher suites
-        sslContextFactory.setExcludeCipherSuites();
-        var httpClient = new HttpClient(sslContextFactory);
-        return new WebSocketClient(httpClient);
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+
+        return new WebSocketClient(new HttpClient(new HttpClientTransportDynamic(clientConnector)));
     }
 
     @Override

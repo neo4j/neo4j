@@ -114,7 +114,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
-            <artifactId>websocket-client</artifactId>
+            <artifactId>websocket-jetty-client</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

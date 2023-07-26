@@ -83,10 +83,6 @@
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

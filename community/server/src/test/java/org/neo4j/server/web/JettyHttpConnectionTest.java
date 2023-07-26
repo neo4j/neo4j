@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -66,14 +66,14 @@ class JettyHttpConnectionTest {
     }
 
     private static JettyHttpConnection newConnection(Connector connector) {
-        return new JettyHttpConnection(
-                "http-1", new HttpConfiguration(), connector, mock(EndPoint.class), HttpCompliance.LEGACY, false);
+        return new JettyHttpConnection("http-1", new HttpConfiguration(), connector, mock(EndPoint.class), false);
     }
 
     private static Connector connectorMock(String name) {
         Connector connector = mock(Connector.class);
         when(connector.getName()).thenReturn(name);
         when(connector.getExecutor()).thenReturn(Runnable::run);
+        when(connector.getByteBufferPool()).thenReturn(mock(ByteBufferPool.class));
         when(connector.getServer()).thenReturn(new Server());
         return connector;
     }

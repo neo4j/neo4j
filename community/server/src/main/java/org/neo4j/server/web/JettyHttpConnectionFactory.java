@@ -43,18 +43,13 @@ public class JettyHttpConnectionFactory extends HttpConnectionFactory {
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint) {
         JettyHttpConnection connection = createConnection(connector, endPoint);
-        connection.addListener(connectionListener);
+        connection.addEventListener(connectionListener);
         return configure(connection, connector, endPoint);
     }
 
     private JettyHttpConnection createConnection(Connector connector, EndPoint endPoint) {
         String connectionId = connectionTracker.newConnectionId(connector.getName());
         return new JettyHttpConnection(
-                connectionId,
-                getHttpConfiguration(),
-                connector,
-                endPoint,
-                getHttpCompliance(),
-                isRecordHttpComplianceViolations());
+                connectionId, getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations());
     }
 }

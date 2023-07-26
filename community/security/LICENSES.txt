@@ -461,7 +461,6 @@ This Agreement is governed by the laws of the State of New York and the intellec
 ------------------------------------------------------------------------------
 MIT License
   SLF4J API Module
-  SLF4J NOP Binding
 ------------------------------------------------------------------------------
 
 The MIT License

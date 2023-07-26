@@ -34,7 +34,7 @@ import org.neo4j.logging.NullLogProvider;
 class JettyThreadLimitIT {
     @Test
     void shouldHaveConfigurableJettyThreadPoolSize() throws Exception {
-        Jetty9WebServer server = new Jetty9WebServer(
+        JettyWebServer server = new JettyWebServer(
                 NullLogProvider.getInstance(),
                 Config.defaults(),
                 NetworkConnectionTracker.NO_OP,

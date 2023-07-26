@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.security.ssl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
-import static org.eclipse.jetty.http.HttpScheme.HTTPS;
 import static org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -43,11 +43,11 @@ class HttpsRequestCustomizerTest {
     @Test
     void shouldSetRequestSchemeToHttps() {
         Customizer customizer = newCustomizer();
-        Request request = mock(Request.class);
+        Request request = newRequest();
 
         customize(customizer, request);
 
-        verify(request).setScheme(HTTPS.asString());
+        assertThat(request.getHttpURI()).isEqualTo(HttpURI.build("https://example.com"));
     }
 
     @Test
@@ -81,6 +81,8 @@ class HttpsRequestCustomizerTest {
         HttpChannel channel = mock(HttpChannel.class);
         Response response = new Response(channel, mock(HttpOutput.class));
         Request request = new Request(channel, mock(HttpInput.class));
+        var httpUri = HttpURI.build("http://example.com");
+        request.setHttpURI(httpUri);
         when(channel.getRequest()).thenReturn(request);
         when(channel.getResponse()).thenReturn(response);
         return request;

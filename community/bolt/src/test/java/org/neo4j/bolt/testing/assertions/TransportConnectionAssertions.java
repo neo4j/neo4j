@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.assertj.core.api.AbstractAssert;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.function.Predicates;
@@ -95,7 +94,7 @@ public abstract class TransportConnectionAssertions<
                     () -> {
                         try {
                             this.actual.sendRaw(new byte[] {0, 0}).receive(1);
-                        } catch (IOException | WebSocketException ex) {
+                        } catch (IOException ex) {
                             return true;
                         } catch (InterruptedException ex) {
                             fail(ex);

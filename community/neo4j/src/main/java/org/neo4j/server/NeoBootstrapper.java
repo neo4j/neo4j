@@ -57,7 +57,6 @@ import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.logging.log4j.SystemLogger;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.server.logging.JULBridge;
-import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.startup.Environment;
 import org.neo4j.server.startup.PidFileHelper;
 import org.neo4j.util.FeatureToggles;
@@ -300,7 +299,6 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         JULBridge.resetJUL();
         Logger.getLogger("").setLevel(Level.WARNING);
         JULBridge.forwardTo(userLogProvider);
-        JettyLogBridge.setLogProvider(userLogProvider);
         setupSLF4JProvider(userLogProvider, List.of("org.eclipse.jetty"), "WARN");
         return userLogProvider;
     }

@@ -126,7 +126,7 @@
     <jamm.version>0.3.3</jamm.version>
     <lucene.version>9.7.0</lucene.version>
     <bouncycastle.version>1.75</bouncycastle.version>
-    <jetty.version>9.4.51.v20230217</jetty.version>
+    <jetty.version>10.0.15</jetty.version>
     <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
     <scala.version>2.13.11</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
@@ -1546,7 +1546,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-client</artifactId>
+        <artifactId>websocket-jetty-client</artifactId>
         <version>${jetty.version}</version>
       </dependency>
       <dependency>

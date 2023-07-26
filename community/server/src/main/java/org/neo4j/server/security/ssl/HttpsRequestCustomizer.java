@@ -25,6 +25,7 @@ import static org.neo4j.server.configuration.ServerSettings.http_strict_transpor
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -40,8 +41,7 @@ public class HttpsRequestCustomizer implements HttpConfiguration.Customizer {
 
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request) {
-        request.setScheme(HttpScheme.HTTPS.asString());
-
+        request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
         addResponseFieldIfConfigured(request, hstsResponseField);
     }
 

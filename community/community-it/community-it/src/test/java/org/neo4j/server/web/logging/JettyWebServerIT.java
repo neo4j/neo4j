@@ -28,16 +28,16 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.web.Jetty9WebServer;
+import org.neo4j.server.web.JettyWebServer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
-class Jetty9WebServerIT extends ExclusiveWebContainerTestBase {
-    private Jetty9WebServer webServer;
+class JettyWebServerIT extends ExclusiveWebContainerTestBase {
+    private JettyWebServer webServer;
 
     @Test
     void shouldBeAbleToUsePortZero() throws Exception {
         // Given
-        webServer = new Jetty9WebServer(
+        webServer = new JettyWebServer(
                 NullLogProvider.getInstance(),
                 Config.defaults(),
                 NetworkConnectionTracker.NO_OP,
@@ -54,7 +54,7 @@ class Jetty9WebServerIT extends ExclusiveWebContainerTestBase {
     @Test
     void shouldBeAbleToRestart() throws Throwable {
         // given
-        webServer = new Jetty9WebServer(
+        webServer = new JettyWebServer(
                 NullLogProvider.getInstance(),
                 Config.defaults(),
                 NetworkConnectionTracker.NO_OP,
@@ -71,7 +71,7 @@ class Jetty9WebServerIT extends ExclusiveWebContainerTestBase {
 
     @Test
     void shouldStopCleanlyEvenWhenItHasntBeenStarted() {
-        new Jetty9WebServer(
+        new JettyWebServer(
                         NullLogProvider.getInstance(),
                         Config.defaults(),
                         NetworkConnectionTracker.NO_OP,

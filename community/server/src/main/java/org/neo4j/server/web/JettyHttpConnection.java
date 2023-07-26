@@ -20,7 +20,6 @@
 package org.neo4j.server.web;
 
 import java.net.SocketAddress;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -45,9 +44,8 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
             HttpConfiguration config,
             Connector connector,
             EndPoint endPoint,
-            HttpCompliance compliance,
             boolean recordComplianceViolations) {
-        super(config, connector, endPoint, compliance, recordComplianceViolations);
+        super(config, connector, endPoint, recordComplianceViolations);
         this.id = id;
         this.connectTime = System.currentTimeMillis();
     }

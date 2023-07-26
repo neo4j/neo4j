@@ -103,6 +103,7 @@ Apache Software License, Version 2.0
   Jetty :: IO Utility
   Jetty :: Security
   Jetty :: Server Core
+  Jetty :: Servlet API and Schemas for JPMS and OSGi
   Jetty :: Servlet Handling
   Jetty :: Utilities
   Jetty :: Webapp Application Support
@@ -173,9 +174,6 @@ BSD License 2-clause
   uri-js
   zstd-jni
 
-Common Development and Distribution License Version 1.1
-  Java Servlet API
-
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
@@ -214,7 +212,6 @@ GNU General Public License, version 2 with the Classpath Exception
   HK2 Implementation Utilities
   Jakarta Annotations API
   jakarta.ws.rs-api
-  Java Servlet API
   javax.inject:1 as OSGi bundle
   jersey-container-servlet
   jersey-container-servlet-core
@@ -386,7 +383,6 @@ MIT License
   save-as
   setimmediate
   SLF4J API Module
-  SLF4J NOP Binding
   sshpk
   string-width
   string_decoder
@@ -454,10 +450,6 @@ HK2 Implementation Utilities
 
 Jakarta Annotations API
   Eclipse Public License v2.0
-  GNU General Public License, version 2 with the Classpath Exception
-
-Java Servlet API
-  Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 
 ServiceLocator Default Implementation

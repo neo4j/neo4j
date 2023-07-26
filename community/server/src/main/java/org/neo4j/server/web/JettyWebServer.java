@@ -67,7 +67,7 @@ import org.neo4j.ssl.SslPolicy;
 /**
  * This class handles the configuration and runtime management of a Jetty web server. The server is restartable.
  */
-public class Jetty9WebServer implements WebServer, WebContainerThreadInfo {
+public class JettyWebServer implements WebServer, WebContainerThreadInfo {
     private static final int JETTY_THREAD_POOL_IDLE_TIMEOUT = 60000;
 
     public static final SocketAddress DEFAULT_ADDRESS = new SocketAddress("0.0.0.0", 80);
@@ -95,7 +95,7 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo {
     private final HttpConnectorFactory connectorFactory;
     private final InternalLog log;
 
-    public Jetty9WebServer(
+    public JettyWebServer(
             InternalLogProvider logProvider,
             Config config,
             NetworkConnectionTracker connectionTracker,

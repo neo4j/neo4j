@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -131,12 +130,7 @@ public class WebSocketConnection extends AbstractTransportConnection implements 
 
             buf.readBytes(heap);
             heap.flip();
-            try {
-                this.server.sendBytesByFuture(heap).get();
-            } catch (ExecutionException | InterruptedException e) {
-                throw new IOException(e);
-            }
-
+            this.server.sendBytes(heap);
         } while (buf.isReadable());
 
         return this;

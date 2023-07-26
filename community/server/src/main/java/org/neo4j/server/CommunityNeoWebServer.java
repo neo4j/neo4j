@@ -42,7 +42,7 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.TransactionModule;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
-import org.neo4j.server.web.Jetty9WebServer;
+import org.neo4j.server.web.JettyWebServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.time.SystemNanoClock;
 
@@ -94,7 +94,7 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer {
     protected WebServer createWebServer() {
         var globalDependencies = getGlobalDependencies();
         var connectionTracker = globalDependencies.resolveDependency(NetworkConnectionTracker.class);
-        var webServer = new Jetty9WebServer(userLogProvider, getConfig(), connectionTracker, byteBufferPool);
+        var webServer = new JettyWebServer(userLogProvider, getConfig(), connectionTracker, byteBufferPool);
         globalDependencies.satisfyDependency(webServer);
         return webServer;
     }
