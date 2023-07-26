@@ -22,16 +22,16 @@ package org.neo4j.io;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.list.MutableList;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.function.ThrowingPredicate;
@@ -154,7 +154,7 @@ public final class IOUtils {
                 if (closeable != null) {
                     closeable.close();
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 if (closeThrowable == null) {
                     closeThrowable = constructor.apply("Exception closing multiple resources.", e);
                 } else {
@@ -219,17 +219,41 @@ public final class IOUtils {
         }
     }
 
-    public static class AutoCloseables implements AutoCloseable {
-        private final List<AutoCloseable> autoCloseables = new ArrayList<>();
+    public static class AutoCloseables<E extends Exception> implements AutoCloseable {
+        private final BiFunction<String, Throwable, E> constructor;
+        private final MutableList<AutoCloseable> autoCloseables;
+
+        @SafeVarargs
+        public <T extends AutoCloseable> AutoCloseables(
+                BiFunction<String, Throwable, E> constructor, T... autoCloseables) {
+            // saves extra copy than using this(constructor, Arrays::asList);
+            this.autoCloseables = Lists.mutable.with(autoCloseables);
+            this.constructor = constructor;
+        }
+
+        public AutoCloseables(
+                BiFunction<String, Throwable, E> constructor, Iterable<? extends AutoCloseable> autoCloseables) {
+            this.autoCloseables = Lists.mutable.withAll(autoCloseables);
+            this.constructor = constructor;
+        }
 
         public <T extends AutoCloseable> T add(T autoCloseable) {
             autoCloseables.add(autoCloseable);
             return autoCloseable;
         }
 
+        @SafeVarargs
+        public final <T extends AutoCloseable> void addAll(T... autoCloseables) {
+            addAll(Arrays.asList(autoCloseables));
+        }
+
+        public void addAll(Iterable<? extends AutoCloseable> autoCloseables) {
+            this.autoCloseables.addAllIterable(autoCloseables);
+        }
+
         @Override
-        public void close() throws Exception {
-            closeAll(autoCloseables);
+        public void close() throws E {
+            IOUtils.close(constructor, autoCloseables);
         }
     }
 

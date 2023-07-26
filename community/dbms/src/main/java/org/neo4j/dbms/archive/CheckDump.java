@@ -52,7 +52,7 @@ public class CheckDump implements CheckDatabase {
 
     @Override
     public DatabaseLayout targetLayoutFrom(
-            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database, AutoCloseables autoCloseables)
+            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database, AutoCloseables<?> autoCloseables)
             throws IOException, CannotWriteException {
         final var pathSource = Source.expected(PathSource.class, source);
         final var temporaryHome = autoCloseables.add(pathSource.createTemporaryDirectory(fs));

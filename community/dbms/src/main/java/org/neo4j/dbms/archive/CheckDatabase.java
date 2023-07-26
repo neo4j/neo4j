@@ -89,7 +89,7 @@ public interface CheckDatabase {
             FileSystemAbstraction fs, Source source, NormalizedDatabaseName database);
 
     DatabaseLayout targetLayoutFrom(
-            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database, AutoCloseables autoCloseables)
+            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database, AutoCloseables<?> autoCloseables)
             throws IOException, CannotWriteException;
 
     void tryExtract(

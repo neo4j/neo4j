@@ -46,7 +46,10 @@ public class CheckNativeDatabase implements CheckDatabase {
 
     @Override
     public DatabaseLayout targetLayoutFrom(
-            FileSystemAbstraction fs, Source source, NormalizedDatabaseName database, AutoCloseables autoCloseables) {
+            FileSystemAbstraction fs,
+            Source source,
+            NormalizedDatabaseName database,
+            AutoCloseables<?> autoCloseables) {
         final var dataTxnSource = Source.expected(DataTxnSource.class, source);
         return dataTxnSource.layout.databaseLayout(database.name());
     }

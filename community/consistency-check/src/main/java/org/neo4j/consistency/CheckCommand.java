@@ -166,7 +166,7 @@ public class CheckCommand extends AbstractAdminCommand {
     }
 
     protected Result checkWith(Config config, MemoryTracker memoryTracker) {
-        try (var autoClosables = new AutoCloseables()) {
+        try (var autoClosables = new AutoCloseables<>(IOException::new)) {
             final DatabaseLayout layout;
             try {
                 layout = CheckDatabase.selectAndExtract(ctx.fs(), source, database, ctx.out(), force, autoClosables);
