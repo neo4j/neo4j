@@ -243,6 +243,22 @@ class DurationValueTest
     }
 
     @Test
+    void shouldParseNegativeDuration()
+    {
+        assertEquals( duration( -12, 0, 0, 0 ), parse( "-P1Y" ) );
+        assertEquals( duration( 12, 0, 0, 0 ), parse( "-P-1Y" ) );
+        assertEquals( duration( 6, 0, 0, 0 ), parse( "-P-6M" ) );
+
+        /*
+         * -(1 year, -2 months, 3 days, -4h, 5m, -6s) =
+         * -1 year, 2 months, -3 days, 4h, -5m, 6s =
+         * (-12 + 2) months, -3 days, (4*60*60 - 5*60 + 6) s =
+         * -10 months, -3 days, 14106s
+         */
+        assertEquals( duration( -10, -3, 14106, 0 ), parse( "-P1Y-2M3DT-4H5M-6S" ) );
+    }
+
+    @Test
     void shouldNotParseInvalidDurationStrings()
     {
         assertThrows( TemporalParseException.class, () -> parse( "" ) );
