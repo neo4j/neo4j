@@ -1134,4 +1134,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> log_query_cache_usage = newBuilder(
                     "internal.dbms.logs.query.query_cache_usage", BOOL, false)
             .build();
+
+    @Internal
+    @Description("The maximum period of time to wait for changes to the transaction log (specifically to get the "
+            + "position after the last committed transaction). This is an upper bound as further subscriber requests "
+            + "will always lead to fetching the latest transaction details.")
+    public static final Setting<Duration> cdc_log_change_max_refresh_interval = newBuilder(
+                    "internal.db.cdc.log_change_max_refresh_interval", DURATION, Duration.ofSeconds(1))
+            .build();
 }
