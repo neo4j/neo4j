@@ -845,7 +845,10 @@ case class Match(
     allLabels ++ allRelTypes
   }
 
-  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.findAllByClass[LogicalVariable].toSet
+  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.treeFold(Set.empty[LogicalVariable]) {
+    case _: FullSubqueryExpression   => acc => SkipChildren(acc)
+    case logicalVar: LogicalVariable => acc => TraverseChildren(acc ++ Set(logicalVar))
+  }
 }
 
 case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], where: Option[Where] = None)(

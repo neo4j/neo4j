@@ -1421,6 +1421,17 @@ Feature: CountExpressionAcceptance
       | 1      | 'one'   |
       | 3      | 'three' |
 
+  Scenario: COUNT subquery as property inside node
+    Given an empty graph
+    When executing query:
+      """
+      WITH 0 AS n0
+      MATCH ({n1:COUNT { RETURN 0 AS x } })
+      RETURN 2 as result
+      """
+    Then the result should be, in any order:
+      | result |
+
   Scenario: COUNT subquery with empty node
     Given an empty graph
     When executing query:

@@ -307,4 +307,36 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
         |""".stripMargin
     )
   }
+
+  test("Variables inside of FullSubqueryExpressions should not be pulled out into the moved WITH") {
+    List("COUNT", "COLLECT", "EXISTS").foreach(subqueryExpression => {
+      assertRewrite(
+        s"""WITH 1 AS n
+           |MATCH ({m:$subqueryExpression { RETURN 0 AS x } })
+           |RETURN *
+           |""".stripMargin,
+        s"""
+           |MATCH ({m:$subqueryExpression { RETURN 0 AS x } })
+           |WITH 1 AS n
+           |RETURN *
+           |""".stripMargin
+      )
+    })
+  }
+
+  test("Variables outside of FullSubqueryExpressions should still be pulled out into the moved WITH") {
+    List("COUNT", "COLLECT", "EXISTS").foreach(subqueryExpression => {
+      assertRewrite(
+        s"""WITH $subqueryExpression { RETURN 0 AS x } as subqueryExpr
+           |MATCH (x:Person)
+           |RETURN x.name AS name, subqueryExpr
+           |""".stripMargin,
+        s"""
+           |MATCH (x:Person)
+           |WITH $subqueryExpression { RETURN 0 AS x } as subqueryExpr, x AS x
+           |RETURN x.name AS name, subqueryExpr
+           |""".stripMargin
+      )
+    })
+  }
 }

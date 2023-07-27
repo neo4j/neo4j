@@ -2469,6 +2469,17 @@ Feature: ExistsExpressionAcceptance
       | true   | 'one'   |
       | true   | 'three' |
 
+  Scenario: EXISTS subquery as property inside node
+    Given an empty graph
+    When executing query:
+      """
+      WITH 0 AS n0
+      MATCH ({n1:EXISTS { RETURN 0 AS x } })
+      RETURN 2 as result
+      """
+    Then the result should be, in any order:
+      | result |
+
   Scenario: EXISTS subquery with empty node
     Given an empty graph
     When executing query:
