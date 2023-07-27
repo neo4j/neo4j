@@ -51,7 +51,7 @@ class IterablesTest {
         final var subjects = asList("1", "2", "3", "4", "5");
 
         // when
-        assertThatThrownBy(() -> Iterables.safeForAll(consumer, subjects))
+        assertThatThrownBy(() -> Iterables.safeForAll(subjects, consumer))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("1")
                 .hasSuppressedException(new RuntimeException("3"))

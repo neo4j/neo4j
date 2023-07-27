@@ -563,21 +563,21 @@ public final class Iterables {
      * throw an exception. First exception will be thrown and subsequent will be suppressed.
      * This method guarantees that all subjects will be consumed, unless {@link Error} happens.
      *
-     * @param consumer lambda function to call on each object passed
-     * @param subjects {@link Iterable} of objects to call the function on
      * @param <E> the type of exception anticipated, inferred from the lambda
+     * @param subjects {@link Iterable} of objects to call the function on
+     * @param consumer lambda function to call on each object passed
      * @throws E if consumption fails with this exception
      */
     @SuppressWarnings("unchecked")
-    public static <T, E extends Exception> void safeForAll(ThrowingConsumer<T, E> consumer, Iterable<T> subjects)
+    public static <T, E extends Throwable> void safeForAll(Iterable<T> subjects, ThrowingConsumer<T, E> consumer)
             throws E {
         try {
             E exception = null;
             for (T instance : subjects) {
                 try {
                     consumer.accept(instance);
-                } catch (Exception e) {
-                    exception = Exceptions.chain(exception, (E) e);
+                } catch (Throwable t) {
+                    exception = Exceptions.chain(exception, (E) t);
                 }
             }
             if (exception != null) {

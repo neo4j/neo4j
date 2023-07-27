@@ -28,7 +28,7 @@ public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
     long maxCount();
 
     static <T> BoundedIterable<T> empty() {
-        return new BoundedIterable<T>() {
+        return new BoundedIterable<>() {
             @Override
             public long maxCount() {
                 return 0;
@@ -40,6 +40,37 @@ public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
             @Override
             public Iterator<T> iterator() {
                 return Collections.emptyIterator();
+            }
+        };
+    }
+
+    static <T> BoundedIterable<T> concat(Iterable<BoundedIterable<T>> iterables) {
+        var maxCount = 0L;
+        for (final var iterable : iterables) {
+            final var count = iterable.maxCount();
+            if (count == UNKNOWN_MAX_COUNT) {
+                // If any of the iterators have an unknown max count, then the whole thing does
+                maxCount = UNKNOWN_MAX_COUNT;
+                break;
+            }
+            maxCount += iterable.maxCount();
+        }
+
+        final var finalMaxCount = maxCount;
+        return new BoundedIterable<>() {
+            @Override
+            public long maxCount() {
+                return finalMaxCount;
+            }
+
+            @Override
+            public void close() throws Exception {
+                Iterables.safeForAll(iterables, BoundedIterable::close);
+            }
+
+            @Override
+            public Iterator<T> iterator() {
+                return Iterables.concat(iterables).iterator();
             }
         };
     }
