@@ -189,10 +189,10 @@ public class RelationshipChangesForNode {
                         : nonEmptyConcat(primitiveIds(incoming), primitiveIds(loops));
             }
             case OUTGOING -> {
-                MutableLongSet outging = typeSets.getIds(RelationshipDirection.OUTGOING);
-                return outging == null && loops == null
+                MutableLongSet outgoing = typeSets.getIds(RelationshipDirection.OUTGOING);
+                return outgoing == null && loops == null
                         ? ImmutableEmptyLongIterator.INSTANCE
-                        : nonEmptyConcat(primitiveIds(outging), primitiveIds(loops));
+                        : nonEmptyConcat(primitiveIds(outgoing), primitiveIds(loops));
             }
             case BOTH -> {
                 MutableLongSet incoming = typeSets.getIds(RelationshipDirection.INCOMING);
@@ -201,6 +201,16 @@ public class RelationshipChangesForNode {
             }
             default -> throw new IllegalArgumentException("Unknown direction: " + direction);
         }
+    }
+
+    public LongIterator getRelationships(RelationshipDirection direction, int type) {
+        RelationshipSetsByDirection typeSets = byType.get(type);
+        if (typeSets == null) {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
+        MutableLongSet set = typeSets.getIds(direction);
+        return set == null ? ImmutableEmptyLongIterator.INSTANCE : primitiveIds(set);
     }
 
     public boolean hasRelationships(int type) {

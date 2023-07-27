@@ -215,7 +215,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
     @Override
     protected void collectAddedTxStateSnapshot() {
         if (selection != null) {
-            addedRelationships = selection.addedRelationship(read.txState().getNodeState(originNodeReference));
+            addedRelationships = selection.addedRelationships(read.txState().getNodeState(originNodeReference));
         }
     }
 

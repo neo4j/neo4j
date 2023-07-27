@@ -25,6 +25,7 @@ import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
@@ -52,4 +53,6 @@ public interface NodeState extends EntityState {
     LongIterator getAddedRelationships(Direction direction);
 
     LongIterator getAddedRelationships(Direction direction, int relType);
+
+    LongIterator getAddedRelationships(RelationshipDirection direction, int relType);
 }

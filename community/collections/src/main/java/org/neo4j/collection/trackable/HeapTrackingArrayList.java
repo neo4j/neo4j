@@ -39,7 +39,7 @@ import org.neo4j.memory.MemoryTracker;
 
 /**
  * A heap tracking array list. It only tracks the internal structure, not the elements within.
- *
+ * <p>
  * This is mostly a copy of {@link ArrayList} to expose the {@link #grow(int)} method.
  *
  * @param <E> element type
@@ -260,6 +260,18 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable {
     @Override
     public List<E> subList(int fromIndex, int toIndex) {
         throw new UnsupportedOperationException();
+    }
+
+    public void truncate(int newSize) {
+        if (newSize >= size) {
+            return;
+        }
+
+        for (int i = newSize; i < size; i++) {
+            elementData[i] = null;
+        }
+
+        this.size = newSize;
     }
 
     @Override

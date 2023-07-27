@@ -43,6 +43,7 @@ public abstract class RelationshipSelection {
 
     /**
      * Tests whether a relationship of a certain direction should be part of this selection.
+     *
      * @param direction {@link RelationshipDirection} of the relationship to test.
      * @return whether or not this relationship is part of this selection.
      */
@@ -98,7 +99,7 @@ public abstract class RelationshipSelection {
      * @param transactionState the {@link NodeState} to select added relationships from.
      * @return a {@link LongIterator} of added relationships matching the selection criteria from transaction state.
      */
-    public abstract LongIterator addedRelationship(NodeState transactionState);
+    public abstract LongIterator addedRelationships(NodeState transactionState);
 
     public abstract RelationshipSelection reverse();
 
@@ -119,6 +120,32 @@ public abstract class RelationshipSelection {
 
     public static RelationshipSelection selection(Direction direction) {
         return direction == Direction.BOTH ? ALL_RELATIONSHIPS : new DirectionalAllTypes(direction);
+    }
+
+    /**
+     * Allows specification of types for the three different directions. Assumes that the
+     * three arrays are all pairwise disjoint. A null array signifies that we allow all types in the corresponding
+     * direction.
+     * <p>
+     * If one of the directed arrays are null, then the other directed array must be empty per the disjoint
+     * assumption. If the bothTypes array is null, then both other arrays need to be empty.
+     */
+    public static RelationshipSelection selection(DirectedTypes directedTypes) {
+        if (directedTypes.allowsAll()) {
+            return ALL_RELATIONSHIPS;
+        }
+
+        if (!directedTypes.hasTypesInBothDirections()) {
+            if (!directedTypes.hasSomeOutgoing()) {
+                return selection(directedTypes.typesWithoutDirections(), Direction.INCOMING);
+            } else if (!directedTypes.hasSomeIncoming()) {
+                return selection(directedTypes.typesWithoutDirections(), Direction.OUTGOING);
+            }
+        } else if (!directedTypes.hasSomeOutgoing() && !directedTypes.hasSomeIncoming()) {
+            return selection(directedTypes.typesWithoutDirections(), Direction.BOTH);
+        }
+
+        return new MultiDirectionalMultiType(directedTypes);
     }
 
     private abstract static class Directional extends RelationshipSelection {
@@ -196,7 +223,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public LongIterator addedRelationship(NodeState transactionState) {
+        public LongIterator addedRelationships(NodeState transactionState) {
             return transactionState.getAddedRelationships(direction, type);
         }
 
@@ -252,7 +279,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public LongIterator addedRelationship(NodeState transactionState) {
+        public LongIterator addedRelationships(NodeState transactionState) {
             LongIterator[] all = new LongIterator[types.length];
             int index = 0;
             for (int i = 0; i < types.length; i++) {
@@ -309,7 +336,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public LongIterator addedRelationship(NodeState transactionState) {
+        public LongIterator addedRelationships(NodeState transactionState) {
             return transactionState.getAddedRelationships(direction);
         }
 
@@ -321,6 +348,74 @@ public abstract class RelationshipSelection {
         @Override
         public String toString() {
             return "RelationshipSelection[" + direction + "]";
+        }
+    }
+
+    private static class MultiDirectionalMultiType extends Directional {
+        private final DirectedTypes directedTypes;
+
+        /**
+         * Allows specification of types for the three different directions. Assumes that the
+         * three arrays are all pairwise disjoint. A null array signifies that we allow all types in the corresponding
+         * direction.
+         * <p>
+         * If one of the directed arrays are null, then the other directed array must be empty per the disjoint
+         * assumption. If the bothTypes array is null, then both other arrays need to be empty.
+         */
+        MultiDirectionalMultiType(DirectedTypes directedTypes) {
+            super(directedTypes.computeDirection());
+            this.directedTypes = directedTypes;
+        }
+
+        @Override
+        public boolean test(RelationshipDirection direction) {
+            return super.test(direction);
+        }
+
+        @Override
+        public boolean test(int type) {
+            return directedTypes.hasEither(type);
+        }
+
+        @Override
+        public boolean test(int type, RelationshipDirection direction) {
+            if (direction == RelationshipDirection.LOOP) {
+                return test(type);
+            } else if (direction == RelationshipDirection.OUTGOING) {
+                return directedTypes.hasOutgoing(type);
+            } else {
+                return directedTypes.hasIncoming(type);
+            }
+        }
+
+        @Override
+        public int numberOfCriteria() {
+            return directedTypes.numberOfCriteria();
+        }
+
+        @Override
+        public boolean isTypeLimited() {
+            return directedTypes.isTypeLimited();
+        }
+
+        @Override
+        public Direction criterionDirection(int index) {
+            return directedTypes.criterionDirection(index);
+        }
+
+        @Override
+        public int criterionType(int index) {
+            return directedTypes.criterionType(index);
+        }
+
+        @Override
+        public LongIterator addedRelationships(NodeState transactionState) {
+            return directedTypes.addedRelationships(transactionState);
+        }
+
+        @Override
+        public RelationshipSelection reverse() {
+            return new MultiDirectionalMultiType(directedTypes.reverse());
         }
     }
 
@@ -378,7 +473,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public LongIterator addedRelationship(NodeState transactionState) {
+        public LongIterator addedRelationships(NodeState transactionState) {
             return transactionState.getAddedRelationships();
         }
 
@@ -430,7 +525,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public LongIterator addedRelationship(NodeState transactionState) {
+        public LongIterator addedRelationships(NodeState transactionState) {
             return ImmutableEmptyLongIterator.INSTANCE;
         }
 

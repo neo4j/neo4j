@@ -136,4 +136,82 @@ class HeapTrackingIntArrayListTest {
             assertEquals(0, list.size(), "Returned incorrect size for new list");
         }
     }
+
+    @Test
+    void contains() {
+        assertEquals(100, aList.size(), "Returned incorrect size for exiting list");
+
+        for (int i = 0; i < aList.size(); i++) {
+            assertTrue(aList.contains(i), "the list should contain " + i);
+            assertFalse(aList.contains(i + 1000), "the list shouldn't contain " + (i + 1000));
+        }
+    }
+
+    @Test
+    void toArray() {
+        assertEquals(100, aList.size(), "Returned incorrect size for exiting list");
+
+        int[] arr = aList.toArray();
+
+        assertEquals(aList.size(), arr.length, "Created array should have same size");
+
+        for (int i = 0; i < aList.size(); i++) {
+            assertEquals(i, arr[i], "array should have same elements as list");
+        }
+
+        arr[10] = 2000;
+
+        assertEquals(aList.get(10), 10, "Modifying the array shouldn't modify the original list");
+    }
+
+    @Test
+    void testClone() {
+        assertEquals(100, aList.size(), "Returned incorrect size for exiting list");
+
+        HeapTrackingIntArrayList bList = aList.clone();
+
+        assertEquals(aList.size(), bList.size(), "copied list should have same size as original list");
+        for (int i = 0; i < aList.size(); i++) {
+            assertEquals(aList.get(i), bList.get(i), "entries in copied list should equal original list");
+        }
+
+        bList.set(2, 1000);
+        aList.set(3, -2);
+        bList.addAll(-1, -2, -3);
+
+        assertEquals(bList.get(2), 1000, "setting element in copied list should have an effect");
+        assertEquals(aList.get(2), 2, "setting element in copied list should not have an effect on original list");
+        assertEquals(aList.get(3), -2, "setting element in original list should have an effect on original list");
+        assertEquals(bList.get(3), 3, "setting element in original list should not have an effect on copied list");
+        assertEquals(bList.get(100), -1, "copied list addAll should work");
+        assertEquals(bList.get(101), -2, "copied list addAll should work");
+        assertEquals(bList.get(102), -3, "copied list addAll should work");
+        assertEquals(aList.size(), 100, "copied list addAll should not change original list length");
+
+        bList.close();
+    }
+
+    @Test
+    void indexOfElement() {
+        assertEquals(87, aList.indexOf(87), "Returned incorrect index");
+        assertEquals(-1, aList.indexOf(101), "Returned index for invalid Object");
+        aList.add(25, -1);
+        aList.add(50, -2);
+        assertEquals(25, aList.indexOf(-1), "Wrong indexOf for null.  Wanted 25 got: " + aList.indexOf(-1));
+    }
+
+    @Test
+    void truncate() {
+        HeapTrackingIntArrayList bList = aList.clone();
+
+        bList.truncate(40);
+        assertEquals(40, bList.size(), "Truncating copied list should reduce size");
+        assertEquals(100, aList.size(), "Truncating copied list should not reduce size of original list");
+
+        for (int i = 0; i < bList.size(); i++) {
+            assertEquals(aList.get(i), bList.get(i), "entries in copied list should equal original list");
+        }
+
+        bList.close();
+    }
 }

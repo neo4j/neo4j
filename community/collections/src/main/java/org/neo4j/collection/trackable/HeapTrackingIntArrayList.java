@@ -21,6 +21,7 @@ package org.neo4j.collection.trackable;
 
 import static org.neo4j.collection.trackable.HeapTrackingArrayList.newCapacity;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
@@ -43,6 +44,17 @@ public class HeapTrackingIntArrayList implements Resource {
      */
     public static HeapTrackingIntArrayList newIntArrayList(MemoryTracker memoryTracker) {
         return newIntArrayList(1, memoryTracker);
+    }
+
+    @SuppressWarnings("CopyConstructorMissesField")
+    private HeapTrackingIntArrayList(HeapTrackingIntArrayList other) {
+        int otherSize = other.size;
+        this.size = otherSize;
+        this.elementData = new int[otherSize];
+        System.arraycopy(other.elementData, 0, this.elementData, 0, otherSize);
+        this.memoryTracker = other.memoryTracker;
+        this.trackedSize = shallowSizeOfObjectArray(otherSize);
+        memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize);
     }
 
     /**
@@ -98,6 +110,24 @@ public class HeapTrackingIntArrayList implements Resource {
         size = s + 1;
     }
 
+    public boolean contains(int e) {
+        for (int i = 0; i < size; i++) {
+            if (elementData[i] == e) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int indexOf(int e) {
+        for (int i = 0; i < size; i++) {
+            if (elementData[i] == e) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public int size() {
         return size;
     }
@@ -111,7 +141,6 @@ public class HeapTrackingIntArrayList implements Resource {
     }
 
     public void clear() {
-        Arrays.fill(this.elementData, 0, size, 0);
         this.size = 0;
     }
 
@@ -137,6 +166,23 @@ public class HeapTrackingIntArrayList implements Resource {
         size = s + numNew;
         return true;
     }
+
+    public int[] toArray() {
+        return Arrays.copyOf(elementData, size);
+    }
+
+    public HeapTrackingIntArrayList clone() {
+        return new HeapTrackingIntArrayList(this);
+    }
+
+    public void truncate(int size) {
+        if (size >= this.size) {
+            return;
+        }
+
+        this.size = size;
+    }
+
     /**
      * Grow and report size change to tracker
      */
@@ -146,7 +192,7 @@ public class HeapTrackingIntArrayList implements Resource {
         trackedSize = sizeOfIntArray(newCapacity);
         memoryTracker.allocateHeap(trackedSize);
         int[] newItems = new int[newCapacity];
-        System.arraycopy(elementData, 0, newItems, 0, Math.min(size, newCapacity));
+        System.arraycopy(this.elementData, 0, newItems, 0, Math.min(size, newCapacity));
         elementData = newItems;
         memoryTracker.releaseHeap(oldHeapUsage);
         return elementData;

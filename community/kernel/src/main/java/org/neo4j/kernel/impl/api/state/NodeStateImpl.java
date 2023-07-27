@@ -117,6 +117,11 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
         }
 
         @Override
+        public LongIterator getAddedRelationships(RelationshipDirection direction, int relType) {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
+        @Override
         public IntIterable getAddedRelationshipTypes() {
             return IntSets.immutable.empty();
         }
@@ -248,6 +253,13 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
 
     @Override
     public LongIterator getAddedRelationships(Direction direction, int relType) {
+        return relationshipsAdded != null
+                ? relationshipsAdded.getRelationships(direction, relType)
+                : ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    @Override
+    public LongIterator getAddedRelationships(RelationshipDirection direction, int relType) {
         return relationshipsAdded != null
                 ? relationshipsAdded.getRelationships(direction, relType)
                 : ImmutableEmptyLongIterator.INSTANCE;

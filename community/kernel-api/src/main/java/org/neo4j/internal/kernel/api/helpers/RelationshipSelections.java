@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.DirectedTypes;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
@@ -116,6 +117,25 @@ public final class RelationshipSelections {
     public static RelationshipTraversalCursor allCursor(
             RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types) {
         node.relationships(traversalCursor, RelationshipSelection.selection(types, Direction.BOTH));
+        return traversalCursor;
+    }
+
+    /**
+     * Allows specification of types for the three different directions. Assumes that the
+     * three arrays are all pairwise disjoint. A null array signifies that we allow all types in the corresponding
+     * direction.
+     * <p>
+     * If one of the directed arrays are null, then the other directed array must be empty per the disjoint
+     * assumption. If the bothTypes array is null, then both other arrays need to be empty.
+     *
+     * @param traversalCursor A traversal a cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node
+     * @param directedTypes The types and corresponding directions to traverse
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipTraversalCursor multiTypeMultiDirectionCursor(
+            RelationshipTraversalCursor traversalCursor, NodeCursor node, DirectedTypes directedTypes) {
+        node.relationships(traversalCursor, RelationshipSelection.selection(directedTypes));
         return traversalCursor;
     }
 
