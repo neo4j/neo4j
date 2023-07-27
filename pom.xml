@@ -168,7 +168,7 @@
     <!-- Define project structure -->
     <resources>
       <resource>
-        <directory>src/main/resources</directory>
+        <directory>${basedir}/src/main/resources</directory>
       </resource>
       <resource>
         <directory>${basedir}/src/main/resources/META-INF/</directory>
@@ -189,7 +189,7 @@
     </resources>
     <testResources>
       <testResource>
-        <directory>src/test/resources</directory>
+        <directory>${basedir}/src/test/resources</directory>
       </testResource>
       <testResource>
         <directory>${basedir}</directory>
