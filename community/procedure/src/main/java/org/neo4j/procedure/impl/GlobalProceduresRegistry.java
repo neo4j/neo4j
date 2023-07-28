@@ -21,6 +21,7 @@ package org.neo4j.procedure.impl;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -58,8 +59,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
 
     private final RegistrationUpdater updater = new RegistrationUpdater();
 
+    private static final AtomicLong SIGNATURE_VERSION_GENERATOR = new AtomicLong(0);
     private final AtomicReference<ProcedureView> currentProcedureView =
-            new AtomicReference<>(ProcedureViewImpl.snapshot(registry, safeComponents, allComponents));
+            new AtomicReference<>(makeSnapshot(registry, safeComponents, allComponents));
 
     @VisibleForTesting
     public GlobalProceduresRegistry() {
@@ -331,6 +333,13 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
             onClose.close();
         }
     }
+
+    private static ProcedureView makeSnapshot(
+            ProcedureRegistry registry, ComponentRegistry safeComponents, ComponentRegistry allComponents) {
+        return ProcedureViewImpl.snapshot(
+                SIGNATURE_VERSION_GENERATOR.incrementAndGet(), registry, safeComponents, allComponents);
+    }
+
     /**
      * The RegistrationLatch is responsible for protecting concurrent mutation
      * of the internals of the GlobalProceduresRegistry, as well as generating
@@ -343,8 +352,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
             lock.lock();
             return () -> {
                 try {
-                    currentProcedureView.setRelease(
-                            ProcedureViewImpl.snapshot(registry, safeComponents, allComponents));
+                    currentProcedureView.setRelease(makeSnapshot(registry, safeComponents, allComponents));
                 } finally {
                     lock.unlock();
                 }

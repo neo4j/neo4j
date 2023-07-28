@@ -70,4 +70,6 @@ public interface ProcedureView {
     int[] getFunctionIds(String functionGlobbing);
 
     int[] getAggregatingFunctionIds(String functionGlobbing);
+
+    long signatureVersion();
 }

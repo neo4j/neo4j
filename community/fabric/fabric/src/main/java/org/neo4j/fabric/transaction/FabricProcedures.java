@@ -138,6 +138,11 @@ public class FabricProcedures implements Procedures {
         return notAvailable();
     }
 
+    @Override
+    public long signatureVersion() {
+        return view.signatureVersion();
+    }
+
     private static class EmptyProcedureContext implements Context {
 
         private EmptyProcedureContext() {

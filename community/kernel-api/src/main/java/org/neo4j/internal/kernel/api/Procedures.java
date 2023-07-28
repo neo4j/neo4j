@@ -147,4 +147,6 @@ public interface Procedures {
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
     UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException;
+
+    long signatureVersion();
 }

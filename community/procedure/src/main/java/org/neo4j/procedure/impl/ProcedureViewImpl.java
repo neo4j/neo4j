@@ -46,6 +46,7 @@ public class ProcedureViewImpl implements ProcedureView {
 
     private static final int LOOKUP_CACHE_SIZE = 100;
 
+    private final long signatureVersion;
     private final ProcedureRegistry registry;
     private final ComponentRegistry safeComponents;
     private final ComponentRegistry allComponents;
@@ -56,7 +57,11 @@ public class ProcedureViewImpl implements ProcedureView {
             new LfuCache<>("aggregationFunctions", LOOKUP_CACHE_SIZE);
 
     private ProcedureViewImpl(
-            ProcedureRegistry registryView, ComponentRegistry safeComponents, ComponentRegistry allComponents) {
+            long signatureVersion,
+            ProcedureRegistry registryView,
+            ComponentRegistry safeComponents,
+            ComponentRegistry allComponents) {
+        this.signatureVersion = signatureVersion;
         this.registry = registryView;
         this.safeComponents = safeComponents;
         this.allComponents = allComponents;
@@ -72,8 +77,12 @@ public class ProcedureViewImpl implements ProcedureView {
      * @return an immutable view of the registries
      */
     public static ProcedureView snapshot(
-            ProcedureRegistry registry, ComponentRegistry safeComponents, ComponentRegistry allComponents) {
+            long signatureVersion,
+            ProcedureRegistry registry,
+            ComponentRegistry safeComponents,
+            ComponentRegistry allComponents) {
         return new ProcedureViewImpl(
+                signatureVersion,
                 ProcedureRegistry.copyOf(registry),
                 ComponentRegistry.copyOf(safeComponents),
                 ComponentRegistry.copyOf(allComponents));
@@ -194,5 +203,10 @@ public class ProcedureViewImpl implements ProcedureView {
                 f -> matcherPredicate.test(f.signature().name().toString()));
         aggregationFunctionsLookupCache.put(functionGlobbing, data);
         return data;
+    }
+
+    @Override
+    public long signatureVersion() {
+        return signatureVersion;
     }
 }

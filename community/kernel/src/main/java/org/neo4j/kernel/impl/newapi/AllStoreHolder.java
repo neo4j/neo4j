@@ -996,6 +996,11 @@ public abstract class AllStoreHolder extends Read {
         return getProcedureCaller().procedureView.getAllAggregatingFunctions();
     }
 
+    @Override
+    public long signatureVersion() {
+        return getProcedureCaller().procedureView.signatureVersion();
+    }
+
     public static class ForTransactionScope extends AllStoreHolder {
 
         private final KernelTransactionImplementation ktx;

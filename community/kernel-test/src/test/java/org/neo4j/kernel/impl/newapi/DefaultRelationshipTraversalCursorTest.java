@@ -503,6 +503,11 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
+        public long signatureVersion() {
+            return 0;
+        }
+
+        @Override
         public CursorContext cursorContext() {
             return null;
         }

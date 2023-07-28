@@ -269,5 +269,11 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
             initView();
             return view.getAggregatingFunctionIds(functionGlobbing);
         }
+
+        @Override
+        public long signatureVersion() {
+            initView();
+            return view.signatureVersion();
+        }
     }
 }
