@@ -23,7 +23,6 @@ import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.Relations
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -33,19 +32,16 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup {
     private final MutableLongObjectMap<NodeContext> contexts;
     private final RelationshipGroupGetter relGroupGetter;
     private final RecordAccessSet recordChanges;
-    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
 
     MappedNodeDataLookup(
             MutableLongObjectMap<NodeContext> contexts,
             RelationshipGroupGetter relGroupGetter,
             RecordAccessSet recordChanges,
-            CursorContext cursorContext,
             MemoryTracker memoryTracker) {
         this.contexts = contexts;
         this.relGroupGetter = relGroupGetter;
         this.recordChanges = recordChanges;
-        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
     }
 

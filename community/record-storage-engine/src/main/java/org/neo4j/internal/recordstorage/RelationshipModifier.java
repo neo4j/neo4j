@@ -60,7 +60,6 @@ public class RelationshipModifier {
 
     private final RelationshipGroupGetter relGroupGetter;
     private final int denseNodeThreshold;
-    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final RelationshipCreator creator;
     private final RelationshipDeleter deleter;
@@ -73,7 +72,6 @@ public class RelationshipModifier {
             MemoryTracker memoryTracker) {
         this.relGroupGetter = relGroupGetter;
         this.denseNodeThreshold = denseNodeThreshold;
-        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
 
         final var externalDegreesThreshold = DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
@@ -99,7 +97,7 @@ public class RelationshipModifier {
          */
         try (HeapTrackingLongObjectHashMap<NodeContext> contexts = newLongObjectMap(memoryTracker)) {
             MappedNodeDataLookup nodeDataLookup =
-                    new MappedNodeDataLookup(contexts, relGroupGetter, recordChanges, cursorContext, memoryTracker);
+                    new MappedNodeDataLookup(contexts, relGroupGetter, recordChanges, memoryTracker);
             // Acquire most locks
             // First we take Node and Group locks (sorted by node id)
             acquireMostOfTheNodeAndGroupsLocks(
