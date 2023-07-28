@@ -82,7 +82,7 @@ public class TextIndexReader extends AbstractTextIndexReader {
                 final var ssp = (StringSuffixPredicate) predicate;
                 yield CypherStringQueryFactory.stringSuffix(ssp.suffix().stringValue());
             }
-            default -> throw invalidQuery(predicate);
+            default -> throw invalidQuery(IllegalArgumentException::new, predicate);
         };
     }
 

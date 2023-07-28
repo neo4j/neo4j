@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType;
-
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
-import org.neo4j.values.storable.ValueGroup;
 
 public abstract class AbstractTextIndexReader extends AbstractLuceneIndexReader {
 
@@ -40,14 +40,11 @@ public abstract class AbstractTextIndexReader extends AbstractLuceneIndexReader 
     }
 
     @Override
-    protected void validateQuery(PropertyIndexQuery... predicates) {
-        if (predicates.length > 1) {
-            throw invalidCompositeQuery(predicates);
-        }
+    protected IndexProgressor indexProgressor(Query query, EntityValueClient client) {
+        return search(getIndexSearcher(), query).getIndexProgressor(entityIdFieldKey(), client);
+    }
 
-        final var predicate = predicates[0];
-        if (!(predicate.valueGroup() == ValueGroup.TEXT || predicate.type() == IndexQueryType.ALL_ENTRIES)) {
-            throw invalidQuery(predicate);
-        }
+    protected IndexSearcher getIndexSearcher() {
+        return searcherReference.getIndexSearcher();
     }
 }

@@ -38,6 +38,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.sampler.LuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -112,8 +114,9 @@ class TextIndexReaderTest {
         var query = range(1, 7, true, 8, true);
 
         assertThatThrownBy(() -> doQuery(simpleIndexReader, query))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll("Index query not supported for", "Query:", query.toString());
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for", IndexType.RANGE.name(), "index", "Query", query.toString());
     }
 
     @Test
@@ -138,7 +141,10 @@ class TextIndexReaderTest {
     }
 
     private TextIndexReader getNonUniqueSimpleReader() {
-        IndexDescriptor index = IndexPrototype.forSchema(SCHEMA).withName("a").materialise(0);
+        IndexDescriptor index = IndexPrototype.forSchema(SCHEMA)
+                .withName("a")
+                .materialise(0)
+                .withIndexCapability(TextIndexProvider.CAPABILITY);
         return new TextIndexReader(partitionSearcher, index, samplingConfig, taskCoordinator, NO_USAGE_TRACKER);
     }
 }

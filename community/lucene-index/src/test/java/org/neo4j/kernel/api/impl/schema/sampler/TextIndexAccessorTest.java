@@ -108,7 +108,8 @@ public class TextIndexAccessorTest {
             .withName("a")
             .withIndexType(IndexType.TEXT)
             .withIndexProvider(TextIndexProvider.DESCRIPTOR)
-            .materialise(0);
+            .materialise(0)
+            .withIndexCapability(TextIndexProvider.CAPABILITY);
     private static final Config CONFIG = Config.defaults();
 
     public static Stream<Arguments> implementations() {
@@ -175,8 +176,9 @@ public class TextIndexAccessorTest {
             // WHEN
             var query = exists(PROP_ID);
             assertThatThrownBy(() -> resultsArray(reader, query))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Index query not supported for %s index. Query: %s", IndexType.TEXT, query);
+                    .isInstanceOf(IndexNotApplicableKernelException.class)
+                    .hasMessageContainingAll(
+                            "Index query not supported for", IndexType.TEXT.name(), "index", "Query", query.toString());
         }
     }
 
@@ -208,8 +210,9 @@ public class TextIndexAccessorTest {
             // WHEN
             var query = exists(PROP_ID);
             assertThatThrownBy(() -> resultsArray(reader, query))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Index query not supported for %s index. Query: %s", IndexType.TEXT, query);
+                    .isInstanceOf(IndexNotApplicableKernelException.class)
+                    .hasMessageContainingAll(
+                            "Index query not supported for", IndexType.TEXT.name(), "index", "Query", query.toString());
         }
     }
 
@@ -224,8 +227,9 @@ public class TextIndexAccessorTest {
         var reader = accessor.newValueReader(NO_USAGE_TRACKER);
         var query = range(PROP_ID, 2, true, 3, true);
         assertThatThrownBy(() -> resultsArray(reader, query))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Index query not supported for %s index. Query: %s", IndexType.TEXT, query);
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for", IndexType.TEXT.name(), "index", "Query", query.toString());
     }
 
     @ParameterizedTest(name = "{0}")

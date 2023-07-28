@@ -78,7 +78,7 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
                 final var ssp = (StringSuffixPredicate) predicate;
                 yield TrigramQueryFactory.stringSuffix(ssp.suffix().stringValue());
             }
-            default -> throw invalidQuery(predicate);
+            default -> throw invalidQuery(IllegalArgumentException::new, predicate);
         };
     }
 
@@ -128,6 +128,7 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
     BoundedIterable<Long> newAllEntriesValueReader(long fromIdInclusive, long toIdExclusive) throws IOException {
         return newAllEntriesValueReader(
                 TrigramDocumentStructure.ENTITY_ID_KEY,
+                getIndexSearcher(),
                 TrigramQueryFactory.allValues(),
                 fromIdInclusive,
                 toIdExclusive);

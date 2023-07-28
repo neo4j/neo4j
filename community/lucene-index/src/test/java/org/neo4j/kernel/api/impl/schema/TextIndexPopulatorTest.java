@@ -100,7 +100,8 @@ class TextIndexPopulatorTest {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig(Config.defaults());
         index = IndexPrototype.forSchema(forLabel(42, propertyKeyId), provider.getProviderDescriptor())
                 .withName("index")
-                .materialise(0);
+                .materialise(0)
+                .withIndexCapability(TextIndexProvider.CAPABILITY);
         indexPopulator = provider.getPopulator(
                 index,
                 samplingConfig,

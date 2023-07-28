@@ -65,7 +65,8 @@ class TextIndexPopulationIT {
             .withName("a")
             .withIndexType(IndexType.TEXT)
             .withIndexProvider(TextIndexProvider.DESCRIPTOR)
-            .materialise(1);
+            .materialise(1)
+            .withIndexCapability(TextIndexProvider.CAPABILITY);
     private final Config config = Config.newBuilder()
             .set(GraphDatabaseInternalSettings.lucene_max_partition_size, 10)
             .build();

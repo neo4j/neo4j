@@ -22,16 +22,19 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 
 import java.io.IOException;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexReader;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
+import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
@@ -64,22 +67,18 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     }
 
     @Override
-    protected void validateQuery(PropertyIndexQuery... predicates) {
-        if (predicates.length > 1) {
-            throw invalidCompositeQuery(predicates);
+    protected PropertyIndexQuery validateQuery(PropertyIndexQuery... predicates)
+            throws IndexNotApplicableKernelException {
+        final var predicate = super.validateQuery(predicates);
+        if (predicate instanceof final NearestNeighborsPredicate nearestNeighbour) {
+            final var queryVector = nearestNeighbour.query();
+            if (queryVector.length != vectorDimensionality) {
+                throw new IndexNotApplicableKernelException(
+                        "Index query vector has a dimensionality of %d, but indexed vectors have %d."
+                                .formatted(queryVector.length, vectorDimensionality));
+            }
         }
-
-        final var predicate = predicates[0];
-        if (predicate.type() != IndexQueryType.NEAREST_NEIGHBORS) {
-            throw invalidQuery(predicate);
-        }
-
-        final var queryVector = ((NearestNeighborsPredicate) predicate).query();
-        if (queryVector.length != vectorDimensionality) {
-            throw new IllegalArgumentException(
-                    "Index query vector has a dimensionality of %d, but indexed vectors have %d."
-                            .formatted(queryVector.length, vectorDimensionality));
-        }
+        return predicate;
     }
 
     @Override
@@ -91,8 +90,13 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
                 yield VectorQueryFactory.approximateNearestNeighbors(
                         nearestNeighborsPredicate.query(), nearestNeighborsPredicate.numberOfNeighbors());
             }
-            default -> throw invalidQuery(predicate);
+            default -> throw invalidQuery(IllegalArgumentException::new, predicate);
         };
+    }
+
+    @Override
+    protected IndexProgressor indexProgressor(Query query, EntityValueClient client) {
+        return search(getIndexSearcher(), query).getIndexProgressor(entityIdFieldKey(), client);
     }
 
     @Override
@@ -107,8 +111,16 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
         return false;
     }
 
+    private IndexSearcher getIndexSearcher() {
+        return searcherReference.getIndexSearcher();
+    }
+
     BoundedIterable<Long> newAllEntriesValueReader(long fromIdInclusive, long toIdExclusive) throws IOException {
         return newAllEntriesValueReader(
-                VectorDocumentStructure.ENTITY_ID_KEY, VectorQueryFactory.allValues(), fromIdInclusive, toIdExclusive);
+                VectorDocumentStructure.ENTITY_ID_KEY,
+                getIndexSearcher(),
+                VectorQueryFactory.allValues(),
+                fromIdInclusive,
+                toIdExclusive);
     }
 }

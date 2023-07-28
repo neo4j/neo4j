@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -244,16 +245,22 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
         PropertyIndexQuery query = exists(token.propertyKey(SINCE));
 
         assertThatThrownBy(() -> indexedNodes(query))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Index query not supported for %s index. Query: %s",
-                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for",
+                        org.neo4j.graphdb.schema.IndexType.TEXT.name(),
+                        "index",
+                        "Query",
+                        query.toString());
 
         assertThatThrownBy(() -> indexedRelations(query))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Index query not supported for %s index. Query: %s",
-                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for",
+                        org.neo4j.graphdb.schema.IndexType.TEXT.name(),
+                        "index",
+                        "Query",
+                        query.toString());
     }
 
     @Test
@@ -261,33 +268,45 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
         PropertyIndexQuery query = range(token.propertyKey(SINCE), "2 years", true, "3 years", true);
 
         assertThatThrownBy(() -> indexedNodes(query))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Index query not supported for %s index. Query: %s",
-                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for",
+                        org.neo4j.graphdb.schema.IndexType.TEXT.name(),
+                        "index",
+                        "Query",
+                        query.toString());
 
         assertThatThrownBy(() -> indexedRelations(query))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Index query not supported for %s index. Query: %s",
-                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for",
+                        org.neo4j.graphdb.schema.IndexType.TEXT.name(),
+                        "index",
+                        "Query",
+                        query.toString());
     }
 
     @Test
     void shouldThrowOnNonTextValues() {
         PropertyIndexQuery name = exact(token.propertyKey(SINCE), 77);
         assertThatThrownBy(() -> indexedNodes(name))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Index query not supported for %s index. Query: %s",
-                        org.neo4j.graphdb.schema.IndexType.TEXT, name);
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for",
+                        org.neo4j.graphdb.schema.IndexType.TEXT.name(),
+                        "index",
+                        "Query",
+                        name.toString());
 
         PropertyIndexQuery since = exact(token.propertyKey(SINCE), 694_717_800);
         assertThatThrownBy(() -> indexedRelations(since))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Index query not supported for %s index. Query: %s",
-                        org.neo4j.graphdb.schema.IndexType.TEXT, since);
+                .isInstanceOf(IndexNotApplicableKernelException.class)
+                .hasMessageContainingAll(
+                        "Index query not supported for",
+                        org.neo4j.graphdb.schema.IndexType.TEXT.name(),
+                        "index",
+                        "Query",
+                        since.toString());
     }
 
     protected IndexProviderDescriptor getIndexProviderDescriptor() {

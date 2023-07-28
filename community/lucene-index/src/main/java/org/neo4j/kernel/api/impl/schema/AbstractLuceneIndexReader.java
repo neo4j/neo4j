@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.Function;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -66,8 +67,6 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         this.keepScores = keepScores;
     }
 
-    protected abstract void validateQuery(PropertyIndexQuery... predicates);
-
     @Override
     public void query(
             IndexProgressor.EntityValueClient client,
@@ -76,32 +75,47 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
             IndexQueryConstraints constraints,
             PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
-        validateQuery(predicates);
+        final var predicate = validateQuery(predicates);
+        final var query = toLuceneQuery(predicate);
         context.monitor().queried(descriptor);
         usageTracker.queried();
 
-        final var predicate = predicates[0];
-        final var query = toLuceneQuery(predicate);
-        final var progressor = search(query).getIndexProgressor(entityIdFieldKey(), client);
+        final var progressor = indexProgressor(query, client);
         final var needStoreFilter = needStoreFilter(predicate);
         client.initialize(descriptor, progressor, accessMode, false, needStoreFilter, constraints, predicate);
     }
 
+    protected PropertyIndexQuery validateQuery(PropertyIndexQuery... predicates)
+            throws IndexNotApplicableKernelException {
+        if (predicates.length > 1) {
+            throw invalidCompositeQuery(IndexNotApplicableKernelException::new, predicates);
+        }
+
+        final var predicate = predicates[0];
+        if (!descriptor.getCapability().isQuerySupported(predicate.type(), predicate.valueCategory())) {
+            throw invalidQuery(IndexNotApplicableKernelException::new, predicate);
+        }
+
+        return predicate;
+    }
+
     protected abstract Query toLuceneQuery(PropertyIndexQuery predicate);
 
-    protected IllegalArgumentException invalidCompositeQuery(PropertyIndexQuery... predicates) {
+    protected <E extends Exception> E invalidCompositeQuery(
+            Function<String, E> constructor, PropertyIndexQuery... predicates) {
         final var indexType = descriptor.getIndexType();
-        return new IllegalArgumentException(("Tried to query a %s index with a composite query. "
+        return constructor.apply(("Tried to query a %s index with a composite query. "
                         + "Composite queries are not supported by a %s index. "
                         + "Query was: %s ")
                 .formatted(indexType, indexType, Arrays.toString(predicates)));
     }
 
-    protected IllegalArgumentException invalidQuery(PropertyIndexQuery predicate) {
+    protected <E extends Exception> E invalidQuery(Function<String, E> constructor, PropertyIndexQuery predicate) {
         final var indexType = descriptor.getIndexType();
-        return new IllegalArgumentException(
-                "Index query not supported for %s index. Query: %s".formatted(indexType, predicate));
+        return constructor.apply("Index query not supported for %s index. Query: %s".formatted(indexType, predicate));
     }
+
+    protected abstract IndexProgressor indexProgressor(Query query, IndexProgressor.EntityValueClient client);
 
     protected abstract String entityIdFieldKey();
 
@@ -124,14 +138,10 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         }
     }
 
-    protected IndexSearcher getIndexSearcher() {
-        return searcherReference.getIndexSearcher();
-    }
-
-    private DocValuesCollector search(Query query) {
+    protected DocValuesCollector search(IndexSearcher searcher, Query query) {
         try {
             final var docValuesCollector = new DocValuesCollector(keepScores);
-            getIndexSearcher().search(query, docValuesCollector);
+            searcher.search(query, docValuesCollector);
             return docValuesCollector;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -139,8 +149,8 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     }
 
     protected BoundedIterable<Long> newAllEntriesValueReader(
-            String field, Query query, long fromIdInclusive, long toIdExclusive) {
-        final var collector = search(query);
+            String field, IndexSearcher searcher, Query query, long fromIdInclusive, long toIdExclusive) {
+        final var collector = search(searcher, query);
         final var entityConsumer = new InRangeEntityConsumer(fromIdInclusive, toIdExclusive);
         final var indexProgressor = collector.getIndexProgressor(field, entityConsumer);
         return new AllEntriesValueReader(indexProgressor, entityConsumer);

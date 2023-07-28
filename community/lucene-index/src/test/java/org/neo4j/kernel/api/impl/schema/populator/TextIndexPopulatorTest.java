@@ -82,7 +82,8 @@ class TextIndexPopulatorTest {
                 .withName("index")
                 .withIndexType(IndexType.TEXT)
                 .withIndexProvider(TextIndexProvider.DESCRIPTOR)
-                .materialise(13);
+                .materialise(13)
+                .withIndexCapability(TextIndexProvider.CAPABILITY);
         index = TextIndexBuilder.create(descriptor, writable(), Config.defaults())
                 .withIndexStorage(indexStorage)
                 .build();
@@ -147,7 +148,6 @@ class TextIndexPopulatorTest {
         index.maybeRefreshBlocking();
         try (ValueIndexReader reader = index.getIndexReader(NO_USAGE_TRACKER);
                 NodeValueIterator allEntities = new NodeValueIterator()) {
-            int propertyKeyId = labelSchemaDescriptor.schema().getPropertyId();
             reader.query(
                     allEntities,
                     QueryContext.NULL_CONTEXT,
