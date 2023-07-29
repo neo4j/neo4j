@@ -36,11 +36,11 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
 
     @Override
     public void unpin() {
-        if (pinnedPageRef != 0) {
-            tracer.unpin(loadPlainCurrentPageId(), swapper);
-        }
         if (versionState != null) {
             unmapSnapshot();
+        }
+        if (pinnedPageRef != 0) {
+            tracer.unpin(loadPlainCurrentPageId(), swapper);
         }
         lockStamp = 0; // make sure not to accidentally keep a lock state around
         clearPageCursorState();
@@ -79,9 +79,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         init(pinEvent, pageRef);
         if (multiVersioned) {
             long pagePointer = pointer;
-            long headVersion = getLongAt(pagePointer, littleEndian);
-            versionContext.observedChainHead(headVersion);
-            if (shouldLoadSnapshot(headVersion)) {
+            version = getLongAt(pagePointer, littleEndian);
+            versionContext.observedChainHead(version);
+            if (shouldLoadSnapshot(version)) {
                 versionContext.markHeadInvisible();
                 if (chainFollow) {
                     versionStorage.loadReadSnapshot(this, versionContext, pinEvent);
@@ -102,8 +102,8 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     }
 
     @Override
-    public void remapSnapshot(MuninnPageCursor cursor, long committingTransactionId) {
-        super.remapSnapshot(cursor, committingTransactionId);
+    public void remapSnapshot(MuninnPageCursor cursor) {
+        super.remapSnapshot(cursor);
         lockStamp = cursor.lockStamp();
     }
 

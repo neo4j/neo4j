@@ -1084,23 +1084,19 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.pinnedPageRef = remappedState.pinnedPageRef;
         this.version = remappedState.version;
         this.pointer = remappedState.pointer;
-        this.storeCurrentPageId(remappedState.currentPageId);
     }
 
-    public void remapSnapshot(MuninnPageCursor cursor, long committingTransactionId) {
+    public void remapSnapshot(MuninnPageCursor cursor) {
         // unmap any previous state that we can have in the middle of should retry loops, we only need to close it
         // we do not need to close state here since the only way we're replacing some state is inside retry loop
         resetSnapshot();
-        versionState =
-                new VersionState(pinnedPageRef, version, pointer, cursor.lockStamp(), getCurrentPageId(), cursor);
+        versionState = new VersionState(pinnedPageRef, version, pointer, lockStamp(), cursor);
         pinnedPageRef = cursor.pinnedPageRef;
-        version = committingTransactionId;
+        version = cursor.version;
         pointer = cursor.pointer;
-        storeCurrentPageId(cursor.getCurrentPageId());
     }
 
-    record VersionState(
-            long pinnedPageRef, long version, long pointer, long lockStamp, long currentPageId, MuninnPageCursor cursor)
+    record VersionState(long pinnedPageRef, long version, long pointer, long lockStamp, MuninnPageCursor cursor)
             implements AutoCloseable {
         @Override
         public void close() {
