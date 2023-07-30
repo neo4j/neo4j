@@ -21,7 +21,9 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 
+import java.io.IOException;
 import org.apache.lucene.search.Query;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -103,5 +105,10 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
         // We can't do filtering of false positives after the fact because we would
         // need to know which neighbors we missed to do so. We don't know what we don't know.
         return false;
+    }
+
+    BoundedIterable<Long> newAllEntriesValueReader(long fromIdInclusive, long toIdExclusive) throws IOException {
+        return newAllEntriesValueReader(
+                VectorDocumentStructure.ENTITY_ID_KEY, VectorQueryFactory.allValues(), fromIdInclusive, toIdExclusive);
     }
 }

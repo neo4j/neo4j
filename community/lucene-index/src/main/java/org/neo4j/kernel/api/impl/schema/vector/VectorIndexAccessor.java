@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -49,7 +51,12 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, 
     @Override
     public BoundedIterable<Long> newAllEntriesValueReader(
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
-        return super.newAllEntriesReader(VectorDocumentStructure::entityIdFrom, fromIdInclusive, toIdExclusive);
+        try {
+            return ((VectorIndexReader) luceneIndex.getIndexReader(NO_USAGE_TRACKER))
+                    .newAllEntriesValueReader(fromIdInclusive, toIdExclusive);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

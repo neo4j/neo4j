@@ -332,6 +332,32 @@ public class DocValuesCollector extends SimpleCollector {
         boolean acceptEntity(long reference, float score, Value... values);
     }
 
+    public static final class InRangeEntityConsumer implements DocValuesCollector.EntityConsumer {
+        private final long fromIdInclusive;
+        private final long toIdExclusive;
+
+        private long reference;
+
+        public InRangeEntityConsumer(long fromIdInclusive, long toIdExclusive) {
+            this.fromIdInclusive = fromIdInclusive;
+            this.toIdExclusive = toIdExclusive;
+        }
+
+        public long reference() {
+            return reference;
+        }
+
+        @Override
+        public boolean acceptEntity(long reference, float score, Value... values) {
+            if (fromIdInclusive <= reference && reference < toIdExclusive) {
+                this.reference = reference;
+                return true;
+            }
+
+            return false;
+        }
+    }
+
     private static class LongValuesIndexProgressor extends LongValuesSource implements IndexProgressor {
         private final EntityConsumer entityConsumer;
 

@@ -83,6 +83,7 @@ public class FulltextIndexAccessor
 
     @Override
     public IndexEntriesReader[] newAllEntriesValueReader(int partitions, CursorContext cursorContext) {
+        // TODO VECTOR: this doesn't seem to adhere to the contract stipulated in IndexAccessor wrt partitions hint
         return super.newAllEntriesValueReader(LuceneFulltextDocumentStructure::getNodeId, partitions);
     }
 

@@ -22,8 +22,11 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -32,6 +35,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
+import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector.InRangeEntityConsumer;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -131,6 +135,38 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
             return docValuesCollector;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    protected BoundedIterable<Long> newAllEntriesValueReader(
+            String field, Query query, long fromIdInclusive, long toIdExclusive) {
+        final var collector = search(query);
+        final var entityConsumer = new InRangeEntityConsumer(fromIdInclusive, toIdExclusive);
+        final var indexProgressor = collector.getIndexProgressor(field, entityConsumer);
+        return new AllEntriesValueReader(indexProgressor, entityConsumer);
+    }
+
+    private record AllEntriesValueReader(IndexProgressor indexProgressor, InRangeEntityConsumer entityConsumer)
+            implements BoundedIterable<Long> {
+
+        @Override
+        public Iterator<Long> iterator() {
+            return new PrefetchingIterator<>() {
+                @Override
+                protected Long fetchNextOrNull() {
+                    return indexProgressor.next() ? entityConsumer.reference() : null;
+                }
+            };
+        }
+
+        @Override
+        public long maxCount() {
+            return UNKNOWN_MAX_COUNT;
+        }
+
+        @Override
+        public void close() {
+            indexProgressor.close();
         }
     }
 }

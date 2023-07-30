@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import static org.apache.lucene.document.Field.Store.YES;
+import static org.apache.lucene.document.Field.Store.NO;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.maybeToValidVector;
 
 import org.apache.lucene.document.Document;
@@ -48,7 +48,7 @@ class VectorDocumentStructure {
         }
 
         final var document = new Document();
-        final var idField = new StringField(ENTITY_ID_KEY, Long.toString(id), YES);
+        final var idField = new StringField(ENTITY_ID_KEY, Long.toString(id), NO);
         final var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, id);
         document.add(idField);
         document.add(idValueField);
@@ -56,10 +56,6 @@ class VectorDocumentStructure {
         final var valueField = new KnnFloatVectorField(VECTOR_VALUE_KEY, vector, fieldType);
         document.add(valueField);
         return document;
-    }
-
-    static long entityIdFrom(Document from) {
-        return Long.parseLong(from.get(ENTITY_ID_KEY));
     }
 
     /** Lucene's {@link FieldType#setVectorAttributes} enforces a max dimensionality,
