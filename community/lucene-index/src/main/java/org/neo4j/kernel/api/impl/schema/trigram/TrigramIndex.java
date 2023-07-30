@@ -27,51 +27,33 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
-    private final IndexSamplingConfig samplingConfig;
-    private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
     TrigramIndex(
             PartitionedIndexStorage indexStorage,
             IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
             IndexPartitionFactory partitionFactory,
             Config config) {
         super(indexStorage, partitionFactory, descriptor, config);
-        this.samplingConfig = samplingConfig;
-    }
-
-    @Override
-    public void drop() {
-        taskCoordinator.cancel();
-        try {
-            taskCoordinator.awaitCompletion();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while waiting for concurrent tasks to complete.", e);
-        }
-        super.drop();
     }
 
     @Override
     protected TrigramIndexReader createSimpleReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         AbstractIndexPartition searcher = getFirstPartition(partitions);
-        return new TrigramIndexReader(
-                searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator, usageTracker);
+        return new TrigramIndexReader(searcher.acquireSearcher(), descriptor, usageTracker);
     }
 
     @Override
     protected PartitionedValueIndexReader createPartitionedReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         List<ValueIndexReader> readers = acquireSearchers(partitions).stream()
-                .map(partitionSearcher -> (ValueIndexReader) new TrigramIndexReader(
-                        partitionSearcher, descriptor, samplingConfig, taskCoordinator, usageTracker))
+                .map(partitionSearcher ->
+                        (ValueIndexReader) new TrigramIndexReader(partitionSearcher, descriptor, usageTracker))
                 .toList();
         return new PartitionedValueIndexReader(descriptor, readers, usageTracker);
     }

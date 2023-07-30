@@ -88,7 +88,6 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             StorageEngineIndexingBehaviour indexingBehaviour) {
         final var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
-                .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .withWriterConfig(() -> IndexWriterConfigs.population(config))
                 .build();
@@ -109,7 +108,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        var builder = builder(descriptor, samplingConfig);
+        var builder = builder(descriptor);
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
         }
@@ -119,9 +118,8 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         return new TrigramIndexAccessor(luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY, validator);
     }
 
-    private TrigramIndexBuilder builder(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig) {
+    private TrigramIndexBuilder builder(IndexDescriptor descriptor) {
         return TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
-                .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
     }
 

@@ -38,28 +38,16 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector.InRangeEntityConsumer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 
 public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
-    protected final IndexDescriptor descriptor;
-    protected final IndexSamplingConfig samplingConfig;
-    protected final TaskCoordinator taskCoordinator;
-    protected final IndexUsageTracker usageTracker;
-    protected final boolean keepScores;
+    private final IndexDescriptor descriptor;
+    private final IndexUsageTracker usageTracker;
 
-    public AbstractLuceneIndexReader(
-            IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator,
-            IndexUsageTracker usageTracker,
-            boolean keepScores) {
+    public AbstractLuceneIndexReader(IndexDescriptor descriptor, IndexUsageTracker usageTracker) {
         this.descriptor = descriptor;
-        this.samplingConfig = samplingConfig;
-        this.taskCoordinator = taskCoordinator;
         this.usageTracker = usageTracker;
-        this.keepScores = keepScores;
     }
 
     @Override
@@ -130,7 +118,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
 
     protected DocValuesCollector search(IndexSearcher searcher, Query query) {
         try {
-            final var docValuesCollector = new DocValuesCollector(keepScores);
+            final var docValuesCollector = new DocValuesCollector();
             searcher.search(query, docValuesCollector);
             return docValuesCollector;
         } catch (IOException e) {

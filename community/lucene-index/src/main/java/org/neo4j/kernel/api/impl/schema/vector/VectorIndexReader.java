@@ -40,12 +40,10 @@ import org.neo4j.kernel.api.impl.index.collector.ScoredEntityIterator;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexReader;
 import org.neo4j.kernel.api.impl.schema.LuceneScoredEntityIndexProgressor;
-import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.index.IndexSampler;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.values.storable.Value;
 
@@ -53,14 +51,8 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     private final List<SearcherReference> searchers;
     private final int vectorDimensionality;
 
-    VectorIndexReader(
-            IndexDescriptor descriptor,
-            List<SearcherReference> searchers,
-            IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator,
-            IndexUsageTracker usageTracker) {
-        // TODO VECTOR: should this actually keep scores? Do we care?
-        super(descriptor, samplingConfig, taskCoordinator, usageTracker, true);
+    VectorIndexReader(IndexDescriptor descriptor, List<SearcherReference> searchers, IndexUsageTracker usageTracker) {
+        super(descriptor, usageTracker);
         this.searchers = searchers;
         this.vectorDimensionality = vectorDimensionsFrom(descriptor.getIndexConfig());
     }

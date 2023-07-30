@@ -27,33 +27,16 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
-    private final IndexSamplingConfig samplingConfig;
-    private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
     VectorIndex(
             PartitionedIndexStorage indexStorage,
             IndexPartitionFactory partitionFactory,
             IndexDescriptor descriptor,
-            Config config,
-            IndexSamplingConfig samplingConfig) {
+            Config config) {
         super(indexStorage, partitionFactory, descriptor, config);
-        this.samplingConfig = samplingConfig;
-    }
-
-    @Override
-    public void drop() {
-        taskCoordinator.cancel();
-        try {
-            taskCoordinator.awaitCompletion();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while waiting for concurrent tasks to complete.", e);
-        }
-        super.drop();
     }
 
     @Override
@@ -66,6 +49,6 @@ class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
     protected VectorIndexReader createPartitionedReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         final var searchers = acquireSearchers(partitions);
-        return new VectorIndexReader(descriptor, searchers, samplingConfig, taskCoordinator, usageTracker);
+        return new VectorIndexReader(descriptor, searchers, usageTracker);
     }
 }

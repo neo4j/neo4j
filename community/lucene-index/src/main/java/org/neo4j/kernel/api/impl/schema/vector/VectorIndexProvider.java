@@ -101,7 +101,6 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             StorageEngineIndexingBehaviour indexingBehaviour) {
         var luceneIndex = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
-                .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .withWriterConfig(() -> IndexWriterConfigs.population(config))
                 .build();
@@ -126,7 +125,6 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
         var builder = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
-                .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
         if (readOnly) {
             builder = builder.permanentlyReadOnly();

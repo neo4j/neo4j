@@ -52,13 +52,18 @@ import org.neo4j.values.storable.Value;
  * @see PartitionedValueIndexReader
  */
 public class TextIndexReader extends AbstractTextIndexReader {
+    private final IndexSamplingConfig samplingConfig;
+    private final TaskCoordinator taskCoordinator;
+
     public TextIndexReader(
             SearcherReference searcherReference,
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator,
             IndexUsageTracker usageTracker) {
-        super(descriptor, searcherReference, samplingConfig, taskCoordinator, usageTracker);
+        super(descriptor, searcherReference, usageTracker);
+        this.samplingConfig = samplingConfig;
+        this.taskCoordinator = taskCoordinator;
     }
 
     @Override

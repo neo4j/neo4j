@@ -32,19 +32,16 @@ import org.neo4j.kernel.api.impl.index.WritableDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
 class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> {
     private final IndexDescriptor descriptor;
     private final Config config;
-    private IndexSamplingConfig samplingConfig;
     private Supplier<IndexWriterConfig> writerConfigFactory;
 
     private VectorIndexBuilder(IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
         super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
-        this.samplingConfig = new IndexSamplingConfig(config);
         this.writerConfigFactory = () -> IndexWriterConfigs.standard(config);
     }
 
@@ -57,17 +54,6 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
     static VectorIndexBuilder create(
             IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
         return new VectorIndexBuilder(descriptor, readOnlyChecker, config);
-    }
-
-    /**
-     * Specify lucene schema index sampling config
-     *
-     * @param samplingConfig sampling config
-     * @return index builder
-     */
-    VectorIndexBuilder withSamplingConfig(IndexSamplingConfig samplingConfig) {
-        this.samplingConfig = samplingConfig;
-        return this;
     }
 
     /**
@@ -88,8 +74,8 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
      */
     DatabaseIndex<VectorIndexReader> build() {
         PartitionedIndexStorage storage = storageBuilder.build();
-        var index = new VectorIndex(
-                storage, new WritableIndexPartitionFactory(writerConfigFactory), descriptor, config, samplingConfig);
+        var index =
+                new VectorIndex(storage, new WritableIndexPartitionFactory(writerConfigFactory), descriptor, config);
         return new WritableDatabaseIndex<>(index, readOnlyChecker, permanentlyReadOnly);
     }
 }
