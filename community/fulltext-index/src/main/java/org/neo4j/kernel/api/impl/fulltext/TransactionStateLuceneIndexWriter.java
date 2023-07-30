@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.FULLTEXT;
+
 import java.io.Closeable;
 import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
@@ -87,7 +89,7 @@ class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable 
     }
 
     private void openWriter() throws IOException {
-        writer = new IndexWriter(directory, IndexWriterConfigs.transactionState(config, analyzer));
+        writer = new IndexWriter(directory, IndexWriterConfigs.transactionState(FULLTEXT, config, analyzer));
     }
 
     SearcherReference getNearRealTimeSearcher() throws IOException {

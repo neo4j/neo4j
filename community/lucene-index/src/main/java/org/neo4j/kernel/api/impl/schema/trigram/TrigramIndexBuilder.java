@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema.trigram;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TRIGRAM;
+
 import java.util.function.Supplier;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -43,7 +45,7 @@ public class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndex
         super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(config);
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard(TRIGRAM, config);
     }
 
     /**

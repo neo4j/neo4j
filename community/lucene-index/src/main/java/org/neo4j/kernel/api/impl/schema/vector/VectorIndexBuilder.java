@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.VECTOR;
+
 import java.util.function.Supplier;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -42,7 +44,7 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
         super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(config);
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard(VECTOR, config);
     }
 
     /**

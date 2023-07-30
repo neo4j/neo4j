@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.VECTOR;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorSimilarityFunctionFrom;
 
@@ -102,7 +103,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         var luceneIndex = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(config))
+                .withWriterConfig(() -> IndexWriterConfigs.population(VECTOR, config))
                 .build();
 
         if (luceneIndex.isReadOnly()) {

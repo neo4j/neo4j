@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEST;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -209,7 +210,8 @@ class DatabaseIndexIntegrationTest {
             super(
                     new TestLuceneIndex(
                             indexStorage,
-                            new WritableIndexPartitionFactory(() -> IndexWriterConfigs.standard(Config.defaults()))),
+                            new WritableIndexPartitionFactory(
+                                    () -> IndexWriterConfigs.standard(TEST, Config.defaults()))),
                     writable(),
                     false);
         }

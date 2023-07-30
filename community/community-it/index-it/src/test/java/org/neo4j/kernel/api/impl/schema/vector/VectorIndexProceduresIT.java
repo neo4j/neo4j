@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.helpers.MathUtil.ceil;
-import static org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils.SUGGESTED_SETTINGS;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -80,8 +79,7 @@ class VectorIndexProceduresIT {
 
         @ExtensionCallback
         void configure(TestDatabaseManagementServiceBuilder builder) {
-            builder.setConfig(SUGGESTED_SETTINGS)
-                    .setConfig(GraphDatabaseInternalSettings.lucene_max_partition_size, MAX_PARTITION_SIZE);
+            builder.setConfig(GraphDatabaseInternalSettings.lucene_max_partition_size, MAX_PARTITION_SIZE);
         }
 
         @BeforeEach

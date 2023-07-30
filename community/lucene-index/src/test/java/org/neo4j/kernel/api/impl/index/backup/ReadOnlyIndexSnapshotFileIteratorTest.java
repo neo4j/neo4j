@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index.backup;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEST;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -85,7 +86,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest {
     }
 
     private void prepareIndex() throws IOException {
-        try (IndexWriter writer = new IndexWriter(dir, IndexWriterConfigs.standard(Config.defaults()))) {
+        try (IndexWriter writer = new IndexWriter(dir, IndexWriterConfigs.standard(TEST, Config.defaults()))) {
             insertRandomDocuments(writer);
         }
     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index.partition;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEST;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -61,7 +62,7 @@ class IndexPartitionFactoryTest {
     @Test
     void createWritablePartition() throws Exception {
         try (AbstractIndexPartition indexPartition = new WritableIndexPartitionFactory(
-                        () -> IndexWriterConfigs.standard(Config.defaults()))
+                        () -> IndexWriterConfigs.standard(TEST, Config.defaults()))
                 .createPartition(testDirectory.homePath(), directory)) {
 
             try (IndexWriter indexWriter = indexPartition.getIndexWriter()) {
@@ -81,7 +82,7 @@ class IndexPartitionFactoryTest {
     private void prepareIndex() throws IOException {
         Path location = testDirectory.homePath();
         try (AbstractIndexPartition ignored = new WritableIndexPartitionFactory(
-                        () -> IndexWriterConfigs.standard(Config.defaults()))
+                        () -> IndexWriterConfigs.standard(TEST, Config.defaults()))
                 .createPartition(location, DirectoryFactory.PERSISTENT.open(location))) {
             // empty
         }

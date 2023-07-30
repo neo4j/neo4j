@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.trigram;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TRIGRAM;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -89,7 +90,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         final var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(config))
+                .withWriterConfig(() -> IndexWriterConfigs.population(TRIGRAM, config))
                 .build();
 
         if (luceneIndex.isReadOnly()) {

@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEST;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -206,7 +207,7 @@ class PartitionedIndexStorageTest {
     private Directory createRandomLuceneDir(Path rootFolder) throws IOException {
         Path folder = createRandomFolder(rootFolder);
         Directory directory = directoryFactory.open(folder);
-        try (IndexWriter writer = new IndexWriter(directory, IndexWriterConfigs.standard(Config.defaults()))) {
+        try (IndexWriter writer = new IndexWriter(directory, IndexWriterConfigs.standard(TEST, Config.defaults()))) {
             writer.addDocument(randomDocument());
             writer.commit();
         }

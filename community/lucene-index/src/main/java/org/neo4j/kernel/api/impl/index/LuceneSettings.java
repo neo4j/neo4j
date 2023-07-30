@@ -55,6 +55,11 @@ public class LuceneSettings implements SettingsDeclaration {
 
     @Internal
     @Description("Setting for the matching lucene IndexWriterConfig config")
+    public static final Setting<Integer> vector_merge_factor =
+            newBuilder("internal.dbms.index.vector.merge_factor", INT, 1000).build();
+
+    @Internal
+    @Description("Setting for the matching lucene IndexWriterConfig config")
     public static final Setting<Double> lucene_nocfs_ratio =
             newBuilder("internal.dbms.index.lucene.nocfs.ratio", DOUBLE, 1.0).build();
 
@@ -75,6 +80,12 @@ public class LuceneSettings implements SettingsDeclaration {
     @Description("Setting for the matching lucene IndexWriterConfig config")
     public static final Setting<Double> lucene_population_ram_buffer_size = newBuilder(
                     "internal.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50D)
+            .build();
+
+    @Internal
+    @Description("Setting for the matching lucene IndexWriterConfig config")
+    public static final Setting<Double> vector_population_ram_buffer_size = newBuilder(
+                    "internal.dbms.index.vector.population_ram_buffer_size", DOUBLE, 1D)
             .build();
 
     @Internal

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEXT;
+
 import java.util.function.Supplier;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -54,7 +56,7 @@ public class TextIndexBuilder extends AbstractLuceneIndexBuilder<TextIndexBuilde
         this.descriptor = descriptor;
         this.config = config;
         this.samplingConfig = new IndexSamplingConfig(config);
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(config);
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard(TEXT, config);
     }
 
     /**

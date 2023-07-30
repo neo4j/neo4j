@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEXT;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -88,7 +89,7 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(config))
+                .withWriterConfig(() -> IndexWriterConfigs.population(TEXT, config))
                 .build();
 
         if (index.isReadOnly()) {

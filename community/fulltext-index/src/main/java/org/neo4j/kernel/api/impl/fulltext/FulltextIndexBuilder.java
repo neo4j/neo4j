@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.FULLTEXT;
+
 import java.util.function.Supplier;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,6 +31,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexType;
 import org.neo4j.token.api.TokenHolder;
 
 public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextIndexBuilder> {
@@ -74,8 +77,9 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     }
 
     /**
-     * Whether to create the index in a {@link IndexWriterConfigs#population(Config) populating} mode, if {@code true}, or
-     * in a {@link IndexWriterConfigs#standard(Config) standard} mode, if {@code false}.
+     * Whether to create the index in a {@link IndexWriterConfigs#population(LuceneIndexType,Config) populating}
+     * mode, if {@code true}, or in a {@link IndexWriterConfigs#standard(LuceneIndexType,Config) standard} mode, if
+     * {@code false}.
      *
      * @param isPopulating {@code true} if the index should be created in a populating mode.
      * @return this index builder.
@@ -98,9 +102,9 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     public DatabaseIndex<FulltextIndexReader> build() {
         Supplier<IndexWriterConfig> writerConfigFactory;
         if (populating) {
-            writerConfigFactory = () -> IndexWriterConfigs.population(config, analyzer);
+            writerConfigFactory = () -> IndexWriterConfigs.population(FULLTEXT, config, analyzer);
         } else {
-            writerConfigFactory = () -> IndexWriterConfigs.standard(config, analyzer);
+            writerConfigFactory = () -> IndexWriterConfigs.standard(FULLTEXT, config, analyzer);
         }
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory(writerConfigFactory);
         FulltextIndex fulltextIndex = new FulltextIndex(
