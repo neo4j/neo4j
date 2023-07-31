@@ -39,7 +39,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.TypeRepresentation;
@@ -49,7 +48,6 @@ import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 class SchemaComplianceChecker implements AutoCloseable {
@@ -95,9 +93,7 @@ class SchemaComplianceChecker implements AutoCloseable {
             IntObjectMap<Value> values,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reportSupplier) {
         for (IndexDescriptor indexRule : indexes) {
-            SchemaDescriptor schema = indexRule.schema();
-            Value[] valueArray =
-                    RecordLoading.entityIntersectionWithSchema(entityTokens, values, schema, indexRule.getIndexType());
+            Value[] valueArray = RecordLoading.entityIntersectionWithSchema(entityTokens, values, indexRule);
             if (valueArray == null) {
                 continue;
             }
@@ -105,8 +101,8 @@ class SchemaComplianceChecker implements AutoCloseable {
             if (indexRule.isUnique()) {
                 verifyIndexedUniquely(entity, valueArray, indexRule, reader, reportSupplier);
             } else {
-                long count =
-                        reader.countIndexedEntities(entity.getId(), cursorContext, schema.getPropertyIds(), valueArray);
+                long count = reader.countIndexedEntities(
+                        entity.getId(), cursorContext, indexRule.schema().getPropertyIds(), valueArray);
                 reportIncorrectIndexCount(entity, valueArray, indexRule, count, reportSupplier);
             }
         }
@@ -171,12 +167,10 @@ class SchemaComplianceChecker implements AutoCloseable {
             IndexDescriptor indexRule,
             long count,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reportSupplier) {
-        if (count == 0) {
-            if (areValuesSupportedByIndex(indexRule.getIndexType(), propertyValues)) {
-                reportSupplier
-                        .apply(context.recordLoader.entity(entity, storeCursors))
-                        .notIndexed(indexRule, Values.asObjects(propertyValues));
-            }
+        if (count == 0 && areValuesSupportedByIndex(indexRule, propertyValues)) {
+            reportSupplier
+                    .apply(context.recordLoader.entity(entity, storeCursors))
+                    .notIndexed(indexRule, Values.asObjects(propertyValues));
         } else if (count != 1) {
             reportSupplier
                     .apply(context.recordLoader.entity(entity, storeCursors))
@@ -242,31 +236,7 @@ class SchemaComplianceChecker implements AutoCloseable {
         }
     }
 
-    static boolean areValuesSupportedByIndex(IndexType indexType, Value... values) {
-        if (values == null) {
-            return false;
-        }
-
-        return switch (indexType) {
-            case RANGE -> true;
-            case FULLTEXT -> Arrays.stream(values).anyMatch(value -> isValueSupportedByIndex(indexType, value));
-            case POINT, TEXT ->
-            // Neither point nor text index can be composite,
-            Arrays.stream(values)
-                    .findFirst()
-                    .filter(value -> isValueSupportedByIndex(indexType, value))
-                    .isPresent();
-            default -> false;
-        };
-    }
-
-    static boolean isValueSupportedByIndex(IndexType indexType, Value value) {
-        return switch (indexType) {
-            case RANGE -> true;
-            case TEXT -> value.valueGroup() == ValueGroup.TEXT;
-            case FULLTEXT -> value.valueGroup() == ValueGroup.TEXT || value.valueGroup() == ValueGroup.TEXT_ARRAY;
-            case POINT -> value.valueGroup() == ValueGroup.GEOMETRY;
-            default -> false;
-        };
+    static boolean areValuesSupportedByIndex(IndexDescriptor index, Value... values) {
+        return values != null && index.getCapability().areValuesAccepted(values);
     }
 }

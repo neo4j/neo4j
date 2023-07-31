@@ -21,7 +21,6 @@ package org.neo4j.consistency.checker;
 
 import static org.neo4j.consistency.checker.RecordLoading.entityIntersectionWithSchema;
 import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
-import static org.neo4j.consistency.checker.SchemaComplianceChecker.areValuesSupportedByIndex;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.ArrayList;
@@ -284,14 +283,12 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
             firstValues[slot] = indexedValues;
             firstEntityIds[slot] = entityId;
         }
-        if (lastValues[slot] != null) {
-            if (lastChecksum == checksum) {
-                if (Arrays.equals(lastValues[slot], indexedValues)) {
-                    getReport(getEntity(localStoreCursors, entityId))
-                            .uniqueIndexNotUnique(index.descriptor, indexedValues, lastEntityIds[slot]);
-                }
-            }
+
+        if (lastValues[slot] != null && lastChecksum == checksum && Arrays.equals(lastValues[slot], indexedValues)) {
+            getReport(getEntity(localStoreCursors, entityId))
+                    .uniqueIndexNotUnique(index.descriptor, indexedValues, lastEntityIds[slot]);
         }
+
         lastValues[slot] = indexedValues;
         lastEntityIds[slot] = entityId;
         return checksum;
@@ -317,95 +314,11 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
             IntObjectHashMap<Value> allValues = new IntObjectHashMap<>();
             var client = cacheAccess.client();
             int numberOfIndexes = indexes.size();
-            for (long entityId = fromEntityId; entityId < toEntityId && !context.isCancelled(); entityId++) {
+            for (long entityId = fromEntityId;
+                    entityId < toEntityId && !context.isCancelled();
+                    entityId++, localScanProgress.add(1)) {
                 Record entityRecord = entityReader.read(entityId);
-                if (entityRecord.inUse()) {
-                    long[] entityTokens =
-                            getEntityTokens(noReportingContext, storeCursors, entityRecord, entityTokenReader);
-                    allValues = lightReplace(allValues);
-                    boolean propertyChainRead = entityTokens != null
-                            && propertyReader.read(
-                                    allValues,
-                                    entityRecord,
-                                    record -> getReport(record, noReportingContext.reporter),
-                                    storeCursors);
-                    if (propertyChainRead) {
-                        for (int i = 0; i < numberOfIndexes; i++) {
-                            IndexContext index = indexes.get(i);
-                            IndexDescriptor descriptor = index.descriptor;
-                            long cachedValue = client.getFromCache(entityId, i);
-                            boolean entityIsInIndex = (cachedValue & IN_USE_MASK) != 0;
-                            Value[] values = entityIntersectionWithSchema(
-                                    entityTokens, allValues, descriptor.schema(), descriptor.getIndexType());
-                            if (index.descriptor.schema().isFulltextSchemaDescriptor()) {
-                                // The strategy for fulltext indexes is way simpler. Simply check of the sets of tokens
-                                // (label tokens and property key tokens)
-                                // and if they match the index schema descriptor then the entity should be in the index,
-                                // otherwise not
-                                int[] entityPropertyKeys = allValues.keySet().toArray();
-                                int[] indexPropertyKeys =
-                                        index.descriptor.schema().getPropertyIds();
-                                boolean entityShouldBeInIndex =
-                                        index.descriptor.schema().isAffected(entityTokens)
-                                                && containsAny(indexPropertyKeys, entityPropertyKeys)
-                                                && areValuesSupportedByIndex(IndexType.FULLTEXT, values);
-                                if (entityShouldBeInIndex && !entityIsInIndex) {
-                                    getReport(getEntity(storeCursors, entityId)).notIndexed(descriptor, new Object[0]);
-                                } else if (!entityShouldBeInIndex && entityIsInIndex) {
-                                    // Fulltext indexes created before 4.3.0-drop02 can contain empty documents (added
-                                    // when the schema matched but the values
-                                    // were not text). The index still works with those empty documents present, so we
-                                    // don't want to report them as
-                                    // inconsistencies and force rebuilds.
-                                    // This utilizes the fact that countIndexedEntities in FulltextIndexReader with
-                                    // non-text values will ask
-                                    // about documents that doesn't contain those property keys - a document found by
-                                    // that query should be an empty
-                                    // document we just want to ignore.
-                                    Value[] noValues = new Value[indexPropertyKeys.length];
-                                    Arrays.fill(noValues, NO_VALUE);
-                                    long docsWithNoneOfProperties = indexAccessors
-                                            .readers()
-                                            .reader(descriptor)
-                                            .countIndexedEntities(entityId, cursorContext, indexPropertyKeys, noValues);
-
-                                    if (docsWithNoneOfProperties != 1) {
-                                        reportIndexedWhenShouldNot(
-                                                reporter.forIndexEntry(
-                                                        new IndexEntry(descriptor, context.tokenNameLookup, entityId)),
-                                                getEntity(storeCursors, entityId));
-                                    }
-                                }
-                            } else {
-                                if (values != null) {
-                                    // This entity should really be in the index, is it?
-                                    if (!entityIsInIndex) {
-                                        // It wasn't, report it
-                                        getReport(getEntity(storeCursors, entityId))
-                                                .notIndexed(descriptor, Values.asObjects(values));
-                                    } else if (index.hasValues) {
-                                        int cachedChecksum = (int) cachedValue & CHECKSUM_MASK;
-                                        int actualChecksum = checksum(values);
-                                        if (cachedChecksum != actualChecksum) {
-                                            reportIndexedIncorrectValues(
-                                                    reporter.forIndexEntry(new IndexEntry(
-                                                            descriptor, context.tokenNameLookup, entityId)),
-                                                    getEntity(storeCursors, entityId),
-                                                    Values.asObjects(values));
-                                        }
-                                    }
-                                } else {
-                                    if (entityIsInIndex) {
-                                        reportIndexedWhenShouldNot(
-                                                reporter.forIndexEntry(
-                                                        new IndexEntry(descriptor, context.tokenNameLookup, entityId)),
-                                                getEntity(storeCursors, entityId));
-                                    }
-                                }
-                            }
-                        }
-                    } // else this would be reported elsewhere
-                } else {
+                if (!entityRecord.inUse()) {
                     // This entity shouldn't be in any index
                     for (int i = 0; i < numberOfIndexes; i++) {
                         boolean isInIndex = (client.getFromCache(entityId, i) & IN_USE_MASK) != 0;
@@ -416,21 +329,77 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                                     getEntity(storeCursors, entityId));
                         }
                     }
+                    continue;
                 }
-                localScanProgress.add(1);
-            }
-        }
-    }
 
-    private static boolean containsAny(int[] values, int[] toCheck) {
-        for (int value : values) {
-            for (int candidate : toCheck) {
-                if (value == candidate) {
-                    return true;
+                long[] entityTokens =
+                        getEntityTokens(noReportingContext, storeCursors, entityRecord, entityTokenReader);
+                allValues = lightReplace(allValues);
+                boolean propertyChainRead = entityTokens != null
+                        && propertyReader.read(
+                                allValues,
+                                entityRecord,
+                                record -> getReport(record, noReportingContext.reporter),
+                                storeCursors);
+                if (!propertyChainRead) {
+                    // this would be reported elsewhere
+                    continue;
+                }
+
+                for (int i = 0; i < numberOfIndexes; i++) {
+                    IndexContext index = indexes.get(i);
+                    IndexDescriptor descriptor = index.descriptor;
+                    long cachedValue = client.getFromCache(entityId, i);
+                    boolean entityIsInIndex = (cachedValue & IN_USE_MASK) != 0;
+                    Value[] values = entityIntersectionWithSchema(entityTokens, allValues, descriptor);
+                    boolean entityShouldBeInIndex = values != null;
+
+                    // edge case for older fulltext
+                    if (descriptor.getIndexType() == IndexType.FULLTEXT && !entityShouldBeInIndex && entityIsInIndex) {
+                        // Fulltext indexes created before 4.3.0-drop02 can contain empty documents (added when the
+                        // schema matched but the values  were not text). The index still works with those  empty
+                        // documents present, so we don't want to report them as inconsistencies and force rebuilds.
+                        // This utilizes the fact that countIndexedEntities in FulltextIndexReader with non-text
+                        // values will ask about documents that doesn't contain those property keys - a document
+                        // found by that query should be an empty document we just want to ignore.
+                        int[] indexPropertyKeys = descriptor.schema().getPropertyIds();
+                        Value[] noValues = new Value[indexPropertyKeys.length];
+                        Arrays.fill(noValues, NO_VALUE);
+                        long docsWithNoneOfProperties = indexAccessors
+                                .readers()
+                                .reader(descriptor)
+                                .countIndexedEntities(entityId, cursorContext, indexPropertyKeys, noValues);
+
+                        if (docsWithNoneOfProperties != 1) {
+                            reportIndexedWhenShouldNot(
+                                    reporter.forIndexEntry(
+                                            new IndexEntry(descriptor, context.tokenNameLookup, entityId)),
+                                    getEntity(storeCursors, entityId));
+                        }
+
+                        // usual cases
+                    } else if (entityShouldBeInIndex && !entityIsInIndex) {
+                        getReport(getEntity(storeCursors, entityId)).notIndexed(descriptor, Values.asObjects(values));
+
+                    } else if (entityShouldBeInIndex && entityIsInIndex && index.hasValues) {
+                        int cachedChecksum = (int) cachedValue & CHECKSUM_MASK;
+                        int actualChecksum = checksum(values);
+                        if (cachedChecksum != actualChecksum) {
+                            reportIndexedIncorrectValues(
+                                    reporter.forIndexEntry(
+                                            new IndexEntry(descriptor, context.tokenNameLookup, entityId)),
+                                    getEntity(storeCursors, entityId),
+                                    Values.asObjects(values));
+                        }
+
+                    } else if (!entityShouldBeInIndex && entityIsInIndex) {
+                        reportIndexedWhenShouldNot(
+                                reporter.forIndexEntry(new IndexEntry(descriptor, context.tokenNameLookup, entityId)),
+                                getEntity(storeCursors, entityId));
+                    }
                 }
             }
         }
-        return false;
     }
 
     @Override

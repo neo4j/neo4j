@@ -21,7 +21,6 @@ package org.neo4j.consistency.checker;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static org.neo4j.consistency.checker.SchemaComplianceChecker.isValueSupportedByIndex;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
@@ -41,9 +40,8 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.function.ThrowingIntFunction;
-import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -119,45 +117,30 @@ class RecordLoading {
         return null;
     }
 
-    private static Value[] matchAllProperties(IntObjectMap<Value> values, int[] propertyKeyIds, IndexType indexType) {
-        Value[] array = new Value[propertyKeyIds.length];
-        for (int i = 0; i < propertyKeyIds.length; i++) {
-            int propertyKeyId = propertyKeyIds[i];
-            Value value = values.get(propertyKeyId);
-            if (value == null || !isValueSupportedByIndex(indexType, value)) {
-                return null;
-            }
-            array[i] = value;
+    static Value[] entityIntersectionWithSchema(
+            long[] entityTokens, IntObjectMap<Value> values, IndexDescriptor index) {
+        final var schema = index.schema();
+        if (!schema.isAffected(entityTokens)) {
+            return null;
         }
-        return array;
-    }
 
-    private static Value[] matchAnyProperty(IntObjectMap<Value> values, int[] propertyKeyIds, IndexType indexType) {
-        Value[] array = new Value[propertyKeyIds.length];
-        boolean anyFound = false;
+        final var capability = index.getCapability();
+        final var noValueIsValid = schema.propertySchemaType() == PropertySchemaType.PARTIAL_ANY_TOKEN;
+        final var propertyKeyIds = schema.getPropertyIds();
+        final var matched = new Value[propertyKeyIds.length];
         for (int i = 0; i < propertyKeyIds.length; i++) {
-            Value value = values.get(propertyKeyIds[i]);
-            if (value != null && isValueSupportedByIndex(indexType, value)) {
-                anyFound = true;
-            } else {
+            var value = values.get(propertyKeyIds[i]);
+            if (value == null || !capability.areValuesAccepted(value)) {
+                if (!noValueIsValid) {
+                    // shortcut!! ...also needed as RangeIndexCapability doesn't handle NO_VALUE as an optimisation
+                    return null;
+                }
                 value = NO_VALUE;
             }
-            array[i] = value;
+            matched[i] = value;
         }
-        return anyFound ? array : null;
-    }
 
-    static Value[] entityIntersectionWithSchema(
-            long[] entityTokens, IntObjectMap<Value> values, SchemaDescriptor schema, IndexType indexType) {
-        Value[] valueArray = null;
-        if (schema.isAffected(entityTokens)) {
-            boolean requireAllTokens = schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS;
-            valueArray = requireAllTokens
-                    ? matchAllProperties(values, schema.getPropertyIds(), indexType)
-                    : matchAnyProperty(values, schema.getPropertyIds(), indexType);
-        }
-        // else this entity should not be in this index. This check is done in a sequential manner elsewhere
-        return valueArray;
+        return capability.areValuesAccepted(matched) ? matched : null;
     }
 
     <T extends PrimitiveRecord> T entity(T entityCursor, StoreCursors storeCursors) {
