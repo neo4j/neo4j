@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -82,7 +83,7 @@ class LenientStoreInputChunkTest {
             primitiveRecord.initialize(
                     true, propertyRecordIds[0], false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue());
             InputEntityVisitor visitor = mock(InputEntityVisitor.class);
-            chunk.visitPropertyChainNoThrow(visitor, primitiveRecord, EntityType.NODE, new String[0]);
+            chunk.visitPropertyChainNoThrow(visitor, primitiveRecord, EntityType.NODE, EMPTY_STRING_ARRAY);
 
             // then
             verify(readBehaviour)
@@ -114,7 +115,7 @@ class LenientStoreInputChunkTest {
             NodeRecord nodeRecord = new NodeRecord(9);
             nodeRecord.initialize(true, 10, false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue());
             InputEntityVisitor visitor = mock(InputEntityVisitor.class);
-            chunk.visitPropertyChainNoThrow(visitor, nodeRecord, EntityType.NODE, new String[0]);
+            chunk.visitPropertyChainNoThrow(visitor, nodeRecord, EntityType.NODE, EMPTY_STRING_ARRAY);
 
             // then
             verify(readBehaviour)
@@ -143,7 +144,7 @@ class LenientStoreInputChunkTest {
             NodeRecord nodeRecord = new NodeRecord(9);
             nodeRecord.initialize(true, 10, false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue());
             InputEntityVisitor visitor = mock(InputEntityVisitor.class);
-            chunk.visitPropertyChainNoThrow(visitor, nodeRecord, EntityType.NODE, new String[0]);
+            chunk.visitPropertyChainNoThrow(visitor, nodeRecord, EntityType.NODE, EMPTY_STRING_ARRAY);
 
             // then
             verify(readBehaviour)

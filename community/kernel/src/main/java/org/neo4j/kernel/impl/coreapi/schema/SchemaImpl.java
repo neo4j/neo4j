@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
@@ -655,9 +656,10 @@ public class SchemaImpl implements Schema {
                         tokens == AnyTokens.ANY_LABELS ? EntityType.NODE : EntityType.RELATIONSHIP);
                 var indexDescriptor = createIndex(indexName, schema, IndexType.LOOKUP, indexConfig);
                 if (tokens == AnyTokens.ANY_LABELS) {
-                    return new IndexDefinitionImpl(this, indexDescriptor, new Label[0], new String[0], false);
+                    return new IndexDefinitionImpl(this, indexDescriptor, new Label[0], EMPTY_STRING_ARRAY, false);
                 }
-                return new IndexDefinitionImpl(this, indexDescriptor, new RelationshipType[0], new String[0], false);
+                return new IndexDefinitionImpl(
+                        this, indexDescriptor, new RelationshipType[0], EMPTY_STRING_ARRAY, false);
             } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
                 throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
             } catch (KernelException e) {

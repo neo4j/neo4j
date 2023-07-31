@@ -21,6 +21,7 @@ package org.neo4j.procedure.impl;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.util.Collections.emptyList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_unrestricted;
 
 import java.lang.reflect.Constructor;
@@ -564,7 +565,7 @@ class ProcedureCompiler {
         if (!procName.isBlank()) {
             String[] split = procName.split("\\.");
             if (split.length == 1) {
-                return new QualifiedName(new String[0], split[0]);
+                return new QualifiedName(EMPTY_STRING_ARRAY, split[0]);
             } else {
                 int lastElement = split.length - 1;
                 return new QualifiedName(Arrays.copyOf(split, lastElement), split[lastElement]);
@@ -572,7 +573,7 @@ class ProcedureCompiler {
         }
         Package pkg = procDefinition.getPackage();
         // Package is null if class is in root package
-        String[] namespace = pkg == null ? new String[0] : pkg.getName().split("\\.");
+        String[] namespace = pkg == null ? EMPTY_STRING_ARRAY : pkg.getName().split("\\.");
         String name = m.getName();
         return new QualifiedName(namespace, name);
     }

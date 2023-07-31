@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher.format.input.json;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -128,11 +129,8 @@ class StatementDeserializerTest {
 
     @Test
     void shouldTreatEmptyInputStreamAsEmptyStatementList() {
-        // Given
-        byte[] json = new byte[0];
-
         // When
-        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(json));
+        StatementDeserializer de = new StatementDeserializer(jsonFactory, new ByteArrayInputStream(EMPTY_BYTE_ARRAY));
 
         // Then
         assertNull(de.read());

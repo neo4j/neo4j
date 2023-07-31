@@ -203,7 +203,7 @@ class MultiRootGBPTreeTest {
         var firstSeed = random.nextLong(0, Integer.MAX_VALUE);
         var highRootId = new AtomicLong();
         var deletedRootIds = LongSets.mutable.empty();
-        var sequence = new ArrayQueueOutOfOrderSequence(-1, 50, new long[0]);
+        var sequence = new ArrayQueueOutOfOrderSequence(-1, 50, EMPTY_LONG_ARRAY);
 
         // when
         var race = new Race().withEndCondition(() -> highRootId.get() >= maxNumRoots);

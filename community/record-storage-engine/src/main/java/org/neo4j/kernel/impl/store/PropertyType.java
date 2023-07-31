@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+
 import java.util.Arrays;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -180,7 +182,6 @@ public enum PropertyType {
         }
     };
 
-    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING = -1;
 
     // TODO In wait of a better place
@@ -217,38 +218,23 @@ public enum PropertyType {
     public static PropertyType getPropertyTypeOrNull(long propBlock) {
         // [][][][][    ,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         int type = typeIdentifier(propBlock);
-        switch (type) {
-            case 1:
-                return BOOL;
-            case 2:
-                return BYTE;
-            case 3:
-                return SHORT;
-            case 4:
-                return CHAR;
-            case 5:
-                return INT;
-            case 6:
-                return LONG;
-            case 7:
-                return FLOAT;
-            case 8:
-                return DOUBLE;
-            case 9:
-                return STRING;
-            case 10:
-                return ARRAY;
-            case 11:
-                return SHORT_STRING;
-            case 12:
-                return SHORT_ARRAY;
-            case 13:
-                return GEOMETRY;
-            case 14:
-                return TEMPORAL;
-            default:
-                return null;
-        }
+        return switch (type) {
+            case 1 -> BOOL;
+            case 2 -> BYTE;
+            case 3 -> SHORT;
+            case 4 -> CHAR;
+            case 5 -> INT;
+            case 6 -> LONG;
+            case 7 -> FLOAT;
+            case 8 -> DOUBLE;
+            case 9 -> STRING;
+            case 10 -> ARRAY;
+            case 11 -> SHORT_STRING;
+            case 12 -> SHORT_ARRAY;
+            case 13 -> GEOMETRY;
+            case 14 -> TEMPORAL;
+            default -> null;
+        };
     }
 
     private static int typeIdentifier(long propBlock) {

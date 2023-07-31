@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -513,7 +514,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
     class CheckpointAction extends Action {
         CheckpointAction() {
-            super(new long[0]);
+            super(EMPTY_LONG_ARRAY);
         }
 
         @Override

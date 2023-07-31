@@ -19,17 +19,18 @@
  */
 package org.neo4j.collection;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.collection.PrimitiveArrays.countUnique;
+import static org.neo4j.collection.PrimitiveArrays.intersect;
 
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.internal.Longs;
 import org.junit.jupiter.api.Test;
 
 class PrimitiveArraysTest {
-    private static final int[] NO_INTS = new int[0];
     private static final int[] ONE_INT = new int[] {1};
-    private static final long[] NO_LONGS = new long[0];
     private static final long[] ONE_LONG = new long[] {1};
 
     // union() null checks. Actual behaviour is tested in PrimitiveSortedArraySetUnionTest
@@ -37,8 +38,8 @@ class PrimitiveArraysTest {
     @Test
     void union_shouldHandleNullInput() {
         assertThat(PrimitiveArrays.union(null, null)).isNull();
-        assertThat(PrimitiveArrays.union(null, NO_INTS)).isEqualTo(NO_INTS);
-        assertThat(PrimitiveArrays.union(NO_INTS, null)).isEqualTo(NO_INTS);
+        assertThat(PrimitiveArrays.union(null, EMPTY_INT_ARRAY)).isEmpty();
+        assertThat(PrimitiveArrays.union(EMPTY_INT_ARRAY, null)).isEmpty();
         assertThat(PrimitiveArrays.union(null, ONE_INT)).isEqualTo(ONE_INT);
         assertThat(PrimitiveArrays.union(ONE_INT, null)).isEqualTo(ONE_INT);
     }
@@ -47,38 +48,32 @@ class PrimitiveArraysTest {
 
     @Test
     void intersect_shouldHandleNullInput() {
-        assertThat(PrimitiveArrays.intersect(null, null)).isEqualTo(NO_LONGS);
-        assertThat(PrimitiveArrays.intersect(null, NO_LONGS)).isEqualTo(NO_LONGS);
-        assertThat(PrimitiveArrays.intersect(NO_LONGS, null)).isEqualTo(NO_LONGS);
-        assertThat(PrimitiveArrays.intersect(null, ONE_LONG)).isEqualTo(NO_LONGS);
-        assertThat(PrimitiveArrays.intersect(ONE_LONG, null)).isEqualTo(NO_LONGS);
+        assertThat(intersect(null, null)).isEmpty();
+        assertThat(intersect(null, EMPTY_LONG_ARRAY)).isEmpty();
+        assertThat(intersect(EMPTY_LONG_ARRAY, null)).isEmpty();
+        assertThat(intersect(null, ONE_LONG)).isEmpty();
+        assertThat(intersect(ONE_LONG, null)).isEmpty();
     }
 
     @Test
     void intersect_shouldHandleNonIntersectingArrays() {
-        assertThat(PrimitiveArrays.intersect(new long[] {1, 2, 3}, new long[] {4, 5, 6}))
-                .isEqualTo(NO_LONGS);
+        assertThat(intersect(new long[] {1, 2, 3}, new long[] {4, 5, 6})).isEmpty();
 
-        assertThat(PrimitiveArrays.intersect(new long[] {14, 15, 16}, new long[] {1, 2, 3}))
-                .isEqualTo(NO_LONGS);
+        assertThat(intersect(new long[] {14, 15, 16}, new long[] {1, 2, 3})).isEmpty();
     }
 
     @Test
     void intersect_shouldHandleIntersectingArrays() {
-        assertThat(PrimitiveArrays.intersect(new long[] {1, 2, 3}, new long[] {3, 4, 5}))
-                .containsExactly(3);
+        assertThat(intersect(new long[] {1, 2, 3}, new long[] {3, 4, 5})).containsExactly(3);
 
-        assertThat(PrimitiveArrays.intersect(new long[] {3, 4, 5}, new long[] {1, 2, 3, 4}))
-                .containsExactly(3, 4);
+        assertThat(intersect(new long[] {3, 4, 5}, new long[] {1, 2, 3, 4})).containsExactly(3, 4);
     }
 
     @Test
     void intersect_shouldHandleComplexIntersectingArraysWithGaps() {
-        assertThat(PrimitiveArrays.intersect(
-                        new long[] {4, 6, 9, 11, 12, 15}, new long[] {2, 3, 4, 7, 8, 9, 12, 16, 19}))
+        assertThat(intersect(new long[] {4, 6, 9, 11, 12, 15}, new long[] {2, 3, 4, 7, 8, 9, 12, 16, 19}))
                 .containsExactly(4, 9, 12);
-        assertThat(PrimitiveArrays.intersect(
-                        new long[] {2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[] {4, 6, 9, 11, 12, 15}))
+        assertThat(intersect(new long[] {2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[] {4, 6, 9, 11, 12, 15}))
                 .containsExactly(4, 9, 12);
     }
 
@@ -87,8 +82,8 @@ class PrimitiveArraysTest {
     @Test
     void symDiff_shouldHandleNullInput() {
         assertThat(PrimitiveArrays.symmetricDifference(null, null)).isEqualTo(null);
-        assertThat(PrimitiveArrays.symmetricDifference(null, NO_LONGS)).isEqualTo(NO_LONGS);
-        assertThat(PrimitiveArrays.symmetricDifference(NO_LONGS, null)).isEqualTo(NO_LONGS);
+        assertThat(PrimitiveArrays.symmetricDifference(null, EMPTY_LONG_ARRAY)).isEmpty();
+        assertThat(PrimitiveArrays.symmetricDifference(EMPTY_LONG_ARRAY, null)).isEmpty();
         assertThat(PrimitiveArrays.symmetricDifference(null, ONE_LONG)).isEqualTo(ONE_LONG);
         assertThat(PrimitiveArrays.symmetricDifference(ONE_LONG, null)).isEqualTo(ONE_LONG);
     }

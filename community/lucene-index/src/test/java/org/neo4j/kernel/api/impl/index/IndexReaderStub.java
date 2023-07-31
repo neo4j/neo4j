@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +56,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 
 public class IndexReaderStub extends LeafReader {
     private Fields fields;
-    private String[] elements = new String[0];
+    private String[] elements = EMPTY_STRING_ARRAY;
     private Function<String, NumericDocValues> ndvs;
 
     private static final FieldInfo DUMMY_FIELD_INFO = new FieldInfo(

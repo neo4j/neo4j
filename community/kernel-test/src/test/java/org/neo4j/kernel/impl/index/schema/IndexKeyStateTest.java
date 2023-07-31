@@ -66,6 +66,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -490,16 +491,16 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
         assertLowest(durationArray(new DurationValue[0]));
         assertLowest(durationArray(new TemporalAmount[0]));
         // TEXT_ARRAY
-        assertLowest(of(new String[0]));
+        assertLowest(of(ArrayUtils.EMPTY_STRING_ARRAY));
         // BOOLEAN_ARRAY
-        assertLowest(of(new boolean[0]));
+        assertLowest(of(ArrayUtils.EMPTY_BOOLEAN_ARRAY));
         // NUMBER_ARRAY (byte[], short[], int[], long[], float[], double[])
-        assertLowest(of(new byte[0]));
-        assertLowest(of(new short[0]));
-        assertLowest(of(new int[0]));
-        assertLowest(of(new long[0]));
-        assertLowest(of(new float[0]));
-        assertLowest(of(new double[0]));
+        assertLowest(of(ArrayUtils.EMPTY_BYTE_ARRAY));
+        assertLowest(of(ArrayUtils.EMPTY_SHORT_ARRAY));
+        assertLowest(of(ArrayUtils.EMPTY_INT_ARRAY));
+        assertLowest(of(ArrayUtils.EMPTY_LONG_ARRAY));
+        assertLowest(of(ArrayUtils.EMPTY_FLOAT_ARRAY));
+        assertLowest(of(ArrayUtils.EMPTY_DOUBLE_ARRAY));
     }
 
     @Test

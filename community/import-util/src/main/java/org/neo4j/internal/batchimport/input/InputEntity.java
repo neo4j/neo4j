@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_OBJECT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,8 +36,8 @@ import org.neo4j.util.Preconditions;
  * for that data. Easier to work with than purely visitor-based implementation in tests.
  */
 public class InputEntity implements InputEntityVisitor {
-    public static final Object[] NO_PROPERTIES = new Object[0];
-    public static final String[] NO_LABELS = new String[0];
+    public static final Object[] NO_PROPERTIES = EMPTY_OBJECT_ARRAY;
+    public static final String[] NO_LABELS = EMPTY_STRING_ARRAY;
 
     private final InputEntityVisitor delegate;
 

@@ -22,8 +22,11 @@ package org.neo4j.csv.reader;
 import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.time.ZoneOffset.UTC;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_DOUBLE_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToByte;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
@@ -554,7 +557,6 @@ public class Extractors {
     }
 
     private static class StringArrayExtractor extends ArrayExtractor<String[]> {
-        private static final String[] EMPTY = new String[0];
         private final boolean trimStrings;
 
         StringArrayExtractor(char arrayDelimiter, boolean trimStrings) {
@@ -566,7 +568,7 @@ public class Extractors {
         public String[] extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             int numberOfValues = numberOfValues(data, offset, length);
-            String[] value = numberOfValues > 0 ? new String[numberOfValues] : EMPTY;
+            String[] value = numberOfValues > 0 ? new String[numberOfValues] : EMPTY_STRING_ARRAY;
             for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
                 int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
                 value[arrayIndex] = new String(data, offset + charIndex, numberOfChars);
@@ -580,8 +582,6 @@ public class Extractors {
     }
 
     private static class ByteArrayExtractor extends ArrayExtractor<byte[]> {
-        private static final byte[] EMPTY = new byte[0];
-
         ByteArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Byte.TYPE.getSimpleName());
         }
@@ -590,7 +590,7 @@ public class Extractors {
         public byte[] extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             int numberOfValues = numberOfValues(data, offset, length);
-            byte[] value = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY;
+            byte[] value = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY_BYTE_ARRAY;
             for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
                 int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
                 value[arrayIndex] = safeCastLongToByte(extractLong(data, offset + charIndex, numberOfChars));
@@ -683,7 +683,6 @@ public class Extractors {
     }
 
     private static class DoubleArrayExtractor extends ArrayExtractor<double[]> {
-        private static final double[] EMPTY = new double[0];
 
         DoubleArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Double.TYPE.getSimpleName());
@@ -693,7 +692,7 @@ public class Extractors {
         public double[] extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             int numberOfValues = numberOfValues(data, offset, length);
-            double[] value = numberOfValues > 0 ? new double[numberOfValues] : EMPTY;
+            double[] value = numberOfValues > 0 ? new double[numberOfValues] : EMPTY_DOUBLE_ARRAY;
             for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
                 int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
                 // TODO Figure out a way to do this conversion without round tripping to String

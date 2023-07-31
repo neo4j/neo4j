@@ -20,6 +20,7 @@
 package org.neo4j.csv.reader;
 
 import static java.nio.charset.Charset.forName;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -36,7 +37,7 @@ import java.util.List;
  * Logic for detecting and matching magic numbers in file headers.
  */
 public class Magic {
-    public static final Magic NONE = new Magic("NONE", null, new byte[0]);
+    public static final Magic NONE = new Magic("NONE", null, EMPTY_BYTE_ARRAY);
 
     private static final List<Magic> DEFINITIONS = new ArrayList<>();
     private static int LONGEST;

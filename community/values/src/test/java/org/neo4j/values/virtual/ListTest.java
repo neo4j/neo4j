@@ -20,6 +20,7 @@
 package org.neo4j.values.virtual;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -289,7 +290,7 @@ class ListTest {
         ListValue reversedList = concat.reverse();
         ListValue emptyReversedList = emptyConcat.reverse();
         ListValue arrayList = VirtualValues.fromArray(Values.intArray(new int[] {1, 2, 3}));
-        ListValue emptyArrayList = VirtualValues.fromArray(Values.intArray(new int[0]));
+        ListValue emptyArrayList = VirtualValues.fromArray(Values.intArray(EMPTY_INT_ARRAY));
 
         // Then
         assertThat(empty.isEmpty()).isTrue();

@@ -19,12 +19,14 @@
  */
 package org.neo4j.server.config;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+
 import org.neo4j.server.rest.repr.MappingRepresentation;
 
 public interface AuthConfigProvider {
     MappingRepresentation getRepresentation();
 
     default byte[] getRepresentationAsBytes() {
-        return new byte[0];
+        return EMPTY_BYTE_ARRAY;
     }
 }

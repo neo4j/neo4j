@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -565,7 +566,7 @@ class DetachedLogTailScannerTest {
                         LogPosition currentPosition = logWriter.getCurrentPosition();
                         positions.put(entry, currentPosition);
                         if (entry instanceof StartEntry) {
-                            writer.writeStartEntry(LATEST_KERNEL_VERSION, 0, 0, previousChecksum, new byte[0]);
+                            writer.writeStartEntry(LATEST_KERNEL_VERSION, 0, 0, previousChecksum, EMPTY_BYTE_ARRAY);
                         } else if (entry instanceof CommitEntry commitEntry) {
                             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, commitEntry.txId, 0);
                             lastTxId.set(commitEntry.txId);

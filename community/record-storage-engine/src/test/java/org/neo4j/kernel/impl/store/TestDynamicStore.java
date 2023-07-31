@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -258,7 +259,7 @@ class TestDynamicStore {
     @Test
     void testAddDeleteSequenceEmptyStringArray() throws IOException {
         DynamicArrayStore store = createDynamicArrayStore();
-        long blockId = create(store, new String[0], storeCursors);
+        long blockId = create(store, EMPTY_STRING_ARRAY, storeCursors);
         store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
         String[] readBack = (String[]) store.getArrayFor(
                         store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),

@@ -20,6 +20,7 @@
 package org.neo4j.dbms.archive;
 
 import static java.util.Collections.emptySet;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
@@ -50,7 +51,7 @@ class DumperTest {
     void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException {
         Path directory = testDirectory.directory("a-directory");
         Path archive = testDirectory.file("the-archive.dump");
-        Files.write(archive, new byte[0]);
+        Files.write(archive, EMPTY_BYTE_ARRAY);
         FileAlreadyExistsException exception = assertThrows(FileAlreadyExistsException.class, () -> {
             Dumper dumper = new Dumper();
             dumper.dump(directory, directory, dumper.openForDump(archive), GZIP, Predicates.alwaysFalse());
@@ -84,7 +85,7 @@ class DumperTest {
     void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsAFile() throws IOException {
         Path directory = testDirectory.directory("a-directory");
         Path archive = testDirectory.file("subdir").resolve("the-archive.dump");
-        Files.write(archive.getParent(), new byte[0]);
+        Files.write(archive.getParent(), EMPTY_BYTE_ARRAY);
         FileSystemException exception = assertThrows(FileSystemException.class, () -> {
             Dumper dumper = new Dumper();
             dumper.dump(directory, directory, dumper.openForDump(archive), GZIP, Predicates.alwaysFalse());

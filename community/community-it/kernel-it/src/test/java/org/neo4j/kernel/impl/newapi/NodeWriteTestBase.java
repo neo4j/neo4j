@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.util.Arrays.stream;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -496,7 +495,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             try (var nodeCursor = cursorFactory(ktx).allocateNodeCursor(CursorContext.NULL_CONTEXT)) {
                 ktx.dataRead().singleNode(node, nodeCursor);
                 assertThat(nodeCursor.next()).isTrue();
-                assertThat(nodeCursor.labels().all()).isEqualTo(EMPTY_LONG_ARRAY);
+                assertThat(nodeCursor.labels().all()).isEmpty();
             }
         });
     }

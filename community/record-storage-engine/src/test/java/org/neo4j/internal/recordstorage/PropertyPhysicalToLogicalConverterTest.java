@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,7 +80,6 @@ class PropertyPhysicalToLogicalConverterTest {
     private final Value longerString =
             Values.of("my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd");
     private PropertyPhysicalToLogicalConverter converter;
-    private final long[] none = new long[0];
     private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
@@ -117,7 +117,7 @@ class PropertyPhysicalToLogicalConverterTest {
         PropertyRecord after = propertyRecord(property(key, value));
 
         // WHEN
-        assertThat(convert(none, none, change(before, after)))
+        assertThat(convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, change(before, after)))
                 .isEqualTo(EntityUpdates.forEntity(0, false).added(key, value).build());
     }
 
@@ -131,7 +131,7 @@ class PropertyPhysicalToLogicalConverterTest {
         PropertyRecord after = propertyRecord(property(key, valueAfter));
 
         // WHEN
-        EntityUpdates update = convert(none, none, change(before, after));
+        EntityUpdates update = convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, change(before, after));
 
         // THEN
         EntityUpdates expected = EntityUpdates.forEntity(0, false)
@@ -149,7 +149,7 @@ class PropertyPhysicalToLogicalConverterTest {
         PropertyRecord after = propertyRecord(property(key, value));
 
         // WHEN
-        assertThat(convert(none, none, change(before, after)))
+        assertThat(convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, change(before, after)))
                 .isEqualTo(EntityUpdates.forEntity(0, false).build());
     }
 
@@ -162,7 +162,7 @@ class PropertyPhysicalToLogicalConverterTest {
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        EntityUpdates update = convert(none, none, change(before, after));
+        EntityUpdates update = convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, change(before, after));
 
         // THEN
         EntityUpdates expected =
@@ -178,7 +178,7 @@ class PropertyPhysicalToLogicalConverterTest {
         PropertyRecord after = propertyRecord(property(key, longString));
 
         // THEN
-        assertThat(convert(none, none, change(before, after)))
+        assertThat(convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, change(before, after)))
                 .isEqualTo(
                         EntityUpdates.forEntity(0, false).added(key, longString).build());
     }
@@ -191,7 +191,7 @@ class PropertyPhysicalToLogicalConverterTest {
         PropertyRecord after = propertyRecord(property(key, longerString));
 
         // WHEN
-        EntityUpdates update = convert(none, none, change(before, after));
+        EntityUpdates update = convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, change(before, after));
 
         // THEN
         EntityUpdates expected = EntityUpdates.forEntity(0, false)
@@ -208,7 +208,7 @@ class PropertyPhysicalToLogicalConverterTest {
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        EntityUpdates update = convert(none, none, change(before, after));
+        EntityUpdates update = convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, change(before, after));
 
         // THEN
         EntityUpdates expected =
@@ -226,7 +226,7 @@ class PropertyPhysicalToLogicalConverterTest {
         Command.PropertyCommand movedTo = change(propertyRecord(), propertyRecord(property(key, newValue)));
 
         // WHEN
-        EntityUpdates update = convert(none, none, movedFrom, movedTo);
+        EntityUpdates update = convert(EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, movedFrom, movedTo);
 
         // THEN
         EntityUpdates expected = EntityUpdates.forEntity(0, false)

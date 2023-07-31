@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
@@ -80,7 +81,7 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
         createIndexAndWait(entityUtil);
 
         try (Transaction tx = db.beginTx()) {
-            entityUtil.createEntityWithProperty(tx, new String[0]);
+            entityUtil.createEntityWithProperty(tx, EMPTY_STRING_ARRAY);
             tx.commit();
         }
 

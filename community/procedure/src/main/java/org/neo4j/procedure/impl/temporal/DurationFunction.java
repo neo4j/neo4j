@@ -19,6 +19,7 @@
  */
 package org.neo4j.procedure.impl.temporal;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -49,7 +50,7 @@ class DurationFunction implements CallableUserFunction {
     private static final String CATEGORY = Category.TEMPORAL();
 
     private static final UserFunctionSignature DURATION = new UserFunctionSignature(
-            new QualifiedName(new String[0], "duration"),
+            new QualifiedName(EMPTY_STRING_ARRAY, "duration"),
             Collections.singletonList(inputField("input", Neo4jTypes.NTAny)),
             Neo4jTypes.NTDuration,
             null,

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi.parallel;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -300,7 +301,7 @@ class ExecutionContextProcedureIT {
             try {
                 var handle = executionContext.procedures().procedureGet(getName("range"));
                 transaction.rollback();
-                var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false);
+                var procContext = new ProcedureCallContext(handle.id(), EMPTY_STRING_ARRAY, false, "", false);
                 assertThatThrownBy(() -> executionContext
                                 .procedures()
                                 .procedureCallRead(handle.id(), new Value[] {intValue(0), intValue(2)}, procContext))
@@ -316,7 +317,7 @@ class ExecutionContextProcedureIT {
     void testProcedureWithWriteAccessMode() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             var handle = executionContext.procedures().procedureGet(getName("range"));
-            var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false);
+            var procContext = new ProcedureCallContext(handle.id(), EMPTY_STRING_ARRAY, false, "", false);
             assertThatThrownBy(() -> executionContext
                             .procedures()
                             .procedureCallWrite(handle.id(), new Value[] {intValue(0), intValue(2)}, procContext))
@@ -330,7 +331,7 @@ class ExecutionContextProcedureIT {
     void testProcedureWithSchemaAccessMode() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             var handle = executionContext.procedures().procedureGet(getName("range"));
-            var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false);
+            var procContext = new ProcedureCallContext(handle.id(), EMPTY_STRING_ARRAY, false, "", false);
             assertThatThrownBy(() -> executionContext
                             .procedures()
                             .procedureCallSchema(handle.id(), new Value[] {intValue(0), intValue(2)}, procContext))
@@ -376,7 +377,7 @@ class ExecutionContextProcedureIT {
     private List<AnyValue[]> invokeProcedure(ExecutionContext executionContext, String name, AnyValue... args)
             throws ProcedureException {
         var handle = executionContext.procedures().procedureGet(getName(name));
-        var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false);
+        var procContext = new ProcedureCallContext(handle.id(), EMPTY_STRING_ARRAY, false, "", false);
         RawIterator<AnyValue[], ProcedureException> iterator =
                 executionContext.procedures().procedureCallRead(handle.id(), args, procContext);
         var result = new ArrayList<AnyValue[]>();

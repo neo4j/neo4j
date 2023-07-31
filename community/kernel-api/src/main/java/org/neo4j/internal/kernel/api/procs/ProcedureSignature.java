@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.procs;
 
 import static java.util.Collections.unmodifiableList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -326,7 +327,7 @@ public class ProcedureSignature {
     public static Builder procedureSignature(String... namespaceAndName) {
         String[] namespace = namespaceAndName.length > 1
                 ? Arrays.copyOf(namespaceAndName, namespaceAndName.length - 1)
-                : new String[0];
+                : EMPTY_STRING_ARRAY;
         String name = namespaceAndName[namespaceAndName.length - 1];
         return procedureSignature(namespace, name);
     }

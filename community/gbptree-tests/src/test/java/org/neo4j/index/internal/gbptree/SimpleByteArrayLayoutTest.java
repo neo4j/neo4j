@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ class SimpleByteArrayLayoutTest {
 
     @Test
     void minimalSplitterLengthZero() {
-        left.bytes = new byte[0];
+        left.bytes = EMPTY_BYTE_ARRAY;
         right.bytes = new byte[1];
 
         layout.minimalSplitter(left, right, minimalSplitter);
@@ -42,7 +43,7 @@ class SimpleByteArrayLayoutTest {
     @Test
     void minimalSplitterLengthZeroWithLongRight() {
 
-        left.bytes = new byte[0];
+        left.bytes = EMPTY_BYTE_ARRAY;
         right.bytes = new byte[] {1, 1};
         layout.minimalSplitter(left, right, minimalSplitter);
 

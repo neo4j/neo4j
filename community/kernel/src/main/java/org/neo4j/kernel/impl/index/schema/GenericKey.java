@@ -45,7 +45,6 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeIndexKey<KEY> {
     public static final int TYPE_ID_SIZE = Byte.BYTES;
-    protected static final double[] NO_COORDINATES = new double[0];
     /**
      * This is the biggest size a static (as in non-dynamic, like string), non-array value can have.
      */

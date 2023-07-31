@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -832,7 +833,7 @@ class Neo4jTransactionalContextIT {
         var txSetMetaData =
                 procsRegistry.getCurrentView().procedure(new QualifiedName(new String[] {"tx"}, "setMetaData"));
         var id = txSetMetaData.id();
-        var procContext = new ProcedureCallContext(id, new String[0], false, "", false);
+        var procContext = new ProcedureCallContext(id, EMPTY_STRING_ARRAY, false, "", false);
 
         // When
         AnyValue[] arguments = {VirtualValues.map(new String[] {"foo"}, new AnyValue[] {Values.stringValue("bar")})};

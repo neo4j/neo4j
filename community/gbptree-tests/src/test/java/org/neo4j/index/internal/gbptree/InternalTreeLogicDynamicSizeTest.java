@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -55,7 +56,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[node.keyValueSizeCap() + 1];
-        value.bytes = new byte[0];
+        value.bytes = EMPTY_BYTE_ARRAY;
 
         shouldFailToInsertTooLargeKeyAndValue(key, value);
     }

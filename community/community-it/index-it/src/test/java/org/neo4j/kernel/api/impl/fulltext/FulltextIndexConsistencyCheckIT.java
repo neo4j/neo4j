@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -271,7 +272,7 @@ class FulltextIndexConsistencyCheckIT {
         }
         try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
-            tx.createNode(Label.label("Label")).setProperty("prop", new String[0]);
+            tx.createNode(Label.label("Label")).setProperty("prop", EMPTY_STRING_ARRAY);
             tx.commit();
         }
         managementService.shutdown();
@@ -458,8 +459,8 @@ class FulltextIndexConsistencyCheckIT {
         try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             Node node = tx.createNode();
-            node.createRelationshipTo(node, relationshipType).setProperty("p1", new String[0]);
-            node.createRelationshipTo(node, relationshipType).setProperty("p1", new String[0]);
+            node.createRelationshipTo(node, relationshipType).setProperty("p1", EMPTY_STRING_ARRAY);
+            node.createRelationshipTo(node, relationshipType).setProperty("p1", EMPTY_STRING_ARRAY);
             tx.commit();
         }
         managementService.shutdown();

@@ -20,6 +20,11 @@
 package org.neo4j.kernel.api.index;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_DOUBLE_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -90,11 +95,11 @@ public abstract class IndexProviderApprovalTest {
         ARRAY_OF_BOOLS(new boolean[] {true, false, true}),
         ARRAY_OF_DOUBLES(new double[] {1, 2, 3}),
         ARRAY_OF_STRING(new String[] {"1", "2", "3"}),
-        EMPTY_ARRAY_OF_INTS(new int[0]),
-        EMPTY_ARRAY_OF_LONGS(new long[0]),
-        EMPTY_ARRAY_OF_BOOLS(new boolean[0]),
-        EMPTY_ARRAY_OF_DOUBLES(new double[0]),
-        EMPTY_ARRAY_OF_STRING(new String[0]),
+        EMPTY_ARRAY_OF_INTS(EMPTY_INT_ARRAY),
+        EMPTY_ARRAY_OF_LONGS(EMPTY_LONG_ARRAY),
+        EMPTY_ARRAY_OF_BOOLS(EMPTY_BYTE_ARRAY),
+        EMPTY_ARRAY_OF_DOUBLES(EMPTY_DOUBLE_ARRAY),
+        EMPTY_ARRAY_OF_STRING(EMPTY_STRING_ARRAY),
         ONE(new String[] {"", "||"}),
         OTHER(new String[] {"||", ""}),
         ANOTHER_ARRAY_OF_STRING(new String[] {"1|2|3"}),

@@ -19,6 +19,16 @@
  */
 package org.neo4j.values.storable;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BOOLEAN_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_CHAR_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_DOUBLE_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_FLOAT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_SHORT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -90,29 +100,29 @@ class ExtremeValuesLibrary {
     static final Value[] EXTREME_GEOGRAPHIC_POINT_3D =
             new Value[] {PointValue.MIN_VALUE_WGS_84_3D, PointValue.MAX_VALUE_WGS_84_3D};
     static final Value[] EXTREME_BOOLEAN_ARRAY =
-            new Value[] {Values.of(new boolean[0]), Values.of(new boolean[] {true})};
+            new Value[] {Values.of(EMPTY_BOOLEAN_ARRAY), Values.of(new boolean[] {true})};
     static final Value[] EXTREME_BYTE_ARRAY =
-            new Value[] {Values.of(new byte[0]), Values.of(new byte[] {Byte.MAX_VALUE})};
+            new Value[] {Values.of(EMPTY_BYTE_ARRAY), Values.of(new byte[] {Byte.MAX_VALUE})};
     static final Value[] EXTREME_SHORT_ARRAY =
-            new Value[] {Values.of(new short[0]), Values.of(new short[] {Short.MAX_VALUE})};
+            new Value[] {Values.of(EMPTY_SHORT_ARRAY), Values.of(new short[] {Short.MAX_VALUE})};
     static final Value[] EXTREME_INT_ARRAY =
-            new Value[] {Values.of(new int[0]), Values.of(new int[] {Integer.MAX_VALUE})};
+            new Value[] {Values.of(EMPTY_INT_ARRAY), Values.of(new int[] {Integer.MAX_VALUE})};
     static final Value[] EXTREME_LONG_ARRAY =
-            new Value[] {Values.of(new long[0]), Values.of(new long[] {Long.MAX_VALUE})};
+            new Value[] {Values.of(EMPTY_LONG_ARRAY), Values.of(new long[] {Long.MAX_VALUE})};
     static final Value[] EXTREME_FLOAT_ARRAY =
-            new Value[] {Values.of(new float[0]), Values.of(new float[] {Float.MAX_VALUE})};
+            new Value[] {Values.of(EMPTY_FLOAT_ARRAY), Values.of(new float[] {Float.MAX_VALUE})};
     static final Value[] EXTREME_DOUBLE_ARRAY =
-            new Value[] {Values.of(new double[0]), Values.of(new double[] {Double.MAX_VALUE})};
+            new Value[] {Values.of(EMPTY_DOUBLE_ARRAY), Values.of(new double[] {Double.MAX_VALUE})};
     static final Value[] EXTREME_CHAR_ARRAY =
-            new Value[] {Values.of(new char[0]), Values.of(new char[] {Character.MAX_VALUE})};
+            new Value[] {Values.of(EMPTY_CHAR_ARRAY), Values.of(new char[] {Character.MAX_VALUE})};
     static final Value[] EXTREME_STRING_ARRAY =
-            new Value[] {Values.of(new String[0]), Values.of(new String[] {MAX_CODE_POINT_STRING})};
+            new Value[] {Values.of(EMPTY_STRING_ARRAY), Values.of(new String[] {MAX_CODE_POINT_STRING})};
     static final Value[] EXTREME_STRING_ALPHANUMERIC_ARRAY =
-            new Value[] {Values.of(new String[0]), Values.of(new String[] {MAX_ALPHA_NUMERIC_CODE_POINT_STRING})};
+            new Value[] {Values.of(EMPTY_STRING_ARRAY), Values.of(new String[] {MAX_ALPHA_NUMERIC_CODE_POINT_STRING})};
     static final Value[] EXTREME_STRING_ASCII_ARRAY =
-            new Value[] {Values.of(new String[0]), Values.of(new String[] {MAX_ASCII_CODE_POINT_STRING})};
+            new Value[] {Values.of(EMPTY_STRING_ARRAY), Values.of(new String[] {MAX_ASCII_CODE_POINT_STRING})};
     static final Value[] EXTREME_STRING_BMP_ARRAY =
-            new Value[] {Values.of(new String[0]), Values.of(new String[] {MAX_BMP_CODE_POINT_STRING})};
+            new Value[] {Values.of(EMPTY_STRING_ARRAY), Values.of(new String[] {MAX_BMP_CODE_POINT_STRING})};
     static final Value[] EXTREME_LOCAL_DATE_TIME_ARRAY =
             new Value[] {Values.of(new LocalDateTime[0]), Values.of(new LocalDateTime[] {LocalDateTime.MAX})};
     static final Value[] EXTREME_DATE_ARRAY =

@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -156,7 +157,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
     private void mustStayCorrectWhenInsertingValuesOfIncreasingLength(boolean shuffle) throws IOException {
         try (GBPTree<RawBytes, RawBytes> index = createIndex()) {
             RawBytes emptyValue = layout.newValue();
-            emptyValue.bytes = new byte[0];
+            emptyValue.bytes = EMPTY_BYTE_ARRAY;
             List<Pair<RawBytes, RawBytes>> entries = new ArrayList<>();
             for (int keySize = 1; keySize < index.keyValueSizeCap(); keySize++) {
                 entries.add(Pair.of(key(keySize), emptyValue));

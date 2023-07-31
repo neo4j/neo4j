@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import static java.lang.Math.toIntExact;
 import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,7 +60,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -303,7 +303,7 @@ class TransactionLogsRecoveryTest {
 
             // last committed tx
             channel.getCurrentLogPosition(marker);
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, BASE_TX_CHECKSUM, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
 
             // check point
@@ -379,7 +379,7 @@ class TransactionLogsRecoveryTest {
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, EMPTY_BYTE_ARRAY);
 
             return true;
         });
@@ -399,7 +399,7 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 4L);
 
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
@@ -415,7 +415,7 @@ class TransactionLogsRecoveryTest {
                     "test");
 
             // write incomplete tx to trigger recovery
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, EMPTY_BYTE_ARRAY);
             return true;
         });
         assertTrue(recovery(storeDir));
@@ -444,7 +444,7 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 3L);
 
@@ -467,7 +467,7 @@ class TransactionLogsRecoveryTest {
                     "invalid checkpoint");
 
             // incomplete tx
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, EMPTY_BYTE_ARRAY);
             return true;
         });
         assertTrue(recovery(storeDir));
@@ -490,12 +490,12 @@ class TransactionLogsRecoveryTest {
 
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, EMPTY_BYTE_ARRAY);
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, previousChecksum, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, previousChecksum, EMPTY_BYTE_ARRAY);
 
             return true;
         });
@@ -514,7 +514,7 @@ class TransactionLogsRecoveryTest {
         Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
-        final byte[] additionalHeaderData = new byte[0];
+        final byte[] additionalHeaderData = EMPTY_BYTE_ARRAY;
         final long transactionId = 4;
         final long commitTimestamp = 5;
         writeSomeData(file, dataWriters -> {
@@ -578,7 +578,6 @@ class TransactionLogsRecoveryTest {
         Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
-        final byte[] additionalHeaderData = new byte[0];
         final long transactionId = 4;
         final long commitTimestamp = 5;
         writeSomeData(file, writers -> {
@@ -586,7 +585,7 @@ class TransactionLogsRecoveryTest {
             LogPositionAwareChannel channel = writers.channel();
 
             // last committed tx
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, transactionId, commitTimestamp);
             channel.getCurrentLogPosition(marker);
 
