@@ -286,6 +286,29 @@ class DurationValueTest
     }
 
     @Test
+    void shouldParseDurationWithFractionalComponentConversion()
+    {
+        // years + months => months
+        assertEquals( parse( "P14.2M" ), parse( "P1Y2.2M" ) );
+
+        // weeks + days => days
+        // 0.5 days = 12h = 12*60*60s = 43200s
+        assertEquals( duration( 0, 16, 43200, 0 ), parse( "P2W2.5D" ) );
+
+        // hours + minutes => seconds
+        // 1 h 72.5 min = 1*60*60 + 72*60 + 30 s = 7950s
+        assertEquals( duration( 0, 0, 7950, 0 ), parse( "PT1H72.5M" ) );
+
+        // hours + minutes + seconds => seconds
+        // 1 h 72 min 72.5 s = 1*60*60 + 72*60 + 72.5 s = 7992.5s
+        assertEquals( duration( 0, 0, 7992, 500000000 ), parse( "PT1H72M72.5S" ) );
+
+        // minutes + seconds => seconds
+        // 2 min 72.5 s = 2*60 + 72.5 s = 192.5s
+        assertEquals( duration( 0, 0, 192, 500000000 ), parse( "PT2M72.5S" ) );
+    }
+
+    @Test
     void shouldNotParseInvalidDurationStrings()
     {
         assertThrows( TemporalParseException.class, () -> parse( "" ) );
