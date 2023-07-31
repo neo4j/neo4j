@@ -747,7 +747,7 @@ Feature: CypherTransactionsAcceptance
         CREATE (:A)
       } IN TRANSACTIONS OF $batchSize ROWS
       """
-    Then a SyntaxError should be raised at runtime: InvalidArgumentType
+    Then an ArgumentError should be raised at runtime: InvalidArgumentType
 
   Scenario: Negative parameter for batchSize and an empty graph should fail
     And parameters are:
@@ -759,7 +759,7 @@ Feature: CypherTransactionsAcceptance
         CREATE (:A)
       } IN TRANSACTIONS OF $batchSize ROWS
       """
-    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+    Then an ArgumentError should be raised at runtime: NegativeIntegerArgument
 
   Scenario: Floating point parameter for batchSize and an empty graph should fail
     And parameters are:
@@ -771,7 +771,7 @@ Feature: CypherTransactionsAcceptance
         CREATE (:A)
       } IN TRANSACTIONS OF $batchSize ROWS
       """
-    Then a SyntaxError should be raised at compile time: InvalidArgumentType
+    Then an ArgumentError should be raised at runtime: InvalidArgumentType
 
   Scenario: Graph touching batchSize should fail with a syntax exception
     And having executed:

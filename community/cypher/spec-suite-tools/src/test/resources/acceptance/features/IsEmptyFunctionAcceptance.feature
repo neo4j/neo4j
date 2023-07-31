@@ -140,7 +140,7 @@ Feature: IsEmptyFunctionAcceptance
       MATCH (a)
       RETURN isEmpty(a) AS result
       """
-    Then a SyntaxError should be raised at runtime: InvalidArgumentValue
+    Then a TypeError should be raised at runtime: InvalidArgumentValue
     And no side effects
 
   Scenario: isEmpty should not work for relationship
@@ -154,7 +154,7 @@ Feature: IsEmptyFunctionAcceptance
       MATCH ()-[r]-()
       RETURN isEmpty(r) AS result
       """
-    Then a SyntaxError should be raised at runtime: InvalidArgumentValue
+    Then a TypeError should be raised at runtime: InvalidArgumentValue
     And no side effects
 
   Scenario: isEmpty should work for properties

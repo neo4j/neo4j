@@ -15,6 +15,9 @@ Feature "QuantifiedPathPatternAcceptance": Scenario "Leaving out the nodes adjac
 // Non-local predicates not implemented. Solved in https://trello.com/c/XexwQoc1/
 Feature "QuantifiedPathPatternAcceptance": Scenario "References to non-local unconditional singletons that are dependent on the evaluation of the quantification"
 
+// Uses enterprise procedure
+Feature "CollectExpressionAcceptance": Scenario "COLLECT with updating procedure and yield should fail"
+
 // CIP-101: item-by-item visibility for CREATE
 Feature "Create": Scenario "Creating patterns first evaluates all contained pattern expressions"
 Feature "Create": Scenario "Creating patterns first evaluates all contained pattern comprehensions"

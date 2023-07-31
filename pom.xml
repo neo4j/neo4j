@@ -139,7 +139,7 @@
     <junit.version>5.9.3</junit.version>
     <junit.platform.version>1.9.3</junit.platform.version>
     <mockito.version>5.4.0</mockito.version>
-    <opencypher.version>1.0.0-M21</opencypher.version>
+    <opencypher.version>1.0.0-M23</opencypher.version>
     <caffeine.version>3.1.6</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
     <jackson.version>2.15.2</jackson.version>

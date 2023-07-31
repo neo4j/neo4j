@@ -120,7 +120,7 @@ Feature: NaNAcceptance
       """
       RETURN isNaN("foo") AS result
       """
-    Then a TypeError should be raised at runtime: InvalidArgumentType
+    Then a SyntaxError should be raised at compile time: InvalidArgumentType
 
   Scenario: with chained numerical function value
     When executing query:

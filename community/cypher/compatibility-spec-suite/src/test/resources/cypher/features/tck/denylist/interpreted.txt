@@ -12,13 +12,28 @@ Feature "Match3 - Match fixed length patterns": Scenario "Fail when re-using a r
 // Trello: XbSERLex
 Feature "ReturnOrderBy6 - Aggregation expressions in order by": Scenario "Fail if more complex expressions, even if returned, are used inside an order by item which contains an aggregation expression"
 
-// Wrong error detail. Should now be VariableNotFound
-Feature "ReturnOrderBy6 - Aggregation expressions in order by": Scenario "Fail if not returned variables are used inside an order by item which contains an aggregation expression"
-Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail on sorting by a non-projected aggregation on a variable"
-Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail on sorting by a non-projected aggregation on an expression"
-Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail if not projected variables are used inside an order by item which contains an aggregation expression"
-
 // Query is faulty and missing an `AS` in the `WITH`. If that gets added:
 // Re reintroduced allowing this, while planning to deprecate in 5.X and remove the support in 6.0
 // Trello: XbSERLex
 Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail if more complex expressions, even if projected, are used inside an order by item which contains an aggregation expression"
+
+// Scenarios disabled because of assumed bugs in TCK, https://trello.com/c/h2TRlh5D
+Feature "Delete1 - Deleting nodes": Scenario "Failing when deleting connected nodes"
+Feature "Call1 - Basic procedure calling": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+Feature "Call1 - Basic procedure calling": Scenario "Standalone call to unknown procedure should fail"
+Feature "Call1 - Basic procedure calling": Scenario "In-query call to unknown procedure should fail"
+Feature "Graph6 - Static property access": Scenario "Fail when performing property access on a non-graph element"
+Feature "List1 - Dynamic Element Access": Scenario "Fail when indexing a non-list"
+Feature "List1 - Dynamic Element Access": Scenario "Fail when indexing with a non-integer"
+?Feature "List1 - Dynamic Element Access": Scenario "Fail when indexing with a non-integer given by a parameter"
+?Feature "List1 - Dynamic Element Access": Scenario "Fail when indexing a non-list given by a parameter"
+Feature "List11 - Create a list from a range": Scenario "Fail on invalid argument types for `range()`"
+Feature "Map1 - Static value access": Scenario "Fail when performing property access on a non-map"
+Feature "Map2 - Dynamic Value Access": Scenario "Fail at runtime when attempting to index with an Int into a Map"
+Feature "Map2 - Dynamic Value Access": Scenario "Fail at runtime when trying to index something which is not a map"
+Feature "ReturnSkipLimit1 - Skip": Scenario "Floating point parameter for SKIP should fail"
+Feature "ReturnSkipLimit1 - Skip": Scenario "Negative parameter for SKIP should fail"
+Feature "ReturnSkipLimit2 - Limit": Scenario "Floating point parameter for LIMIT should fail"
+Feature "ReturnSkipLimit2 - Limit": Scenario "Floating point parameter for LIMIT with ORDER BY should fail"
+Feature "ReturnSkipLimit2 - Limit": Scenario "Negative parameter for LIMIT should fail"
+Feature "ReturnSkipLimit2 - Limit": Scenario "Negative parameter for LIMIT with ORDER BY should fail"

@@ -34,7 +34,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       ORDER BY name LIMIT $_limit
       """
-    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+    Then an ArgumentError should be raised at runtime: NegativeIntegerArgument
 
   Scenario: Negative parameter for LIMIT and an empty graph should fail
     And parameters are:
@@ -45,7 +45,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       LIMIT $_limit
       """
-    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+    Then an ArgumentError should be raised at runtime: NegativeIntegerArgument
 
   Scenario: Negative parameter for SKIP and an empty graph should fail
     And parameters are:
@@ -56,7 +56,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       SKIP $limit
       """
-    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+    Then an ArgumentError should be raised at runtime: NegativeIntegerArgument
 
   Scenario: Floating point parameter for LIMIT and an empty graph should fail
     And parameters are:
@@ -67,7 +67,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       LIMIT $limit
       """
-    Then a SyntaxError should be raised at compile time: InvalidArgumentType
+    Then an ArgumentError should be raised at runtime: InvalidArgumentType
 
   Scenario: Floating point parameter for LIMIT with ORDER BY and an empty graph should fail
     And parameters are:
@@ -78,7 +78,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       ORDER BY name LIMIT $limit
       """
-    Then a SyntaxError should be raised at compile time: InvalidArgumentType
+    Then an ArgumentError should be raised at runtime: InvalidArgumentType
 
   Scenario: Floating point parameter for SKIP and an empty graph should fail
     And parameters are:
@@ -89,7 +89,7 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       SKIP $limit
       """
-    Then a SyntaxError should be raised at compile time: InvalidArgumentType
+    Then an ArgumentError should be raised at runtime: InvalidArgumentType
 
   Scenario: Graph touching LIMIT should fail with a syntax exception
     And having executed:
