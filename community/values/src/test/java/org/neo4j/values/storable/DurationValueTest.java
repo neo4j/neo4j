@@ -244,6 +244,32 @@ class DurationValueTest {
     }
 
     @Test
+    void shouldParseNegativeDurationWithFractionalComponent() {
+        assertEquals(duration(-6, 0, 0, 0), parse("-P0.5Y"));
+        assertEquals(duration(6, 0, 0, 0), parse("-P-0.5Y"));
+
+        assertEquals(parse("P0.5M"), parse("-P-0.5M"));
+        assertEquals(parse("P1Y-0.5M"), parse("-P-1Y0.5M"));
+
+        // 1.5 weeks = 10.5 days = 10 days 12h = 10 days 12*60*60s = 10 days 43200s
+        assertEquals(duration(0, -10, -43200, 0), parse("-P1.5W"));
+        assertEquals(duration(10, -10, -43200, 0), parse("-P-1Y2M1.5W"));
+
+        // 0.1 days = 2.4h = 2.4*60*60s = 8640s
+        assertEquals(duration(0, -3, -8640, 0), parse("-P3.1D"));
+        assertEquals(duration(-5, 3, 8640, 0), parse("-P5M-3.1D"));
+
+        // 0.2h = 12min = 12*60s = 720s
+        assertEquals(duration(0, 0, 720, 0), parse("-PT-0.2H"));
+        assertEquals(duration(0, 3, -720, 0), parse("-P-3DT0.2H"));
+
+        assertEquals(duration(0, 0, -66, 0), parse("-PT1.1M"));
+        assertEquals(duration(0, -1, 66, 0), parse("-P1DT-1.1M"));
+
+        assertEquals(duration(0, 0, 6, 550000000), parse("-PT-6.55S"));
+    }
+
+    @Test
     void shouldNotParseInvalidDurationStrings() {
         assertThrows(TemporalParseException.class, () -> parse(""));
         assertThrows(TemporalParseException.class, () -> parse("P"));
@@ -519,6 +545,12 @@ class DurationValueTest {
     public void shouldApproximateFractionalMonth() {
         DurationValue result = DurationValue.approximate(10.8, 0, 0, 0);
         assertEqual(result, DurationValue.duration(10, 24, 30196, 800000001));
+    }
+
+    @Test
+    public void shouldApproximateFractionalMonthFromNegativeDuration() {
+        DurationValue result = DurationValue.approximate(10.8, 0, 0, 0, -1);
+        assertEqual(result, DurationValue.duration(-10, -24, -30196, -800000001));
     }
 
     @Test

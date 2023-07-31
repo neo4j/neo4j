@@ -344,7 +344,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             if (m != null || w != null || d != null || t != null) {
                 return null;
             }
-            return approximate(parseFractional(y, pos) * 12, 0, 0, 0);
+            return approximate(parseFractional(y, pos) * 12, 0, 0, 0, sign);
         }
 
         long years = optLong(y);
@@ -353,7 +353,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             if (w != null || d != null || t != null) {
                 return null;
             }
-            return approximate(monthsAcc + parseFractional(m, pos), 0, 0, 0);
+            return approximate(monthsAcc + parseFractional(m, pos), 0, 0, 0, sign);
         }
 
         long months = optLong(m);
@@ -362,7 +362,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             if (d != null || t != null) {
                 return null;
             }
-            return approximate(monthsAcc, parseFractional(w, pos) * 7, 0, 0);
+            return approximate(monthsAcc, parseFractional(w, pos) * 7, 0, 0, sign);
         }
 
         long weeks = optLong(w);
@@ -371,7 +371,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             if (t != null) {
                 return null;
             }
-            return approximate(monthsAcc, daysAcc + parseFractional(d, pos), 0, 0);
+            return approximate(monthsAcc, daysAcc + parseFractional(d, pos), 0, 0, sign);
         }
 
         long days = optLong(d);
@@ -435,13 +435,13 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 if (m != null || s != null) {
                     return null;
                 }
-                return approximate(months, days, parseFractional(h, pos) * 3600, 0);
+                return approximate(months, days, parseFractional(h, pos) * 3600, 0, sign);
             }
             if ((pos = fractionPoint(m)) >= 0) {
                 if (s != null) {
                     return null;
                 }
-                return approximate(months, days, parseFractional(m, pos) * 60, 0);
+                return approximate(months, days, parseFractional(m, pos) * 60, 0, sign);
             }
         }
         long hours = optLong(h);
@@ -859,6 +859,10 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
      * the remainder into the smaller units.
      */
     public static DurationValue approximate(double months, double days, double seconds, double nanos) {
+        return approximate(months, days, seconds, nanos, 1);
+    }
+
+    public static DurationValue approximate(double months, double days, double seconds, double nanos, int sign) {
         long monthsAsLong = safeDoubleToLong(months);
 
         double monthDiffInNanos = AVG_NANOS_PER_MONTH * (months - monthsAsLong);
@@ -873,7 +877,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         nanos += secondsDiffInNanos;
         long nanosAsLong = safeDoubleToLong(nanos);
 
-        return duration(monthsAsLong, daysAsLong, secondsAsLong, nanosAsLong);
+        return duration(sign * monthsAsLong, sign * daysAsLong, sign * secondsAsLong, sign * nanosAsLong);
     }
 
     /**
