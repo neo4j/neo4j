@@ -217,8 +217,8 @@ class PrettyPrinterTest {
 
     @Test
     void prettyPrintMaps() {
-        checkMapForPrettyPrint(map(), "map" + NEWLINE + "{}" + NEWLINE);
-        checkMapForPrettyPrint(map("abc", "def"), "map" + NEWLINE + "{abc: def}" + NEWLINE);
+        checkMapForPrettyPrint(Map.of(), "map" + NEWLINE + "{}" + NEWLINE);
+        checkMapForPrettyPrint(Map.of("abc", "def"), "map" + NEWLINE + "{abc: def}" + NEWLINE);
     }
 
     private void checkMapForPrettyPrint(Map<String, String> map, String expectedResult) {
