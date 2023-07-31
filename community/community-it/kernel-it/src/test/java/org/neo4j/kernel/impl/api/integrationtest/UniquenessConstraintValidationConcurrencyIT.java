@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
@@ -27,6 +28,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -103,6 +105,21 @@ public class UniquenessConstraintValidationConcurrencyIT {
             tx.rollback();
         }
         assertTrue(result.get(), "entity creation should succeed");
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldFailPolitelyOnTooLargeKeyLength(EntityControl entityControl) throws Exception {
+        // given
+        int numChars = 40_000;
+        try (var tx = database.beginTx()) {
+            entityControl.createEntityWithTokenAndProp(tx, Strings.repeat("a", numChars));
+            tx.commit();
+        }
+
+        assertThatThrownBy(() -> createTestConstraint(entityControl))
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Property value is too large to index");
     }
 
     private void createTestConstraint(EntityControl entityControl) {

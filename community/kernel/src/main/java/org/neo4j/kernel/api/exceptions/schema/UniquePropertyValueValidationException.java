@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -73,6 +74,16 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
 
     @Override
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        var cause = getCause();
+        //noinspection StatementWithEmptyBody
+        if (cause instanceof IndexEntryConflictException ignored) {
+            // Drop through to the final branch
+        } else if (cause instanceof KernelException exc) {
+            return exc.getUserMessage(tokenNameLookup);
+        } else if (cause instanceof Exception exc) {
+            return exc.getMessage();
+        }
+
         SchemaDescriptor schema = constraint.schema();
         StringBuilder message = new StringBuilder();
         for (Iterator<IndexEntryConflictException> iterator = conflicts.iterator(); iterator.hasNext(); ) {

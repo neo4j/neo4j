@@ -197,9 +197,12 @@ public class ConstraintIndexCreator {
             } while (stillGoing);
         } catch (IndexPopulationFailedKernelException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof IndexEntryConflictException) {
+            if (cause instanceof IndexEntryConflictException exc) {
                 throw new UniquePropertyValueValidationException(
-                        constraint, VERIFICATION, (IndexEntryConflictException) cause, transaction.tokenRead());
+                        constraint, VERIFICATION, exc, transaction.tokenRead());
+            } else if (cause instanceof IllegalArgumentException exc) {
+                throw new UniquePropertyValueValidationException(
+                        constraint, VERIFICATION, exc, transaction.tokenRead());
             } else {
                 throw new UniquePropertyValueValidationException(constraint, VERIFICATION, e, transaction.tokenRead());
             }
