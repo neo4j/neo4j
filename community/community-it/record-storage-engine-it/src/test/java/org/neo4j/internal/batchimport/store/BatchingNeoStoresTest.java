@@ -617,7 +617,7 @@ class BatchingNeoStoresTest {
             TxState txState = new TxState();
             var transactionIdGenerator = new IdStoreTransactionIdGenerator(storageEngine.metadataProvider());
             NeoStores neoStores = storageEngine.testAccessNeoStores();
-            try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
+            try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext(false);
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
                 commandCreationContext.initialize(
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,

@@ -98,7 +98,7 @@ public class CommandCreationContextIT {
             ToLongFunction<CommandCreationContext> idReservation) {
         try (var cursorContext = contextFactory.create("trackPageCacheAccessOnIdReservation")) {
             prepareIdGenerator(storeProvider.apply(neoStores).getIdGenerator());
-            try (var creationContext = storageEngine.newCommandCreationContext()) {
+            try (var creationContext = storageEngine.newCommandCreationContext(false)) {
                 creationContext.initialize(
                         kernelVersionProvider,
                         cursorContext,
@@ -116,7 +116,7 @@ public class CommandCreationContextIT {
     @MethodSource("commandOperations")
     void trackMemoryAllocationInCommandCreationContext(BiConsumer<TransactionRecordState, ContextHolder> operation) {
         var memoryTracker = new LocalMemoryTracker();
-        try (var commandCreationContext = storageEngine.newCommandCreationContext();
+        try (var commandCreationContext = storageEngine.newCommandCreationContext(false);
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commandCreationContext.initialize(
                     kernelVersionProvider,

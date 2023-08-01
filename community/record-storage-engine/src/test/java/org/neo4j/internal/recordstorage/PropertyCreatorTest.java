@@ -120,7 +120,12 @@ class PropertyCreatorTest {
                 PROPERTY_CURSOR,
                 storeCursors);
         var context = new RecordStorageCommandCreationContext(
-                neoStores, SIMPLE_NAME_LOOKUP, logProvider, dense_node_threshold.defaultValue(), Config.defaults());
+                neoStores,
+                SIMPLE_NAME_LOOKUP,
+                logProvider,
+                dense_node_threshold.defaultValue(),
+                Config.defaults(),
+                false);
         context.initialize(
                 KernelVersionProvider.THROWING_PROVIDER,
                 cursorContext,

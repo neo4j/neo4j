@@ -60,6 +60,7 @@ public class RelationshipModifier {
 
     private final RelationshipGroupGetter relGroupGetter;
     private final int denseNodeThreshold;
+    private final boolean multiVersioned;
     private final MemoryTracker memoryTracker;
     private final RelationshipCreator creator;
     private final RelationshipDeleter deleter;
@@ -68,15 +69,18 @@ public class RelationshipModifier {
             RelationshipGroupGetter relGroupGetter,
             PropertyDeleter propertyChainDeleter,
             int denseNodeThreshold,
+            boolean multiVersioned,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
         this.relGroupGetter = relGroupGetter;
         this.denseNodeThreshold = denseNodeThreshold;
+        this.multiVersioned = multiVersioned;
         this.memoryTracker = memoryTracker;
 
-        final var externalDegreesThreshold = DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
-        this.creator = new RelationshipCreator(denseNodeThreshold, externalDegreesThreshold, cursorContext);
-        this.deleter = new RelationshipDeleter(relGroupGetter, propertyChainDeleter, externalDegreesThreshold);
+        this.creator =
+                new RelationshipCreator(denseNodeThreshold, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, cursorContext);
+        this.deleter = new RelationshipDeleter(
+                relGroupGetter, propertyChainDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH);
     }
 
     /**
@@ -520,7 +524,7 @@ public class RelationshipModifier {
                     locks.acquireExclusive(lockTracer, RELATIONSHIP, firstInChain);
                 }
                 // and a good insertion point by walking the chain with try-locks
-                return findAndLockInsertionPoint(firstInChain, nodeId, relRecords, locks, lockTracer);
+                return findAndLockInsertionPoint(firstInChain, nodeId, relRecords, multiVersioned, locks, lockTracer);
             }
         }
         return null;

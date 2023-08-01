@@ -66,7 +66,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * {@link #createCommands(ReadableTransactionState, StorageReader, CommandCreationContext, LockTracer, Decorator, CursorContext, StoreCursors, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
-    CommandCreationContext newCommandCreationContext();
+    CommandCreationContext newCommandCreationContext(boolean multiVersioned);
 
     /**
      * Create multi versioned stores transaction validator factory. Validator factory produces noop validators in all other engines.

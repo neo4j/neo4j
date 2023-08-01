@@ -102,7 +102,7 @@ public class CommitProcessTracingIT {
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnCommandCreation");
                 var reader = storageEngine.newReader()) {
             assertZeroCursor(cursorContext);
-            try (CommandCreationContext context = storageEngine.newCommandCreationContext();
+            try (CommandCreationContext context = storageEngine.newCommandCreationContext(false);
                     var storeCursors = storageEngine.createStorageCursors(cursorContext)) {
                 context.initialize(
                         kernelVersionProvider,

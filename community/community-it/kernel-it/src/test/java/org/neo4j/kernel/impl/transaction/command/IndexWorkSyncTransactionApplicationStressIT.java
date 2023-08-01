@@ -206,7 +206,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
         @Override
         public void run() {
             try (StorageReader reader = storageEngine.newReader();
-                    CommandCreationContext creationContext = storageEngine.newCommandCreationContext();
+                    CommandCreationContext creationContext = storageEngine.newCommandCreationContext(false);
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
                 creationContext.initialize(
                         LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -702,7 +703,7 @@ class KernelTransactionsTest {
 
         StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
         when(storageEngine.newReader()).thenReturn(firstReader, otherReaders);
-        when(storageEngine.newCommandCreationContext()).thenReturn(mock(CommandCreationContext.class));
+        when(storageEngine.newCommandCreationContext(anyBoolean())).thenReturn(mock(CommandCreationContext.class));
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
         when(storageEngine.createCommands(
                         any(ReadableTransactionState.class),

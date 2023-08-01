@@ -113,7 +113,8 @@ public class RecordStorageEngineTestUtils {
         TransactionIdStore txIdStore = neoStores.getMetaDataStore();
         KernelVersionProvider kernelVersionProvider = storageEngine.kernelVersionRepository;
         CursorContext cursorContext = NULL_CONTEXT;
-        try (RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
+        try (RecordStorageCommandCreationContext commandCreationContext =
+                        storageEngine.newCommandCreationContext(false);
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
             commandCreationContext.initialize(
                     kernelVersionProvider,

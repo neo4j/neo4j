@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -138,7 +139,7 @@ class KernelTransactionTestBase {
     public void before() throws Exception {
         collectionsFactory = Mockito.spy(new TestCollectionsFactory());
         when(storageEngine.newReader()).thenReturn(storageReader);
-        when(storageEngine.newCommandCreationContext()).thenReturn(commandCreationContext);
+        when(storageEngine.newCommandCreationContext(anyBoolean())).thenReturn(commandCreationContext);
         when(storageEngine.metadataProvider()).thenReturn(metadataProvider);
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
         when(storageEngine.createCommands(

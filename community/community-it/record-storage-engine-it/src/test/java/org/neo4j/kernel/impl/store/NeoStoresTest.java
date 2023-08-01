@@ -535,7 +535,7 @@ class NeoStoresTest {
 
     private void commitTx() throws Exception {
         CursorContext cursorContext = NULL_CONTEXT;
-        try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
+        try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext(false);
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commandCreationContext.initialize(
                     LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,

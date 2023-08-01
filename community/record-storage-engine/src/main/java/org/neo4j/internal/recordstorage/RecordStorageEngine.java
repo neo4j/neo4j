@@ -384,9 +384,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public RecordStorageCommandCreationContext newCommandCreationContext() {
+    public RecordStorageCommandCreationContext newCommandCreationContext(boolean multiVersioned) {
         return new RecordStorageCommandCreationContext(
-                neoStores, tokenHolders, internalLogProvider, denseNodeThreshold, config);
+                neoStores, tokenHolders, internalLogProvider, denseNodeThreshold, config, multiVersioned);
     }
 
     @Override

@@ -197,6 +197,7 @@ class RelationshipCreatorTest {
                 newRelGroupGetter(givenState),
                 null,
                 denseNodeThreshold,
+                false,
                 CursorContext.NULL_CONTEXT,
                 EmptyMemoryTracker.INSTANCE);
 

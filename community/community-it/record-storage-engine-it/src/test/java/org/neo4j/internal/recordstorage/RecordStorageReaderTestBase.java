@@ -108,7 +108,7 @@ public abstract class RecordStorageReaderTestBase {
         this.storageEngine = builder.build();
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
-        this.commitContext = storageEngine.newCommandCreationContext();
+        this.commitContext = storageEngine.newCommandCreationContext(false);
         storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
         commitContext.initialize(
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,

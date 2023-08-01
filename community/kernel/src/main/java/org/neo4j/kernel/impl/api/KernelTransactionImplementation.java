@@ -329,7 +329,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.storageReader = storageEngine.newReader();
-        this.commandCreationContext = storageEngine.newCommandCreationContext();
+        this.commandCreationContext = storageEngine.newCommandCreationContext(multiVersioned);
         this.kernelVersionProvider = kernelVersionProvider;
         this.serverIdentity = serverIdentity;
         this.enrichmentStrategy = enrichmentStrategy;

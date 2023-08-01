@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -99,7 +100,7 @@ public final class KernelTransactionFactory {
         StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
         StorageReader storageReader = mock(StorageReader.class);
         when(storageEngine.newReader()).thenReturn(storageReader);
-        when(storageEngine.newCommandCreationContext()).thenReturn(mock(CommandCreationContext.class));
+        when(storageEngine.newCommandCreationContext(anyBoolean())).thenReturn(mock(CommandCreationContext.class));
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
 
         Dependencies dependencies = new Dependencies();

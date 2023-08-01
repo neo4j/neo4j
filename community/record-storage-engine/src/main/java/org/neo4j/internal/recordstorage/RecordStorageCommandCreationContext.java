@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 
 import java.util.function.Supplier;
 import org.neo4j.common.TokenNameLookup;
@@ -50,6 +49,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 class RecordStorageCommandCreationContext implements CommandCreationContext {
     private final NeoStores neoStores;
     private final Config config;
+    private final boolean multiVersioned;
     private final TokenNameLookup tokenNameLookup;
     private final InternalLogProvider logProvider;
     private final int denseNodeThreshold;
@@ -70,13 +70,15 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             TokenNameLookup tokenNameLookup,
             InternalLogProvider logProvider,
             int denseNodeThreshold,
-            Config config) {
+            Config config,
+            boolean multiVersioned) {
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
         this.denseNodeThreshold = denseNodeThreshold;
         this.neoStores = neoStores;
         this.config = config;
-        this.transactionSequenceProvider = createIdSequenceProvider(neoStores, config);
+        this.multiVersioned = multiVersioned;
+        this.transactionSequenceProvider = createIdSequenceProvider(neoStores, multiVersioned);
         this.dynamicAllocatorProvider = new TransactionDynamicAllocatorProvider(neoStores, transactionSequenceProvider);
     }
 
@@ -162,7 +164,12 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             LoadMonitor monitor) {
         RecordChangeSet recordChangeSet = new RecordChangeSet(loaders, memoryTracker, monitor, storeCursors);
         RelationshipModifier relationshipModifier = new RelationshipModifier(
-                relationshipGroupGetter, propertyDeleter, denseNodeThreshold, cursorContext, memoryTracker);
+                relationshipGroupGetter,
+                propertyDeleter,
+                denseNodeThreshold,
+                multiVersioned,
+                cursorContext,
+                memoryTracker);
         return new TransactionRecordState(
                 kernelVersionProvider,
                 recordChangeSet,
@@ -213,14 +220,9 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
         }
     }
 
-    private static IdSequenceProvider createIdSequenceProvider(NeoStores neoStores, Config config) {
-        // in multi versioned store we acquire and release ids in a page fashion
-        return isNotMultiVersioned(config)
-                ? new TransactionIdSequenceProvider(neoStores)
-                : new BatchedTransactionIdSequenceProvider(neoStores);
-    }
-
-    private static boolean isNotMultiVersioned(Config config) {
-        return !"multiversion".equals(config.get(db_format));
+    private static IdSequenceProvider createIdSequenceProvider(NeoStores neoStores, boolean multiVersioned) {
+        return multiVersioned
+                ? new BatchedTransactionIdSequenceProvider(neoStores)
+                : new TransactionIdSequenceProvider(neoStores);
     }
 }

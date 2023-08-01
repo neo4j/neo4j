@@ -1879,6 +1879,7 @@ class TransactionRecordStateTest {
                         relationshipGroupGetter,
                         propertyDeleter,
                         neoStores.getRelationshipGroupStore().getStoreHeaderInt(),
+                        false,
                         NULL_CONTEXT,
                         EmptyMemoryTracker.INSTANCE),
                 new PropertyCreator(

@@ -334,7 +334,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public CommandCreationContext newCommandCreationContext() {
+        public CommandCreationContext newCommandCreationContext(boolean multiVersioned) {
             throw new UnsupportedOperationException();
         }
 
