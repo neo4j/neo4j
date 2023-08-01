@@ -39,8 +39,11 @@ class ErrorCollectingContext extends BaseContext {
   override def cypherExceptionFactory: CypherExceptionFactory = OpenCypherExceptionFactory(None)
   override def monitors: Monitors = ???
 
-  override def errorHandler: Seq[SemanticErrorDef] => Unit = (errs: Seq[SemanticErrorDef]) =>
-    errors = errs
+  override def errorHandler: Seq[SemanticErrorDef] => Unit = (errs: Seq[SemanticErrorDef]) => {
+    // As semantic analysis gets run twice in testing, concatenate new errors so all are returned.
+    val newErrs = errs.filterNot(errors.contains)
+    errors ++= newErrs
+  }
 
   override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
 

@@ -123,6 +123,47 @@ class CountExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
+  test(
+    """MERGE p=(a)-[:T]->()
+      |WITH *
+      |WHERE COUNT { WITH p AS n } = 3
+      |RETURN 1
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test(
+    """MATCH p=(a)-[:T]->()
+      |WITH *
+      |WHERE COUNT { RETURN p } = 3
+      |RETURN 1
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test(
+    """MATCH p=(a)-[]-()
+      |WITH p
+      |WHERE COUNT { WITH a } = 3
+      |RETURN 1
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test(
+    """MATCH p=()-[]->()
+      |RETURN * ORDER BY COUNT {
+      |  WITH p
+      |  RETURN 1
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
   test("""WITH 5 as aNum
          |MATCH (a)
          |RETURN COUNT {

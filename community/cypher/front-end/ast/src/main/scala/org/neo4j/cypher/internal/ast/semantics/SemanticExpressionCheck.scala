@@ -1062,40 +1062,44 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     }
 
   private def checkForShadowedVariables: SemanticCheck = (inner: SemanticState) => {
-    val outerScopeSymbols = inner.currentScope.parent.get.parent match {
-      case Some(parent) => parent.scope.symbolTable ++ inner.currentScope.parent.get.scope.symbolTable
-      case None         => inner.currentScope.parent.get.scope.symbolTable
+    // Only check the first time to avoid unnecessary checks after extensive rewriting.
+    if (inner.semanticCheckHasRunOnce) SemanticCheckResult(inner, Seq.empty)
+    else {
+      val outerScopeSymbols = inner.currentScope.parent.get.parent match {
+        case Some(parent) => parent.scope.symbolTable ++ inner.currentScope.parent.get.scope.symbolTable
+        case None         => inner.currentScope.parent.get.scope.symbolTable
+      }
+      val innerScopeSymbols = inner.currentScope.scope.allSymbols
+
+      // Union symbols are excluded as those always have the position of the UNION keyword regardless of shadowing
+      val innerDefinitions = innerScopeSymbols.map {
+        case (name, symbols) =>
+          (name, symbols.filterNot(symbol => symbol.unionSymbol).map(_.definition))
+      }
+
+      // If a variable of the same name exists in the inner scope and it is not a reference to the outer scope variable.
+      // Also the outer variable must come before the inner variable (i.e. have a lower position) for it to be a case of shadowing.
+      def isShadowed(s: Symbol): Boolean = {
+        val outerName = s.name
+        val outerPos = s.definition.positionsAndUniqueIdString._1
+
+        innerDefinitions.contains(outerName) &&
+        innerDefinitions(outerName).exists(inner => inner.positionsAndUniqueIdString._1 > outerPos)
+      }
+
+      val shadowedSymbols = outerScopeSymbols.collect {
+        case (name, symbol) if isShadowed(symbol) =>
+          name -> innerDefinitions(name).find(_ != symbol.definition).get.asVariable.position
+      }
+
+      val errors = shadowedSymbols.map {
+        case (varName, pos) => SemanticError(
+            s"The variable `$varName` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+            pos
+          )
+      }.toSeq
+
+      SemanticCheckResult(inner, errors)
     }
-    val innerScopeSymbols = inner.currentScope.scope.allSymbols
-
-    // Union symbols are excluded as those always have the position of the UNION keyword regardless of shadowing
-    val innerDefinitions = innerScopeSymbols.map {
-      case (name, symbols) =>
-        (name, symbols.filterNot(symbol => symbol.unionSymbol).map(_.definition))
-    }
-
-    // If a variable of the same name exists in the inner scope and it is not a reference to the outer scope variable.
-    // Also the outer variable must come before the inner variable (i.e. have a lower position) for it to be a case of shadowing.
-    def isShadowed(s: Symbol): Boolean = {
-      val outerName = s.name
-      val outerPos = s.definition.positionsAndUniqueIdString._1
-
-      innerDefinitions.contains(outerName) &&
-      innerDefinitions(outerName).exists(inner => inner.positionsAndUniqueIdString._1 > outerPos)
-    }
-
-    val shadowedSymbols = outerScopeSymbols.collect {
-      case (name, symbol) if isShadowed(symbol) =>
-        name -> innerDefinitions(name).find(_ != symbol.definition).get.asVariable.position
-    }
-
-    val errors = shadowedSymbols.map {
-      case (varName, pos) => SemanticError(
-          s"The variable `$varName` is shadowing a variable with the same name from the outer scope and needs to be renamed",
-          pos
-        )
-    }.toSeq
-
-    SemanticCheckResult(inner, errors)
   }
 }

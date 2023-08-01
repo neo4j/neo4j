@@ -164,6 +164,47 @@ class CollectExpressionSemanticAnalysisTest
   }
 
   test(
+    """MERGE p=(a)-[:T]->()
+      |WITH *
+      |WHERE COLLECT { WITH p AS n RETURN 1 } = [1]
+      |RETURN 1
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test(
+    """MATCH p=(a)-[:T]->()
+      |WITH *
+      |WHERE COLLECT { RETURN p } = [1]
+      |RETURN 1
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test(
+    """MATCH p=(a)-[]-()
+      |WITH p
+      |WHERE COLLECT { WITH a RETURN 1 } = [1]
+      |RETURN 1
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test(
+    """MATCH p=()-[]->()
+      |RETURN * ORDER BY COLLECT {
+      |  WITH p
+      |  RETURN 1
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test(
     """WITH 5 as aNum
       |MATCH (a)
       |RETURN COLLECT {

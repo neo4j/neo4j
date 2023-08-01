@@ -121,6 +121,39 @@ class ExistsExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
+  test("""MERGE p=(a)-[:T]->()
+         |WITH *
+         |WHERE EXISTS { WITH p AS n }
+         |RETURN 1
+         |""".stripMargin) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test("""MATCH p=(a)-[:T]->()
+         |WITH *
+         |WHERE EXISTS { RETURN p }
+         |RETURN 1
+         |""".stripMargin) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test("""MATCH p=(a)-[]-()
+         |WITH p
+         |WHERE EXISTS { WITH a }
+         |RETURN 1
+         |""".stripMargin) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
+  test("""MATCH p=()-[]->()
+         |RETURN * ORDER BY EXISTS {
+         |  WITH p
+         |  RETURN 1
+         |}
+         |""".stripMargin) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
   test("""WITH 5 as aNum
          |MATCH (a)
          |RETURN EXISTS {

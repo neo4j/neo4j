@@ -47,7 +47,10 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val startState =
-      SemanticState.clean.withFeatures(features: _*)
+      SemanticState.clean
+        .withFeatures(features: _*)
+        .semanticCheckHasRunOnce(from.maybeSemanticTable.isDefined)
+
     val checkContext = new SemanticCheckContext {
       override def errorMessageProvider: ErrorMessageProvider = context.errorMessageProvider
     }

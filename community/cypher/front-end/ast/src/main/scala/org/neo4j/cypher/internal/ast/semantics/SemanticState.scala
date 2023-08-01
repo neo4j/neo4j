@@ -310,7 +310,8 @@ case class SemanticState(
   recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
   notifications: Set[InternalNotification] = Set.empty,
   features: Set[SemanticFeature] = Set.empty,
-  declareVariablesToSuppressDuplicateErrors: Boolean = true
+  declareVariablesToSuppressDuplicateErrors: Boolean = true,
+  semanticCheckHasRunOnce: Boolean = false
 ) {
 
   def scopeTree: Scope = currentScope.rootScope
@@ -406,6 +407,11 @@ case class SemanticState(
 
   def withFeatures(features: SemanticFeature*): SemanticState =
     features.foldLeft(this)(_.withFeature(_))
+
+  // Some semantic checks only make sense to be done on the first run before extensive rewriting
+  def semanticCheckHasRunOnce(hasRun: Boolean): SemanticState = {
+    copy(semanticCheckHasRunOnce = hasRun)
+  }
 
   def expressionType(expression: Expression): ExpressionTypeInfo =
     typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
