@@ -91,7 +91,7 @@ class RelationshipGroupChecker implements Checker {
                 RecordReader<RelationshipGroupRecord> groupReader =
                         new RecordReader<>(neoStores.getRelationshipGroupStore(), true, cursorContext);
                 var localProgress = progress.threadLocalReporter()) {
-            for (long id = 0; id < highId && !context.isCancelled(); id++) {
+            for (long id = groupStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++) {
                 localProgress.add(1);
                 RelationshipGroupRecord record = groupReader.read(id);
                 if (!record.inUse()) {
