@@ -165,7 +165,7 @@ class IndexCapabilityTest {
                 Arguments.of(TOKEN_LOOKUP, UNKNOWN, NONE),
                 Arguments.of(TOKEN_LOOKUP, NO_CATEGORY, of(TOKEN)),
                 Arguments.of(TOKEN_LOOKUP, ANYTHING, NONE),
-                // ALL_ENTRIES
+                // ALL_ENTRIES :: not supported by TOKEN and FULLTEXT, and ValueCategory is ignored
                 Arguments.of(ALL_ENTRIES, NUMBER, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
                 Arguments.of(ALL_ENTRIES, NUMBER_ARRAY, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),
                 Arguments.of(ALL_ENTRIES, ValueCategory.TEXT, of(RANGE, POINT, TEXT, TRIGRAM, VECTOR)),

@@ -56,10 +56,7 @@ public class FulltextIndexCapability implements IndexCapability {
         for (final var valueCategory : valueCategories) {
             switch (valueCategory) {
                 case TEXT, TEXT_ARRAY -> anyValidCategory = true;
-                case NO_CATEGORY -> {}
-                default -> {
-                    return false;
-                }
+                default -> {}
             }
         }
         return anyValidCategory;
@@ -68,7 +65,7 @@ public class FulltextIndexCapability implements IndexCapability {
     @Override
     public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
         // read/write is not symmetric for fulltext - can only query for text values and not on arrays
-        return queryType == IndexQueryType.FULLTEXT_SEARCH && (valueCategory == ValueCategory.TEXT);
+        return queryType == IndexQueryType.FULLTEXT_SEARCH && valueCategory == ValueCategory.TEXT;
     }
 
     @Override
