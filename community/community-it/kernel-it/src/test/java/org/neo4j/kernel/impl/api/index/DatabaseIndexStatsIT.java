@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -106,6 +107,7 @@ class DatabaseIndexStatsIT {
                     .indexFor(NODE_LABEL)
                     .on(PROPERTY_KEY)
                     .withIndexType(indexType.toPublicApi())
+                    .withIndexConfiguration(IndexSettingUtil.defaultSettingsForTesting(indexType.toPublicApi()))
                     .create()
                     .getName();
             tx.commit();
