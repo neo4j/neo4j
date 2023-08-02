@@ -252,6 +252,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
           propertyPredicates,
           interestingOrderConfig,
           semanticTable,
+          planContext.getRelationshipPropertiesWithTypeConstraint(relTypeName.name),
           providedOrderFactory
         )
       } yield RelationshipIndexMatch(

@@ -155,7 +155,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
 
     val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
     val builder = plannerBuilder().processGraphCounts(graphCountData)
-    builder.constraints should contain only ExistenceConstraintDefinition(
+    builder.existenceConstraints should contain only ExistenceConstraintDefinition(
       entityType = IndexDefinition.EntityType.Node("Person"),
       propertyKey = "name"
     )
@@ -211,7 +211,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
 
     val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
     val builder = plannerBuilder().processGraphCounts(graphCountData)
-    builder.constraints should contain.only(
+    builder.existenceConstraints should contain.only(
       ExistenceConstraintDefinition(
         entityType = IndexDefinition.EntityType.Node("Person"),
         propertyKey = "name"
@@ -279,7 +279,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
 
     val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
     val builder = plannerBuilder().processGraphCounts(graphCountData)
-    builder.constraints should contain only ExistenceConstraintDefinition(
+    builder.existenceConstraints should contain only ExistenceConstraintDefinition(
       entityType = IndexDefinition.EntityType.Relationship("KNOWS"),
       propertyKey = "since"
     )

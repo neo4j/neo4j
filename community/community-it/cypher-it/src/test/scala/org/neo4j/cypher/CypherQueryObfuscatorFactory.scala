@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.devNullLogger
+import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
@@ -162,6 +163,23 @@ class CypherQueryObfuscatorFactory {
 
     override def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing =
       fail()
+
+    override def hasNodePropertyTypeConstraint(
+      labelName: String,
+      propertyKey: String,
+      cypherType: SchemaValueType
+    ): Nothing = fail()
+
+    override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = fail()
+
+    override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]] =
+      fail()
+
+    override def hasRelationshipPropertyTypeConstraint(
+      relTypeName: String,
+      propertyKey: String,
+      cypherType: SchemaValueType
+    ): Boolean = fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }

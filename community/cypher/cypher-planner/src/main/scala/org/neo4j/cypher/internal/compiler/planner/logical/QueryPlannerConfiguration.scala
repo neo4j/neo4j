@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPla
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.outerHashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.resolveImplicitlySolvedPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.triadicSelectionFinder
@@ -123,6 +124,7 @@ object QueryPlannerConfiguration {
       SelectPatternPredicates,
       triadicSelectionFinder,
       SelectSubQueryPredicates,
+      resolveImplicitlySolvedPredicates,
       selectCovered,
       selectHasLabelWithJoin
     )

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.planning.ExceptionTranslationSupport
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
@@ -180,4 +181,27 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def txStateHasChanges(): Boolean =
     translateException(tokenNameLookup, inner.txStateHasChanges())
+
+  override def hasNodePropertyTypeConstraint(
+    labelName: String,
+    propertyKey: String,
+    cypherType: SchemaValueType
+  ): Boolean =
+    translateException(tokenNameLookup, inner.hasNodePropertyTypeConstraint(labelName, propertyKey, cypherType))
+
+  override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] =
+    translateException(tokenNameLookup, inner.getNodePropertiesWithTypeConstraint(labelName))
+
+  override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]] =
+    translateException(tokenNameLookup, inner.getRelationshipPropertiesWithTypeConstraint(relTypeName))
+
+  override def hasRelationshipPropertyTypeConstraint(
+    relTypeName: String,
+    propertyKey: String,
+    cypherType: SchemaValueType
+  ): Boolean =
+    translateException(
+      tokenNameLookup,
+      inner.hasRelationshipPropertyTypeConstraint(relTypeName, propertyKey, cypherType)
+    )
 }

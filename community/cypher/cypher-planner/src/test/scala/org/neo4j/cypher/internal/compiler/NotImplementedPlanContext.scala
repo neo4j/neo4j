@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 //noinspection NotImplementedCode
 class NotImplementedPlanContext extends PlanContext {
@@ -60,6 +61,22 @@ class NotImplementedPlanContext extends PlanContext {
   override def hasRelationshipPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 
   override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = ???
+
+  override def hasNodePropertyTypeConstraint(
+    labelName: String,
+    propertyKey: String,
+    cypherType: SchemaValueType
+  ): Boolean = ???
+
+  override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = ???
+
+  override def hasRelationshipPropertyTypeConstraint(
+    relTypeName: String,
+    propertyKey: String,
+    cypherType: SchemaValueType
+  ): Boolean = ???
+
+  override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]] = ???
 
   override def getPropertiesWithExistenceConstraint: Set[String] = ???
 
@@ -134,5 +151,4 @@ class NotImplementedPlanContext extends PlanContext {
     labelName: String,
     propertyKeys: Seq[String]
   ): Option[IndexDescriptor] = ???
-
 }

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building.
@@ -161,6 +162,18 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Set[String]
 
   def getPropertiesWithExistenceConstraint: Set[String]
+
+  def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]]
+
+  def hasNodePropertyTypeConstraint(labelName: String, propertyKey: String, cypherType: SchemaValueType): Boolean
+
+  def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]]
+
+  def hasRelationshipPropertyTypeConstraint(
+    relTypeName: String,
+    propertyKey: String,
+    cypherType: SchemaValueType
+  ): Boolean
 
   /**
    * @return a provider for the highest seen committed transaction id.

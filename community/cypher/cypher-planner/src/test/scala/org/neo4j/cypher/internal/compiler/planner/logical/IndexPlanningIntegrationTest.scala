@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 import scala.collection.immutable.ListSet
 import scala.concurrent.Await
@@ -1215,6 +1216,169 @@ class IndexPlanningIntegrationTest
         .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
         .build()
     }
+  }
+
+  test("should plan node text index scan for IS NOT NULL predicate when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = 0.1,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT,
+        maybeIndexCapability = Some(text_2_0)
+      )
+      .addNodePropertyTypeConstraint("A", "prop", SchemaValueType.STRING)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop IS NOT NULL RETURN *").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.TEXT)
+      .build()
+  }
+
+  test("should plan node text index scan for equality predicate when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = 0.1,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT,
+        maybeIndexCapability = Some(text_2_0)
+      )
+      .addNodePropertyTypeConstraint("A", "prop", SchemaValueType.STRING)
+      .build()
+
+    val plan = cfg.plan("MATCH (a:A) WHERE a.prop = $param RETURN *").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .nodeIndexOperator("a:A(prop = ???)", paramExpr = List(parameter("param", CTAny)), indexType = IndexType.TEXT)
+      .build()
+  }
+
+  test("should plan node point index scan for IS NOT NULL predicate when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = 0.1,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.POINT
+      )
+      .addNodePropertyTypeConstraint("A", "prop", SchemaValueType.POINT)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop IS NOT NULL RETURN *").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should plan node text index scan for a.prop = b.prop predicate when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = 0.1,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT,
+        maybeIndexCapability = Some(text_2_0)
+      )
+      .addNodePropertyTypeConstraint("A", "prop", SchemaValueType.STRING)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a:A)-[r]->(b) WHERE a.prop = b.prop RETURN *").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("a.prop = b.prop")
+      .expandAll("(a)-[r]->(b)")
+      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.TEXT)
+      .build()
+  }
+
+  test("should plan relationship text index scan for r.prop IS NOT NULL when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 500)
+      .setRelationshipCardinality("()-[:REL]->()", 500)
+      .setLabelCardinality("A", 500)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.1,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT,
+        maybeIndexCapability = Some(text_2_0)
+      )
+      .addRelationshipPropertyTypeConstraint("REL", "prop", SchemaValueType.STRING)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN *").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+      .build()
+  }
+
+  test("should plan relationship text index scan for r.prop = a.prop predicate when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 500)
+      .setRelationshipCardinality("()-[:REL]->()", 500)
+      .setLabelCardinality("A", 500)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.1,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT,
+        maybeIndexCapability = Some(text_2_0)
+      )
+      .addRelationshipPropertyTypeConstraint("REL", "prop", SchemaValueType.STRING)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop = a.prop RETURN *").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("r.prop = a.prop")
+      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+      .build()
+  }
+
+  test("should plan relationship point index scan for r.prop = a.prop predicate when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 500)
+      .setRelationshipCardinality("()-[:REL]->()", 500)
+      .setLabelCardinality("A", 500)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.1,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.POINT
+      )
+      .addRelationshipPropertyTypeConstraint("REL", "prop", SchemaValueType.POINT)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop = a.prop RETURN *").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("r.prop = a.prop")
+      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT)
+      .build()
   }
 
   test(

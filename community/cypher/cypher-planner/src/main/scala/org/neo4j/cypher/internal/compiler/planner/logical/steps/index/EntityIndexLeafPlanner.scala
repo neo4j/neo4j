@@ -61,8 +61,11 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 /**
  * Common functionality of NodeIndexLeafPlanner and RelationshipIndexLeafPlanner.
@@ -111,6 +114,31 @@ object EntityIndexLeafPlanner {
   }
 
   /**
+   * If a type constraint exists for the property of a predicate, we may sometimes also consider a scannable version of the predicate.
+   * For example, if a string type constraint exists on n.prop, then any scannable predicate on n.prop is solvable by a text index.
+   */
+  private def resolveConstraintTypes(
+    predicate: IndexCompatiblePredicate,
+    typeConstraints: Map[String, Seq[SchemaValueType]]
+  ): Seq[IndexCompatiblePredicate] = {
+    typeConstraints.get(predicate.propertyKeyName.name) match {
+      case Some(Seq(SchemaValueType.STRING)) =>
+        Seq(
+          predicate,
+          predicate.copy(cypherType = CTString),
+          predicate.convertToTextScannable.copy(cypherType = CTString)
+        )
+      case Some(Seq(SchemaValueType.POINT)) =>
+        Seq(
+          predicate,
+          predicate.copy(cypherType = CTPoint),
+          predicate.convertToPointScannable.copy(cypherType = CTPoint)
+        )
+      case _ => Seq(predicate)
+    }
+  }
+
+  /**
    * Find and group all predicates, where one PredicatesForIndex contains one predicate for each indexed property, in the right order.
    */
   private[index] def predicatesForIndex(
@@ -118,11 +146,13 @@ object EntityIndexLeafPlanner {
     predicates: Set[IndexCompatiblePredicate],
     interestingOrderConfig: InterestingOrderConfig,
     semanticTable: SemanticTable,
+    typeConstraints: Map[String, Seq[SchemaValueType]],
     providedOrderFactory: ProvidedOrderFactory
   ): Set[PredicatesForIndex] = {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
+      .flatMap(resolveConstraintTypes(_, typeConstraints))
       .filter(predicate => predicate.indexRequirements.forall(req => req.satisfiedBy(indexDescriptor, predicate)))
       .groupBy(icp => semanticTable.id(icp.propertyKeyName))
       // Sort out predicates that are not found in semantic table
@@ -246,9 +276,10 @@ object EntityIndexLeafPlanner {
     }
 
     private def convertToTextScannablePredicate(expr: Expression): Expression = {
-      val original = unwrapPartial(expr)
-      val isStringProperty = IsStringProperty(property)(predicate.position)
-      PartialPredicate(isStringProperty, original)
+      unwrapPartial(expr) match {
+        case AsExplicitlyPropertyScannable(scannable) if cypherType == CTString => scannable.expr
+        case expr => PartialPredicate(IsStringProperty(property)(predicate.position), expr)
+      }
     }
 
     def convertToPointScannable: IndexCompatiblePredicate = {
@@ -264,9 +295,10 @@ object EntityIndexLeafPlanner {
     }
 
     private def convertToPointScannablePredicate(expr: Expression): Expression = {
-      val original = unwrapPartial(expr)
-      val isPointProperty = IsPointProperty(property)(predicate.position)
-      PartialPredicate(isPointProperty, original)
+      unwrapPartial(expr) match {
+        case AsExplicitlyPropertyScannable(scannable) if cypherType == CTPoint => scannable.expr
+        case expr => PartialPredicate(IsPointProperty(property)(predicate.position), expr)
+      }
     }
 
     private def unwrapPartial(expr: Expression) = expr match {

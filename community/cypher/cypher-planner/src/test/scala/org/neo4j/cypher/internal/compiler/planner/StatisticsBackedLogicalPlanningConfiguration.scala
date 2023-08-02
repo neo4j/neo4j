@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition.EntityType
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Indexes
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.PropertyTypeDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
@@ -85,6 +86,7 @@ import org.neo4j.internal.schema.IndexType.LOOKUP
 import org.neo4j.internal.schema.IndexType.POINT
 import org.neo4j.internal.schema.IndexType.RANGE
 import org.neo4j.internal.schema.IndexType.TEXT
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 trait StatisticsBackedLogicalPlanningSupport {
 
@@ -218,6 +220,12 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
 
   case class ExistenceConstraintDefinition(entityType: IndexDefinition.EntityType, propertyKey: String)
 
+  case class PropertyTypeDefinition(
+    entityType: IndexDefinition.EntityType,
+    propertyKey: String,
+    propertyType: SchemaValueType
+  )
+
   def getProvidesOrder(indexType: IndexType): IndexOrderCapability = indexType match {
     case FULLTEXT => IndexOrderCapability.NONE
     case LOOKUP   => IndexOrderCapability.BOTH
@@ -247,7 +255,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
   cardinalities: Cardinalities = Cardinalities(),
   tokens: TokenContainer = TokenContainer(),
   indexes: Indexes = Indexes(),
-  constraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
+  existenceConstraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
+  propertyTypeConstraints: Seq[PropertyTypeDefinition] = Seq.empty,
   procedures: Set[ProcedureSignature] = Set.empty,
   settings: Map[Setting[_], AnyRef] = Map.empty
 ) {
@@ -432,7 +441,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     val constraintDef = ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(label), property)
 
     addLabel(label).addProperty(property).copy(
-      constraints = constraints :+ constraintDef
+      existenceConstraints = existenceConstraints :+ constraintDef
     )
   }
 
@@ -443,7 +452,31 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     val constraintDef = ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(relType), property)
 
     addRelType(relType).addProperty(property).copy(
-      constraints = constraints :+ constraintDef
+      existenceConstraints = existenceConstraints :+ constraintDef
+    )
+  }
+
+  def addNodePropertyTypeConstraint(
+    label: String,
+    property: String,
+    propertyType: SchemaValueType
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    val constraintDef = PropertyTypeDefinition(IndexDefinition.EntityType.Node(label), property, propertyType)
+
+    addLabel(label).addProperty(property).copy(
+      propertyTypeConstraints = propertyTypeConstraints :+ constraintDef
+    )
+  }
+
+  def addRelationshipPropertyTypeConstraint(
+    relType: String,
+    property: String,
+    propertyType: SchemaValueType
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    val constraintDef = PropertyTypeDefinition(IndexDefinition.EntityType.Relationship(relType), property, propertyType)
+
+    addRelType(relType).addProperty(property).copy(
+      propertyTypeConstraints = propertyTypeConstraints :+ constraintDef
     )
   }
 
@@ -736,37 +769,78 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       override def relationshipTokenIndex: Option[TokenIndexDescriptor] = indexes.relationshipLookupIndex
 
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
-        constraints.collect {
+        existenceConstraints.collect {
           case ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(`labelName`), property) => property
         }.toSet
       }
 
       override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
-        constraints.exists {
+        existenceConstraints.exists {
           case ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(`labelName`), `propertyKey`) => true
           case _                                                                                          => false
         }
       }
 
       override def getRelationshipPropertiesWithExistenceConstraint(relTypeName: String): Set[String] = {
-        constraints.collect {
+        existenceConstraints.collect {
           case ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(`relTypeName`), property) =>
             property
         }.toSet
       }
 
       override def getPropertiesWithExistenceConstraint: Set[String] = {
-        constraints.collect {
+        existenceConstraints.collect {
           case ExistenceConstraintDefinition(_, property) => property
         }.toSet
       }
 
       override def hasRelationshipPropertyExistenceConstraint(relTypeName: String, propertyKey: String): Boolean = {
-        constraints.exists {
+        existenceConstraints.exists {
           case ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(`relTypeName`), `propertyKey`) =>
             true
           case _ => false
         }
+      }
+
+      override def hasNodePropertyTypeConstraint(
+        labelName: String,
+        propertyKey: String,
+        cypherType: SchemaValueType
+      ): Boolean = {
+        propertyTypeConstraints.exists {
+          case PropertyTypeDefinition(IndexDefinition.EntityType.Node(`labelName`), `propertyKey`, `cypherType`) => true
+          case _ => false
+        }
+      }
+
+      override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = {
+        propertyTypeConstraints.collect {
+          case PropertyTypeDefinition(IndexDefinition.EntityType.Node(`labelName`), property, cypherType) =>
+            property -> Seq(cypherType)
+        }.toMap
+      }
+
+      override def hasRelationshipPropertyTypeConstraint(
+        relTypeName: String,
+        propertyKey: String,
+        cypherType: SchemaValueType
+      ): Boolean = {
+        propertyTypeConstraints.exists {
+          case PropertyTypeDefinition(
+              IndexDefinition.EntityType.Relationship(`relTypeName`),
+              `propertyKey`,
+              `cypherType`
+            ) => true
+          case _ => false
+        }
+      }
+
+      override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String)
+        : Map[String, Seq[SchemaValueType]] = {
+        propertyTypeConstraints.collect {
+          case PropertyTypeDefinition(IndexDefinition.EntityType.Relationship(`relTypeName`), property, cypherType) =>
+            property -> Seq(cypherType)
+        }.toMap
       }
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = {

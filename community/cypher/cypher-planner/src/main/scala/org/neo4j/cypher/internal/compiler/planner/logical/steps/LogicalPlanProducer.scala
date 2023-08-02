@@ -343,11 +343,15 @@ case class LogicalPlanProducer(
   }
 
   def solvePredicate(plan: LogicalPlan, solvedExpression: Expression): LogicalPlan = {
+    solvePredicates(plan, Set(solvedExpression))
+  }
+
+  def solvePredicates(plan: LogicalPlan, solvedExpressions: Set[Expression]): LogicalPlan = {
     // Keep other attributes but change solved
     val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders, labelAndRelTypeInfos)
     val newPlan = plan.copyPlanWithIdGen(keptAttributes.copy(plan.id))
     val solvedPlannerQuery =
-      solveds.get(plan.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(solvedExpression))
+      solveds.get(plan.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(solvedExpressions.toSeq: _*))
     solveds.set(newPlan.id, solvedPlannerQuery)
     newPlan
   }

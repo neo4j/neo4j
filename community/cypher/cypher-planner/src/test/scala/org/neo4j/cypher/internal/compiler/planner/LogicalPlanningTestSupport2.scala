@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.scalatestplus.mockito.MockitoSugar
 
 import scala.language.implicitConversions
@@ -357,6 +358,43 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
 
       override def getPropertiesWithExistenceConstraint: Set[String] = {
         config.relationshipConstraints.flatMap(_._2) ++ config.nodeConstraints.flatMap(_._2)
+      }
+
+      override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
+        getNodePropertiesWithExistenceConstraint(labelName).contains(propertyKey)
+      }
+
+      override def hasRelationshipPropertyExistenceConstraint(relTypeName: String, propertyKey: String): Boolean = {
+        getRelationshipPropertiesWithExistenceConstraint(relTypeName).contains(propertyKey)
+      }
+
+      override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = {
+        // This trait does not support adding property type constraints
+        Map.empty
+      }
+
+      override def hasNodePropertyTypeConstraint(
+        labelName: String,
+        propertyKey: String,
+        cypherType: SchemaValueType
+      ): Boolean = {
+        // This trait does not support adding property type constraints
+        false
+      }
+
+      override def getRelationshipPropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = {
+        // This trait does not support adding property type constraints
+        Map.empty
+      }
+
+      override def hasRelationshipPropertyTypeConstraint(
+        relTypeName: String,
+        propertyKey: String,
+        cypherType: SchemaValueType
+      ): Boolean = {
+
+        // This trait does not support adding property type constraints
+        false
       }
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = {

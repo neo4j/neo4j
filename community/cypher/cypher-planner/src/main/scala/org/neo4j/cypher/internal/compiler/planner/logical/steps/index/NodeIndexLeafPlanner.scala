@@ -199,6 +199,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       indexCompatiblePredicates,
       interestingOrderConfig,
       semanticTable,
+      planContext.getNodePropertiesWithTypeConstraint(labelName.name),
       providedOrderFactory
     )
     indexMatch = NodeIndexMatch(

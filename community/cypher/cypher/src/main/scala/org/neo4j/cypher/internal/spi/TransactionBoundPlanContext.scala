@@ -52,6 +52,7 @@ import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
+import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.InternalLog
 
@@ -421,6 +422,65 @@ class TransactionBoundPlanContext(
       getPropertiesFromExistenceConstraints(constraints)
     } catch {
       case _: KernelException => Set.empty
+    }
+  }
+
+  override def hasNodePropertyTypeConstraint(
+    labelName: String,
+    propertyKey: String,
+    cypherType: SchemaValueType
+  ): Boolean = {
+    getNodePropertiesWithTypeConstraint(labelName).get(propertyKey) match {
+      case Some(Seq(`cypherType`)) => true
+      case _                       => false
+    }
+  }
+
+  override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = {
+    try {
+      val labelId = getLabelId(labelName)
+
+      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabelNonLocking(labelId).asScala
+      val typeConstraints = constraints.filter(c => c.enforcesPropertyType()).map(_.asPropertyTypeConstraint())
+
+      typeConstraints.map(typeConstraint =>
+        (
+          tc.tokenRead.propertyKeyName(typeConstraint.schema().getPropertyId),
+          typeConstraint.propertyType().values().toSeq
+        )
+      ).toMap
+    } catch {
+      case _: KernelException => Map.empty
+    }
+  }
+
+  override def hasRelationshipPropertyTypeConstraint(
+    relTypeName: String,
+    propertyKey: String,
+    cypherType: SchemaValueType
+  ): Boolean = {
+    getRelationshipPropertiesWithTypeConstraint(relTypeName).get(propertyKey) match {
+      case Some(Seq(`cypherType`)) => true
+      case _                       => false
+    }
+  }
+
+  override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]] = {
+    try {
+      val relTypeId = getRelTypeId(relTypeName)
+
+      val constraints: Iterator[ConstraintDescriptor] =
+        tc.schemaRead.constraintsGetForRelationshipTypeNonLocking(relTypeId).asScala
+      val typeConstraints = constraints.filter(c => c.enforcesPropertyType()).map(_.asPropertyTypeConstraint())
+
+      typeConstraints.map(typeConstraint =>
+        (
+          tc.tokenRead.propertyKeyName(typeConstraint.schema().getPropertyId),
+          typeConstraint.propertyType().values().toSeq
+        )
+      ).toMap
+    } catch {
+      case _: KernelException => Map.empty
     }
   }
 
