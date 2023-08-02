@@ -121,6 +121,25 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(rowCount(10))
   }
 
+  test("limit on top of union of all node scans") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(10)
+      .union()
+      .|.allNodeScan("x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(10))
+  }
+
   test("should support limit") {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -183,6 +202,32 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .apply()
       .|.limit(10)
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x").withRows(singleColumn(aNodes.flatMap(n => List().padTo(10, n))))
+  }
+
+  test("should support apply-limit on top of union") {
+    // given
+    val nodesPerLabel = 100
+    val (aNodes, _) = given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(10)
+      .|.union()
+      .|.|.expandAll("(x)-->(y)")
+      .|.|.argument()
       .|.expandAll("(x)-->(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)
