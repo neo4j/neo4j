@@ -353,7 +353,7 @@ public class KernelTransactions extends LifecycleAdapter
         // if transaction has already started committing its horizon is oldestVisibleTransactionNumber which was
         // recorded at the time commit started
         var oldestVisibleTransactionNumber = versionContext.oldestVisibleTransactionNumber();
-        if (oldestVisibleTransactionNumber != BASE_TX_ID) {
+        if (oldestVisibleTransactionNumber > BASE_TX_ID) {
             return oldestVisibleTransactionNumber;
         }
         // ortherwise its horizon is the latest gap free closed transaction at the time it started
