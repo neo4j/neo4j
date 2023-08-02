@@ -22,47 +22,72 @@ import org.neo4j.cypher.internal.util.Rewritable
 
 sealed trait PrivilegeQualifier extends Rewritable {
   def simplify: Seq[PrivilegeQualifier] = Seq(this)
-
-  override def dup(children: Seq[AnyRef]): PrivilegeQualifier.this.type = this
 }
 
 // Graph qualifiers
 
-sealed trait GraphPrivilegeQualifier extends PrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): GraphPrivilegeQualifier.this.type = this
+sealed trait GraphPrivilegeQualifier extends PrivilegeQualifier
+
+final case class LabelQualifier(label: String)(val position: InputPosition) extends GraphPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): LabelQualifier.this.type = {
+    LabelQualifier(
+      children.head.asInstanceOf[String]
+    )(position).asInstanceOf[this.type]
+  }
 }
 
-final case class LabelQualifier(label: String)(val position: InputPosition) extends GraphPrivilegeQualifier
+final case class RelationshipQualifier(reltype: String)(val position: InputPosition) extends GraphPrivilegeQualifier {
 
-final case class RelationshipQualifier(reltype: String)(val position: InputPosition) extends GraphPrivilegeQualifier
+  override def dup(children: Seq[AnyRef]): RelationshipQualifier.this.type = {
+    RelationshipQualifier(
+      children.head.asInstanceOf[String]
+    )(position).asInstanceOf[this.type]
+  }
+}
 
 final case class ElementQualifier(value: String)(val position: InputPosition) extends GraphPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): ElementQualifier.this.type = {
+    ElementQualifier(
+      children.head.asInstanceOf[String]
+    )(position).asInstanceOf[this.type]
+  }
 
   override def simplify: Seq[GraphPrivilegeQualifier] =
     Seq(LabelQualifier(value)(position), RelationshipQualifier(value)(position))
 }
 
 final case class ElementsAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): ElementsAllQualifier.this.type = this
 
   override def simplify: Seq[PrivilegeQualifier] =
     Seq(LabelAllQualifier()(position), RelationshipAllQualifier()(position))
 }
 
-final case class AllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier
+final case class AllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): AllQualifier.this.type = this
+}
 
-final case class LabelAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier
+final case class LabelAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): LabelAllQualifier.this.type = this
+}
 
-final case class RelationshipAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier
+final case class RelationshipAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): RelationshipAllQualifier.this.type = this
+}
 
 // Database qualifiers
 
-sealed trait DatabasePrivilegeQualifier extends PrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): DatabasePrivilegeQualifier.this.type = this
+sealed trait DatabasePrivilegeQualifier extends PrivilegeQualifier
+
+final case class AllDatabasesQualifier()(val position: InputPosition) extends DatabasePrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): AllDatabasesQualifier.this.type = this
 }
 
-final case class AllDatabasesQualifier()(val position: InputPosition) extends DatabasePrivilegeQualifier
-
-final case class UserAllQualifier()(val position: InputPosition) extends DatabasePrivilegeQualifier
+final case class UserAllQualifier()(val position: InputPosition) extends DatabasePrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): UserAllQualifier.this.type = this
+}
 
 final case class UserQualifier(username: Either[String, Parameter])(val position: InputPosition)
     extends DatabasePrivilegeQualifier {
@@ -75,11 +100,15 @@ final case class UserQualifier(username: Either[String, Parameter])(val position
 
 sealed trait ExecutePrivilegeQualifier extends PrivilegeQualifier
 
-sealed trait ProcedurePrivilegeQualifier extends ExecutePrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): ProcedurePrivilegeQualifier.this.type = this
-}
+sealed trait ProcedurePrivilegeQualifier extends ExecutePrivilegeQualifier
 
 final case class ProcedureQualifier(glob: String)(val position: InputPosition) extends ProcedurePrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): ProcedureQualifier.this.type = {
+    ProcedureQualifier(
+      children.head.asInstanceOf[String]
+    )(position).asInstanceOf[this.type]
+  }
 
   override def simplify: Seq[ProcedurePrivilegeQualifier] = glob match {
     case "*" => Seq(ProcedureAllQualifier()(position))
@@ -87,13 +116,19 @@ final case class ProcedureQualifier(glob: String)(val position: InputPosition) e
   }
 }
 
-final case class ProcedureAllQualifier()(val position: InputPosition) extends ProcedurePrivilegeQualifier
-
-sealed trait FunctionPrivilegeQualifier extends ExecutePrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): FunctionPrivilegeQualifier.this.type = this
+final case class ProcedureAllQualifier()(val position: InputPosition) extends ProcedurePrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): ProcedureAllQualifier.this.type = this
 }
 
+sealed trait FunctionPrivilegeQualifier extends ExecutePrivilegeQualifier
+
 final case class FunctionQualifier(glob: String)(val position: InputPosition) extends FunctionPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): FunctionQualifier.this.type = {
+    FunctionQualifier(
+      children.head.asInstanceOf[String]
+    )(position).asInstanceOf[this.type]
+  }
 
   override def simplify: Seq[FunctionPrivilegeQualifier] = glob match {
     case "*" => Seq(FunctionAllQualifier()(position))
@@ -101,14 +136,20 @@ final case class FunctionQualifier(glob: String)(val position: InputPosition) ex
   }
 }
 
-final case class FunctionAllQualifier()(val position: InputPosition) extends FunctionPrivilegeQualifier
-
-sealed trait SettingPrivilegeQualifier extends PrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): SettingPrivilegeQualifier.this.type = this
+final case class FunctionAllQualifier()(val position: InputPosition) extends FunctionPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): FunctionAllQualifier.this.type = this
 }
+
+sealed trait SettingPrivilegeQualifier extends PrivilegeQualifier
 
 final case class SettingQualifier(glob: String)(val position: InputPosition)
     extends SettingPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): SettingQualifier.this.type = {
+    SettingQualifier(
+      children.head.asInstanceOf[String]
+    )(position).asInstanceOf[this.type]
+  }
 
   override def simplify: Seq[SettingPrivilegeQualifier] = glob match {
     case "*" => Seq(SettingAllQualifier()(position))
@@ -116,4 +157,6 @@ final case class SettingQualifier(glob: String)(val position: InputPosition)
   }
 }
 
-final case class SettingAllQualifier()(val position: InputPosition) extends SettingPrivilegeQualifier
+final case class SettingAllQualifier()(val position: InputPosition) extends SettingPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): SettingAllQualifier.this.type = this
+}
