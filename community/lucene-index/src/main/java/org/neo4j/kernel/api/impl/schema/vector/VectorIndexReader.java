@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
@@ -60,8 +61,21 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     @Override
     public long countIndexedEntities(
             long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
-        // TODO VECTOR: count indexed entities
-        return 0;
+        // TODO VECTOR: Currently only checks entity is in the index; it does not check the value is the same.
+        //              Investigate finding a method to extract out the value itself from the index
+        //              LeafReader::getFloatVectorValues seems promising with something like DocValuesCollector.
+        //              Otherwise, perhaps k-ANN of k=1, filter=getById, (score-1) < epsilon?
+
+        var count = 0L;
+        final var query = VectorQueryFactory.getById(entityId);
+        for (final var searcher : searchers) {
+            try {
+                count += searcher.getIndexSearcher().count(query);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return count;
     }
 
     @Override
