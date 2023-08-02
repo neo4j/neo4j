@@ -55,7 +55,8 @@ object leverageOrder {
     // When we can read variables instead of expressions in distinct, we should do that.
     // The new grouping expressions map contains aliases as values, where available.
     val newGroupingExpressionsMap = groupingExpressionsMap.map {
-      case (k, expr) => (k, aliasMap.getOrElse(expr, expr))
+      case original @ (_, _: Variable) => original
+      case (k, expr)                   => (k, aliasMap.getOrElse(expr, expr))
     }
 
     val orderToLeverage = {

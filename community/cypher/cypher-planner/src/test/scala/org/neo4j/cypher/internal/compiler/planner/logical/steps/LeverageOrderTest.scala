@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.Or
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable.SortedMap
+
 class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should leverage ASC order for exact match with grouping column") {
@@ -96,6 +98,17 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       case OrderToLeverageWithAliases(Seq(v), _) =>
         v should be theSameInstanceAs (groupingInstance)
       case order => throw new IllegalArgumentException(s"Unexpected order: $order")
+    }
+  }
+
+  test("should not rewrite grouping columns with variables as projected expressions") {
+    for (mapOrdering <- Seq(Ordering.String, Ordering.String.reverse)) {
+      val aVar = varFor("a")
+      // WITH a, a AS b, a AS c
+      val grouping = SortedMap("a" -> aVar, "b" -> aVar, "c" -> aVar)(mapOrdering)
+      val providedOrder = ProvidedOrder.asc(varFor("b"))
+      val res = leverageOrder(providedOrder, grouping, Set("a", "b", "c"))
+      res.groupingExpressionsMap shouldEqual grouping
     }
   }
 }
