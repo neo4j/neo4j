@@ -46,4 +46,9 @@ class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<MutableLo
     protected TestLayout<MutableLong, MutableLong> getLayout() {
         return layout;
     }
+
+    @Override
+    protected ValueAggregator<MutableLong> getAddingAggregator() {
+        return (value, aggregation) -> aggregation.add(value);
+    }
 }

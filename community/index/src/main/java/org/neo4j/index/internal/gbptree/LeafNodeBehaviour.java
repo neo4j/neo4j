@@ -54,6 +54,16 @@ interface LeafNodeBehaviour<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException;
 
+    int removeKeyValues(
+            PageCursor cursor,
+            int fromPosInclusive,
+            int toPosExclusive,
+            int keyCount,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException;
+
     TreeNode.ValueHolder<VALUE> valueAt(
             PageCursor cursor, TreeNode.ValueHolder<VALUE> into, int pos, CursorContext cursorContext)
             throws IOException;

@@ -168,6 +168,25 @@ abstract class TreeNode<KEY, VALUE> {
         return leaf.removeKeyValueAt(cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
     }
 
+    final int removeKeyValues(
+            PageCursor cursor,
+            int fromPosInclusive,
+            int toPosExclusive,
+            int keyCount,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        return leaf.removeKeyValues(
+                cursor,
+                fromPosInclusive,
+                toPosExclusive,
+                keyCount,
+                stableGeneration,
+                unstableGeneration,
+                cursorContext);
+    }
+
     final void removeKeyAndRightChildAt(
             PageCursor cursor,
             int keyPos,

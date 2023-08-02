@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -247,6 +248,32 @@ class WriterTest {
             MutableLong removedValue = writer.remove(new MutableLong(key));
             // then
             assertEquals(new MutableLong(value), removedValue);
+        }
+    }
+
+    @Test
+    void shouldAggregate() throws IOException {
+        // given
+        long keys = 10;
+        long value = 10;
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+            for (int i = 0; i < keys; i++) {
+                writer.put(new MutableLong(i), new MutableLong(value));
+            }
+        }
+
+        // when
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+            writer.aggregate(new MutableLong(0), new MutableLong(keys), (v, a) -> a.add(v));
+        }
+
+        // then
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(0), new MutableLong(keys), NULL_CONTEXT)) {
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.key().longValue()).isEqualTo(keys - 1);
+            assertThat(cursor.value().longValue()).isEqualTo(keys * value);
+            assertThat(cursor.next()).isFalse();
         }
     }
 }

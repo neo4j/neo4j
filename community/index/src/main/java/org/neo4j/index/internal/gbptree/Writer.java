@@ -74,4 +74,17 @@ public interface Writer<KEY, VALUE> extends Closeable {
      * @throws UncheckedIOException on index access error.
      */
     VALUE remove(KEY key);
+
+    /**
+     * Aggregates multiple values within specified range into one using provided function.
+     * Resulting value is placed as a value associated with the rightmost key in the range.
+     * All other keys whose values were aggregated are removed.
+     * @param fromInclusive lower bound of the range to aggregate (inclusive).
+     * @param toExclusive higher bound of the range to aggregate (exclusive).
+     * @param aggregator function to aggregate values
+     * @return number of modified entries:
+     *          if 0 - no changes done to the tree
+     *          positive number N means N-1 entries were removed and 1 entry has its value updated
+     */
+    int aggregate(KEY fromInclusive, KEY toExclusive, ValueAggregator<VALUE> aggregator);
 }

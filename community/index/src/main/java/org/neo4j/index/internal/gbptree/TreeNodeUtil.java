@@ -257,13 +257,37 @@ final class TreeNodeUtil {
      * Key count is NOT updated!
      *
      * @param cursor Write cursor on relevant page
-     * @param pos Logical position where slots should be inserted, pos is based on baseOffset and slotSize.
+     * @param pos Logical position where slots should be removed, pos is based on baseOffset and slotSize.
      * @param totalSlotCount How many slots there are in total. (Usually keyCount for keys and values or keyCount+1 for children).
      * @param baseOffset Offset to slot in logical position 0.
      * @param slotSize Size of one single slot.
      */
     static void removeSlotAt(PageCursor cursor, int pos, int totalSlotCount, int baseOffset, int slotSize) {
         cursor.shiftBytes(baseOffset + (pos + 1) * slotSize, (totalSlotCount - (pos + 1)) * slotSize, -slotSize);
+    }
+
+    /**
+     * Moves data from right to left to remove a slots where data that should be deleted currently sits.
+     * Key count is NOT updated!
+     *
+     * @param cursor           Write cursor on relevant page
+     * @param fromPosInclusive Logical position of the first slot to be removed, fromPosInclusive is based on baseOffset and slotSize.
+     * @param toPosExclusive   Logical position of the first slot to be kept, toPosExclusive is based on baseOffset and slotSize.
+     * @param totalSlotCount   How many slots there are in total. (Usually keyCount for keys and values or keyCount+1 for children).
+     * @param baseOffset       Offset to slot in logical position 0.
+     * @param slotSize         Size of one single slot.
+     */
+    static void removeSlotsAt(
+            PageCursor cursor,
+            int fromPosInclusive,
+            int toPosExclusive,
+            int totalSlotCount,
+            int baseOffset,
+            int slotSize) {
+        cursor.shiftBytes(
+                baseOffset + toPosExclusive * slotSize,
+                (totalSlotCount - toPosExclusive) * slotSize,
+                (fromPosInclusive - toPosExclusive) * slotSize);
     }
 
     static void writeChild(

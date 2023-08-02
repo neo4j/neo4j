@@ -77,6 +77,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     private SimpleIdProvider id;
 
     private ValueMerger<KEY, VALUE> adder;
+    private ValueAggregator<VALUE> addingAggregator;
     private InternalTreeLogic<KEY, VALUE> treeLogic;
     private VALUE dontCare;
     private StructurePropagation<KEY> structurePropagation;
@@ -114,6 +115,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 new OffloadStoreImpl<>(layout, id, pcFactory, idValidator, PAGE_SIZE);
         node = getTreeNode(PAGE_SIZE, layout, offloadStore);
         adder = getAdder();
+        addingAggregator = getAddingAggregator();
         treeLogic = new InternalTreeLogic<>(
                 id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION, DATA_LAYER_FLAG);
         dontCare = layout.newValue();
@@ -126,6 +128,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
             int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
 
     protected abstract TestLayout<KEY, VALUE> getLayout();
+
+    protected abstract ValueAggregator<VALUE> getAddingAggregator();
 
     @ParameterizedTest
     @MethodSource("generators")
@@ -1706,6 +1710,144 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                                 + ". This is most likely caused by an inconsistency " + "in the index.");
     }
 
+    /* AGGREGATE */
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanAggregateAllInEmptyLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
+            throws Exception {
+        // given
+        initialize();
+        var key = key(1L);
+        var value1 = 1L;
+        var value = value(value1);
+        insert(key, value);
+        var value2 = 2;
+        var key2 = key(2);
+        insert(key2, value(value2));
+
+        // when
+        generationManager.checkpoint();
+        // aggregate is allowed to not succeed, i.e. dynamic tree with values of different sizes can have some troubles
+        aggregate(key, key(Long.MAX_VALUE));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(1);
+        assertEqualsKey(key2, keyAt(0, LEAF));
+        assertEqualsValue(value(value1 + value2), valueAt(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanAggregateAllInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
+            throws Exception {
+        // given
+        initialize();
+        int keyCount = 0;
+        KEY key = key(keyCount);
+        VALUE value = value(keyCount);
+        while (node.leafOverflow(cursor, keyCount, key, value) == NO) {
+            insert(key, value);
+
+            keyCount++;
+            key = key(keyCount);
+            value = value(keyCount);
+        }
+
+        // when
+        generationManager.checkpoint();
+        aggregate(key(0), key(Long.MAX_VALUE));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(1);
+        assertEqualsKey(key(keyCount - 1), keyAt(0, LEAF));
+        assertEqualsValue(value((long) (keyCount - 1) * (keyCount) / 2), valueAt(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanAggregateInMiddleInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
+            throws Exception {
+        initialize();
+        int maxKeyCount = 0;
+        KEY key = key(maxKeyCount);
+        VALUE value = value(maxKeyCount);
+        while (node.leafOverflow(cursor, maxKeyCount, key, value) == NO) {
+            insert(key, value);
+
+            maxKeyCount++;
+            key = key(maxKeyCount);
+            value = value(maxKeyCount);
+        }
+        int middle = maxKeyCount / 2;
+
+        // when
+        generationManager.checkpoint();
+        aggregate(key(middle - 1), key(middle + 2));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(maxKeyCount - 2);
+        assertEqualsKey(key(middle + 1L), keyAt(middle - 1, LEAF));
+        assertEqualsValue(value(3L * middle), valueAt(middle - 1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanAggregateLastInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
+            throws Exception {
+        initialize();
+        int maxKeyCount = 0;
+        KEY key = key(maxKeyCount);
+        VALUE value = value(maxKeyCount);
+        while (node.leafOverflow(cursor, maxKeyCount, key, value) == NO) {
+            insert(key, value);
+
+            maxKeyCount++;
+            key = key(maxKeyCount);
+            value = value(maxKeyCount);
+        }
+
+        // when
+        generationManager.checkpoint();
+        aggregate(key(maxKeyCount - 3), key(maxKeyCount));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(maxKeyCount - 2);
+        assertEqualsKey(key(maxKeyCount - 1), keyAt(maxKeyCount - 3, LEAF));
+        assertEqualsValue(value(3L * maxKeyCount - 6), valueAt(maxKeyCount - 3));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerMustNotAggregateWhenRangeCoversNothing(
+            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
+        initialize();
+        int maxKeyCount = 0;
+        KEY key = key(maxKeyCount);
+        VALUE value = value(maxKeyCount);
+        while (node.leafOverflow(cursor, maxKeyCount, key, value) == NO) {
+            insert(key, value);
+
+            maxKeyCount++;
+            key = key(maxKeyCount);
+            value = value(maxKeyCount);
+        }
+
+        // when
+        generationManager.checkpoint();
+        aggregate(key(maxKeyCount), key(Long.MAX_VALUE));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(maxKeyCount);
+        for (int i = 0; i < maxKeyCount; i++) {
+            assertEqualsKey(keyAt(i, LEAF), key(i));
+        }
+    }
+
     private long setTypeInvalidOnLeftChildOfRoot(PageCursor cursor) throws IOException {
         root.goTo(cursor);
         long leftChild = childAt(cursor, 0, stableGeneration, unstableGeneration);
@@ -2045,6 +2187,19 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 structurePropagation,
                 key,
                 new TreeNode.ValueHolder<>(into),
+                stableGeneration,
+                unstableGeneration,
+                NULL_CONTEXT);
+        handleAfterChange();
+    }
+
+    private void aggregate(KEY from, KEY to) throws IOException {
+        treeLogic.aggregate(
+                cursor,
+                structurePropagation,
+                from,
+                to,
+                addingAggregator,
                 stableGeneration,
                 unstableGeneration,
                 NULL_CONTEXT);

@@ -30,6 +30,7 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.OptionalInt;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -330,6 +331,55 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
 
         checkOutOfBounds(cursor);
         return result == InternalTreeLogic.RemoveResult.REMOVED && removedValue.defined ? removedValue.value : null;
+    }
+
+    @Override
+    public int aggregate(K fromInclusive, K toExclusive, ValueAggregator<V> aggregator) {
+        OptionalInt result;
+        try {
+            coordination.beginOperation();
+            if (!goToRoot()
+                    || (result = treeLogic.aggregate(
+                                    cursor,
+                                    structurePropagation,
+                                    fromInclusive,
+                                    toExclusive,
+                                    aggregator,
+                                    stableGeneration,
+                                    unstableGeneration,
+                                    cursorContext))
+                            .isEmpty()) {
+                coordination.flipToPessimisticMode();
+                assert structurePropagation.isEmpty();
+                treeLogic.reset();
+                if (!goToRoot()
+                        || (result = treeLogic.aggregate(
+                                        cursor,
+                                        structurePropagation,
+                                        fromInclusive,
+                                        toExclusive,
+                                        aggregator,
+                                        stableGeneration,
+                                        unstableGeneration,
+                                        cursorContext))
+                                .isEmpty()) {
+                    throw appendTreeInformation(new TreeInconsistencyException(
+                            "Unable to aggregate keys from:%s to:%s in pessimistic mode", fromInclusive, toExclusive));
+                }
+            }
+
+            handleStructureChanges(cursorContext);
+        } catch (IOException e) {
+            exceptionMessageAppender.accept(e);
+            throw new UncheckedIOException(e);
+        } catch (Throwable t) {
+            exceptionMessageAppender.accept(t);
+            throw t;
+        } finally {
+            checkForceReset();
+        }
+        checkOutOfBounds(cursor);
+        return result.orElse(0);
     }
 
     private void checkForceReset() {

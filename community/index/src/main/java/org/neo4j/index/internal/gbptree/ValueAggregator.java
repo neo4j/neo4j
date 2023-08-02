@@ -19,10 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public abstract class TestLayout<KEY, VALUE> extends Layout.Adapter<KEY, VALUE> implements KeyValueSeeder<KEY, VALUE> {
-    protected TestLayout(boolean fixedSize, long identifier, int majorVersion, int minorVersion) {
-        super(fixedSize, identifier, majorVersion, minorVersion);
-    }
-
-    abstract int compareValue(VALUE v1, VALUE v2);
+@FunctionalInterface
+public interface ValueAggregator<VALUE> {
+    /**
+     * Aggregate {@param value} into {@param aggregation}.
+     * Implementations should be aware that aggregation value can already be a result of previous aggregation operations,
+     * so it should be additive.
+     *
+     * @param value value
+     * @param aggregation result
+     */
+    void aggregate(VALUE value, VALUE aggregation);
 }

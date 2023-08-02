@@ -27,4 +27,20 @@ class GBPTreeParallelWritesDynamicSizeIT extends GBPTreeParallelWritesIT<RawByte
         return new SimpleByteArrayLayout(
                 DynamicSizeUtil.keyValueSizeCapFromPageSize(payloadSize) / 2, random.intBetween(0, 10));
     }
+
+    @Override
+    protected ValueAggregator<RawBytes> getAddingAggregator() {
+        return this::add;
+    }
+
+    @Override
+    protected RawBytes sumValues(RawBytes value1, RawBytes value2) {
+        long seed1 = layout.keySeed(value1);
+        long seed2 = layout.keySeed(value2);
+        return layout.value(seed1 + seed2);
+    }
+
+    private void add(RawBytes add, RawBytes base) {
+        base.copyFrom(sumValues(add, base));
+    }
 }

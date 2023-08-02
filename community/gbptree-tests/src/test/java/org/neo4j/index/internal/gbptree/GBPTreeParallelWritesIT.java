@@ -29,6 +29,7 @@ import static org.neo4j.test.utils.PageCacheConfig.config;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -72,12 +73,17 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
 
     private DefaultPageCacheTracer pageCacheTracer;
     private PageCache pageCache;
+    protected TestLayout<KEY, VALUE> layout;
+    private ImmutableSet<OpenOption> openOptions;
 
     @BeforeEach
     void start() {
         pageCacheTracer = new DefaultPageCacheTracer();
         pageCache = PageCacheSupportExtension.getPageCache(
                 fileSystem, config().withPageSize(256).withAccessChecks(true).withTracer(pageCacheTracer));
+
+        openOptions = getOpenOptions();
+        layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
     }
 
     @AfterEach
@@ -87,6 +93,10 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
 
     abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int payloadSize);
 
+    abstract ValueAggregator<VALUE> getAddingAggregator();
+
+    protected abstract VALUE sumValues(VALUE value1, VALUE value2);
+
     ImmutableSet<OpenOption> getOpenOptions() {
         return Sets.immutable.empty();
     }
@@ -94,17 +104,15 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     @Test
     void shouldDoRandomWritesInParallel() throws IOException {
         // given
-        var openOptions = getOpenOptions();
-
-        var layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
+        var addingAggregator = getAddingAggregator();
         try (var index = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout)
                 .with(pageCacheTracer)
                 .with(openOptions)
                 .build()) {
             var threads = Runtime.getRuntime().availableProcessors();
-            MutableLongObjectMap<Pair<KEY, VALUE>>[] dataPerThread = new MutableLongObjectMap[threads];
+            TreeMap<Long, Pair<KEY, VALUE>>[] dataPerThread = new TreeMap[threads];
             for (int i = 0; i < threads; i++) {
-                dataPerThread[i] = LongObjectMaps.mutable.empty();
+                dataPerThread[i] = new TreeMap<>();
             }
 
             // when
@@ -130,6 +138,32 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                                             var value = layout.value(entrySeed);
                                             writer.put(key, value);
                                             data.put(entrySeed, Pair.of(key, value));
+                                        } else if (v < 0.9) {
+                                            // try to aggregate
+                                            var entry0 = data.get(entrySeed);
+                                            if (entry0 != null) {
+                                                var entry1 = data.ceilingEntry(entrySeed);
+                                                if (entry1 != null) {
+                                                    var entry2 = data.ceilingKey(entry1.getKey());
+                                                    if (entry2 == null) {
+                                                        entry2 = Long.MAX_VALUE;
+                                                    }
+                                                    var modified =
+                                                            writer.aggregate(key, layout.key(entry2), addingAggregator);
+                                                    if (modified == 2) {
+                                                        data.remove(entrySeed);
+                                                        data.put(
+                                                                entry1.getKey(),
+                                                                Pair.of(
+                                                                        entry1.getValue()
+                                                                                .getKey(),
+                                                                        sumValues(
+                                                                                entry0.getValue(),
+                                                                                entry1.getValue()
+                                                                                        .getValue())));
+                                                    }
+                                                }
+                                            }
                                         } else {
                                             // remove
                                             writer.remove(key);
@@ -147,7 +181,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
             // then
             MutableLongObjectMap<Pair<KEY, VALUE>> combined = LongObjectMaps.mutable.empty();
             for (var data : dataPerThread) {
-                data.forEachKeyValue(
+                data.forEach(
                         (key, value) -> assertThat(combined.put(key, value)).isNull());
             }
             try (var seek = allEntriesSeek(index, layout)) {

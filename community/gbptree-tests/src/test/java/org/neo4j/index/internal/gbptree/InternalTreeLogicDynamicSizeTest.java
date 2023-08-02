@@ -32,10 +32,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     @Override
     protected ValueMerger<RawBytes, RawBytes> getAdder() {
         return (existingKey, newKey, base, add) -> {
-            long baseSeed = layout.keySeed(base);
-            long addSeed = layout.keySeed(add);
-            RawBytes merged = layout.value(baseSeed + addSeed);
-            base.copyFrom(merged);
+            add(add, base);
             return ValueMerger.MergeResult.MERGED;
         };
     }
@@ -49,6 +46,18 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     @Override
     protected TestLayout<RawBytes, RawBytes> getLayout() {
         return new SimpleByteArrayLayout();
+    }
+
+    @Override
+    protected ValueAggregator<RawBytes> getAddingAggregator() {
+        return this::add;
+    }
+
+    private void add(RawBytes add, RawBytes base) {
+        long baseSeed = layout.keySeed(base);
+        long addSeed = layout.keySeed(add);
+        RawBytes merged = layout.value(baseSeed + addSeed);
+        base.copyFrom(merged);
     }
 
     @Test

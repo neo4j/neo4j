@@ -32,4 +32,20 @@ public class GBPTreeDynamicSizeIT extends GBPTreeITBase<RawBytes, RawBytes> {
     Class<RawBytes> getKeyClass() {
         return RawBytes.class;
     }
+
+    @Override
+    protected ValueAggregator<RawBytes> getAddingAggregator() {
+        return this::add;
+    }
+
+    @Override
+    protected RawBytes sumValues(RawBytes value1, RawBytes value2) {
+        long seed1 = layout.keySeed(value1);
+        long seed2 = layout.keySeed(value2);
+        return layout.value(seed1 + seed2);
+    }
+
+    private void add(RawBytes add, RawBytes base) {
+        base.copyFrom(sumValues(add, base));
+    }
 }

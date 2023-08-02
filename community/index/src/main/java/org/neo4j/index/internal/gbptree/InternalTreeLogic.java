@@ -41,6 +41,7 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.OptionalInt;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
@@ -1708,6 +1709,123 @@ class InternalTreeLogic<KEY, VALUE> {
         idProvider.releaseId(stableGeneration, unstableGeneration, oldId, bind(cursor));
     }
 
+    /**
+     * Returns {@link OptionalInt#empty()} if failed due to lock coordination.
+     */
+    OptionalInt aggregate(
+            PageCursor cursor,
+            StructurePropagation<KEY> structurePropagation,
+            KEY fromInclusive,
+            KEY toExclusive,
+            ValueAggregator<VALUE> aggregator,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        assert cursorIsAtExpectedLocation(cursor);
+        if (!moveToCorrectLeaf(cursor, fromInclusive, stableGeneration, unstableGeneration, cursorContext)) {
+            return OptionalInt.empty();
+        }
+
+        var result = aggregateInLeaf(
+                cursor,
+                structurePropagation,
+                fromInclusive,
+                toExclusive,
+                aggregator,
+                stableGeneration,
+                unstableGeneration,
+                cursorContext);
+        if (result.isPresent()) {
+            handleStructureChanges(cursor, structurePropagation, stableGeneration, unstableGeneration, cursorContext);
+            if (currentLevel <= 0) {
+                tryShrinkTree(cursor, structurePropagation, stableGeneration, unstableGeneration);
+            }
+        }
+        return result;
+    }
+
+    private OptionalInt aggregateInLeaf(
+            PageCursor cursor,
+            StructurePropagation<KEY> structurePropagation,
+            KEY fromInclusive,
+            KEY toExclusive,
+            ValueAggregator<VALUE> aggregator,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        int keyCount = keyCount(cursor);
+        int search = KeySearch.searchLeaf(cursor, bTreeNode, fromInclusive, readKey, keyCount, cursorContext);
+        int fromPos = positionOf(search);
+        int pos = fromPos;
+        // collect all matching values
+        var aggregatedValue = layout.newValue();
+        var key = layout.newKey();
+        var value = new TreeNode.ValueHolder<>(layout.newValue());
+        int totalSpaceBefore = 0;
+        while (pos < keyCount) {
+            bTreeNode.keyValueAt(cursor, key, value, pos, cursorContext);
+            if (layout.compare(key, toExclusive) < 0) {
+                totalSpaceBefore += bTreeNode.totalSpaceOfKeyValue(key, value.value);
+                aggregator.aggregate(value.value, aggregatedValue);
+            } else {
+                break;
+            }
+            pos++;
+        }
+        var itemsToAggregate = pos - fromPos;
+        if (itemsToAggregate <= 1) {
+            // found one or fewer values to aggregate, do nothing
+            return OptionalInt.of(0);
+        }
+
+        int totalSpaceAfter = bTreeNode.totalSpaceOfKeyValue(
+                bTreeNode.keyAtLeaf(cursor, key, pos - 1, cursorContext), aggregatedValue);
+        int shrinkSize = totalSpaceBefore - totalSpaceAfter;
+        if (!coordination.beforeRemovalFromLeaf(shrinkSize)) {
+            return OptionalInt.empty();
+        }
+
+        createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
+        // set aggregated value at the last used element
+        int newKeyCount = keyCount;
+        if (!bTreeNode.setValueAt(
+                cursor, aggregatedValue, pos - 1, cursorContext, stableGeneration, unstableGeneration)) {
+            // unsuccesfull, remove everything then insert new key-value
+            newKeyCount = bTreeNode.removeKeyValues(
+                    cursor, fromPos, pos, newKeyCount, stableGeneration, unstableGeneration, cursorContext);
+            // set keycount otherwise possible defragmentation will not be pleased
+            TreeNodeUtil.setKeyCount(cursor, newKeyCount);
+            InsertResult result = doInsertInLeaf(
+                    cursor,
+                    structurePropagation,
+                    key,
+                    aggregatedValue,
+                    fromPos,
+                    newKeyCount,
+                    stableGeneration,
+                    unstableGeneration,
+                    cursorContext);
+            if (result == InsertResult.SPLIT_FAIL) {
+                return OptionalInt.empty();
+            }
+            newKeyCount++;
+        } else {
+            // remove everything else
+            newKeyCount = bTreeNode.removeKeyValues(
+                    cursor, fromPos, pos - 1, newKeyCount, stableGeneration, unstableGeneration, cursorContext);
+        }
+        TreeNodeUtil.setKeyCount(cursor, newKeyCount);
+        if (bTreeNode.leafUnderflow(cursor, newKeyCount)) {
+            underflowInLeaf(
+                    cursor, structurePropagation, newKeyCount, stableGeneration, unstableGeneration, cursorContext);
+        } else {
+            coordination.updateChildInformation(bTreeNode.availableSpace(cursor, newKeyCount, false), newKeyCount);
+        }
+        return OptionalInt.of(itemsToAggregate);
+    }
+
     private static <KEY, VALUE> void checkChildPointer(
             long childPointer,
             PageCursor cursor,
@@ -1763,12 +1881,12 @@ class InternalTreeLogic<KEY, VALUE> {
     private enum InsertResult {
         NO_SPLIT,
         SPLIT,
-        SPLIT_FAIL;
+        SPLIT_FAIL
     }
 
     enum RemoveResult {
         NOT_FOUND,
         REMOVED,
-        FAIL;
+        FAIL
     }
 }

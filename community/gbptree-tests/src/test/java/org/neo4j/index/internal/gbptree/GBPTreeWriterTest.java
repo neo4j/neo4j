@@ -172,6 +172,30 @@ class GBPTreeWriterTest {
     }
 
     @Test
+    void trackPageCacheAccessOnAggregate() throws IOException {
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var cursorContext = contextFactory.create("trackPageCacheAccessOnRemove");
+
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build()) {
+            try (var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, NULL_CONTEXT)) {
+                treeWriter.put(new MutableLong(0), new MutableLong(1));
+                treeWriter.put(new MutableLong(1), new MutableLong(2));
+                treeWriter.put(new MutableLong(2), new MutableLong(3));
+                treeWriter.put(new MutableLong(3), new MutableLong(4));
+            }
+            try (var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
+                treeWriter.aggregate(new MutableLong(0), new MutableLong(Long.MAX_VALUE), (v, a) -> a.add(v));
+            }
+        }
+
+        var cursorTracer = cursorContext.getCursorTracer();
+        assertThat(cursorTracer.pins()).isEqualTo(2);
+        assertThat(cursorTracer.unpins()).isEqualTo(2);
+        assertThat(cursorTracer.hits()).isEqualTo(2);
+        assertThat(cursorTracer.faults()).isZero();
+    }
+
+    @Test
     void trackPageCacheAccessOnRemoveWhenNothingToRemove() throws IOException {
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         var cursorContext = contextFactory.create("trackPageCacheAccessOnRemoveWhenNothingToRemove");
