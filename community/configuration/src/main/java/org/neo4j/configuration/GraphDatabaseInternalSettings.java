@@ -1124,6 +1124,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.query_router.new_stack", BOOL, false).build();
 
     @Internal
+    @Description("A feature toggle to enable respecting routing policies in server-side routing")
+    public static final Setting<Boolean> query_router_respect_policies = newBuilder(
+                    "internal.dbms.query_router.respect_policies", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Set to `true` to enable internal error tracing (Currently only Block format).")
     public static final Setting<Boolean> trace_internal_transaction_errors = newBuilder(
                     "internal.db.transaction.trace_internal_errors", BOOL, false)
