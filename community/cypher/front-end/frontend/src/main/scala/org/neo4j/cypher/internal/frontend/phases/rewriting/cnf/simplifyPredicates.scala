@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
+import org.neo4j.cypher.internal.ast.IsNotTyped
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Ands
@@ -24,9 +26,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
-import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.True

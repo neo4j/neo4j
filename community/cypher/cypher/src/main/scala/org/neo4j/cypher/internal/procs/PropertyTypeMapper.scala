@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.expressions.BooleanTypeName
-import org.neo4j.cypher.internal.expressions.CypherTypeName
-import org.neo4j.cypher.internal.expressions.DateTypeName
-import org.neo4j.cypher.internal.expressions.DurationTypeName
-import org.neo4j.cypher.internal.expressions.FloatTypeName
-import org.neo4j.cypher.internal.expressions.IntegerTypeName
-import org.neo4j.cypher.internal.expressions.ListTypeName
-import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
-import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
-import org.neo4j.cypher.internal.expressions.PointTypeName
-import org.neo4j.cypher.internal.expressions.StringTypeName
-import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
-import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
+import org.neo4j.cypher.internal.ast.BooleanTypeName
+import org.neo4j.cypher.internal.ast.CypherTypeName
+import org.neo4j.cypher.internal.ast.DateTypeName
+import org.neo4j.cypher.internal.ast.DurationTypeName
+import org.neo4j.cypher.internal.ast.FloatTypeName
+import org.neo4j.cypher.internal.ast.IntegerTypeName
+import org.neo4j.cypher.internal.ast.ListTypeName
+import org.neo4j.cypher.internal.ast.LocalDateTimeTypeName
+import org.neo4j.cypher.internal.ast.LocalTimeTypeName
+import org.neo4j.cypher.internal.ast.PointTypeName
+import org.neo4j.cypher.internal.ast.StringTypeName
+import org.neo4j.cypher.internal.ast.ZonedDateTimeTypeName
+import org.neo4j.cypher.internal.ast.ZonedTimeTypeName
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.internal.schema.constraints.SchemaValueType.BOOLEAN
 import org.neo4j.internal.schema.constraints.SchemaValueType.DATE

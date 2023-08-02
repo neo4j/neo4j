@@ -20,27 +20,14 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
-import org.neo4j.cypher.internal.expressions.BooleanTypeName
-import org.neo4j.cypher.internal.expressions.CypherTypeName
-import org.neo4j.cypher.internal.expressions.DateTypeName
-import org.neo4j.cypher.internal.expressions.DurationTypeName
-import org.neo4j.cypher.internal.expressions.FloatTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.ListTypeName
-import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
-import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.PointTypeName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
-import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.InputPosition
@@ -471,32 +458,32 @@ trait CreateConstraint extends SchemaCommand {
   }
 
   private val allowedPropertyTypes = List(
-    BooleanTypeName(isNullable = true),
-    StringTypeName(isNullable = true),
-    IntegerTypeName(isNullable = true),
-    FloatTypeName(isNullable = true),
-    DateTypeName(isNullable = true),
-    LocalTimeTypeName(isNullable = true),
-    ZonedTimeTypeName(isNullable = true),
-    LocalDateTimeTypeName(isNullable = true),
-    ZonedDateTimeTypeName(isNullable = true),
-    DurationTypeName(isNullable = true),
-    PointTypeName(isNullable = true),
-    ListTypeName(BooleanTypeName(isNullable = false), isNullable = true),
-    ListTypeName(StringTypeName(isNullable = false), isNullable = true),
-    ListTypeName(IntegerTypeName(isNullable = false), isNullable = true),
-    ListTypeName(FloatTypeName(isNullable = false), isNullable = true),
-    ListTypeName(DateTypeName(isNullable = false), isNullable = true),
-    ListTypeName(LocalTimeTypeName(isNullable = false), isNullable = true),
-    ListTypeName(ZonedTimeTypeName(isNullable = false), isNullable = true),
-    ListTypeName(LocalDateTimeTypeName(isNullable = false), isNullable = true),
-    ListTypeName(ZonedDateTimeTypeName(isNullable = false), isNullable = true),
-    ListTypeName(DurationTypeName(isNullable = false), isNullable = true),
-    ListTypeName(PointTypeName(isNullable = false), isNullable = true)
+    BooleanTypeName(isNullable = true)(InputPosition.NONE),
+    StringTypeName(isNullable = true)(InputPosition.NONE),
+    IntegerTypeName(isNullable = true)(InputPosition.NONE),
+    FloatTypeName(isNullable = true)(InputPosition.NONE),
+    DateTypeName(isNullable = true)(InputPosition.NONE),
+    LocalTimeTypeName(isNullable = true)(InputPosition.NONE),
+    ZonedTimeTypeName(isNullable = true)(InputPosition.NONE),
+    LocalDateTimeTypeName(isNullable = true)(InputPosition.NONE),
+    ZonedDateTimeTypeName(isNullable = true)(InputPosition.NONE),
+    DurationTypeName(isNullable = true)(InputPosition.NONE),
+    PointTypeName(isNullable = true)(InputPosition.NONE),
+    ListTypeName(BooleanTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(StringTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(IntegerTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(FloatTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(DateTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(LocalTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(ZonedTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(LocalDateTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(ZonedDateTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(DurationTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListTypeName(PointTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
   )
 
   protected def checkPropertyType(entityTypeString: String, propertyType: CypherTypeName): SemanticCheck =
-    if (!allowedPropertyTypes.contains(propertyType)) {
+    if (!allowedPropertyTypes.contains(propertyType.withPosition(InputPosition.NONE))) {
       val additionalErrorInfo = propertyType match {
         case ListTypeName(_: ListTypeName, _) =>
           " Lists cannot have lists as an inner type."

@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
@@ -100,6 +101,7 @@ import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.CurrentUser
+import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
@@ -153,11 +155,14 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.IsNotTyped
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
+import org.neo4j.cypher.internal.ast.ListTypeName
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.Match
@@ -344,7 +349,6 @@ import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
-import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
@@ -366,9 +370,7 @@ import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
-import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
@@ -377,7 +379,6 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
-import org.neo4j.cypher.internal.expressions.ListTypeName
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -1658,40 +1659,58 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield _type
 
   private val allCypherTypeNamesFromReflection: Set[CypherTypeName] = {
-    val reflections = new Reflections("org.neo4j.cypher.internal.expressions")
+    val reflections = new Reflections("org.neo4j.cypher.internal.ast")
     val innerTypes = reflections.getSubTypesOf[CypherTypeName](classOf[CypherTypeName]).asScala.toSet
       .flatMap((cls: Class[_ <: CypherTypeName]) => {
         try {
           // NOTHING, NULL
-          Set(cls.getDeclaredConstructor().newInstance())
+          val constructor = cls.getDeclaredConstructor(classOf[InputPosition])
+          Set(constructor.newInstance(pos))
         } catch {
           case _: NoSuchMethodException =>
             try {
               // List<...>
               // Gets handled separately afterwords
-              cls.getDeclaredConstructor(classOf[CypherTypeName], classOf[Boolean])
+              cls.getDeclaredConstructor(classOf[CypherTypeName], classOf[Boolean], classOf[InputPosition])
               Set()
             } catch {
               case _: NoSuchMethodException =>
                 // remaining types
-                val constructor = cls.getDeclaredConstructor(classOf[Boolean])
-                Set(constructor.newInstance(true), constructor.newInstance(false))
+                try {
+                  val constructor = cls.getDeclaredConstructor(classOf[Boolean], classOf[InputPosition])
+                  Set(constructor.newInstance(true, pos), constructor.newInstance(false, pos))
+                } catch {
+                  // Closed Dynamic Unions, we will handle after
+                  case _: NoSuchMethodException => Set()
+                }
             }
         }
       })
     val listTypes = innerTypes.flatMap(inner => {
       Set(
-        ListTypeName(inner, isNullable = true),
-        ListTypeName(inner, isNullable = false)
+        ListTypeName(inner, isNullable = true)(pos),
+        ListTypeName(inner, isNullable = false)(pos)
       )
     })
     val nestedListTypes = listTypes.flatMap(inner => {
       Set(
-        ListTypeName(inner, isNullable = true),
-        ListTypeName(inner, isNullable = false)
+        ListTypeName(inner, isNullable = true)(pos),
+        ListTypeName(inner, isNullable = false)(pos)
       )
     })
-    innerTypes ++ listTypes ++ nestedListTypes
+
+    // Don't use all list types as it adds too many types to test
+    val unionTypesWith2Types = innerTypes.flatMap(inner1 => {
+      (innerTypes ++ listTypes.take(5)).flatMap(inner2 => {
+        Set(
+          ClosedDynamicUnionTypeName(Set(inner1, inner2))(pos).simplify
+        )
+      })
+    })
+
+    val allTypes = innerTypes ++ listTypes ++ nestedListTypes ++ unionTypesWith2Types
+    // Normalize to avoid duplicate types
+    allTypes.map(CypherTypeName.normalizeTypes)
   }
 
   def _createIndex: Gen[CreateIndex] = for {

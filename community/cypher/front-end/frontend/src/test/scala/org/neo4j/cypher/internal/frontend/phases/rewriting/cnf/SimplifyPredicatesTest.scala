@@ -16,28 +16,28 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
+import org.neo4j.cypher.internal.ast.BooleanTypeName
+import org.neo4j.cypher.internal.ast.IntegerTypeName
+import org.neo4j.cypher.internal.ast.IsTyped
+import org.neo4j.cypher.internal.ast.StringTypeName
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
-import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.GreaterThan
-import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
-import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.BooleanTypeName
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -36,16 +37,20 @@ import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.DurationTypeName
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.FloatTypeName
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.IntegerTypeName
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.LocalTimeTypeName
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamespacedName
@@ -89,26 +94,22 @@ import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.WriteAction
+import org.neo4j.cypher.internal.ast.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
-import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CachedProperty
-import org.neo4j.cypher.internal.expressions.DurationTypeName
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.expressions.FloatTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
-import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.ListLiteral
-import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -126,7 +127,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Point
@@ -3323,7 +3323,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodePropertyType(IntegerTypeName(true)),
+          NodePropertyType(IntegerTypeName(isNullable = true)(pos)),
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3344,7 +3344,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodePropertyType(BooleanTypeName(true)),
+          NodePropertyType(BooleanTypeName(isNullable = true)(pos)),
           label("Label"),
           Seq(prop("x", "prop")),
           Some("constraintName"),
@@ -3367,11 +3367,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             label("Label"),
             Seq(prop(" x", "prop")),
-            NodePropertyType(ZonedDateTimeTypeName(true)),
+            NodePropertyType(ZonedDateTimeTypeName(isNullable = true)(pos)),
             None,
             NoOptions
           )),
-          NodePropertyType(ZonedDateTimeTypeName(true)),
+          NodePropertyType(ZonedDateTimeTypeName(isNullable = true)(pos)),
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3402,7 +3402,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipPropertyType(FloatTypeName(true)),
+          RelationshipPropertyType(FloatTypeName(isNullable = true)(pos)),
           relType("R"),
           Seq(prop(" x", "prop")),
           None,
@@ -3423,7 +3423,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipPropertyType(LocalTimeTypeName(true)),
+          RelationshipPropertyType(LocalTimeTypeName(isNullable = true)(pos)),
           relType("R"),
           Seq(prop(" x", "prop")),
           Some("constraintName"),
@@ -3446,11 +3446,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             relType("R"),
             Seq(prop(" x", "prop")),
-            RelationshipPropertyType(DurationTypeName(true)),
+            RelationshipPropertyType(DurationTypeName(isNullable = true)(pos)),
             None,
             NoOptions
           )),
-          RelationshipPropertyType(DurationTypeName(true)),
+          RelationshipPropertyType(DurationTypeName(isNullable = true)(pos)),
           relType("R"),
           Seq(prop(" x", "prop")),
           None,

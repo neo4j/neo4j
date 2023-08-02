@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.ast.prettifier
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.IsNotTyped
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -54,10 +56,8 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
-import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension

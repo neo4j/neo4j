@@ -34,6 +34,7 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.asList;
+import static scala.jdk.javaapi.CollectionConverters.asJava;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -44,16 +45,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
-import org.neo4j.cypher.internal.expressions.AnyTypeName;
-import org.neo4j.cypher.internal.expressions.CypherTypeName;
-import org.neo4j.cypher.internal.expressions.ListTypeName;
-import org.neo4j.cypher.internal.expressions.MapTypeName;
-import org.neo4j.cypher.internal.expressions.NodeTypeName;
-import org.neo4j.cypher.internal.expressions.NothingTypeName;
-import org.neo4j.cypher.internal.expressions.NullTypeName;
-import org.neo4j.cypher.internal.expressions.PathTypeName;
-import org.neo4j.cypher.internal.expressions.PropertyValueTypeName;
-import org.neo4j.cypher.internal.expressions.RelationshipTypeName;
+import org.neo4j.cypher.internal.ast.AnyTypeName;
+import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName;
+import org.neo4j.cypher.internal.ast.CypherTypeName;
+import org.neo4j.cypher.internal.ast.ListTypeName;
+import org.neo4j.cypher.internal.ast.MapTypeName;
+import org.neo4j.cypher.internal.ast.NodeTypeName;
+import org.neo4j.cypher.internal.ast.NothingTypeName;
+import org.neo4j.cypher.internal.ast.NullTypeName;
+import org.neo4j.cypher.internal.ast.PathTypeName;
+import org.neo4j.cypher.internal.ast.PropertyValueTypeName;
+import org.neo4j.cypher.internal.ast.RelationshipTypeName;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.exceptions.CypherTypeException;
@@ -1607,6 +1609,14 @@ public final class CypherFunctions {
                     || (item instanceof ListValue listValue
                             && (listValue.isEmpty()
                                     || hasPropertyValueRepresentation(listValue.itemValueRepresentation())));
+        } else if (typeName instanceof ClosedDynamicUnionTypeName unionTypeName) {
+            result = false;
+            for (CypherTypeName innerType : asJava(unionTypeName.innerTypes())) {
+                if (isTyped(item, innerType) == TRUE) {
+                    result = true;
+                    break;
+                }
+            }
         } else {
             throw new IllegalArgumentException(String.format("Unexpected type: %s", typeName.typeName()));
         }

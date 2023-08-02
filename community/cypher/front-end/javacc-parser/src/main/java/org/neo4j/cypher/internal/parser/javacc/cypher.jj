@@ -4764,55 +4764,100 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
     }
 }
 
-ParserCypherTypeName cypherTypeName():
+ParserCypherTypeName cypherTypeName() throws Exception:
 {
-    ParserCypherTypeName typeName = null;
-    ParserCypherTypeName innerType = null;
+    Token t = null;
+    List<ParserCypherTypeName> list = new ArrayList<>();
 }
 {
-    (
-        <NOTHING> { typeName = ParserCypherTypeName.NOTHING; }
-        | <NULL> { typeName = ParserCypherTypeName.NULL; }
-        | (<BOOLEAN> | <BOOL>) { typeName = ParserCypherTypeName.BOOLEAN; }
-        | (<STRING> | <VARCHAR>) { typeName = ParserCypherTypeName.STRING; }
-        | (<INT> | (<SIGNED>)? <INTEGER>) { typeName = ParserCypherTypeName.INTEGER; }
-        | <FLOAT> { typeName = ParserCypherTypeName.FLOAT; }
-        | <DATE> { typeName = ParserCypherTypeName.DATE; }
-        | <LOCAL> (
-            <TIME> { typeName = ParserCypherTypeName.LOCAL_TIME; }
-            | <DATETIME> { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
-        )
-        | <ZONED> (
-            <TIME> { typeName = ParserCypherTypeName.ZONED_TIME; }
-            | <DATETIME> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
-        )
-        | <TIME> (
-            <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_TIME; }
-            | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_TIME; }
-        )
-        | <TIMESTAMP> (
-            <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
-            | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
-        )
-        | <DURATION> { typeName = ParserCypherTypeName.DURATION; }
-        | <POINT> { typeName = ParserCypherTypeName.POINT; }
-        | (<NODE> | <VERTEX>) { typeName = ParserCypherTypeName.NODE; }
-        | (<RELATIONSHIP> | <EDGE>){ typeName = ParserCypherTypeName.RELATIONSHIP; }
-        | <MAP> { typeName = ParserCypherTypeName.MAP; }
-        | (<LIST> | <ARRAY>) <LT> innerType=cypherTypeName() <GT> { typeName = ParserCypherTypeName.listOf(innerType); }
-        | <PATH> { typeName = ParserCypherTypeName.PATH; }
-        | <PROPERTY> <VALUE> { typeName = ParserCypherTypeName.PROPERTY_VALUE; }
-        | LOOKAHEAD(2) <ANY> (
-            (<NODE> | <VERTEX>) { typeName = ParserCypherTypeName.NODE; }
-            | (<RELATIONSHIP> | <EDGE>) { typeName = ParserCypherTypeName.RELATIONSHIP; }
-            | <MAP> { typeName = ParserCypherTypeName.MAP; }
-            | <PROPERTY> <VALUE> { typeName = ParserCypherTypeName.PROPERTY_VALUE; }
-        )
-        | <ANY> (<VALUE>)? { typeName = ParserCypherTypeName.ANY; }
-    ) ( <NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); } )?
-    ((<LIST> | <ARRAY>) { typeName = ParserCypherTypeName.listOf(typeName); } (<NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); })? )*
+    { t = token; }
+    list = cypherTypeNameList()
     {
-        return typeName;
+        if ( list.size() ==  1)
+        {
+            return list.get(0);
+        }
+        else
+        {
+             t = t.next;
+            return ParserCypherTypeName.closedDynamicUnionOf(list).withPos(t.beginOffset, t.beginLine, t.beginColumn);
+        }
+    }
+}
+
+List<ParserCypherTypeName> cypherTypeNameList() throws Exception:
+{
+    ParserCypherTypeName typeName;
+    List<ParserCypherTypeName> list = new ArrayList<>();
+}
+{
+    typeName=cypherTypeNamePart() { list.add( typeName ); }
+    ( LOOKAHEAD(2) <BAR> typeName=cypherTypeNamePart() { list.add( typeName ); } )*
+    {
+        return list;
+    }
+}
+
+ParserCypherTypeName cypherTypeNamePart() throws Exception:
+{
+    Token t = null;
+    ParserCypherTypeName typeName = null;
+    ParserCypherTypeName innerType = null;
+    List<ParserCypherTypeName> unionTypeList = null;
+}
+{
+    { t = token; }
+    try {
+        (
+            <NOTHING> { typeName = ParserCypherTypeName.NOTHING; }
+            | <NULL> { typeName = ParserCypherTypeName.NULL; }
+            | (<BOOLEAN> | <BOOL>) { typeName = ParserCypherTypeName.BOOLEAN; }
+            | (<STRING> | <VARCHAR>) { typeName = ParserCypherTypeName.STRING; }
+            | (<INT> | (<SIGNED>)? <INTEGER>) { typeName = ParserCypherTypeName.INTEGER; }
+            | <FLOAT> { typeName = ParserCypherTypeName.FLOAT; }
+            | <DATE> { typeName = ParserCypherTypeName.DATE; }
+            | <LOCAL> (
+                <TIME> { typeName = ParserCypherTypeName.LOCAL_TIME; }
+                | <DATETIME> { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
+            )
+            | <ZONED> (
+                <TIME> { typeName = ParserCypherTypeName.ZONED_TIME; }
+                | <DATETIME> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
+            )
+            | <TIME> (
+                <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_TIME; }
+                | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_TIME; }
+            )
+            | <TIMESTAMP> (
+                <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
+                | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
+            )
+            | <DURATION> { typeName = ParserCypherTypeName.DURATION; }
+            | <POINT> { typeName = ParserCypherTypeName.POINT; }
+            | (<NODE> | <VERTEX>) { typeName = ParserCypherTypeName.NODE; }
+            | (<RELATIONSHIP> | <EDGE>){ typeName = ParserCypherTypeName.RELATIONSHIP; }
+            | <MAP> { typeName = ParserCypherTypeName.MAP; }
+            | (<LIST> | <ARRAY>) <LT> innerType=cypherTypeName() <GT> { typeName = ParserCypherTypeName.listOf(innerType); }
+            | <PATH> { typeName = ParserCypherTypeName.PATH; }
+            | <PROPERTY> <VALUE> { typeName = ParserCypherTypeName.PROPERTY_VALUE; }
+            | <ANY> (
+                (<NODE> | <VERTEX>) { typeName = ParserCypherTypeName.NODE; }
+                | (<RELATIONSHIP> | <EDGE>) { typeName = ParserCypherTypeName.RELATIONSHIP; }
+                | <MAP> { typeName = ParserCypherTypeName.MAP; }
+                | <PROPERTY> <VALUE> { typeName = ParserCypherTypeName.PROPERTY_VALUE; }
+                | LOOKAHEAD(2) (<VALUE>)? <LT> unionTypeList=cypherTypeNameList() <GT> { typeName = ParserCypherTypeName.closedDynamicUnionOf(unionTypeList); }
+                | (<VALUE>)? { typeName = ParserCypherTypeName.ANY; }
+            )
+        ) ( <NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); } )?
+        ((<LIST> | <ARRAY>) { typeName = ParserCypherTypeName.listOf(typeName); } (<NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); })? )*
+    } catch (IllegalArgumentException e) {
+        // This is thrown if the getNotNullTypeName errors, it will error on Open Dynamic Union Types.
+        t = t.next;
+        throw exceptionFactory.syntaxException(e, t.beginOffset, t.beginLine, t.beginColumn);
+    }
+    {
+        t = t.next;
+        return typeName.withPos(t.beginOffset, t.beginLine, t.beginColumn);
     }
 }
 

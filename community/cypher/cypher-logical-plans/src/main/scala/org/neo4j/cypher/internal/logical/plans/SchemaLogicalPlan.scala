@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.Options
-import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable

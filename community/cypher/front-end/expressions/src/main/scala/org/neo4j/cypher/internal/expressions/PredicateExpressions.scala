@@ -252,28 +252,6 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Boole
   override def canonicalOperatorSymbol = "IS NOT NULL"
 }
 
-case class IsTyped(lhs: Expression, typeName: CypherTypeName)(val position: InputPosition)
-    extends BooleanExpression
-    with RightUnaryOperatorExpression {
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
-  )
-
-  override def canonicalOperatorSymbol = "IS ::"
-}
-
-case class IsNotTyped(lhs: Expression, typeName: CypherTypeName)(val position: InputPosition)
-    extends BooleanExpression
-    with RightUnaryOperatorExpression {
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
-  )
-
-  override def canonicalOperatorSymbol = "IS NOT ::"
-}
-
 object InequalityExpression {
   def unapply(arg: InequalityExpression): Option[(Expression, Expression)] = Some((arg.lhs, arg.rhs))
 }

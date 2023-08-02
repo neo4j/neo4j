@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.IsNotTyped
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PropertyResource
@@ -37,8 +39,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FilteringExpression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
-import org.neo4j.cypher.internal.expressions.IsNotTyped
-import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListComprehension

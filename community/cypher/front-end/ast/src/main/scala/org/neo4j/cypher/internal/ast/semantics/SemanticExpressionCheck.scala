@@ -18,7 +18,10 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.IsNotTyped
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -63,9 +66,7 @@ import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
-import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.LabelCheckExpression
 import org.neo4j.cypher.internal.expressions.LabelOrTypeCheckExpression
@@ -282,11 +283,19 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x: IsTyped =>
         check(ctx, x.arguments) chain
-          checkTypes(x, x.signatures)
+          x.typeName.semanticCheck chain
+          checkTypes(x, x.signatures) chain {
+            x.copy(typeName = CypherTypeName.normalizeTypes(x.typeName))(x.position)
+            SemanticCheck.success
+          }
 
       case x: IsNotTyped =>
         check(ctx, x.arguments) chain
-          checkTypes(x, x.signatures)
+          x.typeName.semanticCheck chain
+          checkTypes(x, x.signatures) chain {
+            x.copy(typeName = CypherTypeName.normalizeTypes(x.typeName))(x.position)
+            SemanticCheck.success
+          }
 
       case x: LessThan =>
         check(ctx, x.arguments) chain checkTypes(x, x.signatures)

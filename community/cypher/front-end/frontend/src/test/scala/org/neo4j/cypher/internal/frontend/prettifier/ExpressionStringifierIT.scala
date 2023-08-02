@@ -99,7 +99,10 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "1 is typed ANY PROPERTY VALUE" -> "1 IS :: PROPERTY VALUE",
       "1 is typed ANY VALUE" -> "1 IS :: ANY",
       "1 :: LIST < INT   >" -> "1 IS :: LIST<INTEGER>",
-      "1 :: ARRAY <  VARcHAr  >" -> "1 IS :: LIST<STRING>"
+      "1 :: ARRAY <  VARcHAr  >" -> "1 IS :: LIST<STRING>",
+      "1 :: any value    <  int    | bool   | bool  >" -> "1 IS :: BOOLEAN | INTEGER",
+      "1 :: any     <  int    | bool   | bool  >" -> "1 IS :: BOOLEAN | INTEGER",
+      "1 ::  int    | bool   | bool  " -> "1 IS :: BOOLEAN | INTEGER"
     )
 
   tests foreach {

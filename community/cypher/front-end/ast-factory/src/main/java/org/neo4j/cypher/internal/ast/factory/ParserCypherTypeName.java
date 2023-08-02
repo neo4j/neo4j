@@ -19,8 +19,21 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
+import java.util.List;
+
 public class ParserCypherTypeName {
     private final String typeName;
+
+    private Integer offset;
+    private Integer line;
+    private Integer column;
+
+    public ParserCypherTypeName withPos(Integer offset, Integer line, Integer column) {
+        this.offset = offset;
+        this.line = line;
+        this.column = column;
+        return this;
+    }
 
     public static final ParserCypherTypeName NOTHING = new ParserCypherTypeName("NOTHING");
     public static final ParserCypherTypeName NULL = new ParserCypherTypeName("NULL");
@@ -70,6 +83,10 @@ public class ParserCypherTypeName {
         return new ListParserCypherTypeName(inner, true);
     }
 
+    public static ParserCypherTypeName closedDynamicUnionOf(List<ParserCypherTypeName> unionTypes) {
+        return new ClosedDynamicUnionParserCypherTypeName(unionTypes);
+    }
+
     public static ParserCypherTypeName listOfNotNull(ParserCypherTypeName inner) {
         return new ListParserCypherTypeName(inner, false);
     }
@@ -109,7 +126,7 @@ public class ParserCypherTypeName {
             return RELATIONSHIP_NOT_NULL;
         } else if (parserCypherTypeName.equals(MAP)) {
             return MAP_NOT_NULL;
-        } else if (parserCypherTypeName.getClass() == ListParserCypherTypeName.class) {
+        } else if (parserCypherTypeName instanceof ListParserCypherTypeName) {
             return listOfNotNull(((ListParserCypherTypeName) parserCypherTypeName).innerType);
         } else if (parserCypherTypeName.equals(PATH)) {
             return PATH_NOT_NULL;
@@ -117,8 +134,23 @@ public class ParserCypherTypeName {
             return ANY_NOT_NULL;
         } else if (parserCypherTypeName.equals(PROPERTY_VALUE)) {
             return PROPERTY_VALUE_NOT_NULL;
+        } else if (parserCypherTypeName instanceof ClosedDynamicUnionParserCypherTypeName) {
+            throw new IllegalArgumentException(
+                    "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead.");
         }
         throw new IllegalArgumentException(String.format("Unexpected type: %s", parserCypherTypeName.typeName));
+    }
+
+    public Integer getOffset() {
+        return offset;
+    }
+
+    public Integer getLine() {
+        return line;
+    }
+
+    public Integer getColumn() {
+        return column;
     }
 
     public static class ListParserCypherTypeName extends ParserCypherTypeName {
@@ -137,6 +169,21 @@ public class ParserCypherTypeName {
 
         public boolean isNullable() {
             return isNullable;
+        }
+    }
+
+    public static class ClosedDynamicUnionParserCypherTypeName extends ParserCypherTypeName {
+        final List<ParserCypherTypeName> unionTypes;
+
+        ClosedDynamicUnionParserCypherTypeName(List<ParserCypherTypeName> unionTypes) {
+            super(String.join(
+                    " | ",
+                    unionTypes.stream().map(ParserCypherTypeName::description).toList()));
+            this.unionTypes = unionTypes;
+        }
+
+        public List<ParserCypherTypeName> getUnionTypes() {
+            return unionTypes;
         }
     }
 }
