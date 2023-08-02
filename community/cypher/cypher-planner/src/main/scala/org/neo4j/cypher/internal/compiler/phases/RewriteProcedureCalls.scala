@@ -32,8 +32,11 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
@@ -46,11 +49,14 @@ import scala.util.Try
 trait RewriteProcedureCalls {
 
   def process(from: BaseState, resolver: ProcedureSignatureResolver): BaseState = {
-    val rewrittenStatement = from.statement().endoRewrite(rewriter(resolver))
+    val instrumentedResolver = new InstrumentedProcedureSignatureResolver(resolver)
+    val rewrittenStatement = from.statement().endoRewrite(rewriter(instrumentedResolver))
+
     from.withStatement(rewrittenStatement)
       // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
       // so now we can assign them in the state.
       .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
+      .withProcedureSignatureVersion(instrumentedResolver.signatureVersionIfResolved)
   }
 
   def rewriter(resolver: ProcedureSignatureResolver): Rewriter =
@@ -164,4 +170,24 @@ case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver)
   }
 
   val rewriter: Rewriter = rewriter(resolver)
+}
+
+class InstrumentedProcedureSignatureResolver(resolver: ProcedureSignatureResolver)
+    extends ProcedureSignatureResolver {
+  private var hasAttemptedToResolve = false
+
+  def procedureSignature(name: QualifiedName): ProcedureSignature = {
+    hasAttemptedToResolve = true
+    resolver.procedureSignature(name)
+  }
+
+  def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
+    hasAttemptedToResolve = true
+    resolver.functionSignature(name)
+  }
+
+  def signatureVersionIfResolved: Option[Long] =
+    if (hasAttemptedToResolve) Some(resolver.procedureSignatureVersion) else None
+
+  override def procedureSignatureVersion: Long = resolver.procedureSignatureVersion
 }

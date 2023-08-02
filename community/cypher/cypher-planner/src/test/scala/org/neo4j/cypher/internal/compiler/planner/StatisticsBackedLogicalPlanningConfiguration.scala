@@ -750,6 +750,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.POINT)
       }
 
+      override def procedureSignatureVersion: Long = -1
+
       private def indexesGetForEntityAndIndexType(
         entityType: IndexDefinition.EntityType,
         indexType: graphdb.schema.IndexType

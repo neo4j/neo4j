@@ -47,23 +47,37 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](
     transactionalContext: TransactionalContext,
     cachedExecutableQuery: EXECUTABLE_QUERY
   ): Staleness = {
+
     val reusability = reusabilityInfo(cachedExecutableQuery, transactionalContext)
     reusability match {
       case MaybeReusable(ref) =>
         val ktx = transactionalContext.kernelTransaction()
-        staleness(ref, TransactionBoundGraphStatistics(ktx.dataRead, ktx.schemaRead, log))
+        staleness(
+          ref,
+          TransactionBoundGraphStatistics(ktx.dataRead, ktx.schemaRead, log),
+          ktx.procedures.signatureVersion
+        )
 
       case FineToReuse    => NotStale
       case NeedsReplan(x) => Stale(x, None)
     }
   }
 
-  private[internal] def staleness(ref: PlanFingerprintReference, statistics: => GraphStatistics): Staleness = {
+  private[internal] def staleness(
+    ref: PlanFingerprintReference,
+    statistics: => GraphStatistics,
+    txnProcedureSignatureVersion: Long
+  ): Staleness = {
     val f = ref.fingerprint
     lazy val currentTimeMillis = clock.millis()
     lazy val lastCommittedTxId = lastCommittedTxIdProvider()
+    lazy val secondsSincePlan = ((currentTimeMillis - f.creationTimeMillis) / 1000).toInt
 
-    if (
+    if (f.procedureSignatureVersion.exists(_ != txnProcedureSignatureVersion)) {
+      // If we have resolved a procedure, we need to verify that it was resolved
+      // with the same signatureVersion as the current transaction uses.
+      Stale(secondsSincePlan, Some("Procedure or function signature have been modified"))
+    } else if (
       divergenceCalculator.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
       lastCommittedTxId != f.lastCommittedTxId
     ) {
@@ -72,7 +86,7 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](
       val divergence = f.snapshot.diverges(f.snapshot.recompute(statistics))
       if (divergence.divergence > threshold) {
         Stale(
-          ((currentTimeMillis - f.creationTimeMillis) / 1000).toInt,
+          secondsSincePlan,
           Option(s"${divergence.key} changed from ${divergence.before} to ${divergence.after}, " +
             s"which is a divergence of ${divergence.divergence} which is greater than " +
             s"threshold $threshold")

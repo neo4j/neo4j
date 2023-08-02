@@ -73,7 +73,8 @@ trait ProcedureSignatureResolverTestSupport {
 
   case class TestProcedureSignatureResolver(
     procedures: Seq[procedure.CallableProcedure],
-    functions: Seq[procedure.CallableUserFunction]
+    functions: Seq[procedure.CallableUserFunction],
+    procedureSignatureVersion: Long = -1
   ) extends ProcedureSignatureResolver {
 
     private val procSignatures = procedures.zipWithIndex.map { case (procedure, i) =>

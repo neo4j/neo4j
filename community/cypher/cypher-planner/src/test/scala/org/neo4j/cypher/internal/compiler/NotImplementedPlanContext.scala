@@ -151,4 +151,6 @@ class NotImplementedPlanContext extends PlanContext {
     labelName: String,
     propertyKeys: Seq[String]
   ): Option[IndexDescriptor] = ???
+
+  override def procedureSignatureVersion: Long = ???
 }

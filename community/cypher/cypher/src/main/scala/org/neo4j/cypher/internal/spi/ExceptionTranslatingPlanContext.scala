@@ -204,4 +204,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
       tokenNameLookup,
       inner.hasRelationshipPropertyTypeConstraint(relTypeName, propertyKey, cypherType)
     )
+
+  override def procedureSignatureVersion: Long = translateException(tokenNameLookup, inner.procedureSignatureVersion)
 }

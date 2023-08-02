@@ -69,7 +69,8 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class SignatureResolver(
   getProc: Function[procs.QualifiedName, procs.ProcedureHandle],
-  getFunc: Function[procs.QualifiedName, procs.UserFunctionHandle]
+  getFunc: Function[procs.QualifiedName, procs.UserFunctionHandle],
+  override val procedureSignatureVersion: Long
 ) extends ProcedureSignatureResolver {
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
@@ -84,12 +85,14 @@ class SignatureResolver(
 
 object SignatureResolver {
 
-  def from(procedures: Procedures) = new SignatureResolver(procedures.procedureGet, procedures.functionGet);
+  def from(procedures: Procedures) =
+    new SignatureResolver(procedures.procedureGet, procedures.functionGet, procedures.signatureVersion());
 
   // Note: Typically the signature resolver should be derived from a transaction bound Procedures object.
   // In some testing situations this can be troublesome to reach, and thus we provide this escape hatch.
   @VisibleForTesting
-  def from(procedureView: ProcedureView) = new SignatureResolver(procedureView.procedure, procedureView.function)
+  def from(procedureView: ProcedureView) =
+    new SignatureResolver(procedureView.procedure, procedureView.function, procedureView.signatureVersion())
 
   def toCypherProcedure(handle: ProcedureHandle): ProcedureSignature = {
     val signature = handle.signature()

@@ -48,6 +48,7 @@ case class LogicalPlanState(
   plannerName: PlannerName,
   planningAttributes: PlanningAttributes,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  maybeProcedureSignatureVersion: Option[Long] = None,
   maybeStatement: Option[Statement] = None,
   maybeSemantics: Option[SemanticState] = None,
   maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]] = None,
@@ -94,6 +95,9 @@ case class LogicalPlanState(
 
   def withNewPlanningAttributes(attributes: PlanningAttributes): LogicalPlanState =
     copy(planningAttributes = attributes)
+
+  override def withProcedureSignatureVersion(generation: Option[Long]): LogicalPlanState =
+    copy(maybeProcedureSignatureVersion = generation)
 }
 
 object LogicalPlanState {
@@ -104,6 +108,7 @@ object LogicalPlanState {
       startPosition = state.startPosition,
       plannerName = state.plannerName,
       planningAttributes = PlanningAttributes.newAttributes,
+      maybeProcedureSignatureVersion = state.maybeProcedureSignatureVersion,
       maybeStatement = state.maybeStatement,
       maybeSemantics = state.maybeSemantics,
       maybeExtractedParams = state.maybeExtractedParams,

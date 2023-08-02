@@ -254,6 +254,8 @@ class CypherPlannerTest extends CypherFunSuite {
         Some(TokenIndexDescriptor(common.EntityType.NODE, IndexOrderCapability.BOTH))
       override def lastCommittedTxIdProvider: () => Long = getTx
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
+
+      override def procedureSignatureVersion: Long = -1
     }
 
     CypherPlanner.customPlanContextCreator = Some((_, _, _) => planContext)

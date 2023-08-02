@@ -19,10 +19,18 @@
  */
 package org.neo4j.cypher.internal.cache
 
+import org.neo4j.collection.RawIterator
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.ExecutionEngineTestSupport
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.util.CountingCacheTracer
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.kernel.api.ResourceMonitor
+import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.procedure.Context
+import org.neo4j.values.AnyValue
 
 class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
 
@@ -168,4 +176,36 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     stats.executionPlanCacheEntries().shouldEqual(2)
 
   }
+
+  test("should evict executable query after procedures signature change") {
+    val tracer = CypherQueryCaches.ExecutableQueryCache.addMonitorListener(
+      kernelMonitors,
+      new CountingCacheTracer[CypherQueryCaches.ExecutableQueryCache.Key]
+    )
+
+    val originalProcedure = registerProcedure("my.proc") { builder =>
+      builder
+        .in("a", Neo4jTypes.NTAny)
+        .out("b", Neo4jTypes.NTAny)
+
+      new BasicProcedure(builder.build()) {
+        override def apply(
+          ctx: Context,
+          input: Array[AnyValue],
+          resourceMonitor: ResourceMonitor
+        ): RawIterator[Array[AnyValue], ProcedureException] = {
+          RawIterator.empty()
+        }
+      }
+    }
+
+    val originalQuery = "CALL my.proc(123)"
+    execute(originalQuery)
+    tracer.counts.evicted shouldBe 0
+
+    globalProcedures.unregister(originalProcedure.signature().name())
+    an[Exception] should be thrownBy execute(originalQuery)
+    tracer.counts.evicted shouldBe 1
+  }
+
 }

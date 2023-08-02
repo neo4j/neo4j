@@ -89,6 +89,7 @@ trait QueryGraphProducer {
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
     val procLookup: QualifiedName => ProcedureSignature = _ => signature
     val fcnLookup: QualifiedName => Option[UserFunctionSignature] = _ => None
+    val resolver = new TestSignatureResolvingPlanContext(procLookup, fcnLookup)
 
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     // if you ever want to have parameters in here, fix the map
@@ -100,12 +101,13 @@ trait QueryGraphProducer {
       IDPPlannerName,
       newStubbedPlanningAttributes,
       anonymousVariableNameGenerator,
+      Some(resolver.procedureSignatureVersion),
       Some(firstRewriteStep),
       Some(semanticState)
     )
     val context = ContextHelper.create(
       logicalPlanIdGen = idGen,
-      planContext = new TestSignatureResolvingPlanContext(procLookup, fcnLookup)
+      planContext = resolver
     )
     val output = (
       RewriteProcedureCalls andThen

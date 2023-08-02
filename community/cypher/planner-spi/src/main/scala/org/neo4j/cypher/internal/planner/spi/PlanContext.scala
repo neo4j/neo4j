@@ -193,4 +193,6 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
 trait ProcedureSignatureResolver {
   def procedureSignature(name: QualifiedName): ProcedureSignature
   def functionSignature(name: QualifiedName): Option[UserFunctionSignature]
+
+  def procedureSignatureVersion: Long
 }

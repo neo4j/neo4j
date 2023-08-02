@@ -312,6 +312,8 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         case (indexDef: IndexDef, indexAttributes: IndexAttributes) => newIndexDescriptor(indexDef, indexAttributes)
       }.toIterator
 
+      override def procedureSignatureVersion: Long = -1
+
       private def newIndexDescriptor(indexDef: IndexDef, indexAttributes: IndexAttributes) = {
         val canGetValue = if (indexAttributes.withValues) CanGetValue else DoNotGetValue
         val entityType = indexDef.entityType match {

@@ -31,6 +31,7 @@ trait BaseState {
   def queryText: String
   def startPosition: Option[InputPosition]
   def plannerName: PlannerName
+  def maybeProcedureSignatureVersion: Option[Long]
   def maybeStatement: Option[Statement]
   def maybeReturnColumns: Option[Seq[String]]
   def maybeSemantics: Option[SemanticState]
@@ -52,6 +53,7 @@ trait BaseState {
   }
 
   def withStatement(s: Statement): BaseState
+  def withProcedureSignatureVersion(signatureVersion: Option[Long]): BaseState
   def withReturnColumns(cols: Seq[String]): BaseState
   def withSemanticTable(s: SemanticTable): BaseState
   def withSemanticState(s: SemanticState): BaseState
@@ -64,6 +66,7 @@ case class InitialState(
   startPosition: Option[InputPosition],
   plannerName: PlannerName,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  maybeProcedureSignatureVersion: Option[Long] = None,
   maybeStatement: Option[Statement] = None,
   maybeSemantics: Option[SemanticState] = None,
   maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]] = None,
@@ -85,4 +88,7 @@ case class InitialState(
     copy(maybeExtractedParams = Some(p))
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): InitialState = copy(maybeObfuscationMetadata = Some(o))
+
+  override def withProcedureSignatureVersion(signatureVersion: Option[Long]): BaseState =
+    copy(maybeProcedureSignatureVersion = signatureVersion)
 }

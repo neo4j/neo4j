@@ -182,5 +182,7 @@ class CypherQueryObfuscatorFactory {
     ): Boolean = fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
+
+    override def procedureSignatureVersion: Long = -1
   }
 }

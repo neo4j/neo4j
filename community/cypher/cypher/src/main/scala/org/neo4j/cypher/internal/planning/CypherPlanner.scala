@@ -490,7 +490,12 @@ case class CypherPlanner(
         }
       case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => (FineToReuse, shouldBeCached)
       case _ =>
-        val fingerprint = PlanFingerprint.take(clock, planContext.lastCommittedTxIdProvider, planContext.statistics)
+        val fingerprint = PlanFingerprint.take(
+          clock,
+          planContext.lastCommittedTxIdProvider,
+          planContext.statistics,
+          logicalPlanState.maybeProcedureSignatureVersion
+        )
         val fingerprintReference = new PlanFingerprintReference(fingerprint)
         (MaybeReusable(fingerprintReference), shouldBeCached)
     }

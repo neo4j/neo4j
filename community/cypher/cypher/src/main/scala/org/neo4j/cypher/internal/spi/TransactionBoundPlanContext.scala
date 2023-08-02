@@ -497,4 +497,6 @@ class TransactionBoundPlanContext(
   override def notificationLogger(): InternalNotificationLogger = logger
 
   override def txStateHasChanges(): Boolean = tc.dataRead.transactionStateHasChanges()
+
+  override def procedureSignatureVersion: Long = tc.procedures.signatureVersion
 }

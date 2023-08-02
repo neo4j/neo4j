@@ -42,6 +42,7 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
 
   override def maybeReturnColumns: Option[Seq[String]] = None
 
+  override def maybeProcedureSignatureVersion: Option[Long] = None
   override def maybeSemantics = None
 
   override def maybeExtractedParams = None
@@ -52,6 +53,7 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
 
   override def accumulatedConditions = Set.empty
 
+  override def withProcedureSignatureVersion(signatureVersion: Option[Long]): BaseState = fail("not implemented")
   override def withStatement(s: ast.Statement) = copy(Some(s))
 
   override def withReturnColumns(cols: Seq[String]): BaseState = fail("not implemented")

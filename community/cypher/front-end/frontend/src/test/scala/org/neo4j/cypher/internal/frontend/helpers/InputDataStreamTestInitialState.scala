@@ -35,6 +35,7 @@ case class InputDataStreamTestInitialState(
   plannerName: PlannerName,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   initialFields: Map[String, CypherType] = Map.empty,
+  maybeProcedureSignatureVersion: Option[Long] = None,
   maybeStatement: Option[ast.Statement] = None,
   maybeSemantics: Option[SemanticState] = None,
   maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]] = None,
@@ -66,4 +67,7 @@ case class InputDataStreamTestInitialState(
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): InputDataStreamTestInitialState =
     copy(maybeObfuscationMetadata = Some(o))
+
+  override def withProcedureSignatureVersion(signatureVersion: Option[Long]): InputDataStreamTestInitialState =
+    copy(maybeProcedureSignatureVersion = signatureVersion)
 }

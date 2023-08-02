@@ -76,6 +76,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
     new ProcedureSignatureResolver {
       override def procedureSignature(name: QualifiedName): ProcedureSignature = signature
       override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = None
+      override def procedureSignatureVersion: Long = -1
     }
   }
 

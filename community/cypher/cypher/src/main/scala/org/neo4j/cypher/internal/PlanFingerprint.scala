@@ -30,12 +30,14 @@ import java.time.Clock
  * @param lastCheckTimeMillis time this fingerprint was last checked
  * @param lastCommittedTxId   highest seen committed transaction id when this fingerprint was created.
  * @param snapshot            a snapshot of the statistics used to compute the plan in a cache
+ * @param procedureSignatureVersion    the signature version that was used to resolve procedures (if any).
  */
 case class PlanFingerprint(
   creationTimeMillis: Long,
   lastCheckTimeMillis: Long,
   lastCommittedTxId: Long,
-  snapshot: GraphStatisticsSnapshot
+  snapshot: GraphStatisticsSnapshot,
+  procedureSignatureVersion: Option[Long]
 ) {
 
   if (snapshot.statsValues.isEmpty) {
@@ -45,15 +47,26 @@ case class PlanFingerprint(
 
 object PlanFingerprint {
 
-  def apply(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot): PlanFingerprint =
-    PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot)
+  def apply(
+    creationTimeMillis: Long,
+    txId: Long,
+    snapshot: GraphStatisticsSnapshot,
+    procedureSignatureVersion: Option[Long]
+  ): PlanFingerprint =
+    PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot, procedureSignatureVersion)
 
   def take(
     clock: Clock,
     lastCommittedTxIdProvider: () => Long,
-    graphStatistics: InstrumentedGraphStatistics
+    graphStatistics: InstrumentedGraphStatistics,
+    procedureSignatureVersion: Option[Long]
   ): PlanFingerprint =
-    PlanFingerprint(clock.millis(), lastCommittedTxIdProvider(), graphStatistics.snapshot.freeze)
+    PlanFingerprint(
+      clock.millis(),
+      lastCommittedTxIdProvider(),
+      graphStatistics.snapshot.freeze,
+      procedureSignatureVersion
+    )
 }
 
 class PlanFingerprintReference(var fingerprint: PlanFingerprint)

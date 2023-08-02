@@ -99,6 +99,7 @@ trait FragmentTestUtils {
       def version: String = ""
     }
     override val startPosition: Option[InputPosition] = Option.empty
+    override val maybeProcedureSignatureVersion: Option[Long] = Option.empty
     override val maybeStatement: Option[Statement] = Option.empty
     override val maybeReturnColumns: Option[Seq[String]] = Option.empty
     override val maybeSemantics: Option[SemanticState] = Option.empty
@@ -113,6 +114,7 @@ trait FragmentTestUtils {
     override def withSemanticState(s: SemanticState): BaseState = this
     override def withParams(p: Map[AutoExtractedParameter, Expression]): BaseState = this
     override def withObfuscationMetadata(o: ObfuscationMetadata): BaseState = this
+    override def withProcedureSignatureVersion(signatureVersion: Option[Long]): BaseState = this
   }
 
   implicit class FragBuilderInit(input: Fragment.Init) {
