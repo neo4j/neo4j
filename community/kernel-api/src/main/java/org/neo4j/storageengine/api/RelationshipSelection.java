@@ -50,9 +50,10 @@ public abstract class RelationshipSelection {
     public abstract boolean test(RelationshipDirection direction);
 
     /**
-     * @return the {@link Direction} of relationships in this selection.
+     * @param type relationship type to get selected {@link Direction} for.
+     * @return the {@link Direction} of relationships for the given {@code type}.
      */
-    public abstract Direction direction();
+    public abstract Direction direction(int type);
 
     /**
      * Tests whether a relationship of a certain type and direction should be part of this selection.
@@ -161,7 +162,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public Direction direction() {
+        public Direction direction(int type) {
             return direction;
         }
     }
@@ -172,11 +173,6 @@ public abstract class RelationshipSelection {
         DirectionalSingleCriterion(int type, Direction direction) {
             super(direction);
             this.type = type;
-        }
-
-        @Override
-        public boolean test(RelationshipDirection direction) {
-            return direction.matches(this.direction);
         }
 
         @Override
@@ -194,11 +190,6 @@ public abstract class RelationshipSelection {
         public int criterionType(int index) {
             assert index == 0;
             return type;
-        }
-
-        @Override
-        public Direction direction() {
-            return direction;
         }
     }
 
@@ -417,6 +408,11 @@ public abstract class RelationshipSelection {
         public RelationshipSelection reverse() {
             return new MultiDirectionalMultiType(directedTypes.reverse());
         }
+
+        @Override
+        public Direction direction(int type) {
+            return directedTypes.direction(type);
+        }
     }
 
     public static final RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection() {
@@ -431,7 +427,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public Direction direction() {
+        public Direction direction(int type) {
             return Direction.BOTH;
         }
 
@@ -495,7 +491,7 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public Direction direction() {
+        public Direction direction(int type) {
             return Direction.BOTH;
         }
 

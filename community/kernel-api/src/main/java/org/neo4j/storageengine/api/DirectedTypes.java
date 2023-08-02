@@ -36,10 +36,36 @@ public final class DirectedTypes {
      * Enum to represent whether either direction has an unspecified type
      */
     private enum DirectionCombination {
-        Neither,
-        Outgoing,
-        Incoming,
-        Both;
+        Neither(null) {
+            @Override
+            public Direction combine(Direction direction) {
+                return direction;
+            }
+        },
+        Outgoing(Direction.OUTGOING) {
+            @Override
+            public Direction combine(Direction direction) {
+                return direction == Direction.OUTGOING ? Direction.OUTGOING : Direction.BOTH;
+            }
+        },
+        Incoming(Direction.INCOMING) {
+            @Override
+            public Direction combine(Direction direction) {
+                return direction == Direction.INCOMING ? Direction.INCOMING : Direction.BOTH;
+            }
+        },
+        Both(Direction.BOTH) {
+            @Override
+            public Direction combine(Direction direction) {
+                return Direction.BOTH;
+            }
+        };
+
+        private final Direction direction;
+
+        DirectionCombination(Direction direction) {
+            this.direction = direction;
+        }
 
         public boolean matchesDirection(Direction direction) {
             return switch (this) {
@@ -94,6 +120,8 @@ public final class DirectedTypes {
                 case Both -> Both;
             };
         }
+
+        public abstract Direction combine(Direction direction);
     }
 
     private final HeapTrackingIntArrayList types;
@@ -150,6 +178,11 @@ public final class DirectedTypes {
             case Both -> Direction.BOTH;
             case Neither -> throw new IllegalStateException("This should not happen");
         };
+    }
+
+    public Direction direction(int type) {
+        int i = types.indexOf(type);
+        return i != -1 ? untyped.combine(directions.get(i)) : untyped.direction;
     }
 
     public boolean hasSomeOutgoing() {
