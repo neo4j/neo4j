@@ -27,6 +27,9 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.test.Tags.Factories.LABEL;
+import static org.neo4j.test.Tags.Factories.PROPERTY_KEY;
+import static org.neo4j.test.Tags.Factories.RELATIONSHIP_TYPE;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -37,8 +40,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,15 +58,20 @@ import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -70,7 +80,7 @@ import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -86,11 +96,14 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 class SpecialisedIndexFullCheckTest {
-    @TestDirectoryExtension
-    abstract class TestBase {
 
-        private static final String PROP1 = "key1";
-        private static final String PROP2 = "key2";
+    private static final Label INDEXED_LABEL = label("Label1");
+    private static final RelationshipType INDEXED_TYPE = withName("Type1");
+    private static final String PROP1 = "key1";
+    private static final String PROP2 = "key2";
+
+    @TestDirectoryExtension
+    abstract static class TestBase {
 
         @Inject
         private TestDirectory testDirectory;
@@ -111,20 +124,49 @@ class SpecialisedIndexFullCheckTest {
 
         abstract Object notIndexedValue();
 
+        SchemaDescriptor nodeIndexSchema(int labelId, int propKeyId) {
+            return SchemaDescriptors.forLabel(labelId, propKeyId);
+        }
+
+        IndexPrototype nodeIndex(KernelTransaction ktx, String propKey) throws KernelException {
+            final var labelId = LABEL.getId(ktx, INDEXED_LABEL);
+            final var propKeyId = PROPERTY_KEY.getId(ktx, propKey);
+            return IndexPrototype.forSchema(nodeIndexSchema(labelId, propKeyId)).withIndexType(type());
+        }
+
         void createNodeIndex(Transaction tx, String propertyKey) {
-            tx.schema()
-                    .indexFor(label("Label1"))
-                    .on(propertyKey)
-                    .withIndexType(type())
-                    .create();
+            final var ktx = ((InternalTransaction) tx).kernelTransaction();
+            try {
+                final var prototype = nodeIndex(ktx, propertyKey);
+                if (prototype != null) {
+                    ktx.schemaWrite().indexCreate(prototype);
+                }
+            } catch (KernelException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        SchemaDescriptor relIndexSchema(int relTypeId, int propKeyId) {
+            return SchemaDescriptors.forRelType(relTypeId, propKeyId);
+        }
+
+        IndexPrototype relIndex(KernelTransaction ktx, String propKey) throws KernelException {
+            final var relTypeId = RELATIONSHIP_TYPE.getId(ktx, INDEXED_TYPE);
+            final var propKeyId = PROPERTY_KEY.getId(ktx, propKey);
+            return IndexPrototype.forSchema(relIndexSchema(relTypeId, propKeyId))
+                    .withIndexType(type());
         }
 
         void createRelIndex(Transaction tx, String propertyKey) {
-            tx.schema()
-                    .indexFor(withName("Type1"))
-                    .on(propertyKey)
-                    .withIndexType(type())
-                    .create();
+            final var ktx = ((InternalTransaction) tx).kernelTransaction();
+            try {
+                final var prototype = relIndex(ktx, propertyKey);
+                if (prototype != null) {
+                    ktx.schemaWrite().indexCreate(prototype);
+                }
+            } catch (KernelException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @BeforeEach
@@ -141,7 +183,7 @@ class SpecialisedIndexFullCheckTest {
         void shouldCheckConsistencyOfAConsistentStore() throws Exception {
             ConsistencySummaryStatistics result = check();
 
-            assertTrue(result.isConsistent(), result.toString());
+            assertTrue(result.isConsistent(), result + System.lineSeparator() + logStream);
         }
 
         @ParameterizedTest
@@ -302,14 +344,14 @@ class SpecialisedIndexFullCheckTest {
 
                     // Create initial data
                     try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
-                        Node node1 = set(tx.createNode(label("Label1")), property(PROP1, indexedValue()));
+                        Node node1 = set(tx.createNode(INDEXED_LABEL), property(PROP1, indexedValue()));
                         Node node2 = set(
-                                tx.createNode(label("Label1")),
+                                tx.createNode(INDEXED_LABEL),
                                 property(PROP1, indexedValue()),
                                 property(PROP2, anotherIndexedValue()));
-                        Node node3 = set(tx.createNode(label("Label1")), property(PROP1, notIndexedValue()));
+                        Node node3 = set(tx.createNode(INDEXED_LABEL), property(PROP1, notIndexedValue()));
                         set(tx.createNode(label("AnotherLabel")), property(PROP1, indexedValue()));
-                        set(tx.createNode(label("Label1")), property("anotherProperty", indexedValue()));
+                        set(tx.createNode(INDEXED_LABEL), property("anotherProperty", indexedValue()));
                         Node node6 = tx.createNode();
 
                         indexedNodes.add(node1.getId());
@@ -318,26 +360,25 @@ class SpecialisedIndexFullCheckTest {
                         // Add another node that is indexed so our tests removing an indexed entry actually run for both
                         // IndexSizes
                         set(
-                                tx.createNode(label("Label1")),
+                                tx.createNode(INDEXED_LABEL),
                                 property(PROP1, indexedValue()),
                                 property(PROP2, anotherIndexedValue()));
 
+                        indexedRelationships.add(
+                                set(node1.createRelationshipTo(node6, INDEXED_TYPE), property(PROP1, indexedValue()))
+                                        .getId());
                         indexedRelationships.add(set(
-                                        node1.createRelationshipTo(node6, withName("Type1")),
-                                        property(PROP1, indexedValue()))
-                                .getId());
-                        indexedRelationships.add(set(
-                                        node2.createRelationshipTo(node6, withName("Type1")),
+                                        node2.createRelationshipTo(node6, INDEXED_TYPE),
                                         property(PROP1, indexedValue()),
                                         property(PROP2, anotherIndexedValue()))
                                 .getId());
-                        set(node3.createRelationshipTo(node6, withName("Type1")), property(PROP1, notIndexedValue()))
+                        set(node3.createRelationshipTo(node6, INDEXED_TYPE), property(PROP1, notIndexedValue()))
                                 .getId();
 
                         // Add another relationship that is indexed so our tests removing an indexed entry actually run
                         // for both IndexSizes
                         set(
-                                node1.createRelationshipTo(node3, withName("Type1")),
+                                node1.createRelationshipTo(node3, INDEXED_TYPE),
                                 property(PROP1, anotherIndexedValue()),
                                 property(PROP2, indexedValue()));
                         tx.commit();
@@ -353,9 +394,7 @@ class SpecialisedIndexFullCheckTest {
 
         protected long createOneNode() {
             final AtomicLong id = new AtomicLong();
-            fixture.apply(tx -> {
-                id.set(tx.createNode().getId());
-            });
+            fixture.apply(tx -> id.set(tx.createNode().getId()));
             return id.get();
         }
     }
@@ -384,8 +423,13 @@ class SpecialisedIndexFullCheckTest {
         }
     }
 
-    @Nested
-    class TextIndex extends TestBase {
+    static class TextIndexBase extends TestBase {
+
+        private final IndexProviderDescriptor descriptor;
+
+        TextIndexBase(IndexProviderDescriptor descriptor) {
+            this.descriptor = descriptor;
+        }
 
         @Override
         IndexType type() {
@@ -393,13 +437,13 @@ class SpecialisedIndexFullCheckTest {
         }
 
         @Override
-        void createNodeIndex(Transaction tx, String propertyKey) {
-            createNodeTextIndex((TransactionImpl) tx, propertyKey, TextIndexProvider.DESCRIPTOR);
+        IndexPrototype nodeIndex(KernelTransaction ktx, String propKey) throws KernelException {
+            return super.nodeIndex(ktx, propKey).withIndexProvider(descriptor);
         }
 
         @Override
-        void createRelIndex(Transaction tx, String propertyKey) {
-            createRelTextIndex((TransactionImpl) tx, propertyKey, TextIndexProvider.DESCRIPTOR);
+        IndexPrototype relIndex(KernelTransaction ktx, String propKey) throws KernelException {
+            return super.relIndex(ktx, propKey).withIndexProvider(descriptor);
         }
 
         @Override
@@ -419,73 +463,30 @@ class SpecialisedIndexFullCheckTest {
     }
 
     @Nested
-    class TrigramTextIndex extends TestBase {
-
-        @Override
-        IndexType type() {
-            return IndexType.TEXT;
-        }
-
-        @Override
-        void createNodeIndex(Transaction tx, String propertyKey) {
-            createNodeTextIndex((TransactionImpl) tx, propertyKey, TrigramIndexProvider.DESCRIPTOR);
-        }
-
-        @Override
-        void createRelIndex(Transaction tx, String propertyKey) {
-            createRelTextIndex((TransactionImpl) tx, propertyKey, TrigramIndexProvider.DESCRIPTOR);
-        }
-
-        @Override
-        Object indexedValue() {
-            return "some text";
-        }
-
-        @Override
-        Object anotherIndexedValue() {
-            return "another piece of text";
-        }
-
-        @Override
-        Object notIndexedValue() {
-            return 123;
+    class TextIndex extends TextIndexBase {
+        TextIndex() {
+            super(TextIndexProvider.DESCRIPTOR);
         }
     }
 
-    private void createRelTextIndex(TransactionImpl tx, String propertyKey, IndexProviderDescriptor descriptor) {
-        try {
-            KernelTransaction kernelTransaction = tx.kernelTransaction();
-            TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-            int type = tokenWrite.relationshipTypeGetOrCreateForName("Type1");
-            int prop = tokenWrite.propertyKeyGetOrCreateForName(propertyKey);
-
-            IndexPrototype prototype = IndexPrototype.forSchema(SchemaDescriptors.forRelType(type, prop))
-                    .withIndexType(org.neo4j.internal.schema.IndexType.TEXT)
-                    .withIndexProvider(descriptor);
-            kernelTransaction.schemaWrite().indexCreate(prototype);
-        } catch (KernelException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void createNodeTextIndex(TransactionImpl tx, String propertyKey, IndexProviderDescriptor descriptor) {
-        try {
-            KernelTransaction kernelTransaction = tx.kernelTransaction();
-            TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-            int label = tokenWrite.labelGetOrCreateForName("Label1");
-            int prop = tokenWrite.propertyKeyGetOrCreateForName(propertyKey);
-
-            IndexPrototype prototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label, prop))
-                    .withIndexType(org.neo4j.internal.schema.IndexType.TEXT)
-                    .withIndexProvider(descriptor);
-            kernelTransaction.schemaWrite().indexCreate(prototype);
-        } catch (KernelException e) {
-            throw new RuntimeException(e);
+    @Nested
+    class TrigramTextIndex extends TextIndexBase {
+        TrigramTextIndex() {
+            super(TrigramIndexProvider.DESCRIPTOR);
         }
     }
 
     @Nested
     class FullTextIndex extends TestBase {
+        @Override
+        SchemaDescriptor nodeIndexSchema(int labelId, int propKeyId) {
+            return SchemaDescriptors.fulltext(EntityType.NODE, new int[] {labelId}, new int[] {propKeyId});
+        }
+
+        @Override
+        SchemaDescriptor relIndexSchema(int relTypeId, int propKeyId) {
+            return SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, new int[] {relTypeId}, new int[] {propKeyId});
+        }
 
         @Override
         IndexType type() {
@@ -506,6 +507,67 @@ class SpecialisedIndexFullCheckTest {
         Object notIndexedValue() {
             return 123;
         }
+    }
+
+    @Nested
+    class VectorIndex extends TestBase {
+        private static final int DIMENSIONS = 100;
+        private static final VectorSimilarityFunction SIMILARITY_FUNCTION = VectorSimilarityFunction.EUCLIDEAN;
+        private static final IndexConfig CONFIG = IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(Map.of(
+                IndexSetting.vector_Dimensions(),
+                DIMENSIONS,
+                IndexSetting.vector_Similarity_Function(),
+                SIMILARITY_FUNCTION.name()));
+        private static final float[] valid1 = new float[DIMENSIONS];
+        private static final Double[] valid2 = new Double[DIMENSIONS];
+        private static final double[] invalid = new double[DIMENSIONS / 2];
+
+        static {
+            for (int i = 0; i < DIMENSIONS; i++) {
+                valid1[i] = (float) i;
+                valid2[i] = (double) (DIMENSIONS - i);
+                if (i < invalid.length) {
+                    invalid[i] = i / 2.;
+                }
+            }
+        }
+
+        @Override
+        IndexType type() {
+            return IndexType.VECTOR;
+        }
+
+        @Override
+        Object indexedValue() {
+            return valid1;
+        }
+
+        @Override
+        Object anotherIndexedValue() {
+            return valid2;
+        }
+
+        @Override
+        Object notIndexedValue() {
+            return invalid;
+        }
+
+        @Override
+        IndexPrototype nodeIndex(KernelTransaction ktx, String propKey) throws KernelException {
+            return super.nodeIndex(ktx, propKey).withIndexConfig(CONFIG);
+        }
+
+        @Override
+        IndexPrototype relIndex(KernelTransaction ktx, String propKey) {
+            // relationship vector index is unsupported
+            return null;
+        }
+
+        @Override
+        @Disabled("relationship vector index is unsupported")
+        @ParameterizedTest
+        @EnumSource(IndexSize.class)
+        void shouldReportRelationshipsThatAreNotIndexed(IndexSize indexSize) {}
     }
 
     /**
