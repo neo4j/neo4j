@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.schema.vector.VectorTestUtils;
 import org.neo4j.procedure.builtin.VectorIndexProcedures.Neighbor;
 import org.neo4j.procedure.builtin.VectorIndexProcedures.NodeRecord;
 import org.neo4j.test.RandomSupport;
@@ -191,8 +192,13 @@ class VectorIndexProceduresIT {
             }
         }
 
+        private static Iterable<List<Double>> canSetValidVector() {
+            // Euclidean is the bare minimum invariant
+            return VectorTestUtils.EUCLIDEAN_VALID_VECTORS_FROM_DOUBLE_LIST;
+        }
+
         @ParameterizedTest
-        @MethodSource("org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils#validVectorsFromDoubleList")
+        @MethodSource
         void canSetValidVector(List<Double> candidate) {
             final long id;
             try (final var tx = db.beginTx()) {
@@ -217,9 +223,14 @@ class VectorIndexProceduresIT {
             }
         }
 
+        private static Iterable<List<Double>> cannotSetInvalidVector() {
+            // Euclidean is the bare minimum invariant
+            return VectorTestUtils.EUCLIDEAN_INVALID_VECTORS_FROM_DOUBLE_LIST;
+        }
+
         @ParameterizedTest
-        @MethodSource("org.neo4j.kernel.api.impl.schema.vector.VectorTestUtils#invalidVectorsFromDoubleList")
-        void cannotSetValidVector(List<Double> candidate) {
+        @MethodSource
+        void cannotSetInvalidVector(List<Double> candidate) {
             try (final var tx = db.beginTx()) {
                 final var node = tx.createNode(LABEL);
                 assertThatThrownBy(() -> setVectorProperty(tx, node, candidate), "invalid vectors should throw")
