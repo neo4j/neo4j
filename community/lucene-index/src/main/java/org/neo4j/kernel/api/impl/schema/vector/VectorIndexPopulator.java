@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.VectorSimilarityFunction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;

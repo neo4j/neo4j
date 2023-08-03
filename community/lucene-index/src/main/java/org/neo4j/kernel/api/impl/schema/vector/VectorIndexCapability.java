@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.maybeToValidVector;
-
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
@@ -33,9 +31,11 @@ import org.neo4j.values.storable.ValueCategory;
 
 class VectorIndexCapability implements IndexCapability {
     private final int dimensions;
+    private final VectorSimilarityFunction similarityFunction;
 
     VectorIndexCapability(IndexConfig config) {
         this.dimensions = VectorUtils.vectorDimensionsFrom(config);
+        this.similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(config);
     }
 
     @Override
@@ -55,7 +55,7 @@ class VectorIndexCapability implements IndexCapability {
         return values.length == 1
                 && values[0] instanceof final FloatingPointArray array
                 && array.length() == dimensions
-                && maybeToValidVector(array) != null;
+                && similarityFunction.maybeToValidVector(array) != null;
     }
 
     @Override

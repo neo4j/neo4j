@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.apache.lucene.document.Field.Store.NO;
-import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.maybeToValidVector;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
@@ -29,7 +28,6 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.VectorEncoding;
-import org.apache.lucene.index.VectorSimilarityFunction;
 import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorDocumentStructure {
@@ -42,7 +40,7 @@ class VectorDocumentStructure {
 
     static Document createLuceneDocument(
             long id, FloatingPointArray value, VectorSimilarityFunction similarityFunction) {
-        final var vector = maybeToValidVector(value);
+        final var vector = similarityFunction.maybeToValidVector(value);
         if (vector == null) {
             return null;
         }
@@ -81,8 +79,8 @@ class VectorDocumentStructure {
         }
 
         @Override
-        public VectorSimilarityFunction vectorSimilarityFunction() {
-            return similarityFunction;
+        public org.apache.lucene.index.VectorSimilarityFunction vectorSimilarityFunction() {
+            return similarityFunction.toLucene();
         }
 
         @Override

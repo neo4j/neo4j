@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import org.apache.lucene.index.VectorSimilarityFunction;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;

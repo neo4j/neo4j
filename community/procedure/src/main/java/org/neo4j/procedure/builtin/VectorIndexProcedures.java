@@ -20,8 +20,8 @@
 package org.neo4j.procedure.builtin;
 
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.maybeToValidVector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorSimilarityFunctionFrom;
 import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.Mode.WRITE;
 
@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -150,15 +151,21 @@ public class VectorIndexProcedures {
     @Procedure(name = "db.create.setVectorProperty", mode = WRITE)
     public Stream<NodeRecord> setVectorProperty(
             @Name("node") Node node, @Name("key") String propKey, @Name("vector") List<Double> vector) {
-        node.setProperty(propKey, validVector(vector));
+        // assume EUCLIDEAN as the bare minimum invariant
+        node.setProperty(propKey, validVector(VectorSimilarityFunction.EUCLIDEAN, vector));
         return Stream.of(new NodeRecord(node));
     }
 
-    private float[] validVector(List<Double> candidate) {
-        final var vector = maybeToValidVector(candidate);
+    private float[] validVector(VectorSimilarityFunction similarityFunction, List<Double> candidate) {
+        final var vector = similarityFunction.maybeToValidVector(candidate);
         if (vector == null) {
-            throw new IllegalArgumentException(
-                    "Index query vector must contain finite values. Provided: %s".formatted(candidate));
+            throw switch (similarityFunction) {
+                case EUCLIDEAN -> new IllegalArgumentException(
+                        "Index query vector must contain finite values. Provided: %s".formatted(candidate));
+                case COSINE -> new IllegalArgumentException(
+                        "Index query vector must contain finite values, and have finite L2-norm. Provided: %s"
+                                .formatted(candidate));
+            };
         }
         return vector;
     }
@@ -172,7 +179,8 @@ public class VectorIndexProcedures {
                     .formatted(query.size(), dimensions));
         }
 
-        return validVector(query);
+        final var similarityFunction = vectorSimilarityFunctionFrom(config);
+        return validVector(similarityFunction, query);
     }
 
     private IndexDescriptor getValidIndex(String name) {

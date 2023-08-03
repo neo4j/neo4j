@@ -23,7 +23,6 @@ import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRAC
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import org.apache.lucene.index.VectorSimilarityFunction;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;

@@ -112,7 +112,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
 
         final var indexConfig = descriptor.getIndexConfig();
         final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
-        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig).toLucene();
+        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, similarityFunction);
     }
 
@@ -135,7 +135,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
 
         final var indexConfig = descriptor.getIndexConfig();
         final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
-        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig).toLucene();
+        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, similarityFunction);
     }
 
