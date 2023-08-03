@@ -26,27 +26,101 @@ import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 
 public enum VectorSimilarityFunction {
+    // TODO VECTOR: perhaps some unrolling and/or vector api (when available) could be used here
+    //              perhaps investigate some more accurate normalisation techniques
+
     EUCLIDEAN {
         @Override
         public float[] maybeToValidVector(FloatingPointArray candidate) {
-            return VectorUtils.maybeToValidVector(candidate);
+            if (candidate == null || candidate.isEmpty()) {
+                return null;
+            }
+
+            final var dimensions = candidate.length();
+            final var vector = new float[dimensions];
+            for (int i = 0; i < dimensions; i++) {
+                final var element = candidate.floatValue(i);
+                if (!Float.isFinite(element)) {
+                    return null;
+                }
+                vector[i] = element;
+            }
+            return vector;
         }
 
         @Override
         public float[] maybeToValidVector(List<Double> candidate) {
-            return VectorUtils.maybeToValidVector(candidate);
+            if (candidate == null || candidate.isEmpty()) {
+                return null;
+            }
+
+            final var dimensions = candidate.size();
+            final var vector = new float[dimensions];
+            for (int i = 0; i < dimensions; i++) {
+                final var rawElement = candidate.get(i);
+                final float element;
+                if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
+                    return null;
+                }
+                vector[i] = element;
+            }
+            return vector;
         }
     },
 
     COSINE {
         @Override
         public float[] maybeToValidVector(FloatingPointArray candidate) {
-            return VectorUtils.maybeValidVectorWithL2Norm(candidate);
+            if (candidate == null || candidate.isEmpty()) {
+                return null;
+            }
+
+            final var dimensions = candidate.length();
+
+            var square = 0.0;
+            final var vector = new float[dimensions];
+            for (int i = 0; i < candidate.length(); i++) {
+                final var rawElement = candidate.doubleValue(i);
+                final var element = (float) rawElement;
+                if (!Float.isFinite(element)) {
+                    return null;
+                }
+                square += rawElement * rawElement;
+                vector[i] = element;
+            }
+
+            if (square <= 0.0 || !Double.isFinite(square)) {
+                return null;
+            }
+
+            return vector;
         }
 
         @Override
         public float[] maybeToValidVector(List<Double> candidate) {
-            return VectorUtils.maybeValidVectorWithL2Norm(candidate);
+            if (candidate == null || candidate.isEmpty()) {
+                return null;
+            }
+
+            final var dimensions = candidate.size();
+
+            var square = 0.0;
+            final var vector = new float[dimensions];
+            for (int i = 0; i < dimensions; i++) {
+                final var rawElement = candidate.get(i);
+                final float element;
+                if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
+                    return null;
+                }
+                square = rawElement * rawElement;
+                vector[i] = element;
+            }
+
+            if (square <= 0.0 || !Double.isFinite(square)) {
+                return null;
+            }
+
+            return vector;
         }
     };
 

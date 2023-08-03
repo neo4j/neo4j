@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import java.util.List;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -58,102 +56,6 @@ public class VectorUtils {
                 () -> new IllegalArgumentException(
                         "Invalid %s provided.".formatted(IndexConfig.class.getSimpleName()),
                         new AssertionError("'%s' is expected to have been set".formatted(name))));
-    }
-
-    // TODO VECTOR: perhaps some unrolling and/or vector api (when available) could be used here
-
-    public static float[] maybeToValidVector(Value candidate) {
-        if (!(candidate instanceof final FloatingPointArray array)) {
-            return null;
-        }
-        return maybeToValidVector(array);
-    }
-
-    public static float[] maybeToValidVector(FloatingPointArray candidate) {
-        if (candidate == null || candidate.isEmpty()) {
-            return null;
-        }
-
-        final var dimensions = candidate.length();
-        final var vector = new float[dimensions];
-        for (int i = 0; i < dimensions; i++) {
-            final var element = candidate.floatValue(i);
-            if (!Float.isFinite(element)) {
-                return null;
-            }
-            vector[i] = element;
-        }
-        return vector;
-    }
-
-    public static float[] maybeToValidVector(List<Double> candidate) {
-        if (candidate == null || candidate.isEmpty()) {
-            return null;
-        }
-
-        final var dimensions = candidate.size();
-        final var vector = new float[dimensions];
-        for (int i = 0; i < dimensions; i++) {
-            final var rawElement = candidate.get(i);
-            final float element;
-            if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
-                return null;
-            }
-            vector[i] = element;
-        }
-        return vector;
-    }
-
-    public static float[] maybeValidVectorWithL2Norm(FloatingPointArray candidate) {
-        if (candidate == null || candidate.isEmpty()) {
-            return null;
-        }
-
-        final var dimensions = candidate.length();
-
-        var square = 0.0;
-        final var vector = new float[dimensions];
-        for (int i = 0; i < candidate.length(); i++) {
-            final var rawElement = candidate.doubleValue(i);
-            final var element = (float) rawElement;
-            if (!Float.isFinite(element)) {
-                return null;
-            }
-            square += rawElement * rawElement;
-            vector[i] = element;
-        }
-
-        if (square <= 0.0 || !Double.isFinite(square)) {
-            return null;
-        }
-
-        return vector;
-    }
-
-    public static float[] maybeValidVectorWithL2Norm(List<Double> candidate) {
-        if (candidate == null || candidate.isEmpty()) {
-            return null;
-        }
-
-        final var dimensions = candidate.size();
-
-        var square = 0.0;
-        final var vector = new float[dimensions];
-        for (int i = 0; i < dimensions; i++) {
-            final var rawElement = candidate.get(i);
-            final float element;
-            if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
-                return null;
-            }
-            square = rawElement * rawElement;
-            vector[i] = element;
-        }
-
-        if (square <= 0.0 || !Double.isFinite(square)) {
-            return null;
-        }
-
-        return vector;
     }
 
     private VectorUtils() {}
