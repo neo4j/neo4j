@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ast.BooleanTypeName
+import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName
 import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.DateTypeName
 import org.neo4j.cypher.internal.ast.DurationTypeName
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.ast.StringTypeName
 import org.neo4j.cypher.internal.ast.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.ast.ZonedTimeTypeName
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.internal.schema.constraints.SchemaValueType.BOOLEAN
 import org.neo4j.internal.schema.constraints.SchemaValueType.DATE
 import org.neo4j.internal.schema.constraints.SchemaValueType.DURATION
@@ -59,32 +61,40 @@ import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_TIME
 object PropertyTypeMapper {
 
   def asPropertyTypeSet(propertyType: CypherTypeName): PropertyTypeSet = {
-    val schemaType = propertyType match {
-      case _: BooleanTypeName                        => BOOLEAN
-      case _: StringTypeName                         => STRING
-      case _: IntegerTypeName                        => INTEGER
-      case _: FloatTypeName                          => FLOAT
-      case _: DateTypeName                           => DATE
-      case _: LocalTimeTypeName                      => LOCAL_TIME
-      case _: ZonedTimeTypeName                      => ZONED_TIME
-      case _: LocalDateTimeTypeName                  => LOCAL_DATETIME
-      case _: ZonedDateTimeTypeName                  => ZONED_DATETIME
-      case _: DurationTypeName                       => DURATION
-      case _: PointTypeName                          => POINT
-      case ListTypeName(_: BooleanTypeName, _)       => LIST_BOOLEAN
-      case ListTypeName(_: StringTypeName, _)        => LIST_STRING
-      case ListTypeName(_: IntegerTypeName, _)       => LIST_INTEGER
-      case ListTypeName(_: FloatTypeName, _)         => LIST_FLOAT
-      case ListTypeName(_: DateTypeName, _)          => LIST_DATE
-      case ListTypeName(_: LocalTimeTypeName, _)     => LIST_LOCAL_TIME
-      case ListTypeName(_: ZonedTimeTypeName, _)     => LIST_ZONED_TIME
-      case ListTypeName(_: LocalDateTimeTypeName, _) => LIST_LOCAL_DATETIME
-      case ListTypeName(_: ZonedDateTimeTypeName, _) => LIST_ZONED_DATETIME
-      case ListTypeName(_: DurationTypeName, _)      => LIST_DURATION
-      case ListTypeName(_: PointTypeName, _)         => LIST_POINT
-      case pt =>
-        throw new IllegalStateException(s"Invalid property type: ${pt.description}")
+    val schemaValueTypes = propertyType match {
+      case c: ClosedDynamicUnionTypeName =>
+        // It's normalized so there isn't any inner unions to consider
+        c.sortedInnerTypes.map(asSingleSchemaValueType)
+      case _ =>
+        List(asSingleSchemaValueType(propertyType))
     }
-    PropertyTypeSet.of(schemaType)
+    PropertyTypeSet.of(schemaValueTypes: _*)
+  }
+
+  private def asSingleSchemaValueType(propertyType: CypherTypeName): SchemaValueType = propertyType match {
+    case _: BooleanTypeName                        => BOOLEAN
+    case _: StringTypeName                         => STRING
+    case _: IntegerTypeName                        => INTEGER
+    case _: FloatTypeName                          => FLOAT
+    case _: DateTypeName                           => DATE
+    case _: LocalTimeTypeName                      => LOCAL_TIME
+    case _: ZonedTimeTypeName                      => ZONED_TIME
+    case _: LocalDateTimeTypeName                  => LOCAL_DATETIME
+    case _: ZonedDateTimeTypeName                  => ZONED_DATETIME
+    case _: DurationTypeName                       => DURATION
+    case _: PointTypeName                          => POINT
+    case ListTypeName(_: BooleanTypeName, _)       => LIST_BOOLEAN
+    case ListTypeName(_: StringTypeName, _)        => LIST_STRING
+    case ListTypeName(_: IntegerTypeName, _)       => LIST_INTEGER
+    case ListTypeName(_: FloatTypeName, _)         => LIST_FLOAT
+    case ListTypeName(_: DateTypeName, _)          => LIST_DATE
+    case ListTypeName(_: LocalTimeTypeName, _)     => LIST_LOCAL_TIME
+    case ListTypeName(_: ZonedTimeTypeName, _)     => LIST_ZONED_TIME
+    case ListTypeName(_: LocalDateTimeTypeName, _) => LIST_LOCAL_DATETIME
+    case ListTypeName(_: ZonedDateTimeTypeName, _) => LIST_ZONED_DATETIME
+    case ListTypeName(_: DurationTypeName, _)      => LIST_DURATION
+    case ListTypeName(_: PointTypeName, _)         => LIST_POINT
+    case pt =>
+      throw new IllegalStateException(s"Invalid property type: ${pt.description}")
   }
 }

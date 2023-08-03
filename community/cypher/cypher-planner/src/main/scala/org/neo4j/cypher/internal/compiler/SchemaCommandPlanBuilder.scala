@@ -233,25 +233,32 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.CreateConstraint(source, RelationshipPropertyExistence, relType, Seq(prop), name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS :: ...
-      case CreateNodePropertyTypeConstraint(_, label, prop, propertyType, name, ifExistsDo, options, _, _, _) =>
+      case c @ CreateNodePropertyTypeConstraint(_, label, prop, _, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               label,
               Seq(prop),
-              plans.NodePropertyType(propertyType),
+              plans.NodePropertyType(c.normalizedPropertyType),
               name,
               options
             ))
           case _ => None
         }
-        Some(plans.CreateConstraint(source, NodePropertyType(propertyType), label, Seq(prop), name, options))
+        Some(plans.CreateConstraint(
+          source,
+          NodePropertyType(c.normalizedPropertyType),
+          label,
+          Seq(prop),
+          name,
+          options
+        ))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS :: ...
-      case CreateRelationshipPropertyTypeConstraint(
+      case c @ CreateRelationshipPropertyTypeConstraint(
           _,
           relType,
           prop,
-          propertyType,
+          _,
           name,
           ifExistsDo,
           options,
@@ -263,13 +270,20 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               relType,
               Seq(prop),
-              plans.RelationshipPropertyType(propertyType),
+              plans.RelationshipPropertyType(c.normalizedPropertyType),
               name,
               options
             ))
           case _ => None
         }
-        Some(plans.CreateConstraint(source, RelationshipPropertyType(propertyType), relType, Seq(prop), name, options))
+        Some(plans.CreateConstraint(
+          source,
+          RelationshipPropertyType(c.normalizedPropertyType),
+          relType,
+          Seq(prop),
+          name,
+          options
+        ))
 
       // DROP CONSTRAINT name [IF EXISTS]
       case DropConstraintOnName(name, ifExists, _) =>

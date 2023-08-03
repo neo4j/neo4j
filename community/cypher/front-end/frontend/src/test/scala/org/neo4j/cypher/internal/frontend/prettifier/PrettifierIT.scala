@@ -780,6 +780,10 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE OR REPLACE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS :: ZONED TIME",
     "create CONSTRAINT foo if not EXISTS FOR (a:A) REQUIRE a.p IS :: LIST<date not null>" ->
       "CREATE CONSTRAINT foo IF NOT EXISTS FOR (a:A) REQUIRE (a.p) IS :: LIST<DATE NOT NULL>",
+    "create CONSTRAINT FOR (a:A) REQUIRE (a.p) is typed boolean | list<float not null> | int | list<point not null> | string" ->
+      "CREATE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS :: BOOLEAN | STRING | INTEGER | LIST<FLOAT NOT NULL> | LIST<POINT NOT NULL>",
+    "create CONSTRAINT foo FOR (a:A) REQUIRE (a.p) is typed any<boolean | string | point>" ->
+      "CREATE CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS :: BOOLEAN | STRING | POINT",
     "create CONSTRAINT FOR ()-[r:R]-() REQUIRE r.p is tyPED bool" ->
       "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS :: BOOLEAN",
     "create CONSTRAINT foo FOR ()-[r:R]->() REQUIRE (r.p) IS :: int" ->
@@ -794,6 +798,10 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS :: LOCAL DATETIME",
     "create or Replace CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS :: list<duration NOT NULL>" ->
       "CREATE OR REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS :: LIST<DURATION NOT NULL>",
+    "create CONSTRAINT FOR ()-[r:R]-() REQUIRE r.p :: point   |  LIST  < timestamp with timezone   not    null>  |   bool" ->
+      "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS :: BOOLEAN | POINT | LIST<ZONED DATETIME NOT NULL>",
+    "create CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) is typed any<boolean | string | point>" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS :: BOOLEAN | STRING | POINT",
     "drop CONSTRAINT foo" ->
       "DROP CONSTRAINT foo",
     "drop CONSTRAINT `foo`" ->

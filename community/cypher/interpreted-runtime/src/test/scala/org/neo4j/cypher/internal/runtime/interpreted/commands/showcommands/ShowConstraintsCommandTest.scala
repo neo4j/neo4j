@@ -762,7 +762,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     )
   }
 
-  Seq(
+  private val allowedSingleTypes = Seq(
     ("BOOLEAN", SchemaValueType.BOOLEAN),
     ("STRING", SchemaValueType.STRING),
     ("INTEGER", SchemaValueType.INTEGER),
@@ -785,7 +785,9 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ("LIST<ZONED DATETIME NOT NULL>", SchemaValueType.LIST_ZONED_DATETIME),
     ("LIST<DURATION NOT NULL>", SchemaValueType.LIST_DURATION),
     ("LIST<POINT NOT NULL>", SchemaValueType.LIST_POINT)
-  ).foreach { case (propTypeString, propType) =>
+  )
+
+  allowedSingleTypes.zipWithIndex.foreach { case ((propTypeString, propType), currentIndex) =>
     test(s"show normalized property type representation: $propType") {
       // Given
       val nodePropTypeConstraintDescriptor =
@@ -822,5 +824,106 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
           s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: $propTypeString"
       )
     }
+
+    // Union of 2 types
+    // allowedSingleTypes is ordered so the normalized form should always be `propType | propType2`
+    // if we only check the types after the current one
+    allowedSingleTypes.drop(currentIndex + 1).foreach { case (propTypeString2, propType2) =>
+      test(s"show normalized property type representation: $propType | $propType2") {
+        // Given
+        val nodePropTypeConstraintDescriptor =
+          ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType, propType2))
+            .withName("constraint0")
+            .withId(0)
+        val relPropTypeConstraintDescriptor =
+          ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType2, propType))
+            .withName("constraint1")
+            .withId(1)
+        when(ctx.getAllConstraints()).thenReturn(Map(
+          nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
+          relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
+        ))
+
+        // When
+        val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns)
+        val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+        // Then
+        result should have size 2
+        checkResult(
+          result.head,
+          name = "constraint0",
+          propType = s"$propTypeString | $propTypeString2",
+          createStatement =
+            s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: $propTypeString | $propTypeString2"
+        )
+        checkResult(
+          result.last,
+          name = "constraint1",
+          propType = s"$propTypeString | $propTypeString2",
+          createStatement =
+            s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: $propTypeString | $propTypeString2"
+        )
+      }
+    }
+  }
+
+  test("show normalized property type representation for larger unions") {
+    // Given
+    val nodePropTypeConstraintDescriptor =
+      ConstraintDescriptorFactory.typeForSchema(
+        labelDescriptor,
+        PropertyTypeSet.of(
+          SchemaValueType.INTEGER,
+          SchemaValueType.LIST_ZONED_TIME,
+          SchemaValueType.LIST_DURATION,
+          SchemaValueType.LOCAL_TIME,
+          SchemaValueType.BOOLEAN
+        )
+      )
+        .withName("constraint0")
+        .withId(0)
+    val relPropTypeConstraintDescriptor =
+      ConstraintDescriptorFactory.typeForSchema(
+        relTypeDescriptor,
+        PropertyTypeSet.of(
+          SchemaValueType.FLOAT,
+          SchemaValueType.LIST_INTEGER,
+          SchemaValueType.STRING,
+          SchemaValueType.LIST_BOOLEAN,
+          SchemaValueType.BOOLEAN,
+          SchemaValueType.FLOAT,
+          SchemaValueType.STRING
+        )
+      )
+        .withName("constraint1")
+        .withId(1)
+    when(ctx.getAllConstraints()).thenReturn(Map(
+      nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
+      relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
+    ))
+
+    // When
+    val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 2
+    checkResult(
+      result.head,
+      name = "constraint0",
+      propType = "BOOLEAN | INTEGER | LOCAL TIME | LIST<ZONED TIME NOT NULL> | LIST<DURATION NOT NULL>",
+      createStatement =
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) " +
+          s"REQUIRE (n.`$prop`) IS :: BOOLEAN | INTEGER | LOCAL TIME | LIST<ZONED TIME NOT NULL> | LIST<DURATION NOT NULL>"
+    )
+    checkResult(
+      result.last,
+      name = "constraint1",
+      propType = "BOOLEAN | STRING | FLOAT | LIST<BOOLEAN NOT NULL> | LIST<INTEGER NOT NULL>",
+      createStatement =
+        s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() " +
+          s"REQUIRE (r.`$prop`) IS :: BOOLEAN | STRING | FLOAT | LIST<BOOLEAN NOT NULL> | LIST<INTEGER NOT NULL>"
+    )
   }
 }

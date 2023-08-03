@@ -30,10 +30,12 @@ import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.BooleanTypeName
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CurrentUser
+import org.neo4j.cypher.internal.ast.DateTypeName
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
@@ -50,6 +52,7 @@ import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.IntegerTypeName
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.ListTypeName
 import org.neo4j.cypher.internal.ast.LocalTimeTypeName
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
@@ -82,6 +85,7 @@ import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.StringTypeName
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -3344,7 +3348,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodePropertyType(BooleanTypeName(isNullable = true)(pos)),
+          NodePropertyType(
+            ClosedDynamicUnionTypeName(Set(
+              ListTypeName(BooleanTypeName(isNullable = true)(pos), isNullable = true)(pos),
+              StringTypeName(isNullable = true)(pos)
+            ))(pos)
+          ),
           label("Label"),
           Seq(prop("x", "prop")),
           Some("constraintName"),
@@ -3356,7 +3365,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateConstraint",
         NoChildren,
-        Seq(details("CONSTRAINT constraintName FOR (x:Label) REQUIRE (x.prop) IS :: BOOLEAN")),
+        Seq(details("CONSTRAINT constraintName FOR (x:Label) REQUIRE (x.prop) IS :: STRING | LIST<BOOLEAN>")),
         Set.empty
       )
     )
@@ -3446,11 +3455,21 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             relType("R"),
             Seq(prop(" x", "prop")),
-            RelationshipPropertyType(DurationTypeName(isNullable = true)(pos)),
+            RelationshipPropertyType(
+              ClosedDynamicUnionTypeName(Set(
+                DurationTypeName(isNullable = true)(pos),
+                DateTypeName(isNullable = true)(pos)
+              ))(pos)
+            ),
             None,
             NoOptions
           )),
-          RelationshipPropertyType(DurationTypeName(isNullable = true)(pos)),
+          RelationshipPropertyType(
+            ClosedDynamicUnionTypeName(Set(
+              DurationTypeName(isNullable = true)(pos),
+              DateTypeName(isNullable = true)(pos)
+            ))(pos)
+          ),
           relType("R"),
           Seq(prop(" x", "prop")),
           None,
@@ -3466,11 +3485,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             id,
             "DoNothingIfExists(CONSTRAINT)",
             NoChildren,
-            Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: DURATION")),
+            Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: DATE | DURATION")),
             Set.empty
           )
         ),
-        Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: DURATION")),
+        Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: DATE | DURATION")),
         Set.empty
       )
     )

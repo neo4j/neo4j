@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -79,6 +81,8 @@ sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooli
   protected val errorMessageOnAssertExists: String =
     "Invalid constraint syntax, ON and ASSERT EXISTS should not be used. Replace ON with FOR and ASSERT EXISTS with REQUIRE ... IS NOT NULL."
 }
+
+// Indexes
 
 case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[UseGraph] = None)(
   val position: InputPosition
@@ -345,7 +349,9 @@ case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[Gra
   def semanticCheck = Seq()
 }
 
-protected trait PropertyConstraintCommand extends SchemaCommand {
+// Constraints
+
+sealed protected trait PropertyConstraintCommand extends SchemaCommand {
   def variable: Variable
 
   def property: Property
@@ -360,7 +366,7 @@ protected trait PropertyConstraintCommand extends SchemaCommand {
       }
 }
 
-protected trait CompositePropertyConstraintCommand extends SchemaCommand {
+sealed protected trait CompositePropertyConstraintCommand extends SchemaCommand {
   def variable: Variable
 
   def properties: Seq[Property]
@@ -378,35 +384,35 @@ protected trait CompositePropertyConstraintCommand extends SchemaCommand {
       }
 }
 
-protected trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
+sealed protected trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
 
   val entityType: NodeType = CTNode
 
   def label: LabelName
 }
 
-protected trait NodeCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
+sealed protected trait NodeCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
 
   val entityType: NodeType = CTNode
 
   def label: LabelName
 }
 
-protected trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
+sealed protected trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
 
   val entityType: RelationshipType = CTRelationship
 
   def relType: RelTypeName
 }
 
-protected trait RelationshipCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
+sealed protected trait RelationshipCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
 
   val entityType: RelationshipType = CTRelationship
 
   def relType: RelTypeName
 }
 
-trait CreateConstraint extends SchemaCommand {
+sealed trait CreateConstraint extends SchemaCommand {
   // To anonymize the name
   val name: Option[String]
   def withName(name: Option[String]): CreateConstraint
@@ -482,21 +488,75 @@ trait CreateConstraint extends SchemaCommand {
     ListTypeName(PointTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
   )
 
-  protected def checkPropertyType(entityTypeString: String, propertyType: CypherTypeName): SemanticCheck =
-    if (!allowedPropertyTypes.contains(propertyType.withPosition(InputPosition.NONE))) {
-      val additionalErrorInfo = propertyType match {
-        case ListTypeName(_: ListTypeName, _) =>
-          " Lists cannot have lists as an inner type."
-        case ListTypeName(inner, _) if inner.isNullable =>
-          " Lists cannot have nullable inner types."
-        case _ => ""
+  protected def checkPropertyTypes(
+    entityTypeString: String,
+    originalPropertyType: CypherTypeName,
+    normalizedPropertyType: CypherTypeName
+  ): SemanticCheck = {
+
+    def allowedTypesCheck = {
+      def anyPropertyValueType(pt: CypherTypeName): Boolean = pt match {
+        case _: PropertyValueTypeName      => true
+        case l: ListTypeName               => anyPropertyValueType(l.innerType)
+        case c: ClosedDynamicUnionTypeName => c.sortedInnerTypes.map(anyPropertyValueType).exists(b => b)
+        case _                             => false
+      }
+      val containsPropertyValueType = anyPropertyValueType(originalPropertyType)
+
+      val onlyAllowedTypes = normalizedPropertyType match {
+        case c: ClosedDynamicUnionTypeName =>
+          c.sortedInnerTypes.forall(p => allowedPropertyTypes.contains(p.withPosition(InputPosition.NONE)))
+        case _ =>
+          allowedPropertyTypes.contains(normalizedPropertyType.withPosition(InputPosition.NONE))
       }
 
-      error(
-        s"Failed to create $entityTypeString property type constraint: Invalid property type `${propertyType.description}`.$additionalErrorInfo",
-        position
-      )
-    } else SemanticCheck.success
+      if (containsPropertyValueType || !onlyAllowedTypes) {
+        def additionalErrorInfo(pt: CypherTypeName): String = pt match {
+          case ListTypeName(_: ListTypeName, _) =>
+            " Lists cannot have lists as an inner type."
+          case ListTypeName(_: ClosedDynamicUnionTypeName, _) =>
+            " Lists cannot have a union of types as an inner type."
+          case ListTypeName(inner, _) if inner.isNullable =>
+            " Lists cannot have nullable inner types."
+          case c: ClosedDynamicUnionTypeName if c.sortedInnerTypes.exists(_.isInstanceOf[ListTypeName]) =>
+            // If we have lists we want to check them for the above cases as well
+            // Unions within unions should have been flattened in parsing so won't be handled here
+            c.sortedInnerTypes.filter(_.isInstanceOf[ListTypeName])
+              .map(additionalErrorInfo)
+              .find(_.nonEmpty)
+              .getOrElse("")
+          case _ => ""
+        }
+
+        // Don't expand the PROPERTY VALUE in error message as that makes it confusing as to why it's not allowed.
+        // Similarly, it shouldn't get any additional error messages for being a union in a list,
+        // in case of LIST<PROPERTY VALUE>, as that isn't the main reason for failure.
+        val (typeDescription, additionalError) =
+          if (containsPropertyValueType) (originalPropertyType.description, additionalErrorInfo(originalPropertyType))
+          else (normalizedPropertyType.description, additionalErrorInfo(normalizedPropertyType))
+
+        error(
+          s"Failed to create $entityTypeString property type constraint: " +
+            s"Invalid property type `$typeDescription`.$additionalError",
+          originalPropertyType.position
+        )
+      } else SemanticCheck.success
+    }
+
+    // We want run the semantic checks for the types themselves, but the error messages might not make sense in this context
+    // There isn't much point telling users to make all their union types NOT NULL if that is not accepted here.
+    originalPropertyType.semanticCheck.map {
+      case r @ SemanticCheckResult(_, Nil) => r
+      case SemanticCheckResult(state, _) => SemanticCheckResult(
+          state,
+          Seq(SemanticError(
+            s"Failed to create $entityTypeString property type constraint: " +
+              s"Invalid property type `${originalPropertyType.description}`.",
+            originalPropertyType.position
+          ))
+        )
+    } chain allowedTypesCheck
+  }
 }
 
 case class CreateNodeKeyConstraint(
@@ -691,7 +751,7 @@ case class CreateNodePropertyTypeConstraint(
   variable: Variable,
   label: LabelName,
   property: Property,
-  propertyType: CypherTypeName,
+  private val propertyType: CypherTypeName,
   override val name: Option[String],
   ifExistsDo: IfExistsDo,
   options: Options,
@@ -702,21 +762,19 @@ case class CreateNodePropertyTypeConstraint(
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def withName(name: Option[String]): CreateNodePropertyTypeConstraint = copy(name = name)(position)
 
+  val normalizedPropertyType: CypherTypeName = CypherTypeName.normalizeTypes(propertyType)
+
   override def semanticCheck: SemanticCheck =
-    checkSemantics(
-      "node property type",
-      ifExistsDo,
-      options,
-      containsOn,
-      constraintVersion
-    ) chain checkPropertyType("node", propertyType) chain super.semanticCheck
+    checkSemantics("node property type", ifExistsDo, options, containsOn, constraintVersion) chain
+      checkPropertyTypes("node", propertyType, normalizedPropertyType) chain
+      super.semanticCheck
 }
 
 case class CreateRelationshipPropertyTypeConstraint(
   variable: Variable,
   relType: RelTypeName,
   property: Property,
-  propertyType: CypherTypeName,
+  private val propertyType: CypherTypeName,
   override val name: Option[String],
   ifExistsDo: IfExistsDo,
   options: Options,
@@ -729,14 +787,12 @@ case class CreateRelationshipPropertyTypeConstraint(
   override def withName(name: Option[String]): CreateRelationshipPropertyTypeConstraint =
     copy(name = name)(position)
 
+  val normalizedPropertyType: CypherTypeName = CypherTypeName.normalizeTypes(propertyType)
+
   override def semanticCheck: SemanticCheck =
-    checkSemantics(
-      "relationship property type",
-      ifExistsDo,
-      options,
-      containsOn,
-      constraintVersion
-    ) chain checkPropertyType("relationship", propertyType) chain super.semanticCheck
+    checkSemantics("relationship property type", ifExistsDo, options, containsOn, constraintVersion) chain
+      checkPropertyTypes("relationship", propertyType, normalizedPropertyType) chain
+      super.semanticCheck
 }
 
 case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(

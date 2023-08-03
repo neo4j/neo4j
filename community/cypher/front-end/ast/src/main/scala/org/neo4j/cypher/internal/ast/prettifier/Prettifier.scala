@@ -472,11 +472,11 @@ case class Prettifier(
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire $propertyString$optionsString"
 
-      case CreateNodePropertyTypeConstraint(
+      case c @ CreateNodePropertyTypeConstraint(
           Variable(variable),
           LabelName(label),
           property,
-          propertyType,
+          _,
           name,
           ifExistsDo,
           options,
@@ -485,17 +485,17 @@ case class Prettifier(
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val propertyString = s"(${propertyToString(property)}) IS :: ${propertyType.description}"
+        val propertyString = s"(${propertyToString(property)}) IS :: ${c.normalizedPropertyType.description}"
         val optionsString = asString(options)
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
 
-      case CreateRelationshipPropertyTypeConstraint(
+      case c @ CreateRelationshipPropertyTypeConstraint(
           Variable(variable),
           RelTypeName(relType),
           property,
-          propertyType,
+          _,
           name,
           ifExistsDo,
           options,
@@ -504,7 +504,7 @@ case class Prettifier(
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val propertyString = s"(${propertyToString(property)}) IS :: ${propertyType.description}"
+        val propertyString = s"(${propertyToString(property)}) IS :: ${c.normalizedPropertyType.description}"
         val optionsString = asString(options)
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
