@@ -1142,4 +1142,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Duration> cdc_log_change_max_refresh_interval = newBuilder(
                     "internal.db.cdc.log_change_max_refresh_interval", DURATION, Duration.ofSeconds(1))
             .build();
+
+    @Internal
+    @Description("Enable online compaction of multiversioned countstore.")
+    public static final Setting<Boolean> multi_version_countstore_compaction = newBuilder(
+                    "internal.dbms.multiversion_countstore_compaction", BOOL, false)
+            .build();
 }
