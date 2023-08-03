@@ -1262,6 +1262,70 @@ class MainIntegrationTest {
                 .assertThatErrorOutput(not(contains("time limited trial")));
     }
 
+    /*
+     * :sysinfo is hard to test, but here is a pretty crappy smoke test.
+     */
+    @Test
+    void sysInfo() throws Exception {
+        assumeAtLeastVersion("4.4.0");
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD)
+                .userInputLines(":sysinfo", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        contains("\"neo4j\""),
+                        contains("\"system\""),
+                        contains("\"Property ID\""),
+                        contains("\"Relationship ID\""),
+                        contains("\"Relationship Type ID\""),
+                        contains("\"Total\""),
+                        contains("\"Database\""),
+                        contains("\"Hits\""),
+                        contains("\"Hit Ratio\""),
+                        contains("\"Usage Ratio\""),
+                        contains("\"Page Faults\""),
+                        contains("\"Last Tx Id\""),
+                        contains("\"Current Read\""),
+                        contains("\"Current Write\""),
+                        contains("\"Peak Transactions\""),
+                        contains("\"Committed Read\""),
+                        contains("\"Committed Write\""));
+    }
+
+    @Test
+    void sysInfoDisconnected() throws Exception {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD)
+                .userInputLines(":disconnect", ":sysinfo", ":exit")
+                .run()
+                .assertSuccess(false)
+                .assertThatErrorOutput(contains("Connect to a database to use :sysinfo"))
+                .assertThatOutput(
+                        contains(
+                                """
+                                Disconnected> :sysinfo
+                                Disconnected> :exit
+                                """));
+    }
+
+    @Test
+    void sysInfoNotSupported() throws Exception {
+        assumeVersionBefore("4.4.0");
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD)
+                .userInputLines(":sysinfo", ":exit")
+                .run()
+                .assertSuccessAndConnected(false)
+                .assertThatErrorOutput(contains(":sysinfo is only supported since 4.4.0"))
+                .assertThatOutput(
+                        contains(
+                                """
+                                neo4j@neo4j> :sysinfo
+                                neo4j@neo4j> :exit
+                                """));
+    }
+
     private static CypherStatement cypher(String cypher) {
         return CypherStatement.complete(cypher);
     }
@@ -1371,6 +1435,10 @@ class MainIntegrationTest {
 
     private void assumeAtLeastVersion(String version) {
         assumeTrue(serverVersion.compareTo(Versions.version(version)) > 0);
+    }
+
+    private void assumeVersionBefore(String version) {
+        assumeTrue(serverVersion.compareTo(Versions.version(version)) < 0);
     }
 
     private static class TestBuilder extends AssertableMain.AssertableMainBuilder {

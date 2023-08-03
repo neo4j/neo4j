@@ -20,10 +20,12 @@
 package org.neo4j.shell.prettyprint;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyIterator;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.shell.prettyprint.OutputFormatter.repeat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -60,6 +62,14 @@ public class TableOutputFormatter implements OutputFormatter {
         return formatResultAndCountRows(columns, records, output);
     }
 
+    /**
+     * Prints bolt result with a heading. Not optimised for large result sets.
+     */
+    public void formatWithHeading(BoltResult result, LinePrinter output, String heading) {
+        final String[] columns = result.getKeys().toArray(new String[0]);
+        printTableAndCountRows(columns, emptyIterator(), output, result.getRecords(), true, heading);
+    }
+
     private static void take(Iterator<Record> records, ArrayList<Record> topRecords, int count) {
         while (records.hasNext() && topRecords.size() < count) {
             topRecords.add(records.next());
@@ -72,10 +82,10 @@ public class TableOutputFormatter implements OutputFormatter {
         try {
             take(records, topRecords, numSampleRows);
         } catch (RuntimeException e) {
-            printTableAndCountRows(columns, records, output, topRecords, false);
+            printTableAndCountRows(columns, records, output, topRecords, false, null);
             throw e;
         }
-        return printTableAndCountRows(columns, records, output, topRecords, true);
+        return printTableAndCountRows(columns, records, output, topRecords, true, null);
     }
 
     private int printTableAndCountRows(
@@ -83,8 +93,9 @@ public class TableOutputFormatter implements OutputFormatter {
             Iterator<Record> records,
             LinePrinter output,
             List<Record> topRecords,
-            boolean printFooter) {
-        int[] columnSizes = calculateColumnSizes(columns, topRecords, records.hasNext());
+            boolean printFooter,
+            String heading) {
+        int[] columnSizes = calculateColumnSizes(columns, topRecords, records.hasNext(), heading);
 
         int totalWidth = 1;
         for (int columnSize : columnSizes) {
@@ -92,12 +103,18 @@ public class TableOutputFormatter implements OutputFormatter {
         }
 
         StringBuilder builder = new StringBuilder(totalWidth);
-        String headerLine = formatRow(builder, columnSizes, columns, new boolean[columnSizes.length]);
         int lineWidth = totalWidth - 2;
         String dashes = "+" + String.valueOf(repeat('-', lineWidth)) + "+";
 
+        if (heading != null && !heading.isBlank()) {
+            output.printOut(dashes);
+            output.printOut(
+                    formatRow(builder, new int[] {lineWidth - 2}, new String[] {heading}, new boolean[] {false}));
+            builder.setLength(0);
+        }
+
         output.printOut(dashes);
-        output.printOut(headerLine);
+        output.printOut(formatRow(builder, columnSizes, columns, new boolean[columnSizes.length]));
         output.printOut(dashes);
 
         int numberOfRows = 0;
@@ -125,7 +142,8 @@ public class TableOutputFormatter implements OutputFormatter {
      * @param moreDataAfterSamples if there is more data that should be written into the table after `data`
      * @return the column sizes
      */
-    private int[] calculateColumnSizes(String[] columns, List<Record> data, boolean moreDataAfterSamples) {
+    private int[] calculateColumnSizes(
+            String[] columns, List<Record> data, boolean moreDataAfterSamples, String heading) {
         int[] columnSizes = new int[columns.length];
         for (int i = 0; i < columns.length; i++) {
             columnSizes[i] = columns[i].length();
@@ -136,6 +154,12 @@ public class TableOutputFormatter implements OutputFormatter {
                 if (columnSizes[i] < len) {
                     columnSizes[i] = len;
                 }
+            }
+        }
+        if (heading != null) {
+            final var totalSize = Arrays.stream(columnSizes).sum();
+            if (heading.length() > totalSize) {
+                columnSizes[0] = columnSizes[0] + (heading.length() - totalSize);
             }
         }
         return columnSizes;
@@ -172,7 +196,7 @@ public class TableOutputFormatter implements OutputFormatter {
     /**
      * Format one row of data.
      *
-     * @param sb           the StringBuilder to use
+     * @param sb           the StringBuilder to use (will reset)
      * @param columnSizes  the size of all columns
      * @param row          the data
      * @param continuation for each column whether it holds the remainder of data that did not fit in the column

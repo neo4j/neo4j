@@ -686,10 +686,50 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         assertThat(formatted).isEqualTo("SERVER SIDE PLAN");
     }
 
+    @Test
+    void printWithHeading() {
+        final var result = mockResult(asList("c1", "c2"), "aaaaaaa", 42, "b", 43);
+
+        assertThat(formatResultWithHeading(result, "My Table"))
+                .isEqualTo(
+                        """
+                        +----------------+
+                        | My Table       |
+                        +----------------+
+                        | c1        | c2 |
+                        +----------------+
+                        | "aaaaaaa" | 42 |
+                        | "b"       | 43 |
+                        +----------------+
+
+                        """);
+
+        assertThat(formatResultWithHeading(result, "Long long long, so very long, heading"))
+                .isEqualTo(
+                        """
+                        +------------------------------------------+
+                        | Long long long, so very long, heading    |
+                        +------------------------------------------+
+                        | c1                                  | c2 |
+                        +------------------------------------------+
+                        | "aaaaaaa"                           | 42 |
+                        | "b"                                 | 43 |
+                        +------------------------------------------+
+
+                        """);
+    }
+
     private static String formatResult(Result result) {
         ToStringLinePrinter printer = new ToStringLinePrinter();
         new TableOutputFormatter(true, 1000)
                 .formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
+        return printer.result();
+    }
+
+    private static String formatResultWithHeading(Result result, String heading) {
+        final var printer = new ToStringLinePrinter();
+        new TableOutputFormatter(true, 1000)
+                .formatWithHeading(new ListBoltResult(result.list(), result.consume()), printer, heading);
         return printer.result();
     }
 

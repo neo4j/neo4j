@@ -56,7 +56,8 @@ class JlineCompleterTest {
             ":rollback",
             ":source",
             ":use",
-            ":impersonate");
+            ":impersonate",
+            ":sysinfo");
 
     @BeforeEach
     void setup() {
