@@ -34,7 +34,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Utility to create {@link Map}s.
@@ -183,23 +182,6 @@ public final class MapUtil {
         properties.store(writer, null);
     }
 
-    public static <K, V> MapBuilder<K, V> entry(K key, V value) {
-        return new MapBuilder<K, V>().entry(key, value);
-    }
-
-    public static class MapBuilder<K, V> {
-        private final Map<K, V> map = new HashMap<>();
-
-        public MapBuilder<K, V> entry(K key, V value) {
-            map.put(key, value);
-            return this;
-        }
-
-        public Map<K, V> create() {
-            return map;
-        }
-    }
-
     /**
      * Mutates the input map by removing entries which do not have keys in the new backing data, as extracted with
      * the keyExtractor.
@@ -212,22 +194,6 @@ public final class MapUtil {
      */
     public static <K, V, T> void trimToList(Map<K, V> map, List<T> newBackingData, Function<T, K> keyExtractor) {
         Set<K> retainedKeys = newBackingData.stream().map(keyExtractor).collect(Collectors.toSet());
-        trimToList(map, retainedKeys);
-    }
-
-    /**
-     * Mutates the input map by removing entries which do not have keys in the new backing data, as extracted with
-     * the keyExtractor.
-     * @param map the map to mutate.
-     * @param newBackingData the backing data to retain.
-     * @param keyExtractor the function to extract keys from the backing data.
-     * @param <K> type of the key in the input map.
-     * @param <V> type of the values in the input map.
-     * @param <T> type of the keys in the new backing data.
-     */
-    public static <K, V, T> void trimToFlattenedList(
-            Map<K, V> map, List<T> newBackingData, Function<T, Stream<K>> keyExtractor) {
-        Set<K> retainedKeys = newBackingData.stream().flatMap(keyExtractor).collect(Collectors.toSet());
         trimToList(map, retainedKeys);
     }
 

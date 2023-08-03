@@ -51,7 +51,6 @@ import java.time.temporal.TemporalUnit;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -133,14 +132,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     public static DurationValue parse(TextValue text) {
         return TemporalValue.parse(DurationValue.class, PATTERN, DurationValue::parse, text);
-    }
-
-    static DurationValue build(Map<String, ? extends AnyValue> input) {
-        StructureBuilder<AnyValue, DurationValue> builder = builder();
-        for (Map.Entry<String, ? extends AnyValue> entry : input.entrySet()) {
-            builder.add(entry.getKey(), entry.getValue());
-        }
-        return builder.build();
     }
 
     public static DurationValue build(MapValue map) {

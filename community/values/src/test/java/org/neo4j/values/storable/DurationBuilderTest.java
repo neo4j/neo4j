@@ -21,65 +21,68 @@ package org.neo4j.values.storable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.helpers.collection.MapUtil.entry;
 import static org.neo4j.values.storable.DurationValue.build;
 import static org.neo4j.values.storable.DurationValue.parse;
-import static org.neo4j.values.storable.Values.of;
 
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 class DurationBuilderTest {
     @Test
     void shouldBuildDuration() {
-        assertEquals(parse("P17Y"), build(entry("years", of(17)).create()));
-        assertEquals(parse("P3M"), build(entry("months", of(3)).create()));
-        assertEquals(parse("P18W"), build(entry("weeks", of(18)).create()));
-        assertEquals(parse("P7D"), build(entry("days", of(7)).create()));
-        assertEquals(parse("PT5H"), build(entry("hours", of(5)).create()));
-        assertEquals(parse("PT7M"), build(entry("minutes", of(7)).create()));
-        assertEquals(parse("PT2352S"), build(entry("seconds", of(2352)).create()));
-        assertEquals(parse("PT0.001S"), build(entry("milliseconds", of(1)).create()));
-        assertEquals(parse("PT0.000001S"), build(entry("microseconds", of(1)).create()));
-        assertEquals(parse("PT0.000000001S"), build(entry("nanoseconds", of(1)).create()));
+        assertEquals(parse("P17Y"), build(asMapValue(Map.of("years", 17))));
+        assertEquals(parse("P3M"), build(asMapValue(Map.of("months", 3))));
+        assertEquals(parse("P18W"), build(asMapValue(Map.of("weeks", 18))));
+        assertEquals(parse("P7D"), build(asMapValue(Map.of("days", 7))));
+        assertEquals(parse("PT5H"), build(asMapValue(Map.of("hours", 5))));
+        assertEquals(parse("PT7M"), build(asMapValue(Map.of("minutes", 7))));
+        assertEquals(parse("PT2352S"), build(asMapValue(Map.of("seconds", 2352))));
+        assertEquals(parse("PT0.001S"), build(asMapValue(Map.of("milliseconds", 1))));
+        assertEquals(parse("PT0.000001S"), build(asMapValue(Map.of("microseconds", 1))));
+        assertEquals(parse("PT0.000000001S"), build(asMapValue(Map.of("nanoseconds", 1))));
         assertEquals(
                 parse("PT4.003002001S"),
-                build(entry("nanoseconds", of(1))
-                        .entry("microseconds", of(2))
-                        .entry("milliseconds", of(3))
-                        .entry("seconds", of(4))
-                        .create()));
+                build(asMapValue(Map.of(
+                        "nanoseconds", 1,
+                        "microseconds", 2,
+                        "milliseconds", 3,
+                        "seconds", 4))));
         assertEquals(
                 parse("P1Y2M3W4DT5H6M7.800000009S"),
-                build(entry("years", of(1))
-                        .entry("months", of(2))
-                        .entry("weeks", of(3))
-                        .entry("days", of(4))
-                        .entry("hours", of(5))
-                        .entry("minutes", of(6))
-                        .entry("seconds", of(7))
-                        .entry("milliseconds", of(800))
-                        .entry("microseconds", of(-900_000))
-                        .entry("nanoseconds", of(900_000_009))
-                        .create()));
+                build(asMapValue(Map.of(
+                        "years", 1,
+                        "months", 2,
+                        "weeks", 3,
+                        "days", 4,
+                        "hours", 5,
+                        "minutes", 6,
+                        "seconds", 7,
+                        "milliseconds", 800,
+                        "microseconds", -900_000,
+                        "nanoseconds", 900_000_009))));
     }
 
     @Test
     void shouldRejectUnknownKeys() {
         assertEquals(
                 "Unknown field: millenia",
-                assertThrows(
-                                IllegalStateException.class,
-                                () -> build(entry("millenia", of(2)).create()))
+                assertThrows(IllegalStateException.class, () -> build(asMapValue(Map.of("millenia", 2))))
                         .getMessage());
     }
 
     @Test
     void shouldAcceptOverlapping() {
-        assertEquals(
-                parse("PT1H90M"),
-                build(entry("hours", of(1)).entry("minutes", of(90)).create()));
-        assertEquals(
-                parse("P1DT30H"),
-                build(entry("days", of(1)).entry("hours", of(30)).create()));
+        assertEquals(parse("PT1H90M"), build(asMapValue(Map.of("hours", 1, "minutes", 90))));
+        assertEquals(parse("P1DT30H"), build(asMapValue(Map.of("days", 1, "hours", 30))));
+    }
+
+    public static MapValue asMapValue(Map<String, ?> map) {
+        MapValueBuilder builder = new MapValueBuilder(map.size());
+        for (Map.Entry<String, ?> entry : map.entrySet()) {
+            builder.add(entry.getKey(), Values.unsafeOf(entry.getValue(), true));
+        }
+        return builder.build();
     }
 }
