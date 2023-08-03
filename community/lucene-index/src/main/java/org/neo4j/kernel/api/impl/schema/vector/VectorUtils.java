@@ -104,5 +104,57 @@ public class VectorUtils {
         return vector;
     }
 
+    public static float[] maybeValidVectorWithL2Norm(FloatingPointArray candidate) {
+        if (candidate == null || candidate.isEmpty()) {
+            return null;
+        }
+
+        final var dimensions = candidate.length();
+
+        var square = 0.0;
+        final var vector = new float[dimensions];
+        for (int i = 0; i < candidate.length(); i++) {
+            final var rawElement = candidate.doubleValue(i);
+            final var element = (float) rawElement;
+            if (!Float.isFinite(element)) {
+                return null;
+            }
+            square += rawElement * rawElement;
+            vector[i] = element;
+        }
+
+        if (square <= 0.0 || !Double.isFinite(square)) {
+            return null;
+        }
+
+        return vector;
+    }
+
+    public static float[] maybeValidVectorWithL2Norm(List<Double> candidate) {
+        if (candidate == null || candidate.isEmpty()) {
+            return null;
+        }
+
+        final var dimensions = candidate.size();
+
+        var square = 0.0;
+        final var vector = new float[dimensions];
+        for (int i = 0; i < dimensions; i++) {
+            final var rawElement = candidate.get(i);
+            final float element;
+            if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
+                return null;
+            }
+            square = rawElement * rawElement;
+            vector[i] = element;
+        }
+
+        if (square <= 0.0 || !Double.isFinite(square)) {
+            return null;
+        }
+
+        return vector;
+    }
+
     private VectorUtils() {}
 }

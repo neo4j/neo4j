@@ -20,17 +20,37 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
+import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.values.storable.Value;
 
 public enum VectorSimilarityFunction {
-    EUCLIDEAN,
-    COSINE;
+    EUCLIDEAN {
+        @Override
+        public float[] maybeToValidVector(FloatingPointArray candidate) {
+            return VectorUtils.maybeToValidVector(candidate);
+        }
+
+        @Override
+        public float[] maybeToValidVector(List<Double> candidate) {
+            return VectorUtils.maybeToValidVector(candidate);
+        }
+    },
+
+    COSINE {
+        @Override
+        public float[] maybeToValidVector(FloatingPointArray candidate) {
+            return VectorUtils.maybeValidVectorWithL2Norm(candidate);
+        }
+
+        @Override
+        public float[] maybeToValidVector(List<Double> candidate) {
+            return VectorUtils.maybeValidVectorWithL2Norm(candidate);
+        }
+    };
 
     static final EnumSet<VectorSimilarityFunction> SUPPORTED = EnumSet.allOf(VectorSimilarityFunction.class);
-
-    public float compare(float[] vector1, float[] vector2) {
-        return toLucene().compare(vector1, vector2);
-    }
 
     public static VectorSimilarityFunction fromName(String name) {
         try {
@@ -41,7 +61,22 @@ public enum VectorSimilarityFunction {
         }
     }
 
-    org.apache.lucene.index.VectorSimilarityFunction toLucene() {
+    public final float[] maybeToValidVector(Value candidate) {
+        if (!(candidate instanceof final FloatingPointArray array)) {
+            return null;
+        }
+        return maybeToValidVector(array);
+    }
+
+    public abstract float[] maybeToValidVector(FloatingPointArray candidate);
+
+    public abstract float[] maybeToValidVector(List<Double> candidate);
+
+    public float compare(float[] vector1, float[] vector2) {
+        return toLucene().compare(vector1, vector2);
+    }
+
+    final org.apache.lucene.index.VectorSimilarityFunction toLucene() {
         return switch (this) {
             case EUCLIDEAN -> org.apache.lucene.index.VectorSimilarityFunction.EUCLIDEAN;
             case COSINE -> org.apache.lucene.index.VectorSimilarityFunction.COSINE;
