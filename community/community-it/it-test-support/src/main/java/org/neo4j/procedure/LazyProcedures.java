@@ -272,7 +272,11 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
 
         @Override
         public long signatureVersion() {
-            initView();
+            // Since signatureValues are now used by the query planner cache, basically any transactions
+            // would cause initialization. To avoid this, we instead return a placeholder value.
+            if (view == null) {
+                return -1;
+            }
             return view.signatureVersion();
         }
     }
