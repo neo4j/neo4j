@@ -60,10 +60,18 @@ object leverageOrder {
     }
 
     val orderToLeverage = {
+
+      val aliasesForProvidedOrder = {
+        val newGroupingVariablesAliases = newGroupingExpressionsMap.collect {
+          case (k, v: Variable) if availableSymbols.contains(k) => (Variable(k)(v.position), v)
+        }
+        aliasMap ++ newGroupingVariablesAliases
+      }
+
       // To find out if there are order columns of which we can leverage the order, we have to use the same aliases in the provided order.
       val aliasedInputProvidedOrder = inputProvidedOrder.mapColumns {
-        case c @ Asc(expression, _)  => c.copy(aliasMap.getOrElse(expression, expression))
-        case c @ Desc(expression, _) => c.copy(aliasMap.getOrElse(expression, expression))
+        case c @ Asc(expression, _)  => c.copy(aliasesForProvidedOrder.getOrElse(expression, expression))
+        case c @ Desc(expression, _) => c.copy(aliasesForProvidedOrder.getOrElse(expression, expression))
       }
 
       providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet)

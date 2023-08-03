@@ -106,9 +106,21 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       val aVar = varFor("a")
       // WITH a, a AS b, a AS c
       val grouping = SortedMap("a" -> aVar, "b" -> aVar, "c" -> aVar)(mapOrdering)
-      val providedOrder = ProvidedOrder.asc(varFor("b"))
+      val providedOrder = ProvidedOrder.empty
       val res = leverageOrder(providedOrder, grouping, Set("a", "b", "c"))
-      res.groupingExpressionsMap shouldEqual grouping
+      res shouldBe OrderToLeverageWithAliases(Seq.empty, grouping)
+    }
+  }
+
+  test("should leverage aliased provided order column") {
+    for (mapOrdering <- Seq(Ordering.String, Ordering.String.reverse)) {
+      val aVar = varFor("a")
+      val bVar = varFor("b")
+      // WITH a, a AS b, a AS c
+      val grouping = SortedMap("a" -> aVar, "b" -> aVar, "c" -> aVar)(mapOrdering)
+      val providedOrder = ProvidedOrder.asc(bVar)
+      val res = leverageOrder(providedOrder, grouping, Set("a", "b", "c"))
+      res shouldBe OrderToLeverageWithAliases(Seq(aVar), grouping)
     }
   }
 }

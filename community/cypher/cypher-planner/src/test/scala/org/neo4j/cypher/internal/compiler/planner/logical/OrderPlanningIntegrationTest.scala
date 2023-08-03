@@ -2514,4 +2514,25 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         .build()
     )
   }
+
+  test("should push sort below UNWIND and leverage provided order on aliased column") {
+    val planner = plannerBuilder().setAllNodesCardinality(100).build()
+
+    val q =
+      """
+        |MATCH (a)
+        |UNWIND [1, 2, 3] AS x
+        |RETURN DISTINCT a, a AS b
+        |ORDER BY b
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .orderedDistinct(Seq("a"), "a AS a", "a AS b")
+      .unwind("[1, 2, 3] AS x")
+      .sort("b ASC")
+      .projection("a AS b")
+      .allNodeScan("a")
+      .build()
+  }
 }
