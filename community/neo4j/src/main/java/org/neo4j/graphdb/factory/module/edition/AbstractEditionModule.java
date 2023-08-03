@@ -62,6 +62,7 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.InternalLogProvider;
@@ -140,6 +141,10 @@ public abstract class AbstractEditionModule {
 
     public DatabaseTransactionStats.Factory getTransactionMonitorFactory() {
         return DatabaseTransactionStats::new;
+    }
+
+    public DatabaseIndexStats.Factory getIndexMonitorFactory() {
+        return DatabaseIndexStats::new;
     }
 
     public NetworkConnectionTracker getConnectionTracker() {

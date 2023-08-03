@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -89,6 +90,8 @@ public interface DatabaseCreationContext {
     FileSystemAbstraction getFs();
 
     DatabaseTransactionStats getTransactionStats();
+
+    DatabaseIndexStats getIndexStats();
 
     Factory<DatabaseHealth> getDatabaseHealthFactory();
 

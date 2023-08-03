@@ -127,6 +127,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -214,6 +215,7 @@ public class Database extends AbstractDatabase {
     private final LockService lockService;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
+    private final DatabaseIndexStats indexStats;
     private final CommitProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
     private final GlobalProcedures globalProcedures;
@@ -284,6 +286,7 @@ public class Database extends AbstractDatabase {
         this.transactionEventListeners = context.getTransactionEventListeners();
         this.fs = context.getFs();
         this.transactionStats = context.getTransactionStats();
+        this.indexStats = context.getIndexStats();
         this.constraintSemantics = context.getConstraintSemantics();
         this.globalProcedures = context.getGlobalProcedures();
         this.ioControllerService = context.getIoControllerService();
@@ -358,6 +361,7 @@ public class Database extends AbstractDatabase {
         databaseDependencies.satisfyDependency(kernelTransactionFactory);
         databaseDependencies.satisfyDependency(storeCopyCheckPointMutex);
         databaseDependencies.satisfyDependency(transactionStats);
+        databaseDependencies.satisfyDependency(indexStats);
         databaseDependencies.satisfyDependency(databaseLockManager);
         databaseDependencies.satisfyDependency(databaseAvailability);
         databaseDependencies.satisfyDependency(idGeneratorFactory);
@@ -403,6 +407,7 @@ public class Database extends AbstractDatabase {
                 new LoggingLogTailScannerMonitor(internalLogProvider.getLog(DetachedLogTailScanner.class)));
         databaseMonitors.addMonitorListener(new ReverseTransactionCursorLoggingMonitor(
                 internalLogProvider.getLog(ReversedSingleFileCommandBatchCursor.class)));
+        databaseMonitors.addMonitorListener(indexStats);
 
         // Upgrade the store before we begin
         upgradeStore(databaseConfig, databasePageCache, otherDatabaseMemoryTracker);

@@ -154,6 +154,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 globalModule,
                 identityModule,
                 getTransactionMonitorFactory(),
+                getIndexMonitorFactory(),
                 createIdContextFactory(globalModule),
                 deviceMapper,
                 new CommunityIOControllerService(),

@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -91,6 +92,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final TokenHolders tokenHolders;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
+    private final DatabaseIndexStats indexStats;
     private final Factory<DatabaseHealth> databaseHealthFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
@@ -139,6 +141,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             ConstraintSemantics constraintSemantics,
             QueryEngineProvider queryEngineProvider,
             DatabaseTransactionStats transactionStats,
+            DatabaseIndexStats indexStats,
             Predicate<String> databaseFileFilter,
             AccessCapabilityFactory accessCapabilityFactory,
             ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
@@ -168,6 +171,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.parentMonitors = parentMonitors;
         this.fs = globalModule.getFileSystem();
         this.transactionStats = transactionStats;
+        this.indexStats = indexStats;
         this.eventListeners = globalModule.getDatabaseEventListeners();
         this.databaseHealthFactory = () -> new DatabaseHealth(
                 new DatabaseHealthEventGenerator(eventListeners, namedDatabaseId),
@@ -256,6 +260,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public DatabaseTransactionStats getTransactionStats() {
         return transactionStats;
+    }
+
+    @Override
+    public DatabaseIndexStats getIndexStats() {
+        return indexStats;
     }
 
     @Override

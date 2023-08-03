@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.pagecache.CommunityVersionStorageFactory;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 public class DefaultDatabaseContextFactory
         extends AbstractDatabaseContextFactory<StandaloneDatabaseContext, Optional<?>> {
     private final DatabaseTransactionStats.Factory transactionStatsFactory;
+    private final DatabaseIndexStats.Factory indexStatsFactory;
     private final DeviceMapper deviceMapper;
     private final IOControllerService controllerService;
     private final CommitProcessFactory commitProcessFactory;
@@ -56,6 +58,7 @@ public class DefaultDatabaseContextFactory
             GlobalModule globalModule,
             ServerIdentity serverIdentity,
             DatabaseTransactionStats.Factory transactionStatsFactory,
+            DatabaseIndexStats.Factory indexStatsFactory,
             IdContextFactory idContextFactory,
             DeviceMapper deviceMapper,
             IOControllerService controllerService,
@@ -64,6 +67,7 @@ public class DefaultDatabaseContextFactory
         super(globalModule, idContextFactory);
         this.serverIdentity = serverIdentity;
         this.transactionStatsFactory = transactionStatsFactory;
+        this.indexStatsFactory = indexStatsFactory;
         this.deviceMapper = deviceMapper;
         this.controllerService = controllerService;
         this.commitProcessFactory = commitProcessFactory;
@@ -102,6 +106,7 @@ public class DefaultDatabaseContextFactory
                     new StandardConstraintSemantics(),
                     new CommunityCypherEngineProvider(),
                     transactionStatsFactory.create(),
+                    indexStatsFactory.create(),
                     ModularDatabaseCreationContext.defaultFileWatcherFilter(),
                     AccessCapabilityFactory.configDependent(),
                     ExternalIdReuseConditionProvider.NONE,
