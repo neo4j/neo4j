@@ -86,10 +86,11 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
     for {
       predicateCandidate <- unsolvedIsTypedPredicates
       label <- solvedLabelPredicates.getOrElse(predicateCandidate.variable.name, Set.empty)
+      propertyType <- PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
       if context.staticComponents.planContext.hasNodePropertyTypeConstraint(
         label.name,
         predicateCandidate.property,
-        PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
+        propertyType
       )
     } yield predicateCandidate.predicate
   }
@@ -122,10 +123,11 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
     for {
       predicateCandidate <- unsolvedIsTypedPredicates
       relType <- solvedRelTypePredicates.getOrElse(predicateCandidate.variable.name, Set.empty)
+      propertyType <- PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
       if context.staticComponents.planContext.hasRelationshipPropertyTypeConstraint(
         relType.name,
         predicateCandidate.property,
-        PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
+        propertyType
       )
     } yield predicateCandidate.predicate
   }

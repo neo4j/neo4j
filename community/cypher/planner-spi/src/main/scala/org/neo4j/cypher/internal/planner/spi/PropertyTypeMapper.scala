@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.ast.PointTypeName
 import org.neo4j.cypher.internal.ast.StringTypeName
 import org.neo4j.cypher.internal.ast.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.ast.ZonedTimeTypeName
-import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.internal.schema.constraints.SchemaValueType.BOOLEAN
 import org.neo4j.internal.schema.constraints.SchemaValueType.DATE
@@ -47,24 +46,20 @@ import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_TIME
 
 object PropertyTypeMapper {
 
-  def asSchemaValueType(propertyType: CypherTypeName): SchemaValueType = {
+  def asSchemaValueType(propertyType: CypherTypeName): Option[SchemaValueType] = {
     propertyType match {
-      case _: BooleanTypeName       => BOOLEAN
-      case _: StringTypeName        => STRING
-      case _: IntegerTypeName       => INTEGER
-      case _: FloatTypeName         => FLOAT
-      case _: DateTypeName          => DATE
-      case _: LocalTimeTypeName     => LOCAL_TIME
-      case _: ZonedTimeTypeName     => ZONED_TIME
-      case _: LocalDateTimeTypeName => LOCAL_DATETIME
-      case _: ZonedDateTimeTypeName => ZONED_DATETIME
-      case _: DurationTypeName      => DURATION
-      case _: PointTypeName         => POINT
-      case pt                       => throw new IllegalStateException(s"Invalid property type: ${pt.description}")
+      case _: BooleanTypeName       => Some(BOOLEAN)
+      case _: StringTypeName        => Some(STRING)
+      case _: IntegerTypeName       => Some(INTEGER)
+      case _: FloatTypeName         => Some(FLOAT)
+      case _: DateTypeName          => Some(DATE)
+      case _: LocalTimeTypeName     => Some(LOCAL_TIME)
+      case _: ZonedTimeTypeName     => Some(ZONED_TIME)
+      case _: LocalDateTimeTypeName => Some(LOCAL_DATETIME)
+      case _: ZonedDateTimeTypeName => Some(ZONED_DATETIME)
+      case _: DurationTypeName      => Some(DURATION)
+      case _: PointTypeName         => Some(POINT)
+      case _                        => None
     }
-  }
-
-  def asPropertyTypeSet(cypherType: CypherTypeName): PropertyTypeSet = {
-    PropertyTypeSet.of(asSchemaValueType(cypherType))
   }
 }
