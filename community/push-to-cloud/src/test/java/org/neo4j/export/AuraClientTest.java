@@ -201,7 +201,7 @@ public class AuraClientTest {
         //        // when
         auraClient.authenticate(true);
         auraClient.checkSize(true, dbSize, authorizationTokenResponse);
-        auraClient.initatePresignedUpload(crc32Sum, dbSize, dbSize, authorizationTokenResponse, "5.7.0");
+        auraClient.initatePresignedUpload(crc32Sum, dbSize, dbSize, authorizationTokenResponse);
         auraClient.doStatusPolling(true, authorizationTokenResponse, dbSize);
         auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse);
         //
@@ -383,7 +383,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 containsString("authorization token is invalid"),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
     }
 
     @Test
@@ -417,7 +417,7 @@ public class AuraClientTest {
                         containsString(errorUrl),
                         not(containsString(errorReason)),
                         not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
     }
 
     @Test
@@ -446,7 +446,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 not(containsString("null")),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
     }
 
     @Test
@@ -470,7 +470,7 @@ public class AuraClientTest {
                         containsString("No content to map due to end-of-input"),
                         not(containsString("null")),
                         not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
     }
 
     @Test
@@ -500,7 +500,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 containsString("Error: something bad happened. See: https://example.com/"),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
     }
 
     @Test
@@ -535,7 +535,7 @@ public class AuraClientTest {
                         containsString("Minimum storage space required: 0"),
                         containsString("See: https://console.neo4j.io"),
                         not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token, "4.4"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
     }
 
     @Test
@@ -578,8 +578,7 @@ public class AuraClientTest {
         assertThrows(
                 CommandFailedException.class,
                 allOf(containsString("Unexpected response"), containsString("Initiating upload target")),
-                () -> auraClient.initatePresignedUpload(
-                        crc32Sum, dbSize, sourceLength, authorizationTokenResponse, "5.7.0"));
+                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, authorizationTokenResponse));
 
         // 1 initial call plus 2 retries are 3 expected calls
         wireMock.verify(

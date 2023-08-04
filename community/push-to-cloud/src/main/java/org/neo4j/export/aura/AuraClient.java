@@ -99,6 +99,10 @@ public class AuraClient {
         return auraConsole;
     }
 
+    private String getClientVersion() {
+        return getClass().getPackage().getImplementationVersion();
+    }
+
     public String authenticate(boolean verbose) throws CommandFailedException {
         try {
             return doAuthenticate(verbose);
@@ -112,15 +116,14 @@ public class AuraClient {
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
     public SignedURIBodyResponse initatePresignedUpload(
-            long crc32Sum, long dumpSize, long fullStoreSize, String bearerToken, String version) {
+            long crc32Sum, long dumpSize, long fullStoreSize, String bearerToken) {
         URL importURL = auraConsole.getImportUrl();
         return retryOnUnavailable(
-                () -> doInitatePresignedUpload(crc32Sum, dumpSize, fullStoreSize, bearerToken, version, importURL));
+                () -> doInitatePresignedUpload(crc32Sum, dumpSize, fullStoreSize, bearerToken, importURL));
     }
 
     private SignedURIBodyResponse doInitatePresignedUpload(
-            long crc32Sum, long dumpSize, long fullSize, String bearerToken, String version, URL importURL)
-            throws IOException {
+            long crc32Sum, long dumpSize, long fullSize, String bearerToken, URL importURL) throws IOException {
 
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
         String bearerHeader = "Bearer " + bearerToken;
@@ -130,7 +133,7 @@ public class AuraClient {
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Authorization", bearerHeader);
             connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("Neo4j-Version", version);
+            connection.setRequestProperty("Neo4j-Version", getClientVersion());
             connection.setDoOutput(true);
             try (OutputStream postData = connection.getOutputStream()) {
                 postData.write(
