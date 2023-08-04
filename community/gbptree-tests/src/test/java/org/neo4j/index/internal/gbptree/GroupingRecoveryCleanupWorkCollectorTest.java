@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -60,47 +60,47 @@ class GroupingRecoveryCleanupWorkCollectorTest {
     }
 
     @Test
-    void shouldRunAllJobsBeforeOrDuringShutdown() throws Exception {
+    void shouldRunAllJobsBeforeOrDuringStop() throws Exception {
         // given
-        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> allRuns = new CopyOnWriteArrayList<>();
         List<DummyJob> expectedJobs = someJobs(allRuns);
         collector.init();
 
         // when
         addAll(expectedJobs);
         collector.start();
-        collector.shutdown();
+        collector.stop();
 
         // then
-        assertEquals(allRuns, expectedJobs);
+        assertThat(allRuns).containsExactlyInAnyOrderElementsOf(expectedJobs);
     }
 
     @Test
-    void mustThrowIfStartedMultipleTimes() throws ExecutionException, InterruptedException {
+    void mustThrowIfStartedMultipleTimes() throws Exception {
         // given
-        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> allRuns = new CopyOnWriteArrayList<>();
         List<DummyJob> someJobs = someJobs(allRuns);
         addAll(someJobs);
         collector.start();
 
         // when
-        collector.shutdown();
+        collector.stop();
         assertThrows(IllegalStateException.class, collector::start);
 
         // then
-        collector.shutdown();
+        collector.stop();
     }
 
     @Test
-    void mustCloseOldJobsOnShutdown() throws ExecutionException, InterruptedException {
+    void mustCloseOldJobsOnStop() throws Exception {
         // given
-        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> allRuns = new CopyOnWriteArrayList<>();
         List<DummyJob> someJobs = someJobs(allRuns);
 
         // when
         collector.init();
         addAll(someJobs);
-        collector.shutdown();
+        collector.stop();
 
         // then
         for (DummyJob job : someJobs) {
@@ -110,7 +110,7 @@ class GroupingRecoveryCleanupWorkCollectorTest {
 
     @Test
     void shouldExecuteAllTheJobsWhenSeparateJobFails() throws Exception {
-        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> allRuns = new CopyOnWriteArrayList<>();
 
         DummyJob firstJob = new DummyJob("first", allRuns);
         DummyJob thirdJob = new DummyJob("third", allRuns);
@@ -124,9 +124,9 @@ class GroupingRecoveryCleanupWorkCollectorTest {
         collector.add(fourthJob);
 
         collector.start();
-        collector.shutdown();
+        collector.stop();
 
-        assertSame(expectedJobs, allRuns);
+        assertThat(allRuns).containsExactlyInAnyOrderElementsOf(expectedJobs);
     }
 
     @Test
@@ -141,11 +141,6 @@ class GroupingRecoveryCleanupWorkCollectorTest {
         jobs.forEach(collector::add);
     }
 
-    private static void assertSame(List<DummyJob> someJobs, List<DummyJob> actual) {
-        assertTrue(actual.containsAll(someJobs));
-        assertTrue(someJobs.containsAll(actual));
-    }
-
     private static List<DummyJob> someJobs(List<DummyJob> allRuns) {
         return new ArrayList<>(
                 Arrays.asList(new DummyJob("A", allRuns), new DummyJob("B", allRuns), new DummyJob("C", allRuns)));
@@ -155,7 +150,6 @@ class GroupingRecoveryCleanupWorkCollectorTest {
         private final ExecutorService executorService = Executors.newSingleThreadExecutor();
         private final Group mainGroup;
         private final Group workGroup;
-        private MonitoredJobExecutor createdExecutor;
 
         SingleGroupJobScheduler(Group mainGroup, Group workGroup) {
             this.mainGroup = mainGroup;
@@ -165,8 +159,7 @@ class GroupingRecoveryCleanupWorkCollectorTest {
         @Override
         public MonitoredJobExecutor monitoredJobExecutor(Group group) {
             assertGroup(group, workGroup);
-            createdExecutor = (monitoringParams, job) -> executorService.submit(job);
-            return createdExecutor;
+            return (monitoringParams, job) -> executorService.submit(job);
         }
 
         @Override

@@ -40,7 +40,7 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     private final Group workerGroup;
     private final String databaseName;
     private volatile boolean moreJobsAllowed = true;
-    private JobHandle handle;
+    private volatile JobHandle handle;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
@@ -63,19 +63,19 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     }
 
     @Override
-    public void add(CleanupJob job) {
+    public synchronized void add(CleanupJob job) {
         Preconditions.checkState(moreJobsAllowed, "Index clean jobs can't be added after collector start.");
         jobs.add(job);
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
         Preconditions.checkState(moreJobsAllowed, "Already started");
         moreJobsAllowed = false;
     }
 
     @Override
-    public void shutdown() throws ExecutionException, InterruptedException {
+    public synchronized void stop() throws ExecutionException, InterruptedException {
         moreJobsAllowed = false;
         if (handle != null) {
             // Also set the started flag which acts as a signal to exit the scheduled job on empty queue,
