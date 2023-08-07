@@ -31,7 +31,7 @@ set prompt "${bold}neo4j@neo4j${color_reset}> "
 proc sendQuery { query } {
     expect "\033\[\[1mneo4j@neo4j\033\[\[0m> " {
         # We "should" not need to sleep here, but input and output gets out of sync if we don't
-        sleep 0.4
+        sleep 0.5
         send "${query}\r"
     }
 }
