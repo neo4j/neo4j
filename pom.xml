@@ -129,7 +129,7 @@
     <caffeine.version>3.0.3</caffeine.version>
     <required.maven.version>3.6.3</required.maven.version>
     <jackson.version>2.15.2</jackson.version>
-    <amazon-sdk.version>1.12.301</amazon-sdk.version>
+    <amazon-sdk.version>1.12.502</amazon-sdk.version>
     <guava.version>32.0.0-jre</guava.version>
     <awaitility.version>4.1.0</awaitility.version>
     <!--    Be careful when updating Log4j version. We have workarounds for problems with shading/plugin handling
@@ -1564,61 +1564,10 @@
         <artifactId>annotations</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <!-- used by benchmark-infra module -->
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-batch</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-cloudformation</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-core</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-s3</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-secretsmanager</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-ec2</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-ec2instanceconnect</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-lambda</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
       <dependency>
         <groupId>com.kohlschutter.junixsocket</groupId>
         <artifactId>junixsocket-core</artifactId>
         <version>2.3.4</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-ecs</artifactId>
-        <version>${amazon-sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-logs</artifactId>
-        <version>${amazon-sdk.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
