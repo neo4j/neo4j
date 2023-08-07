@@ -42,7 +42,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -451,7 +451,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Test
     void countOpenedAndClosedCursors() throws IOException {
         DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(defaultPageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(defaultPageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (MuninnPageCache pageCache = createPageCache(fs, 42, defaultPageCacheTracer)) {
             int iterations = 14;
             for (int i = 0; i < iterations; i++) {
@@ -493,7 +493,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Test
     void countOpenedAndClosedLinkedCursors() throws IOException {
         DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(defaultPageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(defaultPageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (MuninnPageCache pageCache = createPageCache(fs, 42, defaultPageCacheTracer)) {
             int iterations = 14;
             for (int i = 0; i < iterations; i++) {
@@ -541,7 +541,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Test
     void shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped() throws IOException {
         DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(defaultPageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(defaultPageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         Path fileForDeletion = file("fileForDeletion");
         writeInitialDataTo(fileForDeletion, reservedBytes);
         long initialFlushes = defaultPageCacheTracer.flushes();
@@ -565,7 +565,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer recordingCursor =
                 new RecordingPageCursorTracer(tracer, "ableToEvictAllPageInAPageCache");
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         try (MuninnPageCache pageCache = createPageCache(fs, 2, blockCacheFlush(tracer));
                 PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes);
                 CursorContext context = contextFactory.create(recordingCursor)) {
@@ -585,7 +585,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer recordingTracer =
                 new RecordingPageCursorTracer(tracer, "mustEvictCleanPageWithoutFlushing");
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 10, blockCacheFlush(tracer));
                 PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
@@ -609,7 +609,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer recordingTracer =
                 new RecordingPageCursorTracer(tracer, "mustFlushDirtyPagesOnEvictingFirstPage");
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 10, blockCacheFlush(tracer));
                 PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
@@ -637,7 +637,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer recordingTracer =
                 new RecordingPageCursorTracer(tracer, "mustFlushDirtyPagesOnEvictingLastPage");
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 10, blockCacheFlush(tracer));
                 PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
@@ -664,7 +664,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer(true);
         PageCursorTracer pageCursorTracer =
                 cacheTracer.createPageCursorTracer("finishPinEventWhenOpenedWithNoFaultOption");
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 4, cacheTracer);
                 PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
@@ -689,7 +689,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer(true);
         PageCursorTracer pageCursorTracer =
                 cacheTracer.createPageCursorTracer("finishPinEventWhenOpenedWithNoFaultOption");
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 2, cacheTracer);
                 PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
@@ -714,7 +714,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         writeInitialDataTo(file("b"), reservedBytes);
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer(true);
         PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer("finishPinEventReportedPerFile");
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 4, cacheTracer);
                 PagedFile pagedFileA = map(pageCache, file("a"), 8 + reservedBytes);
@@ -746,7 +746,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         writeInitialDataTo(file("b"), reservedBytes);
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer(true);
         PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer("finishPinEventReportedPerFile");
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 4, cacheTracer);
                 PagedFile pagedFileA = map(pageCache, file("a"), 8 + reservedBytes);
@@ -773,7 +773,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer recordingTracer =
                 new RecordingPageCursorTracer(tracer, "mustFlushDirtyPagesOnEvictingAllPages", Fault.class);
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, 10, blockCacheFlush(tracer));
                 PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
@@ -829,7 +829,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     void reportFreeListSizeToTracers() throws IOException {
         var pageCacheTracer = new InfoTracer();
         int maxPages = 40;
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         try (MuninnPageCache pageCache = createPageCache(fs, maxPages, pageCacheTracer);
                 PagedFile pagedFile = map(pageCache, file("a"), (int) ByteUnit.kibiBytes(8))) {
@@ -2397,7 +2397,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Test
     void touchShouldLoadPagesIntoPageCache() throws Exception {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, 1000, tracer);
         Path file = file("a");
         int toTouch = 128;
@@ -2447,7 +2447,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Test
     void touchShouldReportFaults() throws Exception {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, 1000, tracer);
         Path file = file("a");
         int toTouch = 128;
@@ -2489,7 +2489,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     @Test
     void touchWhenSomePagesAlreadyLoaded() throws Exception {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, 1000, tracer);
         Path file = file("a");
         int toTouch = 128;
@@ -2517,7 +2517,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     void touchMoreThenLockStriping() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
-            var contextFactory = new CursorContextFactory(tracer, EMPTY);
+            var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
             getPageCache(fs, LatchMap.faultLockStriping * 2, tracer);
             Path file = file("a");
 

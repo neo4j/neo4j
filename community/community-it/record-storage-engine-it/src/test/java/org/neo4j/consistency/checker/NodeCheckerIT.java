@@ -26,7 +26,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.assertj.core.api.SoftAssertions;
@@ -135,7 +135,7 @@ class NodeCheckerIT {
 
     private void prepareContext() throws Exception {
         var neoStores = storageEngine.testAccessNeoStores();
-        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
             Iterable<IndexDescriptor> indexDescriptors =
                     () -> SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders)

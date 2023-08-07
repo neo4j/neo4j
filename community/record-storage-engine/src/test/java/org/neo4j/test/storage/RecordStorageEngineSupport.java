@@ -21,7 +21,7 @@ package org.neo4j.test.storage;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
@@ -266,7 +266,7 @@ public class RecordStorageEngineSupport {
                     emptyLogTailMetadata,
                     new MetadataCache(emptyLogTailMetadata),
                     LockVerificationFactory.NONE,
-                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                     PageCacheTracer.NULL);
             this.transactionApplierTransformer = transactionApplierTransformer;
         }

@@ -28,7 +28,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 
 import java.util.Collection;
@@ -67,7 +67,8 @@ import org.neo4j.values.storable.Values;
 @ExtendWith(JobSchedulerExtension.class)
 class TokenIndexPopulationTest {
     private final IndexStoreView storeView = mock(IndexStoreView.class);
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     private final IndexDescriptor valueIndex = TestIndexDescriptorFactory.forLabel(1, 1);
     private final IndexPopulator valueIndexPopulator = mock(IndexPopulator.class);

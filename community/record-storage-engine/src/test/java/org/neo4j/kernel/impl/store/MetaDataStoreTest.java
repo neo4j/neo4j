@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -101,7 +101,8 @@ public class MetaDataStoreTest {
     private PageCache pageCache;
     private boolean fakePageCursorOverflow;
     private PageCache pageCacheWithFakeOverflow;
-    private final CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private final CursorContextFactory contextFactory =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     public static Stream<Arguments> recordFormats() {
         return Stream.of(Arguments.of(PageAligned.LATEST_RECORD_FORMATS));
@@ -475,7 +476,7 @@ public class MetaDataStoreTest {
     @Test
     void tracePageCacheAccessOnStoreInitialisation() {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (MetaDataStore ignored = newMetaDataStore(contextFactory)) {
             assertThat(pageCacheTracer.faults()).isOne();
             assertThat(pageCacheTracer.pins()).isEqualTo(2);
@@ -486,7 +487,7 @@ public class MetaDataStoreTest {
 
     @Test
     void tracePageCacheAccessOnSetRecord() throws IOException {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("tracePageCacheAccessOnSetRecord");
         try (var metaDataStore = newMetaDataStore()) {
             var fieldAccess = MetaDataStore.getFieldAccess(
@@ -502,7 +503,7 @@ public class MetaDataStoreTest {
 
     @Test
     void tracePageCacheAccessOnGetRecord() throws IOException {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("tracePageCacheAccessOnGetRecord");
         try (var metaDataStore = newMetaDataStore()) {
             var fieldAccess = MetaDataStore.getFieldAccess(
@@ -518,7 +519,7 @@ public class MetaDataStoreTest {
 
     @Test
     void tracePageCacheAssessOnRegenerate() {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("tracePageCacheAssessOnSetStoreId");
         try (var metaDataStore = newMetaDataStore()) {
             var storeId = StoreId.generateNew("engine-1", "format-1", 1, 1);
@@ -591,7 +592,7 @@ public class MetaDataStoreTest {
     void shouldLoadAllFieldsOnOpen() {
         // given
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var store = newMetaDataStore(contextFactory)) {
             var pinsBefore = pageCacheTracer.pins();
             readAllFields(store);

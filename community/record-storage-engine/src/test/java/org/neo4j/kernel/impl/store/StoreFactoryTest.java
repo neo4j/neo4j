@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
 
 import java.io.IOException;
@@ -77,7 +77,7 @@ class StoreFactoryTest {
     }
 
     private StoreFactory storeFactory(Config config) {
-        return storeFactory(config, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+        return storeFactory(config, new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER));
     }
 
     private StoreFactory storeFactory(Config config, CursorContextFactory contextFactory) {
@@ -117,7 +117,7 @@ class StoreFactoryTest {
     @Test
     void tracePageCacheAccessOnOpenStores() {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         neoStores = storeFactory(defaults(), contextFactory).openAllNeoStores();
 
         assertThat(pageCacheTracer.pins()).isNotZero();
@@ -139,7 +139,7 @@ class StoreFactoryTest {
         // GIVEN
         StoreFactory storeFactory = storeFactory(
                 defaults(),
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                 immutable.of(DELETE_ON_CLOSE),
                 false);
 

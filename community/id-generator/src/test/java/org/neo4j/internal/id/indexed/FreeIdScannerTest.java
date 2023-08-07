@@ -27,7 +27,7 @@ import static org.neo4j.internal.id.IdSlotDistribution.evenSlotDistribution;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
 import java.io.IOException;
@@ -617,7 +617,7 @@ class FreeIdScannerTest {
         int cacheSize = IDS_PER_ENTRY / 2;
         FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cacheSize, generation, true);
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("tracerPageCacheAccessOnCacheScan")) {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isZero();
@@ -639,7 +639,7 @@ class FreeIdScannerTest {
         int cacheSize = IDS_PER_ENTRY / 2;
         FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cacheSize, generation, true);
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnCacheClear")) {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isZero();

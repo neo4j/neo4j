@@ -23,6 +23,7 @@ import static java.lang.Integer.min;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheckStrict;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -47,7 +48,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.test.Race;
@@ -119,8 +119,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
             var seed = random.seed();
             for (int round = 0; round < 5; round++) {
                 var race = new Race();
-                var cursorContext =
-                        new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY).create("test");
+                var cursorContext = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER).create("test");
                 for (var i = 0; i < threads; i++) {
                     int id = i;
                     var threadSeed = seed++;

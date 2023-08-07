@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -101,7 +101,7 @@ class PropertyStoreTraceIT {
         var propertyStore = neoStores.getPropertyStore();
         prepareIdGenerator(propertyStore.getStringStore().getIdGenerator());
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnPropertyBlockIdGeneration")) {
             var propertyBlock = new PropertyBlock();
             var dynamicRecord = new DynamicRecord(2);

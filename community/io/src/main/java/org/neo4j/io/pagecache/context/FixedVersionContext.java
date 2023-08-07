@@ -23,7 +23,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 public class FixedVersionContext implements VersionContext {
     private static final long INVALID_TRANSACTION_ID = 0;
-    public static final VersionContext EMPTY = new FixedVersionContext(INVALID_TRANSACTION_ID);
+    public static final VersionContext EMPTY_VERSION_CONTEXT = new FixedVersionContext(INVALID_TRANSACTION_ID);
 
     private final long committingTransactionId;
 

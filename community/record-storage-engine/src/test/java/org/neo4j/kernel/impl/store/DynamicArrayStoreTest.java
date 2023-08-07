@@ -24,7 +24,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
@@ -87,7 +87,7 @@ class DynamicArrayStoreTest {
     @ParameterizedTest
     @MethodSource("data")
     void tracePageCacheAccessOnRecordAllocation(Supplier<Object> dataSupplier) throws IOException {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         try (var store = dynamicArrayStore()) {
             tracePageCacheAccessOnAllocation(store, contextFactory, dataSupplier.get());
         }
@@ -143,7 +143,7 @@ class DynamicArrayStoreTest {
                 false,
                 DEFAULT_DATABASE_NAME,
                 immutable.empty());
-        store.initialise(new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+        store.initialise(new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER));
         store.start(NULL_CONTEXT);
         return store;
     }

@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ public class FreeListIdProviderTracersTest {
     private TestDirectory testDirectory;
 
     private final DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-    private final CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+    private final CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
     @Test
     void trackPageCacheAccessOnInitialize() throws IOException {

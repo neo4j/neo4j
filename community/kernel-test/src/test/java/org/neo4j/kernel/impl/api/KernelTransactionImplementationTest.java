@@ -52,7 +52,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionValidationFailed;
 
@@ -660,7 +660,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics(
                 transaction, new AtomicReference<>(new ThreadBasedCpuClock()), false);
         PredictablePageCursorTracer tracer = new PredictablePageCursorTracer();
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         statistics.init(2, contextFactory.create(tracer));
 
         assertEquals(2, statistics.cpuTimeMillis());

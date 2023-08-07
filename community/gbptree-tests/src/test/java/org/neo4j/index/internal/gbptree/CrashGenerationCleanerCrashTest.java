@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.CrashGenerationCleaner.MAX_BATCH_SIZE;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
 import java.util.List;
@@ -100,7 +100,7 @@ class CrashGenerationCleanerCrashTest {
                 5,
                 7,
                 NO_MONITOR,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                 "test tree");
     }
 }

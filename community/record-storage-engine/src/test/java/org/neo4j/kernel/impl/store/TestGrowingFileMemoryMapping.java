@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ class TestGrowingFileMemoryMapping {
                 pageCacheTracer,
                 testDirectory.getFileSystem(),
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(pageCacheTracer, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 false,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
 

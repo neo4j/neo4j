@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 
 import java.io.IOException;
@@ -96,7 +96,7 @@ class TokenIndexReaderTest {
 
         // WHEN the index is queried
         var cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("tracePageCache");
         var reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKER, idLayout);
         var tokenClient = new SimpleEntityTokenClient();

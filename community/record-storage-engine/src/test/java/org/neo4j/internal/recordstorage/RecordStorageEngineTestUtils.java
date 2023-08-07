@@ -27,7 +27,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
 import org.neo4j.collection.diffset.LongDiffSets;
@@ -91,7 +91,7 @@ public class RecordStorageEngineTestUtils {
                 emptyLogTailMetadata,
                 new MetadataCache(emptyLogTailMetadata),
                 LockVerificationFactory.NONE,
-                new CursorContextFactory(cacheTracer, EMPTY),
+                new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 cacheTracer);
     }
 

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.mockito.matcher.KernelExceptionUserMessageAssert.assertThat;
 
 import java.util.ArrayList;
@@ -120,7 +120,7 @@ class SchemaStorageTest {
                 pageCacheTracer,
                 fs,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(pageCacheTracer, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 false,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         neoStores = storeFactory.openNeoStores(

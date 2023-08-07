@@ -24,7 +24,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.index.schema.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
@@ -117,7 +117,7 @@ public class ConsistencyCheckService {
                 null,
                 ConsistencyFlags.ALL,
                 PageCacheTracer.NULL,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                 EmptyMemoryTracker.INSTANCE,
                 DEFAULT_SMALL_MAX_OFF_HEAP_MEMORY,
                 Runtime.getRuntime().availableProcessors());

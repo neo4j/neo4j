@@ -30,7 +30,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.ROOT_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.setKeyCount;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
@@ -293,7 +293,7 @@ class CrashGenerationCleanerTest {
         assertThat(cacheTracer.unpins()).isZero();
         assertThat(cacheTracer.hits()).isZero();
 
-        var cursorContextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var cursorContextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         var cleaner = new CrashGenerationCleaner(
                 pagedFile,
@@ -324,7 +324,7 @@ class CrashGenerationCleanerTest {
                 unstableTreeState.stableGeneration(),
                 unstableTreeState.unstableGeneration(),
                 monitor,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                 "test tree");
     }
 

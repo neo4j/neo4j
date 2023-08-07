@@ -25,7 +25,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -65,8 +65,8 @@ class PageCacheLongArrayTest {
                 DEFAULT_DATABASE_NAME,
                 immutable.of(CREATE, DELETE_ON_CLOSE));
 
-        try (LongArray array =
-                new PageCacheLongArray(file, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), COUNT, 0, 0)) {
+        try (LongArray array = new PageCacheLongArray(
+                file, new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER), COUNT, 0, 0)) {
             verifyBehaviour(array);
         }
     }
@@ -74,7 +74,7 @@ class PageCacheLongArrayTest {
     @Test
     void verifyChunkingArrayWithPageCacheLongArray() {
         Path directory = testDirectory.homePath();
-        var contextFactory = new CursorContextFactory(NULL, EMPTY);
+        var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
         NumberArrayFactory numberArrayFactory = NumberArrayFactories.auto(
                 pageCache, contextFactory, directory, false, NO_MONITOR, NullLog.getInstance(), DEFAULT_DATABASE_NAME);
         try (LongArray array = numberArrayFactory.newDynamicLongArray(COUNT / 1_000, 0, INSTANCE)) {

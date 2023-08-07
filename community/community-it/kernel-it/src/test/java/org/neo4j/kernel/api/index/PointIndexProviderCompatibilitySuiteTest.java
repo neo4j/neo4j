@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.nio.file.Path;
@@ -78,7 +78,7 @@ class PointIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
                 config,
                 readOnlyChecker,
                 recoveryCleanupWorkCollector,
-                new CursorContextFactory(cacheTracer, EMPTY),
+                new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 cacheTracer,
                 DEFAULT_DATABASE_NAME,
                 EmptyDependencyResolver.EMPTY_RESOLVER);

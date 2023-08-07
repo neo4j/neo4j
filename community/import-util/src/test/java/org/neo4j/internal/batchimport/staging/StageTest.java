@@ -27,7 +27,7 @@ import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.internal.batchimport.staging.StageExecution.DEFAULT_PANIC_MONITOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -50,7 +50,8 @@ import org.neo4j.test.extension.RandomExtension;
 @ExtendWith(RandomExtension.class)
 class StageTest {
     private static final int TEST_BATCH_SIZE = 100;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private RandomSupport random;

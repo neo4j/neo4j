@@ -25,7 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.util.UUID;
@@ -80,7 +80,7 @@ class StatementLifecycleTest {
                 new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                 from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
                 Config.defaults(GraphDatabaseInternalSettings.track_tx_statement_close, true));
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("test");
         statement.initialize(mock(LockManager.Client.class), cursorContext, 1);
         return statement;

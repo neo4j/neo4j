@@ -31,6 +31,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.index.internal.gbptree.RootLayerConfiguration.multipleRoots;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
@@ -65,7 +66,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Race;
@@ -112,7 +112,7 @@ class MultiRootGBPTreeTest {
                 getOpenOptions(),
                 "db",
                 "test multi-root tree",
-                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
                 pageCacheTracer);
         highestUsableSeed = layout.highestUsableSeed();
@@ -150,7 +150,7 @@ class MultiRootGBPTreeTest {
                 getOpenOptions(),
                 "db",
                 "test multi-root tree",
-                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 multipleRoots(layoutWithBadHashes, (int) kibiBytes(1)),
                 pageCacheTracer)) {
 
@@ -484,7 +484,7 @@ class MultiRootGBPTreeTest {
                         getOpenOptions(),
                         "db",
                         "test multi-root tree",
-                        new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
+                        new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         multipleRoots(wrongRootLayout, (int) kibiBytes(1)),
                         cacheTracer))
                 .isInstanceOf(MetadataMismatchException.class);
@@ -511,7 +511,7 @@ class MultiRootGBPTreeTest {
                         getOpenOptions(),
                         "db",
                         "test multi-root tree",
-                        new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
+                        new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
                         cacheTracer))
                 .isInstanceOf(MetadataMismatchException.class);
@@ -538,7 +538,7 @@ class MultiRootGBPTreeTest {
                             getOpenOptions(),
                             "db",
                             "test multi-root tree",
-                            new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY),
+                            new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                             multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
                             cacheTracer)
                     .close();

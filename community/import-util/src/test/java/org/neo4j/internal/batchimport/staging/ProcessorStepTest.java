@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_THREAD;
 import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -52,7 +52,8 @@ import org.neo4j.test.extension.OtherThreadExtension;
 
 @ExtendWith(OtherThreadExtension.class)
 class ProcessorStepTest {
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private OtherThread t2;
@@ -83,7 +84,7 @@ class ProcessorStepTest {
         StageControl control = new SimpleStageControl();
         var cacheTracer = new DefaultPageCacheTracer();
         int batches = 10;
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (MyProcessorStep step = new MyProcessorStep(control, 0, contextFactory)) {
             step.start(Step.ORDER_SEND_DOWNSTREAM);
 

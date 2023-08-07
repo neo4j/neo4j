@@ -38,7 +38,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -121,7 +121,8 @@ import org.neo4j.values.storable.Values;
 
 @ImpermanentDbmsExtension
 class IndexPopulationJobTest {
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private DatabaseManagementService managementService;
@@ -204,7 +205,7 @@ class IndexPopulationJobTest {
         int prop = tokenHolders.propertyKeyTokens().getIdByName(name);
         LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel(label, prop);
         var pageCacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         IndexPopulationJob job = newIndexPopulationJob(
                 populator,
                 new FlippableIndexProxy(),
@@ -266,7 +267,7 @@ class IndexPopulationJobTest {
         IndexPopulator actualPopulator = indexPopulator(descriptor);
         TrackingIndexPopulator populator = new TrackingIndexPopulator(actualPopulator);
         var pageCacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         IndexPopulationJob job = newIndexPopulationJob(
                 populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor, contextFactory);
 

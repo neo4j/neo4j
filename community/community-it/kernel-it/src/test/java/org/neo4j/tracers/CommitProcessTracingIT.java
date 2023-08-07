@@ -22,7 +22,7 @@ package org.neo4j.tracers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -98,7 +98,7 @@ public class CommitProcessTracingIT {
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnCommandCreation");
                 var reader = storageEngine.newReader()) {
             assertZeroCursor(cursorContext);
@@ -140,7 +140,7 @@ public class CommitProcessTracingIT {
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnTransactionApply")) {
             assertZeroCursor(cursorContext);
 

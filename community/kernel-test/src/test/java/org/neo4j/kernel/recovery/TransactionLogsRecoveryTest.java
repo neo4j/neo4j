@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.KibiByte;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
@@ -74,7 +75,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -161,7 +161,7 @@ class TransactionLogsRecoveryTest {
 
     @Test
     void shouldRecoverExistingData() throws Exception {
-        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
+        var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
         LogFile logFile = logFiles.getLogFile();
         Path file = logFile.getLogFileForVersion(logVersion);
 
@@ -293,7 +293,7 @@ class TransactionLogsRecoveryTest {
     @Test
     void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception {
         Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
-        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
+        var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
 
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeDataWithVersion(file, dataWriters -> {
@@ -547,7 +547,7 @@ class TransactionLogsRecoveryTest {
     @Test
     void shouldInitSchemaLifeWhenRecoveryNotRequired() throws Exception {
         Lifecycle schemaLife = mock(Lifecycle.class);
-        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
+        var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
 
         RecoveryService recoveryService = mock(RecoveryService.class);
         when(recoveryService.getRecoveryStartInformation()).thenReturn(NO_RECOVERY_REQUIRED);
@@ -613,7 +613,7 @@ class TransactionLogsRecoveryTest {
 
     private boolean recovery(Path storeDir, RecoveryStartupChecker startupChecker) throws IOException {
         LifeSupport life = new LifeSupport();
-        var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
+        var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
 
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
         RecoveryMonitor monitor = new RecoveryMonitor() {

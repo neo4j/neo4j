@@ -32,7 +32,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -77,7 +77,8 @@ import org.neo4j.test.utils.TestDirectory;
 @ExtendWith(RandomExtension.class)
 class RelationshipGroupDefragmenterTest {
     private static final Configuration CONFIG = Configuration.DEFAULT;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private TestDirectory testDirectory;
@@ -136,7 +137,7 @@ class RelationshipGroupDefragmenterTest {
         RecordStore<RelationshipGroupRecord> groupStore = stores.getTemporaryRelationshipGroupStore();
         prepareData(nodeCount, relationshipTypeCount, groupStore);
         var pageCacheTracer = new DefaultPageCacheTracer();
-        defrag(nodeCount, groupStore, new CursorContextFactory(pageCacheTracer, EMPTY));
+        defrag(nodeCount, groupStore, new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER));
 
         assertThat(pageCacheTracer.pins()).isEqualTo(8);
         assertThat(pageCacheTracer.unpins()).isEqualTo(8);

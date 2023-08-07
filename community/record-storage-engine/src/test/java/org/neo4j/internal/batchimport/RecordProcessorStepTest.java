@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,7 +50,7 @@ class RecordProcessorStepTest {
                 () -> new TestProcessor(result, doneCalls, closeCalls),
                 true,
                 numThreads,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                 any -> StoreCursors.NULL)) {
             // when
             step.start(0);

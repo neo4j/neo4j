@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.DESCRIPTOR;
 
 import org.eclipse.collections.impl.factory.Sets;
@@ -48,7 +48,11 @@ class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey> {
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         var cacheTracer = PageCacheTracer.NULL;
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder(
-                        pageCache, fs, new CursorContextFactory(cacheTracer, EMPTY), cacheTracer, DEFAULT_DATABASE_NAME)
+                        pageCache,
+                        fs,
+                        new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
+                        cacheTracer,
+                        DEFAULT_DATABASE_NAME)
                 .build();
         StandardConfiguration configuration = new StandardConfiguration();
         return new PointIndexAccessor(

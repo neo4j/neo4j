@@ -36,7 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -547,7 +547,7 @@ class StoreMigratorTest {
 
     private StoreMigrator createMigrator(LogService logService, Config config) throws IOException {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
         var logTail = new LogTailExtractor(fs, pageCache, config, storageEngineFactory, DatabaseTracers.EMPTY)
                 .getTailMetadata(databaseLayout, INSTANCE);

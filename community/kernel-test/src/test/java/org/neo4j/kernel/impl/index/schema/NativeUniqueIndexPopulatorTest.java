@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 import java.io.IOException;
@@ -68,7 +68,11 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
     NativeIndexPopulator<KEY> createPopulator(PageCache pageCache) throws IOException {
         var cacheTracer = PageCacheTracer.NULL;
         DatabaseIndexContext context = DatabaseIndexContext.builder(
-                        pageCache, fs, new CursorContextFactory(cacheTracer, EMPTY), cacheTracer, DEFAULT_DATABASE_NAME)
+                        pageCache,
+                        fs,
+                        new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
+                        cacheTracer,
+                        DEFAULT_DATABASE_NAME)
                 .build();
         return populatorFactory.create(context, indexFiles, layout, indexDescriptor, tokenNameLookup);
     }

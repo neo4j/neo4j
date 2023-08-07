@@ -25,7 +25,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.Race.throwing;
 
 import java.util.ArrayList;
@@ -92,7 +92,7 @@ class LargeFreelistCreationDeletionIT {
                     false,
                     Config.defaults(),
                     DEFAULT_DATABASE_NAME,
-                    new CursorContextFactory(cacheTracer, EMPTY),
+                    new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                     NO_MONITOR,
                     Sets.immutable.empty(),
                     SINGLE_IDS,

@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -103,7 +103,7 @@ class ImportPanicIT {
                     LogFilesInitializer.NULL,
                     IndexImporterFactory.EMPTY,
                     EmptyMemoryTracker.INSTANCE,
-                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER));
             Iterable<DataFactory> nodeData = DataFactories.datas(DataFactories.data(
                     InputEntityDecorators.NO_DECORATOR, fileAsCharReadable(nodeCsvFileWithBrokenEntries())));
             Input brokenCsvInput = new CsvInput(

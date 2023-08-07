@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.parallel;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -31,7 +32,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.ProcedureView;
@@ -51,7 +51,7 @@ class ThreadExecutionContextTest {
     @Test
     void closeResourcesOnContextClose() {
         var pageCacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var storageReader = mock(StorageReader.class);
         var lockClient = mock(LockManager.Client.class);
 

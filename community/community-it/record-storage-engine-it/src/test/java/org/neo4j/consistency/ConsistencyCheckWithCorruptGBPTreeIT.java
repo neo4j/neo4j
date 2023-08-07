@@ -27,11 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.ConsistencyFlags.ALL;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.index.internal.gbptree.RootLayerConfiguration.singleRoot;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
@@ -873,7 +872,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
             Path... targetFiles)
             throws Exception {
         List<Path> treeFiles = new ArrayList<>();
-        var contextFactory = new CursorContextFactory(NULL, EMPTY);
+        var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("corruptIndexes");
                 JobScheduler jobScheduler = createInitialisedScheduler();
                 GBPTreeBootstrapper bootstrapper =

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
@@ -93,7 +93,8 @@ class CountsComputerTest {
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final Config CONFIG = Config.defaults();
     private static final PageCacheTracer PAGE_CACHE_TRACER = PageCacheTracer.NULL;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PAGE_CACHE_TRACER, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PAGE_CACHE_TRACER, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -129,7 +130,7 @@ class CountsComputerTest {
 
             var countsStore = db.getDependencyResolver().resolveDependency(GBPTreeCountsStore.class);
             var pageCacheTracer = new DefaultPageCacheTracer();
-            var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+            var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
             var cursorContext = contextFactory.create("tracePageCacheAccessOnInitialization");
 
             countsStore.start(cursorContext, INSTANCE);

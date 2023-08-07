@@ -27,7 +27,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +89,7 @@ class ConsistencyCheckingApplierTest {
                         pageCacheTracer,
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
-                        new CursorContextFactory(pageCacheTracer, EMPTY),
+                        new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         false,
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                 .openAllNeoStores();

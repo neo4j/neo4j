@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.AfterEach;
@@ -71,7 +71,8 @@ class RecordStoreMigratorTest {
 
     private JobScheduler jobScheduler;
     private final BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
-    private final CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+    private final CursorContextFactory contextFactory =
+            new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
 
     @BeforeEach
     void setUp() {

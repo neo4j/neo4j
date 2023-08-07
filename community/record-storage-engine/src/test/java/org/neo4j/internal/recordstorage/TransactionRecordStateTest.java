@@ -51,7 +51,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.relationship;
 import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.relationships;
 import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.singleCreate;
@@ -221,7 +221,7 @@ class TransactionRecordStateTest {
                 fs,
                 formats,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(pageCacheTracer, EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 false,
                 logTailMetadata,
                 immutable.empty());

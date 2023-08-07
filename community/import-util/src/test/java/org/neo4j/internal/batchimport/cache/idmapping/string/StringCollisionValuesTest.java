@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Path;
@@ -73,7 +73,7 @@ class StringCollisionValuesTest {
                 (PageCache pageCache, Path homePath) -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
                 (PageCache pageCache, Path homePath) -> new PageCachedNumberArrayFactory(
                         pageCache,
-                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                        new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                         homePath,
                         NullLog.getInstance(),
                         DEFAULT_DATABASE_NAME));

@@ -28,6 +28,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -69,7 +70,6 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -159,7 +159,7 @@ class RecordStorageMigratorIT {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
         StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
-        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
         RecordStorageMigrator migrator = new RecordStorageMigrator(
@@ -214,7 +214,7 @@ class RecordStorageMigratorIT {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
         StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
-        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
         RecordStorageMigrator migrator = new RecordStorageMigrator(
@@ -283,7 +283,7 @@ class RecordStorageMigratorIT {
 
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         RecordFormats toFormat = StandardFormatWithMinorVersionBump.RECORD_FORMATS;
         RecordStoreVersion versionToMigrateFrom = new RecordStoreVersion(Standard.LATEST_RECORD_FORMATS);
@@ -356,7 +356,7 @@ class RecordStorageMigratorIT {
 
         StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         RecordStorageMigrator migrator = new RecordStorageMigrator(
                 fs,
                 pageCache,
@@ -459,7 +459,7 @@ class RecordStorageMigratorIT {
 
         StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         RecordStorageMigrator migrator = new RecordStorageMigrator(
                 fs,
                 pageCache,
@@ -548,7 +548,7 @@ class RecordStorageMigratorIT {
         StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         MigrationProgressMonitor progressMonitor = SILENT;
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         RecordStorageMigrator migrator = new RecordStorageMigrator(
                 fs,
                 pageCache,
@@ -599,7 +599,7 @@ class RecordStorageMigratorIT {
         StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         StoreVersion versionToMigrateTo = getVersionToMigrateTo();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         // when
         RecordStorageMigrator migrator = new RecordStorageMigrator(

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.concurrent.Future;
@@ -230,13 +230,15 @@ public class DynamicIndexStoreViewIT {
     }
 
     private StoreScan nodeStoreScan(TokenScanConsumer consumer) {
-        CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        CursorContextFactory contextFactory =
+                new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         return storeView.visitNodes(
                 getLabelIds(), PropertySelection.ALL_PROPERTIES, null, consumer, false, true, contextFactory, INSTANCE);
     }
 
     private StoreScan relationshipStoreScan(TokenScanConsumer consumer) {
-        CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        CursorContextFactory contextFactory =
+                new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         return storeView.visitRelationships(
                 getRelationTypeIds(),
                 PropertySelection.ALL_PROPERTIES,

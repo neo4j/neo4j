@@ -27,7 +27,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_S
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -111,7 +111,7 @@ class PropertyDeleterTest {
                         pageCacheTracer,
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
-                        new CursorContextFactory(pageCacheTracer, EMPTY),
+                        new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         false,
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                 .openAllNeoStores();

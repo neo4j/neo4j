@@ -23,7 +23,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
@@ -73,7 +73,7 @@ class NeoStoreOpenFailureTest {
         RecordFormatPropertyConfigurator.configureRecordFormat(formats, config);
         StoreType[] storeTypes = StoreType.STORE_TYPES;
         ImmutableSet<OpenOption> openOptions = immutable.empty();
-        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         LogTailLogVersionsMetadata logTail = LogTailLogVersionsMetadata.EMPTY_LOG_TAIL;
         NeoStores neoStores = new NeoStores(
                 fileSystem,

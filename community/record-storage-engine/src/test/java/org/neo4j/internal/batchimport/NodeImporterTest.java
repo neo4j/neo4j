@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.batchimport.SchemaMonitor.NO_MONITOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -145,7 +145,7 @@ class NodeImporterTest {
         int numberOfLabels = 50;
         long nodeId = 0;
         var cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
 
         // when
         try (NodeImporter importer = new NodeImporter(

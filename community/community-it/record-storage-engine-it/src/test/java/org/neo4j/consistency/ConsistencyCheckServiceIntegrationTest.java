@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -152,7 +152,7 @@ public class ConsistencyCheckServiceIntegrationTest {
                 PageCache pageCache = pageCacheFactory.getOrCreatePageCache()) {
             var result = consistencyCheckService()
                     .with(pageCache)
-                    .with(new CursorContextFactory(pageCacheTracer, EMPTY))
+                    .with(new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER))
                     .runFullConsistencyCheck();
 
             assertFalse(result.isSuccessful());

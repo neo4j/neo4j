@@ -43,7 +43,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.EMPTY_REBUILD;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.OtherThreadExecutor.command;
@@ -84,7 +84,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -109,7 +108,8 @@ class GBPTreeGenericCountsStoreTest {
     private static final int LABEL_ID_2 = 2;
     private static final int RELATIONSHIP_TYPE_ID_1 = 1;
     private static final int RELATIONSHIP_TYPE_ID_2 = 2;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private TestDirectory directory;
@@ -142,8 +142,7 @@ class GBPTreeGenericCountsStoreTest {
 
         assertZeroGlobalTracer(pageCacheTracer);
 
-        CursorContextFactory cursorContextFactory =
-                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        CursorContextFactory cursorContextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (var counts = new GBPTreeCountsStore(
                 pageCache,
                 file,

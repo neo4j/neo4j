@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -91,7 +91,7 @@ class AbstractDynamicStoreTest {
 
     @Test
     void tracePageCacheAccessOnRecordsAllocation() {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnRecordsAllocation");
                 var store = newTestableDynamicStore()) {
             assertZeroCursor(cursorContext);
@@ -111,7 +111,7 @@ class AbstractDynamicStoreTest {
 
     @Test
     void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree() {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree");
                 var store = newTestableDynamicStore()) {
             assertZeroCursor(cursorContext);
@@ -246,7 +246,7 @@ class AbstractDynamicStoreTest {
                         return "TestDynamicStore";
                     }
                 };
-        store.initialise(new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+        store.initialise(new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER));
         return store;
     }
 

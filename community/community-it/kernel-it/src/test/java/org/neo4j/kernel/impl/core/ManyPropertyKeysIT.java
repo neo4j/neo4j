@@ -24,7 +24,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_KEY_TOKEN_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -137,7 +137,7 @@ class ManyPropertyKeysIT {
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys(int propertyKeyCount) throws IOException {
         var cacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("databaseWithManyPropertyKeys");
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,

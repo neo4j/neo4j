@@ -32,7 +32,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.keyToString;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
@@ -211,7 +211,7 @@ class GBPTreeCountsStoreTest {
                 fs,
                 countsStoreFile(),
                 new PrintStream(out),
-                new CursorContextFactory(cacheTracer, EMPTY),
+                new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 cacheTracer,
                 immutable.empty());
 
@@ -264,7 +264,7 @@ class GBPTreeCountsStoreTest {
                 DEFAULT_DATABASE_NAME,
                 10,
                 NullLogProvider.getInstance(),
-                new CursorContextFactory(cacheTracer, EMPTY),
+                new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 cacheTracer,
                 Sets.immutable.empty());
     }

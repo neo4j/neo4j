@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -72,7 +72,8 @@ import org.neo4j.values.storable.Values;
 
 @DbmsExtension
 class FullScanStoreViewTest {
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private GraphDatabaseAPI graphDb;
@@ -295,7 +296,7 @@ class FullScanStoreViewTest {
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("forcedCheckpoint"));
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var propertyScanConsumer = new TestPropertyScanConsumer();
         var scan = new NodeStoreScan(
                 Config.defaults(),
@@ -326,7 +327,7 @@ class FullScanStoreViewTest {
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("forcedCheckpoint"));
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var propertyScanConsumer = new TestPropertyScanConsumer();
         var scan = new RelationshipStoreScan(
                 Config.defaults(),

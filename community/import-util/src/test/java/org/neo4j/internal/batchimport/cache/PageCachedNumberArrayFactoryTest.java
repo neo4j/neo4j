@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.cache;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Path;
@@ -44,7 +44,8 @@ class PageCachedNumberArrayFactoryTest {
     @Inject
     private TestDirectory directory;
 
-    private final CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private final CursorContextFactory contextFactory =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Test
     void shouldLogAllocationOnIntArray() {

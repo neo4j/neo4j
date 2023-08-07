@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.io.IOUtils.closeAllSilently;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -47,7 +47,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 class ForkedProcessorStepTest {
     private static final int TIMEOUT_MINUTES = 2;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Test
     void shouldProcessAllSingleThreaded() throws Exception {

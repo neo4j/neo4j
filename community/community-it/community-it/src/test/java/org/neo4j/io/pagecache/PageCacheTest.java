@@ -52,7 +52,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
@@ -2267,7 +2267,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
-            var contextFactory = new CursorContextFactory(tracer, EMPTY);
+            var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
             getPageCache(fs, maxPages, tracer);
 
             generateFileWithRecords(
@@ -2336,7 +2336,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             long pagesToGenerate = 142;
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
-            var contextFactory = new CursorContextFactory(tracer, EMPTY);
+            var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
             getPageCache(fs, maxPages, tracer);
 
             long initialPins = tracer.pins();
@@ -2415,7 +2415,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return super.beginPin(writeLock, filePageId, swapper);
             }
         };
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, maxPages, tracer);
 
         generateFileWithRecords(file("a"), recordCount, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
@@ -2440,7 +2440,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void restartByShouldRetryMustCarryOverExistingPin() throws IOException {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, maxPages, tracer);
         generateFileWithRecords(file("a"), recordCount, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
 
@@ -2470,7 +2470,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         RandomAdversary adversary = new RandomAdversary(0.0, 0.9, 0.0);
         adversary.setProbabilityFactor(0.0);
         AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction(adversary, fs);
-        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(afs, maxPages, tracer);
         generateFileWithRecords(file("a"), recordCount, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
 
@@ -6028,7 +6028,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void noFaultReadOfPagesNotInMemory() throws Exception {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, maxPages, cacheTracer);
 
         Path file = file("a");
@@ -6045,7 +6045,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void noFaultWriteOnPagesNotInMemory() throws Exception {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, maxPages, cacheTracer);
 
         Path file = file("a");
@@ -6063,7 +6063,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void noFaultLinkedReadOfPagesNotInMemory() throws Exception {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, maxPages, cacheTracer);
 
         Path file = file("a");
@@ -6081,7 +6081,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void noFaultLinkedWriteOnPagesNotInMemory() throws Exception {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(fs, maxPages, cacheTracer);
 
         Path file = file("a");

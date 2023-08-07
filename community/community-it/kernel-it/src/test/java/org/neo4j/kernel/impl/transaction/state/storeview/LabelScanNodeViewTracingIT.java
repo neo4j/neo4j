@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import static java.util.stream.StreamSupport.stream;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
 import static org.neo4j.test.PageCacheTracerAssertions.pins;
@@ -80,7 +80,7 @@ class LabelScanNodeViewTracingIT {
         var labelId = getLabelId(label);
 
         var cacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         IndexProxy indexProxy = indexingService.getIndexProxy(findTokenIndex());
 
         var scan = new LabelIndexedNodeStoreScan(

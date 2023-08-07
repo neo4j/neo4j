@@ -21,13 +21,14 @@ package org.neo4j.io.pagecache.context;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.io.pagecache.context.FixedVersionContext.EMPTY_VERSION_CONTEXT;
 
 import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class CursorContext implements AutoCloseable {
     public static final CursorContext NULL_CONTEXT =
-            new CursorContext(NULL_CONTEXT_FACTORY, PageCursorTracer.NULL, EmptyVersionContext.EMPTY);
+            new CursorContext(NULL_CONTEXT_FACTORY, PageCursorTracer.NULL, EMPTY_VERSION_CONTEXT);
 
     private final PageCursorTracer cursorTracer;
     private final VersionContext versionContext;

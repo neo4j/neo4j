@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class NumberArrayPageCacheTestSupport {
         TestDirectory testDirectory = TestDirectory.testDirectory(testClass, fileSystem);
         Path dir = testDirectory.prepareDirectoryForTest("test");
         ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
         PageCache pageCache =
                 StandalonePageCacheFactory.createPageCache(fileSystem, scheduler, PageCacheTracer.NULL, config(1024));
         return new Fixture(pageCache, fileSystem, dir, scheduler, contextFactory);

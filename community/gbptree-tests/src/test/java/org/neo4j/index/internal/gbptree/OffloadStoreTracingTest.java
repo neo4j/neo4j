@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.OffloadIdValidator.ALWAYS_TRUE;
 import static org.neo4j.index.internal.gbptree.RawBytes.EMPTY_BYTES;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
@@ -49,7 +49,8 @@ class OffloadStoreTracingTest {
 
     private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout(false);
     private final DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
-    private final CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+    private final CursorContextFactory contextFactory =
+            new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
     private OffloadStoreImpl<RawBytes, RawBytes> offloadStore;
     private CursorContext cursorContext;
     private PagedFile pagedFile;

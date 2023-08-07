@@ -24,6 +24,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.nio.file.OpenOption;
@@ -35,7 +36,6 @@ import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
@@ -143,8 +143,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     }
 
     public GBPTree<KEY, VALUE> build() {
-        CursorContextFactory cursorContextFactory =
-                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        CursorContextFactory cursorContextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         return new GBPTree<>(
                 pageCache,
                 fileSystem,
@@ -164,7 +163,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     }
 
     public MultiRootGBPTree<ROOT_KEY, KEY, VALUE> buildMultiRoot() {
-        var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         return new MultiRootGBPTree<>(
                 pageCache,
                 fileSystem,

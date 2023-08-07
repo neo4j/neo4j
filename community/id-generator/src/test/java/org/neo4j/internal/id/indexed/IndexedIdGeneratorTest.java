@@ -49,7 +49,7 @@ import static org.neo4j.internal.id.IdSlotDistribution.powerTwoSlotSizesDownward
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
@@ -113,7 +113,8 @@ import org.neo4j.test.utils.TestDirectory;
 @ExtendWith({RandomExtension.class, LifeExtension.class})
 class IndexedIdGeneratorTest {
     private static final long MAX_ID = 0x3_00000000L;
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private TestDirectory directory;
@@ -843,7 +844,7 @@ class IndexedIdGeneratorTest {
     void tracePageCacheAccessOnConsistencyCheck() {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         idGenerator.consistencyCheck(
                 noopReporterFactory(),
                 cursorContextFactory,

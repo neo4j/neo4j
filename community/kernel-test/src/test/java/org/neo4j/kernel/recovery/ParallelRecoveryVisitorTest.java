@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
@@ -44,7 +45,6 @@ import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
@@ -86,8 +86,7 @@ import org.neo4j.test.Barrier;
 import org.neo4j.time.SystemNanoClock;
 
 class ParallelRecoveryVisitorTest {
-    private final CursorContextFactory contextFactory =
-            new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
+    private final CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Test
     void shouldApplyUnrelatedInParallel() throws Exception {

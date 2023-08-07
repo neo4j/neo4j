@@ -22,7 +22,7 @@ package org.neo4j.commandline.dbms;
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.io.fs.FileUtils.deleteDirectory;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -62,7 +62,7 @@ public class LoadDumpExecutor {
     }
 
     public void execute(DumpInput dumpInput, String database, boolean force) throws IOException {
-        CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
         DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(database);
         fs.mkdirs(databaseLayout.databaseDirectory());

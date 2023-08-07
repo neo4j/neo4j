@@ -19,12 +19,14 @@
  */
 package org.neo4j.io.pagecache.context;
 
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
+
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class CursorContextFactory {
     public static final CursorContextFactory NULL_CONTEXT_FACTORY =
-            new CursorContextFactory(PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY);
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
     private final PageCacheTracer cacheTracer;
     private final VersionContextSupplier versionContextSupplier;
 

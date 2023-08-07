@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -57,7 +57,8 @@ import org.neo4j.values.storable.Values;
 class IndexPopulationTest {
     private final IndexStatisticsStore indexStatisticsStore = mock(IndexStatisticsStore.class);
     private final InMemoryTokens tokens = new InMemoryTokens();
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Test
     void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception {

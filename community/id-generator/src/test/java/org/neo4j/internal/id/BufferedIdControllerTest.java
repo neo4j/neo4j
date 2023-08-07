@@ -27,7 +27,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
 import org.junit.jupiter.api.RepeatedTest;
@@ -93,7 +93,7 @@ class BufferedIdControllerTest {
 
     @Test
     void shouldStopWhenNotStarted() throws IOException {
-        setUp(new CursorContextFactory(PageCacheTracer.NULL, EMPTY), fs);
+        setUp(new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER), fs);
 
         assertDoesNotThrow(controller::stop);
     }
@@ -101,7 +101,7 @@ class BufferedIdControllerTest {
     @Test
     void reportPageCacheMetricsOnMaintenance() throws IOException {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         setUp(contextFactory, fs);
 
         try (var idGenerator = idGeneratorFactory.create(
@@ -138,7 +138,7 @@ class BufferedIdControllerTest {
     void concurrentMaintanenceAndClose() throws Throwable {
         var race = new Race();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         setUp(contextFactory, fs);
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
@@ -177,7 +177,7 @@ class BufferedIdControllerTest {
     @Test
     void maintanenceAfterClose() throws Throwable {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         setUp(contextFactory, fs);
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
@@ -213,7 +213,7 @@ class BufferedIdControllerTest {
                 DiskBufferedIds.class.getDeclaredMethod(
                         "processChunk", BufferedIds.BufferedIdVisitor.class, ReadAheadChannel.class));
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var adversarialFs = new AdversarialFileSystemAbstraction(adversary, fs);
         setUp(contextFactory, adversarialFs);
         life.start();

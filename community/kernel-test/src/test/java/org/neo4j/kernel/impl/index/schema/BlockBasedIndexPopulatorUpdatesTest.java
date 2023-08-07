@@ -30,7 +30,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValue
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -111,7 +111,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         databaseIndexContext = DatabaseIndexContext.builder(
                         pageCache,
                         fs,
-                        new CursorContextFactory(pageCacheTracer, EMPTY),
+                        new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         pageCacheTracer,
                         DEFAULT_DATABASE_NAME)
                 .build();

@@ -21,7 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import java.util.ArrayList;
@@ -96,7 +96,12 @@ class ReadGroupsFromCacheStepTest {
         private final AtomicInteger processCounter;
 
         VerifierStep(StageControl control, Configuration config, AtomicInteger processCounter) {
-            super(control, "Verifier", config, 1, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+            super(
+                    control,
+                    "Verifier",
+                    config,
+                    1,
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER));
             this.processCounter = processCounter;
         }
 

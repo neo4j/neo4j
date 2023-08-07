@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.include_versions_under_development;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -206,7 +206,7 @@ class RecordStoreVersionCheckTest {
         createMetaDataStore(PageAligned.LATEST_RECORD_FORMATS);
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("tracePageCacheAccessOnCheckUpgradable");
 
         performCheck.accept(cursorContext);
@@ -232,7 +232,7 @@ class RecordStoreVersionCheckTest {
                 format.minorVersion()));
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var cursorContext = contextFactory.create("tracePageCacheAccessOnStoreVersionAccessConstruction");
         StoreId storeId = StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, cursorContext);
         assertNotNull(storeId);

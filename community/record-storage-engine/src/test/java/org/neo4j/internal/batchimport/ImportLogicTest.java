@@ -30,7 +30,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.logging.internal.NullLogService.getInstance;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -63,7 +63,8 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 @Neo4jLayoutExtension
 @ExtendWith(RandomExtension.class)
 class ImportLogicTest {
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -81,7 +82,7 @@ class ImportLogicTest {
     void closeImporterWithoutDiagnosticState() throws IOException {
         ExecutionMonitor monitor = mock(ExecutionMonitor.class);
         IndexImporterFactory factory = mock(IndexImporterFactory.class);
-        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
         try (BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache(
                 fileSystem,
                 pageCache,
@@ -172,7 +173,7 @@ class ImportLogicTest {
         // given
         ExecutionMonitor monitor = mock(ExecutionMonitor.class);
         IndexImporterFactory factory = mock(IndexImporterFactory.class);
-        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
         try (BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache(
                 fileSystem,
                 pageCache,

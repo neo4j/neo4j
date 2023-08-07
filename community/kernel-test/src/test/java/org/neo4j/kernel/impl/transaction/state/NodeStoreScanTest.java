@@ -24,7 +24,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.PrimitiveArrays.intersect;
 import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.Collection;
@@ -66,7 +66,8 @@ import org.neo4j.values.storable.Values;
 class NodeStoreScanTest {
     private static final String KEY_NAME = "name";
     private static final String KEY_AGE = "age";
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private RandomSupport random;

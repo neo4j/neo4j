@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
@@ -94,7 +94,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
 
     @BeforeEach
     void setup() {
-        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         descriptor = createDescriptor();
         accessor = createAccessor();
     }

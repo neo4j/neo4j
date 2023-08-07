@@ -21,6 +21,8 @@ package org.neo4j.io.pagecache.context;
 
 public class FixedVersionContextSupplier implements VersionContextSupplier {
 
+    public static final VersionContextSupplier EMPTY_CONTEXT_SUPPLIER = new FixedVersionContextSupplier(0);
+
     private final FixedVersionContext fixedVersionContext;
 
     public FixedVersionContextSupplier(long committingTransactionId) {

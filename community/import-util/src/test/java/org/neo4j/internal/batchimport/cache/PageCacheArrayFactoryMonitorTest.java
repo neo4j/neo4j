@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ import org.neo4j.logging.NullLog;
 class PageCacheArrayFactoryMonitorTest {
     private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory(
             mock(PageCache.class),
-            new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
             Path.of("storeDir"),
             NullLog.getInstance(),
             DEFAULT_DATABASE_NAME);

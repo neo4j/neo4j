@@ -31,7 +31,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -375,7 +375,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     IndexMonitor.NO_MONITOR,
                     getSchemaState(),
                     mock(IndexStatisticsStore.class),
-                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                     INSTANCE,
                     "",
                     writable(),
@@ -609,7 +609,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     propertyKeyIdFilter,
                     false,
                     jobScheduler,
-                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                     INSTANCE);
             this.delegate = delegate;
             this.customAction = customAction;

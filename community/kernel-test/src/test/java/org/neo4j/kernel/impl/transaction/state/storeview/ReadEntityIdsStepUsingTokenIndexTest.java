@@ -25,7 +25,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
@@ -91,7 +91,8 @@ class ReadEntityIdsStepUsingTokenIndexTest {
     @Inject
     private RandomSupport random;
 
-    private final CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+    private final CursorContextFactory contextFactory =
+            new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
 
     @Test
     void shouldSeeRecentUpdatesRightInFrontOfExternalUpdatesPoint() throws Exception {
@@ -113,7 +114,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                                     new int[] {TOKEN_ID},
                                     CursorContext.NULL_CONTEXT),
                             any -> StoreCursors.NULL,
-                            new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
+                            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                             new ControlledUpdatesCheck(indexAccessor, expectedEntityIds),
                             new AtomicBoolean(true),
                             true));
@@ -177,7 +178,12 @@ class ReadEntityIdsStepUsingTokenIndexTest {
         private final BitSet seenEntityIds;
 
         CollectEntityIdsStep(StageControl control, Configuration config, BitSet seenEntityIds) {
-            super(control, "Collector", config, 1, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+            super(
+                    control,
+                    "Collector",
+                    config,
+                    1,
+                    new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER));
             this.seenEntityIds = seenEntityIds;
         }
 

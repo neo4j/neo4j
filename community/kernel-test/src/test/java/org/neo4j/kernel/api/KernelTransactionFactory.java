@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.locking.NoLocksClient.NO_LOCKS_CLIENT;
@@ -44,7 +45,6 @@ import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.procedure.ProcedureView;
@@ -121,7 +121,7 @@ public final class KernelTransactionFactory {
                 mock(DatabaseTracers.class, RETURNS_MOCKS),
                 storageEngine,
                 any -> CanWrite.INSTANCE,
-                new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY),
+                new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER),
                 ON_HEAP,
                 new StandardConstraintSemantics(),
                 mock(SchemaState.class),

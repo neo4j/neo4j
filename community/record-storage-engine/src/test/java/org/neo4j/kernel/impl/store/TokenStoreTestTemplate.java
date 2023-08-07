@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -111,7 +111,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
                 immutable.empty());
         store = instantiateStore(
                 fs, file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config);
-        CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
         nameStore.initialise(contextFactory);
         store.initialise(contextFactory);
         nameStore.start(NULL_CONTEXT);

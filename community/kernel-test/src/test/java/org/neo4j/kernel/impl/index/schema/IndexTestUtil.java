@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 import java.util.concurrent.Callable;
@@ -87,7 +87,7 @@ public abstract class IndexTestUtil<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE
     @BeforeEach
     void setup() {
         pageCacheTracer = new DefaultPageCacheTracer();
-        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         indexDescriptor = indexDescriptor();
         layout = layout();
         this.indexFiles = createIndexFiles(fs, directory, indexDescriptor);

@@ -28,6 +28,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
@@ -62,7 +63,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.DefaultVersionStorageTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -238,7 +238,7 @@ class KernelTransactionTestBase {
                         new DefaultTracer(pageCacheTracer), LockTracer.NONE, pageCacheTracer, versionStorageTracer),
                 storageEngine,
                 any -> CanWrite.INSTANCE,
-                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),
+                new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 () -> collectionsFactory,
                 new StandardConstraintSemantics(),
                 mock(SchemaState.class),

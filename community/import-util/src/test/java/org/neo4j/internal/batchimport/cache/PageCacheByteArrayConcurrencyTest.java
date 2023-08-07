@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport.cache;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.PagedFile;
@@ -41,7 +41,11 @@ public class PageCacheByteArrayConcurrencyTest extends PageCacheNumberArrayConcu
     @Override
     protected ByteArray getNumberArray(PagedFile file) throws IOException {
         return new PageCacheByteArray(
-                file, new CursorContextFactory(PageCacheTracer.NULL, EMPTY), COUNT, new byte[] {-1, -1, -1, -1}, 0);
+                file,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
+                COUNT,
+                new byte[] {-1, -1, -1, -1},
+                0);
     }
 
     private static class WholeFileRacer implements Runnable {

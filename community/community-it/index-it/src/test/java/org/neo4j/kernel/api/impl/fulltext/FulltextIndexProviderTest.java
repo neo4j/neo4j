@@ -33,7 +33,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
@@ -540,7 +540,7 @@ class FulltextIndexProviderTest {
         // Modify the full-text index such that it has an analyzer configured that does not exist.
         controller.restartDbms(builder -> {
             var cacheTracer = NULL;
-            CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+            CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(
                     Config.defaults(GraphDatabaseSettings.neo4j_home, builder.getHomeDirectory()));
             DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory(

@@ -23,7 +23,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ class CalculateDenseNodesStepTest {
                 new SimpleStageControl(),
                 Configuration.DEFAULT,
                 cache,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY))) {
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER))) {
             step.start(0);
             step.processors(4);
 

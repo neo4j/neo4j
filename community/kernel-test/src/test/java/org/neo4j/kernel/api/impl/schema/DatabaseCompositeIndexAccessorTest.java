@@ -34,7 +34,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
@@ -335,7 +335,7 @@ public class DatabaseCompositeIndexAccessorTest {
                         DatabaseLayout.ofFlat(testDirectory.homePath()),
                         new TokenHolders(null, null, null),
                         jobScheduler,
-                        new CursorContextFactory(cacheTracer, EMPTY),
+                        new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         cacheTracer,
                         EmptyDependencyResolver.EMPTY_RESOLVER))
                 .collect(Collectors.toList());

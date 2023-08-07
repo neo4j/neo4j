@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.Subject;
@@ -44,7 +44,8 @@ class IndexPopulationJobMonitoringTest {
     private final MultipleIndexPopulator populator = mock(MultipleIndexPopulator.class);
     private final MemoryTracker memoryTracker = mock(MemoryTracker.class);
     private final StoreScan scan = mock(StoreScan.class);
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Test
     void testPopulationOfSingleIndex() {

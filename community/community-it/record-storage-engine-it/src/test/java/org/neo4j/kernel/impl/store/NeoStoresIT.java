@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,7 +60,8 @@ class NeoStoresIT {
 
     private static final RelationshipType FRIEND = RelationshipType.withName("FRIEND");
     private static final String LONG_STRING_VALUE = randomAscii(2048);
-    private final CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+    private final CursorContextFactory contextFactory =
+            new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {

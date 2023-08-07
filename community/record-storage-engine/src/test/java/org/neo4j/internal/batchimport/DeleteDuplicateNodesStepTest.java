@@ -29,7 +29,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
@@ -98,7 +98,7 @@ class DeleteDuplicateNodesStepTest {
 
     @BeforeEach
     void before() {
-        contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
         var storeFactory = new StoreFactory(
                 databaseLayout,
                 Config.defaults(),
@@ -214,7 +214,7 @@ class DeleteDuplicateNodesStepTest {
                 iterator(duplicateNodeIds),
                 neoStores,
                 monitor,
-                new CursorContextFactory(cacheTracer, EMPTY))) {
+                new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER))) {
             stage.execute().awaitCompletion(10, TimeUnit.MINUTES);
         }
 

@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
@@ -52,7 +53,6 @@ import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -405,7 +405,7 @@ class CheckPointerImplTest {
                 NullLogProvider.getInstance(),
                 databaseTracers,
                 mutex,
-                new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY),
+                new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER),
                 clock,
                 IOController.DISABLED,
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER);

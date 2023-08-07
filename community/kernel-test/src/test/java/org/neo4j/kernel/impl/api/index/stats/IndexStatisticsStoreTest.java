@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
@@ -81,7 +81,7 @@ class IndexStatisticsStoreTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         store = openStore("stats");
         lifeSupport.start();
     }
@@ -118,7 +118,7 @@ class IndexStatisticsStoreTest {
         store.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
 
         var checkPageCacheTracer = new DefaultPageCacheTracer();
-        var checkContextFactory = new CursorContextFactory(checkPageCacheTracer, EMPTY);
+        var checkContextFactory = new CursorContextFactory(checkPageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         store.consistencyCheck(
                 noopReporterFactory(), checkContextFactory, Runtime.getRuntime().availableProcessors());
 

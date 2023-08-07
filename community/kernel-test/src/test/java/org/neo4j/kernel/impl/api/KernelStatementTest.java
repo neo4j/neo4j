@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.util.Optional;
@@ -58,7 +58,7 @@ class KernelStatementTest {
         // given
         KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
         when(transaction.isCommitted()).thenReturn(true);
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         KernelStatement statement = createStatement(transaction);
         var cursorContext = contextFactory.create("test");
         statement.initialize(mock(LockManager.Client.class), cursorContext, 1);
@@ -74,7 +74,7 @@ class KernelStatementTest {
     @Test
     void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution() {
         KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
 
         KernelTransactionImplementation.Statistics statistics =
                 new KernelTransactionImplementation.Statistics(transaction, cpuClockRef, false);
@@ -100,7 +100,7 @@ class KernelStatementTest {
     @Test
     void emptyPageCacheStatisticOnClosedStatement() {
         var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
+        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         try (var statement = createStatement(transaction)) {
             var cursorContext = contextFactory.create("test");
             statement.initialize(mock(LockManager.Client.class), cursorContext, 100);

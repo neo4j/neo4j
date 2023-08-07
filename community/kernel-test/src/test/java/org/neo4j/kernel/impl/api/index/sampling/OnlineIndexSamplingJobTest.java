@@ -29,7 +29,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,8 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 class OnlineIndexSamplingJobTest {
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
     private final InternalLogProvider logProvider = NullLogProvider.getInstance();
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock(IndexProxy.class);
@@ -113,7 +114,7 @@ class OnlineIndexSamplingJobTest {
                 "Foo",
                 "Foo",
                 logProvider,
-                new CursorContextFactory(pageCacheTracer, EMPTY));
+                new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER));
         when(indexProxy.getState()).thenReturn(ONLINE);
 
         // when

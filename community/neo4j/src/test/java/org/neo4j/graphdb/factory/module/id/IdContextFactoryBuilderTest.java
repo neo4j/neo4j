@@ -29,7 +29,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.io.IOException;
@@ -65,7 +65,8 @@ import org.neo4j.test.utils.TestDirectory;
 @PageCacheExtension
 @ExtendWith(LifeExtension.class)
 class IdContextFactoryBuilderTest {
-    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+    private static final CursorContextFactory CONTEXT_FACTORY =
+            new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Inject
     private TestDirectory testDirectory;
@@ -161,7 +162,7 @@ class IdContextFactoryBuilderTest {
     @Test
     void useProvidedPageCacheCursorOnIdMaintenance() throws IOException {
         PageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
         Config config = defaults();
         var idContextFactory = IdContextFactoryBuilder.of(fs, jobScheduler, config, cacheTracer)
                 .build();
