@@ -248,10 +248,14 @@ class VectorIndexProceduresIT {
             final var query = randomVector();
             final var approximateNearest = queryNodesAndCollect(k, query);
 
-            assertThat(approximateNearest)
-                    .as("approximate nearest neighbors")
-                    .hasSizeLessThanOrEqualTo(k)
-                    .hasSize(NUMBER_OF_NODES);
+            assertThat(approximateNearest).as("approximate nearest neighbors").hasSizeLessThanOrEqualTo(k);
+
+            // cannot assertThat(approximateNearest).hasSize(NUMBER_OF_NODES):
+            // org.apache.lucene.codecs.KnnVectorsReader::search
+            //
+            // The search is allowed to be approximate, meaning the results are not guaranteed to be the true k
+            // closest neighbors. For large values of k (for example when k is close to the total number of
+            // documents), the search may also retrieve fewer than k documents.
         }
 
         @Test
