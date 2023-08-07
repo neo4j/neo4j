@@ -96,6 +96,11 @@ public abstract class RelationshipSelection {
     }
 
     /**
+     * @return the highest possible type in the selection.
+     */
+    public abstract int highestType();
+
+    /**
      * Selects the correct set of added relationships from transaction state, based on the selection criteria.
      *
      * @param transactionState the {@link NodeState} to select added relationships from.
@@ -192,6 +197,11 @@ public abstract class RelationshipSelection {
             assert index == 0;
             return type;
         }
+
+        @Override
+        public int highestType() {
+            return type;
+        }
     }
 
     private static class DirectionalSingleType extends DirectionalSingleCriterion {
@@ -271,6 +281,11 @@ public abstract class RelationshipSelection {
         }
 
         @Override
+        public int highestType() {
+            return types[types.length - 1];
+        }
+
+        @Override
         public LongIterator addedRelationships(NodeState transactionState) {
             LongIterator[] all = new LongIterator[types.length];
             int index = 0;
@@ -325,6 +340,11 @@ public abstract class RelationshipSelection {
         @Override
         public boolean isTypeLimited() {
             return false;
+        }
+
+        @Override
+        public int highestType() {
+            return Integer.MAX_VALUE;
         }
 
         @Override
@@ -398,6 +418,13 @@ public abstract class RelationshipSelection {
         @Override
         public int criterionType(int index) {
             return directedTypes.criterionType(index);
+        }
+
+        @Override
+        public int highestType() {
+            return directedTypes.isTypeLimited()
+                    ? directedTypes.criterionType(directedTypes.numberOfCriteria() - 1)
+                    : Integer.MAX_VALUE;
         }
 
         @Override
@@ -475,6 +502,11 @@ public abstract class RelationshipSelection {
         }
 
         @Override
+        public int highestType() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
         public LongIterator addedRelationships(NodeState transactionState) {
             return transactionState.getAddedRelationships();
         }
@@ -524,6 +556,11 @@ public abstract class RelationshipSelection {
         @Override
         public boolean isTypeLimited() {
             return true;
+        }
+
+        @Override
+        public int highestType() {
+            return -1;
         }
 
         @Override
