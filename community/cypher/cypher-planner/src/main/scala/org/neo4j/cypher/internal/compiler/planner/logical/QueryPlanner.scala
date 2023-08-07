@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.InlineRelationshipType
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicatesToConnectedNodes.QuantifiedPathPatternPredicatesMovedToConnectedNodes
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.UnnecessaryOptionalMatchesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.QppPredicatesCopiedToJuxtaposedNodes
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.Transformer
@@ -156,7 +156,7 @@ case object QueryPlanner
     InScopeZeroLengthRelationshipsHaveBeenExtracted,
     VarLengthQuantifierMerged,
     TokensResolved,
-    QuantifiedPathPatternPredicatesMovedToConnectedNodes,
+    QppPredicatesCopiedToJuxtaposedNodes,
     RelationshipTypePredicatesInlined
   )
 

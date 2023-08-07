@@ -84,6 +84,8 @@ trait RewritePhaseTest {
     }
   }
 
+  def assertRewritten(from: String, to: Statement): Unit = assertRewritten(from, to, List.empty)
+
   def assertRewritten(
     from: String,
     to: Statement,

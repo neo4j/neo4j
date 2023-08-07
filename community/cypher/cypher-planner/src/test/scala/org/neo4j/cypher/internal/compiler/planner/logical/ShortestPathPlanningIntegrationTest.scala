@@ -176,7 +176,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r:R]->(b:B)")
       .addTransition(2, 1, "(b) (a)")
-      .addTransition(2, 3, "(b) (v WHERE v.prop = 42)")
+      .addTransition(2, 3, "(b) (v WHERE v.prop = 42 AND v:B)")
       .addTransition(3, 4, "(v)-[s]->(w:N)")
       .addFinalState(4)
       .build()
@@ -186,7 +186,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((a)-[r:R]->(b) WHERE `b`:B){1, } (v)-[s]->(w) WHERE v.prop IN [42] AND NOT s IN `r` AND unique(`r`) AND w:N)",
+          "SHORTEST 1 ((u) ((a)-[r:R]->(b) WHERE `b`:B){1, } (v)-[s]->(w) WHERE v:B AND v.prop IN [42] AND NOT s IN `r` AND unique(`r`) AND w:N)",
           None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -210,7 +210,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r:R]->(b:B)")
       .addTransition(2, 1, "(b) (a)")
-      .addTransition(2, 3, "(b) (v WHERE v.prop = cacheNFromStore[u.prop])")
+      .addTransition(2, 3, "(b) (v WHERE v.prop = cacheNFromStore[u.prop] AND v:B)")
       .addTransition(3, 4, "(v)-[s WHERE s.prop = cacheNFromStore[u.prop]]->(w:N)")
       .addFinalState(4)
       .build()
@@ -220,7 +220,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((a)-[r:R]->(b) WHERE `b`:B){1, } (v)-[s]->(w) WHERE v.prop = u.prop AND s.prop = u.prop AND NOT s IN `r` AND unique(`r`) AND w:N)",
+          "SHORTEST 1 ((u) ((a)-[r:R]->(b) WHERE `b`:B){1, } (v)-[s]->(w) WHERE v.prop = u.prop AND s.prop = u.prop AND unique(`r`) AND NOT s IN `r` AND v:B AND w:N)",
           None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),

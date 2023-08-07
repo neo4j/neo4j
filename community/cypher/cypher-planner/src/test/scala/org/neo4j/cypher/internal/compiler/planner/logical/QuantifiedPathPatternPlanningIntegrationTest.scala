@@ -112,6 +112,42 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )
   }
 
+  test("Should use correctly namespaced copied predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(10)
+      .enableDeduplicateNames(enable = false)
+      .build()
+    val query = "MATCH (a) ((n)-[r]->(m) WHERE any(a IN n.list WHERE n.p > a))+ (b) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+
+    val `(a) ((n)-[r]->(m))+ (b)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "  a@0",
+      end = "b",
+      innerStart = "  n@1",
+      innerEnd = "  m@3",
+      groupNodes = Set(("  n@1", "  n@5"), ("  m@3", "  m@7")),
+      groupRelationships = Set(("  r@2", "  r@6")),
+      innerRelationships = Set("  r@2"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan shouldEqual
+      planner.subPlanBuilder()
+        .trail(`(a) ((n)-[r]->(m))+ (b)`)
+        .|.filterExpression(isRepeatTrailUnique("  r@2"))
+        .|.expandAll("(`  n@1`)-[`  r@2`]->(`  m@3`)")
+        .|.filter("any(`  a@4` IN `  n@1`.list WHERE `  n@1`.p > `  a@4`)")
+        .|.argument("  n@1")
+        .filter("any(`  a@4` IN `  a@0`.list WHERE `  a@0`.p > `  a@4`)")
+        .allNodeScan("`  a@0`")
+        .build()
+  }
+
   test("Should plan quantifier * with start node") {
     val query = "MATCH (u:User)((n)-[]->(m))* RETURN n, m"
     val plan = planner.plan(query).stripProduceResults
@@ -1580,7 +1616,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.expandAll("(n)-[r]->(m)")
       .|.filter("1 = true")
       .|.argument("n")
-      .filter("1 = true")
       .allNodeScan("a")
       .build()
   }

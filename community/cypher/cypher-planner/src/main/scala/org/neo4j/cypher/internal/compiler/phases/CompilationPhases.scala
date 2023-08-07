@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.planner.VerifyGraphTarget
 import org.neo4j.cypher.internal.compiler.planner.logical.EmptyRelationshipListEndpointProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.GetDegreeRewriterStep
 import org.neo4j.cypher.internal.compiler.planner.logical.InlineRelationshipTypePredicates
-import org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicatesToConnectedNodes
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.UnfulfillableQueryRewriter
@@ -49,6 +48,7 @@ import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
@@ -88,7 +88,8 @@ object CompilationPhases {
   def enabledSemanticFeatures(extra: Set[String]): Seq[SemanticFeature] =
     defaultSemanticFeatures ++ extra.map(SemanticFeature.fromString)
 
-  private val AccumulatedSteps(orderedPlanPipelineSteps, _) =
+  // these steps work on LogicalPlanState.maybeStatement, up until LogicalPlanState.maybeQuery is created
+  private val AccumulatedSteps(astPlanPipelineSteps, astPlanPipielinePostConditions) =
     StepSequencer[StepSequencer.Step with PlanPipelineTransformerFactory]()
       .orderSteps(
         Set(
@@ -101,23 +102,7 @@ object CompilationPhases {
           collapseMultipleInPredicates,
           ResolveTokens,
           VerifyGraphTarget,
-          CreatePlannerQuery,
-          OptionalMatchRemover,
-          EmptyRelationshipListEndpointProjection,
-          GetDegreeRewriterStep,
-          MoveQuantifiedPathPatternPredicatesToConnectedNodes,
-          InlineRelationshipTypePredicates,
-          UnfulfillableQueryRewriter,
-          VarLengthQuantifierMerger,
-          QueryPlanner,
-          PlanRewriter,
-          InsertCachedProperties,
-          CardinalityRewriter,
-          CompressPlanIDs,
-          CheckForUnresolvedTokens,
-          EagerRewriter,
-          SortPredicatesBySelectivity,
-          ParameterToDefaultRewriter,
+          CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes,
           MoveBoundaryNodePredicates
         ) ++ CNFNormalizer.steps,
         initialConditions =
@@ -128,6 +113,42 @@ object CompilationPhases {
             // It is currently not allowed to then also have it as an initial condition
             - ExpressionsHaveComputedDependencies
       )
+
+  // these steps work on LogicalPlanState.maybeQuery, up until LogicalPlanState.maybeLogicalPlan is created
+  private val AccumulatedSteps(irPlanPipelineSteps, irPlanPipelinePostConditions) =
+    StepSequencer[StepSequencer.Step with PlanPipelineTransformerFactory]()
+      .orderSteps(
+        Set(
+          CreatePlannerQuery,
+          OptionalMatchRemover,
+          EmptyRelationshipListEndpointProjection,
+          GetDegreeRewriterStep,
+          InlineRelationshipTypePredicates,
+          UnfulfillableQueryRewriter,
+          VarLengthQuantifierMerger,
+          CheckForUnresolvedTokens
+        ),
+        initialConditions = astPlanPipielinePostConditions
+      )
+
+  // these steps work on LogicalPlanState.maybeLogicalPlan
+  private val AccumulatedSteps(lpPlanPipelineSteps, _) =
+    StepSequencer[StepSequencer.Step with PlanPipelineTransformerFactory]()
+      .orderSteps(
+        Set(
+          QueryPlanner,
+          PlanRewriter,
+          InsertCachedProperties,
+          CardinalityRewriter,
+          CompressPlanIDs,
+          EagerRewriter,
+          SortPredicatesBySelectivity,
+          ParameterToDefaultRewriter
+        ),
+        initialConditions = irPlanPipelinePostConditions
+      )
+
+  private val orderedPlanPipelineSteps = astPlanPipelineSteps ++ irPlanPipelineSteps ++ lpPlanPipelineSteps
 
   case class ParsingConfig(
     extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,

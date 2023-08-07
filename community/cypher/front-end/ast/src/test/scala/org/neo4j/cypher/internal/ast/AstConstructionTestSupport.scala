@@ -664,6 +664,14 @@ trait AstConstructionTestSupport {
   ): QuantifiedPath =
     QuantifiedPath(PatternPart(relChain), quantifier, optionalWhereExpression)(pos)
 
+  def quantifiedPath(
+    relChain: RelationshipChain,
+    quantifier: GraphPatternQuantifier,
+    optionalWhereExpression: Option[Expression],
+    variableGroupings: Set[VariableGrouping]
+  ): QuantifiedPath =
+    QuantifiedPath(PatternPart(relChain), quantifier, optionalWhereExpression, variableGroupings)(pos)
+
   def parenthesizedPath(
     relChain: RelationshipChain,
     optionalWhereExpression: Option[Expression] = None

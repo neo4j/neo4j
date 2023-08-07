@@ -20,12 +20,15 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
+
+import scala.collection.immutable.ListSet
 
 case class Where(expression: Expression)(val position: InputPosition)
     extends ASTNode with SemanticCheckable {
@@ -36,6 +39,26 @@ case class Where(expression: Expression)(val position: InputPosition)
 }
 
 object Where {
+
+  def combineOrCreate(
+    oldWhere: Option[Where],
+    addedPredicates: ListSet[Expression]
+  )(position: InputPosition): Option[Where] =
+    Where.combineOrCreate(oldWhere.map(_.expression), addedPredicates)
+      .map(newWhere => Where(newWhere)(position))
+
+  def combineOrCreate(oldWhere: Option[Expression], addedPredicates: ListSet[Expression]): Option[Expression] = {
+    oldWhere match {
+      case Some(Ands(oldExpressions)) =>
+        Some(Ands.create(addedPredicates ++ oldExpressions))
+      case Some(oldExpression) =>
+        Some(Ands.create(addedPredicates + oldExpression))
+      case None if addedPredicates.nonEmpty =>
+        Some(Ands.create(addedPredicates))
+      case None =>
+        None
+    }
+  }
 
   def checkExpression(expression: Expression): SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain

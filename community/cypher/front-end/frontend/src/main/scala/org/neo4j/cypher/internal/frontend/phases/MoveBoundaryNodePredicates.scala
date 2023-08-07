@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
+import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.QppPredicatesCopiedToJuxtaposedNodes
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNodeOrRelationshipPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.ParenthesizedPathUnwrapped
 import org.neo4j.cypher.internal.rewriting.rewriters.QppsHavePaddedNodes
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
@@ -49,6 +49,7 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
     NoNodeOrRelationshipPredicates,
     AndRewrittenToAnds,
     QppsHavePaddedNodes,
+    QppPredicatesCopiedToJuxtaposedNodes,
     ParenthesizedPathUnwrapped
   )
 
@@ -74,12 +75,7 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
       val newPattern = Pattern.ForMatch(newParts)(pattern.position)
       matchClause.copy(
         pattern = newPattern,
-        where =
-          addPredicateToWhere(
-            where,
-            matchClause.position,
-            extractedPredicates.view.flatten.to(ListSet)
-          )
+        where = Where.combineOrCreate(where, extractedPredicates.view.flatten.to(ListSet))(matchClause.position)
       )(matchClause.position)
   })
 
@@ -99,24 +95,6 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
         (ListSet.from(extracted), notExtractedAnds)
       case singlePredicate if singlePredicate.dependencies.subsetOf(boundaryNodes) => (ListSet(singlePredicate), None)
       case _                                                                       => (ListSet.empty, Some(where))
-    }
-  }
-
-  protected def addPredicateToWhere(
-    where: Option[Where],
-    pos: InputPosition,
-    extractedPredicates: ListSet[Expression]
-  ): Option[Where] = {
-    where match {
-      case Some(oldWhere @ Where(Ands(previousExpressions))) =>
-        Some(oldWhere.copy(expression = Ands.create(previousExpressions ++ extractedPredicates))(pos))
-      case Some(oldWhere @ Where(expression)) =>
-        Some(oldWhere.copy(expression = Ands.create(ListSet(expression) ++ extractedPredicates))(pos))
-
-      case None if extractedPredicates.nonEmpty =>
-        Some(Where(expression = Ands.create(extractedPredicates))(pos))
-      case None =>
-        None
     }
   }
 
