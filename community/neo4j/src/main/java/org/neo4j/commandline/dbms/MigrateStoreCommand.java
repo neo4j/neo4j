@@ -23,8 +23,8 @@ import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -59,6 +59,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -176,7 +177,8 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
         var databaseTracers = DatabaseTracers.EMPTY;
         var pageCacheTracer = PageCacheTracer.NULL;
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
-        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
+        var contextFactory =
+                new CursorContextFactory(PageCacheTracer.NULL, new FixedVersionContextSupplier(BASE_TX_ID));
 
         List<FailedMigration> failedMigrations = new ArrayList<>();
 
