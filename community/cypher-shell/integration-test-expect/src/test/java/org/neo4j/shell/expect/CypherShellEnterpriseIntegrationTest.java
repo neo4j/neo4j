@@ -21,10 +21,10 @@ package org.neo4j.shell.expect;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-/** Integration test against neo4j 5.6 enterprise */
-public class CypherShellEnterprise56IntegrationTest extends ExpectTestBase {
+/** Integration test against latest neo4j enterprise */
+public class CypherShellEnterpriseIntegrationTest extends ExpectTestBase {
     @RegisterExtension
-    static ExpectTestExtension expect = new ExpectTestExtension("5.6.0-enterprise");
+    static ExpectTestExtension expect = new ExpectTestExtension("enterprise");
 
     @Override
     ExpectTestExtension expect() {
