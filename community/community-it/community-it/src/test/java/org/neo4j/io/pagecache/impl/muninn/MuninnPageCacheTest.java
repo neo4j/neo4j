@@ -23,6 +23,7 @@ import static java.time.Duration.ofMillis;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -821,6 +822,30 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
                 assertEquals(7, PageList.getLastModifiedTxId(pageCursor.pinnedPageRef));
                 assertEquals(1, cursor.getLong());
+            }
+        }
+    }
+
+    @Test
+    void verificationOfCursorWithNoFaultFlag() throws IOException {
+        var versionContext = new TestVersionContext(() -> 15);
+        var contextFactory =
+                new CursorContextFactory(PageCacheTracer.NULL, new SingleVersionContextSupplier(versionContext));
+        try (var pageCache = createPageCache(fs, 2, PageCacheTracer.NULL)) {
+
+            Path file = file("a");
+            try (var pagedFile = map(pageCache, file, 8);
+                    var cursorContext = contextFactory.create("verificationOfCursorWithNoFaultFlag")) {
+                try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                    assertTrue(cursor.next());
+                    cursor.putLong(1);
+                }
+            }
+
+            try (var pagedFile = map(pageCache, file, 8);
+                    var cursorContext = contextFactory.create("verificationOfCursorWithNoFaultFlag");
+                    var cursor = pagedFile.io(0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext)) {
+                assertTrue(assertDoesNotThrow(() -> cursor.next()));
             }
         }
     }

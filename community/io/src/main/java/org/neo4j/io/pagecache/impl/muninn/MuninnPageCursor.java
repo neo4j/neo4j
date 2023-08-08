@@ -217,9 +217,9 @@ public abstract class MuninnPageCursor extends PageCursor {
      */
     private boolean isPotentiallyReadingDirtyData(long lastClosedTransactionId) {
         long pageRef = pinnedPageRef;
-        Preconditions.checkState(pageRef != 0, "Cursor is closed.");
-        return PageList.getLastModifiedTxId(pageRef) > lastClosedTransactionId
-                || pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
+        return pageRef != 0
+                && (PageList.getLastModifiedTxId(pageRef) > lastClosedTransactionId
+                        || pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId);
     }
 
     @Override
