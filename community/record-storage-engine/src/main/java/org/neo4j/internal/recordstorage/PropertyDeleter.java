@@ -230,7 +230,7 @@ public class PropertyDeleter {
 
         deleteValueRecords(propRecord, block);
 
-        // set created flag in before state for the dynmaic records that will be removed, so reverse recovery can
+        // set created flag in before state for the dynamic records that will be removed, so reverse recovery can
         // re-create them
         var before = recordChange.getBefore();
         markValueRecordsAsCreated(before.getPropertyBlock(propertyKey));
