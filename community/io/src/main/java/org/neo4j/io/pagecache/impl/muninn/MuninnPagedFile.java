@@ -51,14 +51,20 @@ import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     static final int UNMAPPED_TTE = -1;
+    private static final boolean TRACE_FILE_CLOSE = flag(MuninnPagedFile.class, "TRACE_FILE_CLOSE", true);
+
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    private static final Exception PLACEHOLDER_CLOSE_EXCEPTION = new Exception("Enable "
+            + MuninnPagedFile.class.getName() + ".TRACE_FILE_CLOSE flag to enable tracing paged file closing");
+
     private static final boolean USE_VECTORIZED_TOUCH = flag(MuninnPagedFile.class, "USE_VECTORIZED_TOUCH", true);
-    private static final boolean mergePagesOnFlush = flag(MuninnPagedFile.class, "mergePagesOnFlush", true);
-    private static final int maxChunkGrowth =
+    private static final boolean MERGE_PAGES_ON_FLUSH = flag(MuninnPagedFile.class, "mergePagesOnFlush", true);
+    private static final int MAX_CHUNK_GROWTH =
             getInteger(MuninnPagedFile.class, "maxChunkGrowth", 16); // One chunk is 32 MiB, by default.
-    private static final int translationTableChunkSizePower =
+    private static final int TRANSLATION_TABLE_CHUNK_SIZE_POWER =
             getInteger(MuninnPagedFile.class, "translationTableChunkSizePower", 12);
-    private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
-    private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
+    private static final int TRANSLATION_TABLE_CHUNK_SIZE = 1 << TRANSLATION_TABLE_CHUNK_SIZE_POWER;
+    private static final long TRANSLATION_TABLE_CHUNK_SIZE_MASK = TRANSLATION_TABLE_CHUNK_SIZE - 1;
 
     private static final int HEADER_STATE_REF_COUNT_SHIFT = 48;
     private static final int HEADER_STATE_REF_COUNT_MAX = 0x7FFF;
@@ -302,7 +308,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     void closeSwapper() throws IOException {
         // We don't set closeStackTrace in close(), because the reference count may keep the file open.
         // But if we get here, to close the swapper, then we are definitely unmapping!
-        closeStackTrace = new Exception("tracing paged file closing");
+        if (TRACE_FILE_CLOSE) {
+            closeStackTrace = new Exception("tracing paged file closing");
+        } else {
+            closeStackTrace = PLACEHOLDER_CLOSE_EXCEPTION;
+        }
 
         evictPages();
         if (!deleteOnClose) {
@@ -483,10 +493,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             FileFlushEvent flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer)
             throws IOException {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
-        long[] pages = new long[translationTableChunkSize];
-        long[] flushStamps = forClosing ? null : new long[translationTableChunkSize];
-        long[] bufferAddresses = new long[translationTableChunkSize];
-        int[] bufferLengths = new int[translationTableChunkSize];
+        long[] pages = new long[TRANSLATION_TABLE_CHUNK_SIZE];
+        long[] flushStamps = forClosing ? null : new long[TRANSLATION_TABLE_CHUNK_SIZE];
+        long[] bufferAddresses = new long[TRANSLATION_TABLE_CHUNK_SIZE];
+        int[] bufferLengths = new int[TRANSLATION_TABLE_CHUNK_SIZE];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         int[][] tt = this.translationTable;
         boolean useTemporaryBuffer = ioBuffer.isEnabled();
@@ -566,7 +576,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                                     continue chunkLoop; // go to next page
                                 }
                             } else {
-                                if (mergePagesOnFlush && nextSequentialAddress == address) {
+                                if (MERGE_PAGES_ON_FLUSH && nextSequentialAddress == address) {
                                     // do not add new address, only bump length of previous buffer
                                     bufferLengths[lastBufferIndex] += filePageSize;
                                     mergedPages++;
@@ -895,7 +905,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 // Hint to the file system that we've grown our file.
                 // This should reduce our tendency to fragment files.
                 long newFileSize = tt.length; // New number of chunks.
-                newFileSize *= translationTableChunkSize; // Pages per chunk.
+                newFileSize *= TRANSLATION_TABLE_CHUNK_SIZE; // Pages per chunk.
                 newFileSize *= filePageSize; // Bytes per page.
                 swapper.allocate(newFileSize);
             }
@@ -926,7 +936,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     private static int[] newChunk() {
-        int[] chunk = new int[translationTableChunkSize];
+        int[] chunk = new int[TRANSLATION_TABLE_CHUNK_SIZE];
         fill(chunk, UNMAPPED_TTE);
         return chunk;
     }
@@ -935,15 +945,15 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         // Grow by approximate 10% but always by at least one full chunk, and no more than maxChunkGrowth (16 by
         // default, equivalent to 512 MiB).
         int next = 1 + (int) (maxChunkId * 1.1);
-        return Math.min(next, maxChunkId + maxChunkGrowth);
+        return Math.min(next, maxChunkId + MAX_CHUNK_GROWTH);
     }
 
     static int computeChunkId(long filePageId) {
-        return (int) (filePageId >>> translationTableChunkSizePower);
+        return (int) (filePageId >>> TRANSLATION_TABLE_CHUNK_SIZE_POWER);
     }
 
     static int computeChunkIndex(long filePageId) {
-        return (int) (filePageId & translationTableChunkSizeMask);
+        return (int) (filePageId & TRANSLATION_TABLE_CHUNK_SIZE_MASK);
     }
 
     @Override

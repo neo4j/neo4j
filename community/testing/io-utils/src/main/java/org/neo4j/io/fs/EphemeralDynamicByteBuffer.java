@@ -20,6 +20,7 @@
 package org.neo4j.io.fs;
 
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.util.FeatureToggles.flag;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,6 +36,12 @@ import org.neo4j.util.Preconditions;
  * so that we don't have to allocate too big of a buffer up-front.
  */
 class EphemeralDynamicByteBuffer {
+    private static final boolean TRACE_BUFFER_FREE = flag(EphemeralDynamicByteBuffer.class, "TRACE_BUFFER_FREE", false);
+
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    private static final Exception PLACEHOLDER_EXCEPTION = new Exception("Enable "
+            + EphemeralDynamicByteBuffer.class.getName() + ".TRACE_BUFFER_FREE flag to see actual stacktrace");
+
     private static final int SECTOR_SIZE = (int) ByteUnit.kibiBytes(1);
     private static final byte[] ZERO_BUFFER_ARRAY = new byte[SECTOR_SIZE];
 
@@ -75,9 +82,13 @@ class EphemeralDynamicByteBuffer {
     synchronized void free() {
         assertNotFreed();
         sectors = null;
-        freeCall = new Exception(
-                "You're most likely seeing this exception because there was an attempt to use this buffer "
-                        + "after it was freed. This stack trace may help you figure out where and why it was freed.");
+        if (TRACE_BUFFER_FREE) {
+            freeCall = new Exception(
+                    "You're most likely seeing this exception because there was an attempt to use this buffer "
+                            + "after it was freed. This stack trace may help you figure out where and why it was freed.");
+        } else {
+            freeCall = PLACEHOLDER_EXCEPTION;
+        }
     }
 
     synchronized void put(long pos, byte[] bytes, int off, int length) {

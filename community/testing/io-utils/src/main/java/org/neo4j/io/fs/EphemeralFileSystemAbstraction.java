@@ -183,7 +183,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
         EphemeralFileData data =
                 files.computeIfAbsent(canonicalFile(fileName), key -> new EphemeralFileData(key, clock));
         return new StoreFileChannel(
-                new EphemeralFileChannel(data, new EphemeralFileStillOpenException(fileName.toString())));
+                new EphemeralFileChannel(data, () -> new EphemeralFileStillOpenException(fileName.toString())));
     }
 
     @Override
@@ -358,7 +358,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
         if (data != null) {
             return new StoreFileChannel(new EphemeralFileChannel(
                     data,
-                    new EphemeralFileStillOpenException(
+                    () -> new EphemeralFileStillOpenException(
                             fileName.toAbsolutePath().toString())));
         }
         return write(fileName);

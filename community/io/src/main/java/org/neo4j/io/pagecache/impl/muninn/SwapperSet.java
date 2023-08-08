@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -47,7 +48,7 @@ public final class SwapperSet {
     private static final SwapperMapping SENTINEL = new SwapperMapping(0, null);
     private static final int MAX_SWAPPER_ID = (1 << 21) - 1;
     private volatile SwapperMapping[] swapperMappings = new SwapperMapping[] {SENTINEL};
-    private final MutableIntSet free = new IntHashSet();
+    private final LinkedList<Integer> free = new LinkedList<>();
     private final MutableIntSet postponedIds = new IntHashSet();
     private final Lock sweepCandidatesLock = new ReentrantLock();
 
@@ -79,9 +80,9 @@ public final class SwapperSet {
         SwapperMapping[] swapperMappings = this.swapperMappings;
 
         // First look for an available freed slot.
-        if (!free.isEmpty()) {
-            int id = free.intIterator().next();
-            free.remove(id);
+        var freeId = free.pollFirst();
+        if (freeId != null) {
+            int id = freeId;
             swapperMappings[id] = new SwapperMapping(id, swapper);
             this.swapperMappings = swapperMappings;
             return id;

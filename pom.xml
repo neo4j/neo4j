@@ -86,6 +86,7 @@
       "-XX:HeapDumpPath=target/"
       -Dinternal.dbms.multiversioned.store.override=${multiversion.store}
       -Dorg.neo4j.io.pagecache.impl.muninn.MuninnWritePageCursor.CHECK_WRITE_LOCKS=true
+      -Dorg.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.TRACE_FILE_CLOSE=false
       -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=${cursor.counters.check}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true

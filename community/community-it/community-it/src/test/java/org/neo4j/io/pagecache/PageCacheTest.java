@@ -62,8 +62,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -93,6 +91,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegatingStoreChannel;
@@ -2908,19 +2907,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
 
             PagedFile pagedFile = map(file("a"), filePageSize);
-            closeThisPagedFile(pagedFile);
+            pagedFile.close();
 
             try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 FileIsNotMappedException exception = assertThrows(FileIsNotMappedException.class, cursor::next);
-                StringWriter out = new StringWriter();
-                exception.printStackTrace(new PrintWriter(out));
-                assertThat(out.toString()).contains("closeThisPagedFile");
+                assertThat(Exceptions.stringify(exception)).contains("tracing paged file closing");
             }
         });
-    }
-
-    private static void closeThisPagedFile(PagedFile pagedFile) {
-        pagedFile.close();
     }
 
     @Test
@@ -2930,12 +2923,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             PagedFile pagedFile = map(file("a"), filePageSize);
             PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
-            closeThisPagedFile(pagedFile);
+            pagedFile.close();
 
             FileIsNotMappedException exception = assertThrows(FileIsNotMappedException.class, cursor::next);
-            StringWriter out = new StringWriter();
-            exception.printStackTrace(new PrintWriter(out));
-            assertThat(out.toString()).contains("closeThisPagedFile");
+            assertThat(Exceptions.stringify(exception)).contains("tracing paged file closing");
         });
     }
 

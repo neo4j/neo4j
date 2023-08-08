@@ -22,6 +22,7 @@ package org.neo4j.io.fs;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.util.FeatureToggles.flag;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,17 +34,24 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.function.Supplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
 
 class EphemeralFileChannel extends FileChannel implements EphemeralPositionable {
+    private static final boolean TRACE_FILE_OPEN = flag(EphemeralFileChannel.class, "TRACE_FILE_OPEN", false);
+
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    private static final EphemeralFileStillOpenException PLACEHOLDER_EXCEPTION = new EphemeralFileStillOpenException(
+            "Enable " + EphemeralFileChannel.class.getName() + ".TRACE_FILE_OPEN flag to see actual stacktrace");
+
     final EphemeralFileStillOpenException openedAt;
     private final EphemeralFileData data;
     private long position;
 
-    EphemeralFileChannel(EphemeralFileData data, EphemeralFileStillOpenException opened) {
+    EphemeralFileChannel(EphemeralFileData data, Supplier<EphemeralFileStillOpenException> opened) {
         this.data = data;
-        this.openedAt = opened;
+        this.openedAt = TRACE_FILE_OPEN ? opened.get() : PLACEHOLDER_EXCEPTION;
         data.open(this);
     }
 
