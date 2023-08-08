@@ -35,10 +35,9 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.ByteUnit.bytesToString;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -74,6 +73,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
@@ -474,7 +474,8 @@ class CsvImporter implements Importer {
         private final Map<String, List<Path[]>> relationshipFiles = new HashMap<>();
         private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
-        private CursorContextFactory contextFactory = NULL_CONTEXT_FACTORY;
+        private CursorContextFactory contextFactory =
+                new CursorContextFactory(pageCacheTracer, new FixedVersionContextSupplier(BASE_TX_ID));
         private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
@@ -576,7 +577,11 @@ class CsvImporter implements Importer {
 
         Builder withPageCacheTracer(PageCacheTracer pageCacheTracer) {
             this.pageCacheTracer = pageCacheTracer;
-            this.contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
+            return this;
+        }
+
+        Builder withCursorContextFactory(CursorContextFactory contextFactory) {
+            this.contextFactory = contextFactory;
             return this;
         }
 

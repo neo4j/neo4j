@@ -24,6 +24,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.index.schema.SchemaIndexExtensionLoader.instantiateExtensions;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -31,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -93,12 +95,13 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
                 jobScheduler,
                 immediate(),
                 TOOL,
-                HostedOnMode.SINGLE,
                 monitors,
                 tokenHolders,
                 pageCacheTracer,
                 readOnly()));
 
+        Dependencies dependencies = new Dependencies(extensions);
+        dependencies.satisfyDependency(VersionStorage.EMPTY_STORAGE);
         return life.add(StaticIndexProviderMapFactory.create(
                 life,
                 databaseConfig,
@@ -114,6 +117,6 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
                 jobScheduler,
                 contextFactory,
                 pageCacheTracer,
-                extensions));
+                dependencies));
     }
 }

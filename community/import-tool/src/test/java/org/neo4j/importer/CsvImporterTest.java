@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,6 +43,8 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.test.extension.Inject;
@@ -135,6 +138,8 @@ class CsvImporterTest {
                 .withStdOut(NullPrintStream.INSTANCE)
                 .withStdErr(NullPrintStream.INSTANCE)
                 .withPageCacheTracer(cacheTracer)
+                .withCursorContextFactory(
+                        new CursorContextFactory(cacheTracer, new FixedVersionContextSupplier(BASE_TX_ID)))
                 .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
                 .build();
 

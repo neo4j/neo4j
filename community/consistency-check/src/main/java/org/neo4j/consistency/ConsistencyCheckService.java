@@ -512,7 +512,6 @@ public class ConsistencyCheckService {
                     jobScheduler,
                     recoveryCleanupWorkCollector,
                     TOOL,
-                    HostedOnMode.SINGLE,
                     monitors,
                     tokenHolders,
                     pageCacheTracer,

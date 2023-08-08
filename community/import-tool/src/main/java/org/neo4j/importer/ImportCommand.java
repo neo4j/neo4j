@@ -28,6 +28,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.CsvImporter.DEFAULT_REPORT_FILE_NAME;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
+import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+import static org.neo4j.storageengine.api.StorageEngineFactory.SELECTOR;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Help.Visibility.NEVER;
@@ -55,11 +59,23 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.recovery.LogTailExtractor;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
 import picocli.CommandLine.ITypeConverter;
@@ -333,7 +349,7 @@ public class ImportCommand {
         @Option(
                 names = "--relationships",
                 arity = "1..*",
-                converter = RelationsipFilesConverter.class,
+                converter = RelationshipFilesConverter.class,
                 showDefaultValue = NEVER,
                 paramLabel = "[<type>=]<files>",
                 description =
@@ -393,9 +409,19 @@ public class ImportCommand {
                         .withAutoSkipHeaders(autoSkipHeaders)
                         .withForce(overwriteDestination)
                         .withIncremental(incremental);
+                CursorContextFactory cursorContextFactory;
                 if (incremental) {
                     importerBuilder.withIncrementalStage(mode);
+                    cursorContextFactory = new CursorContextFactory(
+                            PageCacheTracer.NULL,
+                            new FixedVersionContextSupplier(getLogTail(databaseLayout, databaseConfig)
+                                    .getLastCommittedTransaction()
+                                    .transactionId()));
+                } else {
+                    cursorContextFactory =
+                            new CursorContextFactory(PageCacheTracer.NULL, new FixedVersionContextSupplier(BASE_TX_ID));
                 }
+                importerBuilder.withCursorContextFactory(cursorContextFactory);
 
                 nodes.forEach(n -> importerBuilder.addNodeFiles(n.key, n.files));
 
@@ -406,6 +432,39 @@ public class ImportCommand {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+        }
+
+        private LogTailMetadata getLogTail(RecordDatabaseLayout databaseLayout, Config databaseConfig)
+                throws IOException {
+            try (var fs = ctx.fs();
+                    var jobScheduler = createInitialisedScheduler();
+                    var pageCache =
+                            StandalonePageCacheFactory.createPageCache(fs, jobScheduler, PageCacheTracer.NULL)) {
+                Optional<StorageEngineFactory> storageEngineFactory =
+                        SELECTOR.selectStorageEngine(ctx.fs(), databaseLayout);
+                return getLogTail(
+                        ctx.fs(),
+                        databaseLayout,
+                        pageCache,
+                        databaseConfig,
+                        EmptyMemoryTracker.INSTANCE,
+                        storageEngineFactory.get());
+            } catch (Exception e) {
+                throw new RuntimeException("Fail to create temporary page cache.", e);
+            }
+        }
+
+        private LogTailMetadata getLogTail(
+                FileSystemAbstraction fs,
+                DatabaseLayout databaseLayout,
+                PageCache pageCache,
+                Config config,
+                MemoryTracker memoryTracker,
+                StorageEngineFactory storageEngineFactory)
+                throws IOException {
+            LogTailExtractor logTailExtractor =
+                    new LogTailExtractor(fs, pageCache, config, storageEngineFactory, EMPTY);
+            return logTailExtractor.getTailMetadata(databaseLayout, memoryTracker);
         }
 
         @VisibleForTesting
@@ -478,7 +537,7 @@ public class ImportCommand {
             }
         }
 
-        static class RelationsipFilesConverter implements ITypeConverter<InputFilesGroup<String>> {
+        static class RelationshipFilesConverter implements ITypeConverter<InputFilesGroup<String>> {
             @Override
             public InputFilesGroup<String> convert(String value) {
                 try {
