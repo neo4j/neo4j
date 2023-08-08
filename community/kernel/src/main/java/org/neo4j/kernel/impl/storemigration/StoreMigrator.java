@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -40,6 +41,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.FixedVersionContext;
+import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -128,7 +132,6 @@ public class StoreMigrator {
             DatabaseLayout databaseLayout,
             StorageEngineFactory storageEngineFactory,
             IndexProviderMap indexProviderMap,
-            CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             Supplier<LogTailMetadata> logTailSupplier) {
         this.fs = fs;
@@ -137,7 +140,6 @@ public class StoreMigrator {
         this.pageCache = pageCache;
         this.databaseLayout = databaseLayout;
         this.storageEngineFactory = storageEngineFactory;
-        this.contextFactory = contextFactory;
         this.jobScheduler = jobScheduler;
         this.databaseTracers = databaseTracers;
         this.pageCacheTracer = databaseTracers.getPageCacheTracer();
@@ -146,6 +148,8 @@ public class StoreMigrator {
 
         this.internalLog = logService.getInternalLog(getClass());
         this.logTailSupplier = logTailSupplier;
+        this.contextFactory =
+                new CursorContextFactory(databaseTracers.getPageCacheTracer(), new LazyVersionContextSupplier());
     }
 
     public void migrateIfNeeded(String formatToMigrateTo, boolean forceBtreeIndexesToRange)
@@ -598,5 +602,30 @@ public class StoreMigrator {
 
     private interface LogsAction {
         LogsMigrator.MigrationTransactionIds handleLogs(LogsMigrator.CheckResult checkResult);
+    }
+
+    private class LazyVersionContextSupplier extends FixedVersionContextSupplier {
+        public LazyVersionContextSupplier() {
+            super(UNKNOWN_TX_ID);
+        }
+
+        @Override
+        public VersionContext createVersionContext() {
+            return new LazyTailVersionContext(logTailSupplier);
+        }
+    }
+
+    private static class LazyTailVersionContext extends FixedVersionContext {
+        private final Supplier<LogTailMetadata> logTailSupplier;
+
+        public LazyTailVersionContext(Supplier<LogTailMetadata> logTailSupplier) {
+            super(UNKNOWN_TX_ID);
+            this.logTailSupplier = logTailSupplier;
+        }
+
+        @Override
+        public long committingTransactionId() {
+            return logTailSupplier.get().getLastCommittedTransaction().transactionId();
+        }
     }
 }

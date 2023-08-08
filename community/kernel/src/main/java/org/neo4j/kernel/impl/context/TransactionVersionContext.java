@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.context;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 
 import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
@@ -34,9 +35,9 @@ public class TransactionVersionContext implements VersionContext {
     private static final long UNKNOWN_OBSOLETE_HEAD_VERSION = -1;
     private final TransactionIdSnapshotFactory transactionIdSnapshotFactory;
     private final OldestTransactionIdFactory oldestTransactionIdFactory;
-    private long transactionId = BASE_TX_ID - 1;
+    private long transactionId = UNKNOWN_TX_ID;
     private TransactionIdSnapshot transactionIds;
-    private long oldestTransactionId = BASE_TX_ID - 1;
+    private long oldestTransactionId = UNKNOWN_TX_ID;
     private long headChain;
     private boolean dirty;
     private boolean nonVisibleHead;

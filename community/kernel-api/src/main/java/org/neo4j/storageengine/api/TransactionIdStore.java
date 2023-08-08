@@ -73,8 +73,10 @@ public interface TransactionIdStore {
      */
     long UNKNOWN_CONSENSUS_INDEX = -1;
 
-    TransactionId UNKNOWN_TRANSACTION_ID = new TransactionId(
-            BASE_TX_ID - 1, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX);
+    long UNKNOWN_TX_ID = BASE_TX_ID - 1;
+
+    TransactionId UNKNOWN_TRANSACTION_ID =
+            new TransactionId(UNKNOWN_TX_ID, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX);
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}

@@ -26,7 +26,6 @@ import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.id.BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
-import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
@@ -800,7 +799,6 @@ public class Database extends AbstractDatabase {
                 databaseLayout,
                 storageEngineFactory,
                 indexProviderMap,
-                new CursorContextFactory(tracers.getPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER),
                 memoryTracker,
                 logTailSupplier);
         storeMigrator.upgradeIfNeeded();

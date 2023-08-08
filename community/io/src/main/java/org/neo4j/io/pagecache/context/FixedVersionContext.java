@@ -27,7 +27,7 @@ public class FixedVersionContext implements VersionContext {
 
     private final long committingTransactionId;
 
-    FixedVersionContext(long committingTransactionId) {
+    public FixedVersionContext(long committingTransactionId) {
         this.committingTransactionId = committingTransactionId;
     }
 

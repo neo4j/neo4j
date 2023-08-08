@@ -237,7 +237,6 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                                 databaseLayout,
                                 currentStorageEngineFactory,
                                 indexProviderMap,
-                                contextFactory,
                                 memoryTracker,
                                 Suppliers.lazySingleton(() -> loadLogTail(
                                         fs,
