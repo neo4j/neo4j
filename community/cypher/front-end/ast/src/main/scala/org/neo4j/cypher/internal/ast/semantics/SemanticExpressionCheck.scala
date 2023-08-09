@@ -16,12 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -759,7 +761,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               when(x.query.containsUpdates) {
                 SemanticError("An Exists Expression cannot contain any updates", x.position)
               } chain
-              checkForShadowedVariables chain
+              checkForShadowedVariables(x.query.folder.findAllByClass[SubqueryCall]) chain
               SemanticState.recordCurrentScope(x.query)
           }
 
@@ -771,7 +773,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               when(x.query.containsUpdates) {
                 SemanticError("A Count Expression cannot contain any updates", x.position)
               } chain
-              checkForShadowedVariables chain
+              checkForShadowedVariables(x.query.folder.findAllByClass[SubqueryCall]) chain
               SemanticState.recordCurrentScope(x.query)
           } chain specifyType(CTInteger, x)
 
@@ -786,7 +788,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               when(x.query.returnVariables.includeExisting || x.query.returnColumns.size != 1) {
                 SemanticError("A Collect Expression must end with a single return column.", x.position)
               } chain
-              checkForShadowedVariables chain
+              checkForShadowedVariables(x.query.folder.findAllByClass[SubqueryCall]) chain
               SemanticState.recordCurrentScope(x.query)
           } chain specifyType(CTList(CTAny).covariant, x)
 
@@ -1070,7 +1072,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         }
     }
 
-  private def checkForShadowedVariables: SemanticCheck = (inner: SemanticState) => {
+  private def checkForShadowedVariables(subqueryCallsToFilter: Seq[Clause]): SemanticCheck = (inner: SemanticState) => {
     // Only check the first time to avoid unnecessary checks after extensive rewriting.
     if (inner.semanticCheckHasRunOnce) SemanticCheckResult(inner, Seq.empty)
     else {
@@ -1078,10 +1080,20 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         case Some(parent) => parent.scope.symbolTable ++ inner.currentScope.parent.get.scope.symbolTable
         case None         => inner.currentScope.parent.get.scope.symbolTable
       }
-      val innerScopeSymbols = inner.currentScope.scope.allSymbols
+      val innerScopeSymbols: Map[String, Set[Symbol]] = inner.currentScope.scope.allSymbols
+
+      // Variables inside of CALL {} are allowed to shadow outside variables and should not be considered errors.
+      val subqueryCallScopes =
+        inner.recordedScopes.filter(recordedScope => subqueryCallsToFilter.contains(recordedScope._1.node))
+      val subqueryCallSymbols = subqueryCallScopes.map { case (_, scope) =>
+        scope.parent.map(_.scope.allSymbols).getOrElse(Map.empty)
+      }.flatten.groupMapReduce(_._1)(_._2)(_ ++ _)
+
+      val innerScopeSymbolsWithoutSubquerySymbols: Map[String, Set[Symbol]] =
+        innerScopeSymbols.filterNot { case (x, y) => subqueryCallSymbols.get(x).contains(y) }
 
       // Union symbols are excluded as those always have the position of the UNION keyword regardless of shadowing
-      val innerDefinitions = innerScopeSymbols.map {
+      val innerDefinitions = innerScopeSymbolsWithoutSubquerySymbols.map {
         case (name, symbols) =>
           (name, symbols.filterNot(symbol => symbol.unionSymbol).map(_.definition))
       }

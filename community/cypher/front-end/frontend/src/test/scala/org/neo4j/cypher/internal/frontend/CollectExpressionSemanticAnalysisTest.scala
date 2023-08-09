@@ -643,4 +643,90 @@ class CollectExpressionSemanticAnalysisTest
       )
     )
   }
+
+  test(
+    """MATCH (n)
+      |RETURN COLLECT {
+      |   CALL {
+      |     MATCH (n)
+      |     RETURN 1 AS a
+      |   }
+      |   RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
+  }
+
+  test(
+    """
+      |MATCH (n)
+      |RETURN COLLECT {
+      |   CALL {
+      |     MATCH (n)
+      |     RETURN COLLECT { CALL { MATCH (n) RETURN n AS a } RETURN a } AS a
+      |   }
+      |   RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
+  }
+
+  test(
+    """UNWIND [1, 2, 3] AS x
+      |CALL {
+      |    WITH x
+      |    RETURN x * 10 AS y
+      |}
+      |RETURN COLLECT {
+      |   WITH 10 as x
+      |   MATCH (n) WHERE n.prop = x
+      |   RETURN n.prop
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "The variable `x` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+        InputPosition(96, 7, 15)
+      )
+    )
+  }
+
+  test(
+    """WITH 1 AS x, 2 AS y
+      |RETURN COLLECT {
+      |   CALL {
+      |     WITH y
+      |     WITH y, 3 AS x
+      |     MATCH (n) WHERE n.prop = x
+      |     RETURN 1 AS a
+      |   }
+      |   RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
+  }
+
+  test(
+    """WITH 5 AS y
+      |RETURN COLLECT {
+      |    UNWIND [0, 1, 2] AS x
+      |    CALL {
+      |        WITH x
+      |        RETURN x * 10 AS y
+      |    }
+      |    RETURN y
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "The variable `y` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+        InputPosition(106, 6, 26)
+      )
+    )
+  }
 }
