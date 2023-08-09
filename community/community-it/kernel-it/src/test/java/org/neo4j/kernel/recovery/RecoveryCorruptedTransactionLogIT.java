@@ -404,7 +404,7 @@ class RecoveryCorruptedTransactionLogIT {
         } else {
             assertEquals(
                     CURRENT_FORMAT_LOG_HEADER_SIZE
-                            + CHECKPOINT_RECORD_SIZE * 3 /* checkpoint for setup, start and stop */,
+                            + CHECKPOINT_RECORD_SIZE * 4 /* checkpoint for setup, start and stop */,
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         }
     }
@@ -872,7 +872,7 @@ class RecoveryCorruptedTransactionLogIT {
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
-                    CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * CHECKPOINT_RECORD_SIZE,
+                    CURRENT_FORMAT_LOG_HEADER_SIZE + 5 * CHECKPOINT_RECORD_SIZE,
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         }
     }
