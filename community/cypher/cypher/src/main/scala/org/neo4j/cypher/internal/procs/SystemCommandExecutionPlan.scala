@@ -52,7 +52,7 @@ case class SystemCommandExecutionPlan(
   systemParams: MapValue,
   source: Option[ExecutionPlan] = None,
   checkCredentialsExpired: Boolean = true,
-  parameterTransformer: ParameterTransformer = ParameterTransformer(),
+  parameterTransformer: ParameterTransformerFunction = ParameterTransformer(),
   modeConverter: SecurityContext => SecurityContext = s => s.withMode(AccessMode.Static.READ)
 ) extends AdministrationChainedExecutionPlan(source) {
 

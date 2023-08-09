@@ -77,7 +77,6 @@ import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
-import org.neo4j.kernel.database.DefaultDatabaseResolver
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
@@ -97,9 +96,6 @@ case class CommunityAdministrationCommandRuntime(
 
   private lazy val securityAuthorizationHandler =
     new SecurityAuthorizationHandler(resolver.resolveDependency(classOf[AbstractSecurityLog]))
-
-  private lazy val defaultDatabaseResolver = resolver.resolveDependency(classOf[DefaultDatabaseResolver])
-
   private val config: Config = resolver.resolveDependency(classOf[Config])
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
@@ -302,7 +298,6 @@ case class CommunityAdministrationCommandRuntime(
     case ShowDatabase(scope, verbose, symbols, yields, returns) => _ =>
         ShowDatabasesExecutionPlanner(
           resolver,
-          defaultDatabaseResolver,
           normalExecutionEngine,
           securityAuthorizationHandler
         )(CommunityExtendedDatabaseInfoMapper)

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.procs
 import ParameterTransformer.ParameterConversionFunction
 import ParameterTransformer.ParameterTransformerOutput
 import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterGenerationFunction
-import org.neo4j.cypher.internal.procs.ParameterTransformer.safeMergeParameters
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Transaction
@@ -30,10 +29,30 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
+trait ParameterTransformerFunction {
+
+  def transform(
+    tx: Transaction,
+    sc: SecurityContext,
+    systemParams: MapValue,
+    userParams: MapValue
+  ): ParameterTransformerOutput
+
+  protected def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue): MapValue = {
+    val updatedSystemParams: MapValue = systemParams.updatedWith(initialParams)
+    updatedSystemParams.foreach {
+      case (_, Values.NO_VALUE) => // placeholders should be replaced
+      case (key, _) => if (userParams.containsKey(key))
+          throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
+    }
+    updatedSystemParams.updatedWith(userParams)
+  }
+}
+
 case class ParameterTransformer(
   genFunc: ParameterGenerationFunction = (_, _) => MapValue.EMPTY,
   transformFunc: (Transaction, MapValue) => ParameterTransformerOutput = (_, params) => (params, Set.empty)
-) {
+) extends ParameterTransformerFunction {
 
   def convert(convFunc: ParameterConversionFunction): ParameterTransformer = {
     ParameterTransformer(genFunc, (tx, mv) => (convFunc(tx, transformFunc(tx, mv)._1), Set.empty))
@@ -55,7 +74,7 @@ case class ParameterTransformer(
     )
   }
 
-  def transform(
+  override def transform(
     tx: Transaction,
     sc: SecurityContext,
     systemParams: MapValue,
@@ -72,14 +91,4 @@ object ParameterTransformer {
 
   def apply(genFunc: (Transaction, SecurityContext) => MapValue): ParameterTransformer =
     ParameterTransformer(genFunc, (_, params) => (params, Set.empty))
-
-  private def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue): MapValue = {
-    val updatedSystemParams: MapValue = systemParams.updatedWith(initialParams)
-    updatedSystemParams.foreach {
-      case (_, Values.NO_VALUE) => // placeholders should be replaced
-      case (key, _) => if (userParams.containsKey(key))
-          throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
-    }
-    updatedSystemParams.updatedWith(userParams)
-  }
 }

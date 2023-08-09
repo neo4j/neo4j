@@ -540,7 +540,7 @@ object AdministrationCommandRuntime {
           wasParameter = false,
           IdentityConverter
         )
-      case ParameterName(parameter) =>
+      case pn @ ParameterName(parameter) =>
         def rename: String => String = paramName => internalKey(paramName)
         val displayNameKey = internalKey(parameter.name + "_displayName")
         DatabaseNameFields(
@@ -552,29 +552,13 @@ object AdministrationCommandRuntime {
           Values.NO_VALUE,
           wasParameter = true,
           (_, params) => {
-            val paramValue = params.get(parameter.name)
-            if (!paramValue.isInstanceOf[TextValue]) {
-              throw new ParameterWrongTypeException(
-                s"Expected parameter $$${parameter.name} to have type String but was $paramValue"
-              )
-            } else {
-              val nameParts = paramValue.asInstanceOf[TextValue].stringValue().split('.')
-              if (nameParts.length == 1) {
-                params.updatedWith(rename(parameter.name), Values.utf8Value(valueMapper(nameParts(0))))
-                  .updatedWith(displayNameKey, Values.utf8Value(valueMapper(nameParts(0))))
-              } else {
-                val displayName =
-                  if (nameParts(0).equals(DEFAULT_NAMESPACE))
-                    Values.utf8Value(valueMapper(nameParts.tail.mkString(".")))
-                  else paramValue
-                params.updatedWith(
-                  internalKey(parameter.name + "_namespace"),
-                  Values.utf8Value(valueMapper(nameParts(0)))
-                )
-                  .updatedWith(internalKey(parameter.name), Values.utf8Value(valueMapper(nameParts.tail.mkString("."))))
-                  .updatedWith(displayNameKey, displayName)
-              }
-            }
+            val (namespace, name, displayName) = pn.getNameParts(params, DEFAULT_NAMESPACE)
+            params.updatedWith(
+              internalKey(parameter.name + "_namespace"),
+              Values.utf8Value(valueMapper(namespace.getOrElse(DEFAULT_NAMESPACE)))
+            )
+              .updatedWith(internalKey(parameter.name), Values.utf8Value(valueMapper(name)))
+              .updatedWith(displayNameKey, Values.utf8Value(valueMapper(displayName)))
           }
         )
     }

@@ -19,6 +19,9 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.virtual.MapValue
 
 import java.util
 
@@ -50,4 +53,24 @@ object NamespacedName {
 
 case class ParameterName(parameter: Parameter)(val position: InputPosition) extends DatabaseName {
   override def asLegacyName: Either[String, Parameter] = Right(parameter)
+
+  def getNameParts(params: MapValue, defaultNamespace: String): (Option[String], String, String) = {
+    val paramValue = params.get(parameter.name)
+    if (!paramValue.isInstanceOf[TextValue]) {
+      throw new ParameterWrongTypeException(
+        s"Expected parameter $$${parameter.name} to have type String but was $paramValue"
+      )
+    } else {
+      val nameParts = paramValue.asInstanceOf[TextValue].stringValue().split('.')
+      if (nameParts.length == 1) {
+        (None, nameParts(0), nameParts(0))
+      } else {
+        val displayName =
+          if (nameParts(0).equals(defaultNamespace))
+            nameParts.tail.mkString(".")
+          else paramValue.asInstanceOf[TextValue].stringValue()
+        (Some(nameParts(0)), nameParts.tail.mkString("."), displayName)
+      }
+    }
+  }
 }
