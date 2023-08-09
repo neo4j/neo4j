@@ -325,7 +325,7 @@
         <dependency>
             <groupId>org.bitbucket.inkytonik.kiama</groupId>
             <artifactId>kiama_${scala.binary.version}</artifactId>
-            <version>2.5.0</version>
+            <version>2.5.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.bitbucket.inkytonik.dsinfo</groupId>
