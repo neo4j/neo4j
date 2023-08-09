@@ -233,7 +233,7 @@ public interface Status {
                 "This is an administration command and it should be executed against the system database."),
         AccessMode(ClientError, "The request could not be completed due to access mode violation"),
         UnsupportedOperationError(
-                ClientError, "This query preformed an operation that is not supported in this context."),
+                ClientError, "This query performed an operation that is not supported in this context."),
         ExternalResourceFailed(ClientError, "Access to an external resource failed"),
         UnsatisfiableRelationshipTypeExpression(
                 ClientNotification,
