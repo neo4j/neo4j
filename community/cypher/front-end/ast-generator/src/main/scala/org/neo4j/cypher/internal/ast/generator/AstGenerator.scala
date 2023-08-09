@@ -332,7 +332,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
-import org.neo4j.cypher.internal.ast.generator.AstGenerator.listOfSizeBetween
+import org.neo4j.cypher.internal.ast.generator.AstGenerator.listSetOfSizeBetween
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.twoOrMore
@@ -540,11 +540,25 @@ object AstGenerator {
     }
   }
 
-  def listOfSizeBetween[T](minSize: Int, maxSize: Int, elementGenerator: Gen[T]): Gen[List[T]] = {
+  /*
+   * Simulate a ListSet of size between minSize and maxSize, i.e. make a list of the correct size with unique values
+   */
+  def listSetOfSizeBetween[T](minSize: Int, maxSize: Int, elementGenerator: Gen[T]): Gen[List[T]] = {
     for {
-      minRequiredElements <- sequence(Iterable.fill(minSize)(elementGenerator))(Buildable.buildableSeq)
-      additionalElements <- listOfN(maxSize - minSize, elementGenerator)
-    } yield minRequiredElements.toList ++ additionalElements
+      nbrElements <- choose(minSize, maxSize)
+      elements <- setOfSize(nbrElements, Set.empty, elementGenerator)
+    } yield elements.toList
+  }
+
+  def setOfSize[T](size: Int, setSoFar: Set[T], elementGenerator: Gen[T]): Gen[Set[T]] = {
+    if (setSoFar.size == size) Gen.const(setSoFar)
+    else {
+      for {
+        element <- elementGenerator
+        newSet = setSoFar + element
+        result <- setOfSize(size, newSet, elementGenerator)
+      } yield result
+    }
   }
 }
 
@@ -681,8 +695,32 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     res <- _predicateComparisonPar(l, r)
   } yield res
 
+  /*
+   * A predicate comparison chain (e.g. a > b < c = d) must contain at least 2 comparisons and therefore at least
+   * 3 expressions to use Ands. Since Ands is using a ListSet, duplicates will be removed in AST.
+   *
+   * Example 1:
+   *   1. Original query: RETURN a > b = a > b
+   *   2. Original AST (pseudo code): ... Ands(ListSet((a > b),(b = a))) ...
+   *   3. Prettified query: RETURN a > b = a
+   *   4. Prettified AST (pseudo code): ... Ands(ListSet((a > b),(b = a))) ...
+   *
+   * Example 2:
+   *   1. Original query: RETURN a > a > a
+   *   2. Original AST (pseudo code): ... Ands(ListSet((a > a))) ...
+   *   3. Prettified query: RETURN a > a
+   *   4. Prettified AST (pseudo code): ... (a > a) ...
+   *
+   * The AST generator is used by PrettifierPropertyTest to test the round-trip of step 2 - 4 above.
+   * For both examples the queries in step 1 and 3 are different but equivalent.
+   * For Example 1, the AST in step 2 and 4 is the same.
+   * For Example 2, the AST in step 2 and 4 is different <= this will lead to an error in PrettifierPropertyTest.
+   *
+   * As we consider this difference in AST acceptable,
+   * we will make sure to generate at least 3 unique expressions to avoid to end up in Example 2.
+   */
   def _predicateComparisonChain: Gen[Expression] = for {
-    exprs <- listOfSizeBetween(2, 4, _expression)
+    exprs <- listSetOfSizeBetween(3, 5, _expression)
     pairs = exprs.sliding(2)
     gens = pairs.map(p => _predicateComparisonPar(p.head, p.last)).toList
     chain <- sequence(gens)(Buildable.buildableFactory)

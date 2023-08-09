@@ -23,16 +23,22 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Gen
+import org.scalacheck.Shrink
 
 class AstGeneratorTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   private val astGenerator = new AstGenerator()
 
-  test("listOfSizeBetween") {
+  // Avoid shrinking as that give invalid continued generation instead of aborting on errors
+  def noShrink[T]: Shrink[T] = Shrink[T](_ => Stream.empty)
+  implicit val intListNoShrink: Shrink[List[Int]] = noShrink[List[Int]]
+  implicit val intNoShrink: Shrink[Int] = noShrink[Int]
+
+  test("listSetOfSizeBetween") {
     val g = for {
       min <- Gen.choose(1, 10)
       max <- Gen.choose(10, 20)
-      list <- AstGenerator.listOfSizeBetween(min, max, Gen.const(123))
+      list <- AstGenerator.listSetOfSizeBetween(min, max, Gen.choose(0, max))
     } yield (min, max, list)
 
     forAll(g) { case (min, max, list) =>
@@ -43,8 +49,15 @@ class AstGeneratorTest extends CypherFunSuite with CypherScalaCheckDrivenPropert
 
   test("_predicateComparisonChain") {
     forAll(astGenerator._predicateComparisonChain) {
-      case Ands(exprs) =>
-        exprs.size should be > 1
+
+      case Ands(comparisons) =>
+        comparisons.size match {
+          case size if size < 2 =>
+            fail(s"Expected at least 2 comparisons but was $size")
+          case size if size > 4 =>
+            fail(s"Expected at most 4 comparisons but was $size")
+          case _ =>
+        }
       case x => fail(s"Expected Ands(exprs) but was ${x.getClass}")
     }
   }
