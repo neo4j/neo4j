@@ -7564,4 +7564,68 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     result shouldEqual expectedPlan
   }
+
+  test("should insert eager on top of filter that might read deleted NODE through a hidden alias") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .deleteNode("n")
+      .filter("secretN.prop IS NOT NULL").withCardinality(200)
+      .unwind("range(1,10) AS increaseCardinality").withCardinality(100)
+      .projection("head([n, 123]) AS secretN").withCardinality(10)
+      .newVar("secretN", CTAny.covariant)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .deleteNode("n")
+      .eager(ListSet(
+        ReadDeleteConflict("secretN").withConflict(Conflict(Id(2), Id(3))),
+        ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(5))),
+        ReadDeleteConflict("secretN").withConflict(EagernessReason.Conflict(Id(2), Id(5)))
+      ))
+      .filter("secretN.prop IS NOT NULL")
+      .unwind("range(1, 10) AS increaseCardinality")
+      .projection("head([n, 123]) AS secretN")
+      .allNodeScan("n")
+      .build()
+
+    result shouldEqual expectedPlan
+  }
+
+  test("should insert eager on top of filter that might read a deleted RELATIONSHIP through a hidden alias") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .deleteRelationship("r")
+      .filter("secretR.prop IS NOT NULL").withCardinality(200)
+      .unwind("range(1,10) AS increaseCardinality").withCardinality(100)
+      .projection("head([r, 123]) AS secretR").withCardinality(10)
+      .newVar("secretR", CTAny.covariant)
+      .allRelationshipsScan("(a)-[r]->(b)").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .deleteRelationship("r")
+      .eager(ListSet(
+        ReadDeleteConflict("secretR").withConflict(Conflict(Id(2), Id(3))),
+        ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(5))),
+        ReadDeleteConflict("secretR").withConflict(Conflict(Id(2), Id(5)))
+      ))
+      .filter("secretR.prop IS NOT NULL")
+      .unwind("range(1, 10) AS increaseCardinality")
+      .projection("head([r, 123]) AS secretR")
+      .allRelationshipsScan("(a)-[r]->(b)")
+      .build()
+
+    result shouldEqual expectedPlan
+  }
 }

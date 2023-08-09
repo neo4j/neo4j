@@ -696,8 +696,6 @@ object ReadFinder {
           } else identity
         ))(PlanReads())
 
-      case Projection(_, _, _) =>
-        PlanReads()
       // Projection.projectExpressions could actually contain introductions of entity variables.
       // But, these will always refer to variables that have been "found" before,
       // Thus no new entity is really introduced. Using `withIntroducedNodeVariable`
@@ -708,6 +706,36 @@ object ReadFinder {
       //  * Unwind
       //  * [Ordered]Aggregation
       //  * [Ordered]Distinct
+      case Projection(_, _, projectExpressions) =>
+        projectExpressions.foldLeft(PlanReads()) {
+
+          // Don't introduce new variables for aliases: WITH a AS b
+          case (acc, _ -> (_: Variable)) =>
+            acc
+
+          case (acc, v -> nonVariableExpression) =>
+            var res = acc
+
+            // Check both expressions to avoid introducing new variables for projections like:
+            // WITH n.prop AS `n.prop`
+            // If there's no entry in the type table for `n.prop`, we assume it _could_ be a node, but at the same time
+            // we know that n.prop cannot be a node.
+            val couldBeNode =
+              semanticTable.typeFor(v.name).couldBe(CTNode) &&
+                semanticTable.typeFor(nonVariableExpression).couldBe(CTNode)
+            if (couldBeNode) {
+              res = res.withIntroducedNodeVariable(v)
+            }
+
+            val couldBeRel =
+              semanticTable.typeFor(v.name).couldBe(CTRelationship) &&
+                semanticTable.typeFor(nonVariableExpression).couldBe(CTRelationship)
+            if (couldBeRel) {
+              res = res.withIntroducedRelationshipVariable(v)
+            }
+
+            res
+        }
 
       case c: Create =>
         val nodes = c.nodes
