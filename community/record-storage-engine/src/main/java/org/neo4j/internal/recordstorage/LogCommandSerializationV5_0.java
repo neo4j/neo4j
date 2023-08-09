@@ -20,8 +20,8 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
-import static org.neo4j.util.Bits.bitFlag;
-import static org.neo4j.util.Bits.bitFlags;
+import static org.neo4j.util.BitUtils.bitFlag;
+import static org.neo4j.util.BitUtils.bitFlags;
 
 import java.io.IOException;
 import java.time.LocalDate;

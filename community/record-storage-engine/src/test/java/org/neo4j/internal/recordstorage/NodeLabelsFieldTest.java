@@ -33,7 +33,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.util.Bits.bits;
+import static org.neo4j.util.BitBuffer.bits;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,7 +82,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -575,7 +575,7 @@ class NodeLabelsFieldTest {
     private static long inlinedLabelsLongRepresentation(long... labelIds) {
         long header = (long) labelIds.length << 36;
         byte bitsPerLabel = (byte) (36 / labelIds.length);
-        Bits bits = bits(5);
+        BitBuffer bits = bits(5);
         for (long labelId : labelIds) {
             bits.put(labelId, bitsPerLabel);
         }

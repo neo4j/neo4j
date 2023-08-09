@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 public class HasLabelSubscriberTest {
     private static final int THE_NODE = 13;
@@ -116,15 +116,15 @@ public class HasLabelSubscriberTest {
     }
 
     private static DynamicRecord record(int numberOfLabels, int startLabel, boolean needsHeader) {
-        Bits bits;
+        BitBuffer bits;
         if (needsHeader) {
-            bits = Bits.bits(3 + (int) Math.ceil(8 * (numberOfLabels + 1) / 8.0));
+            bits = BitBuffer.bits(3 + (int) Math.ceil(8 * (numberOfLabels + 1) / 8.0));
             bits.put((byte) 6); // ShortArray.LONG
             bits.put((byte) 8); // bits used in last byte
             bits.put((byte) 8); // required bits
             bits.put(THE_NODE, 8);
         } else {
-            bits = Bits.bits((int) Math.ceil(8 * numberOfLabels / 8.0));
+            bits = BitBuffer.bits((int) Math.ceil(8 * numberOfLabels / 8.0));
         }
 
         for (int label = startLabel; label < startLabel + numberOfLabels; label++) {

@@ -67,7 +67,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
-import static org.neo4j.util.Bits.bits;
+import static org.neo4j.util.BitBuffer.bits;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -188,7 +188,7 @@ import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -927,7 +927,7 @@ public class FullCheckIntegrationTest {
     private static long inlinedLabelsLongRepresentation(long... labelIds) {
         long header = (long) labelIds.length << 36;
         byte bitsPerLabel = (byte) (36 / labelIds.length);
-        Bits bits = bits(5);
+        BitBuffer bits = bits(5);
         for (long labelId : labelIds) {
             bits.put(labelId, bitsPerLabel);
         }

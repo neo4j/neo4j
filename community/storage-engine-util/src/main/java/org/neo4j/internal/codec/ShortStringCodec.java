@@ -20,7 +20,7 @@
 package org.neo4j.internal.codec;
 
 import java.util.Arrays;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 public enum ShortStringCodec {
     /**
@@ -594,7 +594,7 @@ public enum ShortStringCodec {
 
     ShortStringCodec(int codecId, int step, boolean needsChars) {
         this.codecId = codecId;
-        this.mask = Bits.rightOverflowMask(step);
+        this.mask = BitBuffer.rightOverflowMask(step);
         this.step = step;
         this.needsChars = needsChars;
         this.bitMask = (1 << (codecId - 1));

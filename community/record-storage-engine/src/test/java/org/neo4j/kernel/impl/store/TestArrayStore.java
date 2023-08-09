@@ -57,7 +57,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
@@ -313,7 +313,7 @@ public class TestArrayStore {
     private static void assertNumericArrayHeaderAndContent(
             Object array, PropertyType type, int expectedBitsUsedPerItem, HeavyRecordData recordData) {
         assertArrayHeader(recordData.header(), type, expectedBitsUsedPerItem);
-        Bits bits = Bits.bitsFromBytes(recordData.data());
+        BitBuffer bits = BitBuffer.bitsFromBytes(recordData.data());
         int length = Array.getLength(array);
         for (int i = 0; i < length; i++) {
             if (array instanceof double[]) {

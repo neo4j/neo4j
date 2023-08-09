@@ -23,7 +23,7 @@ import static org.neo4j.internal.helpers.Numbers.unsignedByteToInt;
 import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.directionFromCombinedKey;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.groupIdFromCombinedKey;
-import static org.neo4j.util.Bits.bitFlag;
+import static org.neo4j.util.BitUtils.bitFlag;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;

@@ -33,7 +33,7 @@ import static org.neo4j.internal.codec.ShortStringCodec.prepareEncode;
 import java.nio.charset.StandardCharsets;
 import org.neo4j.internal.codec.ShortStringCodec;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
@@ -124,7 +124,7 @@ public class LongerShortString {
         return false;
     }
 
-    private static void writeHeader(Bits bits, int keyId, int encoding, int stringLength) {
+    private static void writeHeader(BitBuffer bits, int keyId, int encoding, int stringLength) {
         // [][][][ lll,llle][eeee,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         bits.put(keyId, 24)
                 .put(PropertyType.SHORT_STRING.intValue(), 4)
@@ -216,17 +216,17 @@ public class LongerShortString {
         }
     }
 
-    private static Bits newBits(ShortStringCodec codec, int length) {
-        return Bits.bits(calculateNumberOfBlocksUsed(codec, length) * 8);
+    private static BitBuffer newBits(ShortStringCodec codec, int length) {
+        return BitBuffer.bits(calculateNumberOfBlocksUsed(codec, length) * 8);
     }
 
-    private static Bits newBitsForStep8(int length) {
-        return Bits.bits(calculateNumberOfBlocksUsedForStep8(length) << 3); // *8
+    private static BitBuffer newBitsForStep8(int length) {
+        return BitBuffer.bits(calculateNumberOfBlocksUsedForStep8(length) << 3); // *8
     }
 
     private static boolean encodeLatin1(int keyId, String string, PropertyBlock target) {
         int length = string.length();
-        Bits bits = newBitsForStep8(length);
+        BitBuffer bits = newBitsForStep8(length);
         writeHeader(bits, keyId, ENCODING_LATIN1, length);
         if (!writeLatin1Characters(string, bits)) {
             return false;
@@ -235,7 +235,7 @@ public class LongerShortString {
         return true;
     }
 
-    public static boolean writeLatin1Characters(String string, Bits bits) {
+    public static boolean writeLatin1Characters(String string, BitBuffer bits) {
         int length = string.length();
         for (int i = 0; i < length; i++) {
             char c = string.charAt(i);
@@ -253,7 +253,7 @@ public class LongerShortString {
         if (length > payloadSize - 3 /*key*/ - 2 /*enc+len*/) {
             return false;
         }
-        Bits bits = newBitsForStep8(length);
+        BitBuffer bits = newBitsForStep8(length);
         writeHeader(
                 bits, keyId, ENCODING_UTF8, length); // In this case it isn't the string length, but the number of bytes
         for (byte value : bytes) {
@@ -273,7 +273,7 @@ public class LongerShortString {
         if (length > maxLength(codec, payloadSize)) {
             return false;
         }
-        Bits bits = newBits(codec, length);
+        BitBuffer bits = newBits(codec, length);
         writeHeader(bits, keyId, codec.id(), length);
         if (length > 0) {
             translateData(bits, data, length, codec.bitsPerCharacter(), codec);
@@ -282,7 +282,7 @@ public class LongerShortString {
         return true;
     }
 
-    private static void translateData(Bits bits, byte[] data, int length, final int step, ShortStringCodec codec) {
+    private static void translateData(BitBuffer bits, byte[] data, int length, final int step, ShortStringCodec codec) {
         for (int i = 0; i < length; i++) {
             bits.put(codec.encTranslate(data[i]), step);
         }

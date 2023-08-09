@@ -58,7 +58,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.string.UTF8;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextValue;
@@ -670,7 +670,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
                 buffer.get(byteArray);
                 return Values.byteArray(byteArray);
             } else { // Fallback to the generic approach, which is a slower
-                Bits bits = Bits.bitsFromBytes(buffer.array(), buffer.position());
+                BitBuffer bits = BitBuffer.bitsFromBytes(buffer.array(), buffer.position());
                 int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
                 return type.createArray(length, bits, requiredBits);
             }

@@ -24,7 +24,7 @@ import static java.lang.Math.max;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 /**
  * Caches labels for each node. Tries to keep memory as 8b (a long) per node. If a particular node has many labels
@@ -33,14 +33,14 @@ import org.neo4j.util.Bits;
 public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoCloseable {
     public static class Client {
         private final long[] labelScratch;
-        private final Bits labelBits;
+        private final BitBuffer labelBits;
         private final long[] fieldScratch = new long[1];
-        private final Bits fieldBits = Bits.bitsFromLongs(fieldScratch);
+        private final BitBuffer fieldBits = BitBuffer.bitsFromLongs(fieldScratch);
         private long[] target = new long[20];
 
         public Client(int worstCaseLongsNeeded) {
             this.labelScratch = new long[worstCaseLongsNeeded];
-            this.labelBits = Bits.bitsFromLongs(labelScratch);
+            this.labelBits = BitBuffer.bitsFromLongs(labelScratch);
         }
     }
 
@@ -163,7 +163,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         spillOver.acceptMemoryStatsVisitor(visitor);
     }
 
-    private void decode(Bits bits, int length, long[] target) {
+    private void decode(BitBuffer bits, int length, long[] target) {
         for (int i = 0; i < length; i++) {
             target[i] = bits.getInt(bitsPerLabel);
         }

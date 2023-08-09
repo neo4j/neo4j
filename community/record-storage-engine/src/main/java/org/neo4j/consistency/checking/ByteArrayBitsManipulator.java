@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking;
 
 import java.util.Arrays;
 import org.neo4j.internal.batchimport.cache.ByteArray;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitUtils;
 
 /**
  * Uses a {@link ByteArray} and can conveniently split up an index into slots, not only per byte, but arbitrary bit-sizes,
@@ -90,7 +90,7 @@ public class ByteArrayBitsManipulator {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "[" + Bits.numbersToBitString(new long[] {mask << bitOffset}) + "]";
+            return getClass().getSimpleName() + "[" + BitUtils.numbersToBitString(new long[] {mask << bitOffset}) + "]";
         }
     }
 

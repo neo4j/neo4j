@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 /**
  * Implementation of the node store.
@@ -60,7 +60,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
         if (requiredBits == 0) {
             return null;
         }
-        Bits bits = Bits.bitsFromBytes(array);
+        BitBuffer bits = BitBuffer.bitsFromBytes(array);
         return bits.getLong(requiredBits);
     }
 

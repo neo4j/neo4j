@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 /**
  * The content layout of metadata store changed in 5.0
@@ -170,7 +170,7 @@ public class LegacyMetadataHandler {
         if (storeVersion == -1) {
             return UNKNOWN_VERSION;
         }
-        Bits bits = Bits.bitsFromLongs(new long[] {storeVersion});
+        BitBuffer bits = BitBuffer.bitsFromLongs(new long[] {storeVersion});
         int length = bits.getShort(8);
         if (length == 0 || length > 7) {
             throw new IllegalArgumentException(format("The read version string length %d is not proper.", length));

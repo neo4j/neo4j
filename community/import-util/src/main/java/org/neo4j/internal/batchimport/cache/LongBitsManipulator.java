@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport.cache;
 
 import java.util.Arrays;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitUtils;
 
 /**
  * Turns a long into 64 bits of memory where variables can be allocated in, for example:
@@ -69,7 +69,8 @@ public class LongBitsManipulator {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "[" + Bits.numbersToBitString(new long[] {maxValue << bitOffset}) + "]";
+            return getClass().getSimpleName() + "[" + BitUtils.numbersToBitString(new long[] {maxValue << bitOffset})
+                    + "]";
         }
     }
 

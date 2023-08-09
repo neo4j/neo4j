@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CRSTable;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -165,7 +165,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
         } else {
             int numberOfBytes = (totalBits - 1) / 8 + 1;
             numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
-            Bits bits = Bits.bits(numberOfBytes);
+            BitBuffer bits = BitBuffer.bits(numberOfBytes);
             bits.put((byte) type.intValue());
             bits.put((byte) bitsUsedInLastByte);
             bits.put((byte) requiredBits);
@@ -360,7 +360,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
                 && requiredBits == Byte.SIZE) { // Optimization for byte arrays (probably large ones)
             return Values.byteArray(bArray);
         } else { // Fallback to the generic approach, which is a slower
-            Bits bits = Bits.bitsFromBytes(bArray);
+            BitBuffer bits = BitBuffer.bitsFromBytes(bArray);
             int length = (bArray.length * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
             return type.createArray(length, bits, requiredBits);
         }

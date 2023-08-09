@@ -19,15 +19,13 @@
  */
 package org.neo4j.util;
 
-import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
-
 import java.util.Arrays;
 
 /**
  * Got bits to store, shift and retrieve and they are more than what fits in a long?
- * Use {@link Bits} then.
+ * Use {@link BitBuffer} then.
  */
-public final class Bits {
+public final class BitBuffer {
     // 3: ...
     // 2:   [   23    ][   22    ][   21    ][   20    ][   19    ][   18    ][   17    ][   16    ] <--\
     //                                                                                                   |
@@ -43,56 +41,41 @@ public final class Bits {
     private int writePosition;
     private int readPosition;
 
-    /*
-     * Calculate all the right overflow masks
-     */
-    private static final long[] RIGHT_OVERFLOW_MASKS;
-
-    static {
-        RIGHT_OVERFLOW_MASKS = new long[Long.SIZE];
-        long mask = 1L;
-        for (int i = 0; i < RIGHT_OVERFLOW_MASKS.length; i++) {
-            RIGHT_OVERFLOW_MASKS[i] = mask;
-            mask <<= 1;
-            mask |= 0x1L;
-        }
-    }
-
-    public static Bits bits(int numberOfBytes) {
+    public static BitBuffer bits(int numberOfBytes) {
         int requiredLongs = requiredLongs(numberOfBytes);
-        return new Bits(new long[requiredLongs], numberOfBytes);
+        return new BitBuffer(new long[requiredLongs], numberOfBytes);
     }
 
     public static int requiredLongs(int numberOfBytes) {
         return ((numberOfBytes - 1) >> 3) + 1; // /8
     }
 
-    public static Bits bitsFromLongs(long[] longs) {
-        return new Bits(longs, longs.length << 3); // *8
+    public static BitBuffer bitsFromLongs(long[] longs) {
+        return new BitBuffer(longs, longs.length << 3); // *8
     }
 
-    public static Bits bitsFromBytes(byte[] bytes) {
+    public static BitBuffer bitsFromBytes(byte[] bytes) {
         return bitsFromBytes(bytes, 0);
     }
 
-    public static Bits bitsFromBytes(byte[] bytes, int startIndex) {
+    public static BitBuffer bitsFromBytes(byte[] bytes, int startIndex) {
         final int count = bytes.length;
-        Bits bits = bits(count - startIndex);
+        BitBuffer bits = bits(count - startIndex);
         for (int i = startIndex; i < count; i++) {
             bits.put(bytes[i]);
         }
         return bits;
     }
 
-    public static Bits bitsFromBytes(byte[] bytes, int offset, int length) {
-        Bits bits = bits(length - offset);
+    public static BitBuffer bitsFromBytes(byte[] bytes, int offset, int length) {
+        BitBuffer bits = bits(length - offset);
         for (int i = offset; i < (offset + length); i++) {
             bits.put(bytes[i]);
         }
         return bits;
     }
 
-    private Bits(long[] longs, int numberOfBytes) {
+    private BitBuffer(long[] longs, int numberOfBytes) {
         this.longs = longs;
         this.numberOfBytes = numberOfBytes;
     }
@@ -105,7 +88,7 @@ public final class Bits {
      * @return the created mask.
      */
     public static long rightOverflowMask(int steps) {
-        return RIGHT_OVERFLOW_MASKS[steps - 1];
+        return -1L >>> (64 - steps);
     }
 
     /**
@@ -151,7 +134,7 @@ public final class Bits {
             }
             builder.append(longIndex);
             builder.append(':');
-            numberToString(builder, value, 8);
+            BitUtils.numberToString(builder, value, 8);
             if (longIndex == 0) {
                 builder.append(" <-- START");
             }
@@ -159,55 +142,35 @@ public final class Bits {
         return builder.toString();
     }
 
-    public static void numberToString(StringBuilder builder, long value, int numberOfBytes) {
-        builder.append('[');
-        for (int i = 8 * numberOfBytes - 1; i >= 0; i--) {
-            boolean isSet = (value & (1L << i)) != 0;
-            builder.append(isSet ? "1" : "0");
-            if (i > 0 && i % 8 == 0) {
-                builder.append(',');
-            }
-        }
-        builder.append(']');
-    }
-
-    public static String numbersToBitString(long[] values) {
-        StringBuilder builder = new StringBuilder();
-        for (long value : values) {
-            numberToString(builder, value, 8);
-        }
-        return builder.toString();
-    }
-
-    public Bits put(byte value) {
+    public BitBuffer put(byte value) {
         return put(value, Byte.SIZE);
     }
 
-    public Bits put(byte value, int steps) {
+    public BitBuffer put(byte value, int steps) {
         return put((long) value, steps);
     }
 
-    public Bits put(short value) {
+    public BitBuffer put(short value) {
         return put(value, Short.SIZE);
     }
 
-    public Bits put(short value, int steps) {
+    public BitBuffer put(short value, int steps) {
         return put((long) value, steps);
     }
 
-    public Bits put(int value) {
+    public BitBuffer put(int value) {
         return put(value, Integer.SIZE);
     }
 
-    public Bits put(int value, int steps) {
+    public BitBuffer put(int value, int steps) {
         return put((long) value, steps);
     }
 
-    public Bits put(long value) {
+    public BitBuffer put(long value) {
         return put(value, Long.SIZE);
     }
 
-    public Bits put(long value, int steps) {
+    public BitBuffer put(long value, int steps) {
         int lowLongIndex = writePosition >> 6; // /64
         int lowBitInLong = writePosition % 64;
         int lowBitsAvailable = 64 - lowBitInLong;
@@ -221,7 +184,7 @@ public final class Bits {
         return this;
     }
 
-    public Bits put(byte[] bytes, int offset, int length) {
+    public BitBuffer put(byte[] bytes, int offset, int length) {
         for (int i = offset; i < offset + length; i++) {
             put(bytes[i], Byte.SIZE);
         }
@@ -277,69 +240,6 @@ public final class Bits {
         }
         readPosition += steps;
         return result;
-    }
-
-    public static boolean bitFlag(byte flags, byte flag) {
-        assert isPowerOfTwo(flag) : "flag should be a power of 2, not: 0x" + Integer.toHexString(flag);
-        return (flags & flag) == flag;
-    }
-
-    public static boolean bitFlag(int flags, int flag) {
-        assert isPowerOfTwo(flag) : "flag should be a power of 2, not: 0x" + Integer.toHexString(flag);
-        return (flags & flag) == flag;
-    }
-
-    public static int bitFlag(boolean value, int flag) {
-        assert isPowerOfTwo(flag) : "flag should be a power of 2, not: 0x" + Integer.toHexString(flag);
-        return value ? flag : 0;
-    }
-
-    public static byte bitFlag(boolean value, byte flag) {
-        assert isPowerOfTwo(flag) : "flag should be a power of 2, not: 0x" + Integer.toHexString(flag);
-        return value ? flag : 0;
-    }
-
-    public static byte bitFlags(
-            int flag1, int flag2, int flag3, int flag4, int flag5, int flag6, int flag7, int flag8) {
-        int result = flag1 | flag2 | flag3 | flag4 | flag5 | flag6 | flag7 | flag8;
-        assert (result & ~0xFF) == 0;
-        return (byte) result;
-    }
-
-    public static byte bitFlags(int flag1, int flag2, int flag3, int flag4, int flag5, int flag6, int flag7) {
-        int result = flag1 | flag2 | flag3 | flag4 | flag5 | flag6 | flag7;
-        assert (result & ~0xFF) == 0;
-        return (byte) result;
-    }
-
-    public static byte bitFlags(int flag1, int flag2, int flag3, int flag4, int flag5, int flag6) {
-        int result = flag1 | flag2 | flag3 | flag4 | flag5 | flag6;
-        assert (result & ~0xFF) == 0;
-        return (byte) result;
-    }
-
-    public static byte bitFlags(int flag1, int flag2, int flag3, int flag4, int flag5) {
-        int result = flag1 | flag2 | flag3 | flag4 | flag5;
-        assert (result & ~0xFF) == 0;
-        return (byte) result;
-    }
-
-    public static byte bitFlags(int flag1, int flag2, int flag3, int flag4) {
-        int result = flag1 | flag2 | flag3 | flag4;
-        assert (result & ~0xFF) == 0;
-        return (byte) result;
-    }
-
-    public static byte bitFlags(int flag1, int flag2, int flag3) {
-        int result = flag1 | flag2 | flag3;
-        assert (result & ~0xFF) == 0;
-        return (byte) result;
-    }
-
-    public static byte bitFlags(int flag1, int flag2) {
-        int result = flag1 | flag2;
-        assert (result & ~0xFF) == 0;
-        return (byte) result;
     }
 
     /**

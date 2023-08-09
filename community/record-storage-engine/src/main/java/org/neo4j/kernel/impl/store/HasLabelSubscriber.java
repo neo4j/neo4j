@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 /**
  * Used for streaming hasLabel check
@@ -30,7 +30,7 @@ import org.neo4j.util.Bits;
 class HasLabelSubscriber implements RecordSubscriber<DynamicRecord> {
     private int requiredBits;
     private int remainingBits;
-    private Bits bits;
+    private BitBuffer bits;
     private boolean firstRecord = true;
     private boolean found;
     private final int label;
@@ -68,7 +68,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord> {
         assert ShortArray.typeOf(data[0]) == ShortArray.LONG;
         bitsUsedInLastByte = data[1];
         requiredBits = data[2];
-        bits = Bits.bitsFromBytes(data, 3);
+        bits = BitBuffer.bitsFromBytes(data, 3);
         int numberOfUsedBitsInRecord = numberOfUsedBitsInRecord((data.length - 3) * Byte.SIZE, lastRecord);
         int numberOfCompleteLabels = numberOfUsedBitsInRecord / requiredBits;
         remainingBits = numberOfUsedBitsInRecord - numberOfCompleteLabels * requiredBits;
@@ -90,12 +90,12 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord> {
 
     private void computeBits(byte[] data, int totalNumberOfBits, int numberOfCompleteLabels) {
         if (remainingBits > 0) {
-            Bits newBits = Bits.bits((int) Math.ceil((totalNumberOfBits + remainingBits) / 8.0));
+            BitBuffer newBits = BitBuffer.bits((int) Math.ceil((totalNumberOfBits + remainingBits) / 8.0));
             newBits.put(bits.getLong(remainingBits), remainingBits);
             newBits.put(data, 0, data.length);
             bits = newBits;
         } else {
-            bits = Bits.bitsFromBytes(data);
+            bits = BitBuffer.bitsFromBytes(data);
         }
         remainingBits = totalNumberOfBits - numberOfCompleteLabels * requiredBits;
     }

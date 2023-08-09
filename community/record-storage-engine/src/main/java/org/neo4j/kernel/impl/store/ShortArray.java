@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -37,7 +37,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (boolean value : (boolean[]) array) {
                     result.put(value ? 1 : 0, 1);
@@ -50,7 +50,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_BOOLEAN_ARRAY;
             }
@@ -93,7 +93,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (byte b : (byte[]) array) {
                     result.put(b, requiredBits);
@@ -106,7 +106,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_BYTE_ARRAY;
             }
@@ -149,7 +149,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (short value : (short[]) array) {
                     result.put(value, requiredBits);
@@ -162,7 +162,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_SHORT_ARRAY;
             }
@@ -205,7 +205,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (char value : (char[]) array) {
                     result.put(value, requiredBits);
@@ -218,7 +218,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_CHAR_ARRAY;
             }
@@ -261,7 +261,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (int value : (int[]) array) {
                     result.put(value, requiredBits);
@@ -274,7 +274,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_INT_ARRAY;
             }
@@ -318,7 +318,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (long value : (long[]) array) {
                     result.put(value, requiredBits);
@@ -331,7 +331,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_LONG_ARRAY;
             }
@@ -375,7 +375,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (float value : (float[]) array) {
                     result.put(Float.floatToIntBits(value), requiredBits);
@@ -410,7 +410,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_FLOAT_ARRAY;
             }
@@ -454,7 +454,7 @@ public enum ShortArray {
         }
 
         @Override
-        public void writeAll(Object array, int length, int requiredBits, Bits result) {
+        public void writeAll(Object array, int length, int requiredBits, BitBuffer result) {
             if (isPrimitive(array)) {
                 for (double value : (double[]) array) {
                     result.put(Double.doubleToLongBits(value), requiredBits);
@@ -489,7 +489,7 @@ public enum ShortArray {
         }
 
         @Override
-        public ArrayValue createArray(int length, Bits bits, int requiredBits) {
+        public ArrayValue createArray(int length, BitBuffer bits, int requiredBits) {
             if (length == 0) {
                 return Values.EMPTY_DOUBLE_ARRAY;
             }
@@ -537,7 +537,7 @@ public enum ShortArray {
         return type.intValue();
     }
 
-    public abstract ArrayValue createArray(int length, Bits bits, int requiredBits);
+    public abstract ArrayValue createArray(int length, BitBuffer bits, int requiredBits);
 
     public static boolean encode(int keyId, Object array, PropertyBlock target, int payloadSizeInBytes) {
         /*
@@ -560,10 +560,10 @@ public enum ShortArray {
             return false;
         }
         final int numberOfBytes = calculateNumberOfBlocksUsed(arrayLength, requiredBits) * 8;
-        if (Bits.requiredLongs(numberOfBytes) > PropertyType.getPayloadSizeLongs()) {
+        if (BitBuffer.requiredLongs(numberOfBytes) > PropertyType.getPayloadSizeLongs()) {
             return false;
         }
-        Bits result = Bits.bits(numberOfBytes);
+        BitBuffer result = BitBuffer.bits(numberOfBytes);
         // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         writeHeader(keyId, type, arrayLength, requiredBits, result);
         type.writeAll(array, arrayLength, requiredBits, result);
@@ -571,7 +571,7 @@ public enum ShortArray {
         return true;
     }
 
-    private static void writeHeader(int keyId, ShortArray type, int arrayLength, int requiredBits, Bits result) {
+    private static void writeHeader(int keyId, ShortArray type, int arrayLength, int requiredBits, BitBuffer result) {
         result.put(keyId, 24);
         result.put(PropertyType.SHORT_ARRAY.intValue(), 4);
         result.put(type.type.intValue(), 4);
@@ -580,11 +580,11 @@ public enum ShortArray {
     }
 
     public static Value decode(PropertyBlock block) {
-        Bits bits = Bits.bitsFromLongs(Arrays.copyOf(block.getValueBlocks(), block.getValueBlocks().length));
+        BitBuffer bits = BitBuffer.bitsFromLongs(Arrays.copyOf(block.getValueBlocks(), block.getValueBlocks().length));
         return decode(bits);
     }
 
-    public static Value decode(Bits bits) {
+    public static Value decode(BitBuffer bits) {
         // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         bits.getInt(24); // Get rid of key
         bits.getByte(4); // Get rid of short array type
@@ -663,7 +663,7 @@ public enum ShortArray {
         return (totalBits - 1) / 64 + 1;
     }
 
-    public abstract void writeAll(Object array, int length, int requiredBits, Bits result);
+    public abstract void writeAll(Object array, int length, int requiredBits, BitBuffer result);
 
     public void writeAll(Object array, byte[] result, int offset) {
         throw new IllegalStateException("Types that skip bit compaction should implement this method");

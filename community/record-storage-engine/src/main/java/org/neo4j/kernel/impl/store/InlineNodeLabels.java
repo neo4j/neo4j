@@ -25,7 +25,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.LabelIdArray.concatAndSort;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
-import static org.neo4j.util.Bits.bits;
+import static org.neo4j.util.BitBuffer.bits;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 
 public class InlineNodeLabels implements NodeLabels {
     private static final int LABEL_BITS = 36;
@@ -120,7 +120,7 @@ public class InlineNodeLabels implements NodeLabels {
         }
 
         byte bitsPerLabel = (byte) (ids.length > 0 ? (LABEL_BITS / ids.length) : LABEL_BITS);
-        Bits bits = bits(5);
+        BitBuffer bits = bits(5);
         if (!inlineValues(ids, bitsPerLabel, bits)) {
             return false;
         }
@@ -129,7 +129,7 @@ public class InlineNodeLabels implements NodeLabels {
         return true;
     }
 
-    private static boolean inlineValues(long[] values, int maxBitsPerLabel, Bits target) {
+    private static boolean inlineValues(long[] values, int maxBitsPerLabel, BitBuffer target) {
         long limit = 1L << maxBitsPerLabel;
         for (long value : values) {
             if (highestOneBit(value) < limit) {

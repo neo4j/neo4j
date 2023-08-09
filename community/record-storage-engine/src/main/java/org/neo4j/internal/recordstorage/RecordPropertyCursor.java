@@ -48,7 +48,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteValue;
@@ -304,7 +304,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     private Value readShortArray() {
-        Bits bits = Bits.bits(MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY);
+        BitBuffer bits = BitBuffer.bits(MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY);
         int blocksUsed = ShortArray.calculateNumberOfBlocksUsed(currentBlock());
         for (int i = 0; i < blocksUsed; i++) {
             bits.put(getBlocks()[block + i]);

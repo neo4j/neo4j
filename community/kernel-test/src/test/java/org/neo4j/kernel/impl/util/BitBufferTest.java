@@ -21,18 +21,19 @@ package org.neo4j.kernel.impl.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.util.Bits.bits;
+import static org.neo4j.util.BitBuffer.bits;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
-import org.neo4j.util.Bits;
+import org.neo4j.util.BitBuffer;
+import org.neo4j.util.BitUtils;
 
-class TestBits {
+class BitBufferTest {
     @Test
     void asBytes() {
         int numberOfBytes = 14;
-        Bits bits = bits(numberOfBytes);
+        BitBuffer bits = bits(numberOfBytes);
         for (byte i = 0; i < numberOfBytes; i++) {
             bits.put(i);
         }
@@ -46,20 +47,20 @@ class TestBits {
     @Test
     void doubleAsBytes() {
         double[] array1 = {1.0, 2.0, 3.0, 4.0, 5.0};
-        Bits bits = bits(array1.length * 8);
+        BitBuffer bits = bits(array1.length * 8);
         for (double value : array1) {
             bits.put(Double.doubleToRawLongBits(value));
         }
         String first = bits.toString();
         byte[] asBytes = bits.asBytes();
-        String other = Bits.bitsFromBytes(asBytes).toString();
+        String other = BitBuffer.bitsFromBytes(asBytes).toString();
         assertEquals(first, other);
     }
 
     @Test
     void doubleAsBytesWithOffset() {
         double[] array1 = {1.0, 2.0, 3.0, 4.0, 5.0};
-        Bits bits = bits(array1.length * 8);
+        BitBuffer bits = bits(array1.length * 8);
         for (double value : array1) {
             bits.put(Double.doubleToRawLongBits(value));
         }
@@ -76,7 +77,7 @@ class TestBits {
     @Test
     void writeAndRead() {
         for (int b = 5; b <= 8; b++) {
-            Bits bits = bits(16);
+            BitBuffer bits = bits(16);
             for (byte value = 0; value < 16; value++) {
                 bits.put(value, b);
             }
@@ -86,7 +87,7 @@ class TestBits {
         }
 
         for (byte value = Byte.MIN_VALUE; value < Byte.MAX_VALUE; value++) {
-            Bits bits = bits(8);
+            BitBuffer bits = bits(8);
             bits.put(value);
             assertEquals(value, bits.getByte());
         }
@@ -98,7 +99,7 @@ class TestBits {
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
         buffer.putLong(123456789L);
         buffer.flip();
-        Bits bits = Bits.bitsFromBytes(bytes, 0, buffer.limit());
+        BitBuffer bits = BitBuffer.bitsFromBytes(bytes, 0, buffer.limit());
 
         assertEquals(123456789L, bits.getLong());
     }
@@ -106,7 +107,7 @@ class TestBits {
     @Test
     void numberToStringSeparatesAfter8Bits() {
         StringBuilder builder = new StringBuilder();
-        Bits.numberToString(builder, 0b11111111, 2);
+        BitUtils.numberToString(builder, 0b11111111, 2);
         assertThat(builder.toString()).isEqualTo("[00000000,11111111]");
     }
 }

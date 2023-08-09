@@ -25,7 +25,7 @@ import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.util.Bits.bitFlag;
+import static org.neo4j.util.BitUtils.bitFlag;
 
 import java.io.IOException;
 import java.util.ArrayList;
