@@ -690,7 +690,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
     void printWithHeading() {
         final var result = mockResult(asList("c1", "c2"), "aaaaaaa", 42, "b", 43);
 
-        assertThat(formatResultWithHeading(result, "My Table"))
+        assertThat(formatResultWithHeading(result, "My Table").replace("\r\n", "\n"))
                 .isEqualTo(
                         """
                         +----------------+
@@ -704,7 +704,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
                         """);
 
-        assertThat(formatResultWithHeading(result, "Long long long, so very long, heading"))
+        assertThat(formatResultWithHeading(result, "Long long long, so very long, heading")
+                        .replace("\r\n", "\n"))
                 .isEqualTo(
                         """
                         +------------------------------------------+
