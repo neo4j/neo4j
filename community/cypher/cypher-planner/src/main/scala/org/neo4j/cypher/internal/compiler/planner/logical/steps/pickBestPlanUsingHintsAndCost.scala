@@ -41,7 +41,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
         resolvedPerPlan: LogicalPlan => String,
         heuristic: SelectorHeuristic
       ): Option[X] = {
-        context.settings.costComparisonListener.report(
+        context.staticComponents.costComparisonListener.report(
           projector,
           input,
           (plan: X) => score(projector, plan, heuristic, context),

@@ -367,7 +367,8 @@ case class CypherPlanner(
       options.materializedEntitiesMode,
       options.queryOptions.eagerAnalyzer,
       databaseReferenceRepository,
-      transactionalContextWrapper.databaseId
+      transactionalContextWrapper.databaseId,
+      log
     )
 
     // Prepare query for caching

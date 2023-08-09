@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
@@ -96,7 +97,8 @@ class PlannerContext(
   val materializedEntitiesMode: Boolean,
   val eagerAnalyzer: CypherEagerAnalyzerOption,
   val databaseReferenceRepository: DatabaseReferenceRepository,
-  val databaseId: NamedDatabaseId
+  val databaseId: NamedDatabaseId,
+  val log: Log
 ) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
 
 object PlannerContext {
@@ -122,7 +124,8 @@ object PlannerContext {
     materializedEntitiesMode: Boolean,
     eagerAnalyzer: CypherEagerAnalyzerOption,
     databaseReferenceRepository: DatabaseReferenceRepository,
-    databaseId: NamedDatabaseId
+    databaseId: NamedDatabaseId,
+    log: Log
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -147,7 +150,8 @@ object PlannerContext {
       materializedEntitiesMode,
       eagerAnalyzer,
       databaseReferenceRepository,
-      databaseId
+      databaseId,
+      log
     )
   }
 }

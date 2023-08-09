@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvalua
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -509,7 +510,8 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         idGen = idGen,
         anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
         cancellationChecker = CancellationChecker.NeverCancelled,
-        semanticTable = semanticTable
+        semanticTable = semanticTable,
+        costComparisonListener = devNullListener
       )
 
       val settings = Settings(

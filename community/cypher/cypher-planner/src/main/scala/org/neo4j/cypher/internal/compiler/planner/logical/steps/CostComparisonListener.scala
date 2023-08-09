@@ -24,9 +24,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.logging.Log
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -38,7 +40,7 @@ trait CostComparisonListener {
   def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    inputOrdering: X => Score,
+    calculateScore: X => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -46,12 +48,27 @@ trait CostComparisonListener {
   ): Unit
 }
 
+object CostComparisonListener {
+
+  def givenDebugOptions(options: CypherDebugOptions, log: Log): CostComparisonListener =
+    List(
+      Option.when(
+        options.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
+      )(new SystemOutCostLogger()),
+      Option.when(options.logCostComparisonsEnabled)(new DebugCostLogger(log))
+    ).flatten match {
+      case Nil             => devNullListener
+      case listener :: Nil => listener
+      case listeners       => new CombinedListener(listeners)
+    }
+}
+
 object devNullListener extends CostComparisonListener {
 
   override def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
-    inputOrdering: X => Score,
+    calculateScore: X => Score,
     context: LogicalPlanningContext,
     resolved: => String,
     resolvedPerPlan: LogicalPlan => String = _ => "",
@@ -59,27 +76,42 @@ object devNullListener extends CostComparisonListener {
   ): Unit = {}
 }
 
-object SystemOutCostLogger extends CostComparisonListener {
+final class CombinedListener(listeners: List[CostComparisonListener]) extends CostComparisonListener {
 
+  override def report[X, Score: Ordering](
+    projector: X => LogicalPlan,
+    input: Iterable[X],
+    calculateScore: X => Score,
+    context: LogicalPlanningContext,
+    resolved: => String,
+    resolvedPerPlan: LogicalPlan => String = _ => "",
+    heuristic: SelectorHeuristic
+  ): Unit =
+    listeners.foreach(_.report(projector, input, calculateScore, context, resolved, resolvedPerPlan, heuristic))
+}
+
+abstract class CostLogger extends CostComparisonListener {
   private val comparisonId = new AtomicLong()
+
   private val prefix = "\t"
-  private def blue(str: String) = AnsiColor.BLUE + str + AnsiColor.RESET
-  private def blue_bold(str: String) = AnsiColor.BLUE + AnsiColor.BOLD + str + AnsiColor.RESET
-  private def cyan(str: String) = AnsiColor.CYAN + str + AnsiColor.RESET
-  private def cyan_bold(str: String) = AnsiColor.CYAN + AnsiColor.UNDERLINED + AnsiColor.BOLD + str + AnsiColor.RESET
-  private def cyan_background(str: String) = AnsiColor.CYAN_B + str + AnsiColor.RESET
-  private def green(str: String) = AnsiColor.GREEN + str + AnsiColor.RESET
-  private def magenta(str: String) = AnsiColor.MAGENTA + str + AnsiColor.RESET
 
-  private def magenta_bold(str: String) =
-    AnsiColor.MAGENTA + AnsiColor.UNDERLINED + AnsiColor.BOLD + str + AnsiColor.RESET
-
-  private def indent(level: Int, str: String) = {
+  private def indent(level: Int, str: String): String = {
     val ind = prefix * level
     ind + str.replaceAll(System.lineSeparator(), System.lineSeparator() + ind)
   }
 
-  def report[X, Score: Ordering](
+  protected def blue(str: String): String
+  protected def blue_bold(str: String): String
+  protected def cyan(str: String): String
+  protected def cyan_bold(str: String): String
+  protected def cyan_background(str: String): String
+  protected def green(str: String): String
+  protected def magenta(str: String): String
+  protected def magenta_bold(str: String): String
+
+  protected def printLine(str: String): Unit
+
+  override def report[X, Score: Ordering](
     projector: X => LogicalPlan,
     input: Iterable[X],
     calculateScore: X => Score,
@@ -123,8 +155,8 @@ object SystemOutCostLogger extends CostComparisonListener {
 
     if (input.nonEmpty) {
       val id = comparisonId.getAndIncrement()
-      println(blue_bold(s"$id: Resolving $resolved"))
-      println(s"Get best of:")
+      printLine(blue_bold(s"$id: Resolving $resolved"))
+      printLine(s"Get best of:")
 
       input
         .to(LazyList) // working lazily as much as possible to traverse input as few times as necessary
@@ -157,11 +189,41 @@ object SystemOutCostLogger extends CostComparisonListener {
           val heuristicValue = heuristic.tieBreaker(plan)
           val extra = s"(hints: $hints, heuristic: $heuristicValue)"
 
-          println(indent(1, header))
-          println(indent(2, planWithCosts))
-          println(indent(2, extra))
-          println()
+          printLine(indent(1, header))
+          printLine(indent(2, planWithCosts))
+          printLine(indent(2, extra))
+          printLine("")
         }
     }
   }
+}
+
+final class SystemOutCostLogger() extends CostLogger {
+  override protected def blue(str: String): String = AnsiColor.BLUE + str + AnsiColor.RESET
+  override protected def blue_bold(str: String): String = AnsiColor.BLUE + AnsiColor.BOLD + str + AnsiColor.RESET
+  override protected def cyan(str: String): String = AnsiColor.CYAN + str + AnsiColor.RESET
+
+  override protected def cyan_bold(str: String): String =
+    AnsiColor.CYAN + AnsiColor.UNDERLINED + AnsiColor.BOLD + str + AnsiColor.RESET
+  override protected def cyan_background(str: String): String = AnsiColor.CYAN_B + str + AnsiColor.RESET
+  override protected def green(str: String): String = AnsiColor.GREEN + str + AnsiColor.RESET
+  override protected def magenta(str: String): String = AnsiColor.MAGENTA + str + AnsiColor.RESET
+
+  override protected def magenta_bold(str: String): String =
+    AnsiColor.MAGENTA + AnsiColor.UNDERLINED + AnsiColor.BOLD + str + AnsiColor.RESET
+
+  override protected def printLine(str: String): Unit = println(str)
+}
+
+final class DebugCostLogger(log: Log) extends CostLogger {
+  override protected def blue(str: String): String = str
+  override protected def blue_bold(str: String): String = str
+  override protected def cyan(str: String): String = str
+  override protected def cyan_bold(str: String): String = str
+  override protected def cyan_background(str: String): String = str
+  override protected def green(str: String): String = str
+  override protected def magenta(str: String): String = str
+  override protected def magenta_bold(str: String): String = str
+
+  override protected def printLine(str: String): Unit = log.debug(str)
 }

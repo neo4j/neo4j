@@ -394,6 +394,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object default extends CypherDebugOption("none")
   case object tostring extends CypherDebugOption("tostring")
   case object printCostComparisons extends CypherDebugOption("printcostcomparisons")
+  case object logCostComparisons extends CypherDebugOption("logcostcomparisons")
   case object generateJavaSource extends CypherDebugOption("generate_java_source")
   case object showJavaSource extends CypherDebugOption("show_java_source")
   case object showBytecode extends CypherDebugOption("show_bytecode")
@@ -414,6 +415,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   def values: Set[CypherDebugOption] = Set(
     tostring,
     printCostComparisons,
+    logCostComparisons,
     generateJavaSource,
     showJavaSource,
     showBytecode,
@@ -463,6 +465,7 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
 
   val toStringEnabled: Boolean = isEnabled(CypherDebugOption.tostring)
   val printCostComparisonsEnabled: Boolean = isEnabled(CypherDebugOption.printCostComparisons)
+  val logCostComparisonsEnabled: Boolean = isEnabled(CypherDebugOption.logCostComparisons)
   val generateJavaSourceEnabled: Boolean = isEnabled(CypherDebugOption.generateJavaSource)
   val showJavaSourceEnabled: Boolean = isEnabled(CypherDebugOption.showJavaSource)
   val showBytecodeEnabled: Boolean = isEnabled(CypherDebugOption.showBytecode)

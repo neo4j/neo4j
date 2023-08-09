@@ -57,7 +57,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -257,7 +259,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     semanticTable: SemanticTable = newMockedSemanticTable,
     strategy: QueryGraphSolver = newMockQueryGraphSolver,
     notificationLogger: InternalNotificationLogger = devNullLogger,
-    useErrorsOverWarnings: Boolean = false
+    useErrorsOverWarnings: Boolean = false,
+    costComparisonListener: CostComparisonListener = devNullListener
   ): LogicalPlanningContext = {
     val planningAttributes = PlanningAttributes.newAttributes
     newLogicalPlanningContextWithGivenAttributes(
@@ -267,7 +270,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       strategy,
       notificationLogger,
       useErrorsOverWarnings,
-      planningAttributes
+      planningAttributes,
+      costComparisonListener
     )
   }
 
@@ -277,7 +281,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     semanticTable: SemanticTable = newMockedSemanticTable,
     strategy: QueryGraphSolver = newMockQueryGraphSolver,
     notificationLogger: InternalNotificationLogger = devNullLogger,
-    useErrorsOverWarnings: Boolean = false
+    useErrorsOverWarnings: Boolean = false,
+    costComparisonListener: CostComparisonListener = devNullListener
   ): LogicalPlanningContext = {
     val planningAttributes = newStubbedPlanningAttributes
     newLogicalPlanningContextWithGivenAttributes(
@@ -287,7 +292,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       strategy,
       notificationLogger,
       useErrorsOverWarnings,
-      planningAttributes
+      planningAttributes,
+      costComparisonListener
     )
   }
 
@@ -298,7 +304,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     strategy: QueryGraphSolver,
     notificationLogger: InternalNotificationLogger,
     useErrorsOverWarnings: Boolean,
-    planningAttributes: PlanningAttributes
+    planningAttributes: PlanningAttributes,
+    costComparisonListener: CostComparisonListener
   ): LogicalPlanningContext = {
     val staticComponents = StaticComponents(
       planContext = planContext,
@@ -310,7 +317,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       idGen = idGen,
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       cancellationChecker = CancellationChecker.NeverCancelled,
-      semanticTable = semanticTable
+      semanticTable = semanticTable,
+      costComparisonListener = costComparisonListener
     )
 
     val settings = Settings(

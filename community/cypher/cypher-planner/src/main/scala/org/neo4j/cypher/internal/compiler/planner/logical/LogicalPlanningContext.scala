@@ -36,8 +36,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
@@ -91,7 +89,8 @@ object LogicalPlanningContext {
     idGen: IdGen,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    costComparisonListener: CostComparisonListener
   )
 
   /**
@@ -130,12 +129,6 @@ object LogicalPlanningContext {
       GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
     eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default
   ) {
-
-    val costComparisonListener: CostComparisonListener =
-      if (debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE"))
-        SystemOutCostLogger
-      else
-        devNullListener
 
     def cacheKey(): Seq[Any] = this match {
       // Note: This extra match is here to trigger a compilation error whenever the Signature of Settings is changed,

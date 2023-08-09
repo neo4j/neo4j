@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.UnnecessaryOptionalMatchesRemoved
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
@@ -90,7 +91,8 @@ case object QueryPlanner
       idGen = context.logicalPlanIdGen,
       anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
       cancellationChecker = context.cancellationChecker,
-      semanticTable = from.semanticTable()
+      semanticTable = from.semanticTable(),
+      costComparisonListener = CostComparisonListener.givenDebugOptions(context.debugOptions, context.log)
     )
 
     val settings = Settings(

@@ -98,6 +98,7 @@ class CypherQueryObfuscatorFactory {
       false,
       CypherEagerAnalyzerOption.default,
       null,
+      null,
       null
     )
 

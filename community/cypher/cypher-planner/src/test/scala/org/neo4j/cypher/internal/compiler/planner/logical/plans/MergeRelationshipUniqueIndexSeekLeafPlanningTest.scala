@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeRelationshipUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -108,7 +109,8 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
       idGen = idGen,
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       cancellationChecker = CancellationChecker.NeverCancelled,
-      semanticTable = config.semanticTable
+      semanticTable = config.semanticTable,
+      costComparisonListener = devNullListener
     )
 
     val settings = Settings(

@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.logging.NullLog
 import org.neo4j.values.virtual.MapValue
 import org.scalatestplus.mockito.MockitoSugar
 
@@ -91,7 +92,8 @@ object ContextHelper extends MockitoSugar {
       materializedEntitiesMode,
       eagerAnalyzer,
       databaseReferenceRepository,
-      databaseId
+      databaseId,
+      NullLog.getInstance()
     )
   }
 
