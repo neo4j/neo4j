@@ -537,19 +537,30 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     rightSymbols.toSeq match {
       case Seq(rightSymbol) =>
         val contextForRhs = context.withModifiedPlannerState(_
-          .withUpdatedLabelInfo(lhsPlan, context.staticComponents.planningAttributes.solveds)
-          .withConfig(context.plannerState.config.withLeafPlanners(
-            QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexSeekPlansFor(
-              rightSymbol,
-              leftSymbols
-            ))
-          )))
+          .withUpdatedLabelInfo(lhsPlan, context.staticComponents.planningAttributes.solveds))
+        val leafPlanCandidates = {
+          val contextForRhsLeaves =
+            contextForRhs.withModifiedPlannerState(_.withConfig(context.plannerState.config.withLeafPlanners(
+              QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexSeekPlansFor(
+                rightSymbol,
+                leftSymbols
+              ))
+            )))
 
+          val componentInterestingOrderConfig = interestingOrderConfig.forQueryGraph(rhsQgWithLhsArguments)
+
+          contextForRhsLeaves.plannerState.config.leafPlanners.candidates(
+            rhsQgWithLhsArguments,
+            interestingOrderConfig = componentInterestingOrderConfig,
+            context = context
+          )
+        }
         val rhsPlans =
           try {
             // planComponent throws if it can't find a solution, which is normally the expected behavior.
             // Here, however, restricting the leaf planners might lead to no solutions found and that is OK.
             Some(singleComponentPlanner.planComponent(
+              leafPlanCandidates,
               rhsQgWithLhsArguments,
               contextForRhs,
               kit,

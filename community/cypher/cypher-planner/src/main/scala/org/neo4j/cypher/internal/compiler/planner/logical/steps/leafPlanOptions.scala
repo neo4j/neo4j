@@ -55,11 +55,21 @@ object leafPlanOptions extends LeafPlanFinder {
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Map[Set[String], BestPlans] = {
+    val leafPlanCandidates =
+      config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context)
+    apply(leafPlanCandidates, config, queryGraph, interestingOrderConfig, context)
+  }
+
+  override def apply(
+    leafPlanCandidates: Set[LogicalPlan],
+    config: QueryPlannerConfiguration,
+    queryGraph: QueryGraph,
+    interestingOrderConfig: InterestingOrderConfig,
+    context: LogicalPlanningContext
+  ): Map[Set[String], BestPlans] = {
     val queryPlannerKit = config.toKit(interestingOrderConfig, context)
     val pickBest = config.pickBestCandidate(context)
 
-    val leafPlanCandidates =
-      config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context)
     val leafPlanCandidatesWithSelections = queryPlannerKit.select(leafPlanCandidates, queryGraph)
 
     leafPlanCandidatesWithSelections

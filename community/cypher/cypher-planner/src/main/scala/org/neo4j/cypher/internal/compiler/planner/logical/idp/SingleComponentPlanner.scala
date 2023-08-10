@@ -52,6 +52,19 @@ case class SingleComponentPlanner(
 )(monitor: IDPQueryGraphSolverMonitor) extends SingleComponentPlannerTrait {
 
   override def planComponent(
+    leafPlanCandidates: Set[LogicalPlan],
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans = {
+    val componentInterestingOrderConfig = interestingOrderConfig.forQueryGraph(qg)
+    val bestLeafPlansPerAvailableSymbol =
+      leafPlanFinder(leafPlanCandidates, context.plannerState.config, qg, componentInterestingOrderConfig, context)
+    planComponent(bestLeafPlansPerAvailableSymbol, qg, context, kit, interestingOrderConfig)
+  }
+
+  override def planComponent(
     qg: QueryGraph,
     context: LogicalPlanningContext,
     kit: QueryPlannerKit,
@@ -60,7 +73,17 @@ case class SingleComponentPlanner(
     val componentInterestingOrderConfig = interestingOrderConfig.forQueryGraph(qg)
     val bestLeafPlansPerAvailableSymbol =
       leafPlanFinder(context.plannerState.config, qg, componentInterestingOrderConfig, context)
+    planComponent(bestLeafPlansPerAvailableSymbol, qg, context, kit, interestingOrderConfig)
+  }
 
+  private def planComponent(
+    bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans = {
+    val componentInterestingOrderConfig = interestingOrderConfig.forQueryGraph(qg)
     val qppInnerPlanner = new CacheBackedQPPInnerPlanner(IDPQPPInnerPlanner(context))
 
     val bestPlans =
@@ -181,6 +204,15 @@ trait SingleComponentPlannerTrait {
     kit: QueryPlannerKit,
     interestingOrderConfig: InterestingOrderConfig
   ): BestPlans
+
+  def planComponent(
+    leafPlanCandidates: Set[LogicalPlan],
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans
+
   def solverConfig: SingleComponentIDPSolverConfig
 }
 
