@@ -52,14 +52,33 @@ case class SingleComponentPlanner(
 )(monitor: IDPQueryGraphSolverMonitor) extends SingleComponentPlannerTrait {
 
   override def planComponent(
+    leafPlanCandidates: Set[LogicalPlan],
     qg: QueryGraph,
     context: LogicalPlanningContext,
     kit: QueryPlannerKit,
     interestingOrderConfig: InterestingOrderConfig
   ): BestPlans = {
-    val bestLeafPlansPerAvailableSymbol =
-      leafPlanFinder(context.config, qg, interestingOrderConfig, context)
+    val bestLeafPlansPerAvailableSymbol = leafPlanFinder(leafPlanCandidates, context.config, qg, interestingOrderConfig, context)
+    planComponent(bestLeafPlansPerAvailableSymbol, qg, context, kit, interestingOrderConfig)
+  }
 
+  override def planComponent(
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans = {
+    val bestLeafPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrderConfig, context)
+    planComponent(bestLeafPlansPerAvailableSymbol, qg, context, kit, interestingOrderConfig)
+  }
+
+  private def planComponent(
+    bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans = {
     val bestPlans =
       if (qg.patternRelationships.nonEmpty) {
         val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
@@ -162,6 +181,15 @@ trait SingleComponentPlannerTrait {
     kit: QueryPlannerKit,
     interestingOrderConfig: InterestingOrderConfig
   ): BestPlans
+
+  def planComponent(
+    leafPlanCandidates: Set[LogicalPlan],
+    qg: QueryGraph,
+    context: LogicalPlanningContext,
+    kit: QueryPlannerKit,
+    interestingOrderConfig: InterestingOrderConfig
+  ): BestPlans
+
   def solverConfig: SingleComponentIDPSolverConfig
 }
 
