@@ -64,6 +64,7 @@ public class CompleteTransaction implements CommandBatch {
         this.subject = subject;
     }
 
+    @Override
     public void setConsensusIndex(long consensusIndex) {
         this.consensusIndex = consensusIndex;
     }

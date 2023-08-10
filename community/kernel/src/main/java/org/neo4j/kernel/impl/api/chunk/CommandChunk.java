@@ -32,7 +32,7 @@ public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMet
 
     @Override
     public long consensusIndex() {
-        return chunkMetadata.consensusIndex();
+        return chunkMetadata.consensusIndex().longValue();
     }
 
     @Override
@@ -103,5 +103,10 @@ public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMet
     @Override
     public int commandCount() {
         return commands.size();
+    }
+
+    @Override
+    public void setConsensusIndex(long commandIndex) {
+        chunkMetadata.consensusIndex().setValue(commandIndex);
     }
 }

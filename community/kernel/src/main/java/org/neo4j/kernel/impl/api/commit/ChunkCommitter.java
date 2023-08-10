@@ -26,6 +26,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.util.List;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionRollbackException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -141,7 +142,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                         false,
                         previousBatchLogPosition,
                         chunkNumber,
-                        UNKNOWN_CONSENSUS_INDEX,
+                        new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
                         commitTime,
@@ -198,7 +199,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                 true,
                 LogPosition.UNSPECIFIED,
                 chunkNumber,
-                UNKNOWN_CONSENSUS_INDEX,
+                new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                 startTimeMillis,
                 lastTransactionIdWhenStarted,
                 clocks.systemClock().millis(),

@@ -23,6 +23,7 @@ import static java.util.Collections.emptyList;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.common.Subject;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -46,7 +47,7 @@ public record RollbackChunkRepresentation(
                         true,
                         LogPosition.UNSPECIFIED,
                         -1,
-                        UNKNOWN_CONSENSUS_INDEX,
+                        new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                         timeWritten,
                         -1,
                         timeWritten,

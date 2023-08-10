@@ -151,7 +151,7 @@ public class ChunkedTransaction implements CommandBatchToApply {
                 beforeTransactionStartPosition,
                 positionAfter,
                 checksum,
-                chunk.chunkMetadata().consensusIndex());
+                chunk.chunkMetadata().consensusIndex().longValue());
         lastBatchLogPosition = beforeStart;
     }
 

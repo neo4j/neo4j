@@ -85,4 +85,6 @@ public interface CommandBatch extends CommandStream, KernelVersionProvider {
      * Number of commands in a batch
      */
     int commandCount();
+
+    void setConsensusIndex(long commandIndex);
 }

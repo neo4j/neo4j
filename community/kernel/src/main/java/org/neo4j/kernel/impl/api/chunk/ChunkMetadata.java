@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.chunk;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.common.Subject;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -29,7 +30,7 @@ public record ChunkMetadata(
         boolean rollback,
         LogPosition previousBatchLogPosition,
         long chunkId,
-        long consensusIndex,
+        MutableLong consensusIndex,
         long startTimeMillis,
         long lastTransactionIdWhenStarted,
         long chunkCommitTime,

@@ -24,6 +24,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 
 import java.io.IOException;
 import java.util.List;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.common.Subject;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -53,7 +54,7 @@ public record CommittedChunkRepresentation(
                 false,
                 logEntryChunkStart.getPreviousBatchLogPosition(),
                 logEntryChunkStart.getChunkId(),
-                UNKNOWN_CONSENSUS_INDEX,
+                new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                 logEntryChunkStart.getTimeWritten(),
                 -1,
                 logEntryChunkStart.getTimeWritten(),
