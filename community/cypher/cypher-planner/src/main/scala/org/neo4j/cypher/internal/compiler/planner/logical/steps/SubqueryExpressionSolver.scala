@@ -473,10 +473,14 @@ object SubqueryExpressionSolver {
       expressions: Seq[Expression],
       context: LogicalPlanningContext
     ): (Seq[Expression], LogicalPlan) = {
-      val solver = SubqueryExpressionSolver.solverFor(inner, context)
-      val rewrittenExpressions: Seq[Expression] = expressions.map(solver.solve(_))
-      val rewrittenInner = solver.rewrittenPlan()
-      (rewrittenExpressions, rewrittenInner)
+      if (expressions.isEmpty) {
+        (expressions, inner)
+      } else {
+        val solver = SubqueryExpressionSolver.solverFor(inner, context)
+        val rewrittenExpressions: Seq[Expression] = expressions.map(solver.solve(_))
+        val rewrittenInner = solver.rewrittenPlan()
+        (rewrittenExpressions, rewrittenInner)
+      }
     }
   }
 

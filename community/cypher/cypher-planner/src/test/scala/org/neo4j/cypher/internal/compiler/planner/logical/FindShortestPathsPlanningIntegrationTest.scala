@@ -30,10 +30,13 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.OptionValues
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
-    with AstConstructionTestSupport {
+    with AstConstructionTestSupport with OptionValues {
 
   test("finds shortest paths") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
@@ -337,6 +340,26 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         .nodeByLabelScan("a", "A")
         .build()
     }
+  }
+
+  test("should not plan selection in shortestPath fallback plan if there are no predicates to solve") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(50)
+      .build()
+
+    val q =
+      """
+        |MATCH shortestPath((a)-[r*1..3]->(b))
+        |MATCH (c)-[r*]->(d)
+        |RETURN r
+        |""".stripMargin
+
+    val plan = planner.plan(q)
+
+    // shortestPath fallback ends with Top
+    val topPlan = plan.folder.treeFindByClass[Top].value
+    topPlan.folder.treeFindByClass[Selection] shouldBe empty
   }
 
   private def outgoingPathExpression(fromNode: String, rels: String, toNode: String) = {

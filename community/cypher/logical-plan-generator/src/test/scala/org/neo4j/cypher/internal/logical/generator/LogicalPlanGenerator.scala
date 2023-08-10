@@ -507,7 +507,7 @@ class LogicalPlanGenerator(
     WithState(source, state) <- innerLogicalPlan(state)
     WithState(xpr, state) <- expressionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression, 1)
   } yield {
-    val plan = Selection(PredicateHelper.coercePredicatesWithAnds(xpr), source)(state.idGen)
+    val plan = Selection(PredicateHelper.coercePredicatesWithAnds(xpr).get, source)(state.idGen)
     annotate(plan, state)
   }
 

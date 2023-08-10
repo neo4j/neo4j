@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.util.symbols
-import org.neo4j.exceptions.InternalException
 
 import scala.collection.immutable.ListSet
 
@@ -45,9 +44,10 @@ object PredicateHelper {
    * @param predicates The predicates to coerce
    * @return coerced predicates anded together
    */
-  def coercePredicatesWithAnds(predicates: Seq[Expression]): Ands = {
-    if (predicates.isEmpty) throw new InternalException("Selection need at least one predicate")
-    Ands(predicates.map(coerceToPredicate))(predicates.map(coerceToPredicate).head.position)
+  def coercePredicatesWithAnds(predicates: Seq[Expression]): Option[Ands] = {
+    Option.when(predicates.nonEmpty) {
+      Ands(predicates.map(coerceToPredicate))(predicates.map(coerceToPredicate).head.position)
+    }
   }
 
   def coercePredicates(predicates: ListSet[Expression]): Expression = Ands.create(predicates.map(coerceToPredicate))

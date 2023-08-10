@@ -1586,12 +1586,15 @@ case class LogicalPlanProducer(
       solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicates: _*)))
     val (rewrittenPredicates, rewrittenSource) =
       SubqueryExpressionSolver.ForMulti.solve(source, predicates, context)
-    annotateSelection(
-      Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource),
-      solved,
-      providedOrders.get(source.id).fromLeft,
-      context
-    )
+
+    coercePredicatesWithAnds(rewrittenPredicates).fold(source) { coercedRewrittenPredicates =>
+      annotateSelection(
+        Selection(coercedRewrittenPredicates, rewrittenSource),
+        solved,
+        providedOrders.get(source.id).fromLeft,
+        context
+      )
+    }
   }
 
   def planHorizonSelection(
@@ -1611,21 +1614,17 @@ case class LogicalPlanProducer(
     val unsolvedPredicates = predicates.filterNot(solvedPredicates.contains(_))
 
     // solve remaining predicates
-    val newPlan =
-      if (unsolvedPredicates.nonEmpty) {
-        val (rewrittenPredicates, rewrittenSource) =
-          SubqueryExpressionSolver.ForMulti.solve(existsPlan, unsolvedPredicates, context)
-        annotateSelection(
-          Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource),
-          solved,
-          providedOrders.get(existsPlan.id).fromLeft,
-          context
-        )
-      } else {
-        existsPlan
-      }
+    val (rewrittenPredicates, rewrittenSource) =
+      SubqueryExpressionSolver.ForMulti.solve(existsPlan, unsolvedPredicates, context)
 
-    newPlan
+    coercePredicatesWithAnds(rewrittenPredicates).fold(existsPlan) { coercedRewrittenPredicates =>
+      annotateSelection(
+        Selection(coercedRewrittenPredicates, rewrittenSource),
+        solved,
+        providedOrders.get(existsPlan.id).fromLeft,
+        context
+      )
+    }
   }
 
   /**
@@ -1637,13 +1636,15 @@ case class LogicalPlanProducer(
     predicates: Seq[Expression],
     solved: PlannerQuery,
     context: LogicalPlanningContext
-  ): Selection = {
-    annotateSelection(
-      Selection(coercePredicatesWithAnds(predicates), source),
-      solved,
-      providedOrders.get(source.id).fromLeft,
-      context
-    )
+  ): LogicalPlan = {
+    coercePredicatesWithAnds(predicates).fold(source) { coercedPredicates =>
+      annotateSelection(
+        Selection(coercedPredicates, source),
+        solved,
+        providedOrders.get(source.id).fromLeft,
+        context
+      )
+    }
   }
 
   // Using the solver for `expr` in all SemiApply-like plans is kinda stupid.
