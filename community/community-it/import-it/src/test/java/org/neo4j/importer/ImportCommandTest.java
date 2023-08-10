@@ -1881,9 +1881,9 @@ class ImportCommandTest {
 
         // WHEN
         Path nodeData = createAndWriteFile("nodes.csv", Charset.defaultCharset(), writer -> {
-            writer.println("id:ID,prop1:short,prop2:float");
-            writer.println("1,123,456.789");
-            writer.println("2,1000000,24850457689578965796.458348570"); // <-- short too big, float too big
+            writer.println("id:ID,prop1:short,prop2:float,prop3:char");
+            writer.println("1,123,456.789,a");
+            writer.println("2,1000000,24850457689578965796.458348570,b"); // <-- short too big, float too big
         });
         Path relationshipData = createAndWriteFile("relationships.csv", Charset.defaultCharset(), writer -> {
             writer.println(":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte");
@@ -1908,6 +1908,8 @@ class ImportCommandTest {
         assertTrue(out.contains(format(
                 "Property type of 'prop2' normalized from 'float' --> 'double' in %s", nodeData.toAbsolutePath())));
         assertTrue(out.contains(format(
+                "Property type of 'prop3' normalized from 'char' --> 'String' in %s", nodeData.toAbsolutePath())));
+        assertTrue(out.contains(format(
                 "Property type of 'prop1' normalized from 'int' --> 'long' in %s", relationshipData.toAbsolutePath())));
         assertTrue(out.contains(format(
                 "Property type of 'prop2' normalized from 'byte' --> 'long' in %s",
@@ -1922,9 +1924,11 @@ class ImportCommandTest {
             Node node1 = nodes.get("1");
             assertEquals(123L, node1.getProperty("prop1"));
             assertEquals(456.789D, node1.getProperty("prop2"));
+            assertEquals("a", node1.getProperty("prop3"));
             Node node2 = nodes.get("2");
             assertEquals(1000000L, node2.getProperty("prop1"));
             assertEquals(24850457689578965796.458348570D, node2.getProperty("prop2"));
+            assertEquals("b", node2.getProperty("prop3"));
 
             Relationship relationship1 = single(node1.getRelationships(Direction.OUTGOING));
             assertEquals(123L, relationship1.getProperty("prop1"));

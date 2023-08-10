@@ -149,7 +149,7 @@ public class Header {
         @Override
         public void typeNormalized(String sourceDescription, String name, String fromType, String toType) {
             if (first) {
-                out.println("Type normalization:");
+                out.println("Cypher type normalization is enabled (disable with --normalize-types=false):");
                 first = false;
             }
 

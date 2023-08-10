@@ -85,7 +85,7 @@ import org.neo4j.values.storable.Values;
  */
 public class Extractors {
     private final Map<String, Extractor<?>> instances = new HashMap<>();
-    private final Extractor<String> string;
+    private final StringExtractor string;
     private final LongExtractor long_;
     private final IntExtractor int_;
     private final CharExtractor char_;
@@ -155,7 +155,7 @@ public class Extractors {
             add(string = new StringExtractor(emptyStringsAsNull));
             add(long_ = new LongExtractor());
             add(int_ = new IntExtractor(long_));
-            add(char_ = new CharExtractor());
+            add(char_ = new CharExtractor(string));
             add(short_ = new ShortExtractor(long_));
             add(byte_ = new ByteExtractor(long_));
             add(boolean_ = new BooleanExtractor());
@@ -457,8 +457,8 @@ public class Extractors {
     }
 
     public static class CharExtractor extends AbstractExtractor<Character> {
-        CharExtractor() {
-            super(Character.TYPE.getSimpleName());
+        CharExtractor(StringExtractor stringExtractor) {
+            super(Character.TYPE.getSimpleName(), stringExtractor);
         }
 
         @Override
