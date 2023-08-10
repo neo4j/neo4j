@@ -25,13 +25,13 @@ import org.neo4j.cypher.util.CountingCacheTracer.CacheCounts
 import java.util.concurrent.atomic.AtomicLong
 
 class CountingCacheTracer[Key] extends CacheTracer[Key] {
-  private val hits = new AtomicLong
-  private val misses = new AtomicLong
-  private val flushes = new AtomicLong
-  private val evicted = new AtomicLong
-  private val discards = new AtomicLong
-  private val compilations = new AtomicLong
-  private val compilationsWithExpressionCodeGen = new AtomicLong
+  protected val hits = new AtomicLong
+  protected val misses = new AtomicLong
+  protected val flushes = new AtomicLong
+  protected val evicted = new AtomicLong
+  protected val discards = new AtomicLong
+  protected val compilations = new AtomicLong
+  protected val compilationsWithExpressionCodeGen = new AtomicLong
 
   def counts: CacheCounts = CacheCounts(
     hits.get,

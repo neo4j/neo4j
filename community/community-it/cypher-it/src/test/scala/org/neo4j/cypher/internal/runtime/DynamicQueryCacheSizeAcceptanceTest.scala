@@ -25,9 +25,10 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.util.CountingCacheTracer
 import org.neo4j.graphdb.config.Setting
-import org.scalatest.concurrent.Eventually.eventually
 
 import java.lang.Boolean.TRUE
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class DynamicQueryCacheSizeAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -47,28 +48,25 @@ class DynamicQueryCacheSizeAcceptanceTest extends ExecutionEngineFunSuite {
   ).foreach { cache =>
     test(s"should resize the ${cache.getClass.getSimpleName} dynamically") {
       // given
-      val counter = cache.addMonitorListener(kernelMonitors, new CountingCacheTracer[cache.Key])
+      val counter = cache.addMonitorListener(kernelMonitors, new LatchTracer[cache.Key])
 
-      runNovelQuery()
-      counter.counts.discards shouldBe 0
-
-      runNovelQuery()
-      eventually { // the cache is asynchronous; occasionally this line will be hit before the discard
-        counter.counts.discards shouldBe 1
+      counter.expectEvents(misses = 1, discards = 0) {
+        runNovelQuery()
       }
 
-      // when
+      counter.expectEvents(misses = 1, discards = 1) {
+        runNovelQuery()
+      }
+
       setCacheSize(2)
 
-      // then
-      runNovelQuery()
-      counter.counts.discards shouldBe 1
+      counter.expectEvents(misses = 1, discards = 0) {
+        runNovelQuery()
+      }
 
-      // when
-      setCacheSize(1)
-
-      // then
-      counter.counts.discards shouldBe 2
+      counter.expectEvents(misses = 0, discards = 1) {
+        setCacheSize(1)
+      }
     }
   }
 
@@ -78,7 +76,43 @@ class DynamicQueryCacheSizeAcceptanceTest extends ExecutionEngineFunSuite {
     execute(queries.next())
   }
 
-  private def setCacheSize(size: Int): Unit = {
+  protected def setCacheSize(size: Int): Unit = {
     graph.config().setDynamic(GraphDatabaseSettings.query_cache_size, Int.box(size), "dynamic query cache size test")
+  }
+
+  // the latch helps guard against potential race conditions which might cause flakiness in the test
+  class LatchTracer[KEY] extends CountingCacheTracer[KEY] {
+    private var latch: CountDownLatch = _
+
+    override def cacheMiss(queryKey: KEY, metaData: String): Unit = {
+      super.cacheMiss(queryKey, metaData)
+      latch.countDown()
+    }
+
+    override def discard(key: KEY, metaData: String): Unit = {
+      super.discard(key, metaData)
+      latch.countDown()
+    }
+
+    def expectEvents(misses: Int, discards: Int)(block: => Unit): Unit = {
+      val expected = misses + discards
+      this.misses.set(0)
+      this.discards.set(0)
+
+      latch = new CountDownLatch(expected)
+      block
+      if (!latch.await(10, TimeUnit.SECONDS)) {
+        fail(
+          s"Expected $expected events but only received ${expected - latch.getCount} (${this.misses.get} misses; ${this.discards.get} discards)"
+        )
+      }
+
+      withClue(s"Expected $misses cache misses") {
+        this.misses.get shouldBe misses
+      }
+      withClue(s"Expected $discards cache discards") {
+        this.discards.get shouldBe discards
+      }
+    }
   }
 }
