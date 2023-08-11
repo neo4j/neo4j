@@ -86,6 +86,7 @@ import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
@@ -1648,8 +1649,11 @@ public final class CypherFunctions {
         } else if (values instanceof ListValue list) {
             // For a simple LIST<TYPE NOT NULL> we can quickly check the list type
             // without needing to iterate over the list
+            // Lists that are mixed ints and floats will return as a list of float here, so don't allow the shortcut for
+            // that
             if (itemTypeName.hasValueRepresentation()
                     && !itemTypeName.isNullable()
+                    && list.itemValueRepresentation().valueGroup() != ValueGroup.NUMBER
                     && itemTypeName.possibleValueRepresentations().contains(list.itemValueRepresentation())) {
                 return true;
             } else {

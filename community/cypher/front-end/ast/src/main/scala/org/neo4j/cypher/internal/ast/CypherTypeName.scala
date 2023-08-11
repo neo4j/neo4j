@@ -562,15 +562,22 @@ case class PropertyValueTypeName(isNullable: Boolean)(val position: InputPositio
     PointTypeName(isNullable)(position),
     ListTypeName(BooleanTypeName(isNullable = false)(position), isNullable = isNullable)(position),
     ListTypeName(StringTypeName(isNullable = false)(position), isNullable = isNullable)(position),
-    ListTypeName(IntegerTypeName(isNullable = false)(position), isNullable = isNullable)(position),
-    ListTypeName(FloatTypeName(isNullable = false)(position), isNullable = isNullable)(position),
     ListTypeName(DateTypeName(isNullable = false)(position), isNullable = isNullable)(position),
     ListTypeName(LocalTimeTypeName(isNullable = false)(position), isNullable = isNullable)(position),
     ListTypeName(ZonedTimeTypeName(isNullable = false)(position), isNullable = isNullable)(position),
     ListTypeName(LocalDateTimeTypeName(isNullable = false)(position), isNullable = isNullable)(position),
     ListTypeName(ZonedDateTimeTypeName(isNullable = false)(position), isNullable = isNullable)(position),
     ListTypeName(DurationTypeName(isNullable = false)(position), isNullable = isNullable)(position),
-    ListTypeName(PointTypeName(isNullable = false)(position), isNullable = isNullable)(position)
+    ListTypeName(PointTypeName(isNullable = false)(position), isNullable = isNullable)(position),
+    // LIST<INTEGER | FLOAT> will be stored as a LIST<FLOAT>, added here so that a check if that list
+    // is storable will pass.
+    ListTypeName(
+      ClosedDynamicUnionTypeName(Set(
+        IntegerTypeName(isNullable = false)(position),
+        FloatTypeName(isNullable = false)(position)
+      ))(position),
+      isNullable = isNullable
+    )(position)
   )
 
   override def updateIsNullable(isNullable: Boolean): CypherTypeName = this.copy(isNullable = isNullable)(position)

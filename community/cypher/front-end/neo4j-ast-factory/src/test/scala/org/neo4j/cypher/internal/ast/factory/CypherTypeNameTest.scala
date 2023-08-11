@@ -83,15 +83,20 @@ class CypherTypeNameTest extends CypherFunSuite {
     PointTypeName(isNullable = true)(pos),
     ListTypeName(BooleanTypeName(isNullable = false)(pos), isNullable = true)(pos),
     ListTypeName(StringTypeName(isNullable = false)(pos), isNullable = true)(pos),
-    ListTypeName(IntegerTypeName(isNullable = false)(pos), isNullable = true)(pos),
-    ListTypeName(FloatTypeName(isNullable = false)(pos), isNullable = true)(pos),
     ListTypeName(DateTypeName(isNullable = false)(pos), isNullable = true)(pos),
     ListTypeName(LocalTimeTypeName(isNullable = false)(pos), isNullable = true)(pos),
     ListTypeName(ZonedTimeTypeName(isNullable = false)(pos), isNullable = true)(pos),
     ListTypeName(LocalDateTimeTypeName(isNullable = false)(pos), isNullable = true)(pos),
     ListTypeName(ZonedDateTimeTypeName(isNullable = false)(pos), isNullable = true)(pos),
     ListTypeName(DurationTypeName(isNullable = false)(pos), isNullable = true)(pos),
-    ListTypeName(PointTypeName(isNullable = false)(pos), isNullable = true)(pos)
+    ListTypeName(PointTypeName(isNullable = false)(pos), isNullable = true)(pos),
+    ListTypeName(
+      ClosedDynamicUnionTypeName(Set(
+        IntegerTypeName(isNullable = false)(pos),
+        FloatTypeName(isNullable = false)(pos)
+      ))(pos),
+      isNullable = true
+    )(pos)
   )
 
   private def normalizeTypeList(types: Set[CypherTypeName]): List[CypherTypeName] = {
