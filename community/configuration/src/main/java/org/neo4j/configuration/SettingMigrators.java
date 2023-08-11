@@ -63,6 +63,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_annotation_data_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
@@ -119,6 +120,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.GraphDatabaseSettings.AnnotationDataFormat;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.InternalLog;
@@ -620,6 +622,7 @@ public final class SettingMigrators {
             migrateSamplingSettings(values, defaultValues, log);
             migratePageCacheAndMemorySettings(values, defaultValues, log);
             migrateAutoUpgrade(values, defaultValues, log);
+            migrateAnnotationDataAsJson(values, defaultValues, log);
         }
 
         private void migratePageCacheAndMemorySettings(
@@ -952,10 +955,33 @@ public final class SettingMigrators {
             migrateSettingNameChange(values, log, "server.db.query_cache_size", query_cache_size);
         }
 
-        private void migrateAutoUpgrade(
+        private static void migrateAutoUpgrade(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             migrateSettingNameChange(
                     values, log, "internal.dbms.allow_single_automatic_upgrade", automatic_upgrade_enabled);
+        }
+
+        private static void migrateAnnotationDataAsJson(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            String jsonEnabledString = values.remove("db.logs.query.annotation_data_as_json_enabled");
+            String annotationDataFormat = values.get(log_queries_annotation_data_format.name());
+            if (isNotBlank(jsonEnabledString)) {
+                log.warn(
+                        "Use of deprecated setting 'db.logs.query.annotation_data_as_json_enabled'. It is replaced by %s.",
+                        log_queries_annotation_data_format.name());
+                if (isNotBlank(annotationDataFormat)) {
+                    log.warn(
+                            "The setting %s is already configured, ignoring db.logs.query.annotation_data_as_json_enabled.",
+                            log_queries_annotation_data_format.name());
+                } else {
+                    boolean jsonEnabled = SettingValueParsers.BOOL.parse(jsonEnabledString);
+                    if (jsonEnabled) {
+                        values.put(log_queries_annotation_data_format.name(), AnnotationDataFormat.FLAT_JSON.name());
+                    } else {
+                        values.put(log_queries_annotation_data_format.name(), AnnotationDataFormat.CYPHER.name());
+                    }
+                }
+            }
         }
     }
 

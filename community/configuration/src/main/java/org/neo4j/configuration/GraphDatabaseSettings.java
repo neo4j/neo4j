@@ -648,11 +648,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .addConstraint(min(1))
             .build();
 
-    @Description("Log executed queries. Valid values are `OFF`, `INFO`, or `VERBOSE`.\n\n" + "`OFF`::  no logging.\n"
-            + "`INFO`:: log queries at the end of execution, that take longer than the configured threshold, `db.logs.query.threshold`.\n"
-            + "`VERBOSE`:: log queries at the start and end of execution, regardless of `db.logs.query.threshold`.\n\n"
-            + "Log entries are written to the query log.\n\n"
-            + "This feature is available in the Neo4j Enterprise Edition.")
+    @Description(
+            """
+            Log executed queries. Valid values are `OFF`, `INFO`, or `VERBOSE`.
+
+            `OFF`::  no logging.
+            `INFO`:: log queries at the end of execution, that take longer than the configured threshold, `db.logs.query.threshold`.
+            `VERBOSE`:: log queries at the start and end of execution, regardless of `db.logs.query.threshold`.
+
+            Log entries are written to the query log.
+
+            This feature is available in the Neo4j Enterprise Edition.""")
     public static final Setting<LogQueryLevel> log_queries = newBuilder(
                     "db.logs.query.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.VERBOSE)
             .dynamic()
@@ -664,21 +670,50 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
         VERBOSE
     }
 
-    @Description("Log the start and end of a transaction. Valid values are 'OFF', 'INFO', or 'VERBOSE'.\n"
-            + "OFF:  no logging.\n"
-            + "INFO: log start and end of transactions that take longer than the configured threshold, db.logs.query.transaction.threshold.\n"
-            + "VERBOSE: log start and end of all transactions.\n"
-            + "Log entries are written to the query log.\n"
-            + "This feature is available in the Neo4j Enterprise Edition.")
+    @Description(
+            """
+            Log the start and end of a transaction. Valid values are `OFF`, `INFO`, or `VERBOSE`.
+
+            `OFF`::  no logging.
+            `INFO`:: log start and end of transactions that take longer than the configured threshold, `db.logs.query.transaction.threshold`.
+            `VERBOSE`:: log start and end of all transactions.
+
+            Log entries are written to the query log.
+            This feature is available in the Neo4j Enterprise Edition.""")
     public static final Setting<LogQueryLevel> log_queries_transactions_level = newBuilder(
                     "db.logs.query.transaction.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.OFF)
             .dynamic()
             .build();
 
-    @Description("Log the annotation data as a JSON strings instead of a cypher map.\n"
-            + "This only have effect when the query log is in JSON format.")
+    @Deprecated(since = "5.12.0", forRemoval = true)
+    @Description(
+            """
+            Log the annotation data as a JSON strings instead of a cypher map.
+            This only have effect when the query log is in JSON format.""")
     public static final Setting<Boolean> log_queries_annotation_data_as_json = newBuilder(
                     "db.logs.query.annotation_data_as_json_enabled", BOOL, false)
+            .dynamic()
+            .build();
+
+    public enum AnnotationDataFormat {
+        CYPHER,
+        JSON,
+        FLAT_JSON
+    }
+
+    @Description(
+            """
+            The format to use for the JSON annotation data.
+
+            `CYPHER`:: Formatted as a Cypher map. E.g. `{foo: 'bar', baz: {k: 1}}`.
+            `JSON`:: Formatted as a JSON map. E.g. `{"foo": "bar", "baz": {"k": 1}}`.
+            `FLAT_JSON`:: Formatted as a flattened JSON map. E.g. `{"foo": "bar", "baz.k": 1}`.
+
+            This only have effect when the query log is in JSON format.""")
+    public static final Setting<AnnotationDataFormat> log_queries_annotation_data_format = newBuilder(
+                    "db.logs.query.annotation_data_format",
+                    ofEnum(AnnotationDataFormat.class),
+                    AnnotationDataFormat.CYPHER)
             .dynamic()
             .build();
 

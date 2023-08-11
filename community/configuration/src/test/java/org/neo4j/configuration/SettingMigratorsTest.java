@@ -69,6 +69,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_annotation_data_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
@@ -129,6 +130,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings.AnnotationDataFormat;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -808,5 +810,44 @@ class SettingMigratorsTest {
                 .forLevel(WARN)
                 .containsMessages(
                         "Use of deprecated setting 'internal.dbms.allow_single_automatic_upgrade'. It is replaced by");
+    }
+
+    @Test
+    void annotationDataAsJson() {
+        var logProvider = new AssertableLogProvider();
+        Config config = Config.newBuilder()
+                .setRaw(Map.of("db.logs.query.annotation_data_as_json_enabled", "true"))
+                .build();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(config.get(log_queries_annotation_data_format)).isEqualTo(AnnotationDataFormat.FLAT_JSON);
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessages(
+                        "Use of deprecated setting 'db.logs.query.annotation_data_as_json_enabled'. It is replaced by");
+    }
+
+    @Test
+    void annotationDataAsJsonConflict() {
+        var logProvider = new AssertableLogProvider();
+        Config config = Config.newBuilder()
+                .setRaw(Map.of(
+                        "db.logs.query.annotation_data_as_json_enabled",
+                        "true",
+                        log_queries_annotation_data_format.name(),
+                        AnnotationDataFormat.CYPHER.name()))
+                .build();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(config.get(log_queries_annotation_data_format)).isEqualTo(AnnotationDataFormat.CYPHER);
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessages(
+                        "Use of deprecated setting 'db.logs.query.annotation_data_as_json_enabled'. It is replaced by")
+                .containsMessages(" is already configured, ignoring db.logs.query.annotation_data_as_json_enabled.");
     }
 }

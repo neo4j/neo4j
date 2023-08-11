@@ -102,7 +102,7 @@ public class SecureString {
 
         if (encryptionAvailable()) {
             try {
-                synchronized (cipher) {
+                synchronized (this) {
                     return cipher.doFinal(encryptedData);
                 }
             } catch (Exception e) {
