@@ -35,10 +35,12 @@ public final class NodeJuxtaposition implements Transition {
         return nodePredicate.test(node);
     }
 
+    @Override
     public State targetState() {
         return targetState;
     }
 
+    @Override
     public void setTargetState(State state) {
         assert targetState == null
                 : "Shouldn't set target state more than once. The targetState field is only mutable to support delayed initialization which is require when there are cycles in the NFA";

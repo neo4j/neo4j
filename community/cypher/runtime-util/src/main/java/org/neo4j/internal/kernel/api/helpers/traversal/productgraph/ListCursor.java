@@ -25,23 +25,28 @@ final class ListCursor<T> implements SourceCursor<List<T>, T> {
     private List<T> list;
     private int index = -1;
 
+    @Override
     public void setSource(List<T> list) {
         this.list = list;
         this.index = -1;
     }
 
+    @Override
     public boolean next() {
         return ++this.index < this.list.size();
     }
 
+    @Override
     public T current() {
         return this.list.get(this.index);
     }
 
+    @Override
     public void reset() {
         this.index = -1;
     }
 
+    @Override
     public void close() {
         this.list = null;
     }

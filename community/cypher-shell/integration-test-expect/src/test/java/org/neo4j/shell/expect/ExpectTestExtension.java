@@ -148,13 +148,15 @@ public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback 
 
     private static Path cypherShellZip() throws IOException {
         final var target = Path.of("../cypher-shell/target");
-        final var zipFiles = Files.list(target)
-                .filter(f -> f.getFileName().toString().endsWith(".zip"))
-                .toList();
-        if (zipFiles.size() == 1) {
-            return zipFiles.get(0);
-        } else {
-            throw new RuntimeException("Did not find cypher shell zip distribution in " + target);
+        try (Stream<Path> pathStream = Files.list(target)) {
+            var zipFiles = pathStream
+                    .filter(f -> f.getFileName().toString().endsWith(".zip"))
+                    .toList();
+            if (zipFiles.size() == 1) {
+                return zipFiles.get(0);
+            } else {
+                throw new RuntimeException("Did not find cypher shell zip distribution in " + target);
+            }
         }
     }
 

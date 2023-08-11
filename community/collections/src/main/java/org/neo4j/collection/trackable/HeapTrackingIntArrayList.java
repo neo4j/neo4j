@@ -171,6 +171,7 @@ public class HeapTrackingIntArrayList implements Resource {
         return Arrays.copyOf(elementData, size);
     }
 
+    @Override
     public HeapTrackingIntArrayList clone() {
         return new HeapTrackingIntArrayList(this);
     }

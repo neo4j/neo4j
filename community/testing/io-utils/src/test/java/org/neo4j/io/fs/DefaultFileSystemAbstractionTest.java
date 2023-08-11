@@ -74,7 +74,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest 
     @Test
     void retrieveFileDescriptorOnClosedChannel() throws IOException {
         Path testFile = testDirectory.file("testFile");
-        StoreChannel escapedChannel = null;
+        StoreChannel escapedChannel;
         try (StoreChannel storeChannel = fsa.write(testFile)) {
             escapedChannel = storeChannel;
         }

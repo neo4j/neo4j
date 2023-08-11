@@ -48,7 +48,7 @@ public class SignedUploadAWS implements SignedUpload {
     private static final long DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS = SECONDS.toMillis(64);
 
     private final String[] signedLinks;
-    private String uploadID;
+    private final String uploadID;
 
     private final String boltURI;
     private final int totalParts;
@@ -80,6 +80,7 @@ public class SignedUploadAWS implements SignedUpload {
         this.sleeper = sleeper;
     }
 
+    @Override
     public void copy(boolean verbose, UploadCommand.Source src) {
         try {
             upload(src);

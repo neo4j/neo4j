@@ -56,8 +56,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.LongLists;
-import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -949,29 +947,12 @@ class TransactionLogFileTest {
             super.flush();
         }
 
-        public ReentrantLock getWriteAllLock() {
-            return writeAllLock;
-        }
-
         public AtomicInteger getWriteAllCounter() {
             return writeAllCounter;
         }
 
         public AtomicInteger getFlushCounter() {
             return flushCounter;
-        }
-    }
-
-    private record TestVersionTracker(MutableLongList deletions, MutableList<LogPosition> rotations)
-            implements LogFileVersionTracker {
-        @Override
-        public void logDeleted(long version) {
-            deletions.add(version);
-        }
-
-        @Override
-        public void logCompleted(LogPosition endLogPosition) {
-            rotations.add(endLogPosition);
         }
     }
 }

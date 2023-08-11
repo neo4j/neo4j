@@ -30,14 +30,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HeapDumpDiagnostics {
     public static final HeapDumpDiagnostics INSTANCE = new HeapDumpDiagnostics();
-    private static final boolean storeDiagnostics = flag(HeapDumpDiagnostics.class, "ENABLED", true);
+    private static final boolean STORE_DIAGNOSTICS = flag(HeapDumpDiagnostics.class, "ENABLED", true);
     public volatile String START_TIME;
     public volatile String NEO4J_VERSION;
     public final ConcurrentHashMap<String, String> DIAGNOSTICS = new ConcurrentHashMap<>();
     public volatile String SYSTEM_DIAGNOSTICS;
 
     public static void addDiagnostics(String database, String diagnostics) {
-        if (storeDiagnostics) {
+        if (STORE_DIAGNOSTICS) {
             if (Objects.equals(database, "")) {
                 // Empty string is System diagnostics
                 INSTANCE.SYSTEM_DIAGNOSTICS = cleanupDiagnostics(diagnostics);

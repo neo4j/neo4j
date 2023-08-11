@@ -255,7 +255,7 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
         }
     }
 
-    private <K, V> HeapTrackingConcurrentLongObjectHashMap<V> newMapWithKeysValues(
+    private <V> HeapTrackingConcurrentLongObjectHashMap<V> newMapWithKeysValues(
             long key1, V value1, long key2, V value2) {
         HeapTrackingConcurrentLongObjectHashMap<V> map =
                 HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE);

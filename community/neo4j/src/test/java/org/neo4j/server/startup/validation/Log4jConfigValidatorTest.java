@@ -104,7 +104,7 @@ class Log4jConfigValidatorTest {
     }
 
     @Test
-    void shouldRestoreStateOnException() throws IOException {
+    void shouldRestoreStateOnException() {
         // The validator silences stdout and stderr; make sure that they are restored even if an exception is thrown.
         // It also causes logging to StatusLogger; make sure that is cleared.
         var logger = StatusLogger.getLogger();

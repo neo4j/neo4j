@@ -112,7 +112,7 @@ public class ResponseRecorder extends AbstractMetadataAwareResponseHandler {
         return messages.size();
     }
 
-    private class RecordingRecordHandler implements RecordHandler {
+    private static class RecordingRecordHandler implements RecordHandler {
         private final List<RecordedRecordMessage> records = new ArrayList<>();
 
         private AnyValue[] fields;

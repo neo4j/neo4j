@@ -765,7 +765,7 @@ public class BiDirectionalBFS implements AutoCloseable {
 
         @Override
         public BiDirectionalBFS.State searchForIntersectionInNextLevel() {
-            if (currentLevel.size() == 0) {
+            if (currentLevel.isEmpty()) {
                 return State.THERE_IS_NO_INTERSECTION;
             }
 
@@ -860,7 +860,7 @@ public class BiDirectionalBFS implements AutoCloseable {
 
         @Override
         public State searchForIntersectionInNextLevel() {
-            if (currentLevel.size() == 0) {
+            if (currentLevel.isEmpty()) {
                 return State.THERE_IS_NO_INTERSECTION;
             }
 

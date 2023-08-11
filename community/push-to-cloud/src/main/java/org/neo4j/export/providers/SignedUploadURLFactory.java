@@ -38,6 +38,7 @@ public class SignedUploadURLFactory implements UploadURLFactory {
     public SignedUploadURLFactory() {}
 
     // This will eventually become more complicated as we add more providers
+    @Override
     public SignedUpload fromAuraResponse(
             SignedURIBodyResponse signedURIBodyResponse, ExecutionContext ctx, String boltURI) {
         if (signedURIBodyResponse.Provider.equalsIgnoreCase(SignedUploadURLFactory.Provider.AWS.name)) {

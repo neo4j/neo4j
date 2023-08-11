@@ -973,6 +973,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         cursor.setOffsetToMark();
     }
 
+    @Override
     public IdGenerator getIdGenerator() {
         return idGenerator;
     }

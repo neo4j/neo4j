@@ -59,7 +59,7 @@ public class SignedUploadGCP implements SignedUpload {
             (text, length) -> ProgressMonitorFactory.textual(ctx.out()).singlePart(text, length);
     Sleeper sleeper;
     String boltURI;
-    private CommandResponseHandler commandResponseHandler;
+    private final CommandResponseHandler commandResponseHandler;
 
     public SignedUploadGCP(
             String[] signedLinks,
@@ -141,6 +141,7 @@ public class SignedUploadGCP implements SignedUpload {
         }
     }
 
+    @Override
     public void copy(boolean verbose, UploadCommand.Source source) {
         URL dest;
         try {

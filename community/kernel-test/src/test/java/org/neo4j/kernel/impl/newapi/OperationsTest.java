@@ -38,7 +38,6 @@ import static org.neo4j.values.storable.Values.intValue;
 
 import java.util.Collections;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.AfterEach;
@@ -66,7 +65,6 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
@@ -312,10 +310,6 @@ abstract class OperationsTest {
         // then
         verify(locks).acquireExclusive(any(), eq(ResourceType.RELATIONSHIP), eq(1L));
         verify(locks).acquireShared(any(), eq(ResourceType.RELATIONSHIP_TYPE), eq((long) type));
-    }
-
-    private static Stream<SchemaDescriptor> schemaDescriptors() {
-        return Stream.of(SchemaDescriptors.forLabel(1, 1), SchemaDescriptors.forRelType(1, 1));
     }
 
     protected String runForSecurityLevel(Executable executable, AccessMode mode, boolean shoudldBeAuthorized)

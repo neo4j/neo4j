@@ -205,7 +205,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("username", "password", false));
         return command;
     }
@@ -252,7 +252,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeAWSUploadURLFactory(),
+                new FakeAWSUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("username", "password", false));
 
         String[] args = getNormalRuntimeArgs();
@@ -298,7 +298,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("username", "password", false));
 
         String[] args = getNormalRuntimeArgs();
@@ -467,7 +467,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
 
         // when
@@ -494,11 +494,7 @@ public class UploadCommandTest {
 
         AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
         UploadCommand command = new UploadCommand(
-                ctx,
-                auraClientBuilder,
-                auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
-                pushToCloudCLI);
+                ctx, auraClientBuilder, auraURLFactory, new FakeGCPUploadURLFactory(), pushToCloudCLI);
 
         // when
         String[] args = {
@@ -527,7 +523,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, "tomte", false));
 
         // when
@@ -559,7 +555,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, "tomte", false));
 
         // when
@@ -588,7 +584,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
         // when
         String[] args = {
@@ -616,7 +612,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
         // when
         String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
@@ -645,7 +641,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
 
         // when
@@ -682,7 +678,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI(username, password, false));
 
         // when
@@ -708,7 +704,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("neo4j", "abc", false));
         CommandLine.populateCommand(command, args);
         final var assertFailure = assertThatThrownBy(command::execute).isInstanceOf(CommandFailedException.class);
@@ -727,7 +723,7 @@ public class UploadCommandTest {
                 ctx,
                 auraClientBuilder,
                 auraURLFactory,
-                new UploadCommandTest.FakeGCPUploadURLFactory(),
+                new FakeGCPUploadURLFactory(),
                 PushToCloudCLI.fakeCLI("neo4j", "abc", false));
         CommandLine.populateCommand(command, args);
         final var assertFailure = assertThatThrownBy(command::execute).isInstanceOf(CommandFailedException.class);
@@ -898,7 +894,7 @@ public class UploadCommandTest {
         }
     }
 
-    private class FakeGCPUploadURLFactory implements UploadURLFactory {
+    private static class FakeGCPUploadURLFactory implements UploadURLFactory {
         private final String signedURIPath = MOCK_BASE_URL + INITATE_PRESIGNED_UPLOAD_LOCATION;
 
         @Override
@@ -915,7 +911,7 @@ public class UploadCommandTest {
         }
     }
 
-    private class FakeAWSUploadURLFactory implements UploadURLFactory {
+    private static class FakeAWSUploadURLFactory implements UploadURLFactory {
 
         @Override
         public SignedUpload fromAuraResponse(

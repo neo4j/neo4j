@@ -23,23 +23,28 @@ final class RelationshipExpansionCursor implements SourceCursor<State, Relations
     private int index = -1;
     private State state;
 
+    @Override
     public void setSource(State state) {
         this.index = -1;
         this.state = state;
     }
 
+    @Override
     public boolean next() {
         return ++this.index < this.state.getRelationshipExpansions().length;
     }
 
+    @Override
     public RelationshipExpansion current() {
         return this.state.getRelationshipExpansions()[this.index];
     }
 
+    @Override
     public void reset() {
         this.index = -1;
     }
 
+    @Override
     public void close() {
         this.state = null;
     }

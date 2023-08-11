@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.LongStream;
 import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
@@ -1058,6 +1059,11 @@ public class ProductGraphTraversalCursorTest {
         @Override
         public boolean equals(Object obj) {
             return obj instanceof ProductGraph && ((ProductGraph) obj).adjacencyLists.equals(adjacencyLists);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(adjacencyLists);
         }
 
         public ProductGraph(HashMap<PGNode, Set<Relationship>> adjacencyLists) {

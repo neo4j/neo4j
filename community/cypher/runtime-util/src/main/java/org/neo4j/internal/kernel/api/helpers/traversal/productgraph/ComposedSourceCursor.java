@@ -75,12 +75,14 @@ final class ComposedSourceCursor<Outer, Intermediate, Inner> implements SourceCu
         return this.innerSourceSet ? this.innerCursor.current() : null;
     }
 
+    @Override
     public void reset() {
         this.outerCursor.reset();
         this.innerCursor.reset();
         this.innerSourceSet = false;
     }
 
+    @Override
     public void close() throws Exception {
         this.outerCursor.close();
         this.innerCursor.close();
