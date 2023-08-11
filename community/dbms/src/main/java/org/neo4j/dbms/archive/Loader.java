@@ -192,15 +192,17 @@ public class Loader {
     }
 
     private void loadEntry(Path destination, ArchiveInputStream stream, ArchiveEntry entry) throws IOException {
-        Path file = destination.resolve(entry.getName());
-        if (!file.normalize().startsWith(destination)) {
+        Path file = destination.resolve(entry.getName().replace('\\', '/'));
+        var normalizedFile = file.normalize();
+        if (!normalizedFile.startsWith(destination)) {
             throw new InvalidDumpEntryException(entry.getName());
         }
 
         if (entry.isDirectory()) {
-            filesystem.mkdirs(file);
+            filesystem.mkdirs(normalizedFile);
         } else {
-            try (OutputStream output = filesystem.openAsOutputStream(file, false)) {
+            filesystem.mkdirs(normalizedFile.getParent());
+            try (OutputStream output = filesystem.openAsOutputStream(normalizedFile, false)) {
                 Utils.copy(stream, output, progressPrinter);
             }
         }

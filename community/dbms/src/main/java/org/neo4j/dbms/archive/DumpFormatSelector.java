@@ -62,15 +62,14 @@ public class DumpFormatSelector {
     private static CompressionFormat selectInputFormat(PushbackInputStream stream) throws IOException {
         var bytes = stream.readNBytes(MAGIC_PREFIX_LENGTH);
         var magic = new String(bytes);
-        switch (magic) {
-            case DumpZstdFormatV1.MAGIC_HEADER:
-                return new DumpZstdFormatV1();
-            case DumpGzipFormatV1.MAGIC_HEADER:
-                return new DumpGzipFormatV1();
-            default:
+        return switch (magic) {
+            case DumpZstdFormatV1.MAGIC_HEADER -> new DumpZstdFormatV1();
+            case DumpGzipFormatV1.MAGIC_HEADER -> new DumpGzipFormatV1();
+            default -> {
                 stream.unread(bytes);
-                return null;
-        }
+                yield null;
+            }
+        };
     }
 
     public static CompressionFormat selectFormat() {
