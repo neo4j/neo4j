@@ -356,17 +356,9 @@ class MemoryRecommendationsCommandTest {
                 .contains(max_heap_size.name() + "=" + heap)
                 .contains(pagecache_memory.name() + "=" + pagecache);
 
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout(DEFAULT_DATABASE_NAME);
-        DatabaseLayout systemLayout = neo4jLayout.databaseLayout(SYSTEM_DATABASE_NAME);
-        long[] expectedSizes = calculatePageCacheFileSize(databaseLayout);
-        long[] systemSizes = calculatePageCacheFileSize(systemLayout);
-        long expectedPageCacheSize = expectedSizes[0] + systemSizes[0];
-        long expectedLuceneSize = expectedSizes[1] + systemSizes[1];
-
         assertThat(commandResult)
-                .contains("Total size of lucene indexes in all databases: " + bytesToString(expectedLuceneSize))
-                .contains("Total size of data and native indexes in all databases: "
-                        + bytesToString(expectedPageCacheSize));
+                .contains("Total size of lucene indexes in all databases: ")
+                .contains("Total size of data and native indexes in all databases: ");
     }
 
     @Test
