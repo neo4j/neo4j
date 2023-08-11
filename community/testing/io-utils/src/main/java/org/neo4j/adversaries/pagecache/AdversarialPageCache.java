@@ -82,11 +82,10 @@ public class AdversarialPageCache implements PageCache {
     @Override
     public List<PagedFile> listExistingMappings() throws IOException {
         adversary.injectFailure(IOException.class, SecurityException.class);
-        List<PagedFile> list = delegate.listExistingMappings();
-        for (int i = 0; i < list.size(); i++) {
-            list.set(i, new AdversarialPagedFile(list.get(i), adversary));
-        }
-        return list;
+        return delegate.listExistingMappings().stream()
+                .map(file -> new AdversarialPagedFile(file, adversary))
+                .map(PagedFile.class::cast)
+                .toList();
     }
 
     @Override

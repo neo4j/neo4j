@@ -25,4 +25,8 @@ public record StoreFileMetadata(Path path, int recordSize, boolean isLogFile) {
     public StoreFileMetadata(Path path, int recordSize) {
         this(path, recordSize, false);
     }
+
+    public StoreFileMetadata(Path path) {
+        this(path, 1);
+    }
 }

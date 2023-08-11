@@ -147,6 +147,7 @@ class MuninnPageCacheExplicitPreallocateTest {
         PageSwapperFactory pageSwapperFactory =
                 (path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers) -> {
                     when(swapper.swapperId()).thenReturn(swappers.allocate(swapper));
+                    when(swapper.path()).thenReturn(path);
                     return swapper;
                 };
         return new MuninnPageCache(pageSwapperFactory, jobScheduler, configuration);

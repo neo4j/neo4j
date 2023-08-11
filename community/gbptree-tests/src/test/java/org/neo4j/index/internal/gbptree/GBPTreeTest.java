@@ -1762,7 +1762,7 @@ class GBPTreeTest {
                         .with(RecoveryCleanupWorkCollector.ignore())
                         .with(tracer)
                         .build()) {
-            List<PagedFile> pagedFiles = pageCache.listExistingMappings();
+            var pagedFiles = pageCache.listExistingMappings();
             assertThat(pagedFiles).hasSize(1);
 
             long flushesBefore = tracer.flushes();

@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -187,8 +188,7 @@ public class MuninnPageCache implements PageCache {
 
     private static final VarHandle FREE_LIST;
 
-    // Linked list of mappings - guarded by synchronized(this)
-    private volatile FileMapping mappedFiles;
+    private final ConcurrentHashMap<String, MuninnPagedFile> mappedFiles;
 
     // The thread that runs the eviction algorithm. We unpark this when we've run out of
     // free pages to grab.
@@ -532,6 +532,7 @@ public class MuninnPageCache implements PageCache {
 
         // Expose the total number of pages
         pageCacheTracer.maxPages(maxPages, cachePageSize);
+        this.mappedFiles = new ConcurrentHashMap<>();
     }
 
     /**
@@ -618,39 +619,35 @@ public class MuninnPageCache implements PageCache {
             }
         }
 
-        FileMapping current = mappedFiles;
-
+        var filePath = path.toString();
         // find an existing mapping
-        while (current != null) {
-            if (current.path.equals(path)) {
-                MuninnPagedFile pagedFile = current.pagedFile;
-                if (pagedFile.pageSize() != filePageSize && !anyPageSize) {
-                    String msg = "Cannot map file " + path + " with " + "filePageSize "
-                            + filePageSize + " bytes, " + "because it has already been mapped with a "
-                            + "filePageSize of "
-                            + pagedFile.pageSize() + " bytes.";
-                    throw new IllegalArgumentException(msg);
-                }
-                if (pagedFile.littleEndian != littleEndian) {
-                    throw new IllegalArgumentException("Cannot map file " + path + " with " + "littleEndian "
-                            + littleEndian + ", " + "because it has already been mapped with a "
-                            + "littleEndian "
-                            + pagedFile.littleEndian);
-                }
-                if (pagedFile.multiVersioned != multiVersioned) {
-                    throw new IllegalArgumentException("Cannot map file " + path + " with " + "multiVersioned "
-                            + multiVersioned + ", " + "because it has already been mapped with a "
-                            + "multiVersioned "
-                            + pagedFile.multiVersioned);
-                }
-                if (truncateExisting) {
-                    throw new UnsupportedOperationException("Cannot truncate a file that is already mapped");
-                }
-                pagedFile.incrementRefCount();
-                pagedFile.setDeleteOnClose(deleteOnClose);
-                return pagedFile;
+        var current = mappedFiles.get(filePath);
+        if (current != null) {
+            if (current.pageSize() != filePageSize && !anyPageSize) {
+                String msg = "Cannot map file " + path + " with " + "filePageSize "
+                        + filePageSize + " bytes, " + "because it has already been mapped with a "
+                        + "filePageSize of "
+                        + current.pageSize() + " bytes.";
+                throw new IllegalArgumentException(msg);
             }
-            current = current.next;
+            if (current.littleEndian != littleEndian) {
+                throw new IllegalArgumentException("Cannot map file " + path + " with " + "littleEndian "
+                        + littleEndian + ", " + "because it has already been mapped with a "
+                        + "littleEndian "
+                        + current.littleEndian);
+            }
+            if (current.multiVersioned != multiVersioned) {
+                throw new IllegalArgumentException("Cannot map file " + path + " with " + "multiVersioned "
+                        + multiVersioned + ", " + "because it has already been mapped with a "
+                        + "multiVersioned "
+                        + current.multiVersioned);
+            }
+            if (truncateExisting) {
+                throw new UnsupportedOperationException("Cannot truncate a file that is already mapped");
+            }
+            current.incrementRefCount();
+            current.setDeleteOnClose(deleteOnClose);
+            return current;
         }
 
         if (filePageSize < Long.BYTES) {
@@ -678,9 +675,7 @@ public class MuninnPageCache implements PageCache {
                 littleEndian);
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose(deleteOnClose);
-        current = new FileMapping(path, pagedFile);
-        current.next = mappedFiles;
-        mappedFiles = current;
+        mappedFiles.put(filePath, pagedFile);
         pageCacheTracer.mappedFile(pagedFile.swapperId, pagedFile);
         return pagedFile;
     }
@@ -700,36 +695,14 @@ public class MuninnPageCache implements PageCache {
     }
 
     private MuninnPagedFile tryGetMappingOrNull(Path path) {
-        FileMapping current = mappedFiles;
-
-        // find an existing mapping
-        while (current != null) {
-            if (current.path.equals(path)) {
-                return current.pagedFile;
-            }
-            current = current.next;
-        }
-
-        // no mapping exists
-        return null;
+        return mappedFiles.get(path.toString());
     }
 
     @Override
     public synchronized List<PagedFile> listExistingMappings() throws IOException {
         assertNotClosed();
         ensureThreadsInitialised();
-
-        List<PagedFile> list = new ArrayList<>();
-        FileMapping current = mappedFiles;
-
-        while (current != null) {
-            // Note that we are NOT incrementing the reference count here.
-            // Calling code is expected to be able to deal with asynchronously closed PagedFiles.
-            MuninnPagedFile pagedFile = current.pagedFile;
-            list.add(pagedFile);
-            current = current.next;
-        }
-        return list;
+        return mappedFiles.values().stream().map(PagedFile.class::cast).toList();
     }
 
     /**
@@ -759,24 +732,11 @@ public class MuninnPageCache implements PageCache {
 
     synchronized void unmap(MuninnPagedFile file) {
         if (file.decrementRefCount()) {
-            // This was the last reference!
-            // Find and remove the existing mapping:
-            FileMapping prev = null;
-            FileMapping current = mappedFiles;
-
-            while (current != null) {
-                if (current.pagedFile == file) {
-                    if (prev == null) {
-                        mappedFiles = current.next;
-                    } else {
-                        prev.next = current.next;
-                    }
-                    pageCacheTracer.unmappedFile(file.swapperId, file);
-                    flushAndCloseWithoutFail(file);
-                    break;
-                }
-                prev = current;
-                current = current.next;
+            var filePath = file.path().toString();
+            var current = mappedFiles.remove(filePath);
+            if (current != null) {
+                pageCacheTracer.unmappedFile(file.swapperId, file);
+                flushAndCloseWithoutFail(file);
             }
         }
     }
@@ -807,7 +767,7 @@ public class MuninnPageCache implements PageCache {
 
     @Override
     public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
-        List<PagedFile> files = listExistingMappings();
+        var files = listExistingMappings();
 
         try (FileFlushEvent ignored = flushEvent.beginFileFlush()) {
             // When we flush whole page cache it can only happen on shutdown and we should be able to progress as fast
@@ -817,7 +777,7 @@ public class MuninnPageCache implements PageCache {
         clearEvictorException();
     }
 
-    private void flushAllPagesParallel(List<PagedFile> files, IOController limiter) throws IOException {
+    private void flushAllPagesParallel(List<? extends PagedFile> files, IOController limiter) throws IOException {
         List<JobHandle<?>> flushes = new ArrayList<>(files.size());
 
         // Submit all flushes to the background thread
@@ -859,16 +819,15 @@ public class MuninnPageCache implements PageCache {
             return;
         }
 
-        FileMapping files = mappedFiles;
-        if (files != null) {
+        var files = mappedFiles;
+        if (!files.isEmpty()) {
             StringBuilder msg = new StringBuilder("Cannot close the PageCache while files are still mapped:");
-            while (files != null) {
-                int refCount = files.pagedFile.getRefCount();
+            for (var file : files.values()) {
+                int refCount = file.getRefCount();
                 msg.append("\n\t");
-                msg.append(files.path);
+                msg.append(file.path());
                 msg.append(" (").append(refCount);
                 msg.append(refCount == 1 ? " mapping)" : " mappings)");
-                files = files.next;
             }
             throw new IllegalStateException(msg.toString());
         }
