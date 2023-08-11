@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
@@ -42,6 +43,8 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
+
+import scala.collection.immutable.ListSet
 
 class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
@@ -155,6 +158,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan should equal(
       planner.subPlanBuilder()
         .create(createNode("x"), createRelationship("t", "v", "R", "x", OUTGOING))
+        .eager(ListSet(EagernessReason.Unknown))
         .statefulShortestPath(
           sourceNode = "u",
           targetNode = "w",

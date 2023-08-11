@@ -26,15 +26,22 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.labelName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.NFA
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -599,6 +606,459 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .|.nodeByLabelScan("a", "A", IndexOrderNone, "i")
         .unwind("[1, 2] AS i")
         .argument()
+        .build()
+    )
+  }
+
+  // SHORTEST Tests
+
+  case class ShortestPathParameters(
+    start: String,
+    end: String,
+    query: String,
+    variables: Set[String],
+    selector: StatefulShortestPath.Selector,
+    nfa: NFA
+  )
+
+  def statefulShortestPath(planBuilder: LogicalPlanBuilder, parameters: ShortestPathParameters): LogicalPlanBuilder =
+    planBuilder
+      .statefulShortestPath(
+        parameters.start,
+        parameters.end,
+        parameters.query,
+        None,
+        Set(),
+        Set(),
+        parameters.variables,
+        StatefulShortestPath.Selector.Shortest(1),
+        parameters.nfa
+      )
+
+  val `(start)-[r]->(end)` : ShortestPathParameters =
+    ShortestPathParameters(
+      "start",
+      "end",
+      "SHORTEST 1 ((start)-[r]->(end))",
+      Set("r", "end"),
+      StatefulShortestPath.Selector.Shortest(1),
+      new TestNFABuilder(0, "start")
+        .addTransition(0, 1, "(start)-[r]->(end)")
+        .addFinalState(1)
+        .build()
+    )
+
+  val `((start)((a)-[r:R]->(b))+(end))` : ShortestPathParameters =
+    ShortestPathParameters(
+      "start",
+      "end",
+      "SHORTEST 1 ((start) ((a)-[r:R]->(b)){1, } (end) WHERE unique(`r`))",
+      Set("end"),
+      StatefulShortestPath.Selector.Shortest(1),
+      new TestNFABuilder(0, "start")
+        .addTransition(0, 1, "(start) (a)")
+        .addTransition(1, 2, "(a)-[r:R]->(b)")
+        .addTransition(2, 1, "(b) (a)")
+        .addTransition(2, 3, "(b) (end)")
+        .addFinalState(3)
+        .build()
+    )
+
+  val `(start)-[r:R]->(end)` : ShortestPathParameters =
+    ShortestPathParameters(
+      "start",
+      "end",
+      "SHORTEST 1 ((start)-[r:R]->(end))",
+      Set("r", "end"),
+      StatefulShortestPath.Selector.Shortest(1),
+      new TestNFABuilder(0, "start")
+        .addTransition(0, 1, "(start)-[r:R]->(end)")
+        .addFinalState(1)
+        .build()
+    )
+
+  test("Shortest match produces an eager when there is a relationship overlap") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query = "MATCH ANY SHORTEST (start)-[r]->(end) CREATE (end)-[s:S]->() RETURN end"
+    val plan = planner.plan(query)
+
+    val topPlan = planner.planBuilder()
+      .produceResults("end")
+      .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
+      .eager(ListSet(EagernessReason.Unknown))
+
+    val expectedPlan = statefulShortestPath(topPlan, `(start)-[r]->(end)`)
+      .allNodeScan("start")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("Shortest match should not produce an eager when there is no relationship overlap") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query = "MATCH ANY SHORTEST (start)-[r:R]->(end) CREATE (end)-[s:S]->() RETURN end"
+    val plan = planner.plan(query)
+
+    val topPlan = planner.planBuilder()
+      .produceResults("end")
+      .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
+
+    val expectedPlan = statefulShortestPath(topPlan, `(start)-[r:R]->(end)`)
+      .allNodeScan("start")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("Shortest match should produce an eager when there is an write/read conflict with set property") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query =
+      "MATCH (a) SET a.prop = 1 WITH a MATCH ANY SHORTEST (start)-[r]->(end) WHERE start.prop = 1 RETURN end.prop2"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`end.prop2`")
+        .projection(project = Seq("end.prop2 AS `end.prop2`"), discard = Set("a", "end", "start", "r"))
+        .statefulShortestPath(
+          "end",
+          "start",
+          "SHORTEST 1 ((start)-[r]->(end) WHERE start.prop IN [1])",
+          None,
+          Set(),
+          Set(),
+          Set("start", "r"),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "end")
+            .addTransition(0, 1, "(end)<-[r]-(start WHERE start.prop = 1)")
+            .addFinalState(1)
+            .build()
+        )
+        .apply()
+        .|.allNodeScan("end", "a")
+        .eager(ListSet(EagernessReason.Unknown))
+        .setNodeProperty("a", "prop", "1")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Shortest match should produce an eager when there is an write/read conflict with create relationship") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query = "CREATE (a)-[s:S]->(b) WITH b MATCH ANY SHORTEST (start)-[r]->(end) RETURN end"
+
+    val topPlan = planner.planBuilder()
+      .produceResults("end")
+    val expected = statefulShortestPath(topPlan, `(start)-[r]->(end)`)
+      .apply()
+      .|.allNodeScan("start", "b")
+      .eager(ListSet(EagernessReason.Unknown))
+      .create(createNode("a"), createNode("b"), createRelationship("s", "a", "S", "b", OUTGOING))
+      .argument()
+      .build()
+
+    val plan = planner.plan(query)
+    plan should equal(expected)
+  }
+
+  test("Shortest match should produce an eager when there is an write/read conflict with delete") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("Label", 10)
+      .setRelationshipCardinality("()-[]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query = "MATCH (a:Label) DELETE a WITH * MATCH ANY SHORTEST (start)-[r]->(end) RETURN end"
+
+    val topPlan = planner.planBuilder()
+      .produceResults("end")
+    val expected = statefulShortestPath(topPlan, `(start)-[r]->(end)`)
+      .apply()
+      .|.allNodeScan("start", "a")
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("a"),
+        EagernessReason.Unknown // end is not found as an eagerness reason in IR-eagerness since `a` is found first.
+      ))
+      .deleteNode("a")
+      .nodeByLabelScan("a", "Label", IndexOrderNone)
+      .build()
+
+    val plan = planner.plan(query)
+    plan should equal(expected)
+  }
+
+  test(
+    "Shortest match should produce an eager when there is an overlap in a non nested pattern with relationship delete"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query =
+      "MATCH ANY SHORTEST ((start)-[s]-(x) ((a)-[r:R]->(b))+(end)) DELETE s RETURN end"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("end")
+        .deleteRelationship("s")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("s")))
+        .statefulShortestPath(
+          "start",
+          "end",
+          "SHORTEST 1 ((start)-[s]-(x) ((a)-[r:R]->(b)){1, } (end) WHERE NOT s IN `r` AND unique(`r`))",
+          None,
+          Set(),
+          Set(),
+          Set("s", "end", "x"),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "start")
+            .addTransition(0, 1, "(start)-[s]-(x)")
+            .addTransition(1, 2, "(x) (a)")
+            .addTransition(2, 3, "(a)-[r:R]->(b)")
+            .addTransition(3, 2, "(b) (a)")
+            .addTransition(3, 4, "(b) (end)")
+            .addFinalState(4)
+            .build()
+        )
+        .allNodeScan("start")
+        .build()
+    )
+  }
+
+  test("Shortest match should produce an eager when there is a property overlap") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query = "MATCH ANY SHORTEST (start{prop:1})-[r:R]->(end) SET end.prop = 1 RETURN end"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("end")
+        .eager(ListSet(EagernessReason.Unknown))
+        .setNodeProperty("end", "prop", "1")
+        .eager(ListSet(EagernessReason.Unknown))
+        .statefulShortestPath(
+          "end",
+          "start",
+          "SHORTEST 1 ((start)-[r:R]->(end) WHERE start.prop IN [1])",
+          None,
+          Set(),
+          Set(),
+          Set("r", "start"),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "end")
+            .addTransition(0, 1, "(end)<-[r:R]-(start WHERE start.prop = 1)")
+            .addFinalState(1)
+            .build()
+        )
+        .allNodeScan("end")
+        .build()
+    )
+  }
+
+  test("Shortest match should produce an eager when there is a delete overlap") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query = "MATCH ANY SHORTEST (start)-[r:R]->(end) DETACH DELETE end RETURN 1"
+
+    val topPlan = planner.planBuilder()
+      .produceResults("1")
+      .projection(project = Seq("1 AS 1"), discard = Set("start", "r", "end"))
+      .detachDeleteNode("end")
+      .eager(ListSet(ReadDeleteConflict("end"))) // This eager is unnecessary since we are limited to one shortest
+    val expected = statefulShortestPath(topPlan, `(start)-[r:R]->(end)`)
+      .allNodeScan("start")
+      .build()
+
+    val plan = planner.plan(query)
+    plan should equal(expected)
+  }
+
+  test("Shortest match should not produce an eager when there is no relationship overlap on merge") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[:T]->()", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query =
+      "MATCH ANY SHORTEST ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:T]-(end) RETURN end"
+
+    val topPlan = planner.planBuilder()
+      .produceResults("end")
+      .apply()
+      .|.merge(Seq(), Seq(createRelationship("t", "start", "T", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
+      .|.expandInto("(start)-[t:T]-(end)")
+      .|.argument("start", "end")
+    val expected = statefulShortestPath(topPlan, `((start)((a)-[r:R]->(b))+(end))`)
+      .allNodeScan("start")
+      .build()
+
+    val plan = planner.plan(query)
+    plan should equal(expected)
+  }
+
+  test("Shortest match should produce an eager when there is a relationship overlap on merge") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[:T]->()", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query =
+      "MATCH ANY SHORTEST ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
+
+    val topPlan = planner.planBuilder()
+      .produceResults("end")
+      .apply()
+      .|.merge(Seq(), Seq(createRelationship("t", "start", "R", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
+      .|.expandInto("(start)-[t:R]-(end)")
+      .|.argument("start", "end")
+      .eager(ListSet(EagernessReason.Unknown))
+    val expected = statefulShortestPath(topPlan, `((start)((a)-[r:R]->(b))+(end))`)
+      .allNodeScan("start")
+      .build()
+
+    val plan = planner.plan(query)
+    plan should equal(expected)
+  }
+
+  test("Shortest match produces an unnecessary eager when there is no overlap on the inner qpp relationship") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("Label", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("()-[]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query =
+      "MATCH ANY SHORTEST ((start:!Label)((a:!Label)-[r:!R]->(b:!Label))+(end:!Label)) MERGE (start)-[t:R]-(end) RETURN end"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("end")
+        .apply()
+        .|.merge(Seq(), Seq(createRelationship("t", "start", "R", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
+        .|.expandInto("(start)-[t:R]-(end)")
+        .|.argument("start", "end")
+        .eager(ListSet(EagernessReason.Unknown)) // This unnecessary eager is only in IR Eager because we do not handle type expressions in IR Eagerness analysis
+        .statefulShortestPath(
+          "start",
+          "end",
+          "SHORTEST 1 ((start) ((a)-[r]->(b) WHERE NOT `a`:Label AND NOT `r`:R AND NOT `b`:Label){1, } (end) WHERE unique(`r`) AND NOT end:Label)",
+          None,
+          Set(),
+          Set(),
+          Set("end"),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "start")
+            .addTransition(0, 1, "(start) (a WHERE NOT a:Label)")
+            .addTransition(1, 2, "(a)-[r WHERE NOT r:R]->(b WHERE NOT b:Label)")
+            .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
+            .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
+            .addFinalState(3)
+            .build()
+        )
+        .filter("NOT start:Label")
+        .allNodeScan("start")
+        .build()
+    )
+  }
+
+  test("Shortest match produces an unnecessary eager on write/read for delete when there is no overlap") {
+    // We cannot find the leafPlans for variables within a SPP so we plan an eager for each found variable.
+    // This is only applicable when we don't have the deleted node as an argument, then we would instead just mention the overlap on the deleted node.
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("Label", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("()-[]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+
+    val query =
+      "MATCH (x:Label) DELETE x WITH 1 as z MATCH ANY SHORTEST ((start:!Label)((a:!Label)-[r:R]->(b:!Label))+(end:!Label)) return end"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("end")
+        .statefulShortestPath(
+          "start",
+          "end",
+          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE unique(`r`) AND NOT end:Label)",
+          None,
+          Set(),
+          Set(),
+          Set("end"),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "start")
+            .addTransition(0, 1, "(start) (a WHERE NOT a:Label)")
+            .addTransition(1, 2, "(a)-[r:R]->(b WHERE NOT b:Label)")
+            .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
+            .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
+            .addFinalState(3)
+            .build()
+        )
+        .filter("NOT start:Label")
+        .apply()
+        .|.allNodeScan("start", "z")
+        .projection(project = Seq("1 AS z"), discard = Set("x"))
+        .eager(ListSet(
+          EagernessReason.ReadDeleteConflict("start"),
+          EagernessReason.ReadDeleteConflict("end"),
+          EagernessReason.ReadDeleteConflict("a"),
+          EagernessReason.ReadDeleteConflict("b"),
+          EagernessReason.Unknown
+        ))
+        .deleteNode("x")
+        .nodeByLabelScan("x", "Label", IndexOrderNone)
         .build()
     )
   }

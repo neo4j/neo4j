@@ -102,4 +102,41 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
     spp.pathVariables should equal(Seq("foo", "x", "start", "a", "r", "b", "s", "c", "end"))
   }
 
+  test("asQueryGraph of an SPP") {
+    val selections = Selections.from(List(
+      not(hasLabels("a", "Label")),
+      unique(varFor("s")),
+      unique(varFor("r"))
+    ))
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(
+          `(foo)-[x]->(start)`,
+          `(start) ((a)-[r]->(b)-[s]->(c))+ (end)`
+        )),
+        selections = selections,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+    val `(a)-[r]->(b)` = PatternRelationship(
+      "r",
+      ("a", "b"),
+      SemanticDirection.OUTGOING,
+      Seq.empty,
+      SimplePatternLength
+    )
+    val `(b)-[s]->(c)` = PatternRelationship(
+      "s",
+      ("b", "c"),
+      SemanticDirection.OUTGOING,
+      Seq.empty,
+      SimplePatternLength
+    )
+
+    spp.asQueryGraph should equal(QueryGraph(
+      patternRelationships = Set(`(foo)-[x]->(start)`, `(a)-[r]->(b)`, `(b)-[s]->(c)`),
+      patternNodes = Set("a", "b", "c", "start", "foo"),
+      selections = selections
+    ))
+  }
+
 }

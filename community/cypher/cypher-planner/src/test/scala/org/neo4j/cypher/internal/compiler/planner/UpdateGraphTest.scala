@@ -41,17 +41,20 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
+import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
@@ -450,6 +453,62 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
         .map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(_))
 
     queryGraph.allQGsWithLeafInfo shouldEqual allQGsWithLeafInfo
+  }
+
+  private val `((a)-[r:R]->(b))+` =
+    QuantifiedPathPattern(
+      leftBinding = NodeBinding("a", "start"),
+      rightBinding = NodeBinding("b", "end"),
+      patternRelationships = List(PatternRelationship(
+        name = "r",
+        boundaryNodes = ("a", "b"),
+        dir = SemanticDirection.OUTGOING,
+        types = List(relTypeName("R")),
+        length = SimplePatternLength
+      )),
+      argumentIds = Set.empty,
+      selections = Selections.empty,
+      repetition = Repetition(1, UpperBound.Unlimited),
+      nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
+      relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+    )
+
+  // SPPs does not contain any unstable leaf nodes so there should never be any overlaps on creating a node without a relationship.
+  test("Should only find node overlaps based on unstable leaf nodes") {
+    // MATCH ANY SHORTEST ((start:!Label)((a)-[r:R]->(b))+(end:!Label)) CREATE q:Label
+
+    val shortestPathPattern =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(`((a)-[r:R]->(b))+`)),
+        selections = Selections.from(List(
+          unique(varFor("r"))
+        )),
+        selector = SelectivePathPattern.Selector.Shortest(1)
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addPredicates(
+          not(hasLabels("end", "Label")),
+          not(hasLabels("start", "Label"))
+        )
+        .addSelectivePathPattern(shortestPathPattern)
+
+    val ug = QueryGraph(mutatingPatterns =
+      IndexedSeq(
+        MergeNodePattern(
+          CreateNode("q", Set(labelName("Label")), None),
+          QueryGraph.empty,
+          Seq.empty,
+          Seq.empty
+        )
+      )
+    )
+
+    val qgWithLeafInfo = QgWithLeafInfo(queryGraph, Set.empty, Set.empty, Some(StableIdentifier("start")), false)
+
+    ug.overlaps(qgWithLeafInfo, noLeafPlanProvider) shouldBe ListSet()
   }
 
   private def createNode(name: String, labels: String*) =

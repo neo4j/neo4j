@@ -162,8 +162,7 @@ case class QueryGraph(
     )
     QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(this) +:
       (iRExpressions ++
-        optionalMatches.flatMap(_.allQGsWithLeafInfo) ++
-        quantifiedPathPatterns.flatMap(_.asQueryGraph.allQGsWithLeafInfo))
+        optionalMatches.flatMap(_.allQGsWithLeafInfo))
   }
 
   /**
@@ -193,10 +192,13 @@ case class QueryGraph(
   def allPatternRelationshipsRead: Set[PatternRelationship] =
     patternRelationships ++
       optionalMatches.flatMap(_.allPatternRelationshipsRead) ++
-      shortestRelationshipPatterns.map(_.rel)
+      shortestRelationshipPatterns.map(_.rel) ++
+      selectivePathPatterns.flatMap(_.asQueryGraph.allPatternRelationshipsRead)
 
   def allPatternNodesRead: Set[String] =
-    patternNodes ++ optionalMatches.flatMap(_.allPatternNodesRead)
+    patternNodes ++
+      optionalMatches.flatMap(_.allPatternNodesRead) ++
+      selectivePathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead)
 
   def addShortestRelationships(shortestRelationships: ShortestRelationshipPattern*): QueryGraph =
     shortestRelationships.foldLeft(this)((qg, p) => qg.addShortestRelationship(p))
@@ -337,7 +339,8 @@ case class QueryGraph(
   private def traverseAllQueryGraphs[A](f: QueryGraph => Set[A]): Set[A] =
     f(this) ++
       optionalMatches.flatMap(_.traverseAllQueryGraphs(f)) ++
-      quantifiedPathPatterns.flatMap(_.asQueryGraph.traverseAllQueryGraphs(f))
+      quantifiedPathPatterns.flatMap(_.asQueryGraph.traverseAllQueryGraphs(f)) ++
+      selectivePathPatterns.flatMap(_.asQueryGraph.traverseAllQueryGraphs(f))
 
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =
     traverseAllQueryGraphs(_.possibleLabelsOnNode(node))

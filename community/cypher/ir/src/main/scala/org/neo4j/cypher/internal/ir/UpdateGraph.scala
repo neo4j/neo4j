@@ -306,6 +306,7 @@ trait UpdateGraph {
     val propertiesToCreate = createNodeProperties
     val tailCreatesNodes = createsNodes
 
+    // Only leafpattern nodes will be considered, so a QueryGraph with a QPP or SPP will ignore the QPP and SPP nodes
     val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable) intersect qgWithInfo.leafPatternNodes
     updatesNodes && relevantNodes.exists { currentNode =>
       lazy val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)

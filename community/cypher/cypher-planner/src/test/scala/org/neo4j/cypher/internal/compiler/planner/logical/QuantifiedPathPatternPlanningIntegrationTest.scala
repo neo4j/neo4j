@@ -1255,7 +1255,9 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
-  test("should insert eager between quantified relationship and the creation of an overlapping node") {
+  test(
+    "should not insert eager between QPP and CREATE of single node: QPPs internal nodes are connected and can therefore not overlap."
+  ) {
     val query = "MATCH (a:N)(()-[r]->())*(b {prop: 42}) MERGE (c:N {prop: 123})"
     val plan = planner.plan(query).stripProduceResults
 
@@ -1265,7 +1267,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.merge(List(createNodeWithProperties("c", List("N"), "{prop: 123}")), Nil, Nil, Nil, Set.empty)
       .|.filter("c.prop = 123")
       .|.nodeByLabelScan("c", "N")
-      .eager(ListSet(EagernessReason.Unknown))
       .filter("b.prop = 42")
       .expandAll("(a)-[r*0..]->(b)")
       .nodeByLabelScan("a", "N")
@@ -1273,7 +1274,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "shouldn't but does insert an unnecessary eager based solely on the predicates contained within the quantified path pattern"
+    "should not insert an unnecessary eager based solely on the predicates contained within the quantified path pattern"
   ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -1286,6 +1287,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
 
     // This first MATCH expands to: (:A) | (:A)-->(:B) | (:A)-->(:B)-->(:B) | etc – all nodes have at least one label
+    // Although this will not produce an eager since only a node is created and it does not overlap with the leaf node. But above still stands
     val query = "MATCH (start:A)((a)-[r]->(b:B))*(end) CREATE (x)"
     val plan = planner.plan(query).stripProduceResults
 
@@ -1308,9 +1310,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .create(createNode("x"))
-      // At the time of writing, predicates do not percolate properly to quantified path patterns.
-      // Here we find an overlap between MATCH () and  CREATE () even though we will not match on ().
-      .eager(ListSet(EagernessReason.Unknown))
       .trail(`(start)((a)-[r]->(b))*(end)`)
       .|.filterExpressionOrString("b:B", isRepeatTrailUnique("r"))
       .|.expandAll("(a)-[r]->(b)")

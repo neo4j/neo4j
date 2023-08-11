@@ -282,6 +282,11 @@ final case class QuantifiedPathPattern(
 
   val groupings: Set[String] = nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(_.groupName)
 
+  /**
+   * Creates a QueryGraph representation of the Quantified Path Pattern and collects all dependent selections eg.
+   * MATCH (start) ((a:L)-[r]->(b)-[s]->(c))+ (end) =>
+   * MATCH (a)-[r]->(b), (b)-[s]->(c) WHERE a:L
+   */
   lazy val asQueryGraph: QueryGraph =
     QueryGraph
       .empty
@@ -392,6 +397,30 @@ final case class SelectivePathPattern(
 
     s"${selector.solvedString} (${ExhaustiveNodeConnection.solvedString(pathPattern.connections.toIndexedSeq)}$where)"
   }
+
+  /**
+   * Creates a QueryGraph representation of the Selective Path Pattern without the QPPs outer nodes and collects all dependent selections eg.
+   * MATCH SHORTEST (foo)-[x]->(start) ((a:L)-[r]->(b)-[s]->(c))+ (end)=>
+   * MATCH (foo)-[x]->(start), (a)-[r]->(b), (b)-[s]->(c) WHERE a:L
+   */
+  lazy val asQueryGraph: QueryGraph =
+    pathPattern.connections.foldLeft(QueryGraph
+      .empty) { (acc, nodeCon) =>
+      nodeCon match {
+        case patternRelationship: PatternRelationship =>
+          acc.addPatternRelationship(patternRelationship)
+        case innerQpp: QuantifiedPathPattern =>
+          val innerQppAsQueryGraph = innerQpp.asQueryGraph
+
+          // We do not need to take the outer nodes into consideration here
+          acc.addPatternRelationships(innerQppAsQueryGraph.patternRelationships)
+            // since they are added in the pattern relationship part of the selective path pattern or are considered for analysis in the outer QueryGraph
+            .addPatternNodes(innerQppAsQueryGraph.patternNodes.diff(boundaryNodesSet).toList: _*)
+            .addSelections(innerQppAsQueryGraph.selections)
+            .addArgumentIds(innerQppAsQueryGraph.argumentIds.toSeq)
+      }
+    }.addSelections(selections)
+
 }
 
 object SelectivePathPattern {
