@@ -42,10 +42,13 @@ import org.eclipse.collections.api.list.MutableList;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.time.Stopwatch;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 class WindowsBootloaderOs extends BootloaderOsAbstraction {
+    private static final boolean ESCAPE_ASTERISKS =
+            FeatureToggles.flag(WindowsBootloaderOs.class, "escapeAsterisks", true);
     static final String PRUNSRV_AMD_64_EXE = "prunsrv-amd64.exe";
     static final String PRUNSRV_I_386_EXE = "prunsrv-i386.exe";
     private static final String POWERSHELL_EXE = "powershell.exe";
@@ -96,6 +99,24 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
     @Override
     long console() throws CommandFailedException {
         return bootloader.processManager().run(buildStandardStartArguments(), new ConsoleProcess(false));
+    }
+
+    @Override
+    long admin() throws CommandFailedException {
+        if (ESCAPE_ASTERISKS) {
+            bootloader.additionalArgs.replaceAll(WindowsBootloaderOs::quoteWildcards);
+        }
+        return super.admin();
+    }
+
+    /**
+     * Replaces the wildcard asterisk (*) with an escaped variant ("*") to prevent unexpected globbing.
+     */
+    private static String quoteWildcards(String s) {
+        if (s.equals("*")) {
+            return "\"*\"";
+        }
+        return s;
     }
 
     private void runServiceCommand(String baseCommand) {
