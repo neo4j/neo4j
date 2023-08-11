@@ -7628,4 +7628,58 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     result shouldEqual expectedPlan
   }
+
+  // Eager here is unnecessary, should be removed if possible
+  test("conflict between CREATE and a hidden node alias") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .create(createNode("newNode"))
+      .projection("head([n, 123]) AS secretN").withCardinality(10)
+      .newVar("secretN", CTAny.covariant)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .create(createNode("newNode"))
+      .eager(ListSet(ReadCreateConflict.withConflict(EagernessReason.Conflict(Id(2), Id(3)))))
+      .projection("head([n, 123]) AS secretN")
+      .allNodeScan("n")
+      .build()
+
+    result shouldEqual expectedPlan
+  }
+
+  test("should not introduce any additional conflicts between SET and a hidden node alias") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .setNodeProperty("n", "prop", "123")
+      .filter("secretN.prop IS NOT NULL")
+      .projection("head([n, 123]) AS secretN").withCardinality(10)
+      .newVar("secretN", CTAny.covariant)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .setNodeProperty("n", "prop", "123")
+      .eager(ListSet(
+        // this conflict is expected regardless of whether we read property through an alias or the original variable
+        PropertyReadSetConflict(propName("prop")).withConflict(EagernessReason.Conflict(Id(2), Id(3)))
+      ))
+      .filter("secretN.prop IS NOT NULL")
+      .projection("head([n, 123]) AS secretN")
+      .allNodeScan("n")
+      .build()
+
+    result shouldEqual expectedPlan
+  }
 }
