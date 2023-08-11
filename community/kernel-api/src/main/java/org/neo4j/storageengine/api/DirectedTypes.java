@@ -31,7 +31,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 public final class DirectedTypes {
-
     /**
      * Enum to represent whether either direction has an unspecified type
      */
@@ -277,6 +276,7 @@ public final class DirectedTypes {
     }
 
     private void addType(int newType, Direction direction) {
+        int insertionIndex = -1;
         for (int i = 0; i < this.types.size(); i++) {
             int type = this.types.get(i);
 
@@ -290,11 +290,21 @@ public final class DirectedTypes {
 
                 return;
             }
+            if (newType < type) {
+                insertionIndex = i;
+                break;
+            }
+        }
+
+        if (insertionIndex != -1) {
+            this.types.add(insertionIndex, newType);
+            this.directions.add(insertionIndex, direction);
+        } else {
+            this.types.add(newType);
+            this.directions.add(direction);
         }
 
         this.existingDirections = this.existingDirections.addDirection(direction);
-        this.types.add(newType);
-        this.directions.add(direction);
     }
 
     public DirectedTypes reverse() {
@@ -407,5 +417,23 @@ public final class DirectedTypes {
 
             case Neither -> addedRelationshipsInner(transactionState);
         };
+    }
+
+    @Override
+    public String toString() {
+        var builder = new StringBuilder();
+        for (int i = 0; i < types.size(); i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(types.get(i)).append(":").append(directions.get(i));
+        }
+        if (untyped != DirectionCombination.Neither) {
+            if (types.size() > 0) {
+                builder.append(", ");
+            }
+            builder.append("*:").append(untyped.direction);
+        }
+        return builder.toString();
     }
 }

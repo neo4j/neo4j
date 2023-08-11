@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -514,5 +515,25 @@ class DirectedTypesTest {
         assertEquals(Direction.OUTGOING, dt.criterionDirection(0));
         assertEquals(Direction.OUTGOING, dt.criterionDirection(1));
         assertEquals(Direction.OUTGOING, dt.criterionDirection(2));
+    }
+
+    @Test
+    void shouldSortAddedTypes() {
+        // given
+        var directedTypes = new DirectedTypes(NO_TRACKING);
+        var unsortedOutTypes = new int[] {4, 2, 3};
+        var unsortedInTypes = new int[] {5, 0, 1};
+
+        // when
+        directedTypes.addTypes(unsortedOutTypes, Direction.OUTGOING);
+        directedTypes.addTypes(unsortedInTypes, Direction.INCOMING);
+
+        // then
+        var prevType = -1;
+        for (var i = 0; i < directedTypes.numberOfCriteria(); i++) {
+            var type = directedTypes.criterionType(i);
+            assertThat(type).isGreaterThan(prevType);
+            prevType = type;
+        }
     }
 }

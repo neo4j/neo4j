@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import static java.lang.String.format;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 import java.util.Arrays;
@@ -412,6 +413,11 @@ public abstract class RelationshipSelection {
         @Override
         public Direction direction(int type) {
             return directedTypes.direction(type);
+        }
+
+        @Override
+        public String toString() {
+            return format("RelationshipSelection[%s]", directedTypes);
         }
     }
 
