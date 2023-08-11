@@ -436,7 +436,6 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("Plans Generic ORDER BY with no Sort on RHS of CartesianProduct") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
-      .enablePrintCostComparisons()
       .build()
 
     val query =
