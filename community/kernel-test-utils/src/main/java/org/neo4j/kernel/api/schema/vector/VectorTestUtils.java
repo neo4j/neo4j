@@ -21,12 +21,15 @@ package org.neo4j.kernel.api.schema.vector;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.factory.primitive.DoubleLists;
 import org.eclipse.collections.api.factory.primitive.FloatLists;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -51,214 +54,284 @@ public class VectorTestUtils {
         final var smallerDoubleThanSmallestFloat = Math.nextDown(smallerDoubleThanSmallestFloatButSameValue);
         final var largerDoubleThanLargestFloatButSameValue = extremeSameFloatValue(+Float.MAX_VALUE);
         final var largerDoubleThanLargestFloat = Math.nextUp(largerDoubleThanLargestFloatButSameValue);
-        final var smallestPositiveFloat = Math.nextUp(+0.f);
+        final var squareRootSmallestPositiveFloat = (float) Math.sqrt(Math.nextUp(+0.f));
         final var squareRootLargestFloat = (float) Math.sqrt(Float.MAX_VALUE);
+        final var squareRootHalfLargestFloat = (float) Math.sqrt(Float.MAX_VALUE / 2.f);
         final var largerThanSquareRootLargestDouble = Math.nextUp(Math.sqrt(Double.MAX_VALUE));
 
-        // finite non-zero values
+        // finite non-zero extreme values
 
-        final var finitePrimitiveNonZeroFloats = FloatLists.immutable.of(
-                -Float.MAX_VALUE,
-                -Float.MIN_NORMAL,
-                -Float.MIN_VALUE,
-                +Float.MIN_VALUE,
-                +Float.MIN_NORMAL,
-                +Float.MAX_VALUE);
-        final var finitePrimitiveNonZeroFloatArrays = Lists.mutable
-                .withAll(finitePrimitiveNonZeroFloats.asLazy().collect(VectorTestUtils::toPrimitive))
-                .toImmutableList();
+        final var floatFiniteNonZeroPositiveExtremePrimitiveFloats = FloatLists.immutable
+                .of(Float.MIN_VALUE, Float.MIN_NORMAL, Float.MAX_VALUE)
+                .asLazy();
 
-        final var finiteBoxedNonZeroFloatArrays = finitePrimitiveNonZeroFloatArrays.collect(ArrayUtils::toObject);
+        final var floatFiniteNonZeroExtremePrimitiveFloatArrays = floatFiniteNonZeroPositiveExtremePrimitiveFloats
+                .asLazy()
+                .flatCollect(VectorTestUtils::signPermutations);
 
-        final var finiteNonZeroFloatArrays = Lists.mutable
-                .withAll(finitePrimitiveNonZeroFloatArrays.asLazy().collect(Values::of))
-                .withAll(finiteBoxedNonZeroFloatArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var floatFiniteNonZeroExtremeBoxedFloatArrays =
+                floatFiniteNonZeroExtremePrimitiveFloatArrays.collect(ArrayUtils::toObject);
 
-        final var finitePrimitiveNonZeroDoubleArrays = DoubleLists.mutable
-                .of(smallerDoubleThanSmallestFloatButSameValue, largerDoubleThanLargestFloatButSameValue)
-                .withAll(finitePrimitiveNonZeroFloats.asLazy().collectDouble(v -> v))
-                .collect(VectorTestUtils::toPrimitive)
-                .toImmutableList();
+        final var floatFiniteNonZeroExtremeFloatArrays = Lists.mutable
+                .withAll(floatFiniteNonZeroExtremePrimitiveFloatArrays.asLazy().collect(Values::of))
+                .withAll(floatFiniteNonZeroExtremeBoxedFloatArrays.asLazy().collect(Values::of))
+                .asLazy();
 
-        final var finiteBoxedNonZeroDoubleArrays = finitePrimitiveNonZeroDoubleArrays.collect(ArrayUtils::toObject);
+        final var floatFiniteNonZeroExtremePrimitiveDoubleArrays = Lists.mutable
+                .of(
+                        smallerDoubleThanSmallestFloatButSameValue,
+                        largerDoubleThanLargestFloatButSameValue,
+                        Double.MIN_VALUE,
+                        Double.MIN_NORMAL)
+                .flatCollect(VectorTestUtils::signPermutations)
+                .withAll(floatFiniteNonZeroExtremePrimitiveFloatArrays.asLazy().collect(VectorTestUtils::promote))
+                .asLazy();
 
-        final var finiteNonZeroDoubleArrays = Lists.mutable
-                .withAll(finitePrimitiveNonZeroDoubleArrays.asLazy().collect(Values::of))
-                .withAll(finiteBoxedNonZeroDoubleArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var floatFiniteNonZeroExtremeBoxedDoubleArrays =
+                floatFiniteNonZeroExtremePrimitiveDoubleArrays.collect(ArrayUtils::toObject);
+
+        final var floatFiniteNonZeroExtremeDoubleArrays = Lists.mutable
+                .withAll(floatFiniteNonZeroExtremePrimitiveDoubleArrays.asLazy().collect(Values::of))
+                .withAll(floatFiniteNonZeroExtremeBoxedDoubleArrays.asLazy().collect(Values::of))
+                .asLazy();
 
         // finite zero values
 
-        final var finitePrimitiveZeroFloats = FloatLists.immutable.of(-0.f, +0.f);
-        final var finitePrimitiveZeroFloatArrays = Lists.mutable
-                .withAll(finitePrimitiveZeroFloats.asLazy().collect(VectorTestUtils::toPrimitive))
-                .toImmutableList();
+        final var floatFiniteZeroPrimitiveFloatArrays = signPermutations(0.f);
 
-        final var finiteBoxedZeroFloatArrays = finitePrimitiveZeroFloatArrays.collect(ArrayUtils::toObject);
+        final var floatFiniteZeroBoxedFloatArrays = floatFiniteZeroPrimitiveFloatArrays.collect(ArrayUtils::toObject);
 
-        final var finiteZeroFloatArrays = Lists.mutable
-                .withAll(finitePrimitiveZeroFloatArrays.asLazy().collect(Values::of))
-                .withAll(finiteBoxedZeroFloatArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var floatFiniteZeroFloatArrays = Lists.mutable
+                .withAll(floatFiniteZeroPrimitiveFloatArrays.asLazy().collect(Values::of))
+                .withAll(floatFiniteZeroBoxedFloatArrays.asLazy().collect(Values::of))
+                .asLazy();
 
-        final var finitePrimitiveZeroDoubleArrays = finitePrimitiveZeroFloatArrays.collect(VectorTestUtils::promote);
+        final var floatFiniteZeroPrimitiveDoubleArrays =
+                floatFiniteZeroPrimitiveFloatArrays.collect(VectorTestUtils::promote);
 
-        final var finiteBoxedZeroDoubleArrays = finitePrimitiveZeroDoubleArrays.collect(ArrayUtils::toObject);
+        final var floatFiniteZeroBoxedDoubleArrays = floatFiniteZeroPrimitiveDoubleArrays.collect(ArrayUtils::toObject);
 
-        final var finiteZeroDoubleArrays = Lists.mutable
-                .withAll(finitePrimitiveZeroDoubleArrays.asLazy().collect(Values::of))
-                .withAll(finiteBoxedZeroDoubleArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var floatFiniteZeroDoubleArrays = Lists.mutable
+                .withAll(floatFiniteZeroPrimitiveDoubleArrays.asLazy().collect(Values::of))
+                .withAll(floatFiniteZeroBoxedDoubleArrays.asLazy().collect(Values::of))
+                .asLazy();
 
-        // finite L2 norms
+        // finite non-zero sqrt(extreme) values
 
-        final var finiteL2NormPrimitiveFloatArrays = Lists.immutable.of(
-                toPrimitive(smallestPositiveFloat, smallestPositiveFloat),
-                toPrimitive(squareRootLargestFloat, squareRootLargestFloat));
+        final var floatFiniteNonZeroSqrtExtremePrimitiveFloats = floatFiniteNonZeroPositiveExtremePrimitiveFloats
+                .asLazy()
+                .collectDouble(Math::sqrt)
+                .collectFloat(v -> (float) v);
 
-        final var finiteL2NormBoxedFloatArrays = finiteL2NormPrimitiveFloatArrays.collect(ArrayUtils::toObject);
+        // finite square L2 norms
 
-        final var finiteL2NormFloatArrays = Lists.mutable
-                .withAll(finiteL2NormPrimitiveFloatArrays.asLazy().collect(Values::of))
-                .withAll(finiteL2NormBoxedFloatArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var floatFiniteSquareL2NormPrimitiveFloatArrays = Lists.mutable
+                .of(
+                        toPrimitive(0.f, squareRootLargestFloat),
+                        toPrimitive(squareRootLargestFloat, 0.f),
+                        toPrimitive(squareRootSmallestPositiveFloat, squareRootSmallestPositiveFloat),
+                        toPrimitive(squareRootHalfLargestFloat, squareRootHalfLargestFloat))
+                .withAll(floatFiniteNonZeroSqrtExtremePrimitiveFloats.asLazy().collect(VectorTestUtils::toPrimitive))
+                .asLazy()
+                .flatCollect(VectorTestUtils::signPermutations);
 
-        final var finiteL2NormPrimitiveDoubleArrays =
-                finiteL2NormPrimitiveFloatArrays.collect(VectorTestUtils::promote);
+        final var floatFiniteSquareL2NormBoxedFloatArrays =
+                floatFiniteSquareL2NormPrimitiveFloatArrays.collect(ArrayUtils::toObject);
 
-        final var finiteL2NormBoxedDoubleArrays = finiteL2NormPrimitiveDoubleArrays.collect(ArrayUtils::toObject);
+        final var floatFiniteSquareL2NormFloatArrays = Lists.mutable
+                .withAll(floatFiniteSquareL2NormPrimitiveFloatArrays.asLazy().collect(Values::of))
+                .withAll(floatFiniteSquareL2NormBoxedFloatArrays.asLazy().collect(Values::of))
+                .asLazy();
 
-        final var finiteL2NormDoubleArrays = Lists.mutable
-                .withAll(finiteL2NormPrimitiveDoubleArrays.asLazy().collect(Values::of))
-                .withAll(finiteL2NormBoxedDoubleArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var floatFiniteSquareL2NormPrimitiveDoubleArrays =
+                floatFiniteSquareL2NormPrimitiveFloatArrays.collect(VectorTestUtils::promote);
+
+        final var floatFiniteSquareL2NormBoxedDoubleArrays =
+                floatFiniteSquareL2NormPrimitiveDoubleArrays.collect(ArrayUtils::toObject);
+
+        final var floatFiniteSquareL2NormDoubleArrays = Lists.mutable
+                .withAll(floatFiniteSquareL2NormPrimitiveDoubleArrays.asLazy().collect(Values::of))
+                .withAll(floatFiniteSquareL2NormBoxedDoubleArrays.asLazy().collect(Values::of))
+                .asLazy();
 
         // non-finite values
 
-        final var nonFinitePrimitiveFloats =
-                FloatLists.immutable.of(Float.NaN, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
-        final var nonFinitePrimitiveFloatArrays = FloatLists.mutable
-                .withAll(nonFinitePrimitiveFloats)
-                .collect(VectorTestUtils::toPrimitive)
+        final var nonFloatFinitePrimitiveFloatArrays = Lists.mutable
+                .withAll(signPermutations(Float.NaN, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY))
                 .with(new float[0])
                 .with(null)
-                .toImmutableList();
+                .asLazy();
 
-        final var nonFiniteBoxedFloatArrays = nonFinitePrimitiveFloatArrays.collect(ArrayUtils::toObject);
+        final var nonFloatFiniteBoxedFloatArrays = nonFloatFinitePrimitiveFloatArrays.collect(ArrayUtils::toObject);
 
-        final var nonFiniteFloatArrays = Lists.mutable
-                .withAll(nonFinitePrimitiveFloatArrays.asLazy().collect(Values::of))
-                .withAll(nonFiniteBoxedFloatArrays.asLazy().collect(Values::of))
+        final var nonFloatFiniteFloatArrays = Lists.mutable
+                .withAll(nonFloatFinitePrimitiveFloatArrays.asLazy().collect(Values::of))
+                .withAll(nonFloatFiniteBoxedFloatArrays.asLazy().collect(Values::of))
                 .with(NO_VALUE)
                 .with(null)
-                .toImmutableList();
+                .asLazy();
 
-        final var nonFinitePrimitiveDoubleArrays = DoubleLists.mutable
-                .of(smallerDoubleThanSmallestFloat, largerDoubleThanLargestFloat)
-                .withAll(nonFinitePrimitiveFloats.asLazy().collectDouble(v -> v))
-                .collect(VectorTestUtils::toPrimitive)
+        final var nonFloatFinitePrimitiveDoubleArrays = Lists.mutable
+                .of(
+                        smallerDoubleThanSmallestFloat,
+                        largerDoubleThanLargestFloat,
+                        Double.MAX_VALUE,
+                        Double.NaN,
+                        Double.NEGATIVE_INFINITY,
+                        Double.POSITIVE_INFINITY)
+                .flatCollect(VectorTestUtils::signPermutations)
+                .withAll(nonFloatFinitePrimitiveFloatArrays.asLazy().collect(VectorTestUtils::promote))
                 .with(null)
-                .toImmutableList();
+                .asLazy();
 
-        final var nonFiniteBoxedDoubleArrays = nonFinitePrimitiveDoubleArrays.collect(ArrayUtils::toObject);
+        final var nonFloatFiniteBoxedDoubleArrays = nonFloatFinitePrimitiveDoubleArrays.collect(ArrayUtils::toObject);
 
-        final var nonFiniteDoubleArrays = Lists.mutable
-                .withAll(nonFinitePrimitiveDoubleArrays.asLazy().collect(Values::of))
-                .withAll(nonFiniteBoxedDoubleArrays.asLazy().collect(Values::of))
+        final var nonFloatFiniteDoubleArrays = Lists.mutable
+                .withAll(nonFloatFinitePrimitiveDoubleArrays.asLazy().collect(Values::of))
+                .withAll(nonFloatFiniteBoxedDoubleArrays.asLazy().collect(Values::of))
                 .with(NO_VALUE)
                 .with(null)
-                .toImmutableList();
+                .asLazy();
 
-        // non-finite L2 norms
+        // non-finite square L2 norms
 
-        final var nonFiniteL2NormPrimitiveFloatArrays =
-                Lists.immutable.of(toPrimitive(-0, -0), toPrimitive(-0, +0), toPrimitive(+0, -0), toPrimitive(+0, +0));
+        final var nonFloatFiniteSquareL2NormPrimitiveFloatArrays = Lists.mutable
+                .of(
+                        toPrimitive(0.f, 0.f),
+                        toPrimitive(squareRootHalfLargestFloat, Math.nextUp(squareRootHalfLargestFloat)),
+                        toPrimitive(Float.MAX_VALUE, Float.MAX_VALUE))
+                .asLazy()
+                .flatCollect(VectorTestUtils::signPermutations);
 
-        final var nonFiniteL2NormBoxedFloatArrays = nonFiniteL2NormPrimitiveFloatArrays.collect(ArrayUtils::toObject);
+        final var nonFloatFiniteSquareL2NormBoxedFloatArrays =
+                nonFloatFiniteSquareL2NormPrimitiveFloatArrays.collect(ArrayUtils::toObject);
 
-        final var nonFiniteL2NormFloatArrays = Lists.mutable
-                .withAll(nonFiniteL2NormPrimitiveFloatArrays.asLazy().collect(Values::of))
-                .withAll(nonFiniteL2NormBoxedFloatArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var nonFloatFiniteSquareL2NormFloatArrays = Lists.mutable
+                .withAll(nonFloatFiniteSquareL2NormPrimitiveFloatArrays.asLazy().collect(Values::of))
+                .withAll(nonFloatFiniteSquareL2NormBoxedFloatArrays.asLazy().collect(Values::of))
+                .asLazy();
 
-        final var nonFiniteL2NormPrimitiveDoubleArrays = Lists.mutable
-                .of(toPrimitive(largerThanSquareRootLargestDouble, largerThanSquareRootLargestDouble))
-                .withAll(nonFiniteL2NormPrimitiveFloatArrays.asLazy().collect(VectorTestUtils::promote))
-                .toImmutableList();
+        final var nonFloatFiniteSquareL2NormPrimitiveDoubleArrays = Lists.mutable
+                .withAll(signPermutations(largerThanSquareRootLargestDouble, largerThanSquareRootLargestDouble))
+                .withAll(nonFloatFiniteSquareL2NormPrimitiveFloatArrays.asLazy().collect(VectorTestUtils::promote))
+                .asLazy();
 
-        final var nonFiniteL2NormBoxedDoubleArrays = nonFiniteL2NormPrimitiveDoubleArrays.collect(ArrayUtils::toObject);
+        final var nonFloatFiniteSquareL2NormBoxedDoubleArrays =
+                nonFloatFiniteSquareL2NormPrimitiveDoubleArrays.collect(ArrayUtils::toObject);
 
-        final var nonFiniteL2NormDoubleArrays = Lists.mutable
-                .withAll(nonFiniteL2NormPrimitiveDoubleArrays.asLazy().collect(Values::of))
-                .withAll(nonFiniteL2NormBoxedDoubleArrays.asLazy().collect(Values::of))
-                .toImmutableList();
+        final var nonFloatFiniteSquareL2NormDoubleArrays = Lists.mutable
+                .withAll(
+                        nonFloatFiniteSquareL2NormPrimitiveDoubleArrays.asLazy().collect(Values::of))
+                .withAll(nonFloatFiniteSquareL2NormBoxedDoubleArrays.asLazy().collect(Values::of))
+                .asLazy();
 
         // now to put them all together
+        //   valid = immutable sorted sets
+        // invalid = unmodifiable sorted sets (immutable cannot handle null)
+
+        // with some comparators to remove duplicates, but keeping different types
+        final var valueComparator = Comparator.nullsFirst(
+                Comparator.comparing(Value::valueRepresentation).thenComparing((lhs, rhs) -> {
+                    if (!(lhs instanceof final FloatingPointArray flhs)
+                            || !(rhs instanceof final FloatingPointArray frhs)) {
+                        if (Objects.equals(lhs, rhs)) {
+                            return 0;
+                        }
+                        return Comparator.comparing(o -> o.getClass().descriptorString())
+                                .compare(lhs, rhs);
+                    }
+
+                    var comparison = Integer.compare(flhs.length(), frhs.length());
+                    if (comparison != 0) {
+                        return comparison;
+                    }
+
+                    for (int i = 0; i < flhs.length(); i++) {
+                        comparison = Double.compare(flhs.doubleValue(i), frhs.doubleValue(i));
+                        if (comparison != 0) {
+                            return comparison;
+                        }
+                    }
+                    return 0;
+                }));
+
+        final var listComparator = Comparator.nullsFirst(
+                Comparator.<List<Double>>comparingInt(List::size).thenComparing((lhs, rhs) -> {
+                    for (int i = 0; i < lhs.size(); i++) {
+                        final var comparison = Double.compare(lhs.get(i), rhs.get(i));
+                        if (comparison != 0) {
+                            return comparison;
+                        }
+                    }
+                    return 0;
+                }));
 
         // set valid Cosine vectors
 
         COSINE_VALID_VECTORS_FROM_VALUE = Lists.mutable
-                .withAll(finiteNonZeroFloatArrays)
-                .withAll(finiteNonZeroDoubleArrays)
-                .withAll(finiteL2NormFloatArrays)
-                .withAll(finiteL2NormDoubleArrays)
-                .toImmutableList();
+                .withAll(floatFiniteSquareL2NormFloatArrays)
+                .withAll(floatFiniteSquareL2NormDoubleArrays)
+                .toImmutableSortedSet(valueComparator);
 
         COSINE_VALID_VECTORS_FROM_DOUBLE_LIST = Lists.mutable
-                .withAll(finiteBoxedNonZeroDoubleArrays)
-                .withAll(finiteL2NormBoxedDoubleArrays)
+                .withAll(floatFiniteSquareL2NormBoxedDoubleArrays)
                 .asLazy()
                 .collect(Lists.immutable::of)
                 .collect(ImmutableList::castToList)
-                .toImmutableList();
+                .toImmutableSortedSet(listComparator);
 
         // set valid Euclidean vectors
 
         EUCLIDEAN_VALID_VECTORS_FROM_VALUE = Lists.mutable
-                .withAll(finiteZeroFloatArrays)
-                .withAll(finiteZeroDoubleArrays)
+                .withAll(floatFiniteZeroFloatArrays)
+                .withAll(floatFiniteZeroDoubleArrays)
+                .withAll(floatFiniteNonZeroExtremeFloatArrays)
+                .withAll(floatFiniteNonZeroExtremeDoubleArrays)
                 .withAll(COSINE_VALID_VECTORS_FROM_VALUE)
-                .toImmutableList();
+                .toImmutableSortedSet(valueComparator);
 
         EUCLIDEAN_VALID_VECTORS_FROM_DOUBLE_LIST = Lists.mutable
-                .withAll(finiteBoxedZeroDoubleArrays)
+                .withAll(floatFiniteZeroBoxedDoubleArrays)
                 .collect(Lists.immutable::of)
                 .collect(ImmutableList::castToList)
                 .withAll(COSINE_VALID_VECTORS_FROM_DOUBLE_LIST)
-                .toImmutableList();
+                .toImmutableSortedSet(listComparator);
 
         // set invalid Euclidean vectors
 
         EUCLIDEAN_INVALID_VECTORS_FROM_VALUE = Lists.mutable
-                .withAll(nonFiniteFloatArrays)
-                .withAll(nonFiniteDoubleArrays)
+                .withAll(nonFloatFiniteFloatArrays)
+                .withAll(nonFloatFiniteDoubleArrays)
                 .with(null)
-                .toImmutableList();
+                .toSortedSet(valueComparator)
+                .asUnmodifiable();
 
         EUCLIDEAN_INVALID_VECTORS_FROM_DOUBLE_LIST = Lists.mutable
-                .withAll(nonFiniteBoxedDoubleArrays
+                .withAll(nonFloatFiniteBoxedDoubleArrays
                         .asLazy()
                         .collect(Lists.immutable::of)
                         .collect(ImmutableList::castToList))
                 .with(null)
-                .toImmutableList();
+                .toSortedSet(listComparator)
+                .asUnmodifiable();
 
         // set invalid Cosine vectors
 
         COSINE_INVALID_VECTORS_FROM_VALUE = Lists.mutable
-                .withAll(nonFiniteL2NormFloatArrays)
-                .withAll(nonFiniteL2NormDoubleArrays)
+                .withAll(nonFloatFiniteSquareL2NormFloatArrays)
+                .withAll(nonFloatFiniteSquareL2NormDoubleArrays)
                 .withAll(EUCLIDEAN_INVALID_VECTORS_FROM_VALUE)
-                .toImmutableList();
+                .toSortedSet(valueComparator)
+                .asUnmodifiable();
 
         COSINE_INVALID_VECTORS_FROM_DOUBLE_LIST = Lists.mutable
-                .withAll(nonFiniteL2NormBoxedDoubleArrays
+                .withAll(nonFloatFiniteSquareL2NormBoxedDoubleArrays
                         .asLazy()
                         .collect(Lists.immutable::of)
                         .collect(ImmutableList::castToList))
                 .withAll(EUCLIDEAN_INVALID_VECTORS_FROM_DOUBLE_LIST)
-                .toImmutableList();
+                .toSortedSet(listComparator)
+                .asUnmodifiable();
     }
 
     // just a convenience method as primitive arrays lack a "constructor"-like interface
@@ -266,16 +339,62 @@ public class VectorTestUtils {
         return array;
     }
 
-    private static double[] toPrimitive(double... array) {
-        return array;
-    }
-
     private static double[] promote(float... array) {
+        if (array == null) {
+            return null;
+        }
+
         final var promoted = new double[array.length];
         for (int i = 0; i < array.length; i++) {
             promoted[i] = array[i];
         }
         return promoted;
+    }
+
+    private static LazyIterable<float[]> signPermutations(float... values) {
+        if (values == null) {
+            return null;
+        }
+
+        final var floatSignBit = 0x80000000; // jdk.internal.math.FloatConsts.SIGN_BIT_MASK
+
+        final var n = 1 << values.length;
+        final var perms = Lists.mutable.<float[]>withInitialCapacity(n);
+
+        for (int p = 0; p < n; p++) {
+            final var perm = new float[values.length];
+            for (int i = 0; i < values.length; i++) {
+                final var set = (p & 1 << i) != 0;
+                final var sign = set ? floatSignBit : 0;
+                final var value = Float.floatToRawIntBits(values[i]);
+                perm[i] = Float.intBitsToFloat(value ^ sign);
+            }
+            perms.add(perm);
+        }
+        return perms.asLazy();
+    }
+
+    private static LazyIterable<double[]> signPermutations(double... values) {
+        if (values == null) {
+            return null;
+        }
+
+        final var doubleSignBit = 0x8000000000000000L; // jdk.internal.math.DoubleConsts.SIGN_BIT_MASK
+
+        final var n = 1 << values.length;
+        final var perms = Lists.mutable.<double[]>withInitialCapacity(n);
+
+        for (int p = 0; p < n; p++) {
+            final var perm = new double[values.length];
+            for (int i = 0; i < values.length; i++) {
+                final var set = (p & 1 << i) != 0;
+                final var sign = set ? doubleSignBit : 0;
+                final var value = Double.doubleToRawLongBits(values[i]);
+                perm[i] = Double.longBitsToDouble(value ^ sign);
+            }
+            perms.add(perm);
+        }
+        return perms.asLazy();
     }
 
     private static double extremeSameFloatValue(double value) {
