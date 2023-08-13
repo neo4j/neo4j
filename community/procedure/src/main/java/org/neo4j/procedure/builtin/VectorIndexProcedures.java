@@ -22,6 +22,7 @@ package org.neo4j.procedure.builtin;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorSimilarityFunctionFrom;
+import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.Mode.WRITE;
 
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
-import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.util.FeatureToggles;
@@ -74,7 +74,6 @@ public class VectorIndexProcedures {
     @Context
     public ProcedureCallContext callContext;
 
-    @Internal
     @Description(
             """
             Create a named node vector index for the given label and property for a specified vector dimensionality.
@@ -100,7 +99,6 @@ public class VectorIndexProcedures {
         indexCreator.create();
     }
 
-    @Internal
     @Description(
             """
             Query the given vector index.
@@ -108,7 +106,7 @@ public class VectorIndexProcedures {
             and their similarity score to that query vector, based on the configured similarity function for the index.
             The similarity score is a value between [0, 1]; where 0 indicates least similar, 1 most similar.
             """)
-    @Procedure(name = "db.index.vector.queryNodes")
+    @Procedure(name = "db.index.vector.queryNodes", mode = READ)
     public Stream<Neighbor> queryVectorIndex(
             @Name("indexName") String name,
             @Name("numberOfNearestNeighbours") long numberOfNearestNeighbours,
@@ -146,7 +144,6 @@ public class VectorIndexProcedures {
         return new NeighborSpliterator(tx, cursor, k).stream();
     }
 
-    @Internal
     @Description("Set a vector property on a given node in a more space efficient representation than Cypher's SET.")
     @Procedure(name = "db.create.setVectorProperty", mode = WRITE)
     public Stream<NodeRecord> setVectorProperty(
