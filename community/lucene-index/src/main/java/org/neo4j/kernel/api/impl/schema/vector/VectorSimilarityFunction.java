@@ -77,19 +77,18 @@ public enum VectorSimilarityFunction {
 
             final var dimensions = candidate.length();
 
-            var square = 0.0;
+            var square = 0.f;
             final var vector = new float[dimensions];
             for (int i = 0; i < candidate.length(); i++) {
-                final var rawElement = candidate.doubleValue(i);
-                final var element = (float) rawElement;
+                final var element = candidate.floatValue(i);
                 if (!Float.isFinite(element)) {
                     return null;
                 }
-                square += rawElement * rawElement;
+                square += element * element;
                 vector[i] = element;
             }
 
-            if (square <= 0.0 || !Double.isFinite(square)) {
+            if (square <= 0.f || !Float.isFinite(square)) {
                 return null;
             }
 
@@ -104,7 +103,7 @@ public enum VectorSimilarityFunction {
 
             final var dimensions = candidate.size();
 
-            var square = 0.0;
+            var square = 0.f;
             final var vector = new float[dimensions];
             for (int i = 0; i < dimensions; i++) {
                 final var rawElement = candidate.get(i);
@@ -112,11 +111,11 @@ public enum VectorSimilarityFunction {
                 if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
                     return null;
                 }
-                square = rawElement * rawElement;
+                square += element * element;
                 vector[i] = element;
             }
 
-            if (square <= 0.0 || !Double.isFinite(square)) {
+            if (square <= 0.f || !Float.isFinite(square)) {
                 return null;
             }
 
