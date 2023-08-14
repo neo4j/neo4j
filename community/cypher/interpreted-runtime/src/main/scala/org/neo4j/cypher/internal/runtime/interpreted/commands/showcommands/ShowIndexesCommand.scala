@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedProcedureArgumentString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.barStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
@@ -319,9 +320,13 @@ object ShowIndexesCommand {
       case IndexType.VECTOR =>
         entityType match {
           case EntityType.NODE =>
+            val escapedName = asEscapedProcedureArgumentString(name)
+            val escapedLabel = asEscapedProcedureArgumentString(labelsOrTypes.head)
+            val escapedPropertyKey = asEscapedProcedureArgumentString(properties.last)
             val dimension = VectorUtils.vectorDimensionsFrom(indexConfig)
-            val similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(indexConfig).name
-            s"CALL db.index.vector.createNodeIndex('$name', '${labelsOrTypes.head}', '${properties.last}', $dimension, '$similarityFunction')"
+            val escapedSimilarityFunction =
+              asEscapedProcedureArgumentString(VectorUtils.vectorSimilarityFunctionFrom(indexConfig).name)
+            s"CALL db.index.vector.createNodeIndex($escapedName, $escapedLabel, $escapedPropertyKey, $dimension, $escapedSimilarityFunction)"
           case EntityType.RELATIONSHIP =>
             throw new IllegalArgumentException(s"$entityType not valid for $indexType index")
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
