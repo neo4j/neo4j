@@ -85,6 +85,4 @@ case class SlottedCypherRowFactory(slots: SlotConfiguration, argumentSize: SlotC
     newCopy.set(key3, value3)
     newCopy
   }
-
-  override def runtimeName: String = "SLOTTED"
 }
