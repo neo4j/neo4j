@@ -29,6 +29,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class UnixDomainSocketConnection extends AbstractTransportConnection {
+
+    private static final Factory factory = new Factory();
     private final SocketAddress address;
 
     private SocketChannel channel;
@@ -37,6 +39,10 @@ public class UnixDomainSocketConnection extends AbstractTransportConnection {
         requireNonNull(address);
 
         this.address = address;
+    }
+
+    public static TransportConnection.Factory factory() {
+        return factory;
     }
 
     @Override
@@ -79,10 +85,25 @@ public class UnixDomainSocketConnection extends AbstractTransportConnection {
     public ByteBuf receive(int length) throws IOException {
         var buffer = ByteBuffer.allocate(length);
         while (buffer.hasRemaining()) {
-            channel.read(buffer);
+            if (channel.read(buffer) == -1) {
+                throw new IOException("End of stream reached. Connection has died.");
+            }
         }
         buffer.flip();
 
         return Unpooled.wrappedBuffer(buffer);
+    }
+
+    private static class Factory implements TransportConnection.Factory {
+
+        @Override
+        public TransportConnection create(SocketAddress address) {
+            return new UnixDomainSocketConnection(address);
+        }
+
+        @Override
+        public String toString() {
+            return "Unix Domain Socket";
+        }
     }
 }

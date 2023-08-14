@@ -19,11 +19,13 @@
  */
 package org.neo4j.bolt.test.connection.resolver;
 
+import java.net.SocketAddress;
+import java.net.UnixDomainSocketAddress;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.neo4j.bolt.test.annotation.connection.Resolver;
+import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
-import org.neo4j.internal.helpers.HostnamePort;
 
 /**
  * Provides a fallback address resolver which will return the address of the default connector (e.g. the standard Bolt
@@ -35,7 +37,16 @@ import org.neo4j.internal.helpers.HostnamePort;
 public final class DefaultAddressResolver extends AbstractAddressResolver {
 
     @Override
-    public HostnamePort doResolve(ExtensionContext extensionContext, ParameterContext context, Neo4jWithSocket server) {
-        return server.lookupDefaultConnector();
+    public SocketAddress doResolve(
+            ExtensionContext extensionContext,
+            ParameterContext context,
+            Neo4jWithSocket server,
+            TransportType transportType) {
+
+        if (transportType.equals(TransportType.UNIX)) {
+            return UnixDomainSocketAddress.of(server.lookupUnixConnector());
+        } else {
+            return server.lookupDefaultConnector().toSocketAddress();
+        }
     }
 }

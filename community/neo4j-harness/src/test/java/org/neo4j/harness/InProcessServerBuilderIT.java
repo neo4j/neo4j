@@ -31,6 +31,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,7 +64,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
-import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -243,7 +243,7 @@ class InProcessServerBuilderIT {
 
             // when
             assertDoesNotThrow(() -> {
-                try (var connection = new SocketConnection(new HostnamePort(uri.getHost(), uri.getPort()))) {
+                try (var connection = new SocketConnection(new InetSocketAddress(uri.getHost(), uri.getPort()))) {
                     connection.connect();
                 }
             });

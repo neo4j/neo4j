@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivateKey;
@@ -61,7 +62,6 @@ import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.pki.PkiUtils;
@@ -149,7 +149,7 @@ class OcspStaplingIT {
 
     @TransportTest
     @IncludeTransport(TransportType.TCP_TLS)
-    void shouldReturnCertificatesWithStapledOcspResponses(HostnamePort address) throws Exception {
+    void shouldReturnCertificatesWithStapledOcspResponses(SocketAddress address) throws Exception {
         try (var connection = new CertConfiguredSecureSocketConnection(address, this.certificate)) {
             connection.connect().sendDefaultProtocolVersion();
 

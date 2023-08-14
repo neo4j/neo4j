@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.test.connection.resolver;
 
+import java.net.SocketAddress;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.neo4j.bolt.test.annotation.connection.resolver.Connector;
+import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.internal.helpers.HostnamePort;
 
 /**
  * Provides an address resolver which resolves the address of a connector based on its specified {@link ConnectorType}
@@ -36,10 +37,13 @@ import org.neo4j.internal.helpers.HostnamePort;
 public class ConnectorAddressResolver extends AbstractAddressResolver {
 
     @Override
-    protected HostnamePort doResolve(
-            ExtensionContext extensionContext, ParameterContext context, Neo4jWithSocket server)
+    protected SocketAddress doResolve(
+            ExtensionContext extensionContext,
+            ParameterContext context,
+            Neo4jWithSocket server,
+            TransportType transportType)
             throws ParameterResolutionException {
-        return server.lookupConnector(this.getConnectorType(context));
+        return server.lookupConnector(this.getConnectorType(context)).toSocketAddress();
     }
 
     private ConnectorType getConnectorType(ParameterContext context) throws ParameterResolutionException {

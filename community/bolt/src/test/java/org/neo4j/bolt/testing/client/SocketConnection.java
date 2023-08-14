@@ -28,16 +28,15 @@ import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.net.SocketTimeoutException;
-import org.neo4j.internal.helpers.HostnamePort;
 
 public class SocketConnection extends AbstractTransportConnection {
     private static final Factory factory = new Factory();
 
-    protected final HostnamePort address;
+    protected final SocketAddress address;
 
     protected Socket socket;
     protected InputStream in;
@@ -47,7 +46,7 @@ public class SocketConnection extends AbstractTransportConnection {
         return factory;
     }
 
-    public SocketConnection(HostnamePort address) {
+    public SocketConnection(SocketAddress address) {
         requireNonNull(address);
 
         this.address = address;
@@ -72,7 +71,7 @@ public class SocketConnection extends AbstractTransportConnection {
 
         this.socket = this.createSocket();
         this.socket.setSoTimeout((int) MINUTES.toMillis(1));
-        this.socket.connect(new InetSocketAddress(address.getHost(), address.getPort()));
+        this.socket.connect(address);
 
         this.in = this.socket.getInputStream();
         this.out = this.socket.getOutputStream();
@@ -129,8 +128,6 @@ public class SocketConnection extends AbstractTransportConnection {
         int read;
 
         try {
-            long startedAt = System.currentTimeMillis();
-
             while (left > 0 && (read = in.read(bytes, length - left, left)) != -1) {
                 left -= read;
             }
@@ -150,7 +147,7 @@ public class SocketConnection extends AbstractTransportConnection {
     private static class Factory implements TransportConnection.Factory {
 
         @Override
-        public TransportConnection create(HostnamePort address) {
+        public TransportConnection create(SocketAddress address) {
             return new SocketConnection(address);
         }
 

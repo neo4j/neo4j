@@ -19,19 +19,21 @@
  */
 package org.neo4j.bolt.test.extension.resolver.connection;
 
+import java.net.SocketAddress;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.neo4j.bolt.test.extension.lifecycle.TransportConnectionManager;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
-import org.neo4j.internal.helpers.HostnamePort;
 
 public class TransportConnectionParameterResolver
         extends AbstractConnectionInitializingParameterResolver<ParameterResolutionException> {
 
-    public TransportConnectionParameterResolver(TransportConnectionManager connectionManager, BoltWire wire) {
-        super(connectionManager, wire);
+    public TransportConnectionParameterResolver(
+            TransportConnectionManager connectionManager, BoltWire wire, TransportType transportType) {
+        super(connectionManager, wire, transportType);
     }
 
     @Override
@@ -48,7 +50,7 @@ public class TransportConnectionParameterResolver
     }
 
     @Override
-    protected void fail(HostnamePort address, Throwable cause) throws ParameterResolutionException {
+    protected void fail(SocketAddress address, Throwable cause) throws ParameterResolutionException {
         throw new ParameterResolutionException("Failed to establish connection with " + address, cause);
     }
 }
