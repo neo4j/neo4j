@@ -96,7 +96,7 @@ public class UploadCommand extends AbstractAdminCommand {
             defaultValue = "${" + ENV_NEO4J_USERNAME + "}",
             description =
                     "Username of the target database to push this database to. Prompt will ask for a username if not provided. "
-                            + "Alternatively, the " + ENV_NEO4J_USERNAME + " environment variable can be used.")
+                            + "%nDefault:  The value of the " + ENV_NEO4J_USERNAME + " environment variable.")
     private String username;
 
     @Option(
@@ -104,7 +104,7 @@ public class UploadCommand extends AbstractAdminCommand {
             defaultValue = "${" + ENV_NEO4J_PASSWORD + "}",
             description =
                     "Password of the target database to push this database to. Prompt will ask for a password if not provided. "
-                            + "Alternatively, the " + ENV_NEO4J_PASSWORD + " environment variable can be used.")
+                            + "%nDefault:  The value of the " + ENV_NEO4J_PASSWORD + " environment variable.")
     private String password;
 
     @Option(
