@@ -344,7 +344,7 @@ public class UploadCommand extends AbstractAdminCommand {
             if (signedURIBodyResponse.Provider.equalsIgnoreCase(String.valueOf(SignedUploadURLFactory.Provider.AWS))) {
                 UploadStatusResponse uploadStatusResponse =
                         auraClient.uploadStatus(verbose, crc32Sum, signedURIBodyResponse.UploadID, bearerToken);
-                auraClient.triggerGCPImportProtocol(
+                auraClient.triggerAWSImportProtocol(
                         verbose, source.path(), crc32Sum, bearerToken, uploadStatusResponse);
             } else {
                 auraClient.triggerGCPImportProtocol(verbose, source.path(), crc32Sum, bearerToken);

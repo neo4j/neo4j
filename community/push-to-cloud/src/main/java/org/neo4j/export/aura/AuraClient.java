@@ -415,7 +415,7 @@ public class AuraClient {
         }
     }
 
-    public void triggerGCPImportProtocol(
+    public void triggerAWSImportProtocol(
             boolean verbose, Path source, long crc32Sum, String bearerToken, UploadStatusResponse uploadStatusResponse)
             throws IOException {
 
@@ -426,6 +426,7 @@ public class AuraClient {
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Authorization", bearerHeader);
+            connection.setRequestProperty("Neo4j-Version", getClientVersion());
             connection.setDoOutput(true);
             try (OutputStream postData = connection.getOutputStream()) {
 
@@ -450,6 +451,7 @@ public class AuraClient {
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Authorization", bearerHeader);
+            connection.setRequestProperty("Neo4j-Version", getClientVersion());
             connection.setDoOutput(true);
             try (OutputStream postData = connection.getOutputStream()) {
                 postData.write(String.format("{\"Crc32\":%d}", crc32Sum).getBytes(UTF_8));
