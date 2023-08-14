@@ -129,6 +129,54 @@
     "enterpriseOnly": false
   },
   {
+    "name": "db.create.setVectorProperty",
+    "description": "Set a vector property on a given node in a more space efficient representation than Cypher's SET.",
+    "mode": "WRITE",
+    "worksOnSystem": false,
+    "signature": "db.create.setVectorProperty(node :: NODE?, key :: STRING?, vector :: LIST? OF FLOAT?) :: (node :: NODE?)",
+    "argumentDescription": [
+      {
+        "name": "node",
+        "description": "node :: NODE?",
+        "type": "NODE?",
+        "isDeprecated": false
+      },
+      {
+        "name": "key",
+        "description": "key :: STRING?",
+        "type": "STRING?",
+        "isDeprecated": false
+      },
+      {
+        "name": "vector",
+        "description": "vector :: LIST? OF FLOAT?",
+        "type": "LIST? OF FLOAT?",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription" : [
+      {
+        "name": "node",
+        "description": "node :: NODE?",
+        "type": "NODE?",
+        "isDeprecated": false
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
     "name": "db.createLabel",
     "description": "Create a label",
     "mode": "WRITE",
@@ -365,6 +413,113 @@
         "name": "relationship",
         "description": "relationship :: RELATIONSHIP?",
         "type": "RELATIONSHIP?",
+        "isDeprecated": false
+      },
+      {
+        "name": "score",
+        "description": "score :: FLOAT?",
+        "type": "FLOAT?",
+        "isDeprecated": false
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.vector.createNodeIndex",
+    "description": "Create a named node vector index for the given label and property for a specified vector dimensionality.\nValid similarity functions are 'EUCLIDEAN' and 'COSINE', and are case-insensitive.\nUse the `db.index.vector.queryNodes` procedure to query the named index.\n",
+    "mode": "SCHEMA",
+    "worksOnSystem": false,
+    "signature": "db.index.vector.createNodeIndex(indexName :: STRING?, label :: STRING?, propertyKey :: STRING?, vectorDimension :: INTEGER?, vectorSimilarityFunction :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?",
+        "isDeprecated": false
+      },
+      {
+        "name": "label",
+        "description": "label :: STRING?",
+        "type": "STRING?",
+        "isDeprecated": false
+      },
+      {
+        "name": "propertyKey",
+        "description": "propertyKey :: STRING?",
+        "type": "STRING?",
+        "isDeprecated": false
+      },
+      {
+        "name": "vectorDimension",
+        "description": "vectorDimension :: INTEGER?",
+        "type": "INTEGER?",
+        "isDeprecated": false
+      },
+      {
+        "name": "vectorSimilarityFunction",
+        "description": "vectorSimilarityFunction :: STRING?",
+        "type": "STRING?",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription" : [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.vector.queryNodes",
+    "description": "Query the given vector index.\nReturns requested number of nearest neighbors to the provided query vector,\nand their similarity score to that query vector, based on the configured similarity function for the index.\nThe similarity score is a value between [0, 1]; where 0 indicates least similar, 1 most similar.\n",
+    "mode": "READ",
+    "worksOnSystem": false,
+    "signature": "db.index.vector.queryNodes(indexName :: STRING?, numberOfNearestNeighbours :: INTEGER?, query :: LIST? OF FLOAT?) :: (node :: NODE?, score :: FLOAT?)",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?",
+        "isDeprecated": false
+      },
+      {
+        "name": "numberOfNearestNeighbours",
+        "description": "numberOfNearestNeighbours :: INTEGER?",
+        "type": "INTEGER?",
+        "isDeprecated": false
+      },
+      {
+        "name": "query",
+        "description": "query :: LIST? OF FLOAT?",
+        "type": "LIST? OF FLOAT?",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription" : [
+      {
+        "name": "node",
+        "description": "node :: NODE?",
+        "type": "NODE?",
         "isDeprecated": false
       },
       {
