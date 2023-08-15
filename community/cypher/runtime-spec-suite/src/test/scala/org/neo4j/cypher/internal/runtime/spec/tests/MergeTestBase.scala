@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidSemanticsException
+import org.neo4j.exceptions.MergeConstraintConflictException
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
@@ -1457,6 +1459,29 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // TODO This test assertion fails but should work
     // .withStatistics(nodesCreated = sizeHint / 2, propertiesSet = sizeHint)
+  }
+
+  test("assert same node with merge throws MergeConstraintConflictException when lhs is empty but rhs isnt") {
+    given {
+      uniqueNodeIndex("Person", "id")
+      uniqueNodeIndex("Person", "mail")
+      val n = tx.createNode(Label.label("Person"))
+      n.setProperty("id", 123)
+      n.setProperty("mail", "qwerty")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id", "mail")
+      .projection("n.id AS id", "n.mail AS mail")
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq("Person"), "{id: 123, mail: 'qwerty'}")))
+      .assertSameNode("n")
+      .|.nodeIndexOperator("n:Person(id = 123)", unique = true)
+      .nodeIndexOperator("n:Person(mail = 'does not exist')", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    a[MergeConstraintConflictException] shouldBe thrownBy(consume(runtimeResult))
   }
 
   test("setNodePropertiesFromMap with fuse-over-pipelines and continuation") {
