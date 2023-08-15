@@ -242,7 +242,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
             checkState(
                     !readOnly,
                     "Counts store needs rebuilding (most likely this database needs to be recovered), but is read-only.");
-            try (CountUpdater updater = directUpdater(false, cursorContext)) {
+            try (CountUpdater updater = createDirectUpdater(false, cursorContext)) {
                 rebuilder.rebuild(updater, cursorContext, memoryTracker);
             } finally {
                 idSequence.set(rebuilder.lastCommittedTxId(), EMPTY_LONG_ARRAY);
@@ -302,7 +302,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
      * @param applyDeltas if {@code true} the writer will apply the changes as deltas, which means reading from the tree.
      * If {@code false} all changes will be written as-is, i.e. as if they are absolute counts.
      */
-    protected CountUpdater directUpdater(boolean applyDeltas, CursorContext cursorContext) throws IOException {
+    protected CountUpdater createDirectUpdater(boolean applyDeltas, CursorContext cursorContext) throws IOException {
         boolean success = false;
         Lock lock = this.lock.writeLock();
         lock.lock();

@@ -665,7 +665,7 @@ class GBPTreeGenericCountsStoreTest {
         }
 
         // when
-        try (CountUpdater countUpdater = countsStore.directUpdater(false, NULL_CONTEXT)) {
+        try (CountUpdater countUpdater = countsStore.createDirectUpdater(false, NULL_CONTEXT)) {
             expected.forEach(countUpdater::increment);
         }
 
@@ -684,7 +684,7 @@ class GBPTreeGenericCountsStoreTest {
 
         // when
         for (int i = 0; i < 2; i++) {
-            try (CountUpdater countUpdater = countsStore.directUpdater(true, NULL_CONTEXT)) {
+            try (CountUpdater countUpdater = countsStore.createDirectUpdater(true, NULL_CONTEXT)) {
                 expected.forEach(countUpdater::increment);
             }
         }

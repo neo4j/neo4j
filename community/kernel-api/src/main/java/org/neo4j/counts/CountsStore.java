@@ -52,6 +52,10 @@ public interface CountsStore extends AutoCloseable, ConsistencyCheckable {
         return CountsUpdater.NO_OP_UPDATER;
     }
 
+    default CountsUpdater directUpdater(CursorContext cursorContext) throws IOException {
+        return updater(cursorContext.getVersionContext().committingTransactionId(), true, cursorContext);
+    }
+
     /**
      * @param labelId node label token id to get count for.
      * @param cursorContext underlying page cursor context

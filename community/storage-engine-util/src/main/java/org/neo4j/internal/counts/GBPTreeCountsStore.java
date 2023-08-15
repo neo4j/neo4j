@@ -127,8 +127,13 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         return updater != null ? new Incrementer(updater) : CountsUpdater.NO_OP_UPDATER;
     }
 
-    public CountsUpdater directApply(boolean deltas, CursorContext cursorContext) throws IOException {
-        CountUpdater updater = directUpdater(deltas, cursorContext);
+    @Override
+    public CountsUpdater directUpdater(CursorContext cursorContext) throws IOException {
+        return directUpdater(true, cursorContext);
+    }
+
+    public CountsUpdater directUpdater(boolean deltas, CursorContext cursorContext) throws IOException {
+        CountUpdater updater = createDirectUpdater(deltas, cursorContext);
         return updater != null ? new Incrementer(updater) : CountsUpdater.NO_OP_UPDATER;
     }
 

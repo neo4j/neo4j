@@ -92,7 +92,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     }
 
     public DegreeUpdater directApply(boolean applyDeltas, CursorContext cursorContext) throws IOException {
-        return new TreeUpdater(directUpdater(applyDeltas, cursorContext));
+        return new TreeUpdater(createDirectUpdater(applyDeltas, cursorContext));
     }
 
     @Override
