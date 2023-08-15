@@ -21,12 +21,15 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.options.CypherRuntimeOption.pipelined
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 
@@ -1175,4 +1178,71 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       )))
   }
 
+  test("github issue #13169") {
+    // given empty graph
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n0")
+      .union()
+      .|.projection("rhsNull AS n0")
+      .|.projection("NULL AS rhsNull")
+      .|.cartesianProduct()
+      .|.|.filter("r:B")
+      .|.|.orderedDistinct(Seq("r"), "r AS r")
+      .|.|.orderedUnion(Seq(Ascending("r")))
+      .|.|.|.filter("not r:A")
+      .|.|.|.relationshipTypeScan("()-[r:D]->()", IndexOrderAscending)
+      .|.|.filter("not r:A")
+      .|.|.relationshipTypeScan("()-[r:C]->()", IndexOrderAscending)
+      .|.allNodeScan("n")
+      .projection("lhsNull AS n0")
+      .projection("NULL AS lhsNull")
+      .subqueryForeach()
+      .|.merge(Seq(createNode("a")), Seq(), Seq(), Seq(), Set())
+      .|.allNodeScan("a")
+      .argument()
+      .build()
+
+    if (runtime.correspondingRuntimeOption.contains(pipelined)) {
+      intercept[CantCompileQueryException](execute(logicalQuery, runtime))
+    } else {
+      val result = execute(logicalQuery, runtime)
+      result should beColumns("n0").withSingleRow(null)
+    }
+  }
+
+  test("github issue #13169 variant") {
+    // given empty graph
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n0")
+      .union()
+      .|.projection("rhsNull AS n0")
+      .|.projection("NULL AS rhsNull")
+      .|.union()
+      .|.|.filter("r:B")
+      .|.|.orderedDistinct(Seq("r"), "r AS r")
+      .|.|.orderedUnion(Seq(Ascending("r")))
+      .|.|.|.filter("not r:A")
+      .|.|.|.relationshipTypeScan("()-[r:D]->()", IndexOrderAscending)
+      .|.|.filter("not r:A")
+      .|.|.relationshipTypeScan("()-[r:C]->()", IndexOrderAscending)
+      .|.allNodeScan("n")
+      .projection("lhsNull AS n0")
+      .projection("NULL AS lhsNull")
+      .subqueryForeach()
+      .|.merge(Seq(createNode("a")), Seq(), Seq(), Seq(), Set())
+      .|.allNodeScan("a")
+      .argument()
+      .build()
+
+    if (runtime.correspondingRuntimeOption.contains(pipelined)) {
+      intercept[CantCompileQueryException](execute(logicalQuery, runtime))
+    } else {
+      val result = execute(logicalQuery, runtime)
+      result should beColumns("n0").withRows(inOrder(Seq(Array(null), Array(null))))
+    }
+  }
 }
