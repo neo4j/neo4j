@@ -20,19 +20,15 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
-import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
-import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Suppliers;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
@@ -108,7 +104,6 @@ public class StoreMigrator {
     public static final String MIGRATION_DIRECTORY = "migrate";
     private static final String MIGRATION_STATUS_FILE = "_status";
 
-    private final StorageEngineFactory targetStorageEngineFactory;
     private final CursorContextFactory contextFactory;
     private final DatabaseTracers databaseTracers;
     private final DatabaseLayout databaseLayout;
@@ -123,6 +118,7 @@ public class StoreMigrator {
     private final StorageEngineFactory storageEngineFactory;
     private final InternalLog internalLog;
     private Supplier<LogTailMetadata> logTailSupplier;
+    private final StorageEngineMigrationAbstraction storageEngineMigrationAbstraction;
 
     public StoreMigrator(
             FileSystemAbstraction fs,
@@ -143,7 +139,6 @@ public class StoreMigrator {
         this.pageCache = pageCache;
         this.databaseLayout = databaseLayout;
         this.storageEngineFactory = storageEngineFactory;
-        this.targetStorageEngineFactory = targetStorageEngineFactory;
         this.jobScheduler = jobScheduler;
         this.databaseTracers = databaseTracers;
         this.pageCacheTracer = databaseTracers.getPageCacheTracer();
@@ -154,6 +149,8 @@ public class StoreMigrator {
         this.logTailSupplier = logTailSupplier;
         this.contextFactory =
                 new CursorContextFactory(databaseTracers.getPageCacheTracer(), new LazyVersionContextSupplier());
+        this.storageEngineMigrationAbstraction =
+                new StorageEngineMigrationAbstraction(storageEngineFactory, targetStorageEngineFactory);
     }
 
     public void migrateIfNeeded(String formatToMigrateTo, boolean forceBtreeIndexesToRange)
@@ -165,20 +162,7 @@ public class StoreMigrator {
 
             finishInterruptedMigration(migrationStructures);
 
-            boolean migrationOverEngine = !storageEngineFactory.equals(targetStorageEngineFactory);
-            MigrationStoreVersionCheck storeVersionCheck = migrationOverEngine
-                    ? new OverEngineVersionCheck(
-                            fs,
-                            pageCache,
-                            databaseLayout,
-                            config,
-                            logService,
-                            contextFactory,
-                            storageEngineFactory,
-                            targetStorageEngineFactory)
-                    : storageEngineFactory.versionCheck(
-                            fs, databaseLayout, config, pageCache, logService, contextFactory);
-            var checkResult = doMigrationCheck(storeVersionCheck, formatToMigrateTo, cursorContext);
+            var checkResult = doMigrationCheck(formatToMigrateTo, cursorContext);
 
             internalLog.info("'" + checkResult.versionToMigrateFrom().getStoreVersionUserString()
                     + "' has been identified as the current version of the store");
@@ -217,7 +201,7 @@ public class StoreMigrator {
                     VisibleMigrationProgressMonitorFactory.forMigration(internalLog),
                     LogsMigrator.CheckResult::migrate,
                     forceBtreeIndexesToRange,
-                    migrationOverEngine);
+                    storageEngineMigrationAbstraction);
         }
     }
 
@@ -243,7 +227,7 @@ public class StoreMigrator {
         progressMonitor.completeTransactionLogsMigration();
 
         // We are only changing logs, but we need to do the postMigration step since the last tx id has changed
-        var participants = getStoreMigrationParticipants(false, false);
+        var participants = getStoreMigrationParticipants(storageEngineMigrationAbstraction, false);
         postMigration(participants, toVersion, txIds.txIdBeforeMigration(), txIds.txIdAfterMigration());
 
         progressMonitor.completed();
@@ -283,7 +267,7 @@ public class StoreMigrator {
                     VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
                     LogsMigrator.CheckResult::upgrade,
                     false,
-                    false);
+                    storageEngineMigrationAbstraction);
         }
     }
 
@@ -300,15 +284,15 @@ public class StoreMigrator {
             MigrationProgressMonitor progressMonitor,
             LogsAction logsAction,
             boolean forceBtreeIndexesToRange,
-            boolean migrationOverEngine)
+            StorageEngineMigrationAbstraction storageEngineMigrationAbstraction)
             throws IOException {
-        var participants = getStoreMigrationParticipants(forceBtreeIndexesToRange, migrationOverEngine);
+        var participants = getStoreMigrationParticipants(storageEngineMigrationAbstraction, forceBtreeIndexesToRange);
         // One or more participants would like to do migration
         progressMonitor.started(participants.size());
 
         var logsMigrator = new LogsMigrator(
                 fs,
-                targetStorageEngineFactory,
+                storageEngineMigrationAbstraction.getTargetStorageEngineFactory(),
                 databaseLayout,
                 pageCache,
                 config,
@@ -316,9 +300,12 @@ public class StoreMigrator {
                 logTailSupplier,
                 pageCacheTracer);
         var logsCheckResult = logsMigrator.assertCleanlyShutDown();
-        StoreVersion fromVersion =
-                storageEngineFactory.versionInformation(versionToMigrateFrom).orElseThrow();
-        StoreVersion toVersion = targetStorageEngineFactory
+        StoreVersion fromVersion = storageEngineMigrationAbstraction
+                .getStorageEngineFactory()
+                .versionInformation(versionToMigrateFrom)
+                .orElseThrow();
+        StoreVersion toVersion = storageEngineMigrationAbstraction
+                .getTargetStorageEngineFactory()
                 .versionInformation(versionToMigrateTo)
                 .orElseThrow();
 
@@ -363,8 +350,10 @@ public class StoreMigrator {
         progressMonitor.completed();
     }
 
-    private CheckResult doMigrationCheck(
-            MigrationStoreVersionCheck storeVersionCheck, String formatToMigrateTo, CursorContext cursorContext) {
+    private CheckResult doMigrationCheck(String formatToMigrateTo, CursorContext cursorContext) {
+        MigrationStoreVersionCheck storeVersionCheck = storageEngineMigrationAbstraction.getStoreVersionCheck(
+                fs, pageCache, databaseLayout, config, logService, contextFactory);
+
         var checkResult = storeVersionCheck.getAndCheckMigrationTargetVersion(formatToMigrateTo, cursorContext);
         var fromVersion = checkResult.versionToMigrateFrom();
         var toVersion = checkResult.versionToMigrateTo();
@@ -412,20 +401,30 @@ public class StoreMigrator {
                 // consistent store again.
                 internalLog.info("Resuming migration in progress to '"
                         + migrationStatus.versionToMigrateTo().getStoreVersionUserString() + "'");
-                // TODO this is not necessarily the same engine combo
+
+                // The interrupted migration is not necessarily to the same version - it could belong to a different
+                // storage engine
+                StoreVersionIdentifier versionToMigrateTo = migrationStatus.versionToMigrateTo();
+                Config localConfig = Config.newBuilder()
+                        .fromConfig(config)
+                        .set(GraphDatabaseSettings.db_format, versionToMigrateTo.getFormatName())
+                        .build();
+                StorageEngineFactory targetStorageEngineFactory = StorageEngineFactory.selectStorageEngine(localConfig);
+                StorageEngineMigrationAbstraction storageEngineMigrationAbstraction =
+                        new StorageEngineMigrationAbstraction(storageEngineFactory, targetStorageEngineFactory);
                 doMigrate(
                         migrationStructures,
                         MigrationStatus.MigrationState.moving,
                         migrationStatus.versionToMigrateFrom(),
-                        migrationStatus.versionToMigrateTo(),
+                        versionToMigrateTo,
                         VisibleMigrationProgressMonitorFactory.forMigration(internalLog),
                         // Since we are doing a migration it should be safe to use the LogsMigrator#migrate
                         LogsMigrator.CheckResult::migrate,
                         false,
-                        false);
+                        storageEngineMigrationAbstraction);
 
                 // Have new logTail now, use that one instead
-                logTailSupplier = getLogTailSupplier();
+                logTailSupplier = getLogTailSupplier(targetStorageEngineFactory);
             } else {
                 removeOldMigrationDir(migrationStructures.migrationLayout.databaseDirectory());
             }
@@ -458,10 +457,10 @@ public class StoreMigrator {
                         VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
                         LogsMigrator.CheckResult::upgrade,
                         false,
-                        false);
+                        storageEngineMigrationAbstraction);
 
                 // Could have new logTail now, use that one instead
-                logTailSupplier = getLogTailSupplier();
+                logTailSupplier = getLogTailSupplier(storageEngineFactory);
             } else {
                 removeOldMigrationDir(migrationStructures.migrationLayout.databaseDirectory());
             }
@@ -469,53 +468,18 @@ public class StoreMigrator {
     }
 
     private List<StoreMigrationParticipant> getStoreMigrationParticipants(
-            boolean forceBtreeIndexesToRange, boolean migratingOverEngine) {
-        List<StoreMigrationParticipant> storeParticipants = new ArrayList<>();
-        if (migratingOverEngine) {
-            // One participant that copies over the data and schema. It doesn't care about any other
-            // participants that the storage engines might have since those don't understand going between engines.
-            storeParticipants.add(new OverEngineMigrationParticipant(
-                    fs,
-                    pageCache,
-                    pageCacheTracer,
-                    config,
-                    logService,
-                    jobScheduler,
-                    contextFactory,
-                    memoryTracker,
-                    storageEngineFactory,
-                    targetStorageEngineFactory));
-        } else {
-            // Get all the participants from the storage engine and add them where they want to be
-            storeParticipants.addAll(storageEngineFactory.migrationParticipants(
-                    fs,
-                    config,
-                    pageCache,
-                    jobScheduler,
-                    logService,
-                    memoryTracker,
-                    pageCacheTracer,
-                    contextFactory,
-                    forceBtreeIndexesToRange));
-
-            // Do individual index provider migration last because they may delete files that we need in earlier steps.
-            indexProviderMap.accept(provider -> storeParticipants.add(provider.storeMigrationParticipant(
-                    fs, pageCache, pageCacheTracer, storageEngineFactory, contextFactory)));
-        }
-
-        Set<String> participantNames = new HashSet<>();
-        storeParticipants.forEach(participant -> {
-            if (!NOT_PARTICIPATING.equals(participant)) {
-                var newParticipantName = participant.getName();
-                checkState(
-                        !participantNames.contains(newParticipantName),
-                        "Migration participants should have unique names. Participant with name: '%s' is already registered.",
-                        newParticipantName);
-                participantNames.add(newParticipantName);
-            }
-        });
-
-        return storeParticipants;
+            StorageEngineMigrationAbstraction storageEngineMigrationAbstraction, boolean forceBtreeIndexesToRange) {
+        return storageEngineMigrationAbstraction.getMigrationParticipants(
+                forceBtreeIndexesToRange,
+                fs,
+                pageCache,
+                pageCacheTracer,
+                config,
+                logService,
+                jobScheduler,
+                contextFactory,
+                memoryTracker,
+                indexProviderMap);
     }
 
     private void migrateToIsolatedDirectory(
@@ -620,7 +584,7 @@ public class StoreMigrator {
         }
     }
 
-    private Suppliers.Lazy<LogTailMetadata> getLogTailSupplier() {
+    private Suppliers.Lazy<LogTailMetadata> getLogTailSupplier(StorageEngineFactory storageEngineFactory) {
         return Suppliers.lazySingleton(() -> {
             try {
                 // If empty tx logs are allowed, and we don't have tx logs we fall back to the latest kernel version.
