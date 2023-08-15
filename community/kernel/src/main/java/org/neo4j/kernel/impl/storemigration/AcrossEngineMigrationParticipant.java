@@ -114,6 +114,11 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 .fromConfig(config)
                 .set(GraphDatabaseSettings.db_format, toVersion.formatName())
                 .build();
+
+        // Use the ids from the old logTail. This means that the importer will end up on the
+        // same tx id as the logs migration
+        AdditionalInitialIds additionalInitialIds = getInitialIds(tailMetadata);
+
         BatchImporter importer = targetStorageEngine.batchImporter(
                 migrationLayoutArg,
                 fileSystem,
@@ -131,7 +136,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 // No progress printing or updating progressReporter right now. Probably should be..
                 new PrintStream(OutputStream.nullOutputStream()),
                 false,
-                AdditionalInitialIds.EMPTY,
+                additionalInitialIds,
                 localConfig,
                 Monitor.NO_MONITOR,
                 jobScheduler,
@@ -223,9 +228,40 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
     public void postMigration(
             DatabaseLayout databaseLayout, StoreVersion toVersion, long txIdBeforeMigration, long txIdAfterMigration)
             throws IOException {
-        // TODO should be no-op after copy but counts stores are confused
+        // No need for updating the latest count stores tx-id here. Logs migration will end up on same id as
+        // the batchimporter.
     }
 
     @Override
     public void cleanup(DatabaseLayout migrationLayout) throws IOException {}
+
+    private static AdditionalInitialIds getInitialIds(LogTailMetadata tailMetadata) {
+        return new AdditionalInitialIds() {
+
+            @Override
+            public long lastCommittedTransactionId() {
+                return tailMetadata.getLastCommittedTransaction().transactionId();
+            }
+
+            @Override
+            public int lastCommittedTransactionChecksum() {
+                return tailMetadata.getLastCommittedTransaction().checksum();
+            }
+
+            @Override
+            public long lastCommittedTransactionLogVersion() {
+                return tailMetadata.getLastTransactionLogPosition().getLogVersion();
+            }
+
+            @Override
+            public long lastCommittedTransactionLogByteOffset() {
+                return tailMetadata.getLastTransactionLogPosition().getByteOffset();
+            }
+
+            @Override
+            public long checkpointLogVersion() {
+                return tailMetadata.getCheckpointLogVersion();
+            }
+        };
+    }
 }

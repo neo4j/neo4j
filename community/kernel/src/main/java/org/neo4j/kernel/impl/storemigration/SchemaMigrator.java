@@ -40,7 +40,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.newapi.ReadOnlyTokenRead;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccessExtended;
@@ -61,11 +64,23 @@ public class SchemaMigrator {
             DatabaseLayout toLayout,
             CursorContextFactory contextFactory)
             throws IOException, KernelException {
+        // Need to start the stores with the correct logTail since some stores depend on tx-id.
+        LogTailExtractor logTailExtractor =
+                new LogTailExtractor(fs, pageCache, config, toStorage, DatabaseTracers.EMPTY);
+        LogTailMetadata logTail = logTailExtractor.getTailMetadata(toLayout, EmptyMemoryTracker.INSTANCE);
+
         var tokenHolders =
                 fromStorage.loadReadOnlyTokens(fs, from, config, pageCache, pageCacheTracer, true, contextFactory);
 
         try (SchemaRuleMigrationAccessExtended schemaRuleMigrationAccess = toStorage.schemaRuleMigrationAccess(
-                fs, pageCache, pageCacheTracer, config, toLayout, contextFactory, EmptyMemoryTracker.INSTANCE)) {
+                fs,
+                pageCache,
+                pageCacheTracer,
+                config,
+                toLayout,
+                contextFactory,
+                EmptyMemoryTracker.INSTANCE,
+                logTail)) {
             TokenRead tokenRead = new ReadOnlyTokenRead(tokenHolders);
 
             LongObjectHashMap<IndexToConnect> indexesToConnect = new LongObjectHashMap<>();

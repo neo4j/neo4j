@@ -539,7 +539,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            LogTailMetadata logTail)
             throws IOException {
         DefaultIdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
@@ -553,7 +554,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 NullLogProvider.getInstance(),
                 contextFactory,
                 false,
-                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
+                logTail);
 
         CursorContext cursorContext = contextFactory.create("schemaStoreMigration");
         NeoStores dstStore = dstFactory.openNeoStores(

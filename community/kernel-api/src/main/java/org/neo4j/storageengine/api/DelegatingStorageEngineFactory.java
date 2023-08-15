@@ -301,10 +301,11 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            LogTailMetadata logTail)
             throws IOException {
         return delegate.schemaRuleMigrationAccess(
-                fs, pageCache, pageCacheTracer, config, databaseLayout, contextFactory, memoryTracker);
+                fs, pageCache, pageCacheTracer, config, databaseLayout, contextFactory, memoryTracker, logTail);
     }
 
     @Override

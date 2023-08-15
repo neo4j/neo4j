@@ -287,7 +287,8 @@ public interface StorageEngineFactory {
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            LogTailMetadata logTail)
             throws IOException;
 
     /**
