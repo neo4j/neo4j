@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.values.storable.Values
@@ -854,6 +855,28 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     compareMemoryUsage(query(rows = 10), query(rows = 100))
+  }
+
+  test("should deallocate memory after skip with out of order arguments in pipelined runtime") {
+    def query(skip: Int) = {
+      val limit = 128
+      new LogicalQueryBuilder(this)
+        .produceResults("i", "j")
+        .skip(skip)
+        .limit(skip + limit)
+        .apply()
+        .|.distinct("j as j")
+        .|.union()
+        .|.|.unwind("range(0,75) as j")
+        .|.|.argument()
+        .|.unwind("range(25,100) as j")
+        .|.argument()
+        .unwind(s"range(0, 1000) as i")
+        .argument()
+        .build()
+    }
+
+    compareMemoryUsage(query(skip = 1000), query(skip = 10000), toleratedDeviation = 0.5)
   }
 
   protected def compareMemoryUsageImplicitTx(
