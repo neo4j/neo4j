@@ -224,6 +224,15 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     }
 
     @Override
+    public boolean beforeAccessingRightSiblingLeaf(long siblingNodeId) {
+        if (pessimistic) {
+            return true;
+        }
+        inc(Stat.FAIL_NEED_UPDATE_SIBLING_LEAF);
+        return false;
+    }
+
+    @Override
     public void beforeSplitInternal(long treeNodeId) {
         if (!pessimistic) {
             throw new IllegalStateException(
@@ -435,7 +444,11 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         /**
          * Number of "flip to pessimistic" caused by failure to upgrade parent read latch to write.
          */
-        FAIL_PARENT_UPGRADE(PESSIMISTIC);
+        FAIL_PARENT_UPGRADE(PESSIMISTIC),
+        /**
+         * Number of "flip to pessimistic" caused by operation needing to update sibling leaf.
+         */
+        FAIL_NEED_UPDATE_SIBLING_LEAF(PESSIMISTIC);
 
         private final Stat comparedTo;
         private final LongAdder count = new LongAdder();

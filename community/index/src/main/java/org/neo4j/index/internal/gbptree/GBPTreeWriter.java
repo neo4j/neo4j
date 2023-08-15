@@ -34,6 +34,7 @@ import java.util.OptionalInt;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -380,6 +381,54 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         }
         checkOutOfBounds(cursor);
         return result.orElse(0);
+    }
+
+    @Override
+    public void updateCeilingValue(K searchKey, K upperBound, Function<V, V> updateFunction) {
+        try {
+            // Try optimistic mode first
+            coordination.beginOperation();
+            if (!goToRoot()
+                    || !treeLogic.updateCeilingValue(
+                            cursor,
+                            structurePropagation,
+                            searchKey,
+                            upperBound,
+                            updateFunction,
+                            stableGeneration,
+                            unstableGeneration,
+                            cursorContext)) {
+                // OK, didn't work. Flip to pessimistic mode and try again.
+                coordination.flipToPessimisticMode();
+                assert structurePropagation.isEmpty();
+                treeLogic.reset();
+                if (!goToRoot()
+                        || !treeLogic.updateCeilingValue(
+                                cursor,
+                                structurePropagation,
+                                searchKey,
+                                upperBound,
+                                updateFunction,
+                                stableGeneration,
+                                unstableGeneration,
+                                cursorContext)) {
+                    throw appendTreeInformation(new TreeInconsistencyException(
+                            "Unable to bla blah key:%s value:%s in pessimistic mode", searchKey, upperBound));
+                }
+            }
+
+            handleStructureChanges(cursorContext);
+        } catch (IOException e) {
+            exceptionMessageAppender.accept(e);
+            throw new UncheckedIOException(e);
+        } catch (Throwable t) {
+            exceptionMessageAppender.accept(t);
+            throw t;
+        } finally {
+            checkForceReset();
+        }
+
+        checkOutOfBounds(cursor);
     }
 
     private void checkForceReset() {

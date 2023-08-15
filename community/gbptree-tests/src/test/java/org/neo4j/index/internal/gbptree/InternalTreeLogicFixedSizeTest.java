@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
+import java.util.function.Function;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<MutableLong, MutableLong> {
@@ -50,5 +51,13 @@ class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<MutableLo
     @Override
     protected ValueAggregator<MutableLong> getAddingAggregator() {
         return (value, aggregation) -> aggregation.add(value);
+    }
+
+    @Override
+    protected Function<MutableLong, MutableLong> getIncrementingValueUpdater() {
+        return v -> {
+            v.increment();
+            return v;
+        };
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.util.function.Function;
 import org.neo4j.test.RandomSupport;
 
 class GBPTreeParallelWritesDynamicSizeIT extends GBPTreeParallelWritesIT<RawBytes, RawBytes> {
@@ -38,6 +39,11 @@ class GBPTreeParallelWritesDynamicSizeIT extends GBPTreeParallelWritesIT<RawByte
         long seed1 = layout.keySeed(value1);
         long seed2 = layout.keySeed(value2);
         return layout.value(seed1 + seed2);
+    }
+
+    @Override
+    Function<RawBytes, RawBytes> getValueIncrementer() {
+        return v -> layout.value(layout.valueSeed(v) + 1);
     }
 
     private void add(RawBytes add, RawBytes base) {

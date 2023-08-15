@@ -37,9 +37,18 @@ public interface CountsStore extends AutoCloseable, ConsistencyCheckable {
     /**
      * @param txId id of the transaction that produces the changes that are being applied.
      * @param cursorContext underlying page cursor context
-     * @return an updater where to process count deltas during reverse recovery
+     * @return an updater to process count deltas for transaction rollback
      */
-    default CountsUpdater reverseUpdater(long txId, CursorContext cursorContext) {
+    default CountsUpdater rollbackUpdater(long txId, CursorContext cursorContext) {
+        return CountsUpdater.NO_OP_UPDATER;
+    }
+
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @param cursorContext underlying page cursor context
+     * @return an updater to process count deltas during reverse recovery
+     */
+    default CountsUpdater reverseRecoveryUpdater(long txId, CursorContext cursorContext) {
         return CountsUpdater.NO_OP_UPDATER;
     }
 

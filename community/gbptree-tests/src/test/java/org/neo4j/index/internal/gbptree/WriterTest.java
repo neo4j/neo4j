@@ -276,4 +276,33 @@ class WriterTest {
             assertThat(cursor.next()).isFalse();
         }
     }
+
+    @Test
+    void shouldUpdateCelingValue() throws IOException {
+        // given
+        long keys = 10;
+        long value = 10;
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+            for (int i = 0; i < keys; i++) {
+                writer.put(new MutableLong(i + 100), new MutableLong(value));
+            }
+        }
+
+        long update = 3215621;
+        // when
+        try (Writer<MutableLong, MutableLong> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+            writer.updateCeilingValue(new MutableLong(0), new MutableLong(Long.MAX_VALUE), v -> {
+                v.setValue(update);
+                return v;
+            });
+        }
+
+        // then
+        try (Seeker<MutableLong, MutableLong> cursor =
+                tree.seek(new MutableLong(0), new MutableLong(Long.MAX_VALUE), NULL_CONTEXT)) {
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.key().longValue()).isEqualTo(100);
+            assertThat(cursor.value().longValue()).isEqualTo(update);
+        }
+    }
 }

@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
 import java.io.IOException;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawBytes, RawBytes> {
@@ -51,6 +52,14 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     @Override
     protected ValueAggregator<RawBytes> getAddingAggregator() {
         return this::add;
+    }
+
+    @Override
+    protected Function<RawBytes, RawBytes> getIncrementingValueUpdater() {
+        return v -> {
+            v.copyFrom(layout.value(layout.valueSeed(v) + 1));
+            return v;
+        };
     }
 
     private void add(RawBytes add, RawBytes base) {

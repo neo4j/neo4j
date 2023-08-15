@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.OptionalInt;
+import java.util.function.Function;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
@@ -723,38 +724,16 @@ class InternalTreeLogic<KEY, VALUE> {
         if (mergeResult == ValueMerger.MergeResult.REPLACED || mergeResult == ValueMerger.MergeResult.MERGED) {
             // First try to write the merged value right in there
             var mergedValue = mergeResult == ValueMerger.MergeResult.REPLACED ? value : readValue.value;
-            boolean couldOverwrite =
-                    bTreeNode.setValueAt(cursor, mergedValue, pos, cursorContext, stableGeneration, unstableGeneration);
-            if (!couldOverwrite) {
-                // Value could not be overwritten in a simple way because they differ in size.
-                // Delete old value and insert w/ overflow/underflow checks.
-                var newKeyCount = bTreeNode.removeKeyValueAt(
-                        cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
-                TreeNodeUtil.setKeyCount(cursor, newKeyCount);
-                // The doInsertInLeaf below will update the child information, so no explicit update here
-                InsertResult result = doInsertInLeaf(
-                        cursor,
-                        structurePropagation,
-                        key,
-                        mergedValue,
-                        pos,
-                        newKeyCount,
-                        stableGeneration,
-                        unstableGeneration,
-                        cursorContext);
-                if (result == InsertResult.SPLIT_FAIL) {
-                    return false;
-                }
-                if (result == InsertResult.NO_SPLIT && bTreeNode.leafUnderflow(cursor, keyCount)) {
-                    underflowInLeaf(
-                            cursor,
-                            structurePropagation,
-                            keyCount,
-                            stableGeneration,
-                            unstableGeneration,
-                            cursorContext);
-                }
-            }
+            return setValueAtWithFallback(
+                    cursor,
+                    pos,
+                    key,
+                    mergedValue,
+                    keyCount,
+                    structurePropagation,
+                    stableGeneration,
+                    unstableGeneration,
+                    cursorContext);
         } else if (mergeResult == ValueMerger.MergeResult.REMOVED) {
             // Remove this entry from the tree and possibly underflow while doing so
             int newKeyCount = bTreeNode.removeKeyValueAt(
@@ -767,6 +746,46 @@ class InternalTreeLogic<KEY, VALUE> {
             }
         } else {
             throw new UnsupportedOperationException("Unexpected merge result " + mergeResult);
+        }
+        return true;
+    }
+
+    private boolean setValueAtWithFallback(
+            PageCursor cursor,
+            int pos,
+            KEY key,
+            VALUE value,
+            int keyCount,
+            StructurePropagation<KEY> structurePropagation,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        if (bTreeNode.setValueAt(cursor, value, pos, cursorContext, stableGeneration, unstableGeneration)) {
+            return true;
+        }
+        // Value could not be overwritten in a simple way because they differ in size.
+        // Delete old value and insert w/ overflow/underflow checks.
+        var newKeyCount =
+                bTreeNode.removeKeyValueAt(cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
+        TreeNodeUtil.setKeyCount(cursor, newKeyCount);
+        // The doInsertInLeaf below will update the child information, so no explicit update here
+        var result = doInsertInLeaf(
+                cursor,
+                structurePropagation,
+                key,
+                value,
+                pos,
+                newKeyCount,
+                stableGeneration,
+                unstableGeneration,
+                cursorContext);
+        if (result == InsertResult.SPLIT_FAIL) {
+            return false;
+        }
+        if (result == InsertResult.NO_SPLIT && bTreeNode.leafUnderflow(cursor, newKeyCount + 1)) {
+            underflowInLeaf(
+                    cursor, structurePropagation, newKeyCount + 1, stableGeneration, unstableGeneration, cursorContext);
         }
         return true;
     }
@@ -1824,6 +1843,161 @@ class InternalTreeLogic<KEY, VALUE> {
             coordination.updateChildInformation(bTreeNode.availableSpace(cursor, newKeyCount, false), newKeyCount);
         }
         return OptionalInt.of(itemsToAggregate);
+    }
+
+    /**
+     * There is the corner case when looking for the ceiling key: arrived to the leaf and searchKey would be inserted in the right corner.
+     * This means that our target ceiling key could be the first key in the right sibling.
+     * To handle this situation we do:
+     * 0. check if right sibling exist
+     * 1. switch to pessimistic mode
+     * 2. read the first key from the sibling, at this point we know that if key will be updated it will be exactly this one
+     * 3. traverse to the new leaf covering new key, without releasing lock on the root node
+     * 4. do update
+     */
+    boolean updateCeilingValue(
+            PageCursor cursor,
+            StructurePropagation<KEY> structurePropagation,
+            KEY searchKey,
+            KEY upperBoundary,
+            Function<VALUE, VALUE> updateFunction,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        assert cursorIsAtExpectedLocation(cursor);
+        if (!moveToCorrectLeaf(cursor, searchKey, stableGeneration, unstableGeneration, cursorContext)) {
+            return false;
+        }
+
+        var updateResult = updateCeilingValueInLeaf(
+                cursor,
+                structurePropagation,
+                searchKey,
+                upperBoundary,
+                updateFunction,
+                stableGeneration,
+                unstableGeneration,
+                cursorContext);
+
+        if (updateResult == UpdateCeilingValueResult.RETRY_IN_SIBLING) {
+            long rightSibling = TreeNodeUtil.rightSibling(cursor, stableGeneration, unstableGeneration);
+            if (!TreeNodeUtil.isNode(rightSibling)) {
+                // no right sibling, nothing to update, success!
+                return true;
+            }
+            // need to have write lock on the sibling before reading from it
+            if (!coordination.beforeAccessingRightSiblingLeaf(rightSibling)) {
+                return false;
+            }
+
+            int rightSiblingKeyCount;
+            KEY firstInRightSibling;
+            try (PageCursor rightSiblingCursor = cursor.openLinkedCursor(rightSibling)) {
+                TreeNodeUtil.goTo(rightSiblingCursor, "right sibling", rightSibling);
+                rightSiblingKeyCount = keyCount(rightSiblingCursor);
+                assert rightSiblingKeyCount > 0;
+                firstInRightSibling = bTreeNode.keyAtLeaf(rightSiblingCursor, layout.newKey(), 0, cursorContext);
+            }
+
+            if (bTreeNode.keyComparator().compare(firstInRightSibling, upperBoundary) >= 0) {
+                return true;
+            }
+            // firstInRightSibling is our ceiling and within range, need to update it
+            // reposition to the right sibling, keeping levels and coordination up-to-date
+            if (!moveToCorrectLeaf(cursor, firstInRightSibling, stableGeneration, unstableGeneration, cursorContext)) {
+                return false;
+            }
+            if (updateValueAt(
+                    cursor,
+                    0,
+                    firstInRightSibling,
+                    updateFunction,
+                    rightSiblingKeyCount,
+                    structurePropagation,
+                    stableGeneration,
+                    unstableGeneration,
+                    cursorContext)) {
+                updateResult = UpdateCeilingValueResult.SUCCESS;
+            }
+        }
+        // it could fail after successor is created
+        handleStructureChanges(cursor, structurePropagation, stableGeneration, unstableGeneration, cursorContext);
+        return updateResult == UpdateCeilingValueResult.SUCCESS;
+    }
+
+    private UpdateCeilingValueResult updateCeilingValueInLeaf(
+            PageCursor cursor,
+            StructurePropagation<KEY> structurePropagation,
+            KEY searchKey,
+            KEY upperBoundary,
+            Function<VALUE, VALUE> updateFunction,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        int keyCount = keyCount(cursor);
+        int search = KeySearch.searchLeaf(cursor, bTreeNode, searchKey, readKey, keyCount, cursorContext);
+        int pos = positionOf(search);
+        if (pos < keyCount) {
+            // ceiling entry within leaf
+            var foundKey = bTreeNode.keyAtLeaf(cursor, layout.newKey(), pos, cursorContext);
+            if (bTreeNode.keyComparator().compare(foundKey, upperBoundary) < 0) {
+                // ceiling entry within range
+                return updateValueAt(
+                                cursor,
+                                pos,
+                                foundKey,
+                                updateFunction,
+                                keyCount,
+                                structurePropagation,
+                                stableGeneration,
+                                unstableGeneration,
+                                cursorContext)
+                        ? UpdateCeilingValueResult.SUCCESS
+                        : UpdateCeilingValueResult.FAIL;
+            }
+            // when not in range, nothing to do, success!
+            return UpdateCeilingValueResult.SUCCESS;
+        }
+        return UpdateCeilingValueResult.RETRY_IN_SIBLING;
+    }
+
+    private boolean updateValueAt(
+            PageCursor cursor,
+            int pos,
+            KEY key,
+            Function<VALUE, VALUE> updateFunction,
+            int keyCount,
+            StructurePropagation<KEY> structurePropagation,
+            long stableGeneration,
+            long unstableGeneration,
+            CursorContext cursorContext)
+            throws IOException {
+        var value = bTreeNode.valueAt(cursor, new TreeNode.ValueHolder<>(layout.newValue()), pos, cursorContext).value;
+        var updatedValue = updateFunction.apply(value);
+        int valueShrinkSize =
+                bTreeNode.totalSpaceOfKeyValue(key, value) - bTreeNode.totalSpaceOfKeyValue(key, updatedValue);
+        if (!coordination.beforeRemovalFromLeaf(valueShrinkSize)) {
+            return false;
+        }
+        createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
+        return setValueAtWithFallback(
+                cursor,
+                pos,
+                key,
+                updatedValue,
+                keyCount,
+                structurePropagation,
+                stableGeneration,
+                unstableGeneration,
+                cursorContext);
+    }
+
+    private enum UpdateCeilingValueResult {
+        SUCCESS,
+        FAIL,
+        RETRY_IN_SIBLING
     }
 
     private static <KEY, VALUE> void checkChildPointer(

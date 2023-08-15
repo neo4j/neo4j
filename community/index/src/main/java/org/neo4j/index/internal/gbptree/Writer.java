@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.Closeable;
 import java.io.UncheckedIOException;
+import java.util.function.Function;
 
 /**
  * Able to {@link #merge(Object, Object, ValueMerger)} and {@link #remove(Object)} key/value pairs
@@ -87,4 +88,12 @@ public interface Writer<KEY, VALUE> extends Closeable {
      *          positive number N means N-1 entries were removed and 1 entry has its value updated
      */
     int aggregate(KEY fromInclusive, KEY toExclusive, ValueAggregator<VALUE> aggregator);
+
+    /**
+     * Updates value associated with the least key greater than or equal to the given key and strictly less than provided upper boundary.
+     * @param searchKey - key to search
+     * @param upperBound - upper bound
+     * @param updateFunction - update function
+     */
+    void updateCeilingValue(KEY searchKey, KEY upperBound, Function<VALUE, VALUE> updateFunction);
 }

@@ -45,6 +45,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,6 +79,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
 
     private ValueMerger<KEY, VALUE> adder;
     private ValueAggregator<VALUE> addingAggregator;
+    private Function<VALUE, VALUE> incrementingValueUpdater;
     private InternalTreeLogic<KEY, VALUE> treeLogic;
     private VALUE dontCare;
     private StructurePropagation<KEY> structurePropagation;
@@ -116,6 +118,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         node = getTreeNode(PAGE_SIZE, layout, offloadStore);
         adder = getAdder();
         addingAggregator = getAddingAggregator();
+        incrementingValueUpdater = getIncrementingValueUpdater();
         treeLogic = new InternalTreeLogic<>(
                 id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION, DATA_LAYER_FLAG);
         dontCare = layout.newValue();
@@ -130,6 +133,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     protected abstract TestLayout<KEY, VALUE> getLayout();
 
     protected abstract ValueAggregator<VALUE> getAddingAggregator();
+
+    protected abstract Function<VALUE, VALUE> getIncrementingValueUpdater();
 
     @ParameterizedTest
     @MethodSource("generators")
@@ -1848,6 +1853,178 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         }
     }
 
+    /* UPDATE CEILING VALUE */
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanUpdateCeilingFirstInNotFullLeaf(
+            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
+        // given
+        initialize();
+        var key = key(1L);
+        var value1 = 1L;
+        var value = value(value1);
+        insert(key, value);
+
+        // when
+        generationManager.checkpoint();
+        // aggregate is allowed to not succeed, i.e. dynamic tree with values of different sizes can have some troubles
+        updateCeilingValue(key(0), key(Long.MAX_VALUE));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(1);
+        assertEqualsKey(key, keyAt(0, LEAF));
+        assertEqualsValue(value(value1 + 1), valueAt(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanUpdateCeilingFirstInFullLeaf(
+            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
+        // given
+        initialize();
+        int keyCount = 0;
+        KEY key = key(keyCount);
+        VALUE value = value(keyCount);
+        while (node.leafOverflow(cursor, keyCount, key, value) == NO) {
+            insert(key, value);
+
+            keyCount++;
+            key = key(keyCount);
+            value = value(keyCount);
+        }
+
+        // when
+        generationManager.checkpoint();
+        updateCeilingValue(key(-1), key(Long.MAX_VALUE));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(keyCount);
+        assertEqualsKey(key(0), keyAt(0, LEAF));
+        assertEqualsValue(value(1), valueAt(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanUpdateCeilingInMiddleInFullLeaf(
+            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
+        initialize();
+        int maxKeyCount = 0;
+        KEY key = key(maxKeyCount);
+        VALUE value = value(maxKeyCount);
+        while (node.leafOverflow(cursor, maxKeyCount, key, value) == NO) {
+            insert(key, value);
+
+            maxKeyCount++;
+            key = key(maxKeyCount * 10L);
+            value = value(maxKeyCount);
+        }
+        int middlePos = maxKeyCount / 2;
+        key = keyAt(middlePos, LEAF);
+        var searchKey = key(getSeed(key) - 5);
+
+        // when
+        generationManager.checkpoint();
+        updateCeilingValue(searchKey, key(Long.MAX_VALUE));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(maxKeyCount);
+        assertEqualsKey(key, keyAt(middlePos, LEAF));
+        assertEqualsValue(value(middlePos + 1), valueAt(middlePos));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanUpdateCeilingLastInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
+            throws Exception {
+        initialize();
+        int maxKeyCount = 0;
+        KEY key = key(maxKeyCount);
+        VALUE value = value(maxKeyCount);
+        while (node.leafOverflow(cursor, maxKeyCount, key, value) == NO) {
+            insert(key, value);
+
+            maxKeyCount++;
+            key = key(maxKeyCount * 10L);
+            value = value(maxKeyCount);
+        }
+
+        // when
+        generationManager.checkpoint();
+        updateCeilingValue(key((maxKeyCount - 1) * 10L - 5), key(Long.MAX_VALUE));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(maxKeyCount);
+        assertEqualsKey(key((maxKeyCount - 1) * 10L), keyAt(maxKeyCount - 1, LEAF));
+        assertEqualsValue(value(maxKeyCount), valueAt(maxKeyCount - 1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerCanUpdateCeilingValueWhenCeilingIsInRightSibling(
+            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
+        // given
+        initialize();
+        int keyCount = 0;
+        KEY key = key(keyCount);
+        VALUE value = value(keyCount);
+        while (node.leafOverflow(cursor, keyCount, key, value) == NO) {
+            insert(key, value);
+
+            keyCount++;
+            key = key(keyCount * 100L);
+            value = value(keyCount);
+        }
+
+        generationManager.checkpoint();
+        insert(key, value);
+
+        root.goTo(readCursor);
+        long rightChild = childAt(readCursor, 1, stableGeneration, unstableGeneration);
+        goTo(readCursor, rightChild);
+
+        var firstInRightChildSeed = getSeed(keyAt(0, LEAF));
+        var searchKey = key(firstInRightChildSeed - 5);
+        updateCeilingValue(searchKey, key(Long.MAX_VALUE));
+
+        // then
+        goTo(readCursor, rightChild);
+        assertEqualsKey(key(firstInRightChildSeed), keyAt(0, LEAF));
+        assertEqualsValue(value((firstInRightChildSeed / 100) + 1), valueAt(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("generators")
+    void writerMustNotUpdateCeilingWhenRangeCoversNothing(
+            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
+        initialize();
+        int maxKeyCount = 0;
+        KEY key = key(maxKeyCount);
+        VALUE value = value(maxKeyCount);
+        while (node.leafOverflow(cursor, maxKeyCount, key, value) == NO) {
+            insert(key, value);
+
+            maxKeyCount++;
+            key = key(maxKeyCount * 10L);
+            value = value(maxKeyCount);
+        }
+
+        // when
+        generationManager.checkpoint();
+        updateCeilingValue(key(1), key(9));
+
+        // then
+        root.goTo(readCursor);
+        assertThat(keyCount()).isEqualTo(maxKeyCount);
+        for (int i = 0; i < maxKeyCount; i++) {
+            assertEqualsKey(key(i * 10L), keyAt(i, LEAF));
+            assertEqualsValue(value(i), valueAt(i));
+        }
+    }
+
     private long setTypeInvalidOnLeftChildOfRoot(PageCursor cursor) throws IOException {
         root.goTo(cursor);
         long leftChild = childAt(cursor, 0, stableGeneration, unstableGeneration);
@@ -2200,6 +2377,19 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 from,
                 to,
                 addingAggregator,
+                stableGeneration,
+                unstableGeneration,
+                NULL_CONTEXT);
+        handleAfterChange();
+    }
+
+    private void updateCeilingValue(KEY from, KEY to) throws IOException {
+        treeLogic.updateCeilingValue(
+                cursor,
+                structurePropagation,
+                from,
+                to,
+                incrementingValueUpdater,
                 stableGeneration,
                 unstableGeneration,
                 NULL_CONTEXT);

@@ -38,15 +38,23 @@ class MultiversionCountsStoreTransactionApplierFactory implements TransactionApp
 
     @Override
     public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
-        if (mode.isReverseStep()) {
-            return new SimpleCountsStoreTransactionApplier(
-                    () -> countsStore.reverseUpdater(transaction.transactionId(), transaction.cursorContext()),
-                    () -> groupDegreesStore.reverseUpdater(transaction.transactionId(), transaction.cursorContext()));
-        }
-        return new SimpleCountsStoreTransactionApplier(
-                () -> countsStore.updater(
-                        transaction.transactionId(), transaction.commandBatch().isLast(), transaction.cursorContext()),
-                () -> groupDegreesStore.updater(
-                        transaction.transactionId(), transaction.commandBatch().isLast(), transaction.cursorContext()));
+        return switch (mode) {
+            case REVERSE_RECOVERY -> new SimpleCountsStoreTransactionApplier(
+                    () -> countsStore.reverseRecoveryUpdater(transaction.transactionId(), transaction.cursorContext()),
+                    () -> groupDegreesStore.reverseRecoveryUpdater(
+                            transaction.transactionId(), transaction.cursorContext()));
+            case MVCC_ROLLBACK -> new SimpleCountsStoreTransactionApplier(
+                    () -> countsStore.rollbackUpdater(transaction.transactionId(), transaction.cursorContext()),
+                    () -> groupDegreesStore.rollbackUpdater(transaction.transactionId(), transaction.cursorContext()));
+            default -> new SimpleCountsStoreTransactionApplier(
+                    () -> countsStore.updater(
+                            transaction.transactionId(),
+                            transaction.commandBatch().isLast(),
+                            transaction.cursorContext()),
+                    () -> groupDegreesStore.updater(
+                            transaction.transactionId(),
+                            transaction.commandBatch().isLast(),
+                            transaction.cursorContext()));
+        };
     }
 }

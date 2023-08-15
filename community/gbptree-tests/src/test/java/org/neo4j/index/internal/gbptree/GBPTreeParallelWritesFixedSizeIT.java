@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
+import java.util.function.Function;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.test.RandomSupport;
 
@@ -38,5 +39,10 @@ class GBPTreeParallelWritesFixedSizeIT extends GBPTreeParallelWritesIT<MutableLo
     @Override
     protected MutableLong sumValues(MutableLong value1, MutableLong value2) {
         return new MutableLong(value1.longValue() + value2.longValue());
+    }
+
+    @Override
+    Function<MutableLong, MutableLong> getValueIncrementer() {
+        return v -> new MutableLong(v.longValue() + 1);
     }
 }

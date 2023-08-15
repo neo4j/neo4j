@@ -31,9 +31,11 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -74,6 +76,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     private DefaultPageCacheTracer pageCacheTracer;
     private PageCache pageCache;
     protected TestLayout<KEY, VALUE> layout;
+    private Function<VALUE, VALUE> valueIncrementer;
     private ImmutableSet<OpenOption> openOptions;
 
     @BeforeEach
@@ -84,6 +87,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
 
         openOptions = getOpenOptions();
         layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
+        valueIncrementer = getValueIncrementer();
     }
 
     @AfterEach
@@ -94,6 +98,8 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int payloadSize);
 
     abstract ValueAggregator<VALUE> getAddingAggregator();
+
+    abstract Function<VALUE, VALUE> getValueIncrementer();
 
     protected abstract VALUE sumValues(VALUE value1, VALUE value2);
 
@@ -192,6 +198,64 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
                             .isZero();
                 }
                 assertThat(combined).isEmpty();
+            }
+        }
+    }
+
+    @Test
+    void shouldDoCeilingValueUpdatesInParallel() throws IOException {
+        try (var index = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout)
+                .with(pageCacheTracer)
+                .with(openOptions)
+                .build()) {
+
+            for (int round = 0; round < 5; round++) {
+                var race = new Race();
+                var cursorContext = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER).create("test");
+                var dataSource = new AtomicLong();
+                var toProcess = new LinkedBlockingQueue<Long>();
+                var insertersCount = 5;
+                var running = new AtomicLong(insertersCount);
+                // inserters
+                race.addContestants(insertersCount, throwing(() -> {
+                    try {
+                        for (int i = 0; i < 100; i++) {
+                            try (var writer = index.writer(cursorContext)) {
+                                for (int j = 0; j < 20; j++) {
+                                    var seed = dataSource.incrementAndGet() * 2; // all seeds even
+                                    writer.put(layout.key(seed), layout.value(seed));
+                                    toProcess.add(seed);
+                                }
+                            }
+                        }
+                    } finally {
+                        running.decrementAndGet();
+                    }
+                }));
+                // incrementers
+                race.addContestants(5, throwing(() -> {
+                    Long seed;
+                    do {
+                        seed = toProcess.poll();
+                        if (seed != null) {
+                            try (var writer = index.writer(cursorContext)) {
+                                writer.updateCeilingValue(layout.key(seed - 1), layout.key(seed + 1), valueIncrementer);
+                            }
+                        }
+                    } while (seed != null || running.get() > 0);
+                }));
+                race.goUnchecked();
+                index.checkpoint(FileFlushEvent.NULL, cursorContext);
+                assertThat(toProcess).isEmpty();
+            }
+
+            // at the end, all values should be greater than their key by one
+            try (var seek = allEntriesSeek(index, layout)) {
+                while (seek.next()) {
+                    var key = layout.keySeed(seek.key());
+                    var value = layout.valueSeed(seek.value());
+                    assertThat(value).isEqualTo(key + 1);
+                }
             }
         }
     }

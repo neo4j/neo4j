@@ -78,6 +78,13 @@ interface TreeWriterCoordination extends AutoCloseable {
     boolean beforeRemovalFromLeaf(int sizeOfLeafEntryToRemove);
 
     /**
+     * Called before accessing right sibling when already in leaf.
+     * @param siblingNodeId sibling node id
+     * @return {@code true} if operation is permitted, otherwise {@code false}.
+     */
+    boolean beforeAccessingRightSiblingLeaf(long siblingNodeId);
+
+    /**
      * Called before a split of an internal node.
      * @param treeNodeId internal tree node id to split.
      */
@@ -141,6 +148,11 @@ interface TreeWriterCoordination extends AutoCloseable {
 
         @Override
         public boolean beforeRemovalFromLeaf(int sizeOfLeafEntryToRemove) {
+            return true;
+        }
+
+        @Override
+        public boolean beforeAccessingRightSiblingLeaf(long siblingNodeId) {
             return true;
         }
 

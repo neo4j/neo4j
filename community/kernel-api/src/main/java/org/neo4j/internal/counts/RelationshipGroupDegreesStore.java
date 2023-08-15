@@ -42,9 +42,18 @@ public interface RelationshipGroupDegreesStore extends AutoCloseable, Consistenc
     /**
      * @param txId id of the transaction that produces the changes that are being applied.
      * @param cursorContext underlying page cursor context
-     * @return an updater where to process count deltas during reverse recovery
+     * @return an updater to process count deltas for transaction rollback
      */
-    default DegreeUpdater reverseUpdater(long txId, CursorContext cursorContext) {
+    default DegreeUpdater rollbackUpdater(long txId, CursorContext cursorContext) {
+        return DegreeUpdater.NO_OP_UPDATER;
+    }
+
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @param cursorContext underlying page cursor context
+     * @return an updater to process count deltas during reverse recovery
+     */
+    default DegreeUpdater reverseRecoveryUpdater(long txId, CursorContext cursorContext) {
         return DegreeUpdater.NO_OP_UPDATER;
     }
 
