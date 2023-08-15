@@ -73,6 +73,11 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     V5_11(11, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_511, KernelVersion.V5_11),
 
     /**
+     *
+     */
+    V5_12(12, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_512, KernelVersion.V5_12),
+
+    /**
      * Glorious future version to be used for testing coming versions.
      */
     GLORIOUS_FUTURE(Integer.MAX_VALUE, DBMS_RUNTIME_COMPONENT, "Future version", KernelVersion.GLORIOUS_FUTURE);
@@ -81,7 +86,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
 
     // The latest version should be kept private to be able to override it from tests.
     // getLatestVersion should be used when the latest version is required.
-    private static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V5_11;
+    private static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V5_12;
 
     public static DbmsRuntimeVersion getLatestVersion(Config config) {
         Integer version = config.get(GraphDatabaseInternalSettings.latest_runtime_version);

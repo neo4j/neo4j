@@ -31,7 +31,6 @@ import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import java.io.IOException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
@@ -62,7 +61,7 @@ class VersionAwareLogEntryReaderTest {
     @Test
     void shouldReadACommitLogEntry() throws IOException {
         // given
-        final LogEntryCommit commit = newCommitEntry(LATEST_KERNEL_VERSION, 42, 21, 556721746);
+        final LogEntryCommit commit = newCommitEntry(LATEST_KERNEL_VERSION, 42, 21, 776463481);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
         writeCommitEntry(channel, commit);
@@ -77,12 +76,11 @@ class VersionAwareLogEntryReaderTest {
     @Test
     void shouldReadACommandLogEntry() throws IOException {
         // given
-        KernelVersion version = LATEST_KERNEL_VERSION;
         TestCommand testCommand = new TestCommand(new byte[] {100, 101, 102});
         final LogEntryCommand command = new LogEntryCommand(testCommand);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
-        channel.put(version.version());
+        channel.put(LATEST_KERNEL_VERSION.version());
         channel.put(LogEntryTypeCodes.COMMAND);
         testCommand.serialize(channel);
 
