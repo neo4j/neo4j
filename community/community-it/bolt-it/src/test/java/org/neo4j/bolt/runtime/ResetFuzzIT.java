@@ -48,6 +48,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.SpiedAssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -77,7 +78,7 @@ public class ResetFuzzIT {
     @Inject
     private Neo4jWithSocket server;
 
-    private java.net.SocketAddress address;
+    private HostnamePort address;
 
     private final BoltWire wire = new BoltDefaultWire();
 
@@ -86,7 +87,7 @@ public class ResetFuzzIT {
         server.setGraphDatabaseFactory(getTestGraphDatabaseFactory());
         server.setConfigure(getSettingsFunction());
         server.init(testInfo);
-        address = server.lookupDefaultConnector().toSocketAddress();
+        address = server.lookupDefaultConnector();
     }
 
     @AfterEach

@@ -22,7 +22,6 @@ package org.neo4j.bolt.testing.client;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.stream.Stream;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
@@ -30,6 +29,7 @@ import org.neo4j.bolt.testing.client.tls.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.websocket.SecureWebSocketConnection;
 import org.neo4j.bolt.testing.client.websocket.WebSocketConnection;
 import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.packstream.io.PackstreamBuf;
 
 public interface TransportConnection extends AutoCloseable {
@@ -194,6 +194,6 @@ public interface TransportConnection extends AutoCloseable {
 
     @FunctionalInterface
     interface Factory {
-        TransportConnection create(SocketAddress address);
+        TransportConnection create(HostnamePort address);
     }
 }

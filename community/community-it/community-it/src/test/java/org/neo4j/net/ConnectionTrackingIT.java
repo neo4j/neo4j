@@ -52,7 +52,6 @@ import static org.neo4j.values.storable.Values.stringOrNoValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -91,6 +90,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.InProcessNeo4jBuilder;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
@@ -308,7 +308,7 @@ class ConnectionTrackingIT {
     }
 
     private TransportConnection connectSocketTo(URI uri) throws IOException {
-        var connection = new SocketConnection(new InetSocketAddress(uri.getHost(), uri.getPort())).connect();
+        var connection = new SocketConnection(new HostnamePort(uri.getHost(), uri.getPort())).connect();
 
         connections.add(connection);
 

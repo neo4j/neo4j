@@ -21,7 +21,6 @@ package org.neo4j.bolt.testing.client.tls;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -36,6 +35,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public class SecureSocketConnection extends SocketConnection {
     private static final Factory factory = new Factory();
@@ -45,7 +45,7 @@ public class SecureSocketConnection extends SocketConnection {
         return factory;
     }
 
-    public SecureSocketConnection(SocketAddress address) {
+    public SecureSocketConnection(HostnamePort address) {
         super(address);
     }
 
@@ -81,7 +81,7 @@ public class SecureSocketConnection extends SocketConnection {
     private static class Factory implements TransportConnection.Factory {
 
         @Override
-        public TransportConnection create(SocketAddress address) {
+        public TransportConnection create(HostnamePort address) {
             return new SecureSocketConnection(address);
         }
 

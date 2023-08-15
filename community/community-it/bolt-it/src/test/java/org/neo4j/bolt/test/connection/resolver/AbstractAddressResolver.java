@@ -19,23 +19,18 @@
  */
 package org.neo4j.bolt.test.connection.resolver;
 
-import java.net.SocketAddress;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
-import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public abstract class AbstractAddressResolver implements AddressResolver {
 
     @Override
-    public SocketAddress resolve(
-            ExtensionContext extensionContext,
-            ParameterContext context,
-            Neo4jWithSocket server,
-            TransportType transportType)
+    public HostnamePort resolve(ExtensionContext extensionContext, ParameterContext context, Neo4jWithSocket server)
             throws ParameterResolutionException {
-        var address = this.doResolve(extensionContext, context, server, transportType);
+        var address = this.doResolve(extensionContext, context, server);
 
         if (address == null) {
             throw new ParameterResolutionException(
@@ -45,10 +40,7 @@ public abstract class AbstractAddressResolver implements AddressResolver {
         return address;
     }
 
-    protected abstract SocketAddress doResolve(
-            ExtensionContext extensionContext,
-            ParameterContext context,
-            Neo4jWithSocket server,
-            TransportType transportType)
+    protected abstract HostnamePort doResolve(
+            ExtensionContext extensionContext, ParameterContext context, Neo4jWithSocket server)
             throws ParameterResolutionException;
 }

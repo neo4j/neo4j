@@ -20,20 +20,18 @@
 package org.neo4j.bolt.test.extension.resolver.connection;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.neo4j.bolt.test.extension.lifecycle.TransportConnectionManager;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
-import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public class ConnectionProviderParameterResolver extends AbstractConnectionInitializingParameterResolver<IOException> {
 
-    public ConnectionProviderParameterResolver(
-            TransportConnectionManager connectionManager, BoltWire wire, TransportType transportType) {
-        super(connectionManager, wire, transportType);
+    public ConnectionProviderParameterResolver(TransportConnectionManager connectionManager, BoltWire wire) {
+        super(connectionManager, wire);
     }
 
     @Override
@@ -49,7 +47,7 @@ public class ConnectionProviderParameterResolver extends AbstractConnectionIniti
     }
 
     @Override
-    protected void fail(SocketAddress address, Throwable cause) throws IOException {
+    protected void fail(HostnamePort address, Throwable cause) throws IOException {
         if (cause instanceof IOException) {
             throw (IOException) cause;
         }

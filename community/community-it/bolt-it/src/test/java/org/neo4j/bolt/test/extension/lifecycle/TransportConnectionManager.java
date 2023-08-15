@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.test.extension.lifecycle;
 
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.client.TransportType;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public class TransportConnectionManager implements AfterEachCallback {
     private final TransportType transportType;
@@ -57,7 +57,7 @@ public class TransportConnectionManager implements AfterEachCallback {
         }
     }
 
-    public TransportConnection acquire(SocketAddress address) {
+    public TransportConnection acquire(HostnamePort address) {
         var connection = this.transportType.getFactory().create(address);
         this.lock.lock();
         try {

@@ -26,7 +26,7 @@ import org.neo4j.bolt.test.extension.db.ServerInstanceContext;
 import org.neo4j.bolt.test.extension.lifecycle.ServerInstanceManager;
 import org.neo4j.bolt.test.extension.lifecycle.TransportConnectionManager;
 import org.neo4j.bolt.test.extension.resolver.connection.ConnectionProviderParameterResolver;
-import org.neo4j.bolt.test.extension.resolver.connection.SocketAddressParameterResolver;
+import org.neo4j.bolt.test.extension.resolver.connection.HostnamePortParameterResolver;
 import org.neo4j.bolt.test.extension.resolver.connection.TransportConnectionParameterResolver;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.extension.parameter.StaticParameterResolver;
@@ -61,8 +61,8 @@ record BoltTestConfig(
                 connectionManager,
                 new StaticParameterResolver<>(BoltWire.class, this.wire),
                 new StaticParameterResolver<>(TransportType.class, this.transport),
-                new SocketAddressParameterResolver(),
-                new ConnectionProviderParameterResolver(connectionManager, this.wire, this.transport),
-                new TransportConnectionParameterResolver(connectionManager, this.wire, this.transport));
+                new HostnamePortParameterResolver(),
+                new ConnectionProviderParameterResolver(connectionManager, this.wire),
+                new TransportConnectionParameterResolver(connectionManager, this.wire));
     }
 }

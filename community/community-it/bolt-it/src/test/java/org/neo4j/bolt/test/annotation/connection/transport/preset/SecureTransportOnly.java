@@ -32,6 +32,6 @@ import org.neo4j.bolt.testing.client.TransportType;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@ExcludeTransport({TransportType.TCP, TransportType.WEBSOCKET, TransportType.UNIX})
+@ExcludeTransport({TransportType.TCP, TransportType.WEBSOCKET})
 @Target({ElementType.ANNOTATION_TYPE, ElementType.METHOD, ElementType.TYPE})
 public @interface SecureTransportOnly {}

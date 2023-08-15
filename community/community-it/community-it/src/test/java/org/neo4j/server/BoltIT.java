@@ -27,7 +27,6 @@ import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
@@ -37,6 +36,7 @@ import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
@@ -110,7 +110,7 @@ class BoltIT extends ExclusiveWebContainerTestBase {
     }
 
     private static void assertEventuallyServerResponds(String host, int port) throws Exception {
-        try (var connection = new SocketConnection(new InetSocketAddress(host, port))) {
+        try (var connection = new SocketConnection(new HostnamePort(host, port))) {
             connection.connect().sendDefaultProtocolVersion();
 
             assertThat(connection).negotiatesDefaultVersion();

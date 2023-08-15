@@ -20,7 +20,6 @@
 package org.neo4j.bolt.test.extension.resolver.connection;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
@@ -30,22 +29,19 @@ import org.neo4j.bolt.test.connection.resolver.AddressResolver;
 import org.neo4j.bolt.test.connection.resolver.DefaultAddressResolver;
 import org.neo4j.bolt.test.extension.lifecycle.TransportConnectionManager;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketSupportExtension;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public abstract class AbstractConnectionInitializingParameterResolver<E extends Exception>
         implements ParameterResolver {
     private final TransportConnectionManager connectionManager;
     private final BoltWire wire;
 
-    private final TransportType transportType;
-
     public AbstractConnectionInitializingParameterResolver(
-            TransportConnectionManager connectionManager, BoltWire wire, TransportType transportType) {
+            TransportConnectionManager connectionManager, BoltWire wire) {
         this.connectionManager = connectionManager;
         this.wire = wire;
-        this.transportType = transportType;
     }
 
     protected TransportConnection acquireConnection(ExtensionContext extensionContext, ParameterContext context)
@@ -55,7 +51,7 @@ public abstract class AbstractConnectionInitializingParameterResolver<E extends 
         var resolver = AddressResolver.findResolver(context).orElseGet(DefaultAddressResolver::new);
         var initializers = ConnectionInitializer.findInitializers(context);
 
-        var address = resolver.resolve(extensionContext, context, server, transportType);
+        var address = resolver.resolve(extensionContext, context, server);
         var connection = this.connectionManager.acquire(address);
 
         try {
@@ -81,5 +77,5 @@ public abstract class AbstractConnectionInitializingParameterResolver<E extends 
         return connection;
     }
 
-    protected abstract void fail(SocketAddress address, Throwable cause) throws E;
+    protected abstract void fail(HostnamePort address, Throwable cause) throws E;
 }

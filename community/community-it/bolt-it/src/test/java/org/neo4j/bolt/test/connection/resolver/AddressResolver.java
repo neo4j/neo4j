@@ -19,15 +19,14 @@
  */
 package org.neo4j.bolt.test.connection.resolver;
 
-import java.net.SocketAddress;
 import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.neo4j.bolt.test.annotation.connection.Resolver;
-import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.util.AnnotationUtil;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.internal.helpers.HostnamePort;
 
 /**
  * Resolves the address to which a connection shall be established within a given test invocation.
@@ -49,14 +48,9 @@ public interface AddressResolver {
      * @param extensionContext the context of the extension which is invoking this resolver..
      * @param context the context of the parameter which is currently being injected.
      * @param server a server instance allocated for the current test.
-     * @param transportType the transport type that is being resolved
      * @throws ParameterResolutionException when the address cannot be resolved.
      */
-    SocketAddress resolve(
-            ExtensionContext extensionContext,
-            ParameterContext context,
-            Neo4jWithSocket server,
-            TransportType transportType)
+    HostnamePort resolve(ExtensionContext extensionContext, ParameterContext context, Neo4jWithSocket server)
             throws ParameterResolutionException;
 
     static Optional<AddressResolver> findResolver(ParameterContext context) {

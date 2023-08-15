@@ -20,7 +20,6 @@
 package org.neo4j.bolt.testing.client.tls;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -42,11 +41,12 @@ import javax.net.ssl.TrustManagerFactory;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPResp;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public class CertConfiguredSecureSocketConnection extends SecureSocketConnection {
     private final X509Certificate rootCert;
 
-    public CertConfiguredSecureSocketConnection(SocketAddress address, X509Certificate trustedRootCertificate) {
+    public CertConfiguredSecureSocketConnection(HostnamePort address, X509Certificate trustedRootCertificate) {
         super(address);
         this.rootCert = trustedRootCertificate;
     }
