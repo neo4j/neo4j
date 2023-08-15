@@ -29,10 +29,4 @@ public class ReadOnlyDbException extends KernelException {
     public ReadOnlyDbException() {
         super(Status.General.ForbiddenOnReadOnlyDatabase, "This Neo4j instance is read only for all databases");
     }
-
-    public ReadOnlyDbException(String databaseName) {
-        super(
-                Status.General.ForbiddenOnReadOnlyDatabase,
-                "This Neo4j instance is read only for the database " + databaseName);
-    }
 }

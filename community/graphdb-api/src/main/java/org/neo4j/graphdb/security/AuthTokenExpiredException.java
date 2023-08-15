@@ -28,10 +28,6 @@ public class AuthTokenExpiredException extends RuntimeException implements Statu
         super(msg);
     }
 
-    public AuthTokenExpiredException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
-
     /** The Neo4j status code associated with this exception type. */
     @Override
     public Status status() {
