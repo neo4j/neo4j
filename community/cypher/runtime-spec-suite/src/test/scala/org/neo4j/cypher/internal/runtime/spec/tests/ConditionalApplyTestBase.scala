@@ -236,7 +236,9 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     runtimeResult should beColumns("x").withRows(rowCount(limit))
-    input.hasMore shouldBe true
+    if (!isParallel) {
+      input.hasMore shouldBe true
+    }
   }
 
   test("should support reduce -> limit on the RHS of conditional apply") {
@@ -640,7 +642,9 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     runtimeResult should beColumns("x").withRows(rowCount(limit))
-    input.hasMore shouldBe true
+    if (!isParallel) {
+      input.hasMore shouldBe true
+    }
   }
 
   test("should support reduce -> limit on the RHS of conditional apply - with leveraged order") {

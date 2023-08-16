@@ -146,7 +146,10 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     result.request(1)
     result.await() shouldBe true
 
-    inputStream.hasMore shouldBe true
+    if (!isParallel) {
+      // depending on fusing & morsel size & nBatches parallel runtime may exhaust input before cancellation kicks in
+      inputStream.hasMore shouldBe true
+    }
     val expected = (0L until 20).map(i => Array(Values.longValue(i)))
     assertRows(expected, probe.seenRows, hasLimit = true)
 

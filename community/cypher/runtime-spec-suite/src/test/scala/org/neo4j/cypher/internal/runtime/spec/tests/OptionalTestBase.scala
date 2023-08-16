@@ -266,6 +266,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
     // then
     subscriber.allSeen should have size 1
+    // NOTE: createBatchedInputValues() creates larger input for parallel runtime so this should not be flaky
     stream.hasMore should be(true)
   }
 
@@ -325,6 +326,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
     // then
     subscriber.allSeen should have size 1
+    // NOTE: createBatchedInputValues() creates larger input for parallel runtime so this should not be flaky
     stream.hasMore should be(true)
   }
 

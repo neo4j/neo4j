@@ -194,7 +194,9 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     runtimeResult should beColumns("x", "y").withRows(rowCount(limit))
-    input.hasMore shouldBe true
+    if (!isParallel) {
+      input.hasMore shouldBe true
+    }
   }
 
   test("should support reduce -> limit on the RHS of anti conditional apply") {
@@ -519,7 +521,9 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     runtimeResult should beColumns("x", "y").withRows(rowCount(limit))
-    input.hasMore shouldBe true
+    if (!isParallel) {
+      input.hasMore shouldBe true
+    }
   }
 
   test("should support reduce -> limit on the RHS of anti conditional apply - with leveraged order") {

@@ -138,7 +138,9 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     runtimeResult should beColumns("x", "let").withRows(rowCount(limit))
-    input.hasMore shouldBe true
+    if (!isParallel) {
+      input.hasMore shouldBe true
+    }
   }
 
   test(
