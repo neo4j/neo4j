@@ -80,7 +80,7 @@ class ExecutionContextMemoryTrackerTest {
 
     @Test
     void throwsOnLimitHeap() {
-        var memoryTracker = new ExecutionContextMemoryTracker(NO_TRACKING, 10, 0, 0, 0, "settingName");
+        var memoryTracker = new ExecutionContextMemoryTracker(NO_TRACKING, 10, 0, 0, "settingName");
         assertThatThrownBy(() -> memoryTracker.allocateHeap(100))
                 .isInstanceOf(MemoryLimitExceededException.class)
                 .hasMessageContaining("settingName");
@@ -89,7 +89,7 @@ class ExecutionContextMemoryTrackerTest {
 
     @Test
     void throwsOnLimitNative() {
-        var memoryTracker = new ExecutionContextMemoryTracker(NO_TRACKING, 10, 0, 0, 0, "settingName");
+        var memoryTracker = new ExecutionContextMemoryTracker(NO_TRACKING, 10, 0, 0, "settingName");
         assertThatThrownBy(() -> memoryTracker.allocateNative(100))
                 .isInstanceOf(MemoryLimitExceededException.class)
                 .hasMessageContaining("settingName");
@@ -99,7 +99,7 @@ class ExecutionContextMemoryTrackerTest {
     @Test
     void throwsOnPoolLimitHeap() {
         var pool = new MemoryPoolImpl(5, true, "poolSetting");
-        var tracker = new ExecutionContextMemoryTracker(pool, 10, 0, 0, 0, "localSetting");
+        var tracker = new ExecutionContextMemoryTracker(pool, 10, 0, 0, "localSetting");
 
         assertThatThrownBy(() -> tracker.allocateHeap(10))
                 .isInstanceOf(MemoryLimitExceededException.class)
@@ -111,7 +111,7 @@ class ExecutionContextMemoryTrackerTest {
     @Test
     void throwsOnPoolLimitNative() {
         var pool = new MemoryPoolImpl(5, true, "poolSetting");
-        var tracker = new ExecutionContextMemoryTracker(pool, 10, 0, 0, 0, "localSetting");
+        var tracker = new ExecutionContextMemoryTracker(pool, 10, 0, 0, "localSetting");
 
         assertThatThrownBy(() -> tracker.allocateNative(10))
                 .isInstanceOf(MemoryLimitExceededException.class)
@@ -125,10 +125,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 100;
@@ -159,10 +158,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 50;
@@ -193,10 +191,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 16;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 100;
@@ -229,10 +226,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 100;
@@ -259,10 +255,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 100;
@@ -278,7 +273,7 @@ class ExecutionContextMemoryTrackerTest {
         verify(pool, times(1)).releaseHeap(32);
         // NOTE: After the first increase to 64 we do not hit the CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD
         verify(pool, times(2)).releaseHeap(64);
-        verify(pool, times(7)).releaseHeap(100);
+        verify(pool, times(6)).releaseHeap(100);
         verifyNoMoreInteractions(pool);
 
         long expectedTotalReleaseSize = nAllocations * allocationSize;
@@ -287,7 +282,7 @@ class ExecutionContextMemoryTrackerTest {
         memoryTracker.allocateHeap(1); // Just to make the final release different from the release calls above
         memoryTracker.reset();
 
-        long expectedLocalHeapPool = expectedTotalReleaseSize - (2 * 20 + 32 + 2 * 64 + 7 * 100) - 1;
+        long expectedLocalHeapPool = expectedTotalReleaseSize - (2 * 20 + 32 + 2 * 64 + 6 * 100) - 1;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -296,10 +291,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 50;
@@ -331,10 +325,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 16;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 100;
@@ -367,10 +360,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         int nAllocations = 100;
@@ -381,7 +373,7 @@ class ExecutionContextMemoryTrackerTest {
 
         // Then
         long expectedTotalReleaseSize = nAllocations * allocationSize;
-        int expectedNumberOfPoolReleases = (int) ((expectedTotalReleaseSize - grabSize) / grabSize);
+        int expectedNumberOfPoolReleases = (int) (expectedTotalReleaseSize / grabSize) - 2;
         verify(pool, times(expectedNumberOfPoolReleases)).releaseHeap(grabSize);
         verifyNoMoreInteractions(pool);
 
@@ -402,9 +394,11 @@ class ExecutionContextMemoryTrackerTest {
         long initialCredit = 20;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
+        memoryTracker.releaseHeap(initialCredit); // Transfer some initial memory to the tracker up-front
+
         int nAllocations = 3;
         long allocationSize = 10L;
         for (int i = 0; i < nAllocations; i++) {
@@ -414,12 +408,12 @@ class ExecutionContextMemoryTrackerTest {
         // Then
         verify(pool, times(1)).reserveHeap(grabSize);
         verifyNoMoreInteractions(pool);
-        long expectedTotalAllocationSize = nAllocations * allocationSize;
+        long expectedTotalAllocationSize = nAllocations * allocationSize - initialCredit;
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = grabSize - expectedTotalAllocationSize;
-        verify(pool, times(1)).reserveHeap(-expectedLocalHeapPool);
+        long expectedLocalHeapPool = expectedTotalAllocationSize;
+        verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
     @Test
@@ -430,15 +424,17 @@ class ExecutionContextMemoryTrackerTest {
         long initialCredit = 20;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
+        memoryTracker.releaseHeap(initialCredit); // Transfer some initial memory to the tracker up-front
         memoryTracker.allocateHeap(20);
         memoryTracker.releaseHeap(20);
         memoryTracker.releaseHeap(20);
         memoryTracker.allocateHeap(20);
         memoryTracker.allocateHeap(20);
         memoryTracker.releaseHeap(20);
+        memoryTracker.allocateHeap(20);
 
         // Then
         verifyNoInteractions(pool);
@@ -446,8 +442,6 @@ class ExecutionContextMemoryTrackerTest {
 
         // When
         memoryTracker.reset();
-
-        verify(pool, never()).releaseHeap(initialCredit);
     }
 
     @Test
@@ -455,10 +449,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         memoryTracker.allocateHeap(1000L);
@@ -485,10 +478,9 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        long initialCredit = 7;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
         memoryTracker.releaseHeap(1000L);
@@ -498,7 +490,7 @@ class ExecutionContextMemoryTrackerTest {
         }
 
         // Then
-        verify(pool, times(1)).releaseHeap(1000 - grabSize * 2 + initialCredit);
+        verify(pool, times(1)).releaseHeap(1000 - grabSize * 2);
         // NOTE: First 4 small allocations will consume the remaining local pool of grabSize*2
         verify(pool, times(1)).reserveHeap(20L);
         verify(pool, times(1)).reserveHeap(32L);
@@ -508,7 +500,7 @@ class ExecutionContextMemoryTrackerTest {
         assertEquals(expectedTotalAllocationSize, memoryTracker.estimatedHeapMemory());
 
         memoryTracker.reset();
-        long expectedLocalHeapPool = 20 + 32 - 4 * 10 - initialCredit;
+        long expectedLocalHeapPool = 20 + 32 - 4 * 10;
         verify(pool, times(1)).releaseHeap(expectedLocalHeapPool);
     }
 
@@ -520,9 +512,10 @@ class ExecutionContextMemoryTrackerTest {
         long initialCredit = 20;
         MemoryPool pool = mock(MemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
-                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, initialCredit, "settingName");
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
         // When
+        memoryTracker.releaseHeap(initialCredit); // Transfer some initial memory to the tracker up-front
         memoryTracker.allocateHeap(10);
 
         // Then
@@ -530,6 +523,5 @@ class ExecutionContextMemoryTrackerTest {
         verifyNoMoreInteractions(pool);
 
         memoryTracker.reset();
-        verify(pool, times(1)).reserveHeap(10);
     }
 }

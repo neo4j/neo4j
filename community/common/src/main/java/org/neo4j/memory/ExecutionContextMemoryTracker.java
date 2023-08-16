@@ -44,16 +44,11 @@ import java.util.function.BooleanSupplier;
  * <p>
  * To allow for smaller initial grab sizes and still reduce contention, the grab size will adaptively grow (up to the given maximum grab size)
  * based on the number of calls to allocate or release heap since the last reservation or release to the parent memory pool.
- * <p>
- * You can give the tracker an upfront "credit" of heap bytes to use up before it needs to reserve memory from the underlying pool the first time.
- * This is to prevent an immediate reservation to the memory pool before any significant allocation has occurred,
- * so that newly created execution contexts does not eagerly hog memory in local pools before being used.
  */
 public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     public static final long NO_LIMIT = 0;
     private static final long INFINITY = Long.MAX_VALUE;
     private static final long DEFAULT_GRAB_SIZE = 8192;
-    private static final long DEFAULT_INITIAL_CREDIT = 0;
 
     /**
      * If an allocation call triggers a reservation from the memory pool,
@@ -77,13 +72,6 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
      * The maximum chunk size to reserve from the memory pool
      */
     private final long maxGrabSize;
-
-    /**
-     * An initial credit of heap bytes that can be used to serve allocations before the memory tracker needs
-     * to reserve memory from the memory pool.
-     * Used up credit will be accounted for on reset().
-     */
-    private final long initialCredit;
 
     /**
      * The number of allocation or release calls since the last interaction with the memory pool
@@ -130,7 +118,12 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     }
 
     public ExecutionContextMemoryTracker(MemoryPool memoryPool) {
-        this(memoryPool, INFINITY, DEFAULT_GRAB_SIZE, DEFAULT_GRAB_SIZE, DEFAULT_INITIAL_CREDIT, null);
+        this(memoryPool, INFINITY, DEFAULT_GRAB_SIZE, DEFAULT_GRAB_SIZE, null);
+    }
+
+    public ExecutionContextMemoryTracker(
+            MemoryPool memoryPool, long localBytesLimit, long grabSize, long maxGrabSize, String limitSettingName) {
+        this(memoryPool, localBytesLimit, grabSize, maxGrabSize, limitSettingName, () -> true);
     }
 
     public ExecutionContextMemoryTracker(
@@ -138,33 +131,18 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
             long localBytesLimit,
             long grabSize,
             long maxGrabSize,
-            long initialCredit,
-            String limitSettingName) {
-        this(memoryPool, localBytesLimit, grabSize, maxGrabSize, initialCredit, limitSettingName, () -> true);
-    }
-
-    public ExecutionContextMemoryTracker(
-            MemoryPool memoryPool,
-            long localBytesLimit,
-            long grabSize,
-            long maxGrabSize,
-            long initialCredit,
             String limitSettingName,
             BooleanSupplier openCheck) {
         this.memoryPool = requireNonNull(memoryPool);
         this.localBytesLimit = validateLimit(localBytesLimit);
         this.grabSize = requireNonNegative(grabSize);
         this.maxGrabSize = requireNonNegative(maxGrabSize);
-        this.initialCredit = requireNonNegative(initialCredit);
 
         this.limitSettingName = limitSettingName;
         this.openCheck = openCheck;
 
         // NOTE: We do not want the threshold to apply on the first grab
         this.clientCallsSinceLastPoolInteraction = CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD;
-
-        // Assign the credit to delay the first grab to the local heap pool
-        this.localHeapPool = initialCredit;
     }
 
     @Override
@@ -281,11 +259,9 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     public void reset() {
         // Only release or reserve heap if the transaction is still open
         if (openCheck.getAsBoolean()) {
-            long localHeapToRelease = localHeapPool - initialCredit;
+            long localHeapToRelease = localHeapPool;
             if (localHeapToRelease > 0L) {
                 memoryPool.releaseHeap(localHeapToRelease);
-            } else if (localHeapToRelease < 0L) {
-                memoryPool.reserveHeap(-localHeapToRelease);
             }
         }
         localHeapPool = 0;

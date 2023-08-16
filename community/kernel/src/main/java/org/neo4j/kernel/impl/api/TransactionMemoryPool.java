@@ -23,8 +23,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -46,7 +44,6 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final Config config;
     private final BooleanSupplier openCheck;
     private final LogProvider logProvider;
-    private final Set<LocalMemoryTracker> memoryTrackers = ConcurrentHashMap.newKeySet();
     private final LocalMemoryTracker transactionTracker;
     private boolean hasExecutionContextMemoryTrackers = false;
 
@@ -78,13 +75,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
 
     @Override
     public MemoryTracker getPoolMemoryTracker() {
-        if (config.get(memory_tracking)) {
-            var memoryTracker = createMemoryTracer();
-            memoryTrackers.add(memoryTracker);
-            return memoryTracker;
-        } else {
-            return EmptyMemoryTracker.INSTANCE;
-        }
+        throw new UnsupportedOperationException("Use getExecutionContextPoolMemoryTracker instead");
     }
 
     public MemoryTracker getExecutionContextPoolMemoryTracker(long grabSize, long maxGrabSize, long initialCredit) {
@@ -147,7 +138,6 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
                 LocalMemoryTracker.NO_LIMIT,
                 grabSize,
                 maxGrabSize,
-                initialCredit,
                 memory_transaction_max_size.name(),
                 openCheck);
     }
@@ -164,15 +154,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
 
     public void reset() {
         transactionTracker.reset();
-        // NOTE: ExecutionContextMemoryTrackers are not stored in memoryTrackers
-        if (!memoryTrackers.isEmpty()) {
-            for (LocalMemoryTracker memoryTracker : memoryTrackers) {
-                memoryTracker.checkAllocatedNativeBytes();
-            }
-            releaseHeap(usedHeap());
-
-            memoryTrackers.clear();
-        } else if (hasExecutionContextMemoryTrackers) {
+        if (hasExecutionContextMemoryTrackers) {
             long usedHeap = usedHeap();
             if (usedHeap > 0L) {
                 releaseHeap(usedHeap);
