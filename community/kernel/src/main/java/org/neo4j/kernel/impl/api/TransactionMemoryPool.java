@@ -47,8 +47,6 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final LocalMemoryTracker transactionTracker;
     private boolean hasExecutionContextMemoryTrackers = false;
 
-    static final long DEFAULT_EXECUTION_CONTEXT_MEMORY_TRACKER_INITIAL_CREDIT = 0;
-
     public TransactionMemoryPool(
             ScopedMemoryPool delegate, Config config, BooleanSupplier openCheck, LogProvider logProvider) {
         super(new MemoryPoolImpl(delegate.totalSize(), true, memory_transaction_database_max_size.name()));
@@ -78,10 +76,10 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
         throw new UnsupportedOperationException("Use getExecutionContextPoolMemoryTracker instead");
     }
 
-    public MemoryTracker getExecutionContextPoolMemoryTracker(long grabSize, long maxGrabSize, long initialCredit) {
+    public MemoryTracker getExecutionContextPoolMemoryTracker(long grabSize, long maxGrabSize) {
         if (config.get(memory_tracking)) {
             hasExecutionContextMemoryTrackers = true;
-            return createExecutionContextMemoryTracker(grabSize, maxGrabSize, initialCredit);
+            return createExecutionContextMemoryTracker(grabSize, maxGrabSize);
         } else {
             return EmptyMemoryTracker.INSTANCE;
         }
@@ -131,8 +129,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
                 memoryLeakLogger(logProvider.getLog(getClass())));
     }
 
-    private ExecutionContextMemoryTracker createExecutionContextMemoryTracker(
-            long grabSize, long maxGrabSize, long initialCredit) {
+    private ExecutionContextMemoryTracker createExecutionContextMemoryTracker(long grabSize, long maxGrabSize) {
         return new ExecutionContextMemoryTracker(
                 this,
                 LocalMemoryTracker.NO_LIMIT,

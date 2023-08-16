@@ -40,7 +40,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.ExecutionContextMemoryTracker;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.util.concurrent.Futures;
@@ -73,8 +72,7 @@ class TransactionMemoryPoolTest {
         var config = Config.defaults(memory_tracking, false);
         var customConfiguredPool =
                 new TransactionMemoryPool(groupTracker, config, () -> false, NullLogProvider.getInstance());
-        assertThat(customConfiguredPool.getPoolMemoryTracker()).isInstanceOf(EmptyMemoryTracker.class);
-        assertThat(customConfiguredPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize, 0))
+        assertThat(customConfiguredPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize))
                 .isInstanceOf(EmptyMemoryTracker.class);
     }
 
@@ -83,15 +81,22 @@ class TransactionMemoryPoolTest {
         var config = Config.defaults(memory_tracking, true);
         var customConfiguredPool =
                 new TransactionMemoryPool(groupTracker, config, () -> false, NullLogProvider.getInstance());
-        assertThat(customConfiguredPool.getPoolMemoryTracker()).isInstanceOf(LocalMemoryTracker.class);
-        assertThat(customConfiguredPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize, 0))
+        assertThat(customConfiguredPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize))
                 .isInstanceOf(ExecutionContextMemoryTracker.class);
     }
 
     @Test
+    void defaultGetPoolMemoryTrackerMethodNotSupported() {
+        var config = Config.defaults(memory_tracking, true);
+        var customConfiguredPool =
+                new TransactionMemoryPool(groupTracker, config, () -> false, NullLogProvider.getInstance());
+        assertThrows(UnsupportedOperationException.class, () -> customConfiguredPool.getPoolMemoryTracker());
+    }
+
+    @Test
     void releaseHeapOnPoolReset() {
-        var tracker1 = pool.getPoolMemoryTracker();
-        var tracker2 = pool.getPoolMemoryTracker();
+        var tracker1 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+        var tracker2 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
         tracker1.allocateHeap(1);
         tracker1.allocateHeap(2);
         tracker2.allocateHeap(3);
@@ -104,8 +109,8 @@ class TransactionMemoryPoolTest {
 
     @Test
     void exceptionOnReleaseNativeOnPoolReset() {
-        var tracker1 = pool.getPoolMemoryTracker();
-        var tracker2 = pool.getPoolMemoryTracker();
+        var tracker1 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+        var tracker2 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
         tracker1.allocateHeap(1);
         tracker1.allocateNative(2);
         tracker2.allocateHeap(3);
@@ -141,7 +146,7 @@ class TransactionMemoryPoolTest {
 
     @Test
     void reportHeapMemoryUsage() {
-        var tracker = pool.getPoolMemoryTracker();
+        var tracker = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
         tracker.allocateHeap(1);
         tracker.allocateHeap(2);
         tracker.allocateHeap(3);
@@ -153,7 +158,7 @@ class TransactionMemoryPoolTest {
 
     @Test
     void reportNativeMemoryUsage() {
-        var tracker = pool.getPoolMemoryTracker();
+        var tracker = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
         tracker.allocateNative(10);
         tracker.allocateNative(2);
         tracker.allocateNative(3);
@@ -164,9 +169,9 @@ class TransactionMemoryPoolTest {
 
     @Test
     void reportHeapMemoryUsageFromSeveralClients() {
-        var tracker1 = pool.getPoolMemoryTracker();
-        var tracker2 = pool.getPoolMemoryTracker();
-        var tracker3 = pool.getPoolMemoryTracker();
+        var tracker1 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+        var tracker2 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+        var tracker3 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
         for (int i = 0; i < 10; i++) {
             tracker1.allocateHeap(i);
             tracker2.allocateHeap(i);
@@ -180,8 +185,8 @@ class TransactionMemoryPoolTest {
     @Test
     void reportHeapMemoryUsageFromSeveralClientsWithNegatives() {
         long grabSize = 100;
-        var tracker1 = pool.getExecutionContextPoolMemoryTracker(grabSize, grabSize, 0);
-        var tracker2 = pool.getExecutionContextPoolMemoryTracker(grabSize, grabSize, 0);
+        var tracker1 = pool.getExecutionContextPoolMemoryTracker(grabSize, grabSize);
+        var tracker2 = pool.getExecutionContextPoolMemoryTracker(grabSize, grabSize);
 
         tracker1.allocateHeap(50);
         tracker2.releaseHeap(50);
@@ -201,9 +206,9 @@ class TransactionMemoryPoolTest {
 
     @Test
     void reportNativeMemoryUsageFromSeveralClients() {
-        var tracker1 = pool.getPoolMemoryTracker();
-        var tracker2 = pool.getPoolMemoryTracker();
-        var tracker3 = pool.getPoolMemoryTracker();
+        var tracker1 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+        var tracker2 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+        var tracker3 = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
         for (int i = 0; i < 15; i++) {
             tracker1.allocateNative(i);
             tracker2.allocateNative(i);
@@ -222,7 +227,7 @@ class TransactionMemoryPoolTest {
             var futures = new ArrayList<Future<?>>(numberOfWorkers);
             for (int i = 0; i < 20; i++) {
                 futures.add(executor.submit(() -> {
-                    var memoryTracker = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize, 0);
+                    var memoryTracker = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
                     for (int allocation = 0; allocation < 10; allocation++) {
                         memoryTracker.allocateHeap(allocation);
                     }
@@ -245,7 +250,7 @@ class TransactionMemoryPoolTest {
             var futures = new ArrayList<Future<?>>(numberOfWorkers);
             for (int i = 0; i < numberOfWorkers; i++) {
                 futures.add(executor.submit(() -> {
-                    var memoryTracker = pool.getPoolMemoryTracker();
+                    var memoryTracker = pool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
                     for (int allocation = 0; allocation < 10; allocation++) {
                         memoryTracker.allocateNative(allocation);
                     }
