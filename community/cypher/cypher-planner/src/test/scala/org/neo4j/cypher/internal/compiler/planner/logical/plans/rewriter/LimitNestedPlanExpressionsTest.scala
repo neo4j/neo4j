@@ -80,6 +80,19 @@ class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanning
     )
   }
 
+  test("should rewrite Nested plan in IsEmpty") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val isEmpty = function("isEmpty", nestedPlan)
+
+    isEmpty.endoRewrite(rewriter) should equal(
+      function(
+        "isEmpty",
+        NestedPlanExpression.collect(Limit(argument, SignedDecimalIntegerLiteral("1")(pos)), aLit, aLit)(pos)
+      )
+    )
+  }
+
   test("should not insert Limit if container index references variable") {
     val argument: LogicalPlan = Argument(Set("a"))
     val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)

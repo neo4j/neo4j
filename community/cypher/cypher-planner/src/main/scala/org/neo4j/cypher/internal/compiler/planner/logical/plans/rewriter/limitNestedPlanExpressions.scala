@@ -29,9 +29,13 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Head
+import org.neo4j.cypher.internal.expressions.functions.IsEmpty
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
@@ -44,6 +48,16 @@ import org.neo4j.cypher.internal.util.bottomUp
  */
 case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttributes: Attributes[LogicalPlan]) extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
+
+  /**
+   * To avoid never stopping in the `fixedPoint` in [[PlanRewriter]],
+   * we cannot insert a Limit if the top plan is already a Limit or the rewrite of a Limit that we already inserted.
+   */
+  private def shouldInsertLimitOnTopOf(plan: LogicalPlan): Boolean =
+    !plan.isInstanceOf[Limit] &&
+      !plan.isInstanceOf[Eager] &&
+      !plan.isInstanceOf[Top] &&
+      !plan.isInstanceOf[PartialTop]
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case fi@FunctionInvocation(Namespace(List()), FunctionName(Head.name), _, IndexedSeq(npe@NestedPlanCollectExpression(plan, _, _))) if !plan.isInstanceOf[Limit] =>
@@ -70,5 +84,16 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
       )
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       ls.copy(list = npe.copy(newPlan)(npe.position))(ls.position)
+
+    case fi @ FunctionInvocation(
+        Namespace(List()),
+        FunctionName(IsEmpty.name),
+        _,
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+      ) if shouldInsertLimitOnTopOf(plan) =>
+      val newPlan =
+        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
   })
 }
