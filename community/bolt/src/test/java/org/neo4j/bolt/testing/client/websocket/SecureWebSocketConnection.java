@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.testing.client.websocket;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
@@ -26,7 +28,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.internal.helpers.HostnamePort;
 
 public class SecureWebSocketConnection extends WebSocketConnection {
     private static final Factory factory = new Factory();
@@ -35,7 +36,7 @@ public class SecureWebSocketConnection extends WebSocketConnection {
         return factory;
     }
 
-    public SecureWebSocketConnection(HostnamePort address) {
+    public SecureWebSocketConnection(SocketAddress address) {
         super(address);
     }
 
@@ -48,14 +49,15 @@ public class SecureWebSocketConnection extends WebSocketConnection {
     }
 
     @Override
-    protected URI createTargetUri(HostnamePort address) {
-        return URI.create("wss://" + address.getHost() + ":" + address.getPort());
+    protected URI createTargetUri(SocketAddress address) {
+        var socketAddress = (InetSocketAddress) address;
+        return URI.create("wss://" + socketAddress.getHostString() + ":" + socketAddress.getPort());
     }
 
     private static class Factory implements TransportConnection.Factory {
 
         @Override
-        public TransportConnection create(HostnamePort address) {
+        public TransportConnection create(SocketAddress address) {
             return new SecureWebSocketConnection(address);
         }
 

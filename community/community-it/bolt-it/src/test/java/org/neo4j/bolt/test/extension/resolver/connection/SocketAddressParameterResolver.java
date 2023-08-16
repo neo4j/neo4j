@@ -19,24 +19,25 @@
  */
 package org.neo4j.bolt.test.extension.resolver.connection;
 
+import java.net.SocketAddress;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.neo4j.bolt.test.connection.resolver.AddressResolver;
 import org.neo4j.bolt.test.connection.resolver.DefaultAddressResolver;
+import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.transport.Neo4jWithSocketSupportExtension;
-import org.neo4j.internal.helpers.HostnamePort;
 
 /**
- * Resolves {@link HostnamePort} addresses of a test server instance.
+ * Resolves {@link SocketAddress} addresses of a test server instance.
  */
-public class HostnamePortParameterResolver implements ParameterResolver {
+public class SocketAddressParameterResolver implements ParameterResolver {
 
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        return HostnamePort.class.equals(parameterContext.getParameter().getType());
+        return SocketAddress.class.equals(parameterContext.getParameter().getType());
     }
 
     @Override
@@ -45,6 +46,6 @@ public class HostnamePortParameterResolver implements ParameterResolver {
         var server = Neo4jWithSocketSupportExtension.getInstance(extensionContext);
 
         var resolver = AddressResolver.findResolver(context).orElseGet(DefaultAddressResolver::new);
-        return resolver.resolve(extensionContext, context, server);
+        return resolver.resolve(extensionContext, context, server, TransportType.TCP_TLS);
     }
 }

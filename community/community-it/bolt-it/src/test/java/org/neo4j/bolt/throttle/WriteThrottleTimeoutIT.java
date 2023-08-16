@@ -21,7 +21,7 @@ package org.neo4j.bolt.throttle;
 
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
-import java.net.SocketException;
+import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.time.Duration;
 import java.util.Map;
@@ -118,7 +118,7 @@ public class WriteThrottleTimeoutIT {
 
         Assertions.assertThatExceptionOfType(ExecutionException.class)
                 .isThrownBy(() -> otherThread.get().awaitFuture(sender))
-                .withRootCauseInstanceOf(SocketException.class);
+                .withRootCauseInstanceOf(IOException.class);
 
         LogAssertions.assertThat(internalLogProvider)
                 .forClass(ChannelWriteThrottleHandler.class)

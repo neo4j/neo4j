@@ -27,6 +27,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -37,14 +39,13 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.neo4j.bolt.testing.client.AbstractTransportConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.internal.helpers.HostnamePort;
 
 public class WebSocketConnection extends AbstractTransportConnection implements WebSocketListener {
     private static final Factory factory = new Factory();
 
     private static final byte[] POISON_PILL = "poison".getBytes();
 
-    private final HostnamePort address;
+    private final SocketAddress address;
 
     private WebSocketClient client;
     private RemoteEndpoint server;
@@ -62,7 +63,7 @@ public class WebSocketConnection extends AbstractTransportConnection implements 
         return factory;
     }
 
-    public WebSocketConnection(HostnamePort address) {
+    public WebSocketConnection(SocketAddress address) {
         requireNonNull(address);
 
         this.address = address;
@@ -72,8 +73,9 @@ public class WebSocketConnection extends AbstractTransportConnection implements 
         return new WebSocketClient();
     }
 
-    protected URI createTargetUri(HostnamePort address) {
-        return URI.create("ws://" + address.getHost() + ":" + address.getPort());
+    protected URI createTargetUri(SocketAddress address) {
+        var socketAddress = (InetSocketAddress) address;
+        return URI.create("ws://" + socketAddress.getHostString() + ":" + socketAddress.getPort());
     }
 
     private void ensureConnected() {
@@ -219,7 +221,7 @@ public class WebSocketConnection extends AbstractTransportConnection implements 
     private static class Factory implements TransportConnection.Factory {
 
         @Override
-        public TransportConnection create(HostnamePort address) {
+        public TransportConnection create(SocketAddress address) {
             return new WebSocketConnection(address);
         }
 

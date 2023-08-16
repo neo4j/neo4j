@@ -27,9 +27,11 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.TestInfo;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -47,6 +49,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 public class Neo4jWithSocket {
     static final String NEO4J_WITH_SOCKET = "org.neo4j.bolt.transport.Neo4jWithSocket";
+    private static final Path LISTEN_FILE = Path.of("/tmp/loopy.sock");
 
     private Consumer<Map<Setting<?>, Object>> configure;
     private final TestDirectory testDirectory;
@@ -160,6 +163,11 @@ public class Neo4jWithSocket {
         settings.put(BoltConnector.enabled, true);
         settings.put(BoltConnector.listen_address, new SocketAddress("localhost", 0));
         settings.put(BoltConnector.encryption_level, DISABLED);
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            settings.put(BoltConnectorInternalSettings.enable_loopback_auth, true);
+            settings.put(BoltConnectorInternalSettings.unsupported_loopback_listen_file, LISTEN_FILE);
+            settings.put(BoltConnectorInternalSettings.unsupported_loopback_delete, true);
+        }
         configure.accept(settings);
         overrideSettingsFunction.accept(settings);
         return settings;
@@ -171,5 +179,9 @@ public class Neo4jWithSocket {
 
     public GraphDatabaseService graphDatabaseService() {
         return gdb;
+    }
+
+    public Path lookupUnixConnector() {
+        return LISTEN_FILE;
     }
 }
