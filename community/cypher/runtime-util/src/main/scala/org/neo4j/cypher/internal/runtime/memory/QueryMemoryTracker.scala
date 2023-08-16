@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.runtime.debug.DebugSupport.DEBUG_MEMORY_TRACKIN
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.MemoryTrackerPerOperator
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.OperatorMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
-import org.neo4j.memory.ExecutionContextMemoryTrackerProvider
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
