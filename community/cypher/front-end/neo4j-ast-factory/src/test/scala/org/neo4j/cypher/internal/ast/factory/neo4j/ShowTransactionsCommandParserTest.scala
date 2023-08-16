@@ -228,7 +228,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ast.ShowTransactionsClause(
           Left(List.empty),
           None,
-          List(commandResultItem("database", Some("database"))),
+          List(commandResultItem("database")),
           yieldAll = false
         )(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("database")))
@@ -284,7 +284,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
           Left(List.empty),
           None,
           List(
-            commandResultItem("transactionId", Some("transactionId")),
+            commandResultItem("transactionId"),
             commandResultItem("activeLockCount", Some("pp"))
           ),
           yieldAll = false
@@ -309,7 +309,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
           Left(List.empty),
           None,
           List(
-            commandResultItem("transactionId", Some("transactionId")),
+            commandResultItem("transactionId"),
             commandResultItem("activeLockCount", Some("pp"))
           ),
           yieldAll = false
@@ -505,7 +505,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ast.ShowTransactionsClause(
           Left(List.empty),
           None,
-          List(commandResultItem("yield", Some("yield"))),
+          List(commandResultItem("yield")),
           yieldAll = false
         )(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("yield")))

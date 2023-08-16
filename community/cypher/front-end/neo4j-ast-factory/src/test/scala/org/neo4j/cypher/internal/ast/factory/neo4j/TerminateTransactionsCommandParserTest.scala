@@ -196,7 +196,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       singleQuery(
         ast.TerminateTransactionsClause(
           Left(List.empty),
-          List(commandResultItem("username", Some("username"))),
+          List(commandResultItem("username")),
           yieldAll = false,
           None
         )(pos),
@@ -253,7 +253,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         use(varFor("db")),
         ast.TerminateTransactionsClause(
           Right(literalString("db1-transaction-123")),
-          List(commandResultItem("transactionId", Some("transactionId")), commandResultItem("username", Some("pp"))),
+          List(commandResultItem("transactionId"), commandResultItem("username", Some("pp"))),
           yieldAll = false,
           None
         )(pos),
@@ -420,7 +420,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       singleQuery(
         ast.TerminateTransactionsClause(
           Left(List.empty),
-          List(commandResultItem("yield", Some("yield"))),
+          List(commandResultItem("yield")),
           yieldAll = false,
           None
         )(pos),

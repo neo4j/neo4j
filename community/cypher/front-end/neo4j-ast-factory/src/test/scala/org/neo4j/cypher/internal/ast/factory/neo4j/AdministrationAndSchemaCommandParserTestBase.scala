@@ -122,8 +122,8 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def pwParam(name: String): Parameter = parameter(name, CTString)
 
-  def commandResultItem(original: String, alias: Option[String]): ast.CommandResultItem =
-    ast.CommandResultItem(original, alias.map(varFor(_)).getOrElse(varFor(original)))(pos)
+  def commandResultItem(original: String, alias: Option[String] = None): ast.CommandResultItem =
+    ast.CommandResultItem(original, alias.map(varFor).getOrElse(varFor(original)))(pos)
 
   def withFromYield(
     returnItems: ast.ReturnItems,

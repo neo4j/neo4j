@@ -182,7 +182,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
           Right(literalString("db1-transaction-123")),
           None,
           false,
-          List(commandResultItem("username", Some("username")))
+          List(commandResultItem("username"))
         )(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username")))
       ))
@@ -199,7 +199,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
           Right(literalString("db1-transaction-123")),
           None,
           false,
-          List(commandResultItem("username", Some("username")))
+          List(commandResultItem("username"))
         )(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username"))),
         returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
@@ -216,7 +216,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
           Right(literalString("db1-transaction-123")),
           None,
           false,
-          List(commandResultItem("username", Some("username")))
+          List(commandResultItem("username"))
         )(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username"))),
         returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
@@ -229,7 +229,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
       assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
-        secondClause(Left(List.empty), None, false, List(commandResultItem("username", Some("username"))))(pos),
+        secondClause(Left(List.empty), None, false, List(commandResultItem("username")))(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username"))),
         returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
       ))
@@ -241,7 +241,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
       assertAst(singleQuery(
         firstClause(Left(List.empty), None, true, List.empty)(defaultPos),
         withFromYield(returnAllItems),
-        secondClause(Left(List.empty), None, false, List(commandResultItem("username", Some("username"))))(pos),
+        secondClause(Left(List.empty), None, false, List(commandResultItem("username")))(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username"))),
         returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
       ))
@@ -285,7 +285,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
           false,
           List(
             commandResultItem("transactionId", Some("txId")),
-            commandResultItem("currentQuery", Some("currentQuery")),
+            commandResultItem("currentQuery"),
             commandResultItem("username", Some("user"))
           )
         )(defaultPos),
@@ -295,8 +295,8 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
           None,
           false,
           List(
-            commandResultItem("username", Some("username")),
-            commandResultItem("message", Some("message"))
+            commandResultItem("username"),
+            commandResultItem("message")
           )
         )(pos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username", "message"))),
@@ -395,7 +395,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
             false,
             List(
               commandResultItem("transactionId", Some("txId")),
-              commandResultItem("username", Some("username"))
+              commandResultItem("username")
             )
           )(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId", "username"))),
@@ -548,7 +548,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
         ast.ShowTransactionsClause(
           Right(varFor("콺")),
           None,
-          List(commandResultItem("碌", Some("碌")), commandResultItem("脃", Some("脃")), commandResultItem("麪", Some("麪"))),
+          List(commandResultItem("碌"), commandResultItem("脃"), commandResultItem("麪")),
           yieldAll = false
         )(pos),
         withFromYield(
