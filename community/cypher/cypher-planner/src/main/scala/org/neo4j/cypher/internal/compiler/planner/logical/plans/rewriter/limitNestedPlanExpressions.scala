@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Head
+import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -85,5 +86,16 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
       )
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       ls.copy(list = npe.copy(newPlan)(npe.position))(ls.position)
+
+    case fi @ FunctionInvocation(
+        Namespace(List()),
+        FunctionName(IsEmpty.name),
+        _,
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+      ) if shouldInsertLimitOnTopOf(plan) =>
+      val newPlan =
+        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
   })
 }

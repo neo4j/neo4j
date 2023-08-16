@@ -25,8 +25,10 @@ import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -44,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Head
+import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
@@ -2116,6 +2119,47 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .allNodeScan("n")
         .build()
     )
+  }
+
+  test("should insert limit for nested plan expression inside isEmpty") {
+    val q =
+      """
+        |MATCH p = (n)
+        |RETURN all(node IN nodes(p) WHERE isEmpty([(n)-[r]->(b) WHERE n.prop > 5 | b.age])) AS age
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .limit(1)
+      .projection("b.age AS anon_0")
+      .expandAll("(n)-[r]->(b)")
+      .filter("n.prop > 5")
+      .argument("n")
+      .build()
+
+    val expected =
+      planner.subPlanBuilder()
+        .projection(
+          project = Map("age" ->
+            AllIterablePredicate(
+              FilterScope(
+                varFor("node"),
+                Some(IsEmpty(
+                  NestedPlanCollectExpression(
+                    expectedNestedPlan,
+                    varFor("anon_0"),
+                    s"[(n)-[r]->(b) WHERE n.prop > 5 | b.age]"
+                  )(pos)
+                )(pos))
+              )(pos),
+              nodes(PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(pos))
+            )(pos)),
+          Set("n")
+        )
+        .allNodeScan("n")
+        .build()
+    plan should equal(expected)
   }
 
   test("should solve and name pattern expressions with NestedPlanExpression for Projection") {

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object IsEmpty extends Function {
-  def name = "isEmpty"
+  val name = "isEmpty"
 
   override val signatures = Vector(
     TypeSignature(this, CTList(CTAny), CTBoolean, "Checks whether a list is empty.", Category.PREDICATE),
