@@ -45,6 +45,8 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util.UUID
 
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.util.Random
 
 object MemoryDeallocationTestBase {
@@ -889,6 +891,48 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsage(query(skip = 1000), query(skip = 10000), toleratedDeviation = 0.5)
   }
 
+  test("should account for memory allocated in value population") {
+    val nodes = given {
+      // Some nodes with memory hungry properties and labels
+      nodePropertyGraphFunctional(
+        nNodes = 32,
+        properties = { i =>
+          Range(0, 128).map(p => s"p$p" -> s"$i:$p:${"bla".repeat(24)}").toMap
+        },
+        labels = { i =>
+          Range(0, 128).map(l => s"Label-$i-$l")
+        }
+      )
+    }
+
+    val estHeapPropsAndLabels = nodes
+      .map { n =>
+        val propValueHeap = n.getAllProperties.asScala.values.map(v => Values.of(v).estimatedHeapUsage()).sum
+        val labelsHeap = n.getLabels.asScala.map(l => Values.of(l.name()).estimatedHeapUsage()).sum
+        propValueHeap + labelsHeap
+      }
+      .sum
+
+    val queryWithNodeRefs = new LogicalQueryBuilder(this)
+      .produceResults("nodes")
+      .aggregation(Seq.empty, Seq("collect(n) as nodes"))
+      .allNodeScan("n")
+      .build()
+
+    val queryWithPropsAndLabels = new LogicalQueryBuilder(this)
+      .produceResults("props", "labels")
+      .aggregation(Seq.empty, Seq("collect(properties(n)) as props", "collect(labels(n)) as labels"))
+      .allNodeScan("n")
+      .build()
+
+    compareMemoryUsage(
+      queryWithNodeRefs,
+      queryWithPropsAndLabels,
+      toleratedDeviation = 0.20,
+      minAllocated = estHeapPropsAndLabels
+    )
+  }
+
   protected def compareMemoryUsageImplicitTx(
     logicalQuery1: LogicalQuery,
     logicalQuery2: LogicalQuery,
@@ -900,7 +944,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       () => NoInput,
       () => NoInput,
       toleratedDeviation,
-      Some(KernelTransaction.Type.IMPLICIT)
+      txType = Some(KernelTransaction.Type.IMPLICIT)
     )
   }
 
@@ -931,13 +975,16 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     input1: () => InputDataStream = () => NoInput,
     input2: () => InputDataStream = () => NoInput,
     toleratedDeviation: Double = 0.0,
+    minAllocated: Long = 0,
     txType: Option[KernelTransaction.Type] = None
   ): Unit = {
     val maxMem1 = maxAllocatedMem(logicalQuery1, input1, txType)
     val maxMem2 = maxAllocatedMem(logicalQuery2, input2, txType)
     val memDiff = Math.abs(maxMem2 - maxMem1)
 
-    maxMem1 shouldNot be(0)
+    maxMem1 should be > minAllocated
+    maxMem2 should be > minAllocated
+
     val deviation = Math.abs(maxMem1 - maxMem2) / maxMem1.toDouble
     val deviationPercentage = Math.round(deviation * 100)
     val toleratedDeviationPercentage = Math.round(toleratedDeviation * 100)

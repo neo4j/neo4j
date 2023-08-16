@@ -29,11 +29,14 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.HeapTrackingListValueBuilder;
+import org.neo4j.values.virtual.HeapTrackingMapValueBuilder;
 import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
@@ -51,22 +54,41 @@ public final class ValuePopulation {
         throw new UnsupportedOperationException("Do not instantiate");
     }
 
+    /**
+     * Populates nodes and relationships contained in the specified value.
+     *
+     * Note about memory tracking!
+     * Population can potentially allocate lots of memory, for example large lists of node references.
+     * To try to avoid some OOMs, we sometimes(!) allocate on the provided memory tracker in these methods.
+     * However, because we don't have ownership of the resources, they are also released from memory tracking
+     * before returning. This provides some safety for really large populations, but is also flawed because the
+     * instances will obviously live on after memory is released from the tracker.
+     * <p>
+     * At the time of writing, runtime have no memory tracking of data that is in-flight in the operator.
+     * If that is added at some point, memory tracking in these methods should be revisited to avoid over-estimation.
+     * For example in queries like `WITH [1,2,3] AS x RETURN x`, if the memory of x is already tracked by the operator
+     * it will be allocated twice when reaching here. Some queries are less straight forward, like `MATCH (n) RETURN n`.
+     * If the operator keeps track of in-flight memory it needs to consider that value population will allocate more
+     * memory.
+     *
+     */
     public static AnyValue populate(
             AnyValue value,
             DbAccess dbAccess,
             NodeCursor nodeCursor,
             RelationshipScanCursor relCursor,
-            PropertyCursor propertyCursor) {
-        if (value instanceof VirtualNodeValue) {
-            return populate((VirtualNodeValue) value, dbAccess, nodeCursor, propertyCursor);
-        } else if (value instanceof VirtualRelationshipValue) {
-            return populate((VirtualRelationshipValue) value, dbAccess, nodeCursor, relCursor, propertyCursor);
-        } else if (value instanceof VirtualPathValue) {
-            return populate((VirtualPathValue) value, dbAccess, nodeCursor, relCursor, propertyCursor);
-        } else if (value instanceof ListValue) {
-            return populate((ListValue) value, dbAccess, nodeCursor, relCursor, propertyCursor);
-        } else if (value instanceof MapValue) {
-            return populate((MapValue) value, dbAccess, nodeCursor, relCursor, propertyCursor);
+            PropertyCursor propertyCursor,
+            MemoryTracker memoryTracker) {
+        if (value instanceof VirtualNodeValue node) {
+            return populate(node, dbAccess, nodeCursor, propertyCursor);
+        } else if (value instanceof VirtualRelationshipValue relationship) {
+            return populate(relationship, dbAccess, relCursor, propertyCursor);
+        } else if (value instanceof VirtualPathValue path) {
+            return populate(path, dbAccess, nodeCursor, relCursor, propertyCursor);
+        } else if (value instanceof ListValue list) {
+            return populate(list, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker);
+        } else if (value instanceof MapValue map) {
+            return populate(map, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker);
         } else {
             return value;
         }
@@ -92,7 +114,6 @@ public final class ValuePopulation {
     public static RelationshipValue populate(
             VirtualRelationshipValue value,
             DbAccess dbAccess,
-            NodeCursor nodeCursor,
             RelationshipScanCursor relCursor,
             PropertyCursor propertyCursor) {
         if (value instanceof RelationshipEntityWrappingValue wrappingValue && !wrappingValue.isPopulated()) {
@@ -101,16 +122,16 @@ public final class ValuePopulation {
                 return wrappingValue;
             } else {
                 // Relationship was created in an inner transaction that has been closed
-                return relationshipValue(value.id(), dbAccess, nodeCursor, relCursor, propertyCursor);
+                return relationshipValue(value.id(), dbAccess, relCursor, propertyCursor);
             }
         } else if (value instanceof RelationshipValue) {
             return (RelationshipValue) value;
         } else {
-            return relationshipValue(value.id(), dbAccess, nodeCursor, relCursor, propertyCursor);
+            return relationshipValue(value.id(), dbAccess, relCursor, propertyCursor);
         }
     }
 
-    public static PathValue populate(
+    private static PathValue populate(
             VirtualPathValue value,
             DbAccess dbAccess,
             NodeCursor nodeCursor,
@@ -128,8 +149,7 @@ public final class ValuePopulation {
             int i = 0;
             for (; i < rels.length; i++) {
                 NodeValue nodeValue = nodeValue(nodeIds[i], dbAccess, nodeCursor, propertyCursor);
-                RelationshipValue relationshipValue =
-                        relationshipValue(relIds[i], dbAccess, nodeCursor, relCursor, propertyCursor);
+                RelationshipValue relationshipValue = relationshipValue(relIds[i], dbAccess, relCursor, propertyCursor);
                 payloadSize += nodeValue.estimatedHeapUsage() + relationshipValue.estimatedHeapUsage();
                 nodes[i] = nodeValue;
                 rels[i] = relationshipValue;
@@ -142,29 +162,45 @@ public final class ValuePopulation {
         }
     }
 
-    public static MapValue populate(
+    private static MapValue populate(
             MapValue value,
             DbAccess dbAccess,
             NodeCursor nodeCursor,
             RelationshipScanCursor relCursor,
-            PropertyCursor propertyCursor) {
-        MapValueBuilder builder = new MapValueBuilder();
+            PropertyCursor propertyCursor,
+            MemoryTracker memoryTracker) {
+        final var builder = HeapTrackingMapValueBuilder.newHeapTrackingMapValueBuilder(memoryTracker);
+
         value.foreach((key, anyValue) ->
-                builder.add(key, populate(anyValue, dbAccess, nodeCursor, relCursor, propertyCursor)));
-        return builder.build();
+                // Empty memory tracker here to avoid duplicated estimation in nested lists/maps.
+                builder.put(
+                        key,
+                        populate(
+                                anyValue,
+                                dbAccess,
+                                nodeCursor,
+                                relCursor,
+                                propertyCursor,
+                                EmptyMemoryTracker.INSTANCE)));
+
+        // Values are still in memory but harder to track after this point.
+        // The intention is to at least avoid OOM during population of heavy maps.
+        return builder.buildAndClose();
     }
 
-    public static ListValue populate(
+    private static ListValue populate(
             ListValue value,
             DbAccess dbAccess,
             NodeCursor nodeCursor,
             RelationshipScanCursor relCursor,
-            PropertyCursor propertyCursor) {
-        ListValueBuilder builder = ListValueBuilder.newListBuilder(value.size());
+            PropertyCursor propertyCursor,
+            MemoryTracker memoryTracker) {
+        final var builder = new HeapTrackingListValueBuilder(memoryTracker);
         for (AnyValue v : value) {
-            builder.add(populate(v, dbAccess, nodeCursor, relCursor, propertyCursor));
+            // Empty memory tracker here to avoid duplicated estimation in nested lists/maps.
+            builder.add(populate(v, dbAccess, nodeCursor, relCursor, propertyCursor, EmptyMemoryTracker.INSTANCE));
         }
-        return builder.build();
+        return builder.buildAndClose();
     }
 
     private static NodeValue nodeValue(
@@ -183,11 +219,7 @@ public final class ValuePopulation {
     }
 
     private static RelationshipValue relationshipValue(
-            long id,
-            DbAccess dbAccess,
-            NodeCursor nodeCursor,
-            RelationshipScanCursor relCursor,
-            PropertyCursor propertyCursor) {
+            long id, DbAccess dbAccess, RelationshipScanCursor relCursor, PropertyCursor propertyCursor) {
         dbAccess.singleRelationship(id, relCursor);
         final var idMapper = dbAccess.elementIdMapper();
         final var elementId = idMapper.relationshipElementId(id);
