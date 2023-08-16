@@ -680,7 +680,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate discarded slots with eager") {
-    assume(runtime.name != "interpreted")
+    // Parallel runtime does not yet support tracking query heap high water mark that is used for the assertion
+    assume(!isParallel && runtime.name != "interpreted")
 
     val nRows = sizeHint
     val inputListSize = 4
@@ -730,7 +731,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate discarded slots with sort") {
-    assume(runtime.name != "interpreted" && runtime.name != "slotted")
+    // Parallel runtime does not yet support tracking query heap high water mark that is used for the assertion
+    assume(!isParallel && runtime.name != "interpreted" && runtime.name != "slotted")
 
     val nRows = sizeHint
     val inputListSize = 4
