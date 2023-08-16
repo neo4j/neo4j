@@ -1443,3 +1443,22 @@ Feature: CountExpressionAcceptance
     Then the result should be, in any order:
       | result |
       | 7      |
+
+  Scenario: COUNT subquery with aggregation inside should work
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (a)
+      RETURN COUNT {
+        MATCH (a)--(b)
+        RETURN count(b.foo)
+      } AS count
+      """
+    Then the result should be, in any order:
+      | count |
+      | 1     |
+      | 1     |
+      | 1     |
+      | 1     |
+      | 1     |
+      | 1     |

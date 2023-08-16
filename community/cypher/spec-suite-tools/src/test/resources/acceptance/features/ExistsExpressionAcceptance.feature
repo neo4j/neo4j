@@ -2491,3 +2491,22 @@ Feature: ExistsExpressionAcceptance
     Then the result should be, in any order:
       | result |
       | true   |
+
+  Scenario: EXISTS subquery with aggregation inside should work
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (a)
+      RETURN EXISTS {
+        MATCH (a)--(b)
+        RETURN count(b.foo)
+      } AS exists
+      """
+    Then the result should be, in any order:
+      | exists |
+      | true   |
+      | true   |
+      | true   |
+      | true   |
+      | true   |
+      | true   |

@@ -168,7 +168,10 @@ object ReturnItems {
 
   def checkAmbiguousGrouping(returnItems: ReturnItems): Option[SemanticError] = {
     val returnItemExprs = returnItems.items.map(_.expression).toSet
-    val aggregationExpressions = returnItemExprs.collect { case expr if expr.containsAggregate => expr }
+    // FullSubqueryExpressions can contain aggregates, but they also contain a whole query so that isn't relevant for this check.
+    val aggregationExpressions = returnItemExprs.collect {
+      case expr if expr.containsAggregate && !expr.isInstanceOf[FullSubqueryExpression] => expr
+    }
     val newGroupingVariables = returnItemExprs.collect { case expr: LogicalVariable => expr }
     val newPropertiesUsedForGrouping = returnItemExprs.collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
 

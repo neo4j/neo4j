@@ -1112,3 +1112,21 @@ Feature: CollectExpressionAcceptance
     Then the result should be, in any order:
       | result             |
       | [1, 1, 1, 1, 1, 1] |
+
+  Scenario: COLLECT subquery with aggregation inside should work
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (a)
+      RETURN COLLECT {
+        MATCH (a)--(b)
+        RETURN count(b.foo)
+      } AS collect
+      """
+    Then the result should be, in any order:
+      | collect |
+      | [0]     |
+      | [0]     |
+      | [0]     |
+      | [0]     |
+      | [0]     |
