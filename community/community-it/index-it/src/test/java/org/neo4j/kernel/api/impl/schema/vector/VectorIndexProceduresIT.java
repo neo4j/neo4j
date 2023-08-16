@@ -233,10 +233,19 @@ class VectorIndexProceduresIT {
         void cannotSetInvalidVector(List<Double> candidate) {
             try (final var tx = db.beginTx()) {
                 final var node = tx.createNode(LABEL);
-                assertThatThrownBy(() -> setVectorProperty(tx, node, candidate), "invalid vectors should throw")
-                        .rootCause()
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Index query vector must contain finite values", "Provided");
+                final var rootAssert = assertThatThrownBy(
+                                () -> setVectorProperty(tx, node, candidate), "invalid vectors should throw")
+                        .rootCause();
+
+                if (candidate != null) {
+                    rootAssert
+                            .isInstanceOf(IllegalArgumentException.class)
+                            .hasMessageContainingAll("Index query vector must contain finite values", "Provided");
+                } else {
+                    rootAssert
+                            .isInstanceOf(NullPointerException.class)
+                            .hasMessageContainingAll("vector", "must not be null");
+                }
             }
         }
 

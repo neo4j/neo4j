@@ -29,6 +29,7 @@ import static org.neo4j.procedure.Mode.WRITE;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -55,6 +56,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.Preconditions;
 
 @SuppressWarnings("unused")
 public class VectorIndexProcedures {
@@ -87,6 +89,12 @@ public class VectorIndexProcedures {
             @Name("propertyKey") String propertyKey,
             @Name("vectorDimension") long vectorDimension,
             @Name("vectorSimilarityFunction") String vectorSimilarityFunction) {
+        Objects.requireNonNull(name, "'indexName' must not be null");
+        Objects.requireNonNull(label, "'label' must not be null");
+        Objects.requireNonNull(propertyKey, "'propertyKey' must not be null");
+        Preconditions.checkArgument(vectorDimension > 1, "'vectorDimension' must be positive");
+        VectorSimilarityFunction.fromName(
+                Objects.requireNonNull(vectorSimilarityFunction, "vectorSimilarityFunction must not be null"));
 
         final var indexCreator = tx.schema()
                 .indexFor(Label.label(label))
@@ -112,6 +120,10 @@ public class VectorIndexProcedures {
             @Name("numberOfNearestNeighbours") long numberOfNearestNeighbours,
             @Name("query") List<Double> query)
             throws KernelException {
+        Objects.requireNonNull(name, "'indexName' must not be null");
+        Preconditions.checkArgument(numberOfNearestNeighbours > 1, "'numberOfNearestNeighbours' must be positive");
+        Objects.requireNonNull(query, "'query' must not be null");
+
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
@@ -148,6 +160,10 @@ public class VectorIndexProcedures {
     @Procedure(name = "db.create.setVectorProperty", mode = WRITE)
     public Stream<NodeRecord> setVectorProperty(
             @Name("node") Node node, @Name("key") String propKey, @Name("vector") List<Double> vector) {
+        Objects.requireNonNull(node, "'node' must not be null");
+        Objects.requireNonNull(propKey, "'key' must not be null");
+        Objects.requireNonNull(vector, "'vector' must not be null");
+
         // assume EUCLIDEAN as the bare minimum invariant
         node.setProperty(propKey, validVector(VectorSimilarityFunction.EUCLIDEAN, vector));
         return Stream.of(new NodeRecord(node));
@@ -169,7 +185,6 @@ public class VectorIndexProcedures {
 
     private float[] validateAndConvertQuery(IndexDescriptor index, List<Double> query) {
         final var config = index.getIndexConfig();
-
         final var dimensions = vectorDimensionsFrom(config);
         if (dimensions != query.size()) {
             throw new IllegalArgumentException("Index query vector has %d dimensions, but indexed vectors have %d."
