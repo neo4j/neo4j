@@ -758,7 +758,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               } chain
               checkForShadowedVariables(x.query.folder.findAllByClass[SubqueryCall]) chain
               SemanticState.recordCurrentScope(x.query)
-          }
+          } chain specifyType(CTBoolean, x)
 
       // COUNT
       case x: CountExpression =>
