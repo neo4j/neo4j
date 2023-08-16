@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
@@ -35,9 +36,18 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -48,7 +58,6 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -97,20 +106,61 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
-  def nodeIndexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property)", _ => getValueFromIndex)
-  def nodeIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", _ => getValueFromIndex)
-  def nodeUniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", _ => getValueFromIndex, unique = true)
-  def nodeIndexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", _ => getValueFromIndex)
-  def nodeIndexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", _ => getValueFromIndex)
+  def nodeIndexScan(
+    node: String,
+    label: String,
+    property: String,
+    getValueFromIndex: GetValueFromIndexBehavior
+  ): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property)", _ => getValueFromIndex)
 
-  def relationshipIndexScan(rel: String, typ: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): RelationshipIndexLeafPlan = IndexSeek.relationshipIndexSeek(s"(x)-[$rel:$typ($property)]->(y)", _ => getValueFromIndex)
+  def nodeIndexSeek(
+    node: String,
+    label: String,
+    property: String,
+    getValueFromIndex: GetValueFromIndexBehavior
+  ): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", _ => getValueFromIndex)
 
-  for((indexOperator, name) <- Seq((nodeIndexScan _, "indexScan"),
-                                  (nodeIndexSeek _, "indexSeek"),
-                                  (nodeUniqueIndexSeek _, "uniqueIndexSeek"),
-                                  (nodeIndexContainsScan _, "indexContainsScan"),
-                                  (nodeIndexEndsWithScan _, "indexEndsWithScan"))) {
-    test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after index operator: $name") {
+  def nodeUniqueIndexSeek(
+    node: String,
+    label: String,
+    property: String,
+    getValueFromIndex: GetValueFromIndexBehavior
+  ): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", _ => getValueFromIndex, unique = true)
+
+  def nodeIndexContainsScan(
+    node: String,
+    label: String,
+    property: String,
+    getValueFromIndex: GetValueFromIndexBehavior
+  ): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", _ => getValueFromIndex)
+
+  def nodeIndexEndsWithScan(
+    node: String,
+    label: String,
+    property: String,
+    getValueFromIndex: GetValueFromIndexBehavior
+  ): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", _ => getValueFromIndex)
+
+  def relationshipIndexScan(
+    rel: String,
+    typ: String,
+    property: String,
+    getValueFromIndex: GetValueFromIndexBehavior
+  ): RelationshipIndexLeafPlan =
+    IndexSeek.relationshipIndexSeek(s"(x)-[$rel:$typ($property)]->(y)", _ => getValueFromIndex)
+
+  for (
+    (indexOperator, name) <- Seq(
+      (nodeIndexScan _, "indexScan"),
+      (nodeIndexSeek _, "indexSeek"),
+      (nodeUniqueIndexSeek _, "uniqueIndexSeek"),
+      (nodeIndexContainsScan _, "indexContainsScan"),
+      (nodeIndexEndsWithScan _, "indexEndsWithScan")
+    )
+  ) {
+    test(
+      s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after index operator: $name"
+    ) {
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Selection(
         Seq(equals(nProp1, literalInt(1))),
@@ -128,18 +178,20 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       newTable.types(cachedNProp1) should be(initialType)
     }
 
-    test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after index operator: $name") {
+    test(
+      s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after index operator: $name"
+    ) {
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Projection(
         indexOperator("n", "L", "prop", CanGetValue),
-        Map("x" -> nProp1),
+        Map("x" -> nProp1)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
       newPlan should equal(
         Projection(
           indexOperator("n", "L", "prop", GetValue),
-          Map("x" -> cachedNProp1),
+          Map("x" -> cachedNProp1)
         )
       )
       val initialType = initialTable.types(nProp1)
@@ -149,8 +201,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     test(s"multiple usages after index should not be knownToAccessStore: $name") {
       val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode)
       val plan = Projection(
-        Selection(Seq(equals(nProp1, literalInt(2))),
-          indexOperator("n", "L", "prop", CanGetValue)),
+        Selection(Seq(equals(nProp1, literalInt(2))), indexOperator("n", "L", "prop", CanGetValue)),
         Map("x" -> nProp2)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
@@ -161,7 +212,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
             Seq(equals(cachedNProp1, literalInt(2))),
             indexOperator("n", "L", "prop", GetValue)
           ),
-          Map("x" -> cachedNProp2))
+          Map("x" -> cachedNProp2)
+        )
       )
 
       val initialType = initialTable.types(nProp1)
@@ -170,8 +222,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     }
   }
 
-  for((indexOperator, name) <- Seq((relationshipIndexScan _, "indexScan"))) {
-    test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after relationship index operator: $name") {
+  for ((indexOperator, name) <- Seq((relationshipIndexScan _, "indexScan"))) {
+    test(
+      s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after relationship index operator: $name"
+    ) {
       val initialTable = semanticTable(rProp1 -> CTInteger, r -> CTRelationship)
       val plan = Selection(
         Seq(equals(rProp1, literalInt(1))),
@@ -189,18 +243,20 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       newTable.types(cachedRRelProp1) should be(initialType)
     }
 
-    test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after relationship index operator: $name") {
+    test(
+      s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after relationship index operator: $name"
+    ) {
       val initialTable = semanticTable(rProp1 -> CTInteger, r -> CTRelationship)
       val plan = Projection(
         indexOperator("r", "L", "prop", CanGetValue),
-        Map("x" -> rProp1),
+        Map("x" -> rProp1)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
       newPlan should equal(
         Projection(
           indexOperator("r", "L", "prop", GetValue),
-          Map("x" -> cachedRRelProp1),
+          Map("x" -> cachedRRelProp1)
         )
       )
       val initialType = initialTable.types(rProp1)
@@ -210,8 +266,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     test(s"multiple usages after relationship index should not be knownToAccessStore: $name") {
       val initialTable = semanticTable(rProp1 -> CTInteger, rProp2 -> CTInteger, r -> CTNode)
       val plan = Projection(
-        Selection(Seq(equals(rProp1, literalInt(2))),
-          indexOperator("r", "L", "prop", CanGetValue)),
+        Selection(Seq(equals(rProp1, literalInt(2))), indexOperator("r", "L", "prop", CanGetValue)),
         Map("x" -> rProp2)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
@@ -222,7 +277,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
             Seq(equals(cachedRRelProp1, literalInt(2))),
             indexOperator("r", "L", "prop", GetValue)
           ),
-          Map("x" -> cachedRRelProp2))
+          Map("x" -> cachedRRelProp2)
+        )
       )
 
       val initialType = initialTable.types(rProp1)
@@ -241,7 +297,6 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan should be(plan)
     newTable should be(initialTable)
   }
-
 
   test("should set DoNotGetValue if there is no usage of prop(n, prop)") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
@@ -317,7 +372,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cachedNProp1) should be(initialType)
   }
 
-  test("should rewrite {foo: prop(n, prop)} to {foo: CachedProperty(n.prop)} with usage in selection after index scan") {
+  test(
+    "should rewrite {foo: prop(n, prop)} to {foo: CachedProperty(n.prop)} with usage in selection after index scan"
+  ) {
     val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
     val plan = Selection(
       Seq(equals(mapOf("foo" -> nProp1), mapOfInt(("foo", 1)))),
@@ -341,10 +398,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val plan = Selection(
       Seq(equals(nProp1, literalInt(1)), propWithoutSemanticType),
-      NodeHashJoin(Set("n"),
-        nodeIndexScan("n", "L", "prop", CanGetValue),
-        nodeIndexScan("m", "L", "prop", CanGetValue)
-      )
+      NodeHashJoin(Set("n"), nodeIndexScan("n", "L", "prop", CanGetValue), nodeIndexScan("m", "L", "prop", CanGetValue))
     )
     val (_, newTable) = replace(plan, initialTable)
     val initialType = initialTable.types(nProp1)
@@ -356,16 +410,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val cp1 = cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
 
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))),
-        AllNodesScan("n", Set.empty)),
+      Selection(Seq(equals(nProp1, literalInt(2))), AllNodesScan("n", Set.empty)),
       Map("x" -> nProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
-        Selection(Seq(equals(cp1, literalInt(2))),
-          AllNodesScan("n", Set.empty)),
+        Selection(Seq(equals(cp1, literalInt(2))), AllNodesScan("n", Set.empty)),
         Map("x" -> cachedNProp2)
       )
     )
@@ -385,16 +437,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val cp2 = cachedNProp2.copy(knownToAccessStore = true)(cachedNProp2.position)
 
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2)), greaterThan(nProp2, literalInt(1))),
-        AllNodesScan("n", Set.empty)),
+      Selection(Seq(equals(nProp1, literalInt(2)), greaterThan(nProp2, literalInt(1))), AllNodesScan("n", Set.empty)),
       Map("x" -> nProp3)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
-        Selection(Seq(equals(cp1, literalInt(2)), greaterThan(cp1, literalInt(1))),
-          AllNodesScan("n", Set.empty)),
+        Selection(Seq(equals(cp1, literalInt(2)), greaterThan(cp1, literalInt(1))), AllNodesScan("n", Set.empty)),
         Map("x" -> cachedNProp3)
       )
     )
@@ -421,7 +471,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
 
     val (newPlan, newTable) = replace(plan, initialTable)
-    newPlan should be (plan)
+    newPlan should be(plan)
     newTable should be(initialTable)
   }
 
@@ -480,10 +530,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .apply()
       .|.union()
       .|.|.projection("n as m")
-      .|.|.filter("cacheFromStore[n.prop] = 2")
+      .|.|.filter("cache[n.prop] = 2")
       .|.|.argument("n")
       .|.projection("n as m")
-      .|.filter("cache[n.prop] = 3")
+      .|.filter("cacheFromStore[n.prop] = 3")
       .|.argument("n")
       .allNodeScan("n")
       .build()
@@ -494,8 +544,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should not rewrite node property if there is only one usage") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))),
-        AllNodesScan("n", Set.empty)),
+      Selection(Seq(equals(nProp1, literalInt(2))), AllNodesScan("n", Set.empty)),
       Map("x" -> nFoo1)
     )
 
@@ -509,7 +558,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val cp1 = cachedRRelProp1.copy(knownToAccessStore = true)(cachedRRelProp1.position)
 
     val plan = Projection(
-      Selection(Seq(equals(rProp1, literalInt(2))),
+      Selection(
+        Seq(equals(rProp1, literalInt(2))),
         DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
       ),
       Map("x" -> rProp2)
@@ -518,7 +568,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
-        Selection(Seq(equals(cp1, literalInt(2))),
+        Selection(
+          Seq(equals(cp1, literalInt(2))),
           DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
         ),
         Map("x" -> cachedRRelProp2)
@@ -544,8 +595,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should not do anything with map properties") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTMap)
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))),
-        Argument(Set("n"))),
+      Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
       Map("x" -> nProp2)
     )
 
@@ -557,8 +607,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should not do anything with untyped variables") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger)
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))),
-        Argument(Set("n"))),
+      Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
       Map("x" -> nProp2)
     )
 
@@ -573,9 +622,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Projection(
-          Selection(Seq(equals(nProp1, literalInt(2))),
-            Argument(Set("n"))),
-          Map("x" -> n)),
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
+          Map("x" -> n)
+        ),
         Map("xProp" -> xProp)
       )
 
@@ -583,9 +632,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan should be(
       Projection(
         Projection(
-          Selection(Seq(equals(cp1, literalInt(2))),
-            Argument(Set("n"))),
-          Map("x" -> n)),
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
+          Map("x" -> n)
+        ),
         Map("xProp" -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
@@ -606,9 +655,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     builder.newNode(varFor("x"))
     val builderTable = builder.getSemanticTable
     val initialTable = builderTable
-      .copy(types = builderTable.types
-        .updated(nProp1, ExpressionTypeInfo(CTInteger))
-        .updated(xProp, ExpressionTypeInfo(CTInteger))
+      .copy(types =
+        builderTable.types
+          .updated(nProp1, ExpressionTypeInfo(CTInteger))
+          .updated(xProp, ExpressionTypeInfo(CTInteger))
       )
 
     val (newPlan, newTable) = replace(builder.build(), initialTable)
@@ -630,9 +680,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Projection(
-          Selection(Seq(equals(nProp1, literalInt(2))),
-            Argument(Set("n"))),
-          Map("n" -> n)),
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
+          Map("n" -> n)
+        ),
         Map("nProp" -> nProp2)
       )
 
@@ -640,9 +690,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan should be(
       Projection(
         Projection(
-          Selection(Seq(equals(cp1, literalInt(2))),
-            Argument(Set("n"))),
-          Map("n" -> n)),
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
+          Map("n" -> n)
+        ),
         Map("nProp" -> cachedNProp2)
       )
     )
@@ -657,7 +707,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Projection(
         Projection(
           Argument(Set("n")),
-          Map("m" -> n)),
+          Map("m" -> n)
+        ),
         Map("n" -> m, "p" -> nProp1)
       )
 
@@ -685,10 +736,12 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Projection(
         Projection(
           Argument(Set("n")),
-          Map("m" -> n)),
-        Map("x" -> m)),
-        Map("n" -> x, "p" -> nProp1)
-      )
+          Map("m" -> n)
+        ),
+        Map("x" -> m)
+      ),
+      Map("n" -> x, "p" -> nProp1)
+    )
 
     an[IllegalStateException] should be thrownBy {
       replace(plan, initialTable)
@@ -704,10 +757,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Aggregation(
-          Selection(Seq(equals(nProp1, literalInt(2))),
-            Argument(Set("n"))),
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
           Map("n" -> n),
-          Map("count(1)" -> count(literalInt(1)))),
+          Map("count(1)" -> count(literalInt(1)))
+        ),
         Map("nProp" -> nProp2)
       )
 
@@ -715,10 +768,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan should be(
       Projection(
         Aggregation(
-          Selection(Seq(equals(cp1, literalInt(2))),
-            Argument(Set("n"))),
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
           Map("n" -> n),
-          Map("count(1)" -> count(literalInt(1)))),
+          Map("count(1)" -> count(literalInt(1)))
+        ),
         Map("nProp" -> cachedNProp2)
       )
     )
@@ -733,10 +786,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Aggregation(
-          Selection(Seq(equals(nProp1, literalInt(2))),
-            Argument(Set("n"))),
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
           Map("x" -> n),
-          Map("count(1)" -> count(literalInt(1)))),
+          Map("count(1)" -> count(literalInt(1)))
+        ),
         Map("xProp" -> xProp)
       )
 
@@ -744,10 +797,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan should be(
       Projection(
         Aggregation(
-          Selection(Seq(equals(cp1, literalInt(2))),
-            Argument(Set("n"))),
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
           Map("x" -> n),
-          Map("count(1)" -> count(literalInt(1)))),
+          Map("count(1)" -> count(literalInt(1)))
+        ),
         Map("xProp" -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
@@ -765,19 +818,37 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .apply().withEffectiveCardinality(200)
       .|.nodeByLabelScan("m", "B").withEffectiveCardinality(200)
       // Note, push down properties don't keep track of input position in all cases and can produce output like the following
-      .cacheProperties(Set[LogicalProperty](Property(Variable("n2")(InputPosition.NONE), PropertyKeyName("prop")(InputPosition.NONE))(InputPosition.NONE)))
-      .aggregation(Seq("n as n2"), Seq("count(n) AS count")).withEffectiveCardinality(3).newVar("n2", n2InputPosition, CTNode)
+      .cacheProperties(Set[LogicalProperty](Property(
+        Variable("n2")(InputPosition.NONE),
+        PropertyKeyName("prop")(InputPosition.NONE)
+      )(InputPosition.NONE)))
+      .aggregation(Seq("n as n2"), Seq("count(n) AS count")).withEffectiveCardinality(3).newVar(
+        "n2",
+        n2InputPosition,
+        CTNode
+      )
       .nodeByLabelScan("n", "A").withEffectiveCardinality(10)
 
     val (resultPlan, _) = replace(plan.build(), plan.getSemanticTable)
     resultPlan shouldBe
       new LogicalPlanBuilder()
         .produceResults("`n3.prop`")
-        .projection(Map("n3.prop" -> CachedProperty("n", Variable("n3")(n2InputPosition), PropertyKeyName("prop")(InputPosition.NONE), NODE_TYPE)(InputPosition.NONE)))
+        .projection(Map("n3.prop" -> CachedProperty(
+          "n",
+          Variable("n3")(n2InputPosition),
+          PropertyKeyName("prop")(InputPosition.NONE),
+          NODE_TYPE
+        )(InputPosition.NONE)))
         .projection("n2 AS n3")
         .apply()
         .|.nodeByLabelScan("m", "B")
-        .cacheProperties(Set[LogicalProperty](CachedProperty("n", Variable("n2")(n2InputPosition), PropertyKeyName("prop")(InputPosition.NONE), NODE_TYPE, knownToAccessStore = true)(InputPosition.NONE)))
+        .cacheProperties(Set[LogicalProperty](CachedProperty(
+          "n",
+          Variable("n2")(n2InputPosition),
+          PropertyKeyName("prop")(InputPosition.NONE),
+          NODE_TYPE,
+          knownToAccessStore = true
+        )(InputPosition.NONE)))
         .aggregation(Seq("n as n2"), Seq("count(n) AS count"))
         .nodeByLabelScan("n", "A")
         .build()
@@ -790,14 +861,26 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .expandAll("(n)-->(m)").withEffectiveCardinality(50)
       .allNodeScan("n").withEffectiveCardinality(5)
 
-    val (resultPlan, _) = replace(plan.build(), plan.getSemanticTable, plan.effectiveCardinalities, plan.idGen, pushdownPropertyReads = true)
+    val (resultPlan, _) = replace(
+      plan.build(),
+      plan.getSemanticTable,
+      plan.effectiveCardinalities,
+      plan.idGen,
+      pushdownPropertyReads = true
+    )
 
     resultPlan shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
         .projection("cache[n.prop] AS x")
         .expandAll("(n)-->(m)")
-        .cacheProperties(Set[LogicalProperty](CachedProperty("n", Variable("n")(InputPosition.NONE), PropertyKeyName("prop")(InputPosition.NONE), NODE_TYPE, knownToAccessStore = true)(InputPosition.NONE)))
+        .cacheProperties(Set[LogicalProperty](CachedProperty(
+          "n",
+          Variable("n")(InputPosition.NONE),
+          PropertyKeyName("prop")(InputPosition.NONE),
+          NODE_TYPE,
+          knownToAccessStore = true
+        )(InputPosition.NONE)))
         .allNodeScan("n")
         .build()
   }
@@ -814,9 +897,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val builderTable = builder.getSemanticTable
     val initialTable = builderTable
-      .copy(types = builderTable.types
-        .updated(nProp1, ExpressionTypeInfo(CTInteger))
-        .updated(nProp2, ExpressionTypeInfo(CTInteger))
+      .copy(types =
+        builderTable.types
+          .updated(nProp1, ExpressionTypeInfo(CTInteger))
+          .updated(nProp2, ExpressionTypeInfo(CTInteger))
       )
 
     val (newPlan, newTable) = replace(builder.build(), initialTable)
@@ -845,11 +929,23 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, newTable) = replace(builder.build(), builder.getSemanticTable)
     newPlan should be(
       new LogicalPlanBuilder(wholePlan = false)
-        .projection(Map("baz" -> cachedNProp1, "bazLT" -> cachedNodeProp("n", "lt"), "bazRT" -> cachedNodeProp("n", "rt")))
+        .projection(Map(
+          "baz" -> cachedNProp1,
+          "bazLT" -> cachedNodeProp("n", "lt"),
+          "bazRT" -> cachedNodeProp("n", "rt")
+        ))
         .apply()
-        .|.projection(Map("bar" -> cachedNProp1, "barLR" -> cachedNodeProp("n", "lr"), "barRT" -> cachedNodePropFromStore("n", "rt")))
+        .|.projection(Map(
+          "bar" -> cachedNProp1,
+          "barLR" -> cachedNodeProp("n", "lr"),
+          "barRT" -> cachedNodePropFromStore("n", "rt")
+        ))
         .|.argument("n")
-        .projection(Map("foo" -> cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position), "fooLR" -> cachedNodePropFromStore("n", "lr"), "fooLT" -> cachedNodePropFromStore("n", "lt")))
+        .projection(Map(
+          "foo" -> cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position),
+          "fooLR" -> cachedNodePropFromStore("n", "lr"),
+          "fooLT" -> cachedNodePropFromStore("n", "lt")
+        ))
         .allNodeScan("n")
         .build()
     )
@@ -864,8 +960,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val builderTable = builder.getSemanticTable
     val initialTable = builderTable
-      .copy(types = builderTable.types
-        .updated(nProp1, ExpressionTypeInfo(CTInteger))
+      .copy(types =
+        builderTable.types
+          .updated(nProp1, ExpressionTypeInfo(CTInteger))
       )
 
     val plan = builder.build()
@@ -885,11 +982,23 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, newTable) = replace(builder.build(), builder.getSemanticTable)
     newPlan should be(
       new LogicalPlanBuilder(wholePlan = false)
-        .projection(Map("baz" -> cachedNProp1, "bazLT" -> cachedNodeProp("n", "lt"), "bazRT" -> cachedNodeProp("n", "rt")))
+        .projection(Map(
+          "baz" -> cachedNProp1,
+          "bazLT" -> cachedNodeProp("n", "lt"),
+          "bazRT" -> cachedNodeProp("n", "rt")
+        ))
         .cartesianProduct()
-        .|.projection(Map("bar" -> cachedNProp1, "barLR" -> cachedNodeProp("n", "lr"), "barRT" -> cachedNodePropFromStore("n", "rt")))
+        .|.projection(Map(
+          "bar" -> cachedNProp1,
+          "barLR" -> cachedNodeProp("n", "lr"),
+          "barRT" -> cachedNodePropFromStore("n", "rt")
+        ))
         .|.allNodeScan("n")
-        .projection(Map("foo" -> cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position), "fooLR" -> cachedNodePropFromStore("n", "lr"), "fooLT" -> cachedNodePropFromStore("n", "lt")))
+        .projection(Map(
+          "foo" -> cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position),
+          "fooLR" -> cachedNodePropFromStore("n", "lr"),
+          "fooLT" -> cachedNodePropFromStore("n", "lt")
+        ))
         .allNodeScan("n")
         .build()
     )
@@ -906,7 +1015,11 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan shouldBe new LogicalPlanBuilder(wholePlan = false)
       .projection("cacheN[a.prop] AS `a.prop`")
       .apply()
-      .|.nodeIndexOperator("b:B(prop = ???)", argumentIds = Set("a"), paramExpr = Some(cachedNodePropFromStore("a", "prop")))
+      .|.nodeIndexOperator(
+        "b:B(prop = ???)",
+        argumentIds = Set("a"),
+        paramExpr = Some(cachedNodePropFromStore("a", "prop"))
+      )
       .nodeIndexOperator("a:A(prop > 'foo')")
       .build()
   }
@@ -976,6 +1089,958 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
+  test("should not use cached properties in expression that is written to same property - SetProperty") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .eager()
+      .setProperty("n", "prop", "coalesce(n.prop + 1, 0)")
+      .eager()
+      .projection("n.prop as oldValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("cacheN[n.prop] as newValue")
+      .eager()
+      .setProperty("n", "prop", "coalesce(n.prop + 1, 0)")
+      .eager()
+      .projection("cacheNFromStore[n.prop] as oldValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in expression that is written to same property - SetProperties") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "newValue2", "oldValue", "oldValue2")
+      .projection("n.prop as newValue", "n.prop2 as newValue2")
+      .setProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1")
+      .projection("n.prop as oldValue", "n.prop2 as oldValue2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "newValue2", "oldValue", "oldValue2")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue", "cacheN[n.prop2] as newValue2")
+      .setProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1")
+      .projection("cacheNFromStore[n.prop] as oldValue", "cacheNFromStore[n.prop2] as oldValue2")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in expression that is written to same property - SetPropertiesFromMap") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      .projection("n.prop as newValue")
+      .setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+      .projection("n.prop as oldValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue")
+      .setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+      .projection("cacheNFromStore[n.prop] as oldValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in expression that is written to same property - SetNodeProperty") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      .projection("n.prop as newValue")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .projection("n.prop as oldValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .projection("cacheNFromStore[n.prop] as oldValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in expression that is written to same property - SetNodeProperties") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("oldValue", "oldValue2", "newValue", "newValue2")
+      .projection("n.prop as newValue", "n.prop2 as newValue2")
+      .setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1")
+      .projection("n.prop as oldValue", "n.prop2 as oldValue2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("oldValue", "oldValue2", "newValue", "newValue2")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue", "cacheN[n.prop2] as newValue2")
+      .setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1")
+      .projection("cacheNFromStore[n.prop] as oldValue", "cacheNFromStore[n.prop2] as oldValue2")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in expression that is written to same property - SetNodePropertiesFromMap") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      .projection("n.prop as newValue")
+      .setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+      .projection("n.prop as oldValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue")
+      .setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+      .projection("cacheNFromStore[n.prop] as oldValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in expression that is written to same property - SetRelationshipProperty") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop as newValue")
+      .setRelationshipProperty("r", "prop", "r.prop + 1")
+      .projection("r.prop as oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheR[r.prop] as newValue")
+      .setRelationshipProperty("r", "prop", "r.prop + 1")
+      .projection("cacheRFromStore[r.prop] as oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in expression that is written to same property - SetRelationshipProperties") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop1 as newValue1", "r.prop2 as newValue2")
+      .setRelationshipProperties("r", ("prop1", "r.prop1 + 1"), ("prop2", "r.prop2 + 1"))
+      .projection("r.prop1 as oldValue1", "r.prop2 as oldValue2")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheR[r.prop1] as newValue1", "cacheR[r.prop2] as newValue2")
+      .setRelationshipProperties("r", ("prop1", "r.prop1 + 1"), ("prop2", "r.prop2 + 1"))
+      .projection("cacheRFromStore[r.prop1] as oldValue1", "cacheRFromStore[r.prop2] as oldValue2")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in expression that is written to same property - SetRelationshipPropertiesFromMap"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop as newValue")
+      .setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}", removeOtherProps = false)
+      .projection("r.prop as oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheR[r.prop] as newValue")
+      .setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}", removeOtherProps = false)
+      .projection("cacheRFromStore[r.prop] as oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not use cached properties in merge on match expression that is written to same property - SetProperty") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperty("n", "prop", "coalesce(n.prop + 1, 0)"))
+      )
+      .projection("n.prop as oldValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperty("n", "prop", "coalesce(n.prop + 1, 0)"))
+      )
+      .projection("cacheNFromStore[n.prop] as oldValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in merge on match expression that is written to same property - SetProperties"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "newValue2", "oldValue", "oldValue2")
+      .projection("n.prop as newValue", "n.prop2 as newValue2")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
+      )
+      .projection("n.prop as oldValue", "n.prop2 as oldValue2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "newValue2", "oldValue", "oldValue2")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue", "cacheN[n.prop2] as newValue2")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
+      )
+      .projection("cacheNFromStore[n.prop] as oldValue", "cacheNFromStore[n.prop2] as oldValue2")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in merge on match expression that is written to same property - SetNodeProperty"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      .projection("n.prop as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperty("n", "prop", "n.prop + 1"))
+      )
+      .projection("n.prop as oldValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperty("n", "prop", "n.prop + 1"))
+      )
+      .projection("cacheNFromStore[n.prop] as oldValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in merge on match expression that is written to same property - SetNodeProperties"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("oldValue", "oldValue2", "newValue", "newValue2")
+      .projection("n.prop as newValue", "n.prop2 as newValue2")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
+      )
+      .projection("n.prop as oldValue", "n.prop2 as oldValue2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("oldValue", "oldValue2", "newValue", "newValue2")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue", "cacheN[n.prop2] as newValue2")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
+      )
+      .projection("cacheNFromStore[n.prop] as oldValue", "cacheNFromStore[n.prop2] as oldValue2")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in merge on match expression that is written to same property - SetNodePropertiesFromMap"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      .projection("n.prop as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false))
+      )
+      .projection("n.prop as oldValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "oldValue")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheN[n.prop] as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false))
+      )
+      .projection("cacheNFromStore[n.prop] as oldValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in merge on match expression that is written to same property - SetRelationshipProperty"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setRelationshipProperty("r", "prop", "r.prop + 1"))
+      )
+      .projection("r.prop as oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheR[r.prop] AS newValue")
+      .merge(
+        nodes = Seq(createNode("n")),
+        onMatch = Seq(setRelationshipProperty("r", "prop", "r.prop + 1"))
+      )
+      .projection("cacheRFromStore[r.prop] AS oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in merge on match expression that is written to same property - SetRelationshipProperties"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setRelationshipProperties("r", "prop" -> "r.prop + 1"))
+      )
+      .projection("r.prop as oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheR[r.prop] AS newValue")
+      .merge(
+        nodes = Seq(createNode("n")),
+        onMatch = Seq(setRelationshipProperties("r", "prop" -> "r.prop + 1"))
+      )
+      .projection("cacheRFromStore[r.prop] AS oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should not use cached properties in merge on match expression that is written to same property - SetRelationshipPropertiesFromMap"
+  ) {
+
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}"))
+      )
+      .projection("r.prop as oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      // Note: Cached properties in this final read is both useless and harmless. Properties will be read from the
+      // transaction context in both cases. It would be preferred *not* to insert cached properties here but we deemed
+      // it not worth the effort right now.
+      .projection("cacheR[r.prop] AS newValue")
+      .merge(
+        nodes = Seq(createNode("n")),
+        onMatch = Seq(setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}"))
+      )
+      .projection("cacheRFromStore[r.prop] AS oldValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should use cached properties - same property and entity in read and set, but the read entity is aliased to a different variable name"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .eager()
+      .setNodeProperty("n", "prop", "n2.prop + 1")
+      .eager()
+      .projection("n2.prop as oldValue")
+      .projection("n as n2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    val otherPlan = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("cacheN[n.prop] as newValue")
+      .eager()
+      .setNodeProperty(
+        "n",
+        "prop",
+        Add(
+          CachedProperty("n", Variable("n2")(pos), PropertyKeyName("prop")(pos), NODE_TYPE)(pos),
+          SignedDecimalIntegerLiteral("1")(pos)
+        )(pos)
+      )
+      .eager()
+      .projection(Map("oldValue" -> CachedProperty(
+        "n",
+        Variable("n2")(pos),
+        PropertyKeyName("prop")(pos),
+        NODE_TYPE,
+        knownToAccessStore = true
+      )(pos)))
+      .projection("n as n2")
+      .allNodeScan("n")
+      .build()
+    newPlan shouldBe otherPlan
+  }
+
+  test("should use cached properties - same property but different node in read and set") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .eager()
+      .setNodeProperty("n", "prop", "n2.prop + 1")
+      .eager()
+      .projection("n2.prop as oldValue")
+      .cartesianProduct()
+      .|.allNodeScan("n2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    val otherPlan = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .eager()
+      .setNodeProperty("n", "prop", "cacheN[n2.prop] + 1")
+      .eager()
+      .projection("cacheNFromStore[n2.prop] as oldValue")
+      .cartesianProduct()
+      .|.allNodeScan("n2")
+      .allNodeScan("n")
+      .build()
+
+    otherPlan shouldBe newPlan
+  }
+
+  test("should not cache in set node property with surrounding property reads") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as value3")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .projection("n.prop as value2")
+      .projection("n.prop as value1")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    val otherPlan = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("cacheN[n.prop] AS value3")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .projection("cacheN[n.prop] AS value2")
+      .projection("cacheNFromStore[n.prop] AS value1")
+      .allNodeScan("n")
+      .build()
+
+    otherPlan shouldBe newPlan
+  }
+
+  test("should not cache property in set property below property reads") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as value2")
+      .projection("n.prop as value1")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("cacheN[n.prop] AS value2")
+      .projection("cacheNFromStore[n.prop] AS value1")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should cache property in merge on match") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(setNodeProperty("n", "prop", "n.prop + 1"))
+      )
+      .projection("n.prop as oldValue")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("cacheN[n.prop] AS newValue")
+      .merge(
+        nodes = Seq(createNode("n")),
+        onMatch = Seq(setNodeProperty("n", "prop", "n.prop + 1"))
+      )
+      .projection("cacheNFromStore[n.prop] AS oldValue")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should cache property in merge with multiple on match") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection(
+        "n.prop as newValue",
+        "n.prop2 as newValue2",
+        "r.prop as newValue3",
+        "r.prop2 as newValue4"
+      )
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(
+          setNodeProperty("n", "prop", "n.prop + 1"),
+          setNodeProperties("n", "other" -> "n.prop2", "prop2" -> "n.prop2 + 1"),
+          setRelationshipProperty("r", "prop", "r.prop + 1")
+        )
+      )
+      .projection(
+        "n.prop as oldValue",
+        "n.prop2 as oldValue2",
+        "r.prop as oldValue3",
+        "r.prop2 as oldValue4"
+      )
+      .expandAll("(n)-[r]->(n)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection(
+        "cacheN[n.prop] as newValue",
+        "cacheN[n.prop2] as newValue2",
+        "cacheR[r.prop] as newValue3",
+        "cacheR[r.prop2] as newValue4"
+      )
+      .merge(
+        nodes = Seq(CreateNode("n", Seq.empty, None)),
+        onMatch = Seq(
+          setNodeProperty("n", "prop", "n.prop + 1"),
+          setNodeProperties("n", "other" -> "cacheN[n.prop2]", "prop2" -> "n.prop2 + 1"),
+          setRelationshipProperty("r", "prop", "r.prop + 1")
+        )
+      )
+      .projection(
+        "cacheNFromStore[n.prop] as oldValue",
+        "cacheNFromStore[n.prop2] as oldValue2",
+        "cacheRFromStore[r.prop] as oldValue3",
+        "cacheRFromStore[r.prop2] as oldValue4"
+      )
+      .expandAll("(n)-[r]->(n)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should use cached properties in expression that is written to different property - SetProperty") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .eager()
+      .setProperty("n", "prop", "coalesce(n.prop2 + 1, 0)")
+      .eager()
+      .projection("n.prop2 as otherValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop as newValue")
+      .eager()
+      .setProperty("n", "prop", "coalesce(cacheN[n.prop2] + 1, 0)")
+      .eager()
+      .projection("cacheNFromStore[n.prop2] as otherValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should use cached properties in expression that is written to different properties - SetProperties") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "newValue2", "otherValue", "otherValue2")
+      .projection("n.prop3 as newValue", "n.prop4 as newValue2")
+      .setProperties("n", "prop3" -> "n.prop + 1", "prop4" -> "n.prop2 + 1")
+      .projection("n.prop as otherValue", "n.prop2 as otherValue2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "newValue2", "otherValue", "otherValue2")
+      .projection("n.prop3 as newValue", "n.prop4 as newValue2")
+      .setProperties("n", "prop3" -> "cacheN[n.prop] + 1", "prop4" -> "cacheN[n.prop2] + 1")
+      .projection("cacheNFromStore[n.prop] as otherValue", "cacheNFromStore[n.prop2] as otherValue2")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should use cached properties in expression that is written to different properties - SetPropertiesFromMap"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "otherValue")
+      .projection("n.prop2 as newValue")
+      .setPropertiesFromMap("n", "{prop2: n.prop + 1}", removeOtherProps = false)
+      .projection("n.prop as otherValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "otherValue")
+      .projection("n.prop2 as newValue")
+      .setPropertiesFromMap("n", "{prop2: cacheN[n.prop] + 1}", removeOtherProps = false)
+      .projection("cacheNFromStore[n.prop] as otherValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should use cached properties in expression that is written to different property - SetNodeProperty") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "otherValue")
+      .projection("n.prop2 as newValue")
+      .setNodeProperty("n", "prop2", "n.prop + 1")
+      .projection("n.prop as otherValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "otherValue")
+      .projection("n.prop2 as newValue")
+      .setNodeProperty("n", "prop2", "cacheN[n.prop] + 1")
+      .projection("cacheNFromStore[n.prop] as otherValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should use cached properties in expression that is written to different properties - SetNodeProperties") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("otherValue", "otherValue2", "newValue", "newValue2")
+      .projection("n.prop3 as newValue", "n.prop4 as newValue2")
+      .setNodeProperties("n", "prop3" -> "n.prop + 1", "prop4" -> "n.prop2 + 1")
+      .projection("n.prop as otherValue", "n.prop2 as otherValue2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("otherValue", "otherValue2", "newValue", "newValue2")
+      .projection("n.prop3 as newValue", "n.prop4 as newValue2")
+      .setNodeProperties("n", "prop3" -> "cacheN[n.prop] + 1", "prop4" -> "cacheN[n.prop2] + 1")
+      .projection("cacheNFromStore[n.prop] as otherValue", "cacheNFromStore[n.prop2] as otherValue2")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should use cached properties in expression that is written to different properties - SetNodePropertiesFromMap"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("newValue", "otherValue")
+      .projection("n.prop2 as newValue")
+      .setNodePropertiesFromMap("n", "{prop2: n.prop + 1}", removeOtherProps = false)
+      .projection("n.prop as otherValue")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("newValue", "otherValue")
+      .projection("n.prop2 as newValue")
+      .setNodePropertiesFromMap("n", "{prop2: cacheN[n.prop] + 1}", removeOtherProps = false)
+      .projection("cacheNFromStore[n.prop] as otherValue")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should use cached properties in expression that is written to different property - SetRelationshipProperty") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop2 as newValue")
+      .setRelationshipProperty("r", "prop2", "r.prop + 1")
+      .projection("r.prop as otherValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop2 as newValue")
+      .setRelationshipProperty("r", "prop2", "cacheR[r.prop] + 1")
+      .projection("cacheRFromStore[r.prop] as otherValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should use cached properties in expression that is written to different properties - SetRelationshipProperties"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop3 as newValue1", "r.prop4 as newValue2")
+      .setRelationshipProperties("r", ("prop3", "r.prop1 + 1"), ("prop4", "r.prop2 + 1"))
+      .projection("r.prop1 as otherValue1", "r.prop2 as otherValue2")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop3 as newValue1", "r.prop4 as newValue2")
+      .setRelationshipProperties("r", ("prop3", "cacheR[r.prop1] + 1"), ("prop4", "cacheR[r.prop2] + 1"))
+      .projection("cacheRFromStore[r.prop1] as otherValue1", "cacheRFromStore[r.prop2] as otherValue2")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should use cached properties in expression that is written to different properties - SetRelationshipPropertiesFromMap"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop2 as newValue")
+      .setRelationshipPropertiesFromMap("r", "{prop2: r.prop + 1}", removeOtherProps = false)
+      .projection("r.prop as otherValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop2 as newValue")
+      .setRelationshipPropertiesFromMap("r", "{prop2: cacheR[r.prop] + 1}", removeOtherProps = false)
+      .projection("cacheRFromStore[r.prop] as otherValue")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should use cached properties in expression that is written to different properties when they overlap with other entries in list - SetNodeProperties"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("n.prop1 as newValue1", "n.prop2 as newValue2")
+      .setNodeProperties("n", "prop1" -> "n.prop1 + 1", "prop2" -> "n.prop1 + 1")
+      .projection("n.prop1 as otherValue1", "n.prop2 as otherValue2")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("cacheN[n.prop1] as newValue1", "cacheN[n.prop2] as newValue2")
+      .setNodeProperties("n", "prop1" -> "n.prop1 + 1", "prop2" -> "cacheN[n.prop1] + 1")
+      .projection("cacheNFromStore[n.prop1] as otherValue1", "cacheNFromStore[n.prop2] as otherValue2")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test(
+    "should use cached properties in expression that is written to different properties when they overlap with other entries in map - SetRelationshipPropertiesFromMap"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("r.prop1 as newValue1", "r.prop2 as newValue2")
+      .setRelationshipPropertiesFromMap("r", "{prop1: r.prop1 + 1, prop2 : r.prop1 + 1}", removeOtherProps = false)
+      .projection("r.prop1 as otherValue1", "r.prop2 as otherValue2")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("cacheR[r.prop1] as newValue1", "cacheR[r.prop2] as newValue2")
+      .setRelationshipPropertiesFromMap(
+        "r",
+        "{prop1: r.prop1 + 1, prop2 : cacheR[r.prop1] + 1}",
+        removeOtherProps = false
+      )
+      .projection("cacheRFromStore[r.prop1] as otherValue1", "cacheRFromStore[r.prop2] as otherValue2")
+      .expandAll("(n)-[r]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("union should not cache single access") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("prop")
+      .union()
+      .|.projection("n.prop as prop")
+      .|.allNodeScan("n")
+      .projection("n.prop as prop")
+      .allNodeScan("n")
+
+    val plan = builder.build()
+    val (newPlan, _) = replace(plan, builder.getSemanticTable)
+    newPlan shouldBe plan
+  }
+
+  // For braver programmers
+  ignore("union should cache on RHS") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("prop")
+      .union()
+      .|.projection("n.prop as propAgain")
+      .|.projection("n.prop as prop")
+      .|.allNodeScan("n")
+      .projection("n.prop as prop")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("a")
+      .union()
+      .|.projection("cacheN[n.prop] as propAgain")
+      .|.projection("cacheNFromStore[n.prop] as prop")
+      .|.allNodeScan("n")
+      .projection("n.prop as prop")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("nested union should cache") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("prop", "propAgain")
+      .apply()
+      .|.union()
+      .|.|.projection("n.prop2 as propAgain")
+      .|.|.argument("n")
+      .|.projection("n.prop as propAgain")
+      .|.argument("n")
+      .union()
+      .|.projection("n.prop as prop")
+      .|.allNodeScan("n")
+      .projection("n.prop as prop")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("prop", "propAgain")
+      .apply()
+      .|.union()
+      .|.|.projection("n.prop2 as propAgain")
+      .|.|.argument("n")
+      .|.projection("cacheN[n.prop] as propAgain")
+      .|.argument("n")
+      .union()
+      .|.projection("cacheN[n.prop] as prop")
+      .|.allNodeScan("n")
+      .projection("cacheNFromStore[n.prop] as prop")
+      .allNodeScan("n")
+      .build()
+  }
+
   private def replace(
     plan: LogicalPlan,
     initialTable: SemanticTable,
@@ -990,9 +2055,11 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads) {
       // Override so that we do not have to provide so many mocks.
-      override protected[steps] def resortSelectionPredicates(from: LogicalPlanState,
-                                                              context: PlannerContext,
-                                                              s: Selection): Seq[Expression] = {
+      override protected[steps] def resortSelectionPredicates(
+        from: LogicalPlanState,
+        context: PlannerContext,
+        s: Selection
+      ): Seq[Expression] = {
         s.predicate.exprs.sortBy(_.folder.treeCount { case _: Property => true })
       }
     }
@@ -1002,12 +2069,12 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     when(plannerContext.tracer).thenReturn(NO_TRACING)
     when(plannerContext.cancellationChecker).thenReturn(CancellationChecker.NeverCancelled)
 
-    val resultState =  icp.transform(state, plannerContext)
+    val resultState = icp.transform(state, plannerContext)
     (resultState.logicalPlan, resultState.semanticTable())
   }
 
-  private def semanticTable(types:(Expression, TypeSpec)*): SemanticTable = {
-    val mappedTypes = types.map { case(expr, typeSpec) => expr -> ExpressionTypeInfo(typeSpec)}
-    SemanticTable(types = ASTAnnotationMap[Expression, ExpressionTypeInfo](mappedTypes:_*))
+  private def semanticTable(types: (Expression, TypeSpec)*): SemanticTable = {
+    val mappedTypes = types.map { case (expr, typeSpec) => expr -> ExpressionTypeInfo(typeSpec) }
+    SemanticTable(types = ASTAnnotationMap[Expression, ExpressionTypeInfo](mappedTypes: _*))
   }
 }

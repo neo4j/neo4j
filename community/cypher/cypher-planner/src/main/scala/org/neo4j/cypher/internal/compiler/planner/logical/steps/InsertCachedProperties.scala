@@ -27,11 +27,16 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanUsesEffectiveOutputCardinality
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.CacheAll
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.ProtectedProperties
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -42,22 +47,57 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.DeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeletePath
+import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetProperties
+import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -70,7 +110,8 @@ case object PropertiesAreCached extends StepSequencer.Condition
  *
  * It traverses the plan and swaps property lookups for cached properties where possible.
  */
-case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
+case class InsertCachedProperties(pushdownPropertyReads: Boolean)
+    extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
@@ -100,47 +141,68 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
      * A summary of all usages of a property
      *
      * @param canGetFromIndex      if the property can be read from an index.
-     * @param usages               how many accesses to the property happen
+     * @param usages               references to all usages of this property
+     * @param usageCount           effective count of usages of property. Note this is not usages.size() since
+     *                             we don't want to count LHS and RHS of unions simultaneously.
      * @param entityType           the type of property
      * @param firstWritingAccesses if there can be determined a first logical plan that writes the property,
      *                             this contains that plan and all accesses that happen to this property from that plan.
      */
-    case class PropertyUsages(canGetFromIndex: Boolean,
-                              usages: Int,
-                              entityType: EntityType,
-                              firstWritingAccesses: Option[(LogicalPlan, Seq[Property])]) {
-      //always prefer reading from index
+    case class PropertyUsages(
+      canGetFromIndex: Boolean,
+      usages: Set[Ref[Property]],
+      usageCount: Int,
+      entityType: EntityType,
+      firstWritingAccesses: Option[(LogicalPlan, Set[Ref[Property]])]
+    ) {
+      // always prefer reading from index
       def registerIndexUsage: PropertyUsages =
         copy(canGetFromIndex = true, firstWritingAccesses = None)
 
       def addUsage(prop: Property, accessingPlan: LogicalPlan): PropertyUsages = {
-        val fWA = if (canGetFromIndex) None else firstWritingAccesses match {
-          case None => Some((accessingPlan, Seq(prop)))
-          case Some((`accessingPlan`, otherUsages)) => Some((accessingPlan, otherUsages :+ prop))
-          case x => x
-        }
+        val fWA =
+          if (canGetFromIndex) None
+          else firstWritingAccesses match {
+            case None                                 => Some((accessingPlan, Set(Ref(prop))))
+            case Some((`accessingPlan`, otherUsages)) => Some((accessingPlan, otherUsages + Ref(prop)))
+            case x                                    => x
+          }
 
-        copy(usages = usages + 1, firstWritingAccesses = fWA)
+        copy(
+          usages = usages + Ref(prop),
+          usageCount = usageCount + 1,
+          firstWritingAccesses = fWA
+        )
       }
 
       def ++(other: PropertyUsages): PropertyUsages = PropertyUsages(
         this.canGetFromIndex || other.canGetFromIndex,
-        this.usages + other.usages,
+        this.usages ++ other.usages,
+        this.usageCount + other.usageCount,
         this.entityType,
         this.firstWritingAccesses.orElse(other.firstWritingAccesses)
       )
     }
 
-    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, NODE_TYPE, None)
-    val REL_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, RELATIONSHIP_TYPE, None)
+    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, Set.empty, 0, NODE_TYPE, None)
+    val REL_NO_PROP_USAGE =
+      PropertyUsages(canGetFromIndex = false, Set.empty, 0, RELATIONSHIP_TYPE, None)
 
-    case class Acc(properties: Map[Property, PropertyUsages] = Map.empty,
-                   previousNames: Map[String, String] = Map.empty) {
+    case class Acc(
+      properties: Map[Property, PropertyUsages] = Map.empty,
+      previousNames: Map[String, String] = Map.empty,
+      protectedPropertiesByPlanId: Map[Id, ProtectedProperties] = Map.empty
+    ) {
 
       def ++(other: Acc): Acc = Acc(
         this.properties.fuse(other.properties)(_ ++ _),
-        this.previousNames ++ other.previousNames
+        this.previousNames ++ other.previousNames,
+        this.protectedPropertiesByPlanId ++ other.protectedPropertiesByPlanId
       )
+
+      def withProtectedProperties(plan: LogicalPlan, protectedProps: ProtectedProperties): Acc = {
+        copy(protectedPropertiesByPlanId = protectedPropertiesByPlanId.updated(plan.id, protectedProps))
+      }
 
       def addIndexNodeProperty(prop: Property): Acc = {
         val previousUsages = properties.getOrElse(prop, NODE_NO_PROP_USAGE)
@@ -155,17 +217,21 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
       }
 
       def addNodeProperty(prop: Property, accessingPlan: LogicalPlan): Acc = {
-        val originalProp = originalProperty(prop)
-        val previousUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
-        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
-        copy(properties = newProperties)
+        ifShouldCache(accessingPlan, prop) {
+          val originalProp = originalProperty(prop)
+          val previousUsages: PropertyUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
+          val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
+          copy(properties = newProperties)
+        }
       }
 
       def addRelProperty(prop: Property, accessingPlan: LogicalPlan): Acc = {
-        val originalProp = originalProperty(prop)
-        val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
-        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
-        copy(properties = newProperties)
+        ifShouldCache(accessingPlan, prop) {
+          val originalProp = originalProperty(prop)
+          val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
+          val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
+          copy(properties = newProperties)
+        }
       }
 
       def addPreviousNames(mappings: Map[String, String]): Acc = {
@@ -180,7 +246,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
               name = newRenamings(name)
               if (!seenNames.add(name)) {
                 // We have a cycle
-                throw new IllegalStateException(s"There was a cycle in names: $seenNames. This is likely a namespacing bug.")
+                throw new IllegalStateException(
+                  s"There was a cycle in names: $seenNames. This is likely a namespacing bug."
+                )
               }
             }
             (currentName, name)
@@ -200,30 +268,50 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         variable.copy(name)(variable.position)
       }
 
+      private def ifShouldCache(plan: LogicalPlan, prop: Property)(f: => Acc): Acc = {
+        if (protectedProperties(plan).shouldCache(prop)) f else this
+      }
+
       def originalProperty(prop: Property): Property = {
-        val Property(v: Variable, _) = prop
+        val v = prop.map.asInstanceOf[Variable]
         prop.copy(variableWithOriginalName(v))(prop.position)
       }
 
       def resetUsagesCount(): Acc =
-        copy(properties = properties.mapValues(_.copy(usages = 0)))
+        copy(properties = properties.mapValues(_.copy(usages = Set.empty, usageCount = 0)))
+
+      def protectedProperties(plan: LogicalPlan): ProtectedProperties = {
+        protectedPropertiesByPlanId.getOrElse(plan.id, CacheAll)
+      }
     }
 
-    def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.folder.treeFold(acc) {
-      // Find properties
-      case prop@Property(v: Variable, _) if isNode(v) => acc =>
-        TraverseChildren(acc.addNodeProperty(prop, logicalPlan))
-      case prop@Property(v: Variable, _) if isRel(v) => acc =>
-        TraverseChildren(acc.addRelProperty(prop, logicalPlan))
+    def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan, lookIn: Option[Foldable] = None): Acc = {
+      lookIn.getOrElse(logicalPlan).folder.treeFold(acc) {
+        // Don't traverse into other logical plans
+        case lp: LogicalPlan if !(lp eq logicalPlan) => acc => SkipChildren(acc)
 
-      // New fold for nested plan expression
-      case nested:NestedPlanExpression => acc =>
-        val accWithNested = findPropertiesInTree(acc, nested.plan)
-        TraverseChildren(accWithNested)
+        case RestrictedCaching(plan, restrictedCaching) =>
+          acc => TraverseChildren(acc.withProtectedProperties(plan, restrictedCaching))
 
-      // Don't traverse into other logical plans
-      case lp: LogicalPlan if !(lp eq logicalPlan) => acc =>
-        SkipChildren(acc)
+        // Find properties
+        case IsNotNull(prop @ Property(v: Variable, _)) if isNode(v) =>
+          acc =>
+            SkipChildren(acc.addNodeProperty(prop, logicalPlan))
+        case IsNotNull(prop @ Property(v: Variable, _)) if isRel(v) =>
+          acc =>
+            SkipChildren(acc.addRelProperty(prop, logicalPlan))
+        case prop @ Property(v: Variable, _) if isNode(v) =>
+          acc =>
+            TraverseChildren(acc.addNodeProperty(prop, logicalPlan))
+        case prop @ Property(v: Variable, _) if isRel(v) =>
+          acc =>
+            TraverseChildren(acc.addRelProperty(prop, logicalPlan))
+
+        // New fold for nested plan expression
+        case nested: NestedPlanExpression => acc =>
+            val accWithNested = findPropertiesInTree(acc, nested.plan)
+            TraverseChildren(accWithNested)
+      }
     }
 
     def findPropertiesInTree(initialAcc: Acc, logicalPlan: LogicalPlan): Acc = {
@@ -246,12 +334,14 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
 
             // Find index plans that can provide cached properties
             case indexPlan: NodeIndexLeafPlan =>
-              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) { (innerAcc, indexedProp) =>
-                innerAcc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
+              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) {
+                (innerAcc, indexedProp) =>
+                  innerAcc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
               }
             case indexPlan: RelationshipIndexLeafPlan =>
-              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) { (innerAcc, indexedProp) =>
-                innerAcc.addIndexRelationshipProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
+              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) {
+                (innerAcc, indexedProp) =>
+                  innerAcc.addIndexRelationshipProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
               }
 
             case _ => accWithProps
@@ -259,16 +349,22 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         },
         (lhsAcc, rhsAcc, plan) =>
           plan match {
-            case _:Union =>
+            case _: Union =>
               // Take on only consistent renaming across both unions and remember properties from both subtrees
-              val mergedNames = lhsAcc.previousNames.filter(
-                entry =>
-                  rhsAcc.previousNames.get(entry._1) match {
-                    case None => false
-                    case Some(value) => value.equals(entry._2)
-                  }
+              val mergedNames = lhsAcc.previousNames.filter(entry =>
+                rhsAcc.previousNames.get(entry._1) match {
+                  case None        => false
+                  case Some(value) => value.equals(entry._2)
+                }
               )
-              Acc(lhsAcc.properties ++ rhsAcc.properties, mergedNames)
+              val mergedProperties = lhsAcc.properties.fuse(rhsAcc.properties) {
+                (lhs, rhs) =>
+                  (lhs ++ rhs).copy(
+                    usages = lhs.usages ++ rhs.usages,
+                    usageCount = math.max(lhs.usageCount, rhs.usageCount)
+                  )
+              }
+              Acc(mergedProperties, mergedNames)
 
             case plan =>
               val combinedChildAcc = lhsAcc ++ rhsAcc
@@ -285,17 +381,20 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
     // In the second step we rewrite both properties and index plans
     val propertyRewriter = bottomUp(Rewriter.lift {
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
-      case prop@Property(v: Variable, propertyKeyName) =>
+      case prop @ Property(v: Variable, propertyKeyName) =>
         val originalVar = acc.variableWithOriginalName(v)
         val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
-          case Some(PropertyUsages(canGetFromIndex, usages, entityType, firstWritingAccesses)) if usages > 1 || canGetFromIndex =>
+          case Some(PropertyUsages(canGetFromIndex, usages, usageCount, entityType, firstWritingAccesses))
+            if usages.contains(Ref(prop)) &&
+              (usageCount > 1 || canGetFromIndex) =>
             // Use the original variable name for the cached property
             val knownToAccessStore = firstWritingAccesses.exists {
-              case (_, properties) => properties.exists(_ eq prop)
+              case (_, properties) => properties.contains(Ref(prop))
             }
 
-            val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
+            val newProperty =
+              CachedProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
             // Register the new variables in the semantic table
             currentTypes.get(prop) match {
               case None => // I don't like this. We have to make sure we retain the type from semantic analysis
@@ -313,10 +412,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later
-            case Some(PropertyUsages(true, usages, _, _))
+            case Some(PropertyUsages(true, _, usageCount, _, _))
               // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
               // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
-              if usages >= 1 && indexedProp.getValueFromIndex != DoNotGetValue =>
+              if usageCount > 0 && indexedProp.getValueFromIndex != DoNotGetValue =>
               indexedProp.copy(getValueFromIndex = GetValue)
             // We could get the value but we don't need it later
             case _ =>
@@ -327,10 +426,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later
-            case Some(PropertyUsages(true, usages, _, _))
+            case Some(PropertyUsages(true, _, usageCount, _, _))
               // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
               // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
-              if usages >= 1 && indexedProp.getValueFromIndex != DoNotGetValue =>
+              if usageCount > 0 && indexedProp.getValueFromIndex != DoNotGetValue =>
               indexedProp.copy(getValueFromIndex = GetValue)
             // We could get the value but we don't need it later
             case _ =>
@@ -338,7 +437,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
           }
         }
 
-      case s:Selection =>
+      case s: Selection =>
         // Since CachedProperties are cheaper than Properties, the previously best predicate evaluation order in a Selection
         // might not be the best order any more.
         // We re-order the predicates to find the new best order.
@@ -347,13 +446,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
     })
 
     val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]
-    val newSemanticTable = if (currentTypes == from.semanticTable().types) from.semanticTable() else from.semanticTable().copy(types = currentTypes)
+    val newSemanticTable =
+      if (currentTypes == from.semanticTable().types) from.semanticTable()
+      else from.semanticTable().copy(types = currentTypes)
     from.withMaybeLogicalPlan(Some(plan)).withSemanticTable(newSemanticTable)
   }
 
-  protected[steps] def resortSelectionPredicates(from: LogicalPlanState,
-                                                 context: PlannerContext,
-                                                 s: Selection): Seq[Expression] = {
+  protected[steps] def resortSelectionPredicates(
+    from: LogicalPlanState,
+    context: PlannerContext,
+    s: Selection
+  ): Seq[Expression] = {
     LogicalPlanProducer.sortPredicatesBySelectivity(
       s.source,
       s.predicate.exprs,
@@ -374,6 +477,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
 }
 
 case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransformerFactory {
+
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter operates on the LogicalPlan
     CompilationContains[LogicalPlan],
@@ -392,6 +496,116 @@ case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineT
     PlanIDsAreCompressed
   )
 
-  override def getTransformer(pushdownPropertyReads: Boolean,
-                              semanticFeatures: Seq[SemanticFeature]): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = InsertCachedProperties(pushdownPropertyReads)
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = InsertCachedProperties(pushdownPropertyReads)
+}
+
+object RestrictedCaching {
+
+  sealed trait ProtectedProperties {
+    def shouldCache(property: Property): Boolean
+  }
+
+  private case class DontCacheProperties(protectedProperties: Set[Ref[Property]]) extends ProtectedProperties {
+    override def shouldCache(property: Property): Boolean = !protectedProperties.contains(Ref(property))
+  }
+
+  private case class CombinedProtectedProperties(inner: Seq[ProtectedProperties]) extends ProtectedProperties {
+    override def shouldCache(property: Property): Boolean = inner.forall(_.shouldCache(property))
+  }
+
+  case object CacheAll extends ProtectedProperties {
+    def shouldCache(property: Property): Boolean = true
+  }
+
+  private def findPropertyReads(foldable: Foldable, entityName: String, propertyName: String): Seq[Property] = {
+    foldable.folder.treeCollect {
+      case p @ Property(LogicalVariable(`entityName`), PropertyKeyName(`propertyName`)) => p
+    }
+  }
+
+  private def protectedProperties(entity: Expression, values: Seq[(String, Expression)]): ProtectedProperties = {
+    entity match {
+      case LogicalVariable(entityName) => protectedProperties(entityName, values)
+      case _                           => CacheAll
+    }
+  }
+
+  private def protectedProperties(entityName: String, values: Seq[(String, Expression)]): ProtectedProperties = {
+    DontCacheProperties(values.flatMap {
+      case (propertyKeyName, expr) =>
+        findPropertyReads(expr, entityName, propertyKeyName).map(Ref(_))
+    }.toSet)
+  }
+
+  private def byName(property: (PropertyKeyName, Expression)): (String, Expression) = property match {
+    case (key, exp) => key.name -> exp
+  }
+
+  def unapply(plan: UpdatingPlan): Option[(UpdatingPlan, ProtectedProperties)] = {
+    val protectedProps = plan match {
+      case SetProperty(_, entity, key, value) =>
+        Some(protectedProperties(entity, Seq(key.name -> value)))
+      case SetProperties(_, entity, items) =>
+        Some(protectedProperties(entity, items.map(byName)))
+      case SetPropertiesFromMap(_, entity, value: MapExpression, _) =>
+        Some(protectedProperties(entity, value.items.map(byName)))
+      case _: SetPropertiesFromMap =>
+        // Only protect properties when there is a direct dependency, which only happens when value is a MapExpression
+        Some(CacheAll)
+      case SetNodeProperty(_, entity, key, value) =>
+        Some(protectedProperties(entity, Seq(key.name -> value)))
+      case SetNodeProperties(_, entity, items) =>
+        Some(protectedProperties(entity, items.map(byName)))
+      case SetNodePropertiesFromMap(_, entity, value: MapExpression, _) =>
+        Some(protectedProperties(entity, value.items.map(byName)))
+      case _: SetNodePropertiesFromMap =>
+        // Only protect properties when there is a direct dependency, which only happens when value is a MapExpression
+        Some(CacheAll)
+      case SetRelationshipProperty(_, entity, key, value) =>
+        Some(protectedProperties(entity, Seq(key.name -> value)))
+      case SetRelationshipProperties(_, entity, items) =>
+        Some(protectedProperties(entity, items.map(byName)))
+      case SetRelationshipPropertiesFromMap(_, entity, value: MapExpression, _) =>
+        Some(protectedProperties(entity, value.items.map(byName)))
+      case _: SetRelationshipPropertiesFromMap =>
+        // Only protect properties when there is a direct dependency, which only happens when value is a MapExpression
+        Some(CacheAll)
+      case merge: Merge =>
+        val protectedMergeProps = merge.onMatch.map {
+          case SetPropertyPattern(e, key, value)             => protectedProperties(e, Seq(key.name -> value))
+          case SetPropertiesPattern(e, ps)                   => protectedProperties(e, ps.map(byName))
+          case SetRelationshipPropertyPattern(e, key, value) => protectedProperties(e, Seq(key.name -> value))
+          case SetRelationshipPropertiesPattern(e, ps)       => protectedProperties(e, ps.map(byName))
+          case SetNodePropertiesFromMapPattern(e, map: MapExpression, _) =>
+            protectedProperties(e, map.items.map(byName))
+          case _: SetNodePropertiesFromMapPattern => CacheAll
+          case SetRelationshipPropertiesFromMapPattern(e, map: MapExpression, _) =>
+            protectedProperties(e, map.items.map(byName))
+          case _: SetRelationshipPropertiesFromMapPattern            => CacheAll
+          case SetPropertiesFromMapPattern(e, map: MapExpression, _) => protectedProperties(e, map.items.map(byName))
+          case _: SetPropertiesFromMapPattern                        => CacheAll
+          case SetNodePropertyPattern(e, key, value)                 => protectedProperties(e, Seq(key.name -> value))
+          case SetNodePropertiesPattern(e, ps)                       => protectedProperties(e, ps.map(byName))
+          case _: SetLabelPattern                                    => CacheAll
+        }
+        if (protectedMergeProps.nonEmpty) Some(CombinedProtectedProperties(protectedMergeProps))
+        else None
+      case _: Create                 => None
+      case _: DeleteExpression       => None
+      case _: DeleteNode             => None
+      case _: DeletePath             => None
+      case _: DeleteRelationship     => None
+      case _: DetachDeleteExpression => None
+      case _: DetachDeleteNode       => None
+      case _: DetachDeletePath       => None
+      case _: Foreach                => None
+      case _: RemoveLabels           => None
+      case _: SetLabels              => None
+    }
+
+    protectedProps.map(plan -> _)
+  }
 }

@@ -22,7 +22,6 @@ package org.neo4j.cypher.testing.impl
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.connectors.BoltConnector
-import org.neo4j.configuration.connectors.HttpConnector
 import org.neo4j.configuration.helpers.SocketAddress
 import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutor.TransactionConfig
@@ -38,9 +37,11 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 
-case class FeatureDatabaseManagementService(private val databaseManagementService: DatabaseManagementService,
-                                            private val executorFactory: CypherExecutorFactory,
-                                            private val databaseName: Option[String] = None) {
+case class FeatureDatabaseManagementService(
+  private val databaseManagementService: DatabaseManagementService,
+  private val executorFactory: CypherExecutorFactory,
+  private val databaseName: Option[String] = None
+) {
 
   private val database: GraphDatabaseFacade =
     databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseFacade]
@@ -80,6 +81,20 @@ case class FeatureDatabaseManagementService(private val databaseManagementServic
   def execute[T](statement: String, converter: StatementResult => T): T =
     execute(statement, Map.empty, converter)
 
+  def executeInNewSession[T](statement: String, converter: StatementResult => T): T = {
+    if (cypherExecutor.sessionBased) {
+      var executor: Option[CypherExecutor] = None
+      try {
+        executor = Some(createExecutor())
+        executor.get.execute(statement, Map.empty, converter)
+      } finally {
+        executor.get.close()
+      }
+    } else {
+      execute(statement, converter)
+    }
+  }
+
   def shutdown(): Unit = {
     cypherExecutor.close()
     executorFactory.close()
@@ -88,7 +103,7 @@ case class FeatureDatabaseManagementService(private val databaseManagementServic
 
   private def createExecutor(): CypherExecutor = databaseName match {
     case Some(name) => executorFactory.executor(name)
-    case None => executorFactory.executor()
+    case None       => executorFactory.executor()
   }
 }
 

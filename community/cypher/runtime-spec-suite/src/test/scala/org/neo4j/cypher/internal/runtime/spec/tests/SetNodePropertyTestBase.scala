@@ -33,10 +33,10 @@ import org.neo4j.lock.ResourceTypes.LABEL
 import org.neo4j.lock.ResourceTypes.NODE
 
 abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should set node property") {
     // given a single node
@@ -86,7 +86,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
   test("should remove node property") {
     // given a single node
     val n = given {
-      nodePropertyGraph(1, { case i: Int => Map("prop" -> i)})
+      nodePropertyGraph(1, { case i: Int => Map("prop" -> i) })
     }
 
     // when
@@ -330,7 +330,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
   test("should count node property updates even if values are not changed") {
     // given single node
     val n = given {
-      nodePropertyGraph(1, { case i => Map("prop" -> 100)})
+      nodePropertyGraph(1, { case i => Map("prop" -> 100) })
     }
 
     // when
@@ -371,7 +371,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node properties between two loops with continuation") {
     val nodes = given {
-      nodePropertyGraph(sizeHint, {case _ => Map("prop" -> 0)})
+      nodePropertyGraph(sizeHint, { case _ => Map("prop" -> 0) })
     }
 
     // when
@@ -396,7 +396,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     // given a single node
     given {
       uniqueIndex("L", "prop")
-      nodePropertyGraph(1, {case _ => Map("prop" -> 1)}, "L")
+      nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 
     // when
@@ -421,7 +421,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     // given a single node
     given {
       uniqueIndex("L", "prop")
-      nodePropertyGraph(1, {case _ => Map("prop" -> 1)}, "L")
+      nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 
     // when
@@ -440,5 +440,54 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
       .withSingleRow(2, 2)
       .withStatistics(propertiesSet = 2)
       .withLocks((EXCLUSIVE, NODE), (EXCLUSIVE, INDEX_ENTRY), (SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("set node property should invalidate cached properties") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
+    }
+
+    invalidateCachedPropsTest(0) { builder =>
+      builder.setNodeProperty("n", "prop", "n.prop + 1")
+    }
+    invalidateCachedPropsTest(1) { builder =>
+      builder.setNodeProperties("n", "prop" -> "n.prop + 1")
+    }
+    invalidateCachedPropsTest(2) { builder =>
+      builder.setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+    }
+    invalidateCachedPropsTest(3) { builder =>
+      builder.setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = true)
+    }
+    invalidateCachedPropsTest(4) { builder =>
+      builder.setProperty("n", "prop", "n.prop + 1")
+    }
+    invalidateCachedPropsTest(5) { builder =>
+      builder.setProperties("n", "prop" -> "n.prop + 1")
+    }
+    invalidateCachedPropsTest(6) { builder =>
+      builder.setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+    }
+    invalidateCachedPropsTest(7) { builder =>
+      builder.setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = true)
+    }
+  }
+
+  private def invalidateCachedPropsTest(expected: Long)(setOp: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {
+    restartTx()
+    val queryBuilder = new LogicalQueryBuilder(this)
+      .produceResults("oldValue", "newValue")
+      .projection("cacheN[n.prop] as newValue")
+    val logicalQuery = setOp.apply(queryBuilder)
+      .projection("cacheNFromStore[n.prop] AS oldValue")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("oldValue", "newValue")
+      .withSingleRow(expected, expected + 1)
+      .withStatistics(propertiesSet = 1)
   }
 }
