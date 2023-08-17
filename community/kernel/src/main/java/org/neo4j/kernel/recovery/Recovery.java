@@ -741,6 +741,8 @@ public final class Recovery {
                 if (awaitIndexesOnlineMillis > 0) {
                     awaitIndexesOnline(indexingService, awaitIndexesOnlineMillis);
                 }
+                // stop extensions now to prevent possible interference with checkpoint
+                extensions.stop();
                 String recoveryMessage =
                         logTailMetadata.logsMissing() ? "Recovery with missing logs completed." : "Recovery completed.";
                 checkPointer.forceCheckPoint(new SimpleTriggerInfo(recoveryMessage));

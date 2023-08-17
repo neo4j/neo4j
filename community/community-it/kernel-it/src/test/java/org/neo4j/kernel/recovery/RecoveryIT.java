@@ -63,6 +63,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -119,6 +120,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -902,6 +904,42 @@ class RecoveryIT {
             assertThat(props).containsExactly("value1", "value2", "value3");
         } finally {
             managementService.shutdown();
+        }
+    }
+
+    @Test
+    void recoveryStopsExtensionsBeforeCheckpoint() throws Exception {
+        GraphDatabaseService database = createDatabase();
+        generateSomeData(database);
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+
+        var checkpointsBeforeRecovery = countCheckPointsInTransactionLogs();
+
+        var extension = new TestRecoveryExtension(checkpointsBeforeRecovery);
+        recoverDatabase(List.of(extension));
+
+        assertThat(extension.stopped).isTrue();
+    }
+
+    @RecoveryExtension
+    private class TestRecoveryExtension extends ExtensionFactory<TestRecoveryExtension.Dependencies> {
+        private final int expectedCheckpointsOnStop;
+        boolean stopped = false;
+
+        interface Dependencies {}
+
+        TestRecoveryExtension(int expectedCheckpointsOnStop) {
+            super(ExtensionType.DATABASE, "testRecoveryExtension");
+            this.expectedCheckpointsOnStop = expectedCheckpointsOnStop;
+        }
+
+        @Override
+        public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+            return LifecycleAdapter.onStop(() -> {
+                stopped = true;
+                assertThat(countCheckPointsInTransactionLogs()).isEqualTo(expectedCheckpointsOnStop);
+            });
         }
     }
 
@@ -1775,6 +1813,10 @@ class RecoveryIT {
         recoverDatabase(EMPTY, recoveryCriteria);
     }
 
+    private void recoverDatabase(Iterable<ExtensionFactory<?>> extensionFactories) throws Exception {
+        recoverDatabase(EMPTY, ALL, extensionFactories);
+    }
+
     void additionalConfiguration(Config config) {
         config.set(fail_on_missing_files, false);
     }
@@ -1784,6 +1826,14 @@ class RecoveryIT {
     }
 
     private void recoverDatabase(DatabaseTracers databaseTracers, RecoveryCriteria recoveryCriteria) throws Exception {
+        recoverDatabase(databaseTracers, recoveryCriteria, Iterables.cast(Services.loadAll(ExtensionFactory.class)));
+    }
+
+    private void recoverDatabase(
+            DatabaseTracers databaseTracers,
+            RecoveryCriteria recoveryCriteria,
+            Iterable<ExtensionFactory<?>> extensionFactories)
+            throws Exception {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener(new LoggingLogFileMonitor(logProvider.getLog(getClass())));
         Config config = Config.newBuilder().build();
@@ -1803,7 +1853,7 @@ class RecoveryIT {
                         logFiles.getTailMetadata())
                 .recoveryPredicate(recoveryCriteria.toPredicate())
                 .monitors(monitors)
-                .extensionFactories(Iterables.cast(Services.loadAll(ExtensionFactory.class)))
+                .extensionFactories(extensionFactories)
                 .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
                 .clock(fakeClock));
         assertFalse(isRecoveryRequired(databaseLayout, config, buildLogFiles()));
