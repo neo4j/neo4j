@@ -22,14 +22,18 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
+import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -95,5 +99,56 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
         planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
+
+    // size(...) = 0
+    case eq@Equals(fi @ FunctionInvocation(
+        Namespace(List()),
+        FunctionName(Size.name),
+        _,
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+      ), SignedDecimalIntegerLiteral("0")) if shouldInsertLimitOnTopOf(plan) =>
+      val newPlan =
+        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      eq.copy(lhs = fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position))(eq.position)
+
+    // 0 = size(...)
+    case eq@Equals(SignedDecimalIntegerLiteral("0"),
+      fi @ FunctionInvocation(
+        Namespace(List()),
+        FunctionName(Size.name),
+        _,
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+        )) if shouldInsertLimitOnTopOf(plan) =>
+      val newPlan =
+        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      eq.copy(rhs = fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position))(eq.position)
+
+    // size(...) > 0
+    case eq@GreaterThan(
+      fi @ FunctionInvocation(
+        Namespace(List()),
+        FunctionName(Size.name),
+        _,
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+        ), SignedDecimalIntegerLiteral("0")) if shouldInsertLimitOnTopOf(plan) =>
+      val newPlan =
+        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      eq.copy(lhs = fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position))(eq.position)
+
+    // 0 < size(...)
+    case eq@LessThan(SignedDecimalIntegerLiteral("0"),
+      fi @ FunctionInvocation(
+        Namespace(List()),
+        FunctionName(Size.name),
+        _,
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+        )) if shouldInsertLimitOnTopOf(plan) =>
+      val newPlan =
+        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      eq.copy(rhs = fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position))(eq.position)
   })
 }

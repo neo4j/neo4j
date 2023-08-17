@@ -22,14 +22,18 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FilterScope
+import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
+import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -77,6 +81,90 @@ class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                     Property(varFor("b"),PropertyKeyName("age")(pos))(pos),
                     s"[(n)-[r]->(b) WHERE n.prop > 5 | b.age]"
                   )(pos)
+                )(pos))
+              )(pos),
+              nodes(PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(pos))
+            )(pos))
+        )
+        .allNodeScan("n")
+        .build()
+    plan should equal(expected)
+  }
+
+  test("should insert limit for nested plan expression inside Size(...) = 0") {
+    val q =
+      """
+        |MATCH p = (n)
+        |RETURN all(node IN nodes(p) WHERE size([(n)-[r]->(b) WHERE n.prop > 5 | b.age]) = 0) AS age
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .limit(1)
+      .expandAll("(n)-[r]->(b)")
+      .filter("n.prop > 5")
+      .argument("n")
+      .build()
+
+    val expected =
+      planner.subPlanBuilder()
+        .projection(
+          Map("age" ->
+            AllIterablePredicate(
+              FilterScope(
+                varFor("node"),
+                Some(Equals(
+                  Size(
+                    NestedPlanCollectExpression(
+                      expectedNestedPlan,
+                      Property(varFor("b"), PropertyKeyName("age")(pos))(pos),
+                      s"[(n)-[r]->(b) WHERE n.prop > 5 | b.age]"
+                    )(pos)
+                  )(pos),
+                  SignedDecimalIntegerLiteral("0")(pos)
+                )(pos))
+              )(pos),
+              nodes(PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(pos))
+            )(pos))
+        )
+        .allNodeScan("n")
+        .build()
+    plan should equal(expected)
+  }
+
+  test("should insert limit for nested plan expression inside Size(...) > 0") {
+    val q =
+      """
+        |MATCH p = (n)
+        |RETURN all(node IN nodes(p) WHERE size([(n)-[r]->(b) WHERE n.prop > 5 | b.age]) > 0) AS age
+    """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .limit(1)
+      .expandAll("(n)-[r]->(b)")
+      .filter("n.prop > 5")
+      .argument("n")
+      .build()
+
+    val expected =
+      planner.subPlanBuilder()
+        .projection(
+          Map("age" ->
+            AllIterablePredicate(
+              FilterScope(
+                varFor("node"),
+                Some(GreaterThan(
+                  Size(
+                    NestedPlanCollectExpression(
+                      expectedNestedPlan,
+                      Property(varFor("b"), PropertyKeyName("age")(pos))(pos),
+                      s"[(n)-[r]->(b) WHERE n.prop > 5 | b.age]"
+                    )(pos)
+                  )(pos),
+                SignedDecimalIntegerLiteral("0")(pos)
                 )(pos))
               )(pos),
               nodes(PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(pos))

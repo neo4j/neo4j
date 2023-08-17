@@ -93,6 +93,70 @@ class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanning
     )
   }
 
+  test("should rewrite Nested plan in Size(...) = 0") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val size = equals(function("size", nestedPlan), SignedDecimalIntegerLiteral("0")(pos))
+
+    size.endoRewrite(rewriter) should equal(
+      equals(
+        function(
+          "size",
+          NestedPlanExpression.collect(Limit(argument, SignedDecimalIntegerLiteral("1")(pos)), aLit, aLit)(pos)
+        ),
+        SignedDecimalIntegerLiteral("0")(pos)
+      )
+    )
+  }
+
+  test("should rewrite Nested plan in 0 = Size(...)") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val size = equals(SignedDecimalIntegerLiteral("0")(pos), function("size", nestedPlan))
+
+    size.endoRewrite(rewriter) should equal(
+      equals(
+        SignedDecimalIntegerLiteral("0")(pos),
+        function(
+          "size",
+          NestedPlanExpression.collect(Limit(argument, SignedDecimalIntegerLiteral("1")(pos)), aLit, aLit)(pos)
+        )
+      )
+    )
+  }
+
+  test("should rewrite Nested plan in Size(...) > 0") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val gt = greaterThan(function("size", nestedPlan), SignedDecimalIntegerLiteral("0")(pos))
+
+    gt.endoRewrite(rewriter) should equal(
+      greaterThan(
+        function(
+          "size",
+          NestedPlanExpression.collect(Limit(argument, SignedDecimalIntegerLiteral("1")(pos)), aLit, aLit)(pos)
+        ),
+        SignedDecimalIntegerLiteral("0")(pos)
+      )
+    )
+  }
+
+  test("should rewrite Nested plan in 0 < Size(...)") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val lt = lessThan(SignedDecimalIntegerLiteral("0")(pos), function("size", nestedPlan))
+
+    lt.endoRewrite(rewriter) should equal(
+      lessThan(
+        SignedDecimalIntegerLiteral("0")(pos),
+        function(
+          "size",
+          NestedPlanExpression.collect(Limit(argument, SignedDecimalIntegerLiteral("1")(pos)), aLit, aLit)(pos)
+        )
+      )
+    )
+  }
+
   test("should not insert Limit if container index references variable") {
     val argument: LogicalPlan = Argument(Set("a"))
     val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)

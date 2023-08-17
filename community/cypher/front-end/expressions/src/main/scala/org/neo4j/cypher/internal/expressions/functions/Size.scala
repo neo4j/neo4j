@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object Size extends Function {
-  def name = "size"
+  val name = "size"
 
   override val signatures = Vector(
     TypeSignature(this, CTList(CTAny), CTInteger, "Returns the number of items in a list.", Category.SCALAR),
