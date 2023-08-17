@@ -656,6 +656,9 @@ public class Operations implements Write, SchemaWrite {
             PropertyIndexQuery.ExactPredicate[] propertyValues,
             long modifiedNode)
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException {
+        if (constraint == null || index == null) {
+            return;
+        }
         try (FullAccessNodeValueIndexCursor valueCursor =
                         cursors.allocateFullAccessNodeValueIndexCursor(ktx.cursorContext(), memoryTracker);
                 IndexReaders indexReaders = new IndexReaders(index, allStoreHolder)) {
@@ -713,6 +716,9 @@ public class Operations implements Write, SchemaWrite {
             PropertyIndexQuery.ExactPredicate[] propertyValues,
             long modifiedRel)
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException {
+        if (constraint == null || index == null) {
+            return;
+        }
         try (FullAccessRelationshipValueIndexCursor valueCursor =
                         cursors.allocateFullAccessRelationshipValueIndexCursor(ktx.cursorContext(), memoryTracker);
                 IndexReaders indexReaders = new IndexReaders(index, allStoreHolder)) {
