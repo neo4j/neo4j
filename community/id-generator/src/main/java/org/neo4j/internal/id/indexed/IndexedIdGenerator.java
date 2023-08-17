@@ -684,14 +684,14 @@ public class IndexedIdGenerator implements IdGenerator {
     public void maintenance(CursorContext cursorContext) {
         if (started && !cache.isFull() && !readOnly) {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.tryLoadFreeIdsIntoCache(true, cursorContext);
+            scanner.tryLoadFreeIdsIntoCache(true, true, cursorContext);
         }
     }
 
     private void checkRefillCache(CursorContext cursorContext) {
         if (cache.size() <= cacheOptimisticRefillThreshold) {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.tryLoadFreeIdsIntoCache(strictlyPrioritizeFreelist, cursorContext);
+            scanner.tryLoadFreeIdsIntoCache(strictlyPrioritizeFreelist, false, cursorContext);
         }
     }
 

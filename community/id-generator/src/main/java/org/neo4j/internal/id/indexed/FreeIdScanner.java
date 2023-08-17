@@ -105,8 +105,8 @@ class FreeIdScanner implements Closeable {
         this.monitor = monitor;
     }
 
-    boolean tryLoadFreeIdsIntoCache(boolean blocking, CursorContext cursorContext) {
-        return tryLoadFreeIdsIntoCache(blocking, false, cursorContext);
+    boolean tryLoadFreeIdsIntoCache(boolean blocking, boolean maintenance, CursorContext cursorContext) {
+        return tryLoadFreeIdsIntoCache(blocking, maintenance, false, cursorContext);
     }
 
     /**
@@ -114,8 +114,9 @@ class FreeIdScanner implements Closeable {
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      * @return {@code true} if a scan was made and at least some IDs were found, otherwise {@code false}.
      */
-    boolean tryLoadFreeIdsIntoCache(boolean blocking, boolean forceScan, CursorContext cursorContext) {
-        if (!forceScan && !hasMoreFreeIds(blocking)) {
+    boolean tryLoadFreeIdsIntoCache(
+            boolean blocking, boolean maintenance, boolean forceScan, CursorContext cursorContext) {
+        if (!forceScan && !hasMoreFreeIds(maintenance)) {
             // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't
             // do it.
             return false;
@@ -205,11 +206,11 @@ class FreeIdScanner implements Closeable {
         consumeQueuedIds(queuedWastedCachedIds, IdGenerator.ContextualMarker::markUnreserved, cursorContext);
     }
 
-    boolean hasMoreFreeIds(boolean blocking) {
+    boolean hasMoreFreeIds(boolean maintenance) {
         // For the case when this is a tx allocating IDs we don't want to force a scan for every little added ID,
         // so add a little lee-way so that there has to be a at least a bunch of these "skipped" IDs to make it worth
         // wile.
-        int numBufferedIdsThreshold = blocking ? 1 : 1_000;
+        int numBufferedIdsThreshold = maintenance ? 1 : 1_000;
         return ongoingScanRangeIndex != null
                 || atLeastOneIdOnFreelist.get()
                 || numBufferedIds.get() >= numBufferedIdsThreshold;
