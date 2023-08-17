@@ -124,7 +124,7 @@ public enum VectorSimilarityFunction {
         }
     };
 
-    static final EnumSet<VectorSimilarityFunction> SUPPORTED = EnumSet.allOf(VectorSimilarityFunction.class);
+    public static final EnumSet<VectorSimilarityFunction> SUPPORTED = EnumSet.allOf(VectorSimilarityFunction.class);
 
     public static VectorSimilarityFunction fromName(String name) {
         try {

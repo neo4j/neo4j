@@ -45,6 +45,7 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MIN
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
+import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
@@ -54,6 +55,8 @@ import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.UrlOrEmail
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider
+import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider
@@ -61,6 +64,7 @@ import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 import java.time.Instant
@@ -86,6 +90,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val textProvider = TrigramIndexProvider.DESCRIPTOR.name()
   private val oldTextProvider = TextIndexProvider.DESCRIPTOR.name()
   private val fulltextProvider = FulltextIndexProviderFactory.DESCRIPTOR.name()
+  private val vectorProvider = VectorIndexProvider.DESCRIPTOR.name()
 
   private val cartesianMin = SPATIAL_CARTESIAN_MIN.getSettingName
   private val cartesianMax = SPATIAL_CARTESIAN_MAX.getSettingName
@@ -167,16 +172,27 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val relFulltextConfigMapString =
     s"{`$fulltextAnalyzer`: '$fulltextAnalyzerName2',`$fulltextEventuallyConsistent`: true}"
 
+  private val nodeVectorConfig = IndexSettingUtil.defaultConfigForTest(IndexType.VECTOR.toPublicApi)
+
+  private val nodeVectorConfigMap = {
+    val entries = nodeVectorConfig.entries
+    val builder = new MapValueBuilder(entries.size)
+    entries.each(kv => builder.add(kv.getOne, kv.getTwo))
+    builder.build
+  }
+  private val vectorDimensions = VectorUtils.vectorDimensionsFrom(nodeVectorConfig)
+  private val vectorSimilarityFunction = VectorUtils.vectorSimilarityFunctionFrom(nodeVectorConfig).name
+
   private val rangeNodeIndexDescriptor =
-    IndexPrototype.forSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index0").materialise(0)
+    IndexPrototype.forSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index00").materialise(0)
 
   private val rangeRelIndexDescriptor =
-    IndexPrototype.forSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index1").materialise(1)
+    IndexPrototype.forSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index01").materialise(1)
 
   private val lookupNodeIndexDescriptor =
     IndexPrototype.forSchema(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
       .withIndexType(IndexType.LOOKUP)
-      .withName("index2")
+      .withName("index02")
       .materialise(2)
 
   private val lookupRelIndexDescriptor =
@@ -185,13 +201,13 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       TokenIndexProvider.DESCRIPTOR
     )
       .withIndexType(IndexType.LOOKUP)
-      .withName("index3")
+      .withName("index03")
       .materialise(3)
 
   private val pointNodeIndexDescriptor =
     IndexPrototype.forSchema(labelDescriptor, PointIndexProvider.DESCRIPTOR)
       .withIndexType(IndexType.POINT)
-      .withName("index4")
+      .withName("index04")
       .withIndexConfig(
         IndexConfig.`with`(cartesian3dMax, Values.doubleArray(Array(1000000.0, 1000000.0, 1000000.0)))
           .withIfAbsent(cartesian3dMin, Values.doubleArray(Array(-1000000.0, -1000000.0, -1000000.0)))
@@ -207,7 +223,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val pointRelIndexDescriptor =
     IndexPrototype.forSchema(relTypeDescriptor, PointIndexProvider.DESCRIPTOR)
       .withIndexType(IndexType.POINT)
-      .withName("index5")
+      .withName("index05")
       .withIndexConfig(
         IndexConfig.`with`(cartesian3dMax, Values.doubleArray(Array(100.0, 100.0, 100.0)))
           .withIfAbsent(cartesian3dMin, Values.doubleArray(Array(-100.0, -100.0, -100.0)))
@@ -223,13 +239,13 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val textNodeIndexDescriptor =
     IndexPrototype.forSchema(labelDescriptor, TrigramIndexProvider.DESCRIPTOR)
       .withIndexType(IndexType.TEXT)
-      .withName("index6")
+      .withName("index06")
       .materialise(6)
 
   private val textRelIndexDescriptor =
     IndexPrototype.forSchema(relTypeDescriptor, TextIndexProvider.DESCRIPTOR)
       .withIndexType(IndexType.TEXT)
-      .withName("index7")
+      .withName("index07")
       .materialise(7)
 
   private val fulltextNodeIndexDescriptor =
@@ -238,7 +254,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       FulltextIndexProviderFactory.DESCRIPTOR
     )
       .withIndexType(IndexType.FULLTEXT)
-      .withName("index8")
+      .withName("index08")
       .withIndexConfig(
         IndexConfig.`with`(fulltextAnalyzer, Values.stringValue(fulltextAnalyzerName))
           .withIfAbsent(fulltextEventuallyConsistent, Values.FALSE)
@@ -251,12 +267,19 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       FulltextIndexProviderFactory.DESCRIPTOR
     )
       .withIndexType(IndexType.FULLTEXT)
-      .withName("index9")
+      .withName("index09")
       .withIndexConfig(
         IndexConfig.`with`(fulltextAnalyzer, Values.stringValue(fulltextAnalyzerName2))
           .withIfAbsent(fulltextEventuallyConsistent, Values.TRUE)
       )
       .materialise(9)
+
+  private val vectorNodeIndexDescriptor =
+    IndexPrototype.forSchema(labelDescriptor, VectorIndexProvider.DESCRIPTOR)
+      .withIndexType(IndexType.VECTOR)
+      .withName("index10")
+      .withIndexConfig(nodeVectorConfig)
+      .materialise(10)
 
   private val config = Config.defaults()
 
@@ -351,7 +374,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     checkResult(
       result.head,
       id = 0L,
-      name = "index0",
+      name = "index00",
       state = "ONLINE",
       population = 100.0f,
       indexType = "RANGE",
@@ -366,7 +389,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     checkResult(
       result.last,
       id = 1L,
-      name = "index1",
+      name = "index01",
       state = "ONLINE",
       population = 100.0f,
       indexType = "RANGE",
@@ -400,7 +423,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     checkResult(
       result.head,
       id = 0L,
-      name = "index0",
+      name = "index00",
       state = "ONLINE",
       population = 100.0f,
       indexType = "RANGE",
@@ -414,12 +437,12 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       trackedSince = Values.NO_VALUE,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
       failureMessage = "",
-      createStatement = s"CREATE RANGE INDEX `index0` FOR (n:`$label`) ON (n.`$prop`)"
+      createStatement = s"CREATE RANGE INDEX `index00` FOR (n:`$label`) ON (n.`$prop`)"
     )
     checkResult(
       result.last,
       id = 1L,
-      name = "index1",
+      name = "index01",
       state = "ONLINE",
       population = 100.0f,
       indexType = "RANGE",
@@ -433,7 +456,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       trackedSince = Values.NO_VALUE,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
       failureMessage = "",
-      createStatement = s"CREATE RANGE INDEX `index1` FOR ()-[r:`$relType`]-() ON (r.`$prop`)"
+      createStatement = s"CREATE RANGE INDEX `index01` FOR ()-[r:`$relType`]-() ON (r.`$prop`)"
     )
   }
 
@@ -476,25 +499,25 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     // Index and constraint descriptors
     val nodeIndexDescriptor =
       IndexPrototype.uniqueForSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR)
-        .withName("index0")
+        .withName("index00")
         .materialise(0)
         .withOwningConstraintId(1)
 
     val relIndexDescriptor =
       IndexPrototype.uniqueForSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR)
-        .withName("index1")
+        .withName("index01")
         .materialise(2)
         .withOwningConstraintId(3)
 
     val nodeConstraintDescriptor =
       ConstraintDescriptorFactory.uniqueForSchema(nodeIndexDescriptor.schema(), IndexType.RANGE)
-        .withName("index0")
+        .withName("index00")
         .withOwnedIndexId(0)
         .withId(1)
 
     val relConstraintDescriptor =
       ConstraintDescriptorFactory.keyForSchema(relIndexDescriptor.schema(), IndexType.RANGE)
-        .withName("index1")
+        .withName("index01")
         .withOwnedIndexId(2)
         .withId(3)
 
@@ -526,18 +549,18 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     result should have size 2
     checkResult(
       result.head,
-      name = "index0",
-      constraint = Some("index0"),
+      name = "index00",
+      constraint = Some("index00"),
       createStatement =
-        s"CREATE CONSTRAINT `index0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE " +
+        s"CREATE CONSTRAINT `index00` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE " +
           s"OPTIONS {indexConfig: {}, indexProvider: '$rangeProvider'}"
     )
     checkResult(
       result.last,
-      name = "index1",
-      constraint = Some("index1"),
+      name = "index01",
+      constraint = Some("index01"),
       createStatement =
-        s"CREATE CONSTRAINT `index1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY " +
+        s"CREATE CONSTRAINT `index01` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY " +
           s"OPTIONS {indexConfig: {}, indexProvider: '$rangeProvider'}"
     )
   }
@@ -555,8 +578,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
 
     // Then
     result should have size 2
-    checkResult(result.head, name = "index0")
-    checkResult(result.last, name = "index1")
+    checkResult(result.head, name = "index00")
+    checkResult(result.last, name = "index01")
   }
 
   test("show indexes should give back nulls when no statistics available") {
@@ -673,7 +696,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       textNodeIndexDescriptor -> nodeIndexInfo,
       textRelIndexDescriptor -> relIndexInfo,
       fulltextNodeIndexDescriptor -> nodeIndexInfo,
-      fulltextRelIndexDescriptor -> relIndexInfo
+      fulltextRelIndexDescriptor -> relIndexInfo,
+      vectorNodeIndexDescriptor -> nodeIndexInfo
     ))
 
     // When
@@ -681,122 +705,134 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 10
+    result should have size 11
     checkResult(
       result.head,
-      name = "index0",
+      name = "index00",
       indexType = "RANGE",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = rangeProvider,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE RANGE INDEX `index0` FOR (n:`$label`) ON (n.`$prop`)"
+      createStatement = s"CREATE RANGE INDEX `index00` FOR (n:`$label`) ON (n.`$prop`)"
     )
     checkResult(
       result(1),
-      name = "index1",
+      name = "index01",
       indexType = "RANGE",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = rangeProvider,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE RANGE INDEX `index1` FOR ()-[r:`$relType`]-() ON (r.`$prop`)"
+      createStatement = s"CREATE RANGE INDEX `index01` FOR ()-[r:`$relType`]-() ON (r.`$prop`)"
     )
     checkResult(
       result(2),
-      name = "index2",
+      name = "index02",
       indexType = "LOOKUP",
       entityType = "NODE",
       labelsOrTypes = Some(null),
       properties = Some(null),
       provider = lookupProvider,
       options = Map("indexProvider" -> Values.stringValue(lookupProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = "CREATE LOOKUP INDEX `index2` FOR (n) ON EACH labels(n)"
+      createStatement = "CREATE LOOKUP INDEX `index02` FOR (n) ON EACH labels(n)"
     )
     checkResult(
       result(3),
-      name = "index3",
+      name = "index03",
       indexType = "LOOKUP",
       entityType = "RELATIONSHIP",
       labelsOrTypes = Some(null),
       properties = Some(null),
       provider = lookupProvider,
       options = Map("indexProvider" -> Values.stringValue(lookupProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = "CREATE LOOKUP INDEX `index3` FOR ()-[r]-() ON EACH type(r)"
+      createStatement = "CREATE LOOKUP INDEX `index03` FOR ()-[r]-() ON EACH type(r)"
     )
     checkResult(
       result(4),
-      name = "index4",
+      name = "index04",
       indexType = "POINT",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = pointProvider,
       options = Map("indexProvider" -> Values.stringValue(pointProvider), "indexConfig" -> nodePointConfigMap),
-      createStatement = s"CREATE POINT INDEX `index4` FOR (n:`$label`) ON (n.`$prop`) " +
+      createStatement = s"CREATE POINT INDEX `index04` FOR (n:`$label`) ON (n.`$prop`) " +
         s"OPTIONS {indexConfig: $nodePointConfigMapString, indexProvider: '$pointProvider'}"
     )
     checkResult(
       result(5),
-      name = "index5",
+      name = "index05",
       indexType = "POINT",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = pointProvider,
       options = Map("indexProvider" -> Values.stringValue(pointProvider), "indexConfig" -> relPointConfigMap),
-      createStatement = s"CREATE POINT INDEX `index5` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
+      createStatement = s"CREATE POINT INDEX `index05` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
         s"OPTIONS {indexConfig: $relPointConfigMapString, indexProvider: '$pointProvider'}"
     )
     checkResult(
       result(6),
-      name = "index6",
+      name = "index06",
       indexType = "TEXT",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = textProvider,
       options = Map("indexProvider" -> Values.stringValue(textProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE TEXT INDEX `index6` FOR (n:`$label`) ON (n.`$prop`) " +
+      createStatement = s"CREATE TEXT INDEX `index06` FOR (n:`$label`) ON (n.`$prop`) " +
         s"OPTIONS {indexConfig: {}, indexProvider: '$textProvider'}"
     )
     checkResult(
       result(7),
-      name = "index7",
+      name = "index07",
       indexType = "TEXT",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = oldTextProvider,
       options = Map("indexProvider" -> Values.stringValue(oldTextProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE TEXT INDEX `index7` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
+      createStatement = s"CREATE TEXT INDEX `index07` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
         s"OPTIONS {indexConfig: {}, indexProvider: '$oldTextProvider'}"
     )
     checkResult(
       result(8),
-      name = "index8",
+      name = "index08",
       indexType = "FULLTEXT",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = fulltextProvider,
       options = Map("indexProvider" -> Values.stringValue(fulltextProvider), "indexConfig" -> nodeFulltextConfigMap),
-      createStatement = s"CREATE FULLTEXT INDEX `index8` FOR (n:`$label`) ON EACH [n.`$prop`] " +
+      createStatement = s"CREATE FULLTEXT INDEX `index08` FOR (n:`$label`) ON EACH [n.`$prop`] " +
         s"OPTIONS {indexConfig: $nodeFulltextConfigMapString, indexProvider: '$fulltextProvider'}"
     )
     checkResult(
       result(9),
-      name = "index9",
+      name = "index09",
       indexType = "FULLTEXT",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = fulltextProvider,
       options = Map("indexProvider" -> Values.stringValue(fulltextProvider), "indexConfig" -> relFulltextConfigMap),
-      createStatement = s"CREATE FULLTEXT INDEX `index9` FOR ()-[r:`$relType`]-() ON EACH [r.`$prop`] " +
+      createStatement = s"CREATE FULLTEXT INDEX `index09` FOR ()-[r:`$relType`]-() ON EACH [r.`$prop`] " +
         s"OPTIONS {indexConfig: $relFulltextConfigMapString, indexProvider: '$fulltextProvider'}"
+    )
+    checkResult(
+      result(10),
+      name = "index10",
+      indexType = "VECTOR",
+      entityType = "NODE",
+      labelsOrTypes = List(label),
+      properties = List(prop),
+      provider = vectorProvider,
+      options = Map("indexProvider" -> Values.stringValue(vectorProvider), "indexConfig" -> nodeVectorConfigMap),
+      createStatement =
+        s"CALL db.index.vector.createNodeIndex('index10', '$label', '$prop', $vectorDimensions, '$vectorSimilarityFunction')"
     )
   }
 
@@ -812,7 +848,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       textNodeIndexDescriptor -> nodeIndexInfo,
       textRelIndexDescriptor -> relIndexInfo,
       fulltextNodeIndexDescriptor -> nodeIndexInfo,
-      fulltextRelIndexDescriptor -> relIndexInfo
+      fulltextRelIndexDescriptor -> relIndexInfo,
+      vectorNodeIndexDescriptor -> nodeIndexInfo
     ))
 
     // When
@@ -823,25 +860,25 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     result should have size 2
     checkResult(
       result.head,
-      name = "index0",
+      name = "index00",
       indexType = "RANGE",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = rangeProvider,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE RANGE INDEX `index0` FOR (n:`$label`) ON (n.`$prop`)"
+      createStatement = s"CREATE RANGE INDEX `index00` FOR (n:`$label`) ON (n.`$prop`)"
     )
     checkResult(
       result.last,
-      name = "index1",
+      name = "index01",
       indexType = "RANGE",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = rangeProvider,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE RANGE INDEX `index1` FOR ()-[r:`$relType`]-() ON (r.`$prop`)"
+      createStatement = s"CREATE RANGE INDEX `index01` FOR ()-[r:`$relType`]-() ON (r.`$prop`)"
     )
   }
 
@@ -857,7 +894,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       textNodeIndexDescriptor -> nodeIndexInfo,
       textRelIndexDescriptor -> relIndexInfo,
       fulltextNodeIndexDescriptor -> nodeIndexInfo,
-      fulltextRelIndexDescriptor -> relIndexInfo
+      fulltextRelIndexDescriptor -> relIndexInfo,
+      vectorNodeIndexDescriptor -> nodeIndexInfo
     ))
 
     // When
@@ -868,25 +906,25 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     result should have size 2
     checkResult(
       result.head,
-      name = "index2",
+      name = "index02",
       indexType = "LOOKUP",
       entityType = "NODE",
       labelsOrTypes = Some(null),
       properties = Some(null),
       provider = lookupProvider,
       options = Map("indexProvider" -> Values.stringValue(lookupProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = "CREATE LOOKUP INDEX `index2` FOR (n) ON EACH labels(n)"
+      createStatement = "CREATE LOOKUP INDEX `index02` FOR (n) ON EACH labels(n)"
     )
     checkResult(
       result.last,
-      name = "index3",
+      name = "index03",
       indexType = "LOOKUP",
       entityType = "RELATIONSHIP",
       labelsOrTypes = Some(null),
       properties = Some(null),
       provider = lookupProvider,
       options = Map("indexProvider" -> Values.stringValue(lookupProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = "CREATE LOOKUP INDEX `index3` FOR ()-[r]-() ON EACH type(r)"
+      createStatement = "CREATE LOOKUP INDEX `index03` FOR ()-[r]-() ON EACH type(r)"
     )
   }
 
@@ -902,7 +940,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       textNodeIndexDescriptor -> nodeIndexInfo,
       textRelIndexDescriptor -> relIndexInfo,
       fulltextNodeIndexDescriptor -> nodeIndexInfo,
-      fulltextRelIndexDescriptor -> relIndexInfo
+      fulltextRelIndexDescriptor -> relIndexInfo,
+      vectorNodeIndexDescriptor -> nodeIndexInfo
     ))
 
     // When
@@ -913,26 +952,26 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     result should have size 2
     checkResult(
       result.head,
-      name = "index4",
+      name = "index04",
       indexType = "POINT",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = pointProvider,
       options = Map("indexProvider" -> Values.stringValue(pointProvider), "indexConfig" -> nodePointConfigMap),
-      createStatement = s"CREATE POINT INDEX `index4` FOR (n:`$label`) ON (n.`$prop`) " +
+      createStatement = s"CREATE POINT INDEX `index04` FOR (n:`$label`) ON (n.`$prop`) " +
         s"OPTIONS {indexConfig: $nodePointConfigMapString, indexProvider: '$pointProvider'}"
     )
     checkResult(
       result.last,
-      name = "index5",
+      name = "index05",
       indexType = "POINT",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = pointProvider,
       options = Map("indexProvider" -> Values.stringValue(pointProvider), "indexConfig" -> relPointConfigMap),
-      createStatement = s"CREATE POINT INDEX `index5` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
+      createStatement = s"CREATE POINT INDEX `index05` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
         s"OPTIONS {indexConfig: $relPointConfigMapString, indexProvider: '$pointProvider'}"
     )
   }
@@ -949,7 +988,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       textNodeIndexDescriptor -> nodeIndexInfo,
       textRelIndexDescriptor -> relIndexInfo,
       fulltextNodeIndexDescriptor -> nodeIndexInfo,
-      fulltextRelIndexDescriptor -> relIndexInfo
+      fulltextRelIndexDescriptor -> relIndexInfo,
+      vectorNodeIndexDescriptor -> nodeIndexInfo
     ))
 
     // When
@@ -960,26 +1000,26 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     result should have size 2
     checkResult(
       result.head,
-      name = "index6",
+      name = "index06",
       indexType = "TEXT",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = textProvider,
       options = Map("indexProvider" -> Values.stringValue(textProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE TEXT INDEX `index6` FOR (n:`$label`) ON (n.`$prop`) " +
+      createStatement = s"CREATE TEXT INDEX `index06` FOR (n:`$label`) ON (n.`$prop`) " +
         s"OPTIONS {indexConfig: {}, indexProvider: '$textProvider'}"
     )
     checkResult(
       result.last,
-      name = "index7",
+      name = "index07",
       indexType = "TEXT",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = oldTextProvider,
       options = Map("indexProvider" -> Values.stringValue(oldTextProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
-      createStatement = s"CREATE TEXT INDEX `index7` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
+      createStatement = s"CREATE TEXT INDEX `index07` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
         s"OPTIONS {indexConfig: {}, indexProvider: '$oldTextProvider'}"
     )
   }
@@ -996,7 +1036,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       textNodeIndexDescriptor -> nodeIndexInfo,
       textRelIndexDescriptor -> relIndexInfo,
       fulltextNodeIndexDescriptor -> nodeIndexInfo,
-      fulltextRelIndexDescriptor -> relIndexInfo
+      fulltextRelIndexDescriptor -> relIndexInfo,
+      vectorNodeIndexDescriptor -> nodeIndexInfo
     ))
 
     // When
@@ -1007,26 +1048,26 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     result should have size 2
     checkResult(
       result.head,
-      name = "index8",
+      name = "index08",
       indexType = "FULLTEXT",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = fulltextProvider,
       options = Map("indexProvider" -> Values.stringValue(fulltextProvider), "indexConfig" -> nodeFulltextConfigMap),
-      createStatement = s"CREATE FULLTEXT INDEX `index8` FOR (n:`$label`) ON EACH [n.`$prop`] " +
+      createStatement = s"CREATE FULLTEXT INDEX `index08` FOR (n:`$label`) ON EACH [n.`$prop`] " +
         s"OPTIONS {indexConfig: $nodeFulltextConfigMapString, indexProvider: '$fulltextProvider'}"
     )
     checkResult(
       result.last,
-      name = "index9",
+      name = "index09",
       indexType = "FULLTEXT",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = fulltextProvider,
       options = Map("indexProvider" -> Values.stringValue(fulltextProvider), "indexConfig" -> relFulltextConfigMap),
-      createStatement = s"CREATE FULLTEXT INDEX `index9` FOR ()-[r:`$relType`]-() ON EACH [r.`$prop`] " +
+      createStatement = s"CREATE FULLTEXT INDEX `index09` FOR ()-[r:`$relType`]-() ON EACH [r.`$prop`] " +
         s"OPTIONS {indexConfig: $relFulltextConfigMapString, indexProvider: '$fulltextProvider'}"
     )
   }
