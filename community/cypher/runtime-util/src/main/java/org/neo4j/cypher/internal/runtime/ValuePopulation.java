@@ -33,6 +33,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.HeapTrackingListValueBuilder;
 import org.neo4j.values.virtual.HeapTrackingMapValueBuilder;
@@ -85,13 +86,18 @@ public final class ValuePopulation {
             return populate(relationship, dbAccess, relCursor, propertyCursor);
         } else if (value instanceof VirtualPathValue path) {
             return populate(path, dbAccess, nodeCursor, relCursor, propertyCursor);
-        } else if (value instanceof ListValue list) {
+        } else if (value instanceof ListValue list && needsPopulation(list)) {
             return populate(list, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker);
         } else if (value instanceof MapValue map) {
             return populate(map, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker);
         } else {
             return value;
         }
+    }
+
+    private static boolean needsPopulation(final ListValue list) {
+        final var itemType = list.itemValueRepresentation();
+        return itemType == ValueRepresentation.UNKNOWN || itemType == ValueRepresentation.ANYTHING;
     }
 
     public static NodeValue populate(
