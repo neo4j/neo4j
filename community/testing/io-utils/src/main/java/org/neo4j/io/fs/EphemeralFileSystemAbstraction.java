@@ -286,6 +286,31 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
         from = canonicalFile(from);
         to = canonicalFile(to);
 
+        if (directories.contains(from)) {
+            if (!isDirectory(to.getParent())) {
+                throw new NoSuchFileException("Target directory[" + to.getParent() + "] does not exists");
+            }
+            directories.add(to);
+            // Rename the directory, meaning all its files instead
+            for (var child : listFiles(from)) {
+                if (isDirectory(child)) {
+                    internalRenameDirectory(to, child);
+                } else {
+                    internalRenameFile(child, to.resolve(child.getFileName().toString()), copyOptions);
+                }
+            }
+        } else {
+            internalRenameFile(from, to, copyOptions);
+        }
+    }
+
+    private void internalRenameDirectory(Path to, Path child) {
+        directories.remove(child);
+        directories.add(to.resolve(child.getFileName().toString()));
+    }
+
+    private void internalRenameFile(Path from, Path to, CopyOption[] copyOptions)
+            throws NoSuchFileException, FileAlreadyExistsException {
         if (!files.containsKey(from)) {
             throw new NoSuchFileException("'" + from + "' doesn't exist");
         }
