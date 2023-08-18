@@ -155,6 +155,11 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
         return indexStorageFactory.indexStorageOf(indexId);
     }
 
+    @Override
+    public void shutdown() throws Exception {
+        indexStorageFactory.close();
+    }
+
     public static boolean indexIsOnline(PartitionedIndexStorage indexStorage, IndexDescriptor descriptor, Config config)
             throws IOException {
         try (var index = new MinimalDatabaseIndex<>(indexStorage, descriptor, config)) {
