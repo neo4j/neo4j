@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
+import static java.lang.Math.toIntExact;
+
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -28,6 +31,7 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.neo4j.io.IOUtils;
@@ -36,7 +40,7 @@ import org.neo4j.util.FeatureToggles;
 
 public interface DirectoryFactory extends AutoCloseable {
     static DirectoryFactory directoryFactory(FileSystemAbstraction fs) {
-        return fs.isPersistent() ? DirectoryFactory.PERSISTENT : new DirectoryFactory.InMemoryDirectoryFactory();
+        return fs.isPersistent() ? DirectoryFactory.PERSISTENT : new DirectoryFactory.InMemoryDirectoryFactory(fs);
     }
 
     Directory open(Path dir) throws IOException;
@@ -63,19 +67,80 @@ public interface DirectoryFactory extends AutoCloseable {
 
     final class InMemoryDirectoryFactory implements DirectoryFactory {
         private final Map<Path, Directory> directories = new HashMap<>();
+        private final FileSystemAbstraction fs;
+
+        public InMemoryDirectoryFactory() {
+            this(null);
+        }
+
+        public InMemoryDirectoryFactory(FileSystemAbstraction fs) {
+            this.fs = fs;
+        }
 
         @Override
         public synchronized Directory open(Path dir) {
             if (!directories.containsKey(dir)) {
-                directories.put(dir, new ByteBuffersDirectory());
+                directories.put(dir, openFromFs(dir));
             }
             return new UncloseableDirectory(directories.get(dir));
         }
 
+        private ByteBuffersDirectory openFromFs(Path dir) {
+            var directory = new ByteBuffersDirectory();
+            if (fs != null) {
+                try {
+                    if (fs.fileExists(dir)) {
+                        if (!fs.isDirectory(dir)) {
+                            throw new RuntimeException("File " + dir + " existed, but was not a directory");
+                        }
+                        // Load the state of the directory from the time it was closed
+                        for (var file : fs.listFiles(dir)) {
+                            try (var in = fs.openAsInputStream(file);
+                                    var out = directory.createOutput(
+                                            file.getFileName().toString(), new IOContext())) {
+                                var length = in.available();
+                                var bytes = new byte[length];
+                                var bytesRead = in.read(bytes, 0, length);
+                                if (bytesRead < length) {
+                                    throw new RuntimeException("Couldn't read it all " + bytesRead + " < " + length);
+                                }
+                                out.writeBytes(bytes, 0, length);
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+            return directory;
+        }
+
         @Override
         public synchronized void close() throws IOException {
-            IOUtils.closeAll(directories.values());
-            directories.clear();
+            try {
+                // Store the directories in the provided file system (supposedly ephemeral)
+                if (fs != null) {
+                    for (var entry : directories.entrySet()) {
+                        var directoryPath = entry.getKey();
+                        fs.deleteRecursively(directoryPath);
+                        fs.mkdirs(directoryPath);
+                        var directory = entry.getValue();
+                        for (var name : directory.listAll()) {
+                            var filePath = directoryPath.resolve(name);
+                            try (var out = fs.openAsOutputStream(filePath, false);
+                                    var in = directory.openInput(name, new IOContext())) {
+                                var length = toIntExact(in.length());
+                                var bytes = new byte[length];
+                                in.readBytes(bytes, 0, length);
+                                out.write(bytes, 0, length);
+                            }
+                        }
+                    }
+                }
+            } finally {
+                IOUtils.closeAll(directories.values());
+                directories.clear();
+            }
         }
     }
 
