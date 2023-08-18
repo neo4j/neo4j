@@ -88,7 +88,7 @@ public class ChannelInputStream extends InputStream {
 
     @Override
     public int available() throws IOException {
-        return (int) (position - channel.size());
+        return (int) (channel.size() - position);
     }
 
     @Override
