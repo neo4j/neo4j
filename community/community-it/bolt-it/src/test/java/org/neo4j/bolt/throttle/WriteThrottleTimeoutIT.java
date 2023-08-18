@@ -96,7 +96,7 @@ public class WriteThrottleTimeoutIT {
     // Restrict to raw transports as we do not get direct access to WebSocket sockets
     @TransportTest
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    @ExcludeTransport({TransportType.WEBSOCKET, TransportType.WEBSOCKET_TLS})
+    @ExcludeTransport({TransportType.WEBSOCKET, TransportType.WEBSOCKET_TLS, TransportType.LOCAL})
     void sendingButNotReceivingClientShouldBeKilledWhenWriteThrottleMaxDurationIsReached(
             BoltWire wire, @Authenticated TransportConnection connection) {
         connection.setOption(StandardSocketOptions.SO_RCVBUF, (int) ByteUnit.kibiBytes(32));

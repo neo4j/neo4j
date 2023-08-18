@@ -31,6 +31,7 @@ import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import java.nio.file.Path;
@@ -48,6 +49,7 @@ import org.neo4j.io.ByteUnit;
 public final class BoltConnectorInternalSettings implements SettingsDeclaration {
 
     public static final String LOOPBACK_NAME = "bolt-loopback";
+    public static final String LOCAL_NAME = "bolt-local";
 
     @Internal
     @Description("Enable protocol level logging for incoming connections on the Bolt connector")
@@ -212,6 +214,17 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
                     "internal.dbms.bolt.streaming_flush_threshold", INT, 8192)
             .addConstraint(any(is(0), min(128)))
             .build();
+
+    @Internal
+    @Description("Specifies the string used to connect to the local channel")
+    public static final Setting<String> local_channel_address = newBuilder(
+                    "internal.dbms.bolt.local_address", STRING, "LocalBoltAddress")
+            .build();
+
+    @Internal
+    @Description("Enabled of disable local bolt connector.")
+    public static final Setting<Boolean> enable_local_connector =
+            newBuilder("internal.dbms.bolt.local_enabled", BOOL, false).build();
 
     public enum ProtocolLoggingMode {
         DECODED(false, true),

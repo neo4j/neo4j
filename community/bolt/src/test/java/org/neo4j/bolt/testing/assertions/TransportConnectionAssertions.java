@@ -93,13 +93,10 @@ public abstract class TransportConnectionAssertions<
             Predicates.await(
                     () -> {
                         try {
-                            this.actual.sendRaw(new byte[] {0, 0}).receive(1);
-                        } catch (IOException ex) {
-                            return true;
+                            return actual.isClosed();
                         } catch (InterruptedException ex) {
                             fail(ex);
                         }
-
                         return false;
                     },
                     5,

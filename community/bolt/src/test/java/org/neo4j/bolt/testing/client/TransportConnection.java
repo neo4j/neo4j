@@ -182,7 +182,14 @@ public interface TransportConnection extends AutoCloseable {
 
     ByteBuf receiveMessage() throws IOException, InterruptedException;
 
-    ByteBuf receiveMessage(int skip) throws IOException, InterruptedException;
+    default boolean isClosed() throws InterruptedException {
+        try {
+            this.sendRaw(new byte[] {0, 0}).receive(1);
+            return false;
+        } catch (IOException e) {
+            return true;
+        }
+    }
 
     @Override
     default void close() throws Exception {

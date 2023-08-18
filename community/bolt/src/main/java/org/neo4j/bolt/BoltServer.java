@@ -27,6 +27,7 @@ import static org.neo4j.function.Suppliers.lazySingleton;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.local.LocalAddress;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.util.internal.PlatformDependent;
@@ -53,6 +54,7 @@ import org.neo4j.bolt.protocol.common.connector.listener.ReadLimitConnectorListe
 import org.neo4j.bolt.protocol.common.connector.listener.ResetMessageConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.ResponseMetricsConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector;
+import org.neo4j.bolt.protocol.common.connector.netty.LocalNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.security.Authentication;
@@ -309,6 +311,16 @@ public class BoltServer extends LifecycleAdapter {
             log.info("Configured internal Bolt connector with listener address %s", internalListenAddress);
         }
 
+        if (config.get(BoltConnectorInternalSettings.enable_local_connector)) {
+            registerConnector(createLocalConnector(
+                    connectionFactory,
+                    transport,
+                    createAuthentication(externalAuthManager),
+                    allocator,
+                    streamingBufferSize,
+                    streamingFlushThreshold));
+        }
+
         log.info("Bolt server loaded");
         connectorLife.init();
     }
@@ -508,6 +520,37 @@ public class BoltServer extends LifecycleAdapter {
                 routingService,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
+    }
+
+    private Connector createLocalConnector(
+            Connection.Factory connectionFactory,
+            ConnectorTransport transport,
+            Authentication authentication,
+            ByteBufAllocator allocator,
+            int streamingBufferSize,
+            int streamingFlushThreshold) {
+        return new LocalNettyConnector(
+                BoltConnectorInternalSettings.LOCAL_NAME,
+                new LocalAddress(config.get(BoltConnectorInternalSettings.local_channel_address)),
+                memoryPool,
+                clock,
+                connectionFactory,
+                connectionTracker,
+                protocolRegistry,
+                authentication,
+                authConfigProvider,
+                defaultDatabaseResolver,
+                connectionHintProvider,
+                transactionManager,
+                streamingBufferSize,
+                streamingFlushThreshold,
+                routingService,
+                logService.getUserLogProvider(),
+                logService.getInternalLogProvider(),
+                transport,
+                eventLoopGroup,
+                config,
+                allocator);
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter {

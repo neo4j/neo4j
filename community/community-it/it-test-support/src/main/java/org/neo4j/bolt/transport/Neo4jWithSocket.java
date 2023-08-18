@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.TestInfo;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
@@ -58,6 +59,8 @@ public class Neo4jWithSocket {
     private Path workingDirectory;
     private ConnectorPortRegister connectorRegister;
     private DatabaseManagementService managementService;
+
+    private Config config;
 
     public Neo4jWithSocket(
             TestDatabaseManagementServiceBuilder graphDatabaseFactory,
@@ -134,6 +137,7 @@ public class Neo4jWithSocket {
         gdb = managementService.database(databaseName);
         connectorRegister =
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
+        config = ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency(Config.class);
     }
 
     private void installSelfSignedCertificateIfEncryptionEnabled(Map<Setting<?>, Object> settings) {
@@ -168,6 +172,7 @@ public class Neo4jWithSocket {
             settings.put(BoltConnectorInternalSettings.unsupported_loopback_listen_file, LISTEN_FILE);
             settings.put(BoltConnectorInternalSettings.unsupported_loopback_delete, true);
         }
+        settings.put(BoltConnectorInternalSettings.enable_local_connector, true);
         configure.accept(settings);
         overrideSettingsFunction.accept(settings);
         return settings;
@@ -183,5 +188,9 @@ public class Neo4jWithSocket {
 
     public Path lookupUnixConnector() {
         return LISTEN_FILE;
+    }
+
+    public String lookupLocalConnector() {
+        return config.get(BoltConnectorInternalSettings.local_channel_address);
     }
 }

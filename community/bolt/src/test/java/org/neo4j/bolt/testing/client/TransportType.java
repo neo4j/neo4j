@@ -29,8 +29,9 @@ public enum TransportType {
 
     WEBSOCKET(WebSocketConnection.factory()),
     WEBSOCKET_TLS(SecureWebSocketConnection.factory()),
+    UNIX(UnixDomainSocketConnection.factory()),
 
-    UNIX(UnixDomainSocketConnection.factory());
+    LOCAL(LocalConnection.factory());
 
     private final TransportConnection.Factory factory;
 

@@ -20,6 +20,7 @@
 package org.neo4j.bolt.protocol.common.connector.transport;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.local.LocalServerChannel;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.unix.ServerDomainSocketChannel;
 import java.util.Comparator;
@@ -112,4 +113,13 @@ public interface ConnectorTransport extends PrioritizedService {
      * @return a server socket implementation or null if unsupported.
      */
     Class<? extends ServerDomainSocketChannel> getDomainSocketChannelType();
+
+    /**
+     * Retrieves the channel implementation which is used to bind local transport for intra-VM communication.
+     *
+     * @return a local server channel implementation.
+     */
+    default Class<? extends LocalServerChannel> getLocalChannelType() {
+        return LocalServerChannel.class;
+    }
 }

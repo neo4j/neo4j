@@ -105,13 +105,4 @@ public abstract class AbstractTransportConnection implements TransportConnection
             composite.addComponent(true, this.receive(chunkLength));
         }
     }
-
-    @Override
-    public ByteBuf receiveMessage(int skip) throws IOException, InterruptedException {
-        for (var i = 0; i < skip; ++skip) {
-            this.receiveMessage();
-        }
-
-        return this.receiveMessage();
-    }
 }
