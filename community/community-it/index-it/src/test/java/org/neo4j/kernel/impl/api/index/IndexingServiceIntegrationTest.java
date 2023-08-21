@@ -155,7 +155,7 @@ public class IndexingServiceIntegrationTest {
     @EnumSource(
             value = IndexType.class,
             mode = EnumSource.Mode.EXCLUDE,
-            names = {"LOOKUP"})
+            names = {"LOOKUP", "VECTOR"})
     void testManualRelationshipIndexPopulation(IndexType indexType) throws Exception {
         IndexDescriptor index;
         try (Transaction tx = database.beginTx()) {

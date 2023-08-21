@@ -1483,15 +1483,20 @@ public class Operations implements Write, SchemaWrite {
     @Override
     public IndexDescriptor indexCreate(IndexPrototype prototype) throws KernelException {
         IndexType indexType = prototype.getIndexType();
-        if ((indexType == IndexType.TEXT || indexType == IndexType.POINT)
+        if ((indexType == IndexType.TEXT || indexType == IndexType.POINT || indexType == IndexType.VECTOR)
                 && prototype.schema().getPropertyIds().length > 1) {
             throw new UnsupportedOperationException(
                     "Composite indexes are not supported for " + indexType.name() + " index type.");
         }
 
         if (indexType == IndexType.VECTOR) {
-            assertSupportedInVersion(
-                    "Failed to create node vector index.", KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
+            if (prototype.schema().entityType() == NODE) {
+                assertSupportedInVersion(
+                        "Failed to create node vector index.", KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
+            } else {
+                throw new UnsupportedOperationException(
+                        "Relationship indexes are not supported for " + indexType.name() + " index type.");
+            }
         }
 
         exclusiveSchemaLock(prototype.schema());
