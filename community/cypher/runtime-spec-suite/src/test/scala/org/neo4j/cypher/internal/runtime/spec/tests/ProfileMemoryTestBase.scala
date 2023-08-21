@@ -116,7 +116,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    assertOnMemory(logicalQuery, NO_INPUT, 3, 0, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of grouping aggregation - many groups") {
@@ -132,7 +132,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    assertOnMemory(logicalQuery, NO_INPUT, 3, 0, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of node hash join") {
@@ -273,7 +273,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    assertOnMemory(logicalQuery, inputValues(input: _*), 3, 0, 1)
+    assertOnMemory(logicalQuery, inputValues(input: _*), 3, 1)
   }
 
   test("should profile memory of var-length-expand") {
