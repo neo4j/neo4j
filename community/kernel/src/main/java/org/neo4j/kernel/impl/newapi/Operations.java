@@ -1489,6 +1489,11 @@ public class Operations implements Write, SchemaWrite {
                     "Composite indexes are not supported for " + indexType.name() + " index type.");
         }
 
+        if (indexType == IndexType.VECTOR) {
+            assertSupportedInVersion(
+                    "Failed to create node vector index.", KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
+        }
+
         exclusiveSchemaLock(prototype.schema());
         ktx.assertOpen();
         assertValidDescriptor(prototype.schema(), INDEX_CREATION);

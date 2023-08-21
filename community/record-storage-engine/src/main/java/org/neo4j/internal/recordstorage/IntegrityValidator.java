@@ -19,11 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.kernel.KernelVersion.LATEST_SCHEMA_CHANGE;
+import static org.neo4j.kernel.KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -49,17 +54,45 @@ class IntegrityValidator {
      */
     static void validateSchemaRule(SchemaRule schemaRule, KernelVersion kernelVersion)
             throws TransactionFailureException {
-        if (kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)
-                && schemaRule instanceof ConstraintDescriptor constraint) {
-            if (constraint.isRelationshipKeyConstraint() || constraint.isRelationshipUniquenessConstraint()) {
-                throw new TransactionFailureException(
-                        Status.General.UpgradeRequired,
-                        "Operation on constraint '%s' not allowed. "
-                                + "Required kernel version for this transaction is %s, but actual version was %s.",
-                        constraint,
-                        VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED.name(),
-                        kernelVersion.name());
-            }
+        if (kernelVersion.isAtLeast(LATEST_SCHEMA_CHANGE)) {
+            return;
         }
+
+        if (schemaRule instanceof final IndexDescriptor index) {
+            final var schemaType = "index";
+
+            if (index.getIndexType() == IndexType.VECTOR) {
+                if (index.schema().entityType() == EntityType.NODE
+                        && kernelVersion.isLessThan(VERSION_NODE_VECTOR_INDEX_INTRODUCED)) {
+                    throw upgradeNeededForSchemaRule(
+                            schemaType, index, kernelVersion, VERSION_NODE_VECTOR_INDEX_INTRODUCED);
+                } // Relationship vector index is not _currently_ supported
+            }
+
+        } else if (schemaRule instanceof final ConstraintDescriptor constraint) {
+            final var schemaType = "constraint";
+
+            if ((constraint.isRelationshipUniquenessConstraint() || constraint.isRelationshipKeyConstraint())
+                    && kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)) {
+                throw upgradeNeededForSchemaRule(
+                        schemaType, constraint, kernelVersion, VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
+            }
+
+        } else {
+            throw new IllegalArgumentException(
+                    "Unknown %s. Provided: %s".formatted(SchemaRule.class.getSimpleName(), schemaRule));
+        }
+    }
+
+    private static TransactionFailureException upgradeNeededForSchemaRule(
+            String schemaType, SchemaRule schemaRule, KernelVersion actualVersion, KernelVersion requiredVersion) {
+        return new TransactionFailureException(
+                Status.General.UpgradeRequired,
+                "Operations on %s '%s' not allowed. "
+                        + "Required kernel version for this transaction is %s, but actual version was %s.",
+                schemaType,
+                schemaRule,
+                requiredVersion.name(),
+                actualVersion.name());
     }
 }
