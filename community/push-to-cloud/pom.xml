@@ -16,8 +16,9 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
-        <licensing.prepend.text>licensing/notice-asl-prefix.txt</licensing.prepend.text>
-        <license-text.header>headers/ASL-2-header.txt</license-text.header>
+        <license.id>neo4j_apache_v2</license.id>
+        <licensing.prepend.text>licensing/notice-apache2-prefix.txt</licensing.prepend.text>
+        <license-text.header>license/neo4j_apache_v2/header.txt</license-text.header>
         <moduleName>org.neo4j.export</moduleName>
     </properties>
 
@@ -29,8 +30,9 @@
 
     <licenses>
         <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <name>Apache-2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
         </license>
     </licenses>
 

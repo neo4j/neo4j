@@ -17,7 +17,6 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
-        <license-text.header>headers/ASL-2-header.txt</license-text.header>
         <moduleName>org.neo4j.cypher.internal.test.util</moduleName>
     </properties>
 
@@ -26,13 +25,6 @@
         <developerConnection>scm:git:git://github.com/openCypher/front-end.git</developerConnection>
         <url>https://github.com/openCypher/front-end</url>
     </scm>
-
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-        </license>
-    </licenses>
 
     <dependencies>
         <dependency>

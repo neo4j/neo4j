@@ -62,12 +62,12 @@
 
   <licenses>
     <license>
-      <name>BSD 3-Clause</name>
+      <name>BSD-3-Clause</name>
       <url>https://opensource.org/licenses/BSD-3-clause</url>
       <distribution>repo</distribution>
     </license>
     <license>
-      <name>GPLv2</name>
+      <name>GPL-2.0</name>
       <url>https://opensource.org/licenses/GPL-2.0</url>
       <distribution>manual</distribution>
     </license>

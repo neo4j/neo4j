@@ -10,7 +10,7 @@
   <name>Neo4j - Parent</name>
   <description>Neo4j Graph Database</description>
   <inceptionYear>2002</inceptionYear>
-  <url>http://neo4j.com/</url>
+  <url>https://neo4j.com/</url>
 
   <organization>
     <name>The Neo4j Graph Database Project</name>
@@ -25,8 +25,22 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <name>GPL-3.0-or-later</name>
+      <url>https://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <distribution>repo</distribution>
+      <comments>
+        The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+        licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+        parties and that license is included below.
+
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo4j or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+        Version 3 and you may use the Software solely pursuant to the terms of
+        the relevant Commercial Agreement.
+      </comments>
     </license>
   </licenses>
 
@@ -64,7 +78,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <jdk.custom.options>
       --add-opens=java.base/java.nio=ALL-UNNAMED
@@ -122,7 +135,9 @@
     <cursor.counters.check>true</cursor.counters.check>
     <skip-scalastyle>false</skip-scalastyle>
 
-    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
+    <license.id>neo4j_gpl_v3</license.id>
+    <license-text.header>license/neo4j_gpl_v3/header.txt</license-text.header>
+    <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
 
     <jamm.version>0.4.0</jamm.version>
     <lucene.version>9.7.0</lucene.version>
@@ -435,9 +450,11 @@
 
         <!-- Licensing settings -->
         <plugin>
+          <!-- Generates and validates NOTICE.txt and LICENSES.txt -->
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>licensing-maven-plugin</artifactId>
           <version>1.7.11</version>
+
           <configuration>
             <failIfDisliked>true</failIfDisliked>
             <failIfMissing>true</failIfMissing>
@@ -479,6 +496,7 @@
           </dependencies>
         </plugin>
         <plugin>
+          <!-- Updates and validates source code headers -->
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>4.2</version>
@@ -514,6 +532,32 @@
               <g4>SLASHSTAR_STYLE</g4>
             </mapping>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.neo4j.build</groupId>
+              <artifactId>build-resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+
+        <plugin>
+          <!-- Generates LICENSE.txt files -->
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>2.2.0</version>
+          <configuration>
+            <licenseResolver>classpath://license</licenseResolver>
+            <licenseName>${license.id}</licenseName>
+          </configuration>
+          <executions>
+            <execution>
+              <id>update-project-license</id>
+              <goals>
+                <goal>update-project-license</goal>
+              </goals>
+            </execution>
+          </executions>
           <dependencies>
             <dependency>
               <groupId>org.neo4j.build</groupId>
@@ -899,6 +943,10 @@
           </plugin>
           <plugin>
             <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
             <artifactId>license-maven-plugin</artifactId>
           </plugin>
         </plugins>

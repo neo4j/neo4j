@@ -13,11 +13,6 @@
 
     <name>Neo4j - Procedure Compiler Integration Tests</name>
 
-    <properties>
-        <license-text.header>headers/GPL-3-header.txt</license-text.header>
-    </properties>
-
-
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
