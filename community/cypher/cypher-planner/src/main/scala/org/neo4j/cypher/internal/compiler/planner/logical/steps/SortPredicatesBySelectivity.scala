@@ -51,7 +51,8 @@ import org.neo4j.cypher.internal.util.bottomUp
 import scala.collection.immutable.ListSet
 
 /**
- * Sorts the predicates in [[Selection]] plans according to their selectivity and cost.
+ * Sorts the predicates in [[Selection]] plans according to their selectivity and cost. Tests can be found in
+ * SelectionPlanningIntegrationTest.
  */
 case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState]
     with StepSequencer.Step

@@ -27,8 +27,10 @@ import org.neo4j.cypher.internal.util.bottomUp
 import scala.collection.mutable
 
 /**
- * Runs through LogicalPlan and copies duplicate plans to make sure the
- * plan doesn't contain elements that are ID identical.
+ * Runs through LogicalPlan and copies duplicate plans to make sure the plan doesn't contain elements that are ID
+ * identical. This is needed by PROFILE which accumulates metrics by assuming that each plan has a unique ID. Plans
+ * may end up with the same ID because IDP begins by figuring out the best leafs plans, and by computing the
+ * initial node connections used as seeds by the IDP algorithm. Multiple of these seeds may contain the same leaf plan.
  */
 case class removeIdenticalPlans(attributes: Attributes[LogicalPlan]) extends Rewriter {
 
