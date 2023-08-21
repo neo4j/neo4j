@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CollectExpression
+import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CommandClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.CreateAliasAction
@@ -217,6 +218,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         case w: With => w.withType == ParsedAsYield || w.withType == AddedInRewrite
         case c       => c.isInstanceOf[ClauseAllowedOnSystem]
       }
+
+    // Return non-administration commands that are not allowed on system database, e.g. SHOW CONSTRAINTS YIELD ...
+    // only needed for better error messages
+    def getCommandClausesNotAllowedOnSystem(clauses: Seq[Clause]) =
+      clauses.filter(clause => clause.isInstanceOf[CommandClause] && !clause.isInstanceOf[ClauseAllowedOnSystem])
 
     def assignPrivilegeAction(immutable: Boolean) =
       if (immutable) AssignImmutablePrivilegeAction else AssignPrivilegeAction
@@ -1162,6 +1168,19 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.AllowedNonAdministrationCommands(q))
 
       case q =>
+        // Check for non-administration commands that are not allowed on system database, e.g. SHOW CONSTRAINTS YIELD ...
+        // To get a better error than the procedure error below
+        val unsupportedCommandClauses = q match {
+          case SingleQuery(clauses) =>
+            getCommandClausesNotAllowedOnSystem(clauses).map(_.name).distinct
+          case _ => List.empty
+        }
+        if (unsupportedCommandClauses.nonEmpty) {
+          throw new RuntimeException(
+            s"The following commands are not allowed on a system database: ${unsupportedCommandClauses.sorted.mkString(", ")}."
+          )
+        }
+
         val unsupportedClauses = q.folder.treeFold(List.empty[String]) {
           case _: CallClause => acc => SkipChildren(acc)
           case _: Return     => acc => SkipChildren(acc)
