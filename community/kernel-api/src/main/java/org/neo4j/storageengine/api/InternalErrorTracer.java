@@ -22,6 +22,8 @@ package org.neo4j.storageengine.api;
 import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public interface InternalErrorTracer {
     long internalReadErrors();
@@ -53,6 +55,11 @@ public interface InternalErrorTracer {
     class Impl implements InternalErrorTracer {
         private final LongAdder internalReadErrors = new LongAdder();
         private final LongAdder internalWriteErrors = new LongAdder();
+        private final InternalLog log;
+
+        public Impl(InternalLogProvider logProvider) {
+            log = logProvider.getLog(InternalErrorTracer.class);
+        }
 
         @Override
         public long internalReadErrors() {
@@ -67,6 +74,7 @@ public interface InternalErrorTracer {
         @Override
         public void traceReadError(Throwable throwable) {
             if (!isTransient(throwable)) {
+                log.info("Internal read error observed", throwable);
                 internalReadErrors.increment();
             }
         }
@@ -74,6 +82,7 @@ public interface InternalErrorTracer {
         @Override
         public void traceWriteError(Throwable throwable) {
             if (!isTransient(throwable)) {
+                log.info("Internal write error observed", throwable);
                 internalWriteErrors.increment();
             }
         }
