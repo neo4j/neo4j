@@ -1,6 +1,6 @@
 Neo4j
-Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
-[http://neo4j.com]
+Copyright © 2002-2023 Neo4j Sweden AB (referred to in this notice as "Neo4j")
+[https://neo4j.com]
 
 This product includes software ("Software") developed by Neo4j.
 

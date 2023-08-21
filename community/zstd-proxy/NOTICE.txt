@@ -1,17 +1,23 @@
 Neo4j
-Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
-[http://neo4j.com]
+Copyright © 2002-2023 Neo4j Sweden AB (referred to in this notice as "Neo4j")
+[https://neo4j.com]
 
-This product includes software ("Software") developed and owned by Neo4j.
+This product includes software ("Software") developed by Neo4j.
 
-The Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html),
-included in the LICENSE.txt file, with the Commons Clause.
+The copyright in the bundled Neo4j graph database (including the
+Software) is owned by Neo4j. The Software developed and owned
+by Neo4j is licensed under the GNU GENERAL PUBLIC LICENSE Version 3
+(http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
+to all third parties and that license, as required by the GPL, is
+included in the LICENSE.txt file.
 
-Neo4j Enterprise object code can be licensed independently from the source
-under separate commercial terms. Email inquiries can be directed
-to: licensing@neo4j.com. More information is also available
-at: https://neo4j.com/licensing/
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo4j or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GPL and you may use the
+software solely pursuant to the terms of the relevant Commercial
+Agreement.
 
 Full license texts are found in LICENSES.txt.
 
