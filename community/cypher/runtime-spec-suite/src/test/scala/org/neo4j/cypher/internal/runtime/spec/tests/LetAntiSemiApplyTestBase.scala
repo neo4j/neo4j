@@ -139,6 +139,7 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "let").withRows(rowCount(limit))
     if (!isParallel) {
+      // parallel runtime may exhaust input before cancellation kicks in (depends on fusing, morsel size, parallelism)
       input.hasMore shouldBe true
     }
   }

@@ -237,6 +237,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x").withRows(rowCount(limit))
     if (!isParallel) {
+      // parallel runtime may exhaust input before cancellation kicks in (depends on fusing, morsel size, parallelism)
       input.hasMore shouldBe true
     }
   }
@@ -643,6 +644,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
     runtimeResult should beColumns("x").withRows(rowCount(limit))
     if (!isParallel) {
+      // parallel runtime may exhaust input before cancellation kicks in (depends on fusing, morsel size, parallelism)
       input.hasMore shouldBe true
     }
   }

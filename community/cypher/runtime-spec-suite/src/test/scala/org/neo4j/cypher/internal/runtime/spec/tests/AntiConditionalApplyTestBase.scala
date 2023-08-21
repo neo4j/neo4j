@@ -195,6 +195,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "y").withRows(rowCount(limit))
     if (!isParallel) {
+      // parallel runtime may exhaust input before cancellation kicks in (depends on fusing, morsel size, parallelism)
       input.hasMore shouldBe true
     }
   }
@@ -522,6 +523,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
     runtimeResult should beColumns("x", "y").withRows(rowCount(limit))
     if (!isParallel) {
+      // parallel runtime may exhaust input before cancellation kicks in (depends on fusing, morsel size, parallelism)
       input.hasMore shouldBe true
     }
   }
