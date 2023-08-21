@@ -29,7 +29,9 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static wiremock.org.hamcrest.CoreMatchers.containsString;
 
@@ -38,6 +40,7 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
@@ -194,6 +197,41 @@ public class SignedUploadGCPTest {
         assertEquals("https://my_list_signed_url", endpoint.toString());
     }
 
+    @Test
+    void shouldReturnTrueWhenFileExists() throws IOException {
+        SignedUploadGCP signedUploadGCP = getGcpSignedUpload(null);
+        String error = "<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied."
+                + "</Message><Details>hello@hello.iam.gserviceaccount.com does not have storage.objects.delete "
+                + "access to the Google Cloud Storage object.</Details></Error>";
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(error.getBytes());
+        assertTrue(signedUploadGCP.canSkipToImport(byteArrayInputStream));
+    }
+
+    @Test
+    void shouldProduceErrorWhenNotPermissionDenied() throws IOException {
+        SignedUploadGCP signedUploadGCP = getGcpSignedUpload(null);
+        String error = "<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied."
+                + "</Message><Details>Unexpected stuff</Details></Error>";
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(error.getBytes());
+        assertFalse(signedUploadGCP.canSkipToImport(byteArrayInputStream));
+    }
+
+    @Test
+    void shouldThrowErrorParsingXEEVulnerableContent() throws IOException {
+        SignedUploadGCP signedUploadGCP = getGcpSignedUpload(null);
+        String error = "<?xml version='1.0' encoding='UTF-8'?>"
+                + "<!DOCTYPE foo [ <!ENTITY xxe SYSTEM \"file:///etc/ntp.conf\"> ]>"
+                + "<Error><Code>&xxe;</Code><Message>Access denied."
+                + "</Message><Details>hello@hello.iam.gserviceaccount.com does not have storage.objects.delete "
+                + "access to the Google Cloud Storage object.</Details></Error>";
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(error.getBytes());
+        ExportTestUtilities.assertThrows(
+                IOException.class,
+                containsString("Encountered invalid response from cloud import location"),
+                () -> signedUploadGCP.canSkipToImport(byteArrayInputStream));
+    }
+
     private MappingBuilder initiateRequest() {
         return post(urlEqualTo("/initiate"))
                 .withHeader("x-goog-resumable", equalTo("start"))
@@ -203,6 +241,12 @@ public class SignedUploadGCPTest {
 
     private ResponseDefinitionBuilder successfulInitiateResponse(String uploadPath) {
         return aResponse().withStatus(HTTP_CREATED).withHeader("Location", wireMockServerAddress + uploadPath);
+    }
+
+    private ResponseDefinitionBuilder resumeInvalidXMLResponse() {
+        String error = "<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied."
+                + "</Message><Details>Unexpected stuff</Details></Error>";
+        return aResponse().withStatus(HTTP_UNAUTHORIZED).withStatusMessage(error);
     }
 
     private MappingBuilder resumeUpload() {

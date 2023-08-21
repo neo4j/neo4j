@@ -21,23 +21,30 @@ import static java.lang.Long.min;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_CREATED;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_GATEWAY_TIMEOUT;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.compress.utils.IOUtils.toByteArray;
 
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.commons.compress.utils.IOUtils;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.apache.commons.io.IOUtils;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.export.CommandResponseHandler;
@@ -46,12 +53,18 @@ import org.neo4j.export.util.IOCommon;
 import org.neo4j.export.util.ProgressTrackingOutputStream;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 public class SignedUploadGCP implements SignedUpload {
     static final int HTTP_RESUME_INCOMPLETE = 308;
     private static final long POSITION_UPLOAD_COMPLETED = -1;
     private static final long DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS = SECONDS.toMillis(64);
     private static final long DEFAULT_MAXIMUM_RETRIES = 50;
+    private static final String UPLOAD_RESPONSE_ERROR_MESSAGE = "Encountered unexpected response uploading to storage";
     String[] signedLinks;
     String signedURI;
     ExecutionContext ctx;
@@ -254,14 +267,63 @@ public class SignedUploadGCP implements SignedUpload {
                 case HTTP_INTERNAL_ERROR:
                 case HTTP_UNAVAILABLE:
                 case HTTP_BAD_GATEWAY:
+                case HTTP_FORBIDDEN:
+                    if (canSkipToImport(connection.getErrorStream())) {
+                        return true;
+                    }
                 case HTTP_GATEWAY_TIMEOUT:
                     commandResponseHandler.debugErrorResponse(verbose, connection);
                     return false;
                 default:
-                    commandResponseHandler.debug(true, "resume upload ends 3\n");
+                    commandResponseHandler.debug(true, "resume upload ends\n");
                     throw resumePossibleErrorResponse(connection, source);
             }
         }
+    }
+
+    public boolean canSkipToImport(InputStream errorStream) throws IOException {
+        String responseString;
+        responseString = new String(toByteArray(errorStream), UTF_8);
+        try {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+            // Security: Java XML parser has external entities enabled by default.
+            // https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html#java
+            dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            dbf.setXIncludeAware(false);
+
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            Document document = builder.parse(new InputSource(new StringReader(responseString)));
+            document.getDocumentElement().normalize();
+            Node codeNode = document.getElementsByTagName("Code").item(0);
+            Node detailsNode = document.getElementsByTagName("Details").item(0);
+
+            if (handleNullResponse(codeNode, detailsNode)) return false;
+            String code = codeNode.getTextContent();
+            String details = detailsNode.getTextContent();
+            if (handleNullResponse(code, details)) return false;
+
+            String objectExistsText = "does not have storage.objects.delete access to the Google Cloud Storage object.";
+            boolean valid = details.contains(objectExistsText) && code.equals("AccessDenied");
+            if (!valid) {
+                ctx.out().println(UPLOAD_RESPONSE_ERROR_MESSAGE);
+                return false;
+            } else {
+                ctx.out().println("Detected already uploaded object, proceeding to import");
+                return true;
+            }
+
+        } catch (ParserConfigurationException | SAXException | DOMException e) {
+            throw new IOException("Encountered invalid response from cloud import location", e.getCause());
+        }
+    }
+
+    private boolean handleNullResponse(Object o1, Object o2) {
+        if (o1 == null || o2 == null) {
+            ctx.out().println(UPLOAD_RESPONSE_ERROR_MESSAGE);
+            return true;
+        }
+        return false;
     }
 
     /**
