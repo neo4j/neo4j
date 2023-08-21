@@ -222,7 +222,11 @@ public enum ZippedStoreCommunity implements ZippedStore {
     REC_SF11_V58_EMPTY(
             "record-standard-1.1_V5.8_empty_community.zip",
             new DbStatistics(
-                    "record-standard-1.1", KernelVersion.V5_8, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+                    "record-standard-1.1", KernelVersion.V5_8, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+    REC_AF11_V510_EMPTY(
+            "record-aligned-1.1_V5.10_empty_community.zip",
+            new DbStatistics(
+                    "record-aligned-1.1", KernelVersion.V5_10, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
     private final String zipFileName;
     private final DbStatistics statistics;
