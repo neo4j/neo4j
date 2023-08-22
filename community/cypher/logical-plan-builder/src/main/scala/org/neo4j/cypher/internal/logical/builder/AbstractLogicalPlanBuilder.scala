@@ -2544,8 +2544,8 @@ object AbstractLogicalPlanBuilder {
   def createNode(node: String, labels: String*): CreateNode =
     CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, None)
 
-  def createNodeIr(node: String, labels: String*): org.neo4j.cypher.internal.ir.CreateNode =
-    org.neo4j.cypher.internal.ir.CreateNode(node, labels.map(LabelName(_)(pos)).toSet, None)
+  def createNodeIr(node: String, properties: Option[String] = None): org.neo4j.cypher.internal.ir.CreateNode =
+    org.neo4j.cypher.internal.ir.CreateNode(node, Set.empty, properties.map(Parser.parseExpression))
 
   def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
     CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, Some(Parser.parseExpression(properties)))

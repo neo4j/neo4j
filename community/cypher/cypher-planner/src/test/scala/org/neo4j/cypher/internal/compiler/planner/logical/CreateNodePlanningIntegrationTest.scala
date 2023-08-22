@@ -21,10 +21,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.collection.immutable.ListSet
 
 class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
@@ -56,6 +60,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan for multiple creates via multiple statements") {
     val cfg = plannerBuilder().setAllNodesCardinality(0).build()
     val plan = cfg.plan("CREATE (a) CREATE (b) CREATE (c)").stripProduceResults
+
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
@@ -63,6 +68,64 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
         createNode("b"),
         createNode("c")
       )
+      .argument()
+      .build()
+  }
+
+  test("should plan multiple creates via multiple operators if they have pattern-dependencies via IR expressions") {
+    val planner = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = planner.plan(
+      """CREATE (m)
+        |CREATE (n {count: COUNT { MATCH () } })""".stripMargin
+    )
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults()
+      .emptyResult()
+      .create(createNodeWithProperties("n", Seq(), "{count: anon_1}"))
+      .apply()
+      .|.nodeCountFromCountStore("anon_1", Seq(None))
+      .eager(ListSet(EagernessReason.Unknown))
+      .create(createNode("m"))
+      .argument()
+      .build()
+  }
+
+  test("should plan multiple creates via multiple operators if they have identifier-dependencies via IR expressions") {
+    val planner = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = planner.plan(
+      """CREATE (a)-[r:T]->(b)
+        |CREATE (c {p: COUNT { WITH r ORDER BY r } })""".stripMargin
+    )
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults()
+      .emptyResult()
+      .create(createNodeWithProperties("c", Seq(), "{p: anon_0}"))
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.sort("r ASC")
+      .|.argument("r")
+      .create(createNode("a"), createNode("b"), createRelationship("r", "a", "T", "b"))
+      .argument()
+      .build()
+  }
+
+  test("should plan multiple creates via multiple operators if they have dependencies via exists expressions") {
+    val planner = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = planner.plan(
+      """CREATE (n)-[r:REL]->(m)
+        |CREATE (o {p: exists( ()--() ) });""".stripMargin
+    )
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults()
+      .emptyResult()
+      .create(createNodeWithProperties("o", Seq(), "{p: anon_3}"))
+      .letSemiApply("anon_3")
+      .|.allRelationshipsScan("(anon_0)-[anon_1]-(anon_2)")
+      .eager(ListSet(EagernessReason.Unknown))
+      .create(createNode("n"), createNode("m"), createRelationship("r", "n", "REL", "m"))
       .argument()
       .build()
   }

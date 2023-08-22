@@ -21,7 +21,6 @@ Feature "CollectExpressionAcceptance": Scenario "COLLECT with updating procedure
 // CIP-101: item-by-item visibility for CREATE
 Feature "Create": Scenario "Creating patterns first evaluates all contained pattern expressions"
 Feature "Create": Scenario "Creating patterns first evaluates all contained pattern comprehensions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained count expressions on all inputs"
 Feature "Create": Scenario "Creating patterns first evaluates all contained count expressions"
 Feature "Create": Scenario "Creating patterns first evaluates all contained exists expressions"
 

@@ -2176,7 +2176,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("Should combine two simple create statement into one create pattern") {
-    val query = buildSinglePlannerQuery("CREATE (a) CREATE (b)")
+    val query = buildSinglePlannerQuery(
+      """CREATE (a)
+        |CREATE (b)""".stripMargin
+    )
     query.queryGraph shouldBe QueryGraph(
       mutatingPatterns = IndexedSeq(createPatternIr(Seq(createNodeIr("a"), createNodeIr("b"))))
     )
@@ -2185,7 +2188,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("Should combine two patterns into one") {
-    val query = buildSinglePlannerQuery("CREATE (a)-[r1:R {p: 1}]->(b) CREATE (c)-[r2: R {p: 1}]->(d)")
+    val query = buildSinglePlannerQuery(
+      """CREATE (a)-[r1:R {p: 1}]->(b)
+        |CREATE (c)-[r2: R {p: 1}]->(d)""".stripMargin
+    )
     query.queryGraph shouldBe QueryGraph(
       mutatingPatterns = IndexedSeq(CreatePattern(Seq(
         createNodeIr("a"),
@@ -2196,6 +2202,33 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         createRelationshipIr("r2", "c", "R", "d", properties = Some("{p: 1}"))
       )))
     )
+
+    query.tail shouldBe empty
+  }
+
+  test("should not flatten creates which have a dependency through reusing the variable") {
+    val query = buildSinglePlannerQuery(
+      """CREATE (m {p: 42} )
+        |CREATE (n {p: m.p})""".stripMargin
+    )
+
+    query.queryGraph shouldBe QueryGraph(
+      mutatingPatterns = IndexedSeq(CreatePattern(Seq(
+        createNodeIr("m", properties = Some("{p: 42}")),
+        createNodeIr("n", properties = Some("{p: m.p}"))
+      )))
+    )
+
+    query.tail shouldBe empty
+  }
+
+  test("should not flatten creates which have a dependency through an IR expression") {
+    val query = buildSinglePlannerQuery(
+      """CREATE (m)
+        |CREATE (n {count: COUNT { MATCH () } })""".stripMargin
+    )
+
+    query.queryGraph.mutatingPatterns should have size 2
 
     query.tail shouldBe empty
   }

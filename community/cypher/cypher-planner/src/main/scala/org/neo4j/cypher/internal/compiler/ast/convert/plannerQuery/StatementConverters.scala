@@ -36,9 +36,11 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -187,12 +189,16 @@ object StatementConverters {
    *
    *   CREATE (a) CREATE (b) => CREATE (a),(b)
    */
-  def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
+  private def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
     val builder = ArrayBuffer.empty[Clause]
     var prevCreate: Option[(Seq[NonPrefixedPatternPart], InputPosition)] = None
     for (clause <- clauses) {
       (clause, prevCreate) match {
         case (c: Create, None) =>
+          prevCreate = Some((c.pattern.patternParts, c.position))
+
+        case (c: Create, Some((prevParts, pos))) if containsIrExpression(c) =>
+          builder += Create(Pattern.ForUpdate(prevParts)(pos))(pos)
           prevCreate = Some((c.pattern.patternParts, c.position))
 
         case (c: Create, Some((prevParts, pos))) =>
@@ -211,4 +217,10 @@ object StatementConverters {
       builder += Create(Pattern.ForUpdate(prevParts)(pos))(pos)
     builder
   }.toSeq
+
+  private def containsIrExpression(c: Create): Boolean =
+    c.pattern.patternParts.exists(part => containsIrExpression(part.element))
+
+  private def containsIrExpression(element: PatternElement): Boolean =
+    element.folder.treeFindByClass[IRExpression].isDefined
 }
