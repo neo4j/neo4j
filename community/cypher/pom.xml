@@ -41,7 +41,6 @@
                 <module>interpreted-runtime</module>
                 <module>slotted-runtime</module>
                 <module>physical-planning</module>
-                <module>acceptance-spec-suite</module>
                 <module>compatibility-spec-suite</module>
                 <module>spec-suite-tools</module>
                 <module>logical-plan-builder</module>
