@@ -23,4 +23,8 @@ final case class ObfuscationMetadata(
   def isEmpty: Boolean = sensitiveLiteralOffsets.isEmpty && sensitiveParameterNames.isEmpty
 }
 
+object ObfuscationMetadata {
+  def empty() = new ObfuscationMetadata(Vector.empty, Set.empty)
+}
+
 case class LiteralOffset(start: Int, length: Option[Int])

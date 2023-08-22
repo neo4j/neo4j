@@ -47,6 +47,7 @@ import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bootstrap.CommonQueryRouterBoostrap;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -55,14 +56,15 @@ import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.router.impl.CommunityLocationService;
 import org.neo4j.router.impl.QueryRouterImpl;
 import org.neo4j.router.impl.bolt.QueryRouterBoltSpi;
 import org.neo4j.router.impl.query.DefaultDatabaseReferenceResolver;
-import org.neo4j.router.impl.query.parsing.QueryTargetCache;
-import org.neo4j.router.impl.query.parsing.StandardQueryTargetParser;
+import org.neo4j.router.impl.query.parsing.PreParsedInfoCache;
+import org.neo4j.router.impl.query.parsing.StandardQueryPreParser;
 import org.neo4j.router.impl.transaction.database.LocalDatabaseTransactionFactory;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
@@ -139,7 +141,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         var monitors = resolve(Monitors.class);
         var cacheFactory = new ExecutorBasedCaffeineCacheFactory(
                 job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
-        var targetCache = new QueryTargetCache(
+        var targetCache = new PreParsedInfoCache(
                 cacheFactory,
                 cypherConfig.queryCacheSize(),
                 monitors.newMonitor(CacheTracer.class, "cypher.cache.target"));
@@ -149,6 +151,11 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         var parsing = new CypherParsing(null, CypherParsingConfig.fromCypherPlannerConfiguration(plannerConfig));
         DefaultDatabaseReferenceResolver databaseReferenceResolver =
                 new DefaultDatabaseReferenceResolver(databaseReferenceRepo);
+        var databaseManager = (DatabaseContextProvider<DatabaseContext>) resolve(DatabaseContextProvider.class);
+        var tracers = resolve(Tracers.class);
+        SystemNanoClock systemNanoClock = resolve(SystemNanoClock.class);
+        var statementLifecycles = new QueryStatementLifecycles(
+                databaseManager, monitors, config, tracers.getLockTracer(), systemNanoClock);
 
         var transactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
         return new QueryRouterBoltSpi.DatabaseManagementService(
@@ -156,13 +163,13 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                         config,
                         databaseReferenceResolver,
                         this::createLocationService,
-                        new StandardQueryTargetParser(
-                                targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}),
+                        new StandardQueryPreParser(targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}),
                         new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
                         createRemoteDatabaseTransactionFactory(),
                         new ErrorReporter(this.logService),
-                        resolve(SystemNanoClock.class),
-                        transactionIdTracker),
+                        systemNanoClock,
+                        transactionIdTracker,
+                        statementLifecycles),
                 databaseReferenceResolver,
                 getCompositeDatabaseStack());
     }

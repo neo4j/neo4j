@@ -42,6 +42,17 @@ enum NoQueryEngine implements QueryExecutionEngine {
     }
 
     @Override
+    public QueryExecution executeQuery(
+            String query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            QuerySubscriber subscriber,
+            QueryExecutionMonitor monitor) {
+        throw noQueryEngine();
+    }
+
+    @Override
     public long clearQueryCaches() {
         throw noQueryEngine();
     }

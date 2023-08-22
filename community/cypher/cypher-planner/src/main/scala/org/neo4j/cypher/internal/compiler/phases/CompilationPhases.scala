@@ -176,7 +176,8 @@ object CompilationPhases {
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       SemanticTypeCheck andThen
       AmbiguousAggregationAnalysis(config.semanticFeatures: _*) andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures)
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures) andThen
+      ObfuscationMetadataCollection
   }
 
   // Phase 1
@@ -194,7 +195,6 @@ object CompilationPhases {
     parsingBase(config) andThen
       ExpandStarRewriter andThen
       TryRewriteProcedureCalls(resolver) andThen
-      ObfuscationMetadataCollection andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 

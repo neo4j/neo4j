@@ -25,10 +25,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.cypher.internal.CypherQueryObfuscator;
+import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.planning.FabricPlan;
-import org.neo4j.fabric.transaction.FabricTransactionInfo;
+import org.neo4j.fabric.transaction.StatementLifecycleTransactionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.ExecutingQueryFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
@@ -39,12 +40,12 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class FabricStatementLifecycles {
+public class QueryStatementLifecycles {
     private final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
     private final QueryExecutionMonitor dbmsMonitor;
     private final ExecutingQueryFactory executingQueryFactory;
 
-    public FabricStatementLifecycles(
+    public QueryStatementLifecycles(
             DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
             Monitors dbmsMonitors,
             Config config,
@@ -70,8 +71,8 @@ public class FabricStatementLifecycles {
         return cpuClock;
     }
 
-    StatementLifecycle create(
-            FabricTransactionInfo transactionInfo,
+    public StatementLifecycle create(
+            StatementLifecycleTransactionInfo transactionInfo,
             String statement,
             MapValue params,
             ExecutingQuery.TransactionBinding transactionBinding) {
@@ -100,11 +101,11 @@ public class FabricStatementLifecycles {
             this.executingQuery = executingQuery;
         }
 
-        void startProcessing() {
+        public void startProcessing() {
             getQueryExecutionMonitor().startProcessing(executingQuery);
         }
 
-        void doneFabricProcessing(FabricPlan plan) {
+        public void doneFabricProcessing(FabricPlan plan) {
             executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(plan.obfuscationMetadata()));
 
             if (plan.inCompositeContext()) {
@@ -114,17 +115,27 @@ public class FabricStatementLifecycles {
             }
         }
 
-        void startExecution(Boolean shouldLogIfSingleQuery) {
+        public void doneRouterProcessing(ObfuscationMetadata obfuscateMetadata, boolean inCompositeContext) {
+            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(obfuscateMetadata));
+
+            if (inCompositeContext) {
+                monitoringMode = new ParentChildMonitoringMode();
+            } else {
+                monitoringMode = new SingleQueryMonitoringMode();
+            }
+        }
+
+        public void startExecution(Boolean shouldLogIfSingleQuery) {
             monitoringMode.startExecution(shouldLogIfSingleQuery);
         }
 
-        void endSuccess() {
+        public void endSuccess() {
             QueryExecutionMonitor monitor = getQueryExecutionMonitor();
             monitor.beforeEnd(executingQuery, true);
             monitor.endSuccess(executingQuery);
         }
 
-        void endFailure(Throwable failure) {
+        public void endFailure(Throwable failure) {
             QueryExecutionMonitor monitor = getQueryExecutionMonitor();
             monitor.beforeEnd(executingQuery, false);
             monitor.endFailure(executingQuery, failure.getMessage());

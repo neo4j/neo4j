@@ -66,7 +66,7 @@ abstract class ExecutionEngine(
 ) {
 
   // HELPER OBJECTS
-  private val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+  protected val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   private val preParser = new CachingPreParser(config, queryCaches.preParserCache)
 
@@ -95,10 +95,11 @@ abstract class ExecutionEngine(
     context: TransactionalContext,
     profile: Boolean,
     prePopulate: Boolean,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    monitor: QueryExecutionMonitor = defaultQueryExecutionMonitor
   ): QueryExecution = {
-    defaultQueryExecutionMonitor.startProcessing(context.executingQuery())
-    executeSubquery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
+    monitor.startProcessing(context.executingQuery())
+    executeSubquery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber, monitor)
   }
 
   /**
@@ -161,7 +162,8 @@ abstract class ExecutionEngine(
     isOutermostQuery: Boolean,
     profile: Boolean,
     prePopulate: Boolean,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    monitor: QueryExecutionMonitor = defaultQueryExecutionMonitor
   ): QueryExecution = {
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
@@ -175,7 +177,7 @@ abstract class ExecutionEngine(
         isOutermostQuery,
         prePopulate,
         NoInput,
-        defaultQueryExecutionMonitor,
+        monitor,
         queryTracer,
         subscriber,
         notificationLogger

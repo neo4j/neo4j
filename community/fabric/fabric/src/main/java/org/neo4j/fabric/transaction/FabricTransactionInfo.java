@@ -28,16 +28,12 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 
-public class FabricTransactionInfo {
+public class FabricTransactionInfo extends StatementLifecycleTransactionInfo {
     private final AccessMode accessMode;
-    private final LoginContext loginContext;
-    private final ClientConnectionInfo clientConnectionInfo;
     private final DatabaseReference sessionDatabaseReference;
     private final boolean implicitTransaction;
     private final Duration txTimeout;
     private final RoutingContext routingContext;
-    private Map<String, Object> txMetadata;
-
     private final QueryExecutionConfiguration queryExecutionConfiguration;
 
     public FabricTransactionInfo(
@@ -50,27 +46,17 @@ public class FabricTransactionInfo {
             Map<String, Object> txMetadata,
             RoutingContext routingContext,
             QueryExecutionConfiguration queryExecutionConfiguration) {
+        super(loginContext, clientConnectionInfo, txMetadata);
         this.accessMode = accessMode;
-        this.loginContext = loginContext;
-        this.clientConnectionInfo = clientConnectionInfo;
         this.sessionDatabaseReference = sessionDatabaseReference;
         this.implicitTransaction = implicitTransaction;
         this.txTimeout = txTimeout;
-        this.txMetadata = txMetadata;
         this.routingContext = routingContext;
         this.queryExecutionConfiguration = queryExecutionConfiguration;
     }
 
     public AccessMode getAccessMode() {
         return accessMode;
-    }
-
-    public LoginContext getLoginContext() {
-        return loginContext;
-    }
-
-    public ClientConnectionInfo getClientConnectionInfo() {
-        return clientConnectionInfo;
     }
 
     public DatabaseReference getSessionDatabaseReference() {
@@ -83,10 +69,6 @@ public class FabricTransactionInfo {
 
     public Duration getTxTimeout() {
         return txTimeout;
-    }
-
-    public Map<String, Object> getTxMetadata() {
-        return txMetadata;
     }
 
     public void setMetaData(Map<String, Object> txMeta) {

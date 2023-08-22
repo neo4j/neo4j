@@ -28,6 +28,7 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.fabric.transaction.StatementLifecycleTransactionInfo;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -60,5 +61,9 @@ public record TransactionInfo(
                 txMetadata != null ? txMetadata : emptyMap(),
                 routingContext,
                 queryExecutionConfiguration);
+    }
+
+    public StatementLifecycleTransactionInfo statementLifecycleTransactionInfo() {
+        return new StatementLifecycleTransactionInfo(loginContext, clientInfo, txMetadata);
     }
 }

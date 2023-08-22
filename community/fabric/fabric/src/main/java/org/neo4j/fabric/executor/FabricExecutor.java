@@ -44,7 +44,7 @@ import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.eval.UseEvaluation;
-import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
+import org.neo4j.fabric.executor.QueryStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.planning.FabricPlanner;
@@ -90,7 +90,7 @@ public class FabricExecutor {
     private final FabricPlanner planner;
     private final UseEvaluation useEvaluation;
     private final InternalLog log;
-    private final FabricStatementLifecycles statementLifecycles;
+    private final QueryStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
     private final QueryRoutingMonitor queryRoutingMonitor;
 
@@ -99,7 +99,7 @@ public class FabricExecutor {
             FabricPlanner planner,
             UseEvaluation useEvaluation,
             InternalLogProvider internalLog,
-            FabricStatementLifecycles statementLifecycles,
+            QueryStatementLifecycles statementLifecycles,
             Executor fabricWorkerExecutor,
             Monitors monitors) {
         this.dataStreamConfig = config.getDataStream();

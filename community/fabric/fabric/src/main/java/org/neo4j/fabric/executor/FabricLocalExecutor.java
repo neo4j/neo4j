@@ -32,7 +32,7 @@ import org.neo4j.fabric.bookmark.LocalBookmark;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
-import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
+import org.neo4j.fabric.executor.QueryStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.transaction.FabricCompoundTransaction;

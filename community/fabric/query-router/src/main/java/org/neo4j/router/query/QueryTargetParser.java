@@ -22,6 +22,7 @@ package org.neo4j.router.query;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.ast.CatalogName;
+import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 
 /**
  * Parse a query into a target database override
@@ -32,15 +33,17 @@ import org.neo4j.cypher.internal.ast.CatalogName;
  */
 public interface QueryTargetParser {
 
-    Optional<CatalogName> parseQueryTarget(Query query);
+    public record PreParsedInfo(Optional<CatalogName> catalogName, Optional<ObfuscationMetadata> obfuscationMetadata) {}
+
+    PreParsedInfo parseQueryTarget(Query query);
 
     interface Cache {
-        Optional<CatalogName> computeIfAbsent(String query, Supplier<Optional<CatalogName>> supplier);
+        PreParsedInfo computeIfAbsent(String query, Supplier<PreParsedInfo> supplier);
     }
 
     Cache NO_CACHE = new Cache() {
         @Override
-        public Optional<CatalogName> computeIfAbsent(String query, Supplier<Optional<CatalogName>> supplier) {
+        public PreParsedInfo computeIfAbsent(String query, Supplier<PreParsedInfo> supplier) {
             return supplier.get();
         }
     };

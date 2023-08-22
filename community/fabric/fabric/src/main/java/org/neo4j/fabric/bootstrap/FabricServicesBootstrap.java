@@ -44,7 +44,7 @@ import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
-import org.neo4j.fabric.executor.FabricStatementLifecycles;
+import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.executor.ThrowingFabricRemoteExecutor;
 import org.neo4j.fabric.planning.FabricPlanner;
 import org.neo4j.fabric.transaction.ErrorReporter;
@@ -147,7 +147,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
                 TransactionManager.class);
 
         var cypherConfig = CypherConfiguration.fromConfig(config);
-        var statementLifecycles = new FabricStatementLifecycles(
+        var statementLifecycles = new QueryStatementLifecycles(
                 databaseManager, monitors, config, tracers.getLockTracer(), systemNanoClock);
         var monitoredExecutor = jobScheduler.monitoredJobExecutor(CYPHER_CACHE);
         var cacheFactory = new ExecutorBasedCaffeineCacheFactory(

@@ -27,14 +27,18 @@ import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.executor.TaggingPlanDescriptionWrapper;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.DelegatingQuerySubscriber;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -114,16 +118,24 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
     }
 
     @Override
-    public QueryExecution executeQuery(Query query, QuerySubscriber querySubscriber) {
+    public QueryExecution executeQuery(
+            Query query,
+            QuerySubscriber querySubscriber,
+            QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
+        statementLifecycle.startExecution(true);
         return translateLocalError(() -> {
-            var transactionalContext = transactionalContextFactory.newContext(
+            var transactionalContext = transactionalContextFactory.newContextForQuery(
                     internalTransaction,
-                    query.text(),
-                    query.parameters(),
+                    statementLifecycle.getMonitoredQuery(),
                     transactionInfo.queryExecutionConfiguration());
             openExecutionContexts.add(transactionalContext);
             var execution = queryExecutionEngine.executeQuery(
-                    query.text(), query.parameters(), transactionalContext, true, querySubscriber);
+                    query.text(),
+                    query.parameters(),
+                    transactionalContext,
+                    true,
+                    new StatementLifecycleQuerySubscriber(querySubscriber, statementLifecycle),
+                    QueryExecutionMonitor.NO_OP);
             return new TransactionalContextQueryExecution(execution, transactionalContext);
         });
     }
@@ -170,6 +182,29 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         @Override
         public ExecutionPlanDescription executionPlanDescription() {
             return new TaggingPlanDescriptionWrapper(super.executionPlanDescription(), location.getDatabaseName());
+        }
+    }
+
+    private static class StatementLifecycleQuerySubscriber extends DelegatingQuerySubscriber {
+
+        private final QueryStatementLifecycles.StatementLifecycle statementLifecycle;
+
+        public StatementLifecycleQuerySubscriber(
+                QuerySubscriber querySubscriber, QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
+            super(querySubscriber);
+            this.statementLifecycle = statementLifecycle;
+        }
+
+        @Override
+        public void onResultCompleted(QueryStatistics statistics) {
+            super.onResultCompleted(statistics);
+            statementLifecycle.endSuccess();
+        }
+
+        @Override
+        public void onError(Throwable throwable) throws Exception {
+            super.onError(throwable);
+            statementLifecycle.endFailure(throwable);
         }
     }
 }

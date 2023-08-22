@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.fabric.config.FabricConfig;
-import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
+import org.neo4j.fabric.executor.QueryStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.stream.InputDataStreamImpl;
 import org.neo4j.fabric.stream.QuerySubject;
 import org.neo4j.fabric.stream.Record;

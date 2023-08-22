@@ -116,9 +116,27 @@ public class ExecutionEngine implements QueryExecutionEngine {
             boolean prePopulate,
             QuerySubscriber subscriber)
             throws QueryExecutionKernelException {
+        return executeQuery(
+                query,
+                parameters,
+                context,
+                prePopulate,
+                subscriber,
+                cypherExecutionEngine.defaultQueryExecutionMonitor());
+    }
+
+    @Override
+    public QueryExecution executeQuery(
+            String query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            QuerySubscriber subscriber,
+            QueryExecutionMonitor monitor)
+            throws QueryExecutionKernelException {
         try {
             checkParams(context, parameters);
-            return cypherExecutionEngine.execute(query, parameters, context, false, prePopulate, subscriber);
+            return cypherExecutionEngine.execute(query, parameters, context, false, prePopulate, subscriber, monitor);
         } catch (Neo4jException e) {
             throw new QueryExecutionKernelException(e);
         }

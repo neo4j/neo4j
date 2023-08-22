@@ -31,13 +31,15 @@ import org.neo4j.cypher.internal.compiler.CypherParsing;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.util.CancellationChecker;
+import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
 import org.neo4j.fabric.eval.StaticUseEvaluation;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryTargetParser;
 import scala.Option;
+import scala.jdk.javaapi.OptionConverters;
 
-public class StandardQueryTargetParser implements QueryTargetParser {
+public class StandardQueryPreParser implements QueryTargetParser {
 
     public static final CatalogName SYSTEM_DATABASE_CATALOG_NAME = CatalogName.of(SYSTEM_DATABASE_NAME);
     private final Cache cache;
@@ -47,7 +49,7 @@ public class StandardQueryTargetParser implements QueryTargetParser {
     private final CancellationChecker cancellationChecker;
     private final StaticUseEvaluation staticUseEvaluation = new StaticUseEvaluation();
 
-    public StandardQueryTargetParser(
+    public StandardQueryPreParser(
             QueryTargetParser.Cache cache,
             PreParser preParser,
             CypherParsing parsing,
@@ -61,11 +63,11 @@ public class StandardQueryTargetParser implements QueryTargetParser {
     }
 
     @Override
-    public Optional<CatalogName> parseQueryTarget(Query query) {
+    public PreParsedInfo parseQueryTarget(Query query) {
         return cache.computeIfAbsent(query.text(), () -> doParseQueryTarget(query));
     }
 
-    private Optional<CatalogName> doParseQueryTarget(Query query) {
+    private PreParsedInfo doParseQueryTarget(Query query) {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
@@ -86,14 +88,15 @@ public class StandardQueryTargetParser implements QueryTargetParser {
                 cancellationChecker);
     }
 
-    private Optional<CatalogName> determineTarget(BaseState parsedQuery) {
+    private PreParsedInfo determineTarget(BaseState parsedQuery) {
         var statement = parsedQuery.statement();
+        Optional<ObfuscationMetadata> obfuscationMetadata = toJava(parsedQuery.maybeObfuscationMetadata());
 
         if (statement instanceof AdministrationCommand) {
-            return Optional.of(SYSTEM_DATABASE_CATALOG_NAME);
+            return new PreParsedInfo(Optional.of(SYSTEM_DATABASE_CATALOG_NAME), obfuscationMetadata);
         } else {
             var catalogNameOption = staticUseEvaluation.evaluateStaticLeadingGraphSelection(statement);
-            return toJava(catalogNameOption);
+            return new PreParsedInfo(OptionConverters.toJava(catalogNameOption), obfuscationMetadata);
         }
     }
 }

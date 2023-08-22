@@ -26,6 +26,7 @@ import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManagerImpl;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -57,6 +58,7 @@ public class QueryRouterImpl implements QueryRouter {
     private final ErrorReporter errorReporter;
     private final SystemNanoClock systemNanoClock;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
+    private final QueryStatementLifecycles statementLifecycles;
 
     public QueryRouterImpl(
             Config config,
@@ -67,7 +69,8 @@ public class QueryRouterImpl implements QueryRouter {
             DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory,
             ErrorReporter errorReporter,
             SystemNanoClock systemNanoClock,
-            LocalGraphTransactionIdTracker transactionIdTracker) {
+            LocalGraphTransactionIdTracker transactionIdTracker,
+            QueryStatementLifecycles statementLifecycles) {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
@@ -77,6 +80,7 @@ public class QueryRouterImpl implements QueryRouter {
         this.errorReporter = errorReporter;
         this.systemNanoClock = systemNanoClock;
         this.transactionIdTracker = transactionIdTracker;
+        this.statementLifecycles = statementLifecycles;
     }
 
     @Override
@@ -114,8 +118,7 @@ public class QueryRouterImpl implements QueryRouter {
         if (sessionDatabaseReference.isComposite()) {
             return new CompositeQueryTargetService(sessionDatabaseReference);
         } else {
-            return new StandardQueryTargetService(
-                    sessionDatabaseReference, queryTargetParser, databaseReferenceResolver);
+            return new StandardQueryTargetService(sessionDatabaseReference, databaseReferenceResolver);
         }
     }
 
@@ -136,9 +139,21 @@ public class QueryRouterImpl implements QueryRouter {
 
     @Override
     public QueryExecution executeQuery(RouterTransactionContext context, Query query, QuerySubscriber subscriber) {
-        var target = context.queryTargetService().determineTarget(query);
-        var location = context.locationService().locationOf(target);
-        var databaseTransaction = context.transactionFor(location);
-        return databaseTransaction.executeQuery(query, subscriber);
+        var statementLifecycle = statementLifecycles.create(
+                context.transactionInfo().statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
+        statementLifecycle.startProcessing();
+        try {
+            var preparsedInfo = queryTargetParser.parseQueryTarget(query);
+            var target = context.queryTargetService().determineTarget(preparsedInfo);
+            var location = context.locationService().locationOf(target);
+            var databaseTransaction = context.transactionFor(location);
+            statementLifecycle.doneRouterProcessing(
+                    preparsedInfo.obfuscationMetadata().get(), target.isComposite());
+            return databaseTransaction.executeQuery(query, subscriber, statementLifecycle);
+        } catch (RuntimeException e) {
+            statementLifecycle.endFailure(e);
+
+            throw e;
+        }
     }
 }

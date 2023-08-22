@@ -20,7 +20,7 @@
 package org.neo4j.router.impl.query;
 
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.router.query.Query;
+import org.neo4j.router.query.QueryTargetParser;
 
 public class CompositeQueryTargetService extends AbstractQueryTargetService {
 
@@ -29,7 +29,7 @@ public class CompositeQueryTargetService extends AbstractQueryTargetService {
     }
 
     @Override
-    public DatabaseReference determineTarget(Query query) {
+    public DatabaseReference determineTarget(QueryTargetParser.PreParsedInfo preparsedInfo) {
         return sessionDatabase;
     }
 }

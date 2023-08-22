@@ -26,5 +26,5 @@ import org.neo4j.kernel.database.DatabaseReference;
  */
 public interface QueryTargetService {
 
-    DatabaseReference determineTarget(Query query);
+    DatabaseReference determineTarget(QueryTargetParser.PreParsedInfo preparsedInfo);
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.router.transaction;
 
+import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.parent.ChildTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -38,5 +39,8 @@ public interface DatabaseTransaction extends ChildTransaction {
 
     void terminate(Status reason);
 
-    QueryExecution executeQuery(Query query, QuerySubscriber querySubscriber);
+    QueryExecution executeQuery(
+            Query query,
+            QuerySubscriber querySubscriber,
+            QueryStatementLifecycles.StatementLifecycle statementLifecycle);
 }

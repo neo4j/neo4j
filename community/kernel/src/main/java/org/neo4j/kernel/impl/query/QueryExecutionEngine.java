@@ -35,6 +35,15 @@ public interface QueryExecutionEngine {
             QuerySubscriber subscriber)
             throws QueryExecutionKernelException;
 
+    QueryExecution executeQuery(
+            String query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            QuerySubscriber subscriber,
+            QueryExecutionMonitor monitor)
+            throws QueryExecutionKernelException;
+
     long clearQueryCaches();
 
     List<FunctionInformation> getProvidedLanguageFunctions();
