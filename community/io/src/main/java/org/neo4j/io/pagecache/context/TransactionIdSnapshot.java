@@ -28,6 +28,9 @@ public record TransactionIdSnapshot(long lastClosedTxId, long highestEverSeen, l
     public static final TransactionIdSnapshot EMPTY_ID_SNAPSHOT = new TransactionIdSnapshot(1);
 
     public static boolean isNotVisible(long[] notVisibleVersions, long version) {
+        if (notVisibleVersions.length == 0) {
+            return false;
+        }
         return Arrays.binarySearch(notVisibleVersions, version) >= 0;
     }
 
