@@ -867,7 +867,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
         int mappedPageId = translationTableGetVolatile(chunk, chunkIndex);
         long pageRef = deref(mappedPageId);
-        setHighestEvictedTransactionId(getAndResetLastModifiedTransactionId(pageRef));
+        if (!multiVersioned) {
+            setHighestEvictedTransactionId(getAndResetLastModifiedTransactionId(pageRef));
+        }
         translationTableSetVolatile(chunk, chunkIndex, UNMAPPED_TTE);
     }
 
