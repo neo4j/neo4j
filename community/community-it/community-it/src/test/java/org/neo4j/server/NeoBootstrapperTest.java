@@ -113,8 +113,8 @@ class NeoBootstrapperTest {
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
 
-        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
-                .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
+        assertThat(getUserLogFiles())
+                .anyMatch(line -> line.contains("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
@@ -133,8 +133,8 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
-        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
-                .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
+        assertThat(getUserLogFiles())
+                .anyMatch(line -> line.contains("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
@@ -153,8 +153,8 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
-        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
-                .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
+        assertThat(getUserLogFiles())
+                .anyMatch(line -> line.contains("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
@@ -172,8 +172,8 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
-        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
-                .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
+        assertThat(getUserLogFiles())
+                .anyMatch(line -> line.contains("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
@@ -191,7 +191,15 @@ class NeoBootstrapperTest {
 
         assertThat(neoBootstrapper.start(dir, config)).isEqualTo(NeoBootstrapper.OK);
         assertThat(getUserLogFiles())
-                .anySatisfy(line -> assertThat(line).contains("Unable to determine total physical memory of machine."));
+                .anyMatch(line -> line.contains("Unable to determine total physical memory of machine."));
+    }
+
+    @Test
+    void printLoggingConfig() throws IOException {
+        neoBootstrapper = new CommunityBootstrapper();
+        assertThat(neoBootstrapper.start(dir, Map.of())).isEqualTo(NeoBootstrapper.OK);
+        neoBootstrapper.stop();
+        assertThat(getUserLogFiles()).anyMatch(line -> line.contains("Logging config in use: "));
     }
 
     private List<String> getUserLogFiles() throws IOException {

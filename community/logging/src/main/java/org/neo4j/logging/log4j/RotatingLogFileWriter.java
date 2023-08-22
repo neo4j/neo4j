@@ -129,7 +129,7 @@ public class RotatingLogFileWriter implements Closeable {
 
             LoggerContext context = new LoggerContext("LoggerContext");
             context.setConfiguration(configuration);
-            return new Neo4jLoggerContext(context, additionalCloseable);
+            return new Neo4jLoggerContext(context, additionalCloseable, "");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

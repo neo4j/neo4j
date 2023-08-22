@@ -341,6 +341,7 @@ public class GlobalModule {
                             log), // dbmsDiagnosticsManager is null here, but will be assigned later
                     DiagnosticsManager.class.getCanonicalName());
 
+            loggerContext.getLogger(getClass()).info("Logging config in use: " + loggerContext.getConfigSourceInfo());
             internalLogProvider = new Log4jLogProvider(loggerContext);
         }
 

@@ -249,6 +249,7 @@ public final class LogConfig {
         private String jsonLayout;
         private boolean useDefaultOnMissingXml = false;
         private boolean daemonMode = false;
+        private String configSourceInfo = "<programmatically>";
 
         private Builder(FileSystemAbstraction fileSystemAbstraction, Path xmlConfigFile) {
             this.fileSystemAbstraction = fileSystemAbstraction;
@@ -309,7 +310,7 @@ public final class LogConfig {
                 }
             }
 
-            return new Neo4jLoggerContext(context, null);
+            return new Neo4jLoggerContext(context, null, configSourceInfo);
         }
 
         private ConfigurationSource getConfigurationSource() throws IOException {
@@ -317,6 +318,7 @@ public final class LogConfig {
             if (fileSystemAbstraction.fileExists(externalConfigPath)) {
                 if (fileSystemAbstraction.isPersistent()) {
                     configurationSource = ConfigurationSource.fromUri(externalConfigPath.toUri());
+                    configSourceInfo = "File '%s'".formatted(externalConfigPath.toAbsolutePath());
                 } else {
                     // non-persistent file system, we need to use a stream here
 
@@ -334,6 +336,7 @@ public final class LogConfig {
                     if (defaultResourcePath != null) {
                         configurationSource = ConfigurationSource.fromResource(
                                 defaultResourcePath, getClass().getClassLoader());
+                        configSourceInfo = "Embedded default config '%s'".formatted(defaultResourcePath);
                     }
                 }
             }

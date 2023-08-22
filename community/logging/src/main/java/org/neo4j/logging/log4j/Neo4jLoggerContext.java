@@ -33,10 +33,12 @@ import org.neo4j.io.IOUtils;
 public class Neo4jLoggerContext implements Closeable {
     private final LoggerContext ctx;
     private final Closeable additionalClosable;
+    private final String configSourceInfo;
 
-    public Neo4jLoggerContext(LoggerContext ctx, Closeable additionalClosable) {
+    public Neo4jLoggerContext(LoggerContext ctx, Closeable additionalClosable, String configSourceInfo) {
         this.ctx = ctx;
         this.additionalClosable = additionalClosable;
+        this.configSourceInfo = configSourceInfo;
     }
 
     /**
@@ -75,5 +77,9 @@ public class Neo4jLoggerContext implements Closeable {
         if (additionalClosable != null) {
             IOUtils.closeAllSilently(additionalClosable);
         }
+    }
+
+    public String getConfigSourceInfo() {
+        return configSourceInfo;
     }
 }

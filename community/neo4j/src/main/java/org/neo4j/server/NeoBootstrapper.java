@@ -294,6 +294,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
                 null,
                 null);
 
+        ctx.getLogger(NeoBootstrapper.class).info("Logging config in use: " + ctx.getConfigSourceInfo());
         Log4jLogProvider userLogProvider = new Log4jLogProvider(ctx);
 
         JULBridge.resetJUL();

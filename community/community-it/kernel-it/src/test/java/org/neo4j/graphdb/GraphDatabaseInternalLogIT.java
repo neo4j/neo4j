@@ -135,6 +135,8 @@ class GraphDatabaseInternalLogIT {
         assertThat(Files.size(internalLog2)).isGreaterThan(0L);
 
         assertEquals(1, countOccurrences(internalLog, "An info entry"));
+        String loggingConfigInfo = "Logging config in use: File '%s'".formatted(log4jXmlConfig.toAbsolutePath());
+        assertEquals(1, countOccurrences(internalLog, loggingConfigInfo));
         assertEquals(1, countOccurrencesJson(internalLog2, "message", "An info entry"));
     }
 
