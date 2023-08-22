@@ -1,6 +1,6 @@
 @ECHO OFF
-rem Copyright (c) "Neo4j,"
-rem Neo4j Sweden AB [http://neo4j.com]
+rem Copyright (c) "Neo4j"
+rem Neo4j Sweden AB [https://neo4j.com]
 rem
 rem This file is part of Neo4j.
 rem
@@ -15,7 +15,7 @@ rem MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 rem GNU General Public License for more details.
 rem
 rem You should have received a copy of the GNU General Public License
-rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
+rem along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 SETLOCAL
 

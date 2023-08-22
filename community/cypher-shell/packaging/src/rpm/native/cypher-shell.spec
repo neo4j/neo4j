@@ -31,7 +31,7 @@ mkdir -p %{buildroot}/%{_datadir}/cypher-shell/bin
 mkdir -p %{buildroot}/%{_datadir}/cypher-shell/lib
 mkdir -p %{buildroot}/%{_mandir}/man1
 
-cd %{name}-%{version}
+cd %{name}-%{version} || exit
 
 install -m 0755 cypher-shell/bin/cypher-shell %{buildroot}/%{_bindir}
 install -m 0644 manpages/* %{buildroot}/%{_mandir}/man1

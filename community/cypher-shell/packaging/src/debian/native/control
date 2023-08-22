@@ -1,10 +1,10 @@
 Source: cypher-shell
 Section: database
 Priority: optional
-Maintainer: Neo Technology <debian@neotechnology.com>
+Maintainer: Neo4j Sweden AB <debian@neo4j.com>
 Build-Depends: debhelper (>=9)
 Standards-Version: 3.9.4
-Homepage: http://neo4j.org/
+Homepage: https://neo4j.com/
 
 Package: cypher-shell
 Architecture: ${ARCH}
