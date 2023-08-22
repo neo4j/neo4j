@@ -30,6 +30,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -81,14 +82,12 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         super.validatePrototype(prototype);
         final var config = prototype.getIndexConfig();
 
-        final int dimensions = vectorDimensionsFrom(config);
-        if (dimensions < 1) {
-            throw new IllegalArgumentException(
-                    "Vector dimensionality must be a positive integer but was %d.".formatted(dimensions));
+        final var dimensions = VectorUtils.vectorDimensionsFrom(config);
+        if (dimensions > VectorUtils.MAX_DIMENSIONS) {
+            throw new UnsupportedOperationException("'%s' set greater than %d is unsupported"
+                    .formatted(IndexSetting.vector_Dimensions().getSettingName(), VectorUtils.MAX_DIMENSIONS));
         }
-
-        // Will throw if specified similarity function is not supported
-        vectorSimilarityFunctionFrom(config);
+        VectorUtils.vectorSimilarityFunctionFrom(config);
     }
 
     @Override

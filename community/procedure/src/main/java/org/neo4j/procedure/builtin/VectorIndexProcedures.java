@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
+import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -92,7 +93,9 @@ public class VectorIndexProcedures {
         Objects.requireNonNull(name, "'indexName' must not be null");
         Objects.requireNonNull(label, "'label' must not be null");
         Objects.requireNonNull(propertyKey, "'propertyKey' must not be null");
-        Preconditions.checkArgument(vectorDimension > 1, "'vectorDimension' must be positive");
+        Preconditions.checkArgument(
+                1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS,
+                "'vectorDimension' must be between %d and %d inclusively".formatted(1, VectorUtils.MAX_DIMENSIONS));
         VectorSimilarityFunction.fromName(
                 Objects.requireNonNull(vectorSimilarityFunction, "vectorSimilarityFunction must not be null"));
 

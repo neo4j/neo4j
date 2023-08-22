@@ -26,6 +26,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 public class VectorUtils {
+    public static final int MAX_DIMENSIONS = 2048;
 
     public static int vectorDimensionsFrom(IndexConfig config) {
         final var setting = IndexSetting.vector_Dimensions();
@@ -34,7 +35,8 @@ public class VectorUtils {
         if (dimensions <= 0) {
             throw new IllegalArgumentException(
                     "Invalid %s provided.".formatted(IndexConfig.class.getSimpleName()),
-                    new AssertionError("'%s' is expected to be non-negative".formatted(setting.getSettingName())));
+                    new AssertionError("'%s' is expected to be positive. Provided: %d"
+                            .formatted(setting.getSettingName(), dimensions)));
         }
         return dimensions;
     }
