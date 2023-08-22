@@ -85,15 +85,11 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     }
 
     public PropertyRecord(PropertyRecord other) {
-        super(other);
-        this.nextProp = other.nextProp;
-        this.prevProp = other.prevProp;
-        arraycopy(other.blocks, 0, this.blocks, 0, other.blocks.length);
+        this(other, false);
         this.blocksCursor = other.blocksCursor;
         this.blockRecordsCursor = other.blockRecordsCursor;
         this.blocksLoaded = other.blocksLoaded;
-        this.entityId = other.entityId;
-        this.entityType = other.entityType;
+        arraycopy(other.blocks, 0, this.blocks, 0, other.blocks.length);
 
         for (int i = 0; i < blockRecordsCursor; i++) {
             this.blockRecords[i] = new PropertyBlock(other.blockRecords[i]);
@@ -106,12 +102,25 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         }
     }
 
+    private PropertyRecord(PropertyRecord other, boolean ignored) {
+        super(other);
+        this.nextProp = other.nextProp;
+        this.prevProp = other.prevProp;
+        this.entityId = other.entityId;
+        this.entityType = other.entityType;
+    }
+
+    public static PropertyRecord lightCopy(PropertyRecord other) {
+        return new PropertyRecord(other, true);
+    }
+
     public PropertyRecord initialize(boolean inUse, long prevProp, long nextProp) {
         super.initialize(inUse);
         this.prevProp = prevProp;
         this.nextProp = nextProp;
         this.deletedRecords = null;
-        this.blockRecordsCursor = blocksCursor = 0;
+        this.blockRecordsCursor = 0;
+        this.blocksCursor = 0;
         this.blocksLoaded = false;
         return this;
     }

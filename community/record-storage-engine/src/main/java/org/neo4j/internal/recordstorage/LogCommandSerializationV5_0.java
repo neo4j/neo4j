@@ -516,7 +516,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
          * Read in existence of DynamicRecords. Remember, this has already been
          * read in the buffer with the blocks, above.
          */
-        readDynamicRecords(channel, toReturn::addValueRecord);
+        readDynamicRecordList(channel, toReturn::setValueRecords);
         return toReturn;
     }
 
@@ -643,9 +643,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
         record.setUseFixedReferences(usesFixedReferenceFormat);
         record.setSecondaryUnitCreated(secondaryUnitCreated);
 
-        List<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
-        readDynamicRecords(channel, dynamicLabelRecords::add);
-        record.setLabelField(record.getLabelField(), dynamicLabelRecords);
+        readDynamicRecordList(channel, dlr -> record.setLabelField(record.getLabelField(), dlr));
 
         record.setCreated(isCreated);
         return record;
@@ -925,6 +923,20 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
             DynamicRecord read = readDynamicRecord(channel);
             recordConsumer.accept(read);
             numberOfRecords--;
+        }
+    }
+
+    private static void readDynamicRecordList(ReadableChannel channel, Consumer<List<DynamicRecord>> recordConsumer)
+            throws IOException {
+        int numberOfRecords = channel.getInt();
+        assert numberOfRecords >= 0;
+        if (numberOfRecords > 0) {
+            var records = new ArrayList<DynamicRecord>(numberOfRecords);
+            while (numberOfRecords > 0) {
+                records.add(readDynamicRecord(channel));
+                numberOfRecords--;
+            }
+            recordConsumer.accept(records);
         }
     }
 

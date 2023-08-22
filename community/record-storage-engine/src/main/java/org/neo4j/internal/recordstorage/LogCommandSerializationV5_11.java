@@ -114,8 +114,7 @@ class LogCommandSerializationV5_11 extends LogCommandSerializationV5_10 {
         long id = channel.getLong();
         var after = readPropertyRecord(id, channel);
 
-        var before = new PropertyRecord(after);
-        before.clearPropertyBlocks();
+        var before = PropertyRecord.lightCopy(after);
         before.setInUse(false);
         before.setCreated(false);
 
