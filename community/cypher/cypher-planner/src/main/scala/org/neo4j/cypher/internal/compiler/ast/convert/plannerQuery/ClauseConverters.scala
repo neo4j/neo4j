@@ -342,7 +342,7 @@ object ClauseConverters {
         seenPatternNodes += id.name
         ()
 
-      //CREATE (n)-[r: R]->(m)
+      //CREATE (n)-[r:R]->(m)
       case EveryPath(pattern: RelationshipChain) =>
 
         val (currentNodes, currentRelationships) = allCreatePatterns(pattern)
@@ -594,7 +594,7 @@ object ClauseConverters {
           ))
           .withTail(RegularSinglePlannerQuery())
 
-      //MERGE (n)-[r: R]->(m)
+      //MERGE (n)-[r:R]->(m)
       case (acc, EveryPath(pattern: RelationshipChain)) =>
         val (nodes, rels) = allCreatePatterns(pattern)
         //remove duplicates from loops, (a:L)-[:ER1]->(a)

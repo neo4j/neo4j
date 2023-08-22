@@ -37,6 +37,9 @@ import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConvert
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -156,20 +159,24 @@ object StatementConverters {
    *
    *   CREATE (a) CREATE (b) => CREATE (a),(b)
    */
-  def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
+  private def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
     val builder = ArrayBuffer.empty[Clause]
     var prevCreate: Option[(Seq[PatternPart], InputPosition)] = None
     for (clause <- clauses) {
       (clause, prevCreate) match {
+        case (c: Create, None) if containsPatternExpression(c) =>
+          builder += c
+          prevCreate = None
+
         case (c: Create, None) =>
           prevCreate = Some((c.pattern.patternParts, c.position))
 
-        case (c: Create, Some((prevParts, pos))) =>
+        case (c: Create, Some((prevParts, pos))) if !containsPatternExpression(c) =>
           prevCreate = Some((prevParts ++ c.pattern.patternParts, pos))
 
-        case (nonCreate, Some((prevParts, pos))) =>
+        case (nonMixingClause, Some((prevParts, pos))) =>
           builder += Create(Pattern(prevParts)(pos))(pos)
-          builder += nonCreate
+          builder += nonMixingClause
           prevCreate = None
 
         case (nonCreate, None) =>
@@ -180,4 +187,12 @@ object StatementConverters {
       builder += Create(Pattern(prevParts)(pos))(pos)
     builder
   }
+
+  private def containsPatternExpression(c: Create): Boolean =
+    c.pattern.patternParts.exists(part => containsPatternExpression(part.element))
+
+  private def containsPatternExpression(element: PatternElement): Boolean =
+    element.folder.treeExists {
+      case _: PatternComprehension | _: PatternExpression => true
+    }
 }

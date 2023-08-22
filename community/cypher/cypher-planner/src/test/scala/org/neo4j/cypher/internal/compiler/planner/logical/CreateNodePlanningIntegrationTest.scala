@@ -21,7 +21,16 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
+import org.neo4j.cypher.internal.logical.builder.Parser
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
@@ -58,6 +67,35 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
         CreateNode("a", Seq.empty, None),
         CreateNode("b", Seq.empty, None),
         CreateNode("c", Seq.empty, None))
+      .argument()
+      .build()
+  }
+
+  test("should plan multiple creates via multiple operators if they have dependencies via exists expressions") {
+    val planner = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = planner.plan(
+      """CREATE (n)-[r:REL]->(m)
+        |CREATE (o {p: exists( ()--() ) })""".stripMargin
+    )
+
+    val embeddedPlan = planner.subPlanBuilder()
+      .expand("(anon_2)-[anon_3]-(anon_4)")
+      .allNodeScan("anon_2")
+      .build()
+
+    val embeddedPlanExpression = NestedPlanExistsExpression(
+      embeddedPlan,
+      "exists((`anon_2`)-[`anon_3`]-(`anon_4`))"
+    )(pos)
+
+    val mapExpression = MapExpression(Seq(propName("p") -> embeddedPlanExpression))(pos)
+    val secondCreateNode = CreateNode("o", Seq.empty, Some(mapExpression))
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults()
+      .emptyResult()
+      .create(secondCreateNode)
+      .create(Seq(createNode("n"), createNode("m")), Seq(createRelationship("r", "n", "REL", "m")))
       .argument()
       .build()
   }

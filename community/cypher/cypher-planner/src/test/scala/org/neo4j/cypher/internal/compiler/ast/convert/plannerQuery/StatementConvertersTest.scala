@@ -60,7 +60,9 @@ import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
@@ -1530,6 +1532,78 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }
     ex should have message cancellationChecker.message
+  }
+
+  test("Should combine two simple create statement into one create pattern") {
+    val query = buildSinglePlannerQuery(
+      """CREATE (a)
+        |CREATE (b)""".stripMargin
+    )
+    query.queryGraph shouldBe QueryGraph(
+      mutatingPatterns = IndexedSeq(createPattern(Seq(createNode("a"), createNode("b"))))
+    )
+
+    query.tail shouldBe empty
+  }
+
+  test("Should combine two patterns into one") {
+    val query = buildSinglePlannerQuery(
+      """CREATE (a)-[r1:R {p: 1}]->(b)
+        |CREATE (c)-[r2:R {p: 1}]->(d)""".stripMargin
+    )
+    query.queryGraph shouldBe QueryGraph(
+      mutatingPatterns = IndexedSeq(createPattern(
+        Seq(
+          createNode("a"),
+          createNode("b"),
+          createNode("c"),
+          createNode("d")
+        ),
+        Seq(
+          createRelationship("r1", "a", "R", "b", properties = Some("{p: 1}")),
+          createRelationship("r2", "c", "R", "d", properties = Some("{p: 1}"))
+        )
+      ))
+    )
+
+    query.tail shouldBe empty
+  }
+
+  test("should not flatten creates which have a dependency through reusing the variable") {
+    val query = buildSinglePlannerQuery(
+      """CREATE (m {p: 42} )
+        |CREATE (n {p: m.p})""".stripMargin
+    )
+
+    query.queryGraph shouldBe QueryGraph(
+      mutatingPatterns = IndexedSeq(createPattern(Seq(
+        createNodeWithProperties("m", Seq.empty, properties = "{p: 42}"),
+        createNodeWithProperties("n", Seq.empty, properties = "{p: m.p}")
+      )))
+    )
+
+    query.tail shouldBe empty
+  }
+
+  test("should not flatten creates which have a dependency through a pattern expression") {
+    for {
+      pattern <- Seq("(o {exists: exists (()--()) })", "(o { exists : [ ()--(p) | p.prop ] })")
+      queryString <- Seq(
+        s"""CREATE (m)-[:REL]->(n)
+           |CREATE $pattern""".stripMargin,
+        s"""CREATE $pattern
+           |CREATE (m)-[:REL]->(n)""".stripMargin
+      )
+    } {
+
+      val query = buildSinglePlannerQuery(
+        queryString
+      )
+
+      query.queryGraph.mutatingPatterns should have size 2
+
+      query.tail shouldBe empty
+    }
   }
 
   private class TestCountdownCancellationChecker(var count: Int) extends CancellationChecker {
