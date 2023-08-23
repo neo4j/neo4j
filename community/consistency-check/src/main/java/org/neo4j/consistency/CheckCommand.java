@@ -173,6 +173,8 @@ public class CheckCommand extends AbstractAdminCommand {
             } catch (IOException e) {
                 throw new CommandFailedException(
                         "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.IOERR);
+            } catch (UnsupportedOperationException e) {
+                throw new CommandFailedException(e.getMessage(), ExitCode.USAGE);
             } catch (Exception e) {
                 throw new CommandFailedException(
                         "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.SOFTWARE);

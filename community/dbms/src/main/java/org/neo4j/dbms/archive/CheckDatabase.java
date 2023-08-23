@@ -73,6 +73,9 @@ public interface CheckDatabase {
                                         .formatted(targetLayout.getNeo4jLayout(), targetLayout.getDatabaseName())));
                 return storageEngineFactory.formatSpecificDatabaseLayout(targetLayout);
 
+            } catch (UnsupportedOperationException u) {
+                // Let it through
+                throw u;
             } catch (Exception e) {
                 throw new IllegalArgumentException(
                         "Invalid input for a " + checkDatabase.getClass().getSimpleName(), e);
