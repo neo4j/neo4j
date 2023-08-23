@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.util.ObfuscationMetadata;
  * - contains a USE-clause, or
  * - contains a system admin command
  */
-public interface QueryTargetParser {
+public interface QueryPreParsedInfoParser {
 
     public record PreParsedInfo(Optional<CatalogName> catalogName, Optional<ObfuscationMetadata> obfuscationMetadata) {}
 
-    PreParsedInfo parseQueryTarget(Query query);
+    PreParsedInfo parseQuery(Query query);
 
     interface Cache {
         PreParsedInfo computeIfAbsent(String query, Supplier<PreParsedInfo> supplier);

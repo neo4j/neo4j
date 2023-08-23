@@ -22,7 +22,7 @@ package org.neo4j.router.impl.transaction;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.router.location.LocationService;
-import org.neo4j.router.query.QueryTargetService;
+import org.neo4j.router.query.QueryPreParsedInfoService;
 import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.RouterTransaction;
 import org.neo4j.router.transaction.RouterTransactionContext;
@@ -33,7 +33,7 @@ public record RouterTransactionContextImpl(
         TransactionInfo transactionInfo,
         RoutingInfo routingInfo,
         RouterTransaction routerTransaction,
-        QueryTargetService queryTargetService,
+        QueryPreParsedInfoService queryTargetService,
         LocationService locationService,
         TransactionBookmarkManager txBookmarkManager)
         implements RouterTransactionContext {
@@ -44,7 +44,7 @@ public record RouterTransactionContextImpl(
     }
 
     @Override
-    public QueryTargetService queryTargetService() {
+    public QueryPreParsedInfoService preParsedInfo() {
         return queryTargetService;
     }
 

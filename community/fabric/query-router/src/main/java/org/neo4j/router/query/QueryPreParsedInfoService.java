@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.router.impl.query;
+package org.neo4j.router.query;
 
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.router.query.QueryTargetService;
 
-public abstract class AbstractQueryTargetService implements QueryTargetService {
-    protected final DatabaseReference sessionDatabase;
+/**
+ * Determines the target database for the given query
+ */
+public interface QueryPreParsedInfoService {
 
-    protected AbstractQueryTargetService(DatabaseReference sessionDatabase) {
-        this.sessionDatabase = sessionDatabase;
-    }
+    DatabaseReference preParsedInfo(QueryPreParsedInfoParser.PreParsedInfo preparsedInfo);
 }

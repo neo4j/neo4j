@@ -32,15 +32,15 @@ import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.router.QueryRouter;
-import org.neo4j.router.impl.query.CompositeQueryTargetService;
-import org.neo4j.router.impl.query.StandardQueryTargetService;
+import org.neo4j.router.impl.query.CompositeQueryPreParsedInfoService;
+import org.neo4j.router.impl.query.StandardQueryPreParsedInfoService;
 import org.neo4j.router.impl.transaction.RouterTransactionContextImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionImpl;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.DatabaseReferenceResolver;
 import org.neo4j.router.query.Query;
-import org.neo4j.router.query.QueryTargetParser;
-import org.neo4j.router.query.QueryTargetService;
+import org.neo4j.router.query.QueryPreParsedInfoParser;
+import org.neo4j.router.query.QueryPreParsedInfoService;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RouterTransactionContext;
 import org.neo4j.router.transaction.RoutingInfo;
@@ -49,7 +49,7 @@ import org.neo4j.time.SystemNanoClock;
 
 public class QueryRouterImpl implements QueryRouter {
 
-    private final QueryTargetParser queryTargetParser;
+    private final QueryPreParsedInfoParser queryPreParsedInfoParser;
     private final DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory;
     private final DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory;
     private final Function<RoutingInfo, LocationService> locationServiceFactory;
@@ -64,7 +64,7 @@ public class QueryRouterImpl implements QueryRouter {
             Config config,
             DatabaseReferenceResolver databaseReferenceResolver,
             Function<RoutingInfo, LocationService> locationServiceFactory,
-            QueryTargetParser queryTargetParser,
+            QueryPreParsedInfoParser queryTargetParser,
             DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory,
             DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory,
             ErrorReporter errorReporter,
@@ -74,7 +74,7 @@ public class QueryRouterImpl implements QueryRouter {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
-        this.queryTargetParser = queryTargetParser;
+        this.queryPreParsedInfoParser = queryTargetParser;
         this.localDatabaseTransactionFactory = localDatabaseTransactionFactory;
         this.remoteDatabaseTransactionFactory = remoteDatabaseTransactionFactory;
         this.errorReporter = errorReporter;
@@ -96,7 +96,7 @@ public class QueryRouterImpl implements QueryRouter {
         var sessionDatabaseReference = resolveSessionDatabaseReference(transactionInfo);
         var routingInfo = new RoutingInfo(
                 sessionDatabaseReference, transactionInfo.routingContext(), transactionInfo.accessMode());
-        var queryTargetService = createQueryTargetService(routingInfo);
+        var queryTargetService = createQueryPreParsedInfoService(routingInfo);
         var locationService = createLocationService(routingInfo);
         var routerTransaction = createRouterTransaction(transactionInfo, transactionBookmarkManager);
         return new RouterTransactionContextImpl(
@@ -113,12 +113,12 @@ public class QueryRouterImpl implements QueryRouter {
         return databaseReferenceResolver.resolve(sessionDatabaseName);
     }
 
-    private QueryTargetService createQueryTargetService(RoutingInfo routingInfo) {
+    private QueryPreParsedInfoService createQueryPreParsedInfoService(RoutingInfo routingInfo) {
         var sessionDatabaseReference = routingInfo.sessionDatabaseReference();
         if (sessionDatabaseReference.isComposite()) {
-            return new CompositeQueryTargetService(sessionDatabaseReference);
+            return new CompositeQueryPreParsedInfoService(sessionDatabaseReference);
         } else {
-            return new StandardQueryTargetService(sessionDatabaseReference, databaseReferenceResolver);
+            return new StandardQueryPreParsedInfoService(sessionDatabaseReference, databaseReferenceResolver);
         }
     }
 
@@ -143,8 +143,8 @@ public class QueryRouterImpl implements QueryRouter {
                 context.transactionInfo().statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
         statementLifecycle.startProcessing();
         try {
-            var preparsedInfo = queryTargetParser.parseQueryTarget(query);
-            var target = context.queryTargetService().determineTarget(preparsedInfo);
+            var preparsedInfo = queryPreParsedInfoParser.parseQuery(query);
+            var target = context.preParsedInfo().preParsedInfo(preparsedInfo);
             var location = context.locationService().locationOf(target);
             var databaseTransaction = context.transactionFor(location);
             statementLifecycle.doneRouterProcessing(

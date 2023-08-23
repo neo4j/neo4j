@@ -22,20 +22,20 @@ package org.neo4j.router.impl.query;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.query.DatabaseReferenceResolver;
-import org.neo4j.router.query.QueryTargetParser;
+import org.neo4j.router.query.QueryPreParsedInfoParser;
 
-public class StandardQueryTargetService extends AbstractQueryTargetService {
+public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInfoService {
 
     private final DatabaseReferenceResolver databaseReferenceResolver;
 
-    public StandardQueryTargetService(
+    public StandardQueryPreParsedInfoService(
             DatabaseReference sessionDatabase, DatabaseReferenceResolver databaseReferenceResolver) {
         super(sessionDatabase);
         this.databaseReferenceResolver = databaseReferenceResolver;
     }
 
     @Override
-    public DatabaseReference determineTarget(QueryTargetParser.PreParsedInfo preParsedInfo) {
+    public DatabaseReference preParsedInfo(QueryPreParsedInfoParser.PreParsedInfo preParsedInfo) {
         var parsedTarget = preParsedInfo
                 .catalogName()
                 .map(CatalogName::qualifiedNameString)

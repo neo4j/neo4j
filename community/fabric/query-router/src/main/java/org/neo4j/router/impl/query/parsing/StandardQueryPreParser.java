@@ -35,11 +35,11 @@ import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
 import org.neo4j.fabric.eval.StaticUseEvaluation;
 import org.neo4j.router.query.Query;
-import org.neo4j.router.query.QueryTargetParser;
+import org.neo4j.router.query.QueryPreParsedInfoParser;
 import scala.Option;
 import scala.jdk.javaapi.OptionConverters;
 
-public class StandardQueryPreParser implements QueryTargetParser {
+public class StandardQueryPreParser implements QueryPreParsedInfoParser {
 
     public static final CatalogName SYSTEM_DATABASE_CATALOG_NAME = CatalogName.of(SYSTEM_DATABASE_NAME);
     private final Cache cache;
@@ -50,7 +50,7 @@ public class StandardQueryPreParser implements QueryTargetParser {
     private final StaticUseEvaluation staticUseEvaluation = new StaticUseEvaluation();
 
     public StandardQueryPreParser(
-            QueryTargetParser.Cache cache,
+            QueryPreParsedInfoParser.Cache cache,
             PreParser preParser,
             CypherParsing parsing,
             CompilationTracer tracer,
@@ -63,16 +63,16 @@ public class StandardQueryPreParser implements QueryTargetParser {
     }
 
     @Override
-    public PreParsedInfo parseQueryTarget(Query query) {
-        return cache.computeIfAbsent(query.text(), () -> doParseQueryTarget(query));
+    public PreParsedInfo parseQuery(Query query) {
+        return cache.computeIfAbsent(query.text(), () -> doParseQuery(query));
     }
 
-    private PreParsedInfo doParseQueryTarget(Query query) {
+    private PreParsedInfo doParseQuery(Query query) {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
         var parsedQuery = parse(query, queryTracer, preParsedQuery);
-        return determineTarget(parsedQuery);
+        return preParsedInfo(parsedQuery);
     }
 
     private BaseState parse(
@@ -88,7 +88,7 @@ public class StandardQueryPreParser implements QueryTargetParser {
                 cancellationChecker);
     }
 
-    private PreParsedInfo determineTarget(BaseState parsedQuery) {
+    private PreParsedInfo preParsedInfo(BaseState parsedQuery) {
         var statement = parsedQuery.statement();
         Optional<ObfuscationMetadata> obfuscationMetadata = toJava(parsedQuery.maybeObfuscationMetadata());
 

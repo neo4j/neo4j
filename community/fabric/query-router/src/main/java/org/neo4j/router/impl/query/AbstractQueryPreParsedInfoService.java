@@ -20,16 +20,12 @@
 package org.neo4j.router.impl.query;
 
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.router.query.QueryTargetParser;
+import org.neo4j.router.query.QueryPreParsedInfoService;
 
-public class CompositeQueryTargetService extends AbstractQueryTargetService {
+public abstract class AbstractQueryPreParsedInfoService implements QueryPreParsedInfoService {
+    protected final DatabaseReference sessionDatabase;
 
-    public CompositeQueryTargetService(DatabaseReference sessionDatabase) {
-        super(sessionDatabase);
-    }
-
-    @Override
-    public DatabaseReference determineTarget(QueryTargetParser.PreParsedInfo preparsedInfo) {
-        return sessionDatabase;
+    protected AbstractQueryPreParsedInfoService(DatabaseReference sessionDatabase) {
+        this.sessionDatabase = sessionDatabase;
     }
 }

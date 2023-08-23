@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.cache.CacheTracer;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.LFUCache;
 import org.neo4j.function.Observable;
-import org.neo4j.router.query.QueryTargetParser;
+import org.neo4j.router.query.QueryPreParsedInfoParser;
 
-public class PreParsedInfoCache implements QueryTargetParser.Cache {
+public class PreParsedInfoCache implements QueryPreParsedInfoParser.Cache {
 
-    private final LFUCache<String, QueryTargetParser.PreParsedInfo> cache;
+    private final LFUCache<String, QueryPreParsedInfoParser.PreParsedInfo> cache;
 
     public PreParsedInfoCache(
             CaffeineCacheFactory cacheFactory, Observable<Integer> cacheSize, CacheTracer<String> tracer) {
@@ -41,8 +41,8 @@ public class PreParsedInfoCache implements QueryTargetParser.Cache {
     }
 
     @Override
-    public QueryTargetParser.PreParsedInfo computeIfAbsent(
-            String query, Supplier<QueryTargetParser.PreParsedInfo> supplier) {
+    public QueryPreParsedInfoParser.PreParsedInfo computeIfAbsent(
+            String query, Supplier<QueryPreParsedInfoParser.PreParsedInfo> supplier) {
         return cache.computeIfAbsent(query, supplier::get);
     }
 }

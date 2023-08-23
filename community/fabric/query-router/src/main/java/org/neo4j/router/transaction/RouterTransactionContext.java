@@ -22,7 +22,7 @@ package org.neo4j.router.transaction;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.router.location.LocationService;
-import org.neo4j.router.query.QueryTargetService;
+import org.neo4j.router.query.QueryPreParsedInfoService;
 
 /**
  * Context object that contains transaction-specific information and services
@@ -31,7 +31,7 @@ public interface RouterTransactionContext {
 
     TransactionInfo transactionInfo();
 
-    QueryTargetService queryTargetService();
+    QueryPreParsedInfoService preParsedInfo();
 
     LocationService locationService();
 
