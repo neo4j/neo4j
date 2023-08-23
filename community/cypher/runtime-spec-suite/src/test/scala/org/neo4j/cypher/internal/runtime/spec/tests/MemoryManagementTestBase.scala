@@ -44,7 +44,7 @@ import java.util.Locale
 
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
-  val maxMemory: Long = ByteUnit.mebiBytes(32)
+  val maxMemory: Long = ByteUnit.mebiBytes(6)
   val perWorkerGrabSize: Long = ByteUnit.kibiBytes(8)
 }
 
@@ -507,7 +507,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT, estimateFunction = estimateTopTableSize(10))
     val input = finiteInput(1000000, Some(_ => Array(expectedRowSize)))
 
     // then no exception
@@ -982,7 +982,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   protected def assertHeapHighWaterMark(
     logicalQuery: LogicalQuery,
     valueToEstimate: ValueToEstimate,
-    sampleValue: Option[Any] = None
+    sampleValue: Option[Any] = None,
+    estimateFunction: (LogicalQuery, Option[Any], Int) => Long = estimateRowSize
   ): Long = {
     // TODO: Improve this to be a bit more reliable
     val expectedValueSize = estimateSize(valueToEstimate)
@@ -992,7 +993,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     } else {
       expectedValueSize
     }
-    val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
+    val estimatedRowSize = estimateFunction(logicalQuery, sampleValue, 1000)
     estimatedRowSize should be >= expectedRowSize
     runtime.name.toLowerCase(Locale.ROOT) match {
       case "pipelined" =>
@@ -1000,7 +1001,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       case "parallel" =>
         estimatedRowSize should be < expectedRowSize * 100 // in parallel we also have overhead of upfront memory grab per worker
       case _ =>
-        estimatedRowSize should be < expectedRowSize * 20 // in pipelined we have lots of overhead for some operators in corner cases
+        estimatedRowSize should be < expectedRowSize * 20
     }
     expectedRowSize
   }
@@ -1012,6 +1013,16 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       tx.kernelTransaction().memoryTracker().heapHighWaterMark() / nRows
     } else {
       result.runtimeResult.heapHighWaterMark() / nRows
+    }
+  }
+
+  protected def estimateTopTableSize(nTableRows: Int)(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None, nRows: Int = 8): Long = {
+    val result = execute(logicalQuery, runtime, inputColumns(1, nTableRows, i => sampleValue.getOrElse(i.toLong)))
+    consume(result)
+    if (isParallel) {
+      tx.kernelTransaction().memoryTracker().heapHighWaterMark() / nTableRows
+    } else {
+      result.runtimeResult.heapHighWaterMark() / nTableRows
     }
   }
 }
