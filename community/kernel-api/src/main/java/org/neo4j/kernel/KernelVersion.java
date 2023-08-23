@@ -71,7 +71,7 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_INDEX_USAGE_STATISTICS_INTRODUCED = V5_8;
     public static final KernelVersion VERSION_CDC_INTRODUCED = V5_8;
     public static final KernelVersion VERSION_TYPE_CONSTRAINTS_INTRODUCED = V5_9;
-    public static final KernelVersion KERNEL_VERSION_BLOCKFORMAT_INTRODUCED = V5_10;
+    public static final KernelVersion VERSION_BLOCKFORMAT_INTRODUCED = V5_10;
     public static final KernelVersion VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED = V5_10;
     public static final KernelVersion VERSION_CDC_USER_METADATA_INTRODUCED = V5_12;
     public static final KernelVersion VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED = GLORIOUS_FUTURE;
