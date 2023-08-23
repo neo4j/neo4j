@@ -2034,12 +2034,12 @@ public class Operations implements Write, SchemaWrite {
 
         TypeRepresentation.validate(propertyType);
 
-        var size = propertyType.size();
+        var isUnion = TypeRepresentation.isUnion(propertyType);
         var hasListType = TypeRepresentation.hasListTypes(propertyType);
 
         // Only the basic type constraint was introduced in KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED.
         // For expanded support, we require the kernel version below:
-        if (!typeConstraintEnabled && (hasListType || size != 1)) {
+        if (!typeConstraintEnabled && (isUnion || hasListType)) {
             assertSupportedInVersion(
                     "Failed to create property type constraint with %s.".formatted(propertyType.userDescription()),
                     KernelVersion.VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED);

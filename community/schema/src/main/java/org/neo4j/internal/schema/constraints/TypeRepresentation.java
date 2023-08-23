@@ -193,6 +193,10 @@ public sealed interface TypeRepresentation permits SchemaValueType, SpecialTypes
         return set.contains(SpecialTypes.LIST_NOTHING);
     }
 
+    static boolean isUnion(PropertyTypeSet set) {
+        return set.size() > 1;
+    }
+
     /**
      * Evaluate if a PropertyTypeSet follows the business rules for the type constraints.
      *
@@ -201,7 +205,6 @@ public sealed interface TypeRepresentation permits SchemaValueType, SpecialTypes
      */
     static void validate(PropertyTypeSet set) {
         var size = set.size();
-        var hasListType = TypeRepresentation.hasListTypes(set);
 
         if (size == 0) {
             throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"

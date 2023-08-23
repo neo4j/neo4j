@@ -22,6 +22,8 @@ package org.neo4j.internal.recordstorage;
 import static org.neo4j.kernel.KernelVersion.LATEST_SCHEMA_CHANGE;
 import static org.neo4j.kernel.KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED;
+import static org.neo4j.kernel.KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED;
+import static org.neo4j.kernel.KernelVersion.VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
@@ -30,6 +32,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.constraints.TypeRepresentation;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -76,6 +79,20 @@ class IntegrityValidator {
                     && kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)) {
                 throw upgradeNeededForSchemaRule(
                         schemaType, constraint, kernelVersion, VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
+            }
+
+            if (constraint.isPropertyTypeConstraint()) {
+                if (kernelVersion.isLessThan(VERSION_TYPE_CONSTRAINTS_INTRODUCED)) {
+                    throw upgradeNeededForSchemaRule(
+                            schemaType, constraint, kernelVersion, VERSION_TYPE_CONSTRAINTS_INTRODUCED);
+                }
+
+                final var propertyType = constraint.asPropertyTypeConstraint().propertyType();
+                if ((TypeRepresentation.isUnion(propertyType) || TypeRepresentation.hasListTypes(propertyType))
+                        && kernelVersion.isLessThan(VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED)) {
+                    throw upgradeNeededForSchemaRule(
+                            schemaType, constraint, kernelVersion, VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED);
+                }
             }
 
         } else {
