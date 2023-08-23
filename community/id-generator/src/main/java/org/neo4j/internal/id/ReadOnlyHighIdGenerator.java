@@ -64,6 +64,11 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
+    public long getUnusedIdCount() {
+        return 0;
+    }
+
+    @Override
     public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
         throw new UnsupportedOperationException("Should not be required");
     }

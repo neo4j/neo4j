@@ -1398,6 +1398,44 @@ class IndexedIdGeneratorTest {
         }
     }
 
+    @Test
+    void shouldCountUnusedIds() throws IOException {
+        // given
+        open();
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        var id1 = idGenerator.nextId(NULL_CONTEXT);
+        var id2 = idGenerator.nextId(NULL_CONTEXT);
+        var id3 = idGenerator.nextId(NULL_CONTEXT);
+        markUsed(id1);
+        markUsed(id2);
+        markUsed(id3);
+
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(0);
+
+        markDeleted(id2);
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(1);
+
+        markFree(id2);
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(1);
+
+        markDeleted(id3);
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(2);
+
+        idGenerator.maintenance(NULL_CONTEXT);
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(2);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(id2);
+
+        markUnallocated(id2);
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(2);
+        idGenerator.maintenance(NULL_CONTEXT);
+
+        var idAfterUnallocated = idGenerator.nextId(NULL_CONTEXT);
+        assertThat(idAfterUnallocated).isEqualTo(id2);
+
+        markUsed(idAfterUnallocated);
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(1);
+    }
+
     private void assertOperationThrowInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");

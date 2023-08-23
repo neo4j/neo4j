@@ -720,6 +720,13 @@ public class IndexedIdGenerator implements IdGenerator {
         return getHighId() - 1;
     }
 
+    @Override
+    public long getUnusedIdCount() throws IOException {
+        // This is an expensive operation but at the time of writing it's only used
+        // for estimating free store space for metrics, computed every 10 minutes.
+        return PrimitiveLongResourceCollections.count(notUsedIdsIterator());
+    }
+
     /**
      * A peculiar being this one. It's for the import case where all records are written w/o even touching the id generator.
      * When all have been written the id generator is told that it should consider highest written where it's at right now

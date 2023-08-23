@@ -127,6 +127,11 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
+        public long getUnusedIdCount() {
+            return 0;
+        }
+
+        @Override
         public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
             return NOOP_MARKER;
         }
