@@ -1223,6 +1223,10 @@ public class Database extends AbstractDatabase {
         return elementIdMapper;
     }
 
+    public long estimateAvailableReservedSpace() throws IOException {
+        return storageEngine.estimateAvailableReservedSpace();
+    }
+
     private void prepareStop(Predicate<PagedFile> deleteFilePredicate) {
         databasePageCache.listExistingMappings().stream()
                 .filter(deleteFilePredicate)

@@ -230,4 +230,13 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      */
     void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
             throws OutOfDiskSpaceException, IOException;
+
+    /**
+     * Conservatively estimate how much reserved space is available for (re)use.
+     * @return available reserved space estimate in bytes
+     * @throws IOException on error reading from store.
+     */
+    default long estimateAvailableReservedSpace() throws IOException {
+        return 0L;
+    }
 }

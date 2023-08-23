@@ -60,6 +60,16 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
         }
     }
 
+    @Override
+    public long getDatabaseAvailableReservedSize(NamedDatabaseId databaseId) throws IOException {
+        final var abstractDatabase = getDatabase(databaseId);
+        if (abstractDatabase instanceof Database database) {
+            return database.estimateAvailableReservedSpace();
+        } else {
+            return 0L;
+        }
+    }
+
     private static FileSystemAbstraction getFileSystem(Database database) {
         return database.getDependencyResolver().resolveDependency(FileSystemAbstraction.class);
     }

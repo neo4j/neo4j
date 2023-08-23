@@ -41,4 +41,12 @@ public interface DatabaseSizeService {
      * @throws IOException on exception during evaluating underlying files size
      */
     long getDatabaseDataSize(NamedDatabaseId databaseId) throws IOException;
+
+    /**
+     * Estimate the amount of reserved space that is available for reuse.
+     * @param databaseId id of the database to evaluate size
+     * @return estimated unused but reserved space
+     * @throws IOException on exception during evaluating underlying files size
+     */
+    long getDatabaseAvailableReservedSize(NamedDatabaseId databaseId) throws IOException;
 }
