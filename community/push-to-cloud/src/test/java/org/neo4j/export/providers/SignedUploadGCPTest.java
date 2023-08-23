@@ -17,6 +17,7 @@
 package org.neo4j.export.providers;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -28,7 +29,6 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +39,7 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -158,6 +159,34 @@ public class SignedUploadGCPTest {
     }
 
     @Test
+    public void shouldHandleServerErrorWhileUploading() {
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        SignedUploadGCP.ProgressListenerFactory progressListenerFactory = (name, length) -> progressListener;
+        wireMockServer.stubFor(initiateRequest().willReturn(successfulInitiateResponse("/upload")));
+        wireMockServer.stubFor(resumeUpload()
+                .willReturn(aResponse().withStatus(HTTP_INTERNAL_ERROR))
+                .inScenario("test")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willSetStateTo("keepResuming"));
+
+        wireMockServer.stubFor(keepResuming()
+                .willReturn(aResponse().withStatus(HTTP_INTERNAL_ERROR))
+                .inScenario("test")
+                .whenScenarioStateIs("keepResuming"));
+
+        SignedUploadGCP gcpSignedUpload = getGcpSignedUpload(progressListenerFactory);
+        UploadCommand.Source source = new UploadCommand.Source(ctx.fs(), dump, storeSize);
+
+        ExportTestUtilities.assertThrows(
+                CommandFailedException.class,
+                containsString("Unexpected response code"),
+                () -> gcpSignedUpload.copy(true, source));
+
+        verify(postRequestedFor(urlEqualTo("/initiate")));
+        verify(putRequestedFor(urlEqualTo("/upload")));
+    }
+
+    @Test
     public void shouldHandleInitiateUploadFailure() {
         ControlledProgressListener progressListener = new ControlledProgressListener();
         SignedUploadGCP.ProgressListenerFactory progressListenerFactory = (name, length) -> progressListener;
@@ -238,18 +267,22 @@ public class SignedUploadGCPTest {
                 .withHeader("Content-Length", equalTo("0"));
     }
 
+    private MappingBuilder resumeRequest() {
+        return post(urlEqualTo("/upload"))
+                .withHeader("Content-Length", equalTo("0"))
+                .withHeader("Content-Length", containing("bytes */"));
+    }
+
     private ResponseDefinitionBuilder successfulInitiateResponse(String uploadPath) {
         return aResponse().withStatus(HTTP_CREATED).withHeader("Location", wireMockServerAddress + uploadPath);
     }
 
-    private ResponseDefinitionBuilder resumeInvalidXMLResponse() {
-        String error = "<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied."
-                + "</Message><Details>Unexpected stuff</Details></Error>";
-        return aResponse().withStatus(HTTP_UNAUTHORIZED).withStatusMessage(error);
-    }
-
     private MappingBuilder resumeUpload() {
         return put(urlEqualTo("/upload")).withHeader("Content-Length", equalTo(String.valueOf(dumpFileSize)));
+    }
+
+    private MappingBuilder keepResuming() {
+        return put(urlEqualTo("/upload")).withHeader("Content-Length", equalTo("0"));
     }
 
     private static class ControlledProgressListener extends ProgressListener.Adapter {

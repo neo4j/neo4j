@@ -263,13 +263,13 @@ public class SignedUploadGCP implements SignedUpload {
             switch (responseCode) {
                 case HTTP_OK:
                     return true; // the file is now uploaded, all good
-                case HTTP_INTERNAL_ERROR:
-                case HTTP_UNAVAILABLE:
-                case HTTP_BAD_GATEWAY:
                 case HTTP_FORBIDDEN:
                     if (canSkipToImport(connection.getErrorStream())) {
                         return true;
                     }
+                case HTTP_INTERNAL_ERROR:
+                case HTTP_UNAVAILABLE:
+                case HTTP_BAD_GATEWAY:
                 case HTTP_GATEWAY_TIMEOUT:
                     commandResponseHandler.debugErrorResponse(verbose, connection);
                     return false;
