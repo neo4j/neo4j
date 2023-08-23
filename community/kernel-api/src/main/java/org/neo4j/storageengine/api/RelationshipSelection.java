@@ -245,7 +245,8 @@ public abstract class RelationshipSelection {
 
         DirectionalMultipleTypes(int[] types, Direction direction) {
             super(direction);
-            this.types = types;
+            this.types = types.clone();
+            Arrays.sort(this.types);
         }
 
         @Override
