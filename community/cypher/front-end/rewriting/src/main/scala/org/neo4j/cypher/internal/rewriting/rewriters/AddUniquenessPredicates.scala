@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
@@ -53,6 +52,11 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.overlaps
+import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniqueness.NodeConnection
+import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniqueness.RelationshipGroup
+import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniqueness.SingleRelationship
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -70,27 +74,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
 
-case object RelationshipUniquenessPredicatesInMatchAndMerge extends StepSequencer.Condition
-
-trait AddRelationshipPredicates extends Step with ASTRewriterFactory {
-
-  protected def addPredicateToWhere(
-    where: Option[Where],
-    pos: InputPosition,
-    maybePredicate: Option[Expression]
-  ): Option[Where] = {
-    val newWhere: Option[Where] = (where, maybePredicate) match {
-      case (Some(oldWhere), Some(newPredicate)) =>
-        Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(pos))(pos))
-
-      case (None, Some(newPredicate)) =>
-        Some(Where(expression = newPredicate)(pos))
-
-      case (oldWhere, None) => oldWhere
-    }
-
-    newWhere
-  }
+trait AddRelationshipPredicates[NC] extends Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     noUnnamedNodesAndRelationships
@@ -106,48 +90,67 @@ trait AddRelationshipPredicates extends Step with ASTRewriterFactory {
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = rewriter
+
+  protected def rewriteSelectivePatternPart(part: PatternPartWithSelector): PatternPartWithSelector =
+    part.element match {
+      case path: ParenthesizedPath =>
+        val nodeConnections = collectNodeConnections(path.part.element)
+        val predicate = createPredicateFor(nodeConnections, path.position)
+        val whereExpr = path.optionalWhereClause
+        val newPredicate = Where.combineOrCreateExpressionBeforeCnf(whereExpr, predicate)(whereExpr.map(_.position))
+        val newElement = path.copy(optionalWhereClause = newPredicate)(path.position)
+        part.replaceElement(newElement)
+      case otherElement =>
+        val nodeConnections = collectNodeConnections(otherElement)
+        createPredicateFor(nodeConnections, part.position) match {
+          // We should not wrap the pattern in new parentheses if there is no predicate to add
+          case None => part
+          case Some(predicate) =>
+            val syntheticPatternPart = PathPatternPart(otherElement)
+            val newElement = ParenthesizedPath(syntheticPatternPart, Some(predicate))(part.position)
+            part.replaceElement(newElement)
+        }
+    }
+
+  protected def withPredicates(pattern: ASTNode, nodeConnections: Seq[NC], where: Option[Where]): Option[Where] = {
+    val pos = pattern.position
+    val maybePredicate: Option[Expression] = createPredicateFor(nodeConnections, pos)
+    Where.combineOrCreateBeforeCnf(where, maybePredicate)(pos)
+  }
+
+  protected def createPredicateFor(nodeConnections: Seq[NC], pos: InputPosition): Option[Expression] = {
+    createPredicatesFor(nodeConnections, pos).reduceOption(expressions.And(_, _)(pos))
+  }
+
+  def createPredicatesFor(nodeConnections: Seq[NC], pos: InputPosition): Seq[Expression]
+
+  def collectNodeConnections(pattern: ASTNode): Seq[NC]
+
+  def createPredicatesFor(pattern: ASTNode): Seq[Expression] = {
+    val connections = collectNodeConnections(pattern)
+    createPredicatesFor(connections, pattern.position)
+  }
 }
 
-case object AddUniquenessPredicates extends AddRelationshipPredicates {
+case object AddUniquenessPredicates extends AddRelationshipPredicates[NodeConnection] {
+  case object rewritten extends StepSequencer.Condition
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipUniquenessPredicatesInMatchAndMerge)
+  override def postConditions: Set[StepSequencer.Condition] = Set(rewritten)
 
   override val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case m @ Match(_, matchMode, pattern: Pattern, _, where) if matchMode.requiresDifferentRelationships =>
-      val rels: Seq[NodeConnection] = collectRelationships(pattern)
-      val newWhere = withPredicates(m, rels, where)
+      val nodeConnections = collectNodeConnections(pattern)
+      val newWhere = withPredicates(m, nodeConnections, where)
       m.copy(where = newWhere)(m.position)
     case m @ Merge(pattern: PatternPart, _, where) =>
-      val rels: Seq[NodeConnection] = collectRelationships(pattern)
-      val newWhere = withPredicates(m, rels, where)
+      val nodeConnections = collectNodeConnections(pattern)
+      val newWhere = withPredicates(m, nodeConnections, where)
       m.copy(where = newWhere)(m.position)
     case part @ PatternPartWithSelector(_: SelectiveSelector, _) =>
-      part.element match {
-        case path: ParenthesizedPath =>
-          val relationships = collectRelationships(path.part.element)
-          val uniquenessPredicate = createPredicateFor(relationships, path.position)
-          val newPredicate = (path.optionalWhereClause, uniquenessPredicate) match {
-            case (None, None)                => None
-            case (Some(where), None)         => Some(where)
-            case (None, Some(unique))        => Some(unique)
-            case (Some(where), Some(unique)) => Some(And(where, unique)(path.position))
-          }
-          val newElement = path.copy(optionalWhereClause = newPredicate)(path.position)
-          part.replaceElement(newElement)
-        case otherElement =>
-          val relationships = collectRelationships(otherElement)
-          createPredicateFor(relationships, part.position) match {
-            // We should not wrap the pattern in new parentheses if there is no predicate to add
-            case None => part
-            case Some(uniquenessPredicate) =>
-              val syntheticPatternPart = PathPatternPart(otherElement)
-              val newElement = ParenthesizedPath(syntheticPatternPart, Some(uniquenessPredicate))(part.position)
-              part.replaceElement(newElement)
-          }
-      }
+      rewriteSelectivePatternPart(part)
     case qpp @ QuantifiedPath(patternPart, _, where, _) =>
-      val rels = collectRelationships(patternPart)
-      val newWhere = withPredicates(qpp, rels, where.map(Where(_)(qpp.position))).map(_.expression)
+      val relationships = collectNodeConnections(patternPart)
+      val newWhere = withPredicates(qpp, relationships, where.map(Where(_)(qpp.position))).map(_.expression)
 
       // We will generate Unique predicates for every relationship in a QPP.
       // If the relationship has an anonymous name, it is not yet included in the variableGroupings.
@@ -163,12 +166,6 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
       )
   })
 
-  private def withPredicates(pattern: ASTNode, rels: Seq[NodeConnection], where: Option[Where]): Option[Where] = {
-    val pos = pattern.position
-    val maybePredicate: Option[Expression] = createPredicateFor(rels, pos)
-    addPredicateToWhere(where, pos, maybePredicate)
-  }
-
   def canBeEmpty(range: Option[Range]): Boolean =
     range match {
       case None                        => false // * means lower bound of 1 in var length relationships
@@ -176,7 +173,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
       case Some(Range(Some(lower), _)) => lower.value == 0
     }
 
-  def collectRelationships(pattern: ASTNode): Seq[NodeConnection] =
+  def collectNodeConnections(pattern: ASTNode): Seq[NodeConnection] =
     pattern.folder.treeFold(Seq.empty[NodeConnection]) {
       case _: ScopeExpression =>
         acc => SkipChildren(acc)
@@ -214,10 +211,6 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
           TraverseChildren(acc :+ RelationshipGroup(Seq(SingleRelationship(ident, labelExpression)), canBeEmpty(range)))
         }
     }
-
-  private def createPredicateFor(nodeConnections: Seq[NodeConnection], pos: InputPosition): Option[Expression] = {
-    createPredicatesFor(nodeConnections, pos).reduceOption(expressions.And(_, _)(pos))
-  }
 
   def createPredicatesFor(nodeConnections: Seq[NodeConnection], pos: InputPosition): Seq[Expression] = {
     val pairs = for {
@@ -276,24 +269,6 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
   private def reduceLists(vars: Seq[LogicalVariable], pos: InputPosition): Expression =
     vars.reduceRight[Expression]((y, x) => expressions.Add(x, y)(pos))
 
-  sealed trait NodeConnection
-
-  case class RelationshipGroup(innerRelationships: Seq[SingleRelationship], canBeEmpty: Boolean = false)
-      extends NodeConnection
-
-  case class SingleRelationship(
-    variable: LogicalVariable,
-    labelExpression: Option[LabelExpression]
-  ) extends NodeConnection {
-    def name: String = variable.name
-
-    def isAlwaysDifferentFrom(other: SingleRelationship): Boolean = {
-      val relTypesToConsider =
-        getRelTypesToConsider(labelExpression).concat(getRelTypesToConsider(other.labelExpression)).distinct
-      !overlaps(relTypesToConsider, labelExpression, other.labelExpression)
-    }
-  }
-
   private[rewriters] def evaluate(expression: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
     expression match {
       case Conjunctions(children, _)               => ands(children, relType)
@@ -339,5 +314,26 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
   private[rewriters] def getRelTypesToConsider(labelExpression: Option[LabelExpression]): Seq[SymbolicName] = {
     // also add the arbitrary rel type "" to check for rel types which are not explicitly named (such as in -[r]-> or -[r:%]->)
     labelExpression.map(_.flatten).getOrElse(Seq.empty) appended RelTypeName("")(InputPosition.NONE)
+  }
+}
+
+object RelationshipUniqueness {
+
+  sealed trait NodeConnection
+
+  case class RelationshipGroup(innerRelationships: Seq[SingleRelationship], canBeEmpty: Boolean = false)
+      extends NodeConnection
+
+  case class SingleRelationship(
+    variable: LogicalVariable,
+    labelExpression: Option[LabelExpression]
+  ) extends NodeConnection {
+    def name: String = variable.name
+
+    def isAlwaysDifferentFrom(other: SingleRelationship): Boolean = {
+      val relTypesToConsider =
+        getRelTypesToConsider(labelExpression).concat(getRelTypesToConsider(other.labelExpression)).distinct
+      !overlaps(relTypesToConsider, labelExpression, other.labelExpression)
+    }
   }
 }

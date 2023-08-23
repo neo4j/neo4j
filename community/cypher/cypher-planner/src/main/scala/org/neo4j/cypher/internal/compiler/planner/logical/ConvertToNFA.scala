@@ -21,8 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipUniquenessPredicate
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
+import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
+import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -30,9 +35,11 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.exceptions.InternalException
 
@@ -48,7 +55,9 @@ object ConvertToNFA {
     spp: SelectivePathPattern,
     fromLeft: Boolean,
     availableSymbols: Set[String],
-    predicatesOnTargetNode: Seq[Expression]
+    predicatesOnTargetNode: Seq[Expression],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    varLengthGroupings: Seq[VariableGrouping]
   ): (NFA, Selections) = {
     val firstNodeName = if (fromLeft) spp.left else spp.right
 
@@ -62,7 +71,9 @@ object ConvertToNFA {
         directedConnections.toIterable,
         spp.selections ++ predicatesOnTargetNode,
         fromLeft,
-        availableSymbols
+        availableSymbols,
+        anonymousVariableNameGenerator,
+        varLengthGroupings
       )
 
     val lastNode = builder.getLastState
@@ -79,7 +90,9 @@ object ConvertToNFA {
     connections: Iterable[ExhaustiveNodeConnection],
     selections: Selections,
     fromLeft: Boolean,
-    availableSymbols: Set[String]
+    availableSymbols: Set[String],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    varLengthGroupings: Seq[VariableGrouping]
   ): Selections = {
     // we cannot inline uniqueness predicates but we do not have to solve them as the algorithm for finding shortest paths will do that.
     val selectionsWithoutUniquenessPredicates = selections.filter(_.expr match {
@@ -87,36 +100,115 @@ object ConvertToNFA {
       case _                                  => true
     })
 
+    def getVariablePredicates(entityName: String) = {
+      val entityPredicates = selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols + entityName)
+      val entityVariablePredicates = toVariablePredicates(entityName, entityPredicates)
+      (entityPredicates, entityVariablePredicates)
+    }
+
     // go over the node connections and keep track of selections we could inline
     val (_, inlinedSelections) = connections.foldLeft((builder, Selections.empty)) {
       case ((builder, inlinedSelections), nodeConnection) =>
+        def addRelationshipBetweenStates(
+          relationshipName: String,
+          targetName: String,
+          dir: SemanticDirection,
+          types: Seq[RelTypeName],
+          sourceState: NFABuilder.State,
+          targetState: NFABuilder.State
+        ) = {
+          val directionToPlan = if (fromLeft) dir else dir.reversed
+
+          val (relPredicates, relVariablePredicates) = getVariablePredicates(relationshipName)
+          val (nodePredicates, nodeVariablePredicates) = getVariablePredicates(targetName)
+          builder.addTransition(
+            sourceState,
+            targetState,
+            NFA.RelationshipExpansionPredicate(
+              relationshipVariable = varFor(relationshipName),
+              relPred = relVariablePredicates,
+              types = types,
+              dir = directionToPlan,
+              nodePred = nodeVariablePredicates
+            )
+          )
+          Selections.from(relPredicates ++ nodePredicates)
+        }
+
+        def addRelationship(
+          relationshipName: String,
+          targetName: String,
+          dir: SemanticDirection,
+          types: Seq[RelTypeName]
+        ) = {
+          val sourceState = builder.getLastState
+          val targetState = builder.addAndGetState(varFor(targetName))
+          addRelationshipBetweenStates(relationshipName, targetName, dir, types, sourceState, targetState)
+        }
+
         val newlyInlinedSelections = nodeConnection match {
           case PatternRelationship(relationshipName, (left, right), dir, types, SimplePatternLength) =>
-            val sourceState = builder.getLastState
-            val target = if (fromLeft) right else left
-            val targetState = builder.addAndGetState(varFor(target))
-            val directionToPlan = if (fromLeft) dir else dir.reversed
+            val targetName = if (fromLeft) right else left
+            addRelationship(relationshipName, targetName, dir, types)
 
-            val relPredicates =
-              selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols + relationshipName)
-            val relVariablePredicates = toVariablePredicates(relationshipName, relPredicates)
-            val nodePredicates = selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols + target)
-            val nodeVariablePredicates = toVariablePredicates(target, nodePredicates)
+          case PatternRelationship(relationshipName, (left, right), dir, types, VarPatternLength(min, max)) =>
+            val singletonRelationshipName = varLengthGroupings
+              .find(_.groupName == relationshipName)
+              .getOrElse(throw new IllegalStateException(
+                s"Could not find grouping for var-length relationship `$relationshipName`"
+              ))
+              .singletonName
+            val sourceState = builder.getLastState
+
+            val lastSourceInnerState = builder.addAndGetState(varFor(anonymousVariableNameGenerator.nextName))
             builder.addTransition(
               sourceState,
-              targetState,
-              NFA.RelationshipExpansionPredicate(
-                relationshipVariable = varFor(relationshipName),
-                relPred = relVariablePredicates,
-                types = types,
-                dir = directionToPlan,
-                nodePred = nodeVariablePredicates
-              )
+              lastSourceInnerState,
+              NFA.NodeJuxtapositionPredicate(None)
             )
-            Selections.from(relPredicates ++ nodePredicates)
 
-          case PatternRelationship(_, _, _, _, _: VarPatternLength) =>
-            throw new InternalException("Converting legacy var-length relationships to NFAs is not supported yet.")
+            for (_ <- 1 to min) {
+              addRelationship(singletonRelationshipName, anonymousVariableNameGenerator.nextName, dir, types)
+            }
+
+            val exitableState = builder.getLastState
+            val furtherExitableStates = max match {
+              case Some(maxValue) =>
+                for (_ <- min until maxValue) yield {
+                  addRelationship(singletonRelationshipName, anonymousVariableNameGenerator.nextName, dir, types)
+                  builder.getLastState
+                }
+              case None =>
+                val targetState = exitableState
+                addRelationshipBetweenStates(
+                  singletonRelationshipName,
+                  anonymousVariableNameGenerator.nextName,
+                  dir,
+                  types,
+                  exitableState,
+                  targetState
+                )
+                Seq.empty
+            }
+
+            val targetName = if (fromLeft) right else left
+            val targetState = builder.addAndGetState(varFor(targetName))
+            (exitableState +: furtherExitableStates).foreach { exitableState =>
+              builder.addTransition(
+                exitableState,
+                targetState,
+                NFA.NodeJuxtapositionPredicate(None)
+              )
+            }
+
+            val (predicatesOnTargetNode, _) = getVariablePredicates(targetName)
+            val varLengthPredicates = selections.flatPredicates.filter {
+              case VarLengthLowerBound(Variable(`relationshipName`), `min`) => true
+              case VarLengthUpperBound(Variable(`relationshipName`), upperBound) if max.contains(upperBound.intValue) =>
+                true
+              case _ => false
+            }
+            Selections.from(predicatesOnTargetNode ++ varLengthPredicates)
 
           case QuantifiedPathPattern(
               leftBinding,
@@ -174,7 +266,15 @@ object ConvertToNFA {
             val relsInOrder = if (fromLeft) patternRelationships else patternRelationships.reverse
 
             def addQppInnerTransitions(): Selections =
-              convertToNfa(builder, relsInOrder, qppSelections -- predicatesOnSourceInner, fromLeft, availableSymbols)
+              convertToNfa(
+                builder,
+                relsInOrder,
+                qppSelections -- predicatesOnSourceInner,
+                fromLeft,
+                availableSymbols,
+                anonymousVariableNameGenerator,
+                varLengthGroupings
+              )
 
             val nonInlinedQppSelections = addQppInnerTransitions()
             if (nonInlinedQppSelections.nonEmpty) {

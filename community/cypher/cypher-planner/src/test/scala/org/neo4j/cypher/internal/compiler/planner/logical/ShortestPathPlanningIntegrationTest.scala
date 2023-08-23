@@ -95,6 +95,36 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("should plan SHORTEST with var-length relationship") {
+    val query = "MATCH ANY SHORTEST (u:User)-[r:R*]->(v) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (anon_1)")
+      .addTransition(1, 2, "(anon_1)-[r:R]->(anon_2)")
+      .addTransition(2, 2, "(anon_2)-[r:R]->(anon_2)")
+      .addTransition(2, 3, "(anon_2) (v)")
+      .addFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u)-[r:R*]->(v) WHERE unique(r) AND size(r) >= 1)",
+          None,
+          groupNodes = Set(),
+          groupRelationships = Set(("r", "r")),
+          singletonVariables = Set("v"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
   test("should plan SHORTEST with 1 QPP, + quantifier, no predicates, right-to-left") {
     val query = "MATCH ANY SHORTEST (u)((n)-[r]->(m))+(v:User) RETURN *"
 
@@ -658,7 +688,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("Should handle path assignment for shortest path containing qpp with two juxtaposed nodes") {
-    val query = "MATCH p= ANY SHORTEST (a) ((b)-[r]->(c))+ (d) RETURN p"
+    val query = "MATCH p = ANY SHORTEST (a) ((b)-[r]->(c))+ (d) RETURN p"
     val plan = planner.plan(query).stripProduceResults
 
     val path = PathExpression(NodePathStep(
@@ -694,7 +724,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("Should handle path assignment for shortest path containing qpp with two juxtaposed patterns") {
-    val query = "MATCH p= ANY SHORTEST (a)--(b) ((c)-[r]->(d))+ (e)--(f) RETURN p"
+    val query = "MATCH p = ANY SHORTEST (a)--(b) ((c)-[r]->(d))+ (e)--(f) RETURN p"
     val plan = planner.plan(query).stripProduceResults
 
     val path = PathExpression(
@@ -744,7 +774,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("Should handle path assignment for shortest path with simple pattern") {
-    val query = "MATCH p= ANY SHORTEST (a)-[r]->(b) RETURN p"
+    val query = "MATCH p = ANY SHORTEST (a)-[r]->(b) RETURN p"
     val plan = planner.plan(query).stripProduceResults
 
     val path = PathExpression(

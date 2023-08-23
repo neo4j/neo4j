@@ -83,7 +83,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
   override val semanticFeatures: List[SemanticFeature] = List(
-    SemanticFeature.GpmShortestPath
+    SemanticFeature.GpmShortestPath,
+    SemanticFeature.MatchModes
   )
   private val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
   private val nProp = prop("n", "prop")
@@ -2272,6 +2273,42 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       SelectivePathPattern(
         pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp)),
         selections = Selections.from(unique(varFor("r"))),
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addSelectivePathPattern(shortestPathPattern)
+
+    val projection = RegularQueryProjection(projections = Map("one" -> literalInt(1)), isTerminating = true)
+
+    query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
+  }
+
+  test("should convert query with path selector and var-length relationship") {
+    val query = buildSinglePlannerQuery(
+      """MATCH SHORTEST 1 GROUP (start)-[r*1..5]->(end)
+        |RETURN 1 AS one""".stripMargin
+    )
+
+    val rel =
+      PatternRelationship(
+        name = "r",
+        boundaryNodes = ("start", "end"),
+        dir = SemanticDirection.OUTGOING,
+        types = Nil,
+        length = VarPatternLength(1, Some(5))
+      )
+
+    val shortestPathPattern =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(rel)),
+        selections = Selections.from(Seq(
+          unique(varFor("r")),
+          varLengthLowerLimitPredicate("r", 1),
+          varLengthUpperLimitPredicate("r", 5)
+        )),
         selector = SelectivePathPattern.Selector.ShortestGroups(1)
       )
 

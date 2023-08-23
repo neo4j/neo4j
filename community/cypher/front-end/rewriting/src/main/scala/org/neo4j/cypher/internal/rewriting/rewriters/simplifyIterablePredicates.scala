@@ -57,7 +57,7 @@ case object simplifyIterablePredicates extends StepSequencer.Step with ASTRewrit
   })
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    RelationshipUniquenessPredicatesInMatchAndMerge // Introduces AnyIterablePredicate and NoneIterablePredicate
+    AddUniquenessPredicates.rewritten // Introduces AnyIterablePredicate and NoneIterablePredicate
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(IterablePredicatesRewrittenToIn)

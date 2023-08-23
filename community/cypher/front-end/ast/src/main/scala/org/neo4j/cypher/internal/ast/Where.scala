@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -40,25 +41,45 @@ case class Where(expression: Expression)(val position: InputPosition)
 
 object Where {
 
+  def combineOrCreateBeforeCnf(
+    oldWhere: Option[Where],
+    maybePredicate: Option[Expression]
+  )(position: InputPosition): Option[Where] =
+    Where.combineOrCreateExpressionBeforeCnf(oldWhere.map(_.expression), maybePredicate)(Some(position))
+      .map(newPredicate => Where(newPredicate)(position))
+
+  def combineOrCreateExpressionBeforeCnf(
+    oldPredicate: Option[Expression],
+    maybePredicate: Option[Expression]
+  )(position: Option[InputPosition]): Option[Expression] =
+    (oldPredicate, maybePredicate) match {
+      case (Some(oldPredicate), Some(newPredicate)) =>
+        Some(And(oldPredicate, newPredicate)(position.get))
+
+      case (None, newPredicate) =>
+        newPredicate
+
+      case (oldPredicate, None) => oldPredicate
+    }
+
   def combineOrCreate(
     oldWhere: Option[Where],
     addedPredicates: ListSet[Expression]
   )(position: InputPosition): Option[Where] =
     Where.combineOrCreate(oldWhere.map(_.expression), addedPredicates)
-      .map(newWhere => Where(newWhere)(position))
+      .map(newPredicate => Where(newPredicate)(position))
 
-  def combineOrCreate(oldWhere: Option[Expression], addedPredicates: ListSet[Expression]): Option[Expression] = {
+  def combineOrCreate(oldWhere: Option[Expression], addedPredicates: ListSet[Expression]): Option[Expression] =
     oldWhere match {
-      case Some(Ands(oldExpressions)) =>
-        Some(Ands.create(addedPredicates ++ oldExpressions))
-      case Some(oldExpression) =>
-        Some(Ands.create(addedPredicates + oldExpression))
+      case Some(Ands(oldPredicates)) =>
+        Some(Ands.create(addedPredicates ++ oldPredicates))
+      case Some(oldPredicate) =>
+        Some(Ands.create(addedPredicates + oldPredicate))
       case None if addedPredicates.nonEmpty =>
         Some(Ands.create(addedPredicates))
       case None =>
         None
     }
-  }
 
   def checkExpression(expression: Expression): SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain

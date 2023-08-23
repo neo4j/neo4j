@@ -45,6 +45,13 @@ class AddVarLengthPredicatesTest extends CypherFunSuite with RewriteTest with As
     )
   }
 
+  test("should add predicates in shortest path") {
+    assertRewrite(
+      "MATCH SHORTEST 1 (a)-[r1*1..5]->(b)-[r2]->(c) RETURN *",
+      "MATCH SHORTEST 1 ((a)-[r1*1..5]->(b)-[r2]->(c) WHERE size(r1) >= 1 AND size(r1) <= 5) RETURN *"
+    )
+  }
+
   test("should add predicates in EXISTS clause") {
     assertRewrite(
       """MATCH (a), (b)

@@ -110,11 +110,9 @@ case class CreateIrExpressions(
     }
 
     // Create predicates for relationship uniqueness
-    val uniqueRels = addUniquenessPredicates.collectRelationships(pattern)
-    val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, pattern.position)
+    val uniquePredicates = addUniquenessPredicates.createPredicatesFor(pattern)
 
-    val varLengthRels = addVarLengthPredicates.collectVarLengthRelationships(pattern)
-    val varLengthPredicates = addVarLengthPredicates.createPredicateFor(varLengthRels, pattern.position)
+    val varLengthPredicates = addVarLengthPredicates.createPredicatesFor(pattern)
 
     // Extract inlined predicates
     val extractedPredicates: Seq[Expression] = {

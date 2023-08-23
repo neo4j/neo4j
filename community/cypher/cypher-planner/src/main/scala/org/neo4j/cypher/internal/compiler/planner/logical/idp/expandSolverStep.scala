@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -552,22 +553,43 @@ object expandSolverStep {
     maybeHiddenFilter: Option[Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
+    val varLengthRelationshipNames = spp.pathPattern.connections.toIndexedSeq.collect {
+      case PatternRelationship(name, _, _, _, _: VarPatternLength) => name
+    }
+    val varLengthGroupings = varLengthRelationshipNames.map { relName =>
+      val singletonRelName = Namespacer.genName(
+        context.staticComponents.anonymousVariableNameGenerator,
+        relName
+      )
+      VariableGrouping(singletonRelName, relName)
+    }
+
     val (nfa, nonInlinedSelections) =
-      ConvertToNFA.convertToNfa(spp, fromLeft, availableSymbols, unsolvedPredicatesOnTargetNode)
+      ConvertToNFA.convertToNfa(
+        spp,
+        fromLeft,
+        availableSymbols,
+        unsolvedPredicatesOnTargetNode,
+        context.staticComponents.anonymousVariableNameGenerator,
+        varLengthGroupings
+      )
+
     val solvedExpressionAsString =
       spp.copy(selections = spp.selections ++ unsolvedPredicatesOnTargetNode)
         .solvedString
 
-    val selector = convertFromIr(spp.selector)
-    val nodeVariableGroupings = spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings.map(convertFromIr))
+    val selector = convertSelectorFromIr(spp.selector)
+    val nodeVariableGroupings =
+      spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings.map(convertGroupingFromIr))
     val relationshipVariableGroupings =
-      spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings.map(convertFromIr))
+      spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings.map(convertGroupingFromIr)) ++
+        varLengthGroupings.map(convertGroupingFromIr)
     val nonInlinablePreFilters =
       Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
 
-    val singletonVariables =
-      (spp.coveredIds -- spp.allQuantifiedPathPatterns.flatMap(_.groupings) - startNode).map(varFor)
-        .toSet[LogicalVariable]
+    val singletonVariableNames =
+      spp.coveredIds -- spp.allQuantifiedPathPatterns.flatMap(_.groupings) -- varLengthRelationshipNames - startNode
+    val singletonVariables = singletonVariableNames.map[LogicalVariable](varFor)
 
     context.staticComponents.logicalPlanProducer.planStatefulShortest(
       sourcePlan,
@@ -587,7 +609,7 @@ object expandSolverStep {
     )
   }
 
-  private val convertFromIr: SelectivePathPattern.Selector => StatefulShortestPath.Selector = {
+  private val convertSelectorFromIr: SelectivePathPattern.Selector => StatefulShortestPath.Selector = {
     // for now we will implement ANY via SHORTEST.
     case SelectivePathPattern.Selector.Any(k)            => StatefulShortestPath.Selector.Shortest(k)
     case SelectivePathPattern.Selector.ShortestGroups(k) => StatefulShortestPath.Selector.ShortestGroups(k)
@@ -595,7 +617,7 @@ object expandSolverStep {
   }
 
   // this should go eventually when we have Variables instead of Strings in IR
-  private def convertFromIr(variableGrouping: VariableGrouping) =
+  private def convertGroupingFromIr(variableGrouping: VariableGrouping) =
     Trail.VariableGrouping(varFor(variableGrouping.singletonName), varFor(variableGrouping.groupName))
 
 }

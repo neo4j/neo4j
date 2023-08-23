@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
@@ -80,6 +81,219 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
     )
 
+  // Test predicates on end
+  test("(start)-[r:R*0..]->(end)") {
+    val varRel =
+      PatternRelationship(
+        "r",
+        ("start", "end"),
+        SemanticDirection.OUTGOING,
+        Seq(relTypeName("R")),
+        VarPatternLength(0, None)
+      )
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(varRel)),
+        selections = Selections.empty,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val expectedNfa = new TestNFABuilder(0, "start")
+      .addTransition(0, 1, "(start) (`  UNNAMED0`)")
+      .addTransition(1, 2, "(`  UNNAMED0`) (end)")
+      .addTransition(1, 1, "(`  UNNAMED0`)-[`  r@4`:R]->(r_inner)")
+      .addFinalState(2)
+      .build()
+
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq(VariableGrouping("  r@4", "r"))
+    ) should equal((expectedNfa, Selections.empty))
+  }
+
+  test("(start)-[r:R*1..]->(end)") {
+    val varRel =
+      PatternRelationship(
+        "r",
+        ("start", "end"),
+        SemanticDirection.OUTGOING,
+        Seq(relTypeName("R")),
+        VarPatternLength(1, None)
+      )
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(varRel)),
+        selections = Selections.empty,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val expectedNfa = new TestNFABuilder(0, "start")
+      .addTransition(0, 1, "(start) (`  UNNAMED0`)")
+      .addTransition(1, 2, "(`  UNNAMED0`)-[`  r@4`:R]->(`  UNNAMED1`)")
+      .addTransition(2, 2, "(`  UNNAMED1`)-[`  r@4`:R]->(`  UNNAMED1`)")
+      .addTransition(2, 3, "(`  UNNAMED1`) (end)")
+      .addFinalState(3)
+      .build()
+
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq(VariableGrouping("  r@4", "r"))
+    ) should equal((expectedNfa, Selections.empty))
+  }
+
+  test("(start)-[r:R*2..]->(end)") {
+    val varRel =
+      PatternRelationship(
+        "r",
+        ("start", "end"),
+        SemanticDirection.OUTGOING,
+        Seq(relTypeName("R")),
+        VarPatternLength(2, None)
+      )
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(varRel)),
+        selections = Selections.empty,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val expectedNfa = new TestNFABuilder(0, "start")
+      .addTransition(0, 1, "(start) (`  UNNAMED0`)")
+      .addTransition(1, 2, "(`  UNNAMED0`)-[`  r@4`:R]->(`  UNNAMED1`)")
+      .addTransition(2, 3, "(`  UNNAMED1`)-[`  r@4`:R]->(`  UNNAMED2`)")
+      .addTransition(3, 3, "(`  UNNAMED2`)-[`  r@4`:R]->(`  UNNAMED2`)")
+      .addTransition(3, 4, "(`  UNNAMED2`) (end)")
+      .addFinalState(4)
+      .build()
+
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq(VariableGrouping("  r@4", "r"))
+    ) should equal((expectedNfa, Selections.empty))
+  }
+
+  test("(start)-[r:R*3..]->(end)") {
+    val varRel =
+      PatternRelationship(
+        "r",
+        ("start", "end"),
+        SemanticDirection.OUTGOING,
+        Seq(relTypeName("R")),
+        VarPatternLength(3, None)
+      )
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(varRel)),
+        selections = Selections.empty,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val expectedNfa = new TestNFABuilder(0, "start")
+      .addTransition(0, 1, "(start) (`  UNNAMED0`)")
+      .addTransition(1, 2, "(`  UNNAMED0`)-[`  r@4`:R]->(`  UNNAMED1`)")
+      .addTransition(2, 3, "(`  UNNAMED1`)-[`  r@4`:R]->(`  UNNAMED2`)")
+      .addTransition(3, 4, "(`  UNNAMED2`)-[`  r@4`:R]->(`  UNNAMED3`)")
+      .addTransition(4, 4, "(`  UNNAMED3`)-[`  r@4`:R]->(`  UNNAMED3`)")
+      .addTransition(4, 5, "(`  UNNAMED3`) (end)")
+      .addFinalState(5)
+      .build()
+
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq(VariableGrouping("  r@4", "r"))
+    ) should equal((expectedNfa, Selections.empty))
+  }
+
+  test("(start)-[r:R*2..3]->(end)") {
+    val varRel =
+      PatternRelationship(
+        "r",
+        ("start", "end"),
+        SemanticDirection.OUTGOING,
+        Seq(relTypeName("R")),
+        VarPatternLength(2, Some(3))
+      )
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(varRel)),
+        selections = Selections.empty,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val expectedNfa = new TestNFABuilder(0, "start")
+      .addTransition(0, 1, "(start) (`  UNNAMED0`)")
+      .addTransition(1, 2, "(`  UNNAMED0`)-[`  r@4`:R]->(`  UNNAMED1`)")
+      .addTransition(2, 3, "(`  UNNAMED1`)-[`  r@4`:R]->(`  UNNAMED2`)")
+      .addTransition(3, 4, "(`  UNNAMED2`)-[`  r@4`:R]->(`  UNNAMED3`)")
+      .addTransition(3, 5, "(`  UNNAMED2`) (end)")
+      .addTransition(4, 5, "(`  UNNAMED3`) (end)")
+      .addFinalState(5)
+      .build()
+
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq(VariableGrouping("  r@4", "r"))
+    ) should equal((expectedNfa, Selections.empty))
+  }
+
+  test("(start)-[r:R*0..3]->(end)") {
+    val varRel =
+      PatternRelationship(
+        "r",
+        ("start", "end"),
+        SemanticDirection.OUTGOING,
+        Seq(relTypeName("R")),
+        VarPatternLength(0, Some(3))
+      )
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(varRel)),
+        selections = Selections.empty,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val expectedNfa = new TestNFABuilder(0, "start")
+      .addTransition(0, 1, "(start) (`  UNNAMED0`)")
+      .addTransition(1, 2, "(`  UNNAMED0`)-[`  r@4`:R]->(`  UNNAMED1`)")
+      .addTransition(2, 3, "(`  UNNAMED1`)-[`  r@4`:R]->(`  UNNAMED2`)")
+      .addTransition(3, 4, "(`  UNNAMED2`)-[`  r@4`:R]->(`  UNNAMED3`)")
+      .addTransition(1, 5, "(`  UNNAMED0`) (end)")
+      .addTransition(2, 5, "(`  UNNAMED1`) (end)")
+      .addTransition(3, 5, "(`  UNNAMED2`) (end)")
+      .addTransition(4, 5, "(`  UNNAMED3`) (end)")
+      .addFinalState(5)
+      .build()
+
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq(VariableGrouping("  r@4", "r"))
+    ) should equal((expectedNfa, Selections.empty))
+  }
+
   test("create simple NFA") {
     val spp =
       SelectivePathPattern(
@@ -96,7 +310,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(3)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 
   test("create simple NFA and report non-inlineable predicate (depends on two variables)") {
@@ -116,7 +337,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(3)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((
       expectedNfa,
       Selections.from(nonInlineablePredicate)
     ))
@@ -140,7 +368,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(3)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((
       expectedNfa,
       Selections.from(nonInlineablePredicate)
     ))
@@ -159,28 +394,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       )
 
     an[InternalException] should be thrownBy {
-      ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty)
-    }
-  }
-
-  test("does not support legacy var-length relationships") {
-    val spp =
-      SelectivePathPattern(
-        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(
-          PatternRelationship(
-            "r",
-            ("a", "b"),
-            SemanticDirection.OUTGOING,
-            Seq.empty,
-            VarPatternLength(1, None)
-          )
-        )),
-        selections = Selections.empty,
-        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      ConvertToNFA.convertToNfa(
+        spp,
+        fromLeft = true,
+        Set.empty,
+        Seq.empty,
+        new AnonymousVariableNameGenerator,
+        Seq.empty
       )
-
-    an[InternalException] should be thrownBy {
-      ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty)
     }
   }
 
@@ -200,7 +421,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(3)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = false, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = false,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 
   test("create NFA reversed for (start) ((a)-[r]->(b)-[s]-(c))* (d)<-[t]-(end)") {
@@ -254,7 +482,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(5)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = false, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = false,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 
   test("create NFA with predicates") {
@@ -274,7 +509,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(3)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq(hasLabels("end", "E"))) should equal((
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq(hasLabels("end", "E")),
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((
       expectedNfa,
       Selections.empty
     ))
@@ -331,7 +573,9 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       spp,
       fromLeft = true,
       Set("foo"),
-      Seq(equals(prop("end", "prop"), varFor("foo")))
+      Seq(equals(prop("end", "prop"), varFor("foo"))),
+      new AnonymousVariableNameGenerator,
+      Seq.empty
     ) should equal((
       expectedNfa,
       Selections.empty
@@ -359,7 +603,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(5)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 
   test("create NFA with lower bound == 0 and finite upper bound") {
@@ -384,7 +635,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(5)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 
   test("create NFA with lower bound == 1 and finite upper bound") {
@@ -412,7 +670,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(7)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 
   test("create NFA with lower bound > 1 and finite upper bound") {
@@ -439,7 +704,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(7)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 
   test("create NFA with lower bound > 1 and finite upper bound (with predicates)") {
@@ -465,7 +737,14 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(7)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq(hasLabels("end", "E"))) should equal((
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq(hasLabels("end", "E")),
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((
       expectedNfa,
       Selections.empty
     ))
@@ -492,6 +771,13 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(3)
       .build()
 
-    ConvertToNFA.convertToNfa(spp, fromLeft = true, Set.empty, Seq.empty) should equal((expectedNfa, Selections.empty))
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set.empty,
+      Seq.empty,
+      new AnonymousVariableNameGenerator,
+      Seq.empty
+    ) should equal((expectedNfa, Selections.empty))
   }
 }

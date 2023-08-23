@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.label_expressions.MultiOperatorLabelExpression
 import org.neo4j.cypher.internal.rewriting.RewriteTest
-import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.SingleRelationship
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.evaluate
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
+import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniqueness.SingleRelationship
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -582,7 +582,7 @@ trait RelationshipTypeExpressionGenerators {
    * It's all Greek to me.
    * Keeping it small and hard-coded ensures that the expressions will contain overlaps
    */
-  val names = Set("ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON")
+  private val names = Set("ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON")
 
   val position: InputPosition = InputPosition.NONE
 

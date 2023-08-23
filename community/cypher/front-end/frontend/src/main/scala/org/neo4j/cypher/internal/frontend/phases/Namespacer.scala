@@ -97,23 +97,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
       anonymousVariableNameGenerator: AnonymousVariableNameGenerator
     ): (Ref[LogicalVariable], LogicalVariable) = {
 
-      /**
-       * Generate a unique anonymous name.
-       *
-       * If the original variable is anonymous, simply create a new anonymous variable.
-       * If the original variable is not anonymous,
-       * include the original variable name for easier debugging and better plan descriptions.
-       */
-      def genName = {
-        val nextName = anonymousVariableNameGenerator.nextName
-        if (AnonymousVariableNameGenerator.isNamed(variable.name)) {
-          nextName.replace(AnonymousVariableNameGenerator.generatorName, variable.name + "@")
-        } else {
-          nextName
-        }
-      }
       val symbolDefinition = variableDefinitions(SymbolUse(variable))
-      val name = newNames.getOrElseUpdate(symbolDefinition, genName)
+      val name = newNames.getOrElseUpdate(symbolDefinition, genName(anonymousVariableNameGenerator, variable.name))
       val newVariable = variable.renameId(name)
       Ref(variable) -> newVariable
     }
@@ -134,6 +119,22 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
             innerAcc + createVariableRenaming(v, anonymousVariableNameGenerator)
           }
         acc => TraverseChildren(acc ++ introducedVariablesRenamings ++ scopeDependenciesRenamings)
+    }
+  }
+
+  /**
+   * Generate a unique anonymous name.
+   *
+   * If the original variable is anonymous, simply create a new anonymous variable.
+   * If the original variable is not anonymous,
+   * include the original variable name for easier debugging and better plan descriptions.
+   */
+  def genName(anonymousVariableNameGenerator: AnonymousVariableNameGenerator, variableName: String): String = {
+    val nextName = anonymousVariableNameGenerator.nextName
+    if (AnonymousVariableNameGenerator.isNamed(variableName)) {
+      nextName.replace(AnonymousVariableNameGenerator.generatorName, variableName + "@")
+    } else {
+      nextName
     }
   }
 

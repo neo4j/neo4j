@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -37,18 +37,20 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
-case object RelationshipVarLengthPredicatesInMatchAndMerge extends StepSequencer.Condition
+case object AddVarLengthPredicates extends AddRelationshipPredicates[RelationshipPattern] {
 
-case object AddVarLengthPredicates extends AddRelationshipPredicates {
+  case object rewritten extends StepSequencer.Condition
 
   override val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case matchClause @ Match(_, _, pattern: Pattern, _, where) =>
-      val relationships = collectVarLengthRelationships(pattern)
+      val relationships = collectNodeConnections(pattern)
       val newWhere = withPredicates(matchClause, relationships, where)
       matchClause.copy(where = newWhere)(matchClause.position)
+    case part @ PatternPartWithSelector(_: SelectiveSelector, _) =>
+      rewriteSelectivePatternPart(part)
   })
 
-  def collectVarLengthRelationships(pattern: ASTNode): Seq[RelationshipPattern] =
+  def collectNodeConnections(pattern: ASTNode): Seq[RelationshipPattern] =
     pattern.folder.treeFold(Seq.empty[RelationshipPattern]) {
       case _: ScopeExpression =>
         acc => SkipChildren(acc)
@@ -56,26 +58,15 @@ case object AddVarLengthPredicates extends AddRelationshipPredicates {
       case _: ShortestPathsPatternPart =>
         acc => SkipChildren(acc)
 
+      case PatternPartWithSelector(_: SelectiveSelector, _) =>
+        acc => SkipChildren(acc)
+
       case RelationshipChain(_, rel @ RelationshipPattern(_, _, Some(_), _, _, _), _) =>
         acc => TraverseChildren(acc :+ rel)
     }
 
-  protected def withPredicates(
-    pattern: ASTNode,
-    rels: Seq[RelationshipPattern],
-    where: Option[Where]
-  ): Option[Where] = {
-    val pos = pattern.position
-    val maybePredicate: Option[Expression] = createPredicateFor(rels, pos)
-    addPredicateToWhere(where, pos, maybePredicate)
-  }
-
-  def createPredicateFor(relationships: Seq[RelationshipPattern], pos: InputPosition): Option[Expression] = {
-    createPredicatesFor(relationships, pos).reduceOption(expressions.And(_, _)(pos))
-  }
-
   override def postConditions: Set[StepSequencer.Condition] =
-    Set(RelationshipVarLengthPredicatesInMatchAndMerge)
+    Set(rewritten)
 
   def createPredicatesFor(relationships: Seq[RelationshipPattern], pos: InputPosition): Seq[Expression] =
     relationships.flatMap {
