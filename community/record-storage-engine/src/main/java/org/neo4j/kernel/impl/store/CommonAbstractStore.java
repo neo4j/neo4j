@@ -997,4 +997,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     public void allocate(long highId) throws IOException {
         pagedFile.preAllocate(pageIdForRecord(highId));
     }
+
+    @Override
+    public long estimateAvailableReservedSpace() throws IOException {
+        // This doesn't account for unallocated records in the last page whose IDs are greater than highId,
+        // which means it is only accurate up to the page size. This is fine since it's a conservative estimate.
+        return idGenerator.getUnusedIdCount() * recordSize;
+    }
 }

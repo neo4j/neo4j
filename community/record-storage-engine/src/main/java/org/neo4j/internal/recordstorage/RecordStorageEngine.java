@@ -735,6 +735,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
+    public long estimateAvailableReservedSpace() throws IOException {
+        return neoStores.estimateAvailableReservedSpace();
+    }
+
+    @Override
     public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
             throws IOException {
         if (!mode.isReverseStep() && batch != null) {

@@ -299,4 +299,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * of this operation.
      */
     void allocate(long highId) throws IOException;
+
+    /**
+     * Conservatively estimate how much reserved space is available for (re)use.
+     * @return available reserved space estimate in bytes
+     * @throws IOException on error reading from store.
+     */
+    long estimateAvailableReservedSpace() throws IOException;
 }

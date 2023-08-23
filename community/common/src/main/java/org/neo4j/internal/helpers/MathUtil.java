@@ -171,7 +171,7 @@ public final class MathUtil {
     }
 
     /**
-     * Round up to the next multiple of a specified number.
+     * Round a non-negative value up to the next multiple of a specified number.
      * @param value to round up.
      * @param multiplier
      * @return rounded up value.

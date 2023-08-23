@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -619,5 +620,11 @@ public class NeoStores implements AutoCloseable {
 
     public static boolean isStorePresent(FileSystemAbstraction fs, RecordDatabaseLayout databaseLayout) {
         return fs.fileExists(databaseLayout.pathForExistsMarker());
+    }
+
+    public long estimateAvailableReservedSpace() throws IOException {
+        final var bytes = new MutableLong();
+        visitStores(store -> bytes.add(store.estimateAvailableReservedSpace()));
+        return bytes.longValue();
     }
 }
