@@ -26,17 +26,21 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.Race;
@@ -66,20 +70,17 @@ class EnrichmentTest {
             final var changesSize = random.nextInt(13, enrichmentSize / 4);
             final var valuesSize = enrichmentSize - entitiesSize - detailsSize - changesSize;
             final var enrichmentBytes = random.nextBytes(new byte[enrichmentSize]);
-            final var enrichmentBuffer = ByteBuffer.allocate(enrichmentSize)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .put(enrichmentBytes)
-                    .flip();
 
             // mimic the output of enrichment data
             channel.putInt(entitiesSize)
                     .putInt(detailsSize)
                     .putInt(changesSize)
                     .putInt(valuesSize)
-                    .putAll(enrichmentBuffer)
+                    .put(enrichmentBytes, 0, enrichmentSize)
                     .flip();
 
-            final var enrichment = Enrichment.Read.deserialize(channel, EmptyMemoryTracker.INSTANCE);
+            final var enrichment = Enrichment.Read.deserialize(
+                    KernelVersion.VERSION_CDC_INTRODUCED, channel, EmptyMemoryTracker.INSTANCE);
             @SuppressWarnings("unchecked")
             final var buffersWithSize = Lists.mutable.with(
                     Pair.<Integer, Supplier<ByteBuffer>>of(entitiesSize, enrichment::entities),
@@ -113,8 +114,9 @@ class EnrichmentTest {
         }
     }
 
-    @Test
-    void memoryTracking() throws IOException {
+    @ParameterizedTest
+    @MethodSource("cdcKernelVersion")
+    void memoryTracking(KernelVersion kernelVersion) throws IOException {
         // given
         final var allocated = ArgumentCaptor.forClass(Long.class);
         final var released = ArgumentCaptor.forClass(Long.class);
@@ -130,22 +132,37 @@ class EnrichmentTest {
         try (var channel = new ChannelBuffer(capacity)) {
             metadata.serialize(channel);
 
-            final var enrichmentSize = (int) (capacity - channel.position() - (Integer.BYTES * 4));
-            final var entitiesSize = random.nextInt(13, enrichmentSize / 4);
-            final var detailsSize = random.nextInt(13, enrichmentSize / 4);
-            final var changesSize = random.nextInt(13, enrichmentSize / 4);
-            final var valuesSize = enrichmentSize - entitiesSize - detailsSize - changesSize;
-            final var enrichmentBytes = random.nextBytes(new byte[enrichmentSize]);
+            final int enrichmentSize;
+            if (kernelVersion == KernelVersion.VERSION_CDC_INTRODUCED) {
+                enrichmentSize = (int) (capacity - channel.position() - (Integer.BYTES * 4));
+                final var entitiesSize = random.nextInt(13, enrichmentSize / 4);
+                final var detailsSize = random.nextInt(13, enrichmentSize / 4);
+                final var changesSize = random.nextInt(13, enrichmentSize / 4);
+                final var valuesSize = enrichmentSize - entitiesSize - detailsSize - changesSize;
 
-            // mimic the output of enrichment data
-            channel.putInt(entitiesSize)
-                    .putInt(detailsSize)
-                    .putInt(changesSize)
-                    .putInt(valuesSize)
-                    .put(enrichmentBytes, 0, enrichmentSize)
+                channel.putInt(entitiesSize)
+                        .putInt(detailsSize)
+                        .putInt(changesSize)
+                        .putInt(valuesSize);
+            } else {
+                enrichmentSize = (int) (capacity - channel.position() - (Integer.BYTES * 5));
+                final var entitiesSize = random.nextInt(13, enrichmentSize / 5);
+                final var detailsSize = random.nextInt(13, enrichmentSize / 5);
+                final var changesSize = random.nextInt(13, enrichmentSize / 5);
+                final var valuesSize = random.nextInt(13, enrichmentSize / 5);
+                final var metadataSize = enrichmentSize - entitiesSize - detailsSize - changesSize - valuesSize;
+
+                channel.putInt(entitiesSize)
+                        .putInt(detailsSize)
+                        .putInt(changesSize)
+                        .putInt(valuesSize)
+                        .putInt(metadataSize);
+            }
+
+            channel.put(random.nextBytes(new byte[enrichmentSize]), 0, enrichmentSize)
                     .flip();
 
-            try (var ignored = Enrichment.Read.deserialize(channel, tracker)) {
+            try (var ignored = Enrichment.Read.deserialize(kernelVersion, channel, tracker)) {
                 assertThat(sum(allocated))
                         .as("should have allocated the enrichment data")
                         .isEqualTo(enrichmentSize);
@@ -161,29 +178,33 @@ class EnrichmentTest {
     void roundTrippingWithWriteEnrichment() throws IOException {
         // given
         final var tracker = EmptyMemoryTracker.INSTANCE;
-        final var dataSize = 32;
         final var metadata = TxMetadata.create(CaptureMode.DIFF, "some.server", securityContext(), 42L);
 
-        final var entitiesData = random.nextBytes(new byte[dataSize]);
-        final var detailsData = random.nextBytes(new byte[dataSize]);
-        final var changesData = random.nextBytes(new byte[dataSize]);
-        final var valuesData = random.nextBytes(new byte[dataSize]);
+        final var userMetadataSize = random.nextInt(0, 123);
+        final var entitiesData = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var detailsData = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var changesData = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var valuesData = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var metadataData = random.nextBytes(new byte[userMetadataSize]);
 
         try (var entitiesChannel = new WriteEnrichmentChannel(tracker);
                 var detailsChannel = new WriteEnrichmentChannel(tracker);
                 var changesChannel = new WriteEnrichmentChannel(tracker);
-                var valuesChannel = new WriteEnrichmentChannel(tracker)) {
+                var valuesChannel = new WriteEnrichmentChannel(tracker);
+                var metadataChannel = new WriteEnrichmentChannel(tracker)) {
             entitiesChannel.put(entitiesData);
             detailsChannel.put(detailsData);
             changesChannel.put(changesData);
             valuesChannel.put(valuesData);
+            metadataChannel.put(metadataData);
 
-            final var enrichment = new Enrichment.Write(
+            final var enrichment = Enrichment.Write.createV5_12(
                     metadata,
                     entitiesChannel.flip(),
                     detailsChannel.flip(),
                     changesChannel.flip(),
-                    valuesChannel.flip());
+                    valuesChannel.flip(),
+                    metadataChannel.flip());
 
             final var capacity = 4096;
             try (var channel = new ChannelBuffer(capacity)) {
@@ -192,50 +213,79 @@ class EnrichmentTest {
                 enrichment.serialize(channel);
                 channel.flip();
 
-                final var enrichment1 = Enrichment.Read.deserialize(channel, tracker);
+                final var enrichment1 = Enrichment.Read.deserialize(
+                        KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED, channel, tracker);
                 assertMetadata(enrichment1.metadata, metadata);
                 assertBuffer(enrichment1.entities(), entitiesData);
                 assertBuffer(enrichment1.entityDetails(), detailsData);
                 assertBuffer(enrichment1.entityChanges(), changesData);
                 assertBuffer(enrichment1.values(), valuesData);
+                if (userMetadataSize == 0) {
+                    assertThat(enrichment1.userMetadata()).isNotPresent();
+                } else {
+                    assertThat(enrichment1.userMetadata())
+                            .isPresent()
+                            .get()
+                            .satisfies(buffer -> assertBuffer(buffer, metadataData));
+                }
 
-                final var enrichment2 = Enrichment.Read.deserialize(channel, tracker);
+                final var enrichment2 = Enrichment.Read.deserialize(
+                        KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED, channel, tracker);
                 assertMetadata(enrichment2.metadata, metadata);
                 assertBuffer(enrichment2.entities(), entitiesData);
                 assertBuffer(enrichment2.entityDetails(), detailsData);
                 assertBuffer(enrichment2.entityChanges(), changesData);
                 assertBuffer(enrichment2.values(), valuesData);
+                if (userMetadataSize == 0) {
+                    assertThat(enrichment2.userMetadata()).isNotPresent();
+                } else {
+                    assertThat(enrichment2.userMetadata())
+                            .isPresent()
+                            .get()
+                            .satisfies(buffer -> assertBuffer(buffer, metadataData));
+                }
             }
         }
     }
 
-    @Test
-    void roundTrippingWithReadEnrichment() throws IOException {
+    @ParameterizedTest
+    @MethodSource("cdcKernelVersion")
+    void roundTrippingWithReadEnrichment(KernelVersion kernelVersion) throws IOException {
         // given
         final var tracker = EmptyMemoryTracker.INSTANCE;
-        final var dataSize = 32;
         final var metadata = TxMetadata.create(CaptureMode.DIFF, "some.server", securityContext(), 42L);
 
-        final var entitiesData = random.nextBytes(new byte[dataSize]);
-        final var detailsData = random.nextBytes(new byte[dataSize]);
-        final var changesData = random.nextBytes(new byte[dataSize]);
-        final var valuesData = random.nextBytes(new byte[dataSize]);
+        final var userMetadataSize = random.nextInt(0, 123);
+        final var entitiesData = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var detailsData = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var changesData = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var valuesData = random.nextBytes(new byte[random.nextInt(0, 123)]);
+        final var metadataData = random.nextBytes(new byte[userMetadataSize]);
 
         final var capacity = 4096;
         final Enrichment.Read enrichment;
         try (var channel = new ChannelBuffer(capacity)) {
             metadata.serialize(channel);
-            channel.putInt(dataSize)
-                    .putInt(dataSize)
-                    .putInt(dataSize)
-                    .putInt(dataSize)
-                    .put(entitiesData, 0, dataSize)
-                    .put(detailsData, 0, dataSize)
-                    .put(changesData, 0, dataSize)
-                    .put(valuesData, 0, dataSize)
-                    .flip();
+            channel.putInt(entitiesData.length)
+                    .putInt(detailsData.length)
+                    .putInt(changesData.length)
+                    .putInt(valuesData.length);
 
-            enrichment = Enrichment.Read.deserialize(channel, tracker);
+            if (kernelVersion == KernelVersion.VERSION_CDC_INTRODUCED) {
+                channel.put(entitiesData, 0, entitiesData.length)
+                        .put(detailsData, 0, detailsData.length)
+                        .put(changesData, 0, changesData.length)
+                        .put(valuesData, 0, valuesData.length);
+            } else {
+                channel.putInt(userMetadataSize)
+                        .put(entitiesData, 0, entitiesData.length)
+                        .put(detailsData, 0, detailsData.length)
+                        .put(changesData, 0, changesData.length)
+                        .put(valuesData, 0, valuesData.length)
+                        .put(metadataData, 0, userMetadataSize);
+            }
+
+            enrichment = Enrichment.Read.deserialize(kernelVersion, channel.flip(), tracker);
         }
 
         try (var channel = new ChannelBuffer(capacity)) {
@@ -244,20 +294,42 @@ class EnrichmentTest {
             enrichment.serialize(channel);
             channel.flip();
 
-            final var enrichment1 = Enrichment.Read.deserialize(channel, tracker);
+            final var enrichment1 = Enrichment.Read.deserialize(kernelVersion, channel, tracker);
             assertMetadata(enrichment1.metadata, metadata);
             assertBuffer(enrichment1.entities(), entitiesData);
             assertBuffer(enrichment1.entityDetails(), detailsData);
             assertBuffer(enrichment1.entityChanges(), changesData);
             assertBuffer(enrichment1.values(), valuesData);
+            if (kernelVersion == KernelVersion.VERSION_CDC_INTRODUCED || userMetadataSize == 0) {
+                assertThat(enrichment1.userMetadata()).isNotPresent();
+            } else {
+                assertThat(enrichment1.userMetadata())
+                        .isPresent()
+                        .get()
+                        .satisfies(buffer -> assertBuffer(buffer, metadataData));
+            }
 
-            final var enrichment2 = Enrichment.Read.deserialize(channel, tracker);
+            final var enrichment2 = Enrichment.Read.deserialize(kernelVersion, channel, tracker);
             assertMetadata(enrichment2.metadata, metadata);
             assertBuffer(enrichment2.entities(), entitiesData);
             assertBuffer(enrichment2.entityDetails(), detailsData);
             assertBuffer(enrichment2.entityChanges(), changesData);
             assertBuffer(enrichment2.values(), valuesData);
+            if (kernelVersion == KernelVersion.VERSION_CDC_INTRODUCED || userMetadataSize == 0) {
+                assertThat(enrichment2.userMetadata()).isNotPresent();
+            } else {
+                assertThat(enrichment2.userMetadata())
+                        .isPresent()
+                        .get()
+                        .satisfies(buffer -> assertBuffer(buffer, metadataData));
+            }
         }
+    }
+
+    private static Stream<Arguments> cdcKernelVersion() {
+        return Stream.of(
+                Arguments.of(KernelVersion.VERSION_CDC_INTRODUCED),
+                Arguments.of(KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED));
     }
 
     private static void assertMetadata(TxMetadata actual, TxMetadata expected) {

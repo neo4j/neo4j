@@ -54,7 +54,7 @@ public enum KernelVersion {
     V5_9((byte) 8), // 5.9. Introduces type constraints for single scalar types.
     V5_10((byte) 9), // 5.10.
     V5_11((byte) 10), // 5.11. Introduces specific add/remove commands.
-    V5_12((byte) 11), // 5.12.
+    V5_12((byte) 11), // 5.12. Introduces user metadata for CDC
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -73,6 +73,7 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_TYPE_CONSTRAINTS_INTRODUCED = V5_9;
     public static final KernelVersion KERNEL_VERSION_BLOCKFORMAT_INTRODUCED = V5_10;
     public static final KernelVersion VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED = V5_10;
+    public static final KernelVersion VERSION_CDC_USER_METADATA_INTRODUCED = V5_12;
     public static final KernelVersion VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED = GLORIOUS_FUTURE;
 
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database

@@ -788,14 +788,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     @Override
     public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
         switch (iterationPreference()) {
-            case RANDOM_ACCESS:
-                randomAccessWriteTo(writer);
-                break;
-            case ITERATION:
-                iterationWriteTo(writer);
-                break;
-            default:
-                throw new IllegalStateException("not a valid iteration preference");
+            case RANDOM_ACCESS -> randomAccessWriteTo(writer);
+            case ITERATION -> iterationWriteTo(writer);
         }
     }
 

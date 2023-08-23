@@ -37,7 +37,8 @@ class LogCommandSerializationV5_8 extends LogCommandSerializationV5_7 {
 
     @Override
     protected Command readEnrichmentCommand(ReadableChannel channel) throws IOException {
-        return new RecordEnrichmentCommand(this, Enrichment.Read.deserialize(channel, EmptyMemoryTracker.INSTANCE));
+        return new RecordEnrichmentCommand(
+                this, Enrichment.Read.deserialize(kernelVersion(), channel, EmptyMemoryTracker.INSTANCE));
     }
 
     @Override

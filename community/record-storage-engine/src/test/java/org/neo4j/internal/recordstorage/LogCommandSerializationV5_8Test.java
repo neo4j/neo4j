@@ -30,15 +30,16 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel.Writer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.enrichment.CaptureMode;
-import org.neo4j.storageengine.api.enrichment.Enrichment;
 import org.neo4j.storageengine.api.enrichment.TxMetadata;
 import org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel;
 
 public class LogCommandSerializationV5_8Test {
 
     private static final long[] DUMMY_DATA = new long[] {1, 2, 3};
+    private static final int DUMMY_DATA_LENGTH = DUMMY_DATA.length * Long.BYTES;
 
     @Test
     void enrichmentSupported() throws IOException {
@@ -46,11 +47,21 @@ public class LogCommandSerializationV5_8Test {
         try (var channel = new InMemoryClosableChannel()) {
             final var serialization = LogCommandSerializationV5_8.INSTANCE;
 
-            final var enrichment = new Enrichment.Write(metadata(), dummyData(), dummyData(), dummyData(), dummyData());
-
             final var writer = channel.writer();
             writer.beginChecksumForWriting();
-            serialization.writeEnrichmentCommand(writer, new RecordEnrichmentCommand(serialization, enrichment));
+
+            // write directly as version has now moved on
+            writer.put(NeoCommandType.ENRICHMENT_COMMAND);
+            metadata.serialize(writer);
+            writer.putInt(DUMMY_DATA_LENGTH);
+            writer.putInt(DUMMY_DATA_LENGTH);
+            writer.putInt(DUMMY_DATA_LENGTH);
+            writer.putInt(DUMMY_DATA_LENGTH);
+            serializeDummyData(writer);
+            serializeDummyData(writer);
+            serializeDummyData(writer);
+            serializeDummyData(writer);
+
             final var afterEnrichment = writer.getCurrentLogPosition();
             writer.putChecksum();
 
@@ -76,12 +87,14 @@ public class LogCommandSerializationV5_8Test {
                 .isEqualTo(actual.connectionInfo().protocol());
     }
 
-    private static WriteEnrichmentChannel dummyData() {
-        final var dataChannel = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
-        for (var entity : DUMMY_DATA) {
-            dataChannel.putLong(entity);
+    private static void serializeDummyData(Writer writer) throws IOException {
+        try (var dataChannel = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE)) {
+            for (var entity : DUMMY_DATA) {
+                dataChannel.putLong(entity);
+            }
+
+            dataChannel.flip().serialize(writer);
         }
-        return dataChannel.flip();
     }
 
     static TxMetadata metadata() {

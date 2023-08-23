@@ -73,7 +73,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     V5_11(11, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_511, KernelVersion.V5_11),
 
     /**
-     *
+     * User metadata being tracked for CDC
      */
     V5_12(12, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_512, KernelVersion.V5_12),
 

@@ -30,25 +30,47 @@ import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.utils.TemporalUtil;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 /**
  * @param channel the channel to write the {@link Value} objects out to.
  */
-public record ValuesWriter(WriteEnrichmentChannel channel) implements ValueWriter<RuntimeException> {
-    public int write(Value value) {
+public record ValuesWriter(WriteEnrichmentChannel channel) implements AnyValueWriter<RuntimeException> {
+
+    public int write(AnyValue value) {
         final var position = channel.size();
         if (value == null) {
             channel.put(ValuesReader.NO_VALUE.id());
         } else {
             channel.put(ValuesReader.forValueClass(value.getClass()).id());
-            value.writeTo(this);
+
+            if (value instanceof ListValue list) {
+                writeList(list);
+            } else if (value instanceof MapValue map) {
+                writeMap(map);
+            } else {
+                value.writeTo(this);
+            }
         }
         return position;
+    }
+
+    @Override
+    public EntityMode entityMode() {
+        return EntityMode.FULL;
     }
 
     @Override
@@ -181,5 +203,153 @@ public record ValuesWriter(WriteEnrichmentChannel channel) implements ValueWrite
             final var zoneId = (TimeZones.map(zone.getId()) << 1) | 1;
             channel.putInt(zoneId);
         }
+    }
+
+    @Override
+    public void beginMap(int size) {
+        channel.putInt(size);
+    }
+
+    @Override
+    public void endMap() {
+        // NOOP - ValuesWriter does not feature explicit termination
+    }
+
+    @Override
+    public void beginList(int size) {
+        channel.putInt(size);
+    }
+
+    @Override
+    public void endList() {
+        // NOOP - ValuesWriter does not feature explicit termination
+    }
+
+    @Override
+    public void writePath(NodeValue[] nodes, RelationshipValue[] relationships) {
+        writeBoolean(true);
+        channel.putInt(nodes.length);
+        for (var node : nodes) {
+            node.writeTo(this);
+        }
+
+        for (var relationship : relationships) {
+            relationship.writeTo(this);
+        }
+    }
+
+    @Override
+    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
+        writeBoolean(true);
+        writeInteger(nodeId);
+        writeString(elementId);
+        writeBoolean(isDeleted);
+
+        writeInteger(labels.length());
+        for (var i = 0; i < labels.length(); i++) {
+            writeString(labels.stringValue(i));
+        }
+
+        beginMap(properties.size());
+        properties.foreach((key, value) -> {
+            writeString(key);
+            write(value);
+        });
+        endMap();
+    }
+
+    @Override
+    public void writeRelationship(
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted)
+            throws RuntimeException {
+        writeBoolean(true);
+        writeInteger(relId);
+        writeString(elementId);
+        writeString(type.stringValue());
+        writeBoolean(isDeleted);
+
+        writeInteger(startNodeId);
+        writeString(startNodeElementId);
+        writeInteger(endNodeId);
+        writeString(endNodeElementId);
+
+        beginMap(properties.size());
+        properties.foreach((key, value) -> {
+            writeString(key);
+            write(value);
+        });
+        endMap();
+    }
+
+    @Override
+    public void writePathReference(long[] nodes, long[] relationships) {
+        writeBoolean(false);
+        channel.putInt(nodes.length);
+        for (var node : nodes) {
+            channel.putLong(node);
+        }
+
+        for (var relationship : relationships) {
+            channel.putLong(relationship);
+        }
+    }
+
+    @Override
+    public void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
+        writeBoolean(false);
+        channel.putInt(nodes.length);
+        for (var node : nodes) {
+            channel.putLong(node.id());
+        }
+
+        for (var relationship : relationships) {
+            channel.putLong(relationship.id());
+        }
+    }
+
+    @Override
+    public void writeNodeReference(long nodeId) {
+        writeBoolean(false);
+        writeInteger(nodeId);
+    }
+
+    @Override
+    public void writeRelationshipReference(long relId) {
+        writeBoolean(false);
+        writeInteger(relId);
+    }
+
+    private void writeList(ListValue list) {
+        beginList(list.size());
+        switch (list.iterationPreference()) {
+            case RANDOM_ACCESS -> {
+                for (var i = 0; i < list.size(); i++) {
+                    write(list.value(i));
+                }
+            }
+            case ITERATION -> {
+                for (var value : list) {
+                    write(value);
+                }
+            }
+        }
+        endList();
+    }
+
+    private void writeMap(MapValue map) {
+        beginMap(map.size());
+        map.foreach((key, value) -> {
+            writeString(key);
+            write(value);
+        });
+        endMap();
     }
 }

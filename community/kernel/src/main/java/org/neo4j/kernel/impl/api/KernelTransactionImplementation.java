@@ -1057,6 +1057,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         kernelVersionProvider,
                         storageEngine::createEnrichmentCommand,
                         txState,
+                        userMetaData,
                         lastTransactionIdWhenStarted,
                         storageReader,
                         cursorContext,

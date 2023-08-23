@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.database.enrichment;
 import static org.neo4j.util.Preconditions.checkState;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
@@ -37,7 +38,9 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -128,8 +131,8 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
     private final WriteEnrichmentChannel participantsChannel;
     private final WriteEnrichmentChannel detailsChannel;
     private final WriteEnrichmentChannel changesChannel;
-    private final WriteEnrichmentChannel valuesChannel;
-    private final ValuesWriter valueWriter;
+    private final ValuesChannel valuesChannel;
+    private final ValuesChannel metadataChannel;
 
     private final HeapTrackingArrayList<Participant> participants;
     private final HeapTrackingLongIntHashMap nodePositions;
@@ -145,6 +148,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             KernelVersionProvider kernelVersionProvider,
             EnrichmentCommandFactory enrichmentCommandFactory,
             ReadableTransactionState txState,
+            Map<String, Object> userMetadata,
             long lastTransactionIdWhenStarted,
             StorageReader store,
             CursorContext cursorContext,
@@ -163,8 +167,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         this.participantsChannel = new WriteEnrichmentChannel(memoryTracker);
         this.detailsChannel = new WriteEnrichmentChannel(memoryTracker);
         this.changesChannel = new WriteEnrichmentChannel(memoryTracker);
-        this.valuesChannel = new WriteEnrichmentChannel(memoryTracker);
-        this.valueWriter = new ValuesWriter(valuesChannel);
+        this.valuesChannel = new ValuesChannel(memoryTracker);
 
         this.participants = HeapTrackingCollections.newArrayList(memoryTracker);
         this.nodePositions = HeapTrackingCollections.newLongIntMap(memoryTracker);
@@ -173,6 +176,19 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         this.nodeCursor = store.allocateNodeCursor(cursorContext, storeCursors);
         this.relCursor = store.allocateRelationshipScanCursor(cursorContext, storeCursors);
         this.propertiesCursor = store.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker);
+
+        if (kernelVersionProvider.kernelVersion().isAtLeast(KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED)) {
+            this.metadataChannel = new ValuesChannel(memoryTracker);
+            if (!userMetadata.isEmpty()) {
+                metadataChannel.writer.writeInteger(userMetadata.size());
+                userMetadata.forEach((key, value) -> {
+                    metadataChannel.writer.writeString(key);
+                    metadataChannel.writer.write(ValueUtils.of(value));
+                });
+            }
+        } else {
+            this.metadataChannel = null;
+        }
     }
 
     @Override
@@ -307,9 +323,22 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         if (ensureParticipantsWritten()) {
             final var metadata =
                     TxMetadata.create(captureMode, serverId, securityContext, lastTransactionIdWhenStarted);
-            return enrichmentCommandFactory.create(
-                    kernelVersionProvider.kernelVersion(),
-                    new Enrichment.Write(metadata, participantsChannel, detailsChannel, changesChannel, valuesChannel));
+
+            final Enrichment.Write enrichment;
+            if (metadataChannel == null) {
+                enrichment = Enrichment.Write.createV5_8(
+                        metadata, participantsChannel, detailsChannel, changesChannel, valuesChannel.channel);
+            } else {
+                enrichment = Enrichment.Write.createV5_12(
+                        metadata,
+                        participantsChannel,
+                        detailsChannel,
+                        changesChannel,
+                        valuesChannel.channel,
+                        metadataChannel.channel);
+            }
+
+            return enrichmentCommandFactory.create(kernelVersionProvider.kernelVersion(), enrichment);
         }
 
         return null;
@@ -342,6 +371,9 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             detailsChannel.flip();
             changesChannel.flip();
             valuesChannel.flip();
+            if (metadataChannel != null) {
+                metadataChannel.flip();
+            }
             return true;
         }
 
@@ -569,7 +601,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
     private void captureProperty(int property, Value value) {
         changesChannel.putInt(property);
-        changesChannel.putInt(valueWriter.write(value));
+        changesChannel.putInt(valuesChannel.write(value));
     }
 
     private int addLabels(int... labels) {
@@ -590,7 +622,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             }
 
             changesChannel.putInt(property.propertyKeyId());
-            changesChannel.putInt(valueWriter.write(property.value()));
+            changesChannel.putInt(valuesChannel.write(property.value()));
             captured++;
         }
 
@@ -624,8 +656,8 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
             final var propertyId = propertiesCursor.propertyKey();
             changesChannel.putInt(propertyId);
-            changesChannel.putInt(valueWriter.write(propertiesCursor.propertyValue()));
-            changesChannel.putInt(valueWriter.write(propertyValues.get(propertyId)));
+            changesChannel.putInt(valuesChannel.write(propertiesCursor.propertyValue()));
+            changesChannel.putInt(valuesChannel.write(propertyValues.get(propertyId)));
             captured++;
         }
 
@@ -652,7 +684,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             }
 
             changesChannel.putInt(propertiesCursor.propertyKey());
-            changesChannel.putInt(valueWriter.write(propertiesCursor.propertyValue()));
+            changesChannel.putInt(valuesChannel.write(propertiesCursor.propertyValue()));
             captured++;
         }
 
@@ -662,6 +694,21 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         }
 
         return false;
+    }
+
+    private Participant createParticipant(EntityType entityType, DeltaType deltaType, long id, int position) {
+        // we want to order based on delta type then on entity type (fallback to id after that)
+        // however, we need to reverse the order for deletes to make detach-delete operations easier
+        // i.e. rel first rather than node first
+        var orderCode = (short) (deltaType.id() << Byte.SIZE);
+        if (deltaType == DeltaType.DELETED) {
+            orderCode |= (entityType == EntityType.NODE) ? 1 : 0;
+        } else {
+            orderCode |= (entityType == EntityType.NODE) ? 0 : 1;
+        }
+
+        memoryTracker.allocateHeap(Participant.SIZE);
+        return new Participant(orderCode, id, position);
     }
 
     private static DeltaType deltaType(byte flag) {
@@ -680,19 +727,23 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         return tokens;
     }
 
-    private Participant createParticipant(EntityType entityType, DeltaType deltaType, long id, int position) {
-        // we want to order based on delta type then on entity type (fallback to id after that)
-        // however, we need to reverse the order for deletes to make detach-delete operations easier
-        // i.e. rel first rather than node first
-        var orderCode = (short) (deltaType.id() << Byte.SIZE);
-        if (deltaType == DeltaType.DELETED) {
-            orderCode |= (entityType == EntityType.NODE) ? 1 : 0;
-        } else {
-            orderCode |= (entityType == EntityType.NODE) ? 0 : 1;
+    private static class ValuesChannel {
+
+        private final WriteEnrichmentChannel channel;
+        private final ValuesWriter writer;
+
+        private ValuesChannel(MemoryTracker memoryTracker) {
+            this.channel = new WriteEnrichmentChannel(memoryTracker);
+            this.writer = new ValuesWriter(channel);
         }
 
-        memoryTracker.allocateHeap(Participant.SIZE);
-        return new Participant(orderCode, id, position);
+        private void flip() {
+            channel.flip();
+        }
+
+        private int write(Value value) {
+            return writer.write(value);
+        }
     }
 
     @SuppressWarnings("ClassCanBeRecord") // HeapEstimator doesn't work on records

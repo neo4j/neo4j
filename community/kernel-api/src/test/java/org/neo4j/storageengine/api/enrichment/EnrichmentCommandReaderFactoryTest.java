@@ -27,6 +27,8 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -47,6 +49,7 @@ public class EnrichmentCommandReaderFactoryTest {
     private static final long[] DETAILS_DATA = new long[] {11, 12, 13};
     private static final long[] CHANGES_DATA = new long[] {111, 112, 113};
     private static final long[] VALUES_DATA = new long[] {1111, 1112, 1113};
+    private static final long[] META_DATA = new long[] {11111, 11112, 11113};
 
     @Test
     void factoryCanReadDelegatesCommands() throws IOException {
@@ -55,27 +58,26 @@ public class EnrichmentCommandReaderFactoryTest {
 
             final var command = new TestCommand(42);
             command.serialize(channel);
-            channel.flip();
 
-            final var reader = reader();
-            assertThat(reader.read(channel)).isEqualTo(command);
+            final var reader = reader(true);
+            assertThat(reader.read(channel.flip())).isEqualTo(command);
         }
     }
 
     @SuppressWarnings("resource")
-    @Test
-    void factoryCanReadEnrichmentCommand() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void factoryCanReadEnrichmentCommand(boolean includeUserMetadata) throws IOException {
         try (var channel = new ChannelBuffer(BUFFER_SIZE)) {
             zeroPad(channel);
 
-            final var enrichment = enrichment();
+            final var enrichment = enrichment(includeUserMetadata);
 
             channel.put(EnrichmentCommand.COMMAND_CODE);
             enrichment.serialize(channel);
-            channel.flip();
 
-            final var reader = reader();
-            final var readCommand = reader.read(channel);
+            final var reader = reader(includeUserMetadata);
+            final var readCommand = reader.read(channel.flip());
 
             assertThat(readCommand).isInstanceOf(TestEnrichmentCommand.class);
             assertMetadataEquals(enrichment.metadata(), ((TestEnrichmentCommand) readCommand).metadata);
@@ -85,12 +87,19 @@ public class EnrichmentCommandReaderFactoryTest {
             assertContents(readEnrichment.entityDetails(), DETAILS_DATA);
             assertContents(readEnrichment.entityChanges(), CHANGES_DATA);
             assertContents(readEnrichment.values(), VALUES_DATA);
+
+            if (includeUserMetadata) {
+                assertContents(readEnrichment.userMetadata().orElseThrow(), META_DATA);
+            } else {
+                assertThat(readEnrichment.userMetadata()).isNotPresent();
+            }
         }
     }
 
     @SuppressWarnings("resource")
-    @Test
-    void factoryCanReadMixedCommand() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void factoryCanReadMixedCommand(boolean includeUserMetadata) throws IOException {
         try (var channel = new ChannelBuffer(BUFFER_SIZE)) {
             zeroPad(channel);
 
@@ -98,7 +107,7 @@ public class EnrichmentCommandReaderFactoryTest {
             final var command2 = new TestCommand(43);
             final var command3 = new TestCommand(44);
 
-            final var enrichment = enrichment();
+            final var enrichment = enrichment(includeUserMetadata);
 
             command1.serialize(channel);
             command2.serialize(channel);
@@ -107,7 +116,7 @@ public class EnrichmentCommandReaderFactoryTest {
             command3.serialize(channel);
             channel.flip();
 
-            final var reader = reader();
+            final var reader = reader(includeUserMetadata);
             assertThat(reader.read(channel)).isEqualTo(command1);
             assertThat(reader.read(channel)).isEqualTo(command2);
 
@@ -120,6 +129,12 @@ public class EnrichmentCommandReaderFactoryTest {
             assertContents(readEnrichment.entityDetails(), DETAILS_DATA);
             assertContents(readEnrichment.entityChanges(), CHANGES_DATA);
             assertContents(readEnrichment.values(), VALUES_DATA);
+
+            if (includeUserMetadata) {
+                assertContents(readEnrichment.userMetadata().orElseThrow(), META_DATA);
+            } else {
+                assertThat(readEnrichment.userMetadata()).isNotPresent();
+            }
 
             assertThat(reader.read(channel)).isEqualTo(command3);
         }
@@ -139,19 +154,22 @@ public class EnrichmentCommandReaderFactoryTest {
         channel.put((byte) 0).put((byte) 0).put((byte) 0);
     }
 
-    private static CommandReader reader() {
+    private static CommandReader reader(boolean includeUserMetadata) {
         final var commandFactory = mock(EnrichmentCommandFactory.class);
         when(commandFactory.create(any(), any())).thenAnswer(answer -> {
             final var enrichment = answer.<Enrichment>getArgument(1);
             return new TestEnrichmentCommand(enrichment.metadata, enrichment);
         });
 
+        final var kernelVersion = includeUserMetadata
+                ? KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED
+                : KernelVersion.VERSION_CDC_INTRODUCED;
         final var readerFactory = new EnrichmentCommandReaderFactory(
                 new TestCommandReaderFactory(), commandFactory, () -> EmptyMemoryTracker.INSTANCE);
-        return readerFactory.get(KernelVersion.VERSION_CDC_INTRODUCED);
+        return readerFactory.get(kernelVersion);
     }
 
-    private static Enrichment.Write enrichment() {
+    private static Enrichment.Write enrichment(boolean includeUserMetadata) {
         final var entities = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
         for (var entity : ENTITY_DATA) {
             entities.putLong(entity);
@@ -172,12 +190,27 @@ public class EnrichmentCommandReaderFactoryTest {
             values.putLong(change);
         }
 
-        return new Enrichment.Write(
-                TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L),
-                entities.flip(),
-                details.flip(),
-                changes.flip(),
-                values.flip());
+        if (includeUserMetadata) {
+            final var userMetadata = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
+            for (var change : META_DATA) {
+                userMetadata.putLong(change);
+            }
+
+            return Enrichment.Write.createV5_12(
+                    TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L),
+                    entities.flip(),
+                    details.flip(),
+                    changes.flip(),
+                    values.flip(),
+                    userMetadata.flip());
+        } else {
+            return Enrichment.Write.createV5_8(
+                    TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L),
+                    entities.flip(),
+                    details.flip(),
+                    changes.flip(),
+                    values.flip());
+        }
     }
 
     private static void assertContents(ByteBuffer buffer, long[] values) {

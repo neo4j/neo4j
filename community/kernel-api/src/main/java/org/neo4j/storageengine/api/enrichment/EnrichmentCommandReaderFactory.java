@@ -56,8 +56,9 @@ public class EnrichmentCommandReaderFactory implements CommandReaderFactory {
                 @Override
                 public StorageCommand read(byte commandType, ReadableChannel channel) throws IOException {
                     if (EnrichmentCommand.COMMAND_CODE == commandType) {
-                        final var enrichment = Enrichment.Read.deserialize(channel, memoryTracker.get());
-                        return enrichmentCommandFactory.create(version, enrichment);
+                        final var kernelVersion = kernelVersion();
+                        final var enrichment = Enrichment.Read.deserialize(kernelVersion, channel, memoryTracker.get());
+                        return enrichmentCommandFactory.create(kernelVersion, enrichment);
                     }
 
                     return baseReader.read(commandType, channel);

@@ -37,6 +37,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import org.eclipse.collections.api.map.primitive.ImmutableByteObjectMap;
 import org.eclipse.collections.impl.factory.primitive.ByteObjectMaps;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanArray;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteArray;
@@ -76,11 +77,20 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * Factory for reading {@link Value} objects from some {@link ByteBuffer}
  */
 public enum ValuesReader {
+    // STORAGE VALUES
     NO_VALUE((byte) 1, NoValue.class, (unused) -> Values.NO_VALUE),
     BOOLEAN((byte) 2, BooleanValue.class, ValuesReader::readBoolean),
     BOOLEAN_ARRAY((byte) 3, BooleanArray.class, ValuesReader::readBooleanArray),
@@ -113,7 +123,13 @@ public enum ValuesReader {
     LOCAL_TIME((byte) 30, LocalTimeValue.class, ValuesReader::readLocalTime),
     LOCAL_TIME_ARRAY((byte) 31, LocalTimeArray.class, ValuesReader::readLocalTimeArray),
     LOCAL_DATE_TIME((byte) 32, LocalDateTimeValue.class, ValuesReader::readLocalDateTime),
-    LOCAL_DATE_TIME_ARRAY((byte) 33, LocalDateTimeArray.class, ValuesReader::readLocalDateTimeArray);
+    LOCAL_DATE_TIME_ARRAY((byte) 33, LocalDateTimeArray.class, ValuesReader::readLocalDateTimeArray),
+    // ANY VALUES - see also PackStreamValueWriter/PackStreamValueReader in bolt module
+    PATH((byte) 34, VirtualPathValue.class, ValuesReader::readPath),
+    NODE((byte) 35, VirtualNodeValue.class, ValuesReader::readNode),
+    RELATIONSHIP((byte) 36, VirtualRelationshipValue.class, ValuesReader::readRelationship),
+    LIST((byte) 37, ListValue.class, ValuesReader::readList),
+    MAP((byte) 38, MapValue.class, ValuesReader::readMap);
 
     public static final ImmutableByteObjectMap<ValuesReader> BY_ID =
             ByteObjectMaps.immutable.from(List.of(ValuesReader.values()), ValuesReader::id, v -> v);
@@ -122,23 +138,39 @@ public enum ValuesReader {
     private final Class<?> valueClass;
     private final ValueReader<?> reader;
 
-    <T extends Value> ValuesReader(byte id, Class<? extends T> valueClass, ValueReader<T> reader) {
+    <T extends AnyValue> ValuesReader(byte id, Class<? extends T> valueClass, ValueReader<T> reader) {
         this.id = id;
         this.valueClass = valueClass;
         this.reader = reader;
     }
 
-    public Value read(ByteBuffer buffer) {
+    public AnyValue read(ByteBuffer buffer) {
         return reader.read(buffer);
     }
 
-    public static ValuesReader forValueClass(Class<? extends Value> type) {
+    public static ValuesReader forValueClass(Class<? extends AnyValue> type) {
         for (ValuesReader valuesReader : BY_ID) {
             if (valuesReader.valueClass.isAssignableFrom(type)) {
                 return valuesReader;
             }
         }
         throw new IllegalArgumentException("Unsupported value type: " + type);
+    }
+
+    public static AnyValue from(ByteBuffer buffer) {
+        final var type = buffer.get();
+        final var reader = BY_ID.get(type);
+        if (reader == null) {
+            throw new IllegalArgumentException("Unsupported value type: " + type);
+        }
+
+        return reader.read(buffer);
+    }
+
+    public static String readJavaString(ByteBuffer buffer) {
+        final var bytes = new byte[buffer.getInt()];
+        buffer.get(bytes, 0, bytes.length);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     private static ByteValue readByte(ByteBuffer buffer) {
@@ -155,14 +187,14 @@ public enum ValuesReader {
     }
 
     private static BooleanValue readBoolean(ByteBuffer buffer) {
-        return Values.booleanValue(buffer.get() == 1);
+        return Values.booleanValue(readJavaBoolean(buffer));
     }
 
     private static BooleanArray readBooleanArray(ByteBuffer buffer) {
         final var length = buffer.getInt();
         final var values = new boolean[length];
         for (var i = 0; i < length; i++) {
-            values[i] = buffer.get() == 1;
+            values[i] = readJavaBoolean(buffer);
         }
         return Values.booleanArray(values);
     }
@@ -246,18 +278,14 @@ public enum ValuesReader {
     }
 
     private static TextValue readString(ByteBuffer buffer) {
-        final var bytes = new byte[buffer.getInt()];
-        buffer.get(bytes, 0, bytes.length);
-        return Values.stringValue(new String(bytes, StandardCharsets.UTF_8));
+        return Values.stringValue(readJavaString(buffer));
     }
 
     private static TextArray readStringArray(ByteBuffer buffer) {
         final var length = buffer.getInt();
         final var values = new String[length];
         for (var i = 0; i < length; i++) {
-            final var bytes = new byte[buffer.getInt()];
-            buffer.get(bytes, 0, bytes.length);
-            values[i] = new String(bytes, StandardCharsets.UTF_8);
+            values[i] = readJavaString(buffer);
         }
         return Values.stringArray(values);
     }
@@ -371,6 +399,102 @@ public enum ValuesReader {
         return localDateTimeArray(array);
     }
 
+    private static VirtualPathValue readPath(ByteBuffer buffer) {
+        final var isDirect = readJavaBoolean(buffer);
+        final var nodeCount = buffer.getInt();
+        if (isDirect) {
+            final var beforePos = buffer.position();
+            final var nodes = new NodeValue[nodeCount];
+            for (int i = 0; i < nodes.length; i++) {
+                nodes[i] = (NodeValue) readNode(buffer);
+            }
+
+            final var relationships = new RelationshipValue[nodeCount - 1];
+            for (int i = 0; i < relationships.length; i++) {
+                relationships[i] = (RelationshipValue) readRelationship(buffer);
+            }
+
+            final var payloadSize = buffer.position() - beforePos;
+            return VirtualValues.path(nodes, relationships, payloadSize);
+        } else {
+            final var nodes = new long[nodeCount];
+            for (int i = 0; i < nodes.length; i++) {
+                nodes[i] = buffer.getLong();
+            }
+
+            final var relationships = new long[nodeCount - 1];
+            for (int i = 0; i < relationships.length; i++) {
+                relationships[i] = buffer.getLong();
+            }
+
+            return VirtualValues.pathReference(nodes, relationships);
+        }
+    }
+
+    private static VirtualNodeValue readNode(ByteBuffer buffer) {
+        final var isDirect = readJavaBoolean(buffer);
+        final var nodeId = buffer.getLong();
+        if (isDirect) {
+            final var elementId = readJavaString(buffer);
+            final var isDeleted = readJavaBoolean(buffer);
+            final var labels = readStringArray(buffer);
+            final var properties = readMap(buffer);
+            return VirtualValues.nodeValue(nodeId, elementId, labels, properties, isDeleted);
+        } else {
+            return VirtualValues.node(nodeId);
+        }
+    }
+
+    private static VirtualRelationshipValue readRelationship(ByteBuffer buffer) {
+        final var isDirect = readJavaBoolean(buffer);
+        final var relId = buffer.getLong();
+        if (isDirect) {
+            final var elementId = readJavaString(buffer);
+            final var type = readString(buffer);
+            final var isDeleted = readJavaBoolean(buffer);
+
+            final var startId = buffer.getLong();
+            final var startElementId = readJavaString(buffer);
+            final var endId = buffer.getLong();
+            final var endElementId = readJavaString(buffer);
+
+            final var properties = readMap(buffer);
+            return VirtualValues.relationshipValue(
+                    relId,
+                    elementId,
+                    VirtualValues.node(startId, startElementId),
+                    VirtualValues.node(endId, endElementId),
+                    type,
+                    properties,
+                    isDeleted);
+        } else {
+            return VirtualValues.relationship(relId);
+        }
+    }
+
+    private static ListValue readList(ByteBuffer buffer) {
+        final var values = new AnyValue[buffer.getInt()];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = from(buffer);
+        }
+        return VirtualValues.list(values);
+    }
+
+    private static MapValue readMap(ByteBuffer buffer) {
+        final var entryCount = buffer.getInt();
+        final var keys = new String[entryCount];
+        final var values = new AnyValue[entryCount];
+        for (int i = 0; i < entryCount; i++) {
+            keys[i] = readJavaString(buffer);
+            values[i] = from(buffer);
+        }
+        return VirtualValues.map(keys, values);
+    }
+
+    private static boolean readJavaBoolean(ByteBuffer buffer) {
+        return buffer.get() == 1;
+    }
+
     private static OffsetTime readRawTime(ByteBuffer buffer) {
         final var nanosOfDayUTC = buffer.getLong();
         final var offsetSeconds = buffer.getInt();
@@ -393,7 +517,7 @@ public enum ValuesReader {
     }
 
     @FunctionalInterface
-    public interface ValueReader<T extends Value> {
+    public interface ValueReader<T extends AnyValue> {
         T read(ByteBuffer buffer);
     }
 }
