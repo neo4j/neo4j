@@ -1080,8 +1080,8 @@ public class MuninnPageCache implements PageCache {
         return UNKNOWN_PAGES_TO_EVICT;
     }
 
-    int evictPages(int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent) {
-        while (pageCountToEvict > 0 && !closed) {
+    int evictPages(int pageEvictionAttempts, int clockArm, EvictionRunEvent evictionRunEvent) {
+        while (pageEvictionAttempts > 0 && !closed) {
             if (clockArm == pages.getPageCount()) {
                 clockArm = 0;
             }
@@ -1094,7 +1094,7 @@ public class MuninnPageCache implements PageCache {
             long pageRef = pages.deref(clockArm);
             if (PageList.isLoaded(pageRef) && PageList.decrementUsage(pageRef)) {
                 try {
-                    pageCountToEvict--;
+                    pageEvictionAttempts--;
                     if (pages.tryEvict(pageRef, evictionRunEvent)) {
                         clearEvictorException();
                         addFreePageToFreelist(pageRef, evictionRunEvent);
