@@ -1,6 +1,6 @@
 Neo4j
-Copyright © 2002-2023 Neo4j Sweden AB (referred to in this notice as "Neo4j")
-[https://neo4j.com]
+Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
+[http://neo4j.com]
 
 This product includes software ("Software") developed by Neo4j.
 
@@ -90,7 +90,11 @@ Apache Software License, Version 2.0
   jersey-core-server
   jersey-inject-hk2
   Jettison
+  Jetty :: Http Utility
+  Jetty :: IO Utility
   Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet API and Schemas for JPMS and OSGi
   Jetty :: Servlet Handling
   Jetty :: Utilities
   Jetty :: Webapp Application Support

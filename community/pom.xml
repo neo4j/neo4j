@@ -79,6 +79,7 @@
     <module>capabilities</module>
     <module>storage-engine-util</module>
     <module>bootcheck</module>
+    <module>arrow</module>
   </modules>
 
   <profiles>
