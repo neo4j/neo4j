@@ -40,6 +40,7 @@ import wiremock.com.fasterxml.jackson.databind.ObjectMapper;
 import wiremock.org.hamcrest.CoreMatchers;
 import wiremock.org.hamcrest.Matcher;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -863,6 +864,46 @@ class HttpCopierTest
         assertThrows( CommandFailedException.class, containsString( "Upload failed after numerous attempts" ),
                       () -> authenticateAndCopy( copier, source, 1234, true, "user", "pass".toCharArray() ) );
         Mockito.verify( sleeper, atLeast( 30 ) ).sleep( anyLong() );
+    }
+
+    @Test
+    void shouldSkipToImport() throws IOException
+    {
+        HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
+        HttpCopier copier = new HttpCopier( ctx, sleeper, NO_OP_PROGRESS );
+        String error = "<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied." +
+                "</Message><Details>hello@hello.iam.gserviceaccount.com does not have storage.objects.delete " +
+                "access to the Google Cloud Storage object.</Details></Error>";
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( error.getBytes() );
+        assertTrue( copier.canSkipToImport( byteArrayInputStream ) );
+    }
+
+    @Test
+    void shouldNotSkipToImport() throws IOException
+    {
+        HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
+        HttpCopier copier = new HttpCopier( ctx, sleeper, NO_OP_PROGRESS );
+        String error = "<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied." +
+                "</Message><Details>hello@hello.iam.gserviceaccount.com " +
+                " has a problem we haven't thought about</Details></Error>";
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( error.getBytes() );
+        assertFalse( copier.canSkipToImport( byteArrayInputStream ) );
+    }
+
+    @Test
+    void shouldThrowErrorParsingXEEVulnerableContent()
+    {
+        HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
+        HttpCopier copier = new HttpCopier( ctx, sleeper, NO_OP_PROGRESS );
+        String error = "<?xml version='1.0' encoding='UTF-8'?>" +
+                "<!DOCTYPE foo [ <!ENTITY xxe SYSTEM \"file:///etc/ntp.conf\"> ]>" +
+                "<Error><Code>&xxe;</Code><Message>Access denied." +
+                "</Message><Details>hello@hello.iam.gserviceaccount.com does not have storage.objects.delete " +
+                "access to the Google Cloud Storage object.</Details></Error>";
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( error.getBytes() );
+
+        assertThrows( IOException.class, containsString("Encountered invalid response from cloud import location" ),
+                () -> copier.canSkipToImport( byteArrayInputStream ) );
     }
 
     @Test

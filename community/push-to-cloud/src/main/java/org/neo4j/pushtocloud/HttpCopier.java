@@ -28,12 +28,21 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -72,6 +81,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private static final long POSITION_UPLOAD_COMPLETED = -1;
     private static final long DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS = SECONDS.toMillis( 64 );
     private static final long DEFAULT_MAXIMUM_RETRIES = 50;
+    public static final String UNEXPECTED_RESPONSE_ERROR = "Got unexpected response uploading to storage";
 
     private final ExecutionContext ctx;
     private final Sleeper sleeper;
@@ -606,10 +616,76 @@ public class HttpCopier implements PushToCloudCommand.Copier
             case HTTP_GATEWAY_TIMEOUT:
                 debugErrorResponse( verbose, connection );
                 return false;
+            case HTTP_FORBIDDEN:
+                if ( canSkipToImport( connection.getErrorStream() ) )
+                {
+                    return true;
+                }
             default:
                 throw resumePossibleErrorResponse( connection, source, boltUri );
             }
         }
+    }
+
+    public boolean canSkipToImport( InputStream errorStream ) throws IOException
+    {
+        String responseString;
+        responseString = new String( toByteArray( errorStream ), UTF_8 );
+        try
+        {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+            // Security: Java XML parser has external entities enabled by default.
+            // https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html#java
+            dbf.setFeature( "http://apache.org/xml/features/disallow-doctype-decl", true );
+            dbf.setXIncludeAware( false );
+
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            Document document = builder.parse( new InputSource( new StringReader( responseString ) ) );
+            document.getDocumentElement().normalize();
+            Node codeNode = document.getElementsByTagName( "Code" ).item( 0 );
+            Node detailsNode = document.getElementsByTagName( "Details" ).item( 0 );
+
+            if ( isNull( codeNode, detailsNode ) )
+            {
+                return false;
+            }
+            String code = codeNode.getTextContent();
+            String details = detailsNode.getTextContent();
+            if ( isNull( code, details ) )
+            {
+                return false;
+            }
+
+            String objectExistsText = "does not have storage.objects.delete access to the Google Cloud Storage object.";
+            boolean valid = details.contains( objectExistsText ) && code.equals( "AccessDenied" );
+
+            if ( !valid )
+            {
+                ctx.out().println( UNEXPECTED_RESPONSE_ERROR );
+                return false;
+            }
+            else
+            {
+                ctx.out().println( "Detected already uploaded object, proceeding to import" );
+                return true;
+            }
+
+        }
+        catch ( ParserConfigurationException | SAXException | DOMException e )
+        {
+            throw new IOException( "Encountered invalid response from cloud import location" , e.getCause() );
+        }
+    }
+
+    private boolean isNull( Object codeNode, Object detailsNode )
+    {
+        if ( codeNode == null || detailsNode == null )
+        {
+            ctx.out().println( UNEXPECTED_RESPONSE_ERROR );
+            return true;
+        }
+        return false;
     }
 
     private void triggerImportProtocol( boolean verbose, URL importURL, String boltUri, Path source, long crc32Sum, String bearerToken )
