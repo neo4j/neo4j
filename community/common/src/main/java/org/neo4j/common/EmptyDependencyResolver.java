@@ -21,7 +21,7 @@ package org.neo4j.common;
 
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
-public class EmptyDependencyResolver extends DependencyResolver.Adapter {
+public class EmptyDependencyResolver implements DependencyResolver {
 
     public static final DependencyResolver EMPTY_RESOLVER = new EmptyDependencyResolver();
 

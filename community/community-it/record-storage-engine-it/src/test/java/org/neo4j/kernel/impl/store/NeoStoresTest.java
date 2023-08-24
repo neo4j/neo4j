@@ -54,7 +54,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -485,9 +484,7 @@ class NeoStoresTest {
     }
 
     private void reinitializeStores(RecordDatabaseLayout databaseLayout) {
-        Dependencies dependencies = new Dependencies();
         Config config = Config.defaults(GraphDatabaseSettings.fail_on_missing_files, false);
-        dependencies.satisfyDependency(config);
         closeStorageEngine();
         IdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());

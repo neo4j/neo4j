@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public abstract class AbstractExtensions extends DependencyResolver.Adapter implements Lifecycle {
+public abstract class AbstractExtensions implements DependencyResolver, Lifecycle {
     private final ExtensionContext extensionContext;
     private final List<ExtensionFactory<?>> extensionFactories;
     private final Dependencies dependencies;

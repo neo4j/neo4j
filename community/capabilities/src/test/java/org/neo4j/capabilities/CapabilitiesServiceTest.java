@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.capabilities.Type.BOOLEAN;
 import static org.neo4j.capabilities.Type.STRING;
 import static org.neo4j.capabilities.Type.listOf;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -269,8 +270,7 @@ class CapabilitiesServiceTest {
     }
 
     private static Dependencies newDependencies(Object... dependencies) {
-        var deps = new Dependencies();
-        deps.satisfyDependencies(dependencies);
+        var deps = dependenciesOf(dependencies);
         if (!deps.containsDependency(Configuration.class)) {
             deps.satisfyDependency(Config.defaults());
         }

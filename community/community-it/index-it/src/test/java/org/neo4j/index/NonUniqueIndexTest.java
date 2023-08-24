@@ -23,12 +23,12 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import java.util.concurrent.locks.LockSupport;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -111,12 +111,8 @@ class NonUniqueIndexTest {
     }
 
     private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler() {
-        // Inject JobScheduler
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies(createJobScheduler());
-
         managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                .setExternalDependencies(dependencies)
+                .setExternalDependencies(dependenciesOf(createJobScheduler()))
                 .build();
 
         return managementService.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);

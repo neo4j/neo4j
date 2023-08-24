@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
@@ -33,7 +34,6 @@ import java.util.function.LongSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -58,11 +58,9 @@ class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase {
     @BeforeEach
     void setUp() throws Exception {
         var testContextSupplierFactory = new TestTransactionVersionContextSupplier.Factory();
-        var dependencies = new Dependencies();
-        dependencies.satisfyDependencies(testContextSupplierFactory);
         testWebContainer = serverOnRandomPorts()
                 .withProperty(GraphDatabaseInternalSettings.snapshot_query.name(), TRUE)
-                .withDependencies(dependencies)
+                .withDependencies(dependenciesOf(testContextSupplierFactory))
                 .build();
         var db = testWebContainer.getDefaultDatabase();
 

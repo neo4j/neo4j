@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -47,7 +48,6 @@ import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -206,14 +206,12 @@ class LabelsAcceptanceTest {
         try (EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
                 Lifespan lifespan = new Lifespan(scheduler);
                 PageCache pageCache = new MuninnPageCache(swapper(fileSystem, cacheTracer), scheduler, config)) {
-            // Given
-            Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies(createIdContextFactoryWithMaxedOutLabelTokenIds(fileSystem, scheduler));
 
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                     .setFileSystem(fileSystem)
                     .noOpSystemGraphInitializer()
-                    .setExternalDependencies(dependencies)
+                    .setExternalDependencies(
+                            dependenciesOf(createIdContextFactoryWithMaxedOutLabelTokenIds(fileSystem, scheduler)))
                     .build();
 
             GraphDatabaseService graphDatabase = managementService.database(DEFAULT_DATABASE_NAME);

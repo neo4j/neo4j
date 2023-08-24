@@ -29,6 +29,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.lock.LockTracer.NONE;
@@ -46,7 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
@@ -161,9 +161,7 @@ abstract class OperationsTest {
         when(engine.newReader()).thenReturn(storageReader);
         when(engine.createStorageCursors(any())).thenReturn(storeCursors);
         indexingService = mock(IndexingService.class);
-        Dependencies dependencies = new Dependencies();
         var facade = mock(GraphDatabaseFacade.class);
-        dependencies.satisfyDependency(facade);
         storageLocks = mock(StorageLocks.class);
         tokenHolders = mockedTokenHolders();
         var kernelToken = new KernelToken(storageReader, creationContext, transaction, tokenHolders);
@@ -176,7 +174,7 @@ abstract class OperationsTest {
                 mock(SchemaState.class),
                 indexingService,
                 mock(IndexStatisticsStore.class),
-                dependencies,
+                dependenciesOf(facade),
                 INSTANCE);
         allStoreHolder.initialize(mock(ProcedureView.class));
         constraintIndexCreator = mock(ConstraintIndexCreator.class);

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
@@ -133,8 +134,6 @@ class StaticIndexProviderMapTest {
     @Test
     void testWithExtension() throws Exception {
         var extension = mockProvider(IndexProvider.class, IndexType.RANGE);
-        var dependencies = new Dependencies();
-        dependencies.satisfyDependency(extension);
         RangeIndexProvider rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
         var map = new StaticIndexProviderMap(
                 mockProvider(TokenIndexProvider.class, IndexType.LOOKUP),
@@ -144,7 +143,7 @@ class StaticIndexProviderMapTest {
                 mockProvider(PointIndexProvider.class, IndexType.POINT),
                 mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
                 mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
-                dependencies);
+                dependenciesOf(extension));
         map.init();
 
         assertThat(map.lookup(extension.getProviderDescriptor())).isEqualTo(extension);

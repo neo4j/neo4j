@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 
@@ -31,7 +32,6 @@ import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -71,10 +71,8 @@ class DynamicReadOnlyFailoverIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
-        Dependencies dependencies = new Dependencies();
         nativeAccess = new FailingNativeAccess();
-        dependencies.satisfyDependency(nativeAccess);
-        builder.setExternalDependencies(dependencies);
+        builder.setExternalDependencies(dependenciesOf(nativeAccess));
     }
 
     @Test

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.activeFilesBuilder;
@@ -153,10 +154,7 @@ class LogFilesBuilderTest {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository(2);
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency(logVersionRepository);
-        dependencies.satisfyDependency(transactionIdStore);
-        dependencies.satisfyDependency(databaseHealth);
+        Dependencies dependencies = dependenciesOf(logVersionRepository, transactionIdStore, databaseHealth);
 
         TransactionLogFilesContext context = builder(
                         databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)

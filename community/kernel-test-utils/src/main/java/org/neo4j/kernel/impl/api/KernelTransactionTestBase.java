@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -45,7 +46,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.diffset.MutableLongDiffSets;
 import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.collection.factory.OnHeapCollectionsFactory;
@@ -213,10 +213,9 @@ class KernelTransactionTestBase {
 
     KernelTransactionImplementation newNotInitializedTransaction(
             LeaseService leaseService, Config config, NamedDatabaseId databaseId) {
-        Dependencies dependencies = new Dependencies();
         var locks = mock(LockManager.class);
         when(locks.newClient()).thenReturn(locksClient);
-        dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
+        var dependencies = dependenciesOf(mock(GraphDatabaseFacade.class));
         var memoryPool = new MemoryPools().pool(MemoryGroup.TRANSACTION, ByteUnit.mebiBytes(4), null);
 
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);

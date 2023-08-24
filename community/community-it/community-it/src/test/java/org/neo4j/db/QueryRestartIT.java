@@ -22,6 +22,7 @@ package org.neo4j.db;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
@@ -32,7 +33,6 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -161,12 +161,8 @@ class QueryRestartIT {
     }
 
     private GraphDatabaseService startSnapshotQueryDb() {
-        // Inject TransactionVersionContextSupplier
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies(testContextSupplierFactory);
-
         managementService = new TestDatabaseManagementServiceBuilder(storeDir)
-                .setExternalDependencies(dependencies)
+                .setExternalDependencies(dependenciesOf(testContextSupplierFactory))
                 .setConfig(snapshot_query, true)
                 .setConfig(index_background_sampling_enabled, false)
                 .build();

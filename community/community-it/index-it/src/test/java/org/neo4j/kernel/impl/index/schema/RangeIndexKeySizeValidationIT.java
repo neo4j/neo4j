@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.kernel.impl.index.schema.PointKeyUtil.SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE;
@@ -54,7 +55,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -351,9 +351,7 @@ public class RangeIndexKeySizeValidationIT {
         scheduler = JobSchedulerFactory.createInitialisedScheduler();
         pageCache = StandalonePageCacheFactory.createPageCache(
                 fs, scheduler, PageCacheTracer.NULL, config(100).pageSize(pageSize));
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency(pageCache);
-        builder.setExternalDependencies(dependencies);
+        builder.setExternalDependencies(dependenciesOf(pageCache));
 
         dbms = builder.build();
         db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);

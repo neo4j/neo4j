@@ -25,13 +25,13 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -69,9 +69,7 @@ class DefaultStoreSnapshotFactoryTest {
         when(database.getInternalLogProvider()).thenReturn(DatabaseLogProvider.nullDatabaseLogProvider());
         var checkPointer = mock(CheckPointer.class);
         when(checkPointer.latestCheckPointInfo()).thenReturn(LatestCheckpointInfo.UNKNOWN_CHECKPOINT_INFO);
-        var dependencies = new Dependencies();
-        dependencies.satisfyDependency(checkPointer);
-        when(database.getDependencyResolver()).thenReturn(dependencies);
+        when(database.getDependencyResolver()).thenReturn(dependenciesOf(checkPointer));
         when(database.getDatabaseAvailabilityGuard()).thenReturn(availabilityGuard);
         var storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         when(database.getStoreCopyCheckPointMutex()).thenReturn(storeCopyCheckPointMutex);

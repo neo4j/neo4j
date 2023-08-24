@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 
@@ -50,7 +51,6 @@ import org.eclipse.collections.api.set.MutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.index.internal.gbptree.GBPTreeStructure;
@@ -116,10 +116,8 @@ class DatabaseIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
-        Dependencies dependencies = new Dependencies();
         pageCacheWrapper = new PageCacheWrapper(pageCacheExtension.getPageCache(fs));
-        dependencies.satisfyDependency(pageCacheWrapper);
-        builder.setInternalLogProvider(logProvider).setExternalDependencies(dependencies);
+        builder.setInternalLogProvider(logProvider).setExternalDependencies(dependenciesOf(pageCacheWrapper));
     }
 
     @AfterEach

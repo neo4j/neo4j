@@ -40,7 +40,9 @@ public interface DependencyResolver {
      * @throws IllegalArgumentException if no matching dependency was found.
      * @throws UnsatisfiedDependencyException if no matching dependency was found.
      */
-    <T> T resolveDependency(Class<T> type);
+    default <T> T resolveDependency(Class<T> type) {
+        return resolveDependency(type, SINGLE);
+    }
 
     /**
      * Tries to resolve a dependency that matches a given class. All candidates are fed to the
@@ -67,7 +69,9 @@ public interface DependencyResolver {
         throw new UnsupportedOperationException("not implemented");
     }
 
-    <T> Supplier<T> provideDependency(Class<T> type);
+    default <T> Supplier<T> provideDependency(Class<T> type) {
+        return () -> resolveDependency(type);
+    }
 
     /**
      * Check if dependency resolver contains dependencies of provided type
@@ -113,21 +117,5 @@ public interface DependencyResolver {
                 }
             }
         };
-    }
-
-    /**
-     * Adapter for {@link DependencyResolver} which will select the first available candidate by default
-     * for {@link #resolveDependency(Class)}.
-     */
-    abstract class Adapter implements DependencyResolver {
-        @Override
-        public <T> T resolveDependency(Class<T> type) {
-            return resolveDependency(type, SINGLE);
-        }
-
-        @Override
-        public <T> Supplier<T> provideDependency(final Class<T> type) {
-            return () -> resolveDependency(type);
-        }
     }
 }

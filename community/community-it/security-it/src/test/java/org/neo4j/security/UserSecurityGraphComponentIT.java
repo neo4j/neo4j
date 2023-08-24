@@ -23,6 +23,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
@@ -54,7 +55,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -101,7 +101,7 @@ class UserSecurityGraphComponentIT {
     private static UserSecurityGraphComponent userSecurityGraphComponent;
     private static AuthManager authManager;
     // Synthetic system graph component representing the whole system
-    private static SystemGraphComponent.Name testComponent = new SystemGraphComponent.Name("test-component");
+    private static final SystemGraphComponent.Name testComponent = new SystemGraphComponent.Name("test-component");
 
     @BeforeAll
     static void setup() {
@@ -110,19 +110,17 @@ class UserSecurityGraphComponentIT {
                 .set(automatic_upgrade_enabled, FALSE)
                 .build();
 
-        var injectedDependencies = new Dependencies();
         var internalSystemGraphComponentsBuilder = new KeepFirstDuplicateBuilder();
 
         // register a dummy DBMS runtime component as it is not a subject of this test
         internalSystemGraphComponentsBuilder.register(new StubComponent(DBMS_RUNTIME_COMPONENT.name()));
         // register a dummy user security component as it is manually initialised in every test.
         internalSystemGraphComponentsBuilder.register(new StubComponent(SECURITY_USER_COMPONENT.name()));
-        injectedDependencies.satisfyDependencies(internalSystemGraphComponentsBuilder);
 
         dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                 .impermanent()
                 .setConfig(cfg)
-                .setExternalDependencies(injectedDependencies)
+                .setExternalDependencies(dependenciesOf(internalSystemGraphComponentsBuilder))
                 .noOpSystemGraphInitializer()
                 .build();
         system = (GraphDatabaseFacade) dbms.database(SYSTEM_DATABASE_NAME);

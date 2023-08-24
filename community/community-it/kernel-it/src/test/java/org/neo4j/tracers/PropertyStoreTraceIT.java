@@ -21,6 +21,7 @@ package org.neo4j.tracers;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -32,7 +33,6 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -68,9 +68,7 @@ class PropertyStoreTraceIT {
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
         builder.setConfig(db_format, RecordFormatSelector.defaultFormat().name());
-        var dependencies = new Dependencies();
-        // disabling periodic id buffers maintenance jobs
-        dependencies.satisfyDependency(new CentralJobScheduler(Clocks.nanoClock(), NullLogProvider.getInstance()) {
+        var dependencies = dependenciesOf(new CentralJobScheduler(Clocks.nanoClock(), NullLogProvider.getInstance()) {
             @Override
             public JobHandle<?> scheduleRecurring(
                     Group group,

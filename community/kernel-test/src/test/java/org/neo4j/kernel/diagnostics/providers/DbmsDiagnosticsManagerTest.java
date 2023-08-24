@@ -23,6 +23,7 @@ import static java.util.Collections.singletonMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
@@ -94,9 +95,7 @@ class DbmsDiagnosticsManagerTest {
         defaultDatabase = prepareDatabase();
         when(storageEngineFactory.listStorageFiles(any(), any())).thenReturn(Collections.emptyList());
 
-        dependencies = new Dependencies();
-        dependencies.satisfyDependency(Config.defaults());
-        dependencies.satisfyDependency(databaseContextProvider);
+        dependencies = dependenciesOf(Config.defaults(), databaseContextProvider);
 
         when(defaultContext.database()).thenReturn(defaultDatabase);
         when(defaultContext.optionalDatabase()).thenReturn(Optional.of(defaultDatabase));

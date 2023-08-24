@@ -23,6 +23,7 @@ import static java.lang.Boolean.TRUE;
 import static java.util.Collections.addAll;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE;
@@ -42,7 +43,6 @@ import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstances;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -110,9 +110,7 @@ public class DbmsSupportController {
         injectDependencies(dependencyResolver);
 
         // Also inject DbmsController into the test.
-        Dependencies deps = new Dependencies();
-        deps.satisfyDependencies(asDbmsController());
-        injectDependencies(deps);
+        injectDependencies(dependenciesOf(asDbmsController()));
     }
 
     public void stopDatabase(String databaseName) {

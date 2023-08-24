@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.io.pagecache.context.OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY;
@@ -633,8 +634,7 @@ public final class Recovery {
 
         MetadataProvider metadataProvider = storageEngine.metadataProvider();
 
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies(
+        var dependencies = dependenciesOf(
                 databaseLayout,
                 config,
                 databasePageCache,
@@ -894,10 +894,9 @@ public final class Recovery {
                 .filter(extension -> extension.getClass().isAnnotationPresent(RecoveryExtension.class))
                 .collect(toList());
 
-        Dependencies deps = new Dependencies();
         NonListenableMonitors nonListenableMonitors =
                 new NonListenableMonitors(monitors, logService.getInternalLogProvider());
-        deps.satisfyDependencies(
+        var deps = dependenciesOf(
                 fileSystem,
                 config,
                 logService,

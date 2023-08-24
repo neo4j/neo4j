@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -314,9 +315,8 @@ class KernelTransactionTerminationTest {
         }
 
         static TestKernelTransaction create() {
-            Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
-            return new TestKernelTransaction(new CommitTrackingMonitor(), dependencies);
+            return new TestKernelTransaction(
+                    new CommitTrackingMonitor(), dependenciesOf(mock(GraphDatabaseFacade.class)));
         }
 
         TestKernelTransaction initialize() {

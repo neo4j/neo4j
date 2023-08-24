@@ -20,6 +20,7 @@
 package org.neo4j.commandline.dbms;
 
 import static java.lang.String.format;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
@@ -40,7 +41,6 @@ import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -444,8 +444,7 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
             TokenHolders tokenHolders,
             PageCacheTracer pageCacheTracer,
             DatabaseReadOnlyChecker readOnlyChecker) {
-        Dependencies deps = new Dependencies();
-        deps.satisfyDependencies(
+        var deps = dependenciesOf(
                 fs,
                 config,
                 logService,

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.PrintWriter;
@@ -34,7 +35,6 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -249,10 +249,8 @@ class EagerResultIT {
     }
 
     private GraphDatabaseService startRestartableDatabase() {
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies(testContextSupplierFactory);
         managementService = new TestDatabaseManagementServiceBuilder(storeDir)
-                .setExternalDependencies(dependencies)
+                .setExternalDependencies(dependenciesOf(testContextSupplierFactory))
                 .setConfig(GraphDatabaseInternalSettings.snapshot_query, true)
                 .build();
         return managementService.database(DEFAULT_DATABASE_NAME);

@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
@@ -35,7 +36,6 @@ import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.O
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
@@ -103,8 +103,6 @@ public final class KernelTransactionFactory {
         when(storageEngine.newCommandCreationContext(anyBoolean())).thenReturn(mock(CommandCreationContext.class));
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
 
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
         var locks = mock(LockManager.class);
         when(locks.newClient()).thenReturn(NO_LOCKS_CLIENT);
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -129,7 +127,7 @@ public final class KernelTransactionFactory {
                 mock(ElementIdMapper.class),
                 mock(IndexingService.class),
                 mock(IndexStatisticsStore.class),
-                dependencies,
+                dependenciesOf(mock(GraphDatabaseFacade.class)),
                 from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
                 LeaseService.NO_LEASES,
                 MemoryPools.NO_TRACKING,

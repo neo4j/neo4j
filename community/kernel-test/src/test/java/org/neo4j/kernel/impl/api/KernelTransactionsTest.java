@@ -37,6 +37,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -849,14 +850,10 @@ class KernelTransactionsTest {
     }
 
     private static Dependencies createDependencies() {
-        Dependencies dependencies = new Dependencies();
         final var enrichmentStrategy = mock(ApplyEnrichmentStrategy.class);
         when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
 
-        dependencies.satisfyDependency(enrichmentStrategy);
-        dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
-        dependencies.satisfyDependency(CommunitySecurityLog.NULL_LOG);
-        return dependencies;
+        return dependenciesOf(enrichmentStrategy, mock(GraphDatabaseFacade.class), CommunitySecurityLog.NULL_LOG);
     }
 
     private Future<?> unblockTxsInSeparateThread(final KernelTransactions kernelTransactions) {

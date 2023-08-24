@@ -35,9 +35,23 @@ import org.neo4j.common.DependencySatisfier;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
 @SuppressWarnings("unchecked")
-public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier {
+public class Dependencies implements DependencyResolver, DependencySatisfier {
     private final DependencyResolver parent;
     private final MutableSetMultimap<Class<?>, Object> typeDependencies = Multimaps.mutable.set.empty();
+
+    public static Dependencies dependenciesOf(Object object) {
+        var dependencies = new Dependencies();
+        dependencies.satisfyDependency(object);
+        return dependencies;
+    }
+
+    public static Dependencies dependenciesOf(Object... objects) {
+        var dependencies = new Dependencies();
+        for (Object object : objects) {
+            dependencies.satisfyDependency(object);
+        }
+        return dependencies;
+    }
 
     public Dependencies() {
         parent = null;
