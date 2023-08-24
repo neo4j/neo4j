@@ -1016,7 +1016,11 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  protected def estimateTopTableSize(nTableRows: Int)(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None, nRows: Int = 8): Long = {
+  protected def estimateTopTableSize(nTableRows: Int)(
+    logicalQuery: LogicalQuery,
+    sampleValue: Option[Any] = None,
+    nRows: Int = 8
+  ): Long = {
     val result = execute(logicalQuery, runtime, inputColumns(1, nTableRows, i => sampleValue.getOrElse(i.toLong)))
     consume(result)
     if (isParallel) {
