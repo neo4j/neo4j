@@ -60,6 +60,9 @@ class IndexCursorTest {
         public boolean isClosed() {
             return false;
         }
+
+        @Override
+        public void release() {}
     }
 
     private static class StubProgressor implements IndexProgressor {

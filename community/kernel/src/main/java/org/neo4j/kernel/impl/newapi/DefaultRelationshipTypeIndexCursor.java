@@ -21,12 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 
 public abstract class DefaultRelationshipTypeIndexCursor
         extends DefaultEntityTokenIndexCursor<DefaultRelationshipTypeIndexCursor>
-        implements RelationshipTypeIndexCursor {
+        implements InternalRelationshipTypeIndexCursor {
 
     protected DefaultRelationshipTypeIndexCursor(CursorPool<DefaultRelationshipTypeIndexCursor> pool) {
         super(pool);

@@ -105,8 +105,8 @@ class ExpressionCursors(
 
   private def notReturnedToPool(cursor: Cursor): Boolean = {
     cursor match {
-      case tc: TraceableCursor[_] => !tc.returnedToPool()
-      case _                      => true
+      case tc: TraceableCursor => !tc.returnedToPool()
+      case _                   => true
     }
   }
 }

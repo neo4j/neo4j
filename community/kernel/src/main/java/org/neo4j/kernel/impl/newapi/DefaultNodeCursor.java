@@ -47,7 +47,7 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.storageengine.util.SingleDegree;
 
-class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements NodeCursor {
+class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implements NodeCursor {
     Read read;
     boolean checkHasChanges;
     boolean hasChanges;
@@ -425,7 +425,8 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         }
     }
 
-    void release() {
+    @Override
+    public void release() {
         try (securityStoreRelationshipCursor;
                 securityStoreNodeCursor;
                 storeCursor) {

@@ -53,8 +53,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
     private DefaultNodeLabelIndexCursor fullAccessNodeLabelIndexCursor;
     private DefaultRelationshipValueIndexCursor relationshipValueIndexCursor;
-    private DefaultRelationshipTypeIndexCursor relationshipTypeIndexCursor;
-    private DefaultRelationshipTypeIndexCursor fullAccessRelationshipTypeIndexCursor;
+    private InternalRelationshipTypeIndexCursor relationshipTypeIndexCursor;
+    private InternalRelationshipTypeIndexCursor fullAccessRelationshipTypeIndexCursor;
 
     public DefaultPooledCursors(
             StorageReader storageReader,
@@ -156,7 +156,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    private static <C extends TraceableCursor<?>> C acquire(C cursor) {
+    private static <C extends TraceableCursor> C acquire(C cursor) {
         cursor.acquire();
         return cursor;
     }
@@ -434,7 +434,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public DefaultRelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext) {
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext) {
         if (relationshipTypeIndexCursor == null) {
             var nodeCursor = new DefaultNodeCursor(
                     c -> {},
@@ -463,7 +463,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    private void accept(DefaultRelationshipTypeIndexCursor cursor) {
+    private void accept(InternalRelationshipTypeIndexCursor cursor) {
         if (relationshipTypeIndexCursor != null) {
             relationshipTypeIndexCursor.release();
         }
@@ -495,7 +495,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    private void acceptFullAccess(DefaultRelationshipTypeIndexCursor cursor) {
+    private void acceptFullAccess(InternalRelationshipTypeIndexCursor cursor) {
         if (fullAccessRelationshipTypeIndexCursor != null) {
             fullAccessRelationshipTypeIndexCursor.release();
         }

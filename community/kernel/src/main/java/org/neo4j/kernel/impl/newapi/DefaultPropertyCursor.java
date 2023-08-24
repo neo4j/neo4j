@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.txstate.EntityState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor>
+public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCursor>
         implements PropertyCursor, Supplier<TokenSet>, RelTypeSupplier {
     private static final int NODE = -2;
     private Read read;

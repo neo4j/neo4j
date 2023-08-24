@@ -31,7 +31,7 @@ import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
-abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor> extends TraceableCursor<SELF>
+abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor> extends TraceableCursorImpl<SELF>
         implements RelationshipDataAccessor {
     protected boolean hasChanges;
     boolean checkHasChanges;
