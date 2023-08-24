@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
@@ -48,8 +49,9 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory {
     }
 
     @Override
-    protected HttpConfiguration createHttpConfig() {
-        HttpConfiguration httpConfig = super.createHttpConfig();
+    protected HttpConfiguration createHttpConfig(boolean requiresHostnameVerification) {
+        HttpConfiguration httpConfig = super.createHttpConfig(requiresHostnameVerification);
+        httpConfig.addCustomizer(new SecureRequestCustomizer(requiresHostnameVerification));
         httpConfig.addCustomizer(requestCustomizer);
         return httpConfig;
     }
@@ -58,7 +60,11 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory {
             Server server, SslPolicy sslPolicy, SocketAddress address, JettyThreadCalculator jettyThreadCalculator) {
         SslConnectionFactory sslConnectionFactory = createSslConnectionFactory(sslPolicy);
         return createConnector(
-                server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory());
+                server,
+                address,
+                jettyThreadCalculator,
+                sslConnectionFactory,
+                createHttpConnectionFactory(sslPolicy.isVerifyHostname()));
     }
 
     private static SslConnectionFactory createSslConnectionFactory(SslPolicy sslPolicy) {

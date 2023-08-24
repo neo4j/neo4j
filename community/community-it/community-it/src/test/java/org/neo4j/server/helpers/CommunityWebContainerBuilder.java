@@ -161,7 +161,11 @@ public class CommunityWebContainerBuilder {
 
         properties.put(GraphDatabaseSettings.auth_enabled.name(), FALSE);
 
-        if (httpsEnabled) {
+        if (httpsEnabled
+                && arbitraryProperties.get(SslPolicyConfig.forScope(SslPolicyScope.HTTPS)
+                                .enabled
+                                .name())
+                        == null) {
             var certificates = temporaryFolder.resolve("certificates");
             SelfSignedCertificateFactory.create(new DefaultFileSystemAbstraction(), certificates);
             SslPolicyConfig policy = SslPolicyConfig.forScope(SslPolicyScope.HTTPS);

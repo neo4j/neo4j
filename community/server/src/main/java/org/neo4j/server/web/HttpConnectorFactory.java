@@ -54,11 +54,11 @@ public class HttpConnectorFactory {
         this.byteBufferPool = byteBufferPool;
     }
 
-    public ConnectionFactory createHttpConnectionFactory() {
-        return new JettyHttpConnectionFactory(connectionTracker, createHttpConfig());
+    public ConnectionFactory createHttpConnectionFactory(boolean requiresHostnameVerification) {
+        return new JettyHttpConnectionFactory(connectionTracker, createHttpConfig(requiresHostnameVerification));
     }
 
-    protected HttpConfiguration createHttpConfig() {
+    protected HttpConfiguration createHttpConfig(boolean ignored) {
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setRequestHeaderSize(configuration.get(ServerSettings.maximum_request_header_size));
         httpConfig.setResponseHeaderSize(configuration.get(ServerSettings.maximum_response_header_size));
@@ -68,7 +68,7 @@ public class HttpConnectorFactory {
 
     public ServerConnector createConnector(
             Server server, SocketAddress address, JettyThreadCalculator jettyThreadCalculator) {
-        ConnectionFactory httpFactory = createHttpConnectionFactory();
+        ConnectionFactory httpFactory = createHttpConnectionFactory(false);
         return createConnector(server, address, jettyThreadCalculator, httpFactory);
     }
 

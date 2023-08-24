@@ -35,8 +35,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.ConnectorType;
+import org.neo4j.configuration.ssl.ClientAuth;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityWebContainerBuilder;
 import org.neo4j.server.helpers.TestWebContainer;
@@ -44,6 +49,7 @@ import org.neo4j.test.PortUtils;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.InsecureTrustManager;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 class HttpsAccessIT extends ExclusiveWebContainerTestBase {
     private SSLSocketFactory originalSslSocketFactory;
@@ -96,7 +102,7 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
     @Test
     void shouldIncludeStrictTransportHeaderIfConfigured() throws Exception {
         var transportHeader = "max-age=31536000";
-        startServer(false, true, transportHeader);
+        startServer(false, true, transportHeader, "localhost", false);
         shouldInstallConnector("https", ConnectorType.HTTPS);
 
         var response = GET(testWebContainer.getBaseUri().toString());
@@ -104,6 +110,25 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
         assertThat(response.status()).isEqualTo(200);
         assertThat(response.header(HttpHeader.STRICT_TRANSPORT_SECURITY.lowerCaseName()))
                 .isEqualTo(transportHeader);
+    }
+
+    @Test
+    void shouldNotVerifyCertificateHostname() throws Exception {
+        startSecureServer("thishostnameiswrong", false);
+        assertThat(GET(testWebContainer.httpsUri().get().toString()).status()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldVerifyIncorrectCertificateHostname() throws Exception {
+        startSecureServer("thishostnameiswrong", true);
+        var response = GET(testWebContainer.httpsUri().get().toString());
+        assertThat(response.status()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldVerifyCorrectCertificateHostname() throws Exception {
+        startSecureServer("localhost", true);
+        assertThat(GET(testWebContainer.httpsUri().get().toString()).status()).isEqualTo(200);
     }
 
     private void shouldInstallConnector(String scheme, ConnectorType connectorType) {
@@ -127,10 +152,20 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
     }
 
     private void startServer(boolean httpEnabled, boolean httpsEnabled) throws Exception {
-        startServer(httpEnabled, httpsEnabled, null);
+        startServer(httpEnabled, httpsEnabled, null, "localhost", false);
     }
 
-    private void startServer(boolean httpEnabled, boolean httpsEnabled, String strictTransportHeader) throws Exception {
+    private void startSecureServer(String certHostname, boolean hostNameCheck) throws Exception {
+        startServer(false, true, null, certHostname, hostNameCheck);
+    }
+
+    private void startServer(
+            boolean httpEnabled,
+            boolean httpsEnabled,
+            String strictTransportHeader,
+            String certHostName,
+            boolean hostNameCheck)
+            throws Exception {
         CommunityWebContainerBuilder serverBuilder = serverOnRandomPorts()
                 .persistent()
                 .usingDataDir(
@@ -139,6 +174,15 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
             serverBuilder.withHttpDisabled();
         }
         if (httpsEnabled) {
+            var certificates = testDirectory.absolutePath().resolve("certificates");
+            SelfSignedCertificateFactory.create(new DefaultFileSystemAbstraction(), certificates, certHostName);
+            SslPolicyConfig policy = SslPolicyConfig.forScope(SslPolicyScope.HTTPS);
+            serverBuilder.withProperty(policy.enabled.name(), Boolean.TRUE.toString());
+            serverBuilder.withProperty(
+                    policy.base_directory.name(), certificates.toAbsolutePath().toString());
+            serverBuilder.withProperty(policy.trust_all.name(), SettingValueParsers.TRUE);
+            serverBuilder.withProperty(policy.client_auth.name(), ClientAuth.NONE.name());
+            serverBuilder.withProperty(policy.verify_hostname.name(), hostNameCheck ? "true" : "false");
             serverBuilder.withHttpsEnabled();
         }
         if (strictTransportHeader != null) {

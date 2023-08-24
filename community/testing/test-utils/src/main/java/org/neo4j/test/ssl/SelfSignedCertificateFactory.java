@@ -79,17 +79,26 @@ public class SelfSignedCertificateFactory {
         create(fs, certDir, DEFAULT_KEY_FILE_NAME, DEFAULT_CERT_FILE_NAME);
     }
 
-    public static void create(FileSystemAbstraction fs, Path certDir, String keyFileName, String certFileName) {
+    public static void create(FileSystemAbstraction fs, Path certDir, String hostname) {
+        create(fs, certDir, DEFAULT_KEY_FILE_NAME, DEFAULT_CERT_FILE_NAME, hostname);
+    }
+
+    public static void create(
+            FileSystemAbstraction fs, Path certDir, String keyFileName, String certFileName, String hostname) {
         var certificateFactory = new SelfSignedCertificateFactory();
         var privateKeyFile = certDir.resolve(keyFileName);
         var certificateFile = certDir.resolve(certFileName);
         if (!exists(privateKeyFile) && !exists(certificateFile)) {
             try {
-                certificateFactory.createSelfSignedCertificate(fs, certificateFile, privateKeyFile, DEFAULT_HOST_NAME);
+                certificateFactory.createSelfSignedCertificate(fs, certificateFile, privateKeyFile, hostname);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to generate private key and certificate", e);
             }
         }
+    }
+
+    public static void create(FileSystemAbstraction fs, Path certDir, String keyFileName, String certFileName) {
+        create(fs, certDir, keyFileName, certFileName, DEFAULT_HOST_NAME);
     }
 
     public SelfSignedCertificateFactory() {
