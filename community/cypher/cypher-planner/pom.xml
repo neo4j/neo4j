@@ -27,13 +27,6 @@
 
     <dependencies>
 
-        <!-- shared versions are defined in the parent pom -->
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-        </dependency>
-
         <!-- scala -->
 
         <dependency>
