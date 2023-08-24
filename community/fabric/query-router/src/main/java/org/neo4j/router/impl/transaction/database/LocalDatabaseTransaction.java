@@ -32,16 +32,16 @@ import org.neo4j.fabric.executor.TaggingPlanDescriptionWrapper;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.query.DelegatingQuerySubscriber;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.router.impl.subscriber.DelegatingQueryExecution;
+import org.neo4j.router.impl.subscriber.StatementLifecycleQuerySubscriber;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.TransactionInfo;
@@ -182,29 +182,6 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         @Override
         public ExecutionPlanDescription executionPlanDescription() {
             return new TaggingPlanDescriptionWrapper(super.executionPlanDescription(), location.getDatabaseName());
-        }
-    }
-
-    private static class StatementLifecycleQuerySubscriber extends DelegatingQuerySubscriber {
-
-        private final QueryStatementLifecycles.StatementLifecycle statementLifecycle;
-
-        public StatementLifecycleQuerySubscriber(
-                QuerySubscriber querySubscriber, QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
-            super(querySubscriber);
-            this.statementLifecycle = statementLifecycle;
-        }
-
-        @Override
-        public void onResultCompleted(QueryStatistics statistics) {
-            super.onResultCompleted(statistics);
-            statementLifecycle.endSuccess();
-        }
-
-        @Override
-        public void onError(Throwable throwable) throws Exception {
-            super.onError(throwable);
-            statementLifecycle.endFailure(throwable);
         }
     }
 }

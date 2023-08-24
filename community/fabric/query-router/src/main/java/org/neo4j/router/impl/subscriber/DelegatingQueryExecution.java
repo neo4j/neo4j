@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.router.impl.transaction.database;
+package org.neo4j.router.impl.subscriber;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
