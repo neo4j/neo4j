@@ -125,7 +125,7 @@ public class QueryStatementLifecycles {
             }
         }
 
-        public void startExecution(Boolean shouldLogIfSingleQuery) {
+        public void startExecution(boolean shouldLogIfSingleQuery) {
             monitoringMode.startExecution(shouldLogIfSingleQuery);
         }
 
