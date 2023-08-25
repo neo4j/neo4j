@@ -294,7 +294,7 @@ public class UserAggregationFunctionTest {
         ProcedureException exception =
                 assertThrows(ProcedureException.class, () -> compile(FunctionWithSingleName.class));
         assertThat(exception.getMessage())
-                .isEqualTo("It is not allowed to define functions in the root namespace please use a "
+                .isEqualTo("It is not allowed to define functions in the root namespace. Please define a "
                         + "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")");
     }
 

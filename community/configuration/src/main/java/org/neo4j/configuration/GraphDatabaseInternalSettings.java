@@ -1175,4 +1175,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> multi_version_countstore_compaction = newBuilder(
                     "internal.dbms.multiversion_countstore_compaction", BOOL, false)
             .build();
+
+    @Internal
+    @Description(
+            "The reserved namespaces that are used for internal functionality of the DBMS. Procedures and UDFs in these namespaces will never be loaded, or compiled from disk.")
+    public static final Setting<List<String>> reserved_procedure_namespaces = newBuilder(
+                    "internal.dbms.reserved_procedure_namespaces",
+                    listOf(STRING),
+                    List.of("db.*", "dbms.*", "internal.*", "tx.*", "unsupported.*"))
+            .build();
 }

@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.procedure.impl.NamingRestrictions.IllegalNamingException;
 import org.neo4j.string.Globbing;
 
 /**
@@ -116,9 +117,20 @@ class ProcedureJarLoader {
 
         while (classes.hasNext()) {
             Class<?> next = classes.next();
-            target.addAllProcedures(compiler.compileProcedure(next, false, loader, methodNameFilter));
-            target.addAllFunctions(compiler.compileFunction(next, false, loader, methodNameFilter));
-            target.addAllAggregationFunctions(compiler.compileAggregationFunction(next, loader, methodNameFilter));
+            try {
+                final var procedures = compiler.compileProcedure(next, false, loader, methodNameFilter);
+                final var functions = compiler.compileFunction(next, false, loader, methodNameFilter);
+                final var aggregations = compiler.compileAggregationFunction(next, loader, methodNameFilter);
+
+                // Add after compilation, to not taint `target` with a partial success.
+                target.addAllProcedures(procedures);
+                target.addAllFunctions(functions);
+                target.addAllAggregationFunctions(aggregations);
+            } catch (IllegalNamingException exc) {
+                log.error(
+                        "Failed to load procedures from class %s in %s/%s: %s",
+                        next.getSimpleName(), jar.getParent().getFileName(), jar.getFileName(), exc.getMessage());
+            }
         }
     }
 

@@ -28,17 +28,20 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
 public class ProcedureConfig {
     private final List<Pattern> accessPatterns;
     private final List<Pattern> whiteList;
     private final ZoneId defaultTemporalTimeZone;
+    private final List<String> reservedProcedureNamespaces;
 
     private ProcedureConfig() {
         this.accessPatterns = Collections.emptyList();
         this.whiteList = Collections.singletonList(compilePattern("*"));
         this.defaultTemporalTimeZone = UTC;
+        this.reservedProcedureNamespaces = GraphDatabaseInternalSettings.reserved_procedure_namespaces.defaultValue();
     }
 
     public ProcedureConfig(Config config) {
@@ -47,6 +50,7 @@ public class ProcedureConfig {
         this.whiteList =
                 parseMatchers(config.get(GraphDatabaseSettings.procedure_allowlist), ProcedureConfig::compilePattern);
         this.defaultTemporalTimeZone = config.get(GraphDatabaseSettings.db_temporal_timezone);
+        this.reservedProcedureNamespaces = config.get(GraphDatabaseInternalSettings.reserved_procedure_namespaces);
     }
 
     private <T> List<T> parseMatchers(List<String> fullAccessProcedures, Function<String, T> matchFunc) {
@@ -75,5 +79,9 @@ public class ProcedureConfig {
 
     public ZoneId getDefaultTemporalTimeZone() {
         return defaultTemporalTimeZone;
+    }
+
+    public List<String> reservedProcedureNamespaces() {
+        return reservedProcedureNamespaces;
     }
 }

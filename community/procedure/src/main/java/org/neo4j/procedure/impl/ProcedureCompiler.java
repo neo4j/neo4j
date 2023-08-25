@@ -72,7 +72,8 @@ class ProcedureCompiler {
     private final InternalLog log;
     private final TypeCheckers typeCheckers;
     private final ProcedureConfig config;
-    private final NamingRestrictions restrictions;
+    private final NamingRestrictions functionRestrictions;
+    private final NamingRestrictions procedureRestrictions;
 
     ProcedureCompiler(
             TypeCheckers typeCheckers,
@@ -88,7 +89,8 @@ class ProcedureCompiler {
                 log,
                 typeCheckers,
                 config,
-                ProcedureCompiler::rejectEmptyNamespace);
+                NamingRestrictions.rejectEmptyNamespace(),
+                NamingRestrictions.rejectNone());
     }
 
     private ProcedureCompiler(
@@ -99,7 +101,8 @@ class ProcedureCompiler {
             InternalLog log,
             TypeCheckers typeCheckers,
             ProcedureConfig config,
-            NamingRestrictions restrictions) {
+            NamingRestrictions functionRestrictions,
+            NamingRestrictions procedureRestrictions) {
         this.inputSignatureDeterminer = inputSignatureCompiler;
         this.outputSignatureCompiler = outputSignatureCompiler;
         this.safeFieldInjections = safeFieldInjections;
@@ -107,7 +110,8 @@ class ProcedureCompiler {
         this.log = log;
         this.typeCheckers = typeCheckers;
         this.config = config;
-        this.restrictions = restrictions;
+        this.functionRestrictions = functionRestrictions;
+        this.procedureRestrictions = procedureRestrictions;
     }
 
     List<CallableUserFunction> compileFunction(
@@ -258,6 +262,8 @@ class ProcedureCompiler {
             QualifiedName procName,
             ClassLoader parentClassLoader)
             throws ProcedureException {
+        procedureRestrictions.verify(procName);
+
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor(method);
         List<FieldSignature> outputSignature = outputSignatureCompiler.fieldSignatures(method);
 
@@ -346,7 +352,7 @@ class ProcedureCompiler {
     private CallableUserFunction compileFunction(
             Class<?> procDefinition, Method method, QualifiedName procName, ClassLoader parentClassLoader)
             throws ProcedureException {
-        restrictions.verify(procName);
+        functionRestrictions.verify(procName);
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor(method);
         Class<?> returnType = method.getReturnType();
@@ -399,7 +405,7 @@ class ProcedureCompiler {
     private CallableUserAggregationFunction compileAggregationFunction(
             Class<?> definition, Method create, QualifiedName funcName, ClassLoader parentClassLoader)
             throws ProcedureException {
-        restrictions.verify(funcName);
+        functionRestrictions.verify(funcName);
 
         // find update and result method
         Method update = null;
@@ -578,7 +584,7 @@ class ProcedureCompiler {
         return new QualifiedName(namespace, name);
     }
 
-    ProcedureCompiler withoutNamingRestrictions() {
+    ProcedureCompiler withAdditionalProcedureRestrictions(NamingRestrictions additionalProcedureRestrictions) {
         return new ProcedureCompiler(
                 inputSignatureDeterminer,
                 outputSignatureCompiler,
@@ -587,18 +593,7 @@ class ProcedureCompiler {
                 log,
                 typeCheckers,
                 config,
-                name -> {
-                    // all ok
-                });
-    }
-
-    private static void rejectEmptyNamespace(QualifiedName name) throws ProcedureException {
-        if (name.namespace() == null || name.namespace().length == 0) {
-            throw new ProcedureException(
-                    Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, "
-                            + "e.g. `@UserFunction(\"org.example.com.%s\")",
-                    name.name());
-        }
+                functionRestrictions,
+                NamingRestrictions.allOf(procedureRestrictions, additionalProcedureRestrictions));
     }
 }
