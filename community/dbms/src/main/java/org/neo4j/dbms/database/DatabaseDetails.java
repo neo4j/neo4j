@@ -26,6 +26,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.util.StoreIdDecodeUtils;
 
 public record DatabaseDetails(
         // server level values - will differ for every member
@@ -59,5 +60,19 @@ public record DatabaseDetails(
 
     public String databaseType() {
         return type;
+    }
+
+    public Optional<String> readableExternalStoreId() {
+        return externalStoreId.flatMap(id -> {
+            try {
+                return Optional.of(StoreIdDecodeUtils.decodeId(id));
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        });
+    }
+
+    public Optional<String> readableStoreId() {
+        return storeId.map(StoreId::getStoreVersionUserString);
     }
 }

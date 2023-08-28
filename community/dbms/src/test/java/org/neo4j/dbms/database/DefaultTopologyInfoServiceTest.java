@@ -21,6 +21,7 @@ package org.neo4j.dbms.database;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -70,22 +71,16 @@ class DefaultTopologyInfoServiceTest {
         when(stateService.causeOfFailure(any())).thenReturn(Optional.empty());
 
         var extrasProvider = mock(DefaultDatabaseDetailsExtrasProvider.class);
-        long systemLastCommittedTxId = 1978;
         var systemStoreId = new StoreId(11, 21, "engine", "format", 31, 41);
         var systemExternalStoreId = new ExternalStoreId(UUID.randomUUID());
-        long userLastCommittedTxId = 1996;
         var userStoreId = new StoreId(61, 51, "engine", "format", 1, 0);
         var userExternalStoreId = new ExternalStoreId(UUID.randomUUID());
-        when(extrasProvider.extraDetails(databaseId.databaseId(), ALL))
+        when(extrasProvider.extraDetails(eq(databaseId.databaseId()), any()))
                 .thenReturn(new DatabaseDetailsExtras(
-                        Optional.of(userLastCommittedTxId),
-                        Optional.of(userStoreId),
-                        Optional.of(userExternalStoreId)));
-        when(extrasProvider.extraDetails(SYSTEM_DATABASE_ID, ALL))
+                        Optional.empty(), Optional.of(userStoreId), Optional.of(userExternalStoreId)));
+        when(extrasProvider.extraDetails(eq(SYSTEM_DATABASE_ID), any()))
                 .thenReturn(new DatabaseDetailsExtras(
-                        Optional.of(systemLastCommittedTxId),
-                        Optional.of(systemStoreId),
-                        Optional.of(systemExternalStoreId)));
+                        Optional.empty(), Optional.of(systemStoreId), Optional.of(systemExternalStoreId)));
 
         var boltAddress = config.get(BoltConnector.advertised_address);
         var service = new DefaultTopologyInfoService(
@@ -110,7 +105,7 @@ class DefaultTopologyInfoServiceTest {
         assertThat(systemDetails.type()).isEqualTo(TYPE_SYSTEM);
         assertThat(systemDetails.namedDatabaseId()).isEqualTo(NAMED_SYSTEM_DATABASE_ID);
         assertThat(systemDetails.txCommitLag()).hasValue(0L);
-        assertThat(systemDetails.lastCommittedTxId()).hasValue(systemLastCommittedTxId);
+        assertThat(systemDetails.lastCommittedTxId()).isEmpty();
         assertThat(systemDetails.storeId()).hasValue(systemStoreId);
         assertThat(systemDetails.externalStoreId()).hasValue(systemExternalStoreId);
         assertThat(systemDetails.serverId()).hasValue(serverId);
@@ -130,7 +125,7 @@ class DefaultTopologyInfoServiceTest {
         assertThat(userDetails.type()).isEqualTo(TYPE_STANDARD);
         assertThat(userDetails.namedDatabaseId()).isEqualTo(databaseId);
         assertThat(userDetails.txCommitLag()).hasValue(0L);
-        assertThat(userDetails.lastCommittedTxId()).hasValue(userLastCommittedTxId);
+        assertThat(userDetails.lastCommittedTxId()).isEmpty();
         assertThat(userDetails.storeId()).hasValue(userStoreId);
         assertThat(userDetails.externalStoreId()).hasValue(userExternalStoreId);
         assertThat(userDetails.serverId()).hasValue(serverId);

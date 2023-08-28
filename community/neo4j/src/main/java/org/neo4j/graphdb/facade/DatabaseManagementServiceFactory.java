@@ -153,8 +153,8 @@ public class DatabaseManagementServiceFactory {
         var managementService = createManagementService(globalModule, globalLife, internalLog, databaseContextProvider);
         globalDependencies.satisfyDependencies(managementService);
         globalDependencies.satisfyDependency(new DatabaseSizeServiceImpl(databaseContextProvider));
-        var databaseInfoService = edition.createDatabaseInfoService(databaseContextProvider);
-        globalDependencies.satisfyDependencies(databaseInfoService);
+        var topologyInfoService = edition.createTopologyInfoService(databaseContextProvider);
+        globalDependencies.satisfyDependencies(topologyInfoService);
 
         // Routing procedures depend on DatabaseResolver
         edition.createDefaultDatabaseResolver(globalModule);

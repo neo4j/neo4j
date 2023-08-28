@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.administration
 
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
-import org.neo4j.cypher.internal.administration.DatabaseListParameterTransformerFunction.detailedLookupCols
+import org.neo4j.cypher.internal.administration.DatabaseListParameterTransformerFunction.detailLevels
 import org.neo4j.cypher.internal.administration.ShowDatabaseExecutionPlanner.accessibleDbsKey
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
-import org.neo4j.cypher.internal.ast.ShowDatabase.CURRENT_PRIMARIES_COUNT_COL
-import org.neo4j.cypher.internal.ast.ShowDatabase.CURRENT_SECONDARIES_COUNT_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.DATABASE_ID_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_COMMITTED_TX_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.REPLICATION_LAG_COL
@@ -41,9 +39,7 @@ import org.neo4j.cypher.internal.procs.ParameterTransformerFunction
 import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.dbms.database.DatabaseInfoService
-import org.neo4j.dbms.database.ExtendedDatabaseInfo
+import org.neo4j.dbms.database.TopologyInfoService
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
@@ -57,9 +53,7 @@ import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.DefaultDatabaseResolver
-import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
@@ -71,12 +65,11 @@ import scala.jdk.CollectionConverters.SetHasAsJava
 class DatabaseListParameterTransformerFunction(
   referenceResolver: DatabaseReferenceRepository,
   defaultDatabaseResolver: DefaultDatabaseResolver,
-  infoService: DatabaseInfoService,
-  dbms: DatabaseManagementService,
+  infoService: TopologyInfoService,
   maybeYield: Option[Yield],
   verbose: Boolean,
   scope: DatabaseScope
-)(implicit extendedDatabaseInfoMapper: DatabaseInfoMapper[ExtendedDatabaseInfo]) extends ParameterTransformerFunction {
+) extends ParameterTransformerFunction {
 
   override def transform(
     transaction: Transaction,
@@ -117,12 +110,10 @@ class DatabaseListParameterTransformerFunction(
           DatabaseIdFactory.from(db.alias().name(), db.id())
       }
 
-    val dbMetadata =
-      if (verbose && maybeYield.isDefined && requiresDetailedLookup(maybeYield.get)) {
-        requestDetailedInfo(accessibleDatabases, transaction).asJava
-      } else {
-        lookupCachedInfo(accessibleDatabases, transaction).asJava
-      }
+    val dbMetadata = {
+      val dbInfos = infoService.databases(transaction, accessibleDatabases.asJava, detailLevels(verbose, maybeYield))
+      dbInfos.asScala.map(info => DatabaseDetailsMapper.toMapValue(info)).toList.asJava
+    }
 
     (
       safeMergeParameters(
@@ -189,27 +180,6 @@ class DatabaseListParameterTransformerFunction(
     (filteredReferences, notifications)
   }
 
-  private def requiresDetailedLookup(yields: Yield): Boolean = {
-    yields.returnItems.includeExisting || yields.returnItems.items.map(_.expression).exists {
-      case Variable(name) => detailedLookupCols.contains(name)
-      case _              => false
-    }
-  }
-
-  private def lookupCachedInfo(
-    databaseIds: Set[NamedDatabaseId],
-    transaction: Transaction
-  ): List[AnyValue] = {
-    val dbInfos = infoService.lookupCachedInfo(databaseIds.asJava, transaction).asScala
-    dbInfos.map(info => BaseDatabaseInfoMapper.toMapValue(dbms, info)).toList
-  }
-
-  private def requestDetailedInfo(databaseIds: Set[NamedDatabaseId], transaction: Transaction)(implicit
-  mapper: DatabaseInfoMapper[ExtendedDatabaseInfo]): List[AnyValue] = {
-    val dbInfos = infoService.requestDetailedInfo(databaseIds.asJava, transaction).asScala
-    dbInfos.map(info => mapper.toMapValue(dbms, info)).toList
-  }
-
   private def generateUsernameParameter(securityContext: SecurityContext): MapValue = {
     val username = Option(securityContext.subject().executingUser()) match {
       case None       => Values.NO_VALUE
@@ -226,12 +196,32 @@ class DatabaseListParameterTransformerFunction(
 
 object DatabaseListParameterTransformerFunction {
 
-  private val detailedLookupCols = Set(
-    STORE_COL,
+  private val txCols = Set(
     LAST_COMMITTED_TX_COL,
-    REPLICATION_LAG_COL,
-    CURRENT_PRIMARIES_COUNT_COL,
-    CURRENT_SECONDARIES_COUNT_COL,
+    REPLICATION_LAG_COL
+  )
+
+  private val storeIdCols = Set(
+    STORE_COL,
     DATABASE_ID_COL
   )
+
+  private def detailLevels(verbose: Boolean, maybeYield: Option[Yield]): TopologyInfoService.RequestedExtras = {
+    if (verbose && maybeYield.isDefined) {
+      if (maybeYield.get.returnItems.includeExisting) {
+        TopologyInfoService.RequestedExtras.ALL
+      } else {
+        val (lastTxSpecified, storeIdSpecified) =
+          maybeYield.get.returnItems.items.map(_.expression).foldLeft((false, false))((acc, expr) => {
+            expr match {
+              case Variable(name) => (acc._1 || txCols.contains(name), acc._2 || storeIdCols.contains(name))
+              case _              => acc
+            }
+          })
+        new TopologyInfoService.RequestedExtras(lastTxSpecified, storeIdSpecified)
+      }
+    } else {
+      TopologyInfoService.RequestedExtras.NONE
+    }
+  }
 }

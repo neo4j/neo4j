@@ -31,7 +31,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.dbms.CommunityDatabaseStateService;
@@ -40,7 +39,6 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseLifecycles;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
 import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
@@ -48,13 +46,14 @@ import org.neo4j.dbms.database.DatabaseRepository;
 import org.neo4j.dbms.database.DatabaseStateMonitor;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
-import org.neo4j.dbms.database.DefaultDatabaseInfoService;
+import org.neo4j.dbms.database.DefaultDatabaseDetailsExtrasProvider;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
-import org.neo4j.dbms.database.DetailedDbInfoProvider;
+import org.neo4j.dbms.database.DefaultTopologyInfoService;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.dbms.database.TopologyInfoService;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
@@ -249,15 +248,14 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    public DatabaseInfoService createDatabaseInfoService(DatabaseContextProvider<?> databaseContextProvider) {
-        DetailedDbInfoProvider detailedDbInfoProvider = new DetailedDbInfoProvider(databaseContextProvider);
-        var address = globalModule.getGlobalConfig().get(BoltConnector.advertised_address);
-        return new DefaultDatabaseInfoService(
+    public TopologyInfoService createTopologyInfoService(DatabaseContextProvider<?> databaseContextProvider) {
+        var detailsExtrasProvider = new DefaultDatabaseDetailsExtrasProvider(databaseContextProvider);
+        return new DefaultTopologyInfoService(
                 identityModule.serverId(),
-                address,
+                globalModule.getGlobalConfig(),
                 databaseStateService,
                 globalReadOnlyChecker,
-                detailedDbInfoProvider);
+                detailsExtrasProvider);
     }
 
     @Override

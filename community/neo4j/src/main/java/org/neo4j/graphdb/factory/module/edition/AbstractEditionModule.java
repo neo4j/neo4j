@@ -34,11 +34,11 @@ import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.database.TopologyInfoService;
 import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
 import org.neo4j.dbms.routing.RoutingOption;
 import org.neo4j.dbms.routing.RoutingService;
@@ -213,7 +213,7 @@ public abstract class AbstractEditionModule {
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider);
     }
 
-    public abstract DatabaseInfoService createDatabaseInfoService(DatabaseContextProvider<?> databaseContextProvider);
+    public abstract TopologyInfoService createTopologyInfoService(DatabaseContextProvider<?> databaseContextProvider);
 
     public abstract RoutingService createRoutingService(
             DatabaseContextProvider<?> databaseContextProvider, ClientRoutingDomainChecker clientRoutingDomainChecker);

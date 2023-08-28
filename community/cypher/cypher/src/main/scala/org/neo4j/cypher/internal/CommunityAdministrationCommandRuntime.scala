@@ -24,7 +24,6 @@ import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.makeRenameExecutionPlan
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
-import org.neo4j.cypher.internal.administration.CommunityExtendedDatabaseInfoMapper
 import org.neo4j.cypher.internal.administration.CreateUserExecutionPlanner
 import org.neo4j.cypher.internal.administration.DoNothingExecutionPlanner
 import org.neo4j.cypher.internal.administration.DropUserExecutionPlanner
@@ -300,7 +299,7 @@ case class CommunityAdministrationCommandRuntime(
           resolver,
           normalExecutionEngine,
           securityAuthorizationHandler
-        )(CommunityExtendedDatabaseInfoMapper)
+        )
           .planShowDatabases(scope, verbose, symbols.map(_.name), yields, returns)
 
     case DoNothingIfNotExists(source, label, name, operation, valueMapper) => context =>

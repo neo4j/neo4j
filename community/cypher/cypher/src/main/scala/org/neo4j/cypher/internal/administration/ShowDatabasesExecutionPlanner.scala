@@ -60,9 +60,7 @@ import org.neo4j.cypher.internal.ast.ShowDatabase.STORE_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.WRITER_COL
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
-import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.dbms.database.DatabaseInfoService
-import org.neo4j.dbms.database.ExtendedDatabaseInfo
+import org.neo4j.dbms.database.TopologyInfoService
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY
@@ -94,7 +92,7 @@ case class ShowDatabasesExecutionPlanner(
   resolver: DependencyResolver,
   normalExecutionEngine: ExecutionEngine,
   securityAuthorizationHandler: SecurityAuthorizationHandler
-)(implicit extendedDatabaseInfoMapper: DatabaseInfoMapper[ExtendedDatabaseInfo]) {
+) {
 
   private val OPTIONS_TX_LOG_ENRICHMENT_KEY = LogEnrichmentOption.KEY
   private val OPTIONS_EXISTING_DATA_KEY = ExistingDataOption.KEY
@@ -103,9 +101,8 @@ case class ShowDatabasesExecutionPlanner(
   private val OPTIONS_SEED_CREDENTIALS_KEY = SeedCredentialsOption.KEY
   private val OPTIONS_SEED_INSTANCE_KEY = ExistingSeedInstanceOption.KEY
 
-  private val dbms = resolver.resolveDependency(classOf[DatabaseManagementService])
   private val defaultDatabaseResolver = resolver.resolveDependency(classOf[DefaultDatabaseResolver])
-  private val infoService = resolver.resolveDependency(classOf[DatabaseInfoService])
+  private val infoService = resolver.resolveDependency(classOf[TopologyInfoService])
   private val referenceResolver = resolver.resolveDependency(classOf[DatabaseReferenceRepository])
 
   def planShowDatabases(
@@ -250,7 +247,6 @@ case class ShowDatabasesExecutionPlanner(
         referenceResolver,
         defaultDatabaseResolver,
         infoService,
-        dbms,
         yields,
         verbose,
         scope

@@ -44,12 +44,12 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.Version;
 
 public class DefaultTopologyInfoService implements TopologyInfoService {
-    // TODO rename DefaultDatabaseInfoServiceIT to DefaultDatabaseInfoServiceIT
     private final ReadOnlyDatabases readOnlyDatabases;
     private final ServerId serverId;
     private final Config config;
     private final DatabaseStateService stateService;
     private final DefaultDatabaseDetailsExtrasProvider databaseDetailsExtrasProvider;
+    private final SocketAddress fixBoltAddress;
 
     public DefaultTopologyInfoService(
             ServerId serverId,
@@ -62,6 +62,7 @@ public class DefaultTopologyInfoService implements TopologyInfoService {
         this.stateService = stateService;
         this.readOnlyDatabases = readOnlyDatabases;
         this.databaseDetailsExtrasProvider = databaseDetailsExtrasProvider;
+        this.fixBoltAddress = config.get(BoltConnector.advertised_address);
     }
 
     @Override
@@ -95,17 +96,18 @@ public class DefaultTopologyInfoService implements TopologyInfoService {
     }
 
     private DatabaseDetails database(NamedDatabaseId id, RequestedExtras detailsLevel) {
-        var extraDetails = databaseDetailsExtrasProvider.extraDetails(id.databaseId(), detailsLevel);
+        var extraDetails = databaseDetailsExtrasProvider.extraDetails(
+                id.databaseId(), new RequestedExtras(false, detailsLevel.storeId()));
         return new DatabaseDetails(
                 Optional.of(serverId),
                 readOnlyDatabases.isReadOnly(id.databaseId()) ? READ_ONLY : READ_WRITE,
-                address(BoltConnector.enabled, BoltConnector.advertised_address),
+                Optional.of(fixBoltAddress),
                 Optional.of(ROLE_PRIMARY),
                 true,
                 stateService.stateOfDatabase(id).operatorState().description(),
                 stateService.causeOfFailure(id).map(Throwable::getMessage).orElse(""),
-                extraDetails.lastCommittedTxId(),
-                extraDetails.txCommitLag(-1L),
+                Optional.empty(),
+                Optional.of(0L),
                 id,
                 id.isSystemDatabase() ? TYPE_SYSTEM : TYPE_STANDARD,
                 extraDetails.storeId(),

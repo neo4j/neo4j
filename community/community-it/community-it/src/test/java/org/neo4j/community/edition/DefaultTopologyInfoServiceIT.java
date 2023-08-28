@@ -36,8 +36,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseInfo;
-import org.neo4j.dbms.database.DatabaseInfoService;
+import org.neo4j.dbms.database.DatabaseDetails;
+import org.neo4j.dbms.database.TopologyInfoService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -48,7 +48,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-public class DefaultDatabaseInfoServiceIT {
+public class DefaultTopologyInfoServiceIT {
     @Inject
     private TestDirectory testDirectory;
 
@@ -67,14 +67,14 @@ public class DefaultDatabaseInfoServiceIT {
     @Test
     void shouldBeAvailableInDependencyResolver() {
         var dependencyResolver = ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME)).getDependencyResolver();
-        assertTrue(dependencyResolver.containsDependency(DatabaseInfoService.class));
+        assertTrue(dependencyResolver.containsDependency(TopologyInfoService.class));
     }
 
     @Test
     void shouldReturnInfoForAllExistingDatabases() {
         // given
         var dependencyResolver = ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME)).getDependencyResolver();
-        var databaseInfoService = dependencyResolver.resolveDependency(DatabaseInfoService.class);
+        var topologyInfoService = dependencyResolver.resolveDependency(TopologyInfoService.class);
         var nonExistingDatabase = DatabaseIdFactory.from("unknown", UUID.randomUUID());
         var existingDatabases =
                 dbms.listDatabases().stream().map(this::getIdForName).collect(Collectors.toSet());
@@ -82,10 +82,10 @@ public class DefaultDatabaseInfoServiceIT {
         allDatabases.add(nonExistingDatabase);
 
         // when
-        // DefaultDatabaseInfoService does not use the transaction
-        var results = databaseInfoService.lookupCachedInfo(allDatabases, null);
+        // DefaultTopologyInfoService does not use the transaction
+        var results = topologyInfoService.databases(null, allDatabases, TopologyInfoService.RequestedExtras.NONE);
         var returnedDatabases =
-                results.stream().collect(Collectors.toMap(DatabaseInfo::namedDatabaseId, Function.identity()));
+                results.stream().collect(Collectors.toMap(DatabaseDetails::namedDatabaseId, Function.identity()));
 
         // then
         assertThat(returnedDatabases.size()).isEqualTo(allDatabases.size());
