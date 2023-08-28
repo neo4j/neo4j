@@ -213,7 +213,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     allocateFullAccessNodeCursor(cursorContext),
                     allocateFullAccessRelationshipTraversalCursor(cursorContext)));
         } else {
-            return trace(new FullAccessRelationshipTypeIndexCursor(
+            return trace(new FullAccessRelationshipBasedRelationshipTypeIndexCursor(
                     DefaultRelationshipBasedRelationshipTypeIndexCursor::release,
                     allocateFullAccessRelationshipScanCursor(cursorContext)));
         }

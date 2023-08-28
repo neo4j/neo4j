@@ -30,14 +30,13 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.index.IndexProgressor.EntityTokenClient;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
 /**
  * Base for index cursors that can handle scans with IndexOrder.
  */
 abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>>
-        extends IndexCursor<IndexProgressor, SELF> implements EntityTokenClient {
+        extends IndexCursor<IndexProgressor, SELF> implements InternalTokenIndexCursor {
     protected Read read;
 
     protected long entity;
@@ -158,6 +157,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         return isProgressorClosed();
     }
 
+    @Override
     public void setRead(Read read) {
         this.read = read;
     }

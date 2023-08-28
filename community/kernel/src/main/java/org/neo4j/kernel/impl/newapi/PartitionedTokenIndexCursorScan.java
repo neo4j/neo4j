@@ -68,7 +68,7 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
     }
 
     private boolean reservePartition(Cursor cursor, Read read, CursorContext cursorContext, AccessMode accessMode) {
-        final var indexCursor = (DefaultEntityTokenIndexCursor<? extends DefaultEntityTokenIndexCursor<?>>) cursor;
+        final var indexCursor = (InternalTokenIndexCursor) cursor;
         indexCursor.setRead(read);
         final var indexProgressor = tokenScan.reservePartition(indexCursor, cursorContext);
         if (indexProgressor == IndexProgressor.EMPTY) {

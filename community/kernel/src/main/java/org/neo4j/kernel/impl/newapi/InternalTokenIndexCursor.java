@@ -19,22 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
-public class FullAccessRelationshipTypeIndexCursor extends DefaultRelationshipBasedRelationshipTypeIndexCursor {
-    FullAccessRelationshipTypeIndexCursor(
-            CursorPool<DefaultRelationshipBasedRelationshipTypeIndexCursor> pool,
-            DefaultRelationshipScanCursor relationshipScanCursor) {
-        super(pool, relationshipScanCursor);
-    }
-
-    @Override
-    protected final boolean allowed(long reference) {
-        return true;
-    }
-
-    @Override
-    protected final boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
-        return true;
-    }
+public interface InternalTokenIndexCursor extends TraceableCursor, IndexProgressor.EntityTokenClient {
+    void setRead(Read read);
 }

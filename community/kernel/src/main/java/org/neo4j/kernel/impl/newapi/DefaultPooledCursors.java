@@ -484,7 +484,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             } else {
                 var relationshipScanCursor = new FullAccessRelationshipScanCursor(
                         c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors));
-                return trace(new FullAccessRelationshipTypeIndexCursor(this::acceptFullAccess, relationshipScanCursor));
+                return trace(new FullAccessRelationshipBasedRelationshipTypeIndexCursor(
+                        this::acceptFullAccess, relationshipScanCursor));
             }
         }
 
