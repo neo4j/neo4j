@@ -137,8 +137,8 @@ class NotificationCodeWithDescriptionTest {
         idents.add("n");
         idents.add("node2");
         String identifierDetail = NotificationDetail.cartesianProductDescription(idents);
-        NotificationImplementation notification =
-                NotificationCodeWithDescription.cartesianProduct(InputPosition.empty, identifierDetail);
+        NotificationImplementation notification = NotificationCodeWithDescription.cartesianProduct(
+                InputPosition.empty, identifierDetail, "(node1), (node)--(node2)");
 
         verifyNotification(
                 notification,
@@ -151,7 +151,9 @@ class NotificationCodeWithDescriptionTest {
                         + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH "
                         + "(identifiers are: (n, node2))",
                 NotificationCategory.PERFORMANCE,
-                null);
+                "The disconnected patterns `(node1), (node)--(node2)` build a cartesian product. "
+                        + "A cartesian product may produce a large amount of data and slow down query processing. "
+                        + "See Status Codes documentation for suggestions.");
     }
 
     @Test
@@ -279,16 +281,17 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_PROCEDURE_WARNING() {
-        NotificationImplementation notification = procedureWarning(InputPosition.empty, "deprecated procedure");
+        NotificationImplementation notification = procedureWarning(
+                InputPosition.empty, "warning from procedure my.proc", "warning from procedure", "my.proc");
 
         verifyNotification(
                 notification,
                 "The query used a procedure that generated a warning.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Procedure.ProcedureWarning",
-                "The query used a procedure that generated a warning. (deprecated procedure)",
+                "The query used a procedure that generated a warning. (warning from procedure my.proc)",
                 NotificationCategory.GENERIC,
-                null);
+                "The procedure `my.proc` generates the warning `warning from procedure`.");
     }
 
     @Test
@@ -446,7 +449,9 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_UNBOUNDED_SHORTEST_PATH() {
-        NotificationImplementation notification = unboundedShortestPath(InputPosition.empty);
+
+        String pattern = "(a)-[2..*]-(b)";
+        NotificationImplementation notification = unboundedShortestPath(InputPosition.empty, pattern);
 
         verifyNotification(
                 notification,
@@ -456,7 +461,8 @@ class NotificationCodeWithDescriptionTest {
                 "Using shortest path with an unbounded pattern will likely result in long execution times. "
                         + "It is recommended to use an upper limit to the number of node hops in your pattern.",
                 NotificationCategory.PERFORMANCE,
-                null);
+                "The provided pattern `(a)-[2..*]-(b)` is unbounded. Shortest path with an unbounded pattern may result"
+                        + " in long execution times. Use an upper limit (e.g. `[*..5]`) on the number of node hops in your pattern.");
     }
 
     @Test
@@ -567,8 +573,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION() {
-        NotificationImplementation notification =
-                unsatisfiableRelationshipTypeExpression(InputPosition.empty, unsatisfiableRelTypeExpression("!%"));
+        NotificationImplementation notification = unsatisfiableRelationshipTypeExpression(
+                InputPosition.empty, unsatisfiableRelTypeExpression("!%"), "!%");
 
         verifyNotification(
                 notification,
@@ -577,13 +583,13 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.UnsatisfiableRelationshipTypeExpression",
                 "Relationship type expression cannot possibly be satisfied. (`!%` can never be satisfied by any relationship. Relationships must have exactly one relationship type.)",
                 NotificationCategory.GENERIC,
-                null);
+                "The expression `!%` cannot be satisfied because relationships must have exactly one type.");
     }
 
     @Test
     void shouldConstructNotificationsFor_REPEATED_RELATIONSHIP_REFERENCE() {
-        NotificationImplementation notification =
-                repeatedRelationshipReference(InputPosition.empty, repeatedRelationship("r"));
+        NotificationImplementation notification = repeatedRelationshipReference(
+                InputPosition.empty, repeatedRelationship("r"), "r", "()-[r]->()<-[r]-()");
 
         verifyNotification(
                 notification,
@@ -592,7 +598,8 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
                 "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC,
-                null);
+                "`r` is repeated in `()-[r]->()<-[r]-()`, which leads to no results. "
+                        + "See Status Codes documentation for suggestions.");
     }
 
     @Test

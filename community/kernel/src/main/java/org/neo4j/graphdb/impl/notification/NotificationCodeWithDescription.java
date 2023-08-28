@@ -37,7 +37,9 @@ public enum NotificationCodeWithDescription {
                     + " query processing. "
                     + "While occasionally intended, it may often be possible to reformulate the query that avoids the "
                     + "use of this cross "
-                    + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (%s)"),
+                    + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (%s)",
+            "The disconnected patterns `%s` build a cartesian product. A cartesian product may produce a large amount of "
+                    + "data and slow down query processing. See Status Codes documentation for suggestions."),
     RUNTIME_UNSUPPORTED(
             Status.Statement.RuntimeUnsupportedWarning,
             "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)"),
@@ -55,7 +57,10 @@ public enum NotificationCodeWithDescription {
 
     DEPRECATED_RUNTIME_OPTION(
             Status.Statement.FeatureDeprecationWarning, "The query used a deprecated runtime option. (%s)"),
-    PROCEDURE_WARNING(Status.Procedure.ProcedureWarning, "The query used a procedure that generated a warning. (%s)"),
+    PROCEDURE_WARNING(
+            Status.Procedure.ProcedureWarning,
+            "The query used a procedure that generated a warning. (%s)",
+            "The procedure `%s` generates the warning `%s`."),
     DEPRECATED_PROCEDURE_RETURN_FIELD(
             Status.Statement.FeatureDeprecationWarning, "The query used a deprecated field from a procedure. (%s)"),
     DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
@@ -109,7 +114,9 @@ public enum NotificationCodeWithDescription {
     UNBOUNDED_SHORTEST_PATH(
             Status.Statement.UnboundedVariableLengthPattern,
             "Using shortest path with an unbounded pattern will likely result in long execution times. "
-                    + "It is recommended to use an upper limit to the number of node hops in your pattern."),
+                    + "It is recommended to use an upper limit to the number of node hops in your pattern.",
+            "The provided pattern `%s` is unbounded. Shortest path with an unbounded pattern may result in long execution times. "
+                    + "Use an upper limit (e.g. `[*..5]`) on the number of node hops in your pattern."),
     EXHAUSTIVE_SHORTEST_PATH(
             Status.Statement.ExhaustiveShortestPath,
             "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path "
@@ -140,11 +147,14 @@ public enum NotificationCodeWithDescription {
                     + "Names containing `.` should be escaped. (%s)"),
     UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION(
             Status.Statement.UnsatisfiableRelationshipTypeExpression,
-            "Relationship type expression cannot possibly be satisfied. (%s)"),
+            "Relationship type expression cannot possibly be satisfied. (%s)",
+            "The expression `%s` cannot be satisfied because relationships must have exactly one type."),
     REPEATED_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
             "A relationship is referenced more than once in the query, which leads to no results because"
-                    + " relationships must not occur more than once in each result. (%s)"),
+                    + " relationships must not occur more than once in each result. (%s)",
+            "`%s` is repeated in `%s`, which leads to no results. "
+                    + "See Status Codes documentation for suggestions."),
     REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
             "A variable-length relationship variable is bound more than once, which leads to no results because"
@@ -189,8 +199,9 @@ public enum NotificationCodeWithDescription {
         return message;
     }
 
-    public static NotificationImplementation cartesianProduct(InputPosition position, String param) {
-        return CARTESIAN_PRODUCT.notification(position, param);
+    public static NotificationImplementation cartesianProduct(
+            InputPosition position, String oldDetail, String pattern) {
+        return CARTESIAN_PRODUCT.notificationWithMessage(position, new String[] {oldDetail}, new String[] {pattern});
     }
 
     public static NotificationImplementation runtimeUnsupported(InputPosition position, String param) {
@@ -221,8 +232,10 @@ public enum NotificationCodeWithDescription {
         return DEPRECATED_RUNTIME_OPTION.notification(position, param);
     }
 
-    public static NotificationImplementation procedureWarning(InputPosition position, String param) {
-        return PROCEDURE_WARNING.notification(position, param);
+    public static NotificationImplementation procedureWarning(
+            InputPosition position, String parameter, String warning, String procedure) {
+        return PROCEDURE_WARNING.notificationWithMessage(
+                position, new String[] {parameter}, new String[] {procedure, warning});
     }
 
     public static NotificationImplementation deprecatedProcedureReturnField(InputPosition position, String param) {
@@ -275,8 +288,8 @@ public enum NotificationCodeWithDescription {
         return MISSING_PROPERTY_NAME.notification(position, param);
     }
 
-    public static NotificationImplementation unboundedShortestPath(InputPosition position) {
-        return UNBOUNDED_SHORTEST_PATH.notification(position);
+    public static NotificationImplementation unboundedShortestPath(InputPosition position, String pattern) {
+        return UNBOUNDED_SHORTEST_PATH.notificationWithMessage(position, new String[] {}, new String[] {pattern});
     }
 
     public static NotificationImplementation exhaustiveShortestPath(InputPosition position) {
@@ -314,12 +327,15 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation unsatisfiableRelationshipTypeExpression(
-            InputPosition position, String param) {
-        return UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(position, param);
+            InputPosition position, String param, String expression) {
+        return UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notificationWithMessage(
+                position, new String[] {param}, new String[] {expression});
     }
 
-    public static NotificationImplementation repeatedRelationshipReference(InputPosition position, String param) {
-        return REPEATED_RELATIONSHIP_REFERENCE.notification(position, param);
+    public static NotificationImplementation repeatedRelationshipReference(
+            InputPosition position, String param, String relName, String pattern) {
+        return REPEATED_RELATIONSHIP_REFERENCE.notificationWithMessage(
+                position, new String[] {param}, new String[] {relName, pattern});
     }
 
     public static NotificationImplementation repeatedVarLengthRelationshipReference(

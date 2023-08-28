@@ -215,7 +215,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         shouldNotifyInStream(
                 "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m",
                 new InputPosition(31, 1, 32),
-                NotificationCodeWithDescription::unboundedShortestPath);
+                pos -> NotificationCodeWithDescription.unboundedShortestPath(pos, "(n)-[*]->(m)"));
     }
 
     @Test

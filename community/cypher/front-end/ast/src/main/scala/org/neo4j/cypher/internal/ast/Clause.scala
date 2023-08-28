@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.PatternStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -532,11 +533,14 @@ case class Match(
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
+    val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
+    val patternStringifier = PatternStringifier(expressionStringifier)
+    val patternString = patternStringifier(pattern)
     val cc = connectedComponents(pattern.patternParts)
     // if we have multiple connected components we will have
     // a cartesian product
     val newState = cc.drop(1).foldLeft(state) { (innerState, component) =>
-      innerState.addNotification(CartesianProductNotification(position, component.variables.map(_.name)))
+      innerState.addNotification(CartesianProductNotification(position, component.variables.map(_.name), patternString))
     }
 
     semantics.SemanticCheckResult(newState, Seq.empty)

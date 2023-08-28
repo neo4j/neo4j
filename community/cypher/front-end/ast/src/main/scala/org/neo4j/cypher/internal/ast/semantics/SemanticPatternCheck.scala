@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.PatternStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.Expression
@@ -180,7 +181,10 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                   )
 
                 case Some(None) =>
-                  warn(UnboundedShortestPathNotification(x.element.position))
+                  val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
+                  val patternStringifier = PatternStringifier(expressionStringifier)
+                  val pattern = patternStringifier(x.element)
+                  warn(UnboundedShortestPathNotification(x.element.position, pattern))
                 case _ => success
               }
             case _ => success
@@ -631,9 +635,18 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
    * @param astNode the sub-tree to traverse.
    */
   private def ensureNoRepeatedRelationships(astNode: ASTNode): SemanticCheck = {
+    val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
+    val patternStringifier = PatternStringifier(expressionStringifier)
+    val pattern =
+      astNode match {
+        case p: Pattern              => patternStringifier(p)
+        case r: RelationshipsPattern => patternStringifier(r.element)
+        case x =>
+          throw new IllegalArgumentException(s"Expected Pattern or RelationshipsPattern, but was ${x.getClass}.")
+      }
     findRepeatedRelationships(astNode, varLength = false).foldSemanticCheck {
       repeated =>
-        warn(RepeatedRelationshipReference(repeated.position, repeated.name))
+        warn(RepeatedRelationshipReference(repeated.position, repeated.name, pattern))
     }
   }
 

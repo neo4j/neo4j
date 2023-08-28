@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.util
  */
 trait InternalNotification
 
-case class CartesianProductNotification(position: InputPosition, isolatedVariables: Set[String])
+case class CartesianProductNotification(position: InputPosition, isolatedVariables: Set[String], pattern: String)
     extends InternalNotification
 
-case class UnboundedShortestPathNotification(position: InputPosition) extends InternalNotification
+case class UnboundedShortestPathNotification(position: InputPosition, pattern: String) extends InternalNotification
 
 case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String)
     extends InternalNotification
@@ -55,7 +55,8 @@ case class DeprecatedTextIndexProvider(position: InputPosition) extends Internal
 case class UnsatisfiableRelationshipTypeExpression(position: InputPosition, labelExpression: String)
     extends InternalNotification
 
-case class RepeatedRelationshipReference(position: InputPosition, relName: String) extends InternalNotification
+case class RepeatedRelationshipReference(position: InputPosition, relName: String, pattern: String)
+    extends InternalNotification
 
 case class RepeatedVarLengthRelationshipReference(position: InputPosition, relName: String) extends InternalNotification
 

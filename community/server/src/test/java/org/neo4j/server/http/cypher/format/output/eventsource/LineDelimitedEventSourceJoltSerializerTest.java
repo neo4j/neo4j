@@ -719,7 +719,8 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     @Test
     void shouldReturnNotifications() {
         // given
-        Notification notification = NotificationCodeWithDescription.cartesianProduct(new InputPosition(1, 2, 3), "a");
+        Notification notification =
+                NotificationCodeWithDescription.cartesianProduct(new InputPosition(1, 2, 3), "a", "(),()");
         List<Notification> notifications = Collections.singletonList(notification);
 
         var row = Map.of(
@@ -819,7 +820,8 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                 "column1", "value1",
                 "column2", "value2");
 
-        Notification notification = NotificationCodeWithDescription.cartesianProduct(InputPosition.empty, "a");
+        Notification notification =
+                NotificationCodeWithDescription.cartesianProduct(InputPosition.empty, "a", "(), ()");
 
         List<Notification> notifications = Collections.singletonList(notification);
 

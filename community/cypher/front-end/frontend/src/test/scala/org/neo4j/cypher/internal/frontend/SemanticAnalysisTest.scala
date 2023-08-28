@@ -1302,7 +1302,8 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         RepeatedRelationshipReference(
           InputPosition(10, 1, 11),
-          "r"
+          "r",
+          "()-[r]-()-[r]-()"
         )
       )
     )
@@ -1315,11 +1316,13 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         RepeatedRelationshipReference(
           InputPosition(10, 1, 11),
-          "r"
+          "r",
+          "()-[r]-(), ()-[r]-()"
         ),
         CartesianProductNotification(
           InputPosition(0, 1, 1),
-          Set.empty
+          Set.empty,
+          "()-[r]-(), ()-[r]-()"
         )
       )
     )
@@ -1332,11 +1335,13 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         RepeatedRelationshipReference(
           InputPosition(14, 1, 15),
-          "r"
+          "r",
+          "p = ()-[r]-(), q = ()-[r]-()"
         ),
         CartesianProductNotification(
           InputPosition(0, 1, 1),
-          Set.empty
+          Set.empty,
+          "p = ()-[r]-(), q = ()-[r]-()"
         )
       )
     )
@@ -1349,7 +1354,8 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         RepeatedRelationshipReference(
           InputPosition(33, 1, 34),
-          "r"
+          "r",
+          "()-[r]-()-[r]-()"
         )
       )
     )
@@ -1362,7 +1368,8 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         RepeatedRelationshipReference(
           InputPosition(29, 1, 30),
-          "r"
+          "r",
+          "()-[r]-()-[r]-()"
         )
       )
     )

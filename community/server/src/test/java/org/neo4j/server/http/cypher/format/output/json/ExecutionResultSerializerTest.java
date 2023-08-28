@@ -970,7 +970,8 @@ class ExecutionResultSerializerTest {
     @Test
     void shouldReturnNotifications() {
         // given
-        Notification notification = NotificationCodeWithDescription.cartesianProduct(new InputPosition(1, 2, 3), "a");
+        Notification notification =
+                NotificationCodeWithDescription.cartesianProduct(new InputPosition(1, 2, 3), "a", "(), ()");
         List<Notification> notifications = Collections.singletonList(notification);
 
         var row = Map.of(
@@ -1029,7 +1030,8 @@ class ExecutionResultSerializerTest {
                 "column1", "value1",
                 "column2", "value2");
 
-        Notification notification = NotificationCodeWithDescription.cartesianProduct(InputPosition.empty, "a");
+        Notification notification =
+                NotificationCodeWithDescription.cartesianProduct(InputPosition.empty, "a", "(), ()");
 
         List<Notification> notifications = Collections.singletonList(notification);
 

@@ -77,10 +77,11 @@ object NotificationWrapping {
 
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification)
     : NotificationImplementation = notification match {
-    case CartesianProductNotification(pos, variables) =>
+    case CartesianProductNotification(pos, variables, pattern) =>
       NotificationCodeWithDescription.cartesianProduct(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.cartesianProductDescription(variables.asJava)
+        NotificationDetail.cartesianProductDescription(variables.asJava),
+        pattern
       )
     case RuntimeUnsupportedNotification(msg) =>
       NotificationCodeWithDescription.runtimeUnsupported(
@@ -141,8 +142,8 @@ object NotificationWrapping {
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.propertyName(name)
       )
-    case UnboundedShortestPathNotification(pos) =>
-      NotificationCodeWithDescription.unboundedShortestPath(pos.withOffset(offset).asInputPosition)
+    case UnboundedShortestPathNotification(pos, pattern) =>
+      NotificationCodeWithDescription.unboundedShortestPath(pos.withOffset(offset).asInputPosition, pattern)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
       NotificationCodeWithDescription.exhaustiveShortestPath(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
@@ -177,7 +178,9 @@ object NotificationWrapping {
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCodeWithDescription.procedureWarning(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.procedureWarning(name, warning)
+        NotificationDetail.procedureWarning(name, warning),
+        warning,
+        name
       )
     case ExperimentalFeatureNotification(msg) =>
       NotificationCodeWithDescription.runtimeExperimental(
@@ -233,13 +236,16 @@ object NotificationWrapping {
     case UnsatisfiableRelationshipTypeExpression(position, relTypeExpression) =>
       NotificationCodeWithDescription.unsatisfiableRelationshipTypeExpression(
         position.withOffset(offset).asInputPosition,
-        NotificationDetail.unsatisfiableRelTypeExpression(relTypeExpression)
+        NotificationDetail.unsatisfiableRelTypeExpression(relTypeExpression),
+        relTypeExpression
       )
 
-    case RepeatedRelationshipReference(position, relName) =>
+    case RepeatedRelationshipReference(position, relName, pattern) =>
       NotificationCodeWithDescription.repeatedRelationshipReference(
         position.withOffset(offset).asInputPosition,
-        NotificationDetail.repeatedRelationship(relName)
+        NotificationDetail.repeatedRelationship(relName),
+        relName,
+        pattern
       )
 
     case RepeatedVarLengthRelationshipReference(position, relName) =>
