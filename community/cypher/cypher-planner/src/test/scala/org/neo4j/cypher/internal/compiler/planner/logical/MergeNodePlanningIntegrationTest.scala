@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -204,6 +205,127 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         onCreate = Seq(setNodeProperty("a", "prop", "1")))
       .allNodeScan("a")
       .build()
+  }
+
+  test("single node - should add argument for dependency of ON MATCH") {
+    val query =
+      """
+        |WITH 5 AS five SKIP 0
+        |MERGE (a) ON MATCH SET a.p = five
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    planner
+      .plan(query)
+      .stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .emptyResult()
+        .apply()
+        .|.merge(Seq(createNode("a")), onMatch = Seq(setNodeProperty("a", "p", "five")))
+        .|.allNodeScan("a", "five")
+        .projection("5 AS five")
+        .skip(0)
+        .argument()
+        .build()
+    )
+  }
+
+  test("single node - should add argument for dependency of ON CREATE") {
+    val query =
+      """
+        |WITH 5 AS five SKIP 0
+        |MERGE (a) ON CREATE SET a.p = five
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    planner
+      .plan(query)
+      .stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .emptyResult()
+        .apply()
+        .|.merge(Seq(createNode("a")), onCreate = Seq(setNodeProperty("a", "p", "five")))
+        .|.allNodeScan("a", "five")
+        .projection("5 AS five")
+        .skip(0)
+        .argument()
+        .build()
+    )
+  }
+
+  test("relationship - should add argument for dependency of ON MATCH") {
+    val query =
+      """
+        |WITH 5 AS five SKIP 0
+        |MERGE (a)-[r:R]->(b) ON MATCH SET a.p = five
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .build()
+
+    planner
+      .plan(query)
+      .stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .emptyResult()
+        .apply()
+        .|.merge(
+          Seq(createNode("a"), createNode("b")),
+          Seq(createRelationship("r", "a", "R", "b")),
+          onMatch = Seq(setNodeProperty("a", "p", "five"))
+        )
+        .|.relationshipTypeScan("(a)-[r:R]->(b)", "five")
+        .projection("5 AS five")
+        .skip(0)
+        .argument()
+        .build()
+    )
+  }
+
+  test("relationship, one MERGE in between - should add argument for dependency of ON MATCH") {
+    val query =
+      """
+        |WITH 5 AS five SKIP 0
+        |MERGE (a)
+        |MERGE (a)-[r:R]->(b) ON MATCH SET a.p = five
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .build()
+
+    planner
+      .plan(query)
+      .stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .emptyResult()
+        .apply()
+        .|.merge(
+          Seq(createNode("b")),
+          Seq(createRelationship("r", "a", "R", "b")),
+          onMatch = Seq(setNodeProperty("a", "p", "five")),
+          lockNodes = Set("a")
+        )
+        .|.expandAll("(a)-[r:R]->(b)")
+        .|.argument("a", "five")
+        .eager()
+        .apply()
+        .|.merge(Seq(createNode("a")))
+        .|.allNodeScan("a")
+        .projection("5 AS five")
+        .skip(0)
+        .argument()
+        .build()
+    )
   }
 
 }

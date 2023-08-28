@@ -265,8 +265,12 @@ case object PlanUpdates extends UpdatesPlanner {
                 context: LogicalPlanningContext): LogicalPlan = {
     def mergeRead(ctx: LogicalPlanningContext) = {
       val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrderConfig, ctx).result
-      if (context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph != matchGraph)
-        throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph}\n not equal to \n$matchGraph")
+      val solvedGraph =
+        context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph
+      if (solvedGraph != matchGraph)
+        throw new InternalException(
+          s"The planner was unable to successfully plan the MERGE read:\n$solvedGraph\n not equal to \n$matchGraph"
+        )
       mergeReadPart
     }
     val producer: LogicalPlanProducer = context.logicalPlanProducer

@@ -111,26 +111,6 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
-    def fixArgumentIdsOnMerge(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
-      val newMergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph.map {
-        qg =>
-          val nodesAndRels = QueryGraph.coveredIdsForPatterns(qg.patternNodes, qg.patternRelationships)
-          val predicateDependencies = qg.withoutArguments().dependencies
-          val requiredArguments = nodesAndRels ++ predicateDependencies
-          val availableArguments = qg.argumentIds
-          qg.withArgumentIds(requiredArguments intersect availableArguments)
-      }
-
-      val updatePQ = newMergeMatchGraph match {
-        case None =>
-          plannerQuery
-        case Some(qg) =>
-          plannerQuery.amendQueryGraph(_.withMergeMatch(qg))
-      }
-
-      updatePQ.updateTail(fixArgumentIdsOnMerge)
-    }
-
     val fixedArgumentIds = q.foldMap {
       case (head, tail) =>
         val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
@@ -163,8 +143,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     }
 
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
-    val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
-    val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
+    val groupedInequalities = groupInequalities(withFixedOptionalMatchArgumentIds)
     val withInlinedTypePredicates = inlineRelationshipTypePredicates(groupedInequalities)
     fixStandaloneArgumentPatternNodes(withInlinedTypePredicates)
   }

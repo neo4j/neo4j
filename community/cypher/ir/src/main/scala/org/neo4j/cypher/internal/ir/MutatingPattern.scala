@@ -181,7 +181,8 @@ case class MergeNodePattern(createNode: CreateNode,
   override def coveredIds: Set[String] = matchGraph.allCoveredIds
 
   override def dependencies: Set[String] =
-    createNode.properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty) ++
+    createNode.dependencies ++
+      matchGraph.dependencies ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)
 }
@@ -196,6 +197,7 @@ case class MergeRelationshipPattern(createNodes: Seq[CreateNode],
   override def dependencies: Set[String] =
     createNodes.flatMap(_.dependencies).toSet ++
     createRelationships.flatMap(_.dependencies).toSet ++
+      matchGraph.dependencies ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)
 }
