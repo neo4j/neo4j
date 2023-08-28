@@ -1180,19 +1180,25 @@ object LogicalPlanToPlanBuilderString {
       ", "
     )
 
+  /**
+   * NFAs cause stateful shortest path operators to spill over several lines. It is then confusing if the NFA is
+   * rendered on the same indentation as the stateful shortest path operator.
+   */
+  val indent = "  "
+
   private def nfaString(nfa: NFA): String = {
     val start = nfa.startState
     val constructor =
-      s"new TestNFABuilder(${start.id}, ${wrapInQuotations(start.variable.name)})"
+      s"${indent}new TestNFABuilder(${start.id}, ${wrapInQuotations(start.variable.name)})"
     val transitions = nfa.transitions.toSeq.sortBy(_._1.id).flatMap {
       case (from, transitions) =>
         transitions.toSeq.sortBy(_.end.id).map(t => transitionString(from, t.predicate, t.end))
     }
-    val finalStates = nfa.finalStates.map(fs => s".addFinalState(${fs.id})")
-    val build = ".build()"
+    val finalStates = nfa.finalStates.map(fs => s"${indent}${indent}.addFinalState(${fs.id})")
+    val build = s"${indent}${indent}.build()"
 
     val lines = Seq(constructor) ++ transitions ++ finalStates :+ build
-    lines.mkString("\n")
+    lines.mkString("\n", "\n", "\n")
   }
 
   private def transitionString(from: State, nfaPredicate: Predicate, to: State): String = {
@@ -1207,7 +1213,7 @@ object LogicalPlanToPlanBuilderString {
         val typeStr = relTypeStr(types)
         s""" "(${from.variable.name})$dirStrA[${relName.name}$typeStr$relWhereString]$dirStrB(${to.variable.name}$nodeWhereString)" """.trim
     }
-    s".addTransition(${from.id}, ${to.id}, $patternString)"
+    s"${indent}${indent}.addTransition(${from.id}, ${to.id}, $patternString)"
   }
 
   private def trailParametersString(

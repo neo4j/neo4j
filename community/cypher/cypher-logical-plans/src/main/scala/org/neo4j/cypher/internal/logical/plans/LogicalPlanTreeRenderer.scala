@@ -34,7 +34,9 @@ object LogicalPlanTreeRenderer {
 
       sb ++= indentSymbol * level
 
-      sb ++= planRepresentation(plan)
+      val firstLevelRepresentation: String = planRepresentation(plan)
+      val correctLevelRepresentation = firstLevelRepresentation.replace("\n", s"\n${" " * indentSymbol.length * level}")
+      sb ++= correctLevelRepresentation
 
       plan.lhs.foreach(lhs => childrenStack ::= LevelPlanItem(level, lhs))
       plan.rhs.foreach(rhs => childrenStack ::= LevelPlanItem(level + 1, rhs))
