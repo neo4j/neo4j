@@ -2233,6 +2233,17 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail shouldBe empty
   }
 
+  test("should not flatten creates which could overlap through an IR expression if merged") {
+    val query = buildSinglePlannerQuery(
+      """CREATE (n {count: COUNT { MATCH () } })
+        |CREATE (m)""".stripMargin
+    )
+
+    query.queryGraph.mutatingPatterns should have size 2
+
+    query.tail shouldBe empty
+  }
+
   test("should convert query with path selector") {
     val query = buildSinglePlannerQuery(
       """MATCH SHORTEST 1 GROUP (start)((a)-[r]->(b)){1,5}(end)

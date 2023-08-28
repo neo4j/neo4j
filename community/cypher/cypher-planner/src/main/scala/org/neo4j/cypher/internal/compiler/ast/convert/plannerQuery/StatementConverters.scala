@@ -194,19 +194,19 @@ object StatementConverters {
     var prevCreate: Option[(Seq[NonPrefixedPatternPart], InputPosition)] = None
     for (clause <- clauses) {
       (clause, prevCreate) match {
+        case (c: Create, None) if containsIrExpression(c) =>
+          builder += c
+          prevCreate = None
+
         case (c: Create, None) =>
           prevCreate = Some((c.pattern.patternParts, c.position))
 
-        case (c: Create, Some((prevParts, pos))) if containsIrExpression(c) =>
-          builder += Create(Pattern.ForUpdate(prevParts)(pos))(pos)
-          prevCreate = Some((c.pattern.patternParts, c.position))
-
-        case (c: Create, Some((prevParts, pos))) =>
+        case (c: Create, Some((prevParts, pos))) if !containsIrExpression(c) =>
           prevCreate = Some((prevParts ++ c.pattern.patternParts, pos))
 
-        case (nonCreate, Some((prevParts, pos))) =>
+        case (nonMixingClause, Some((prevParts, pos))) =>
           builder += Create(Pattern.ForUpdate(prevParts)(pos))(pos)
-          builder += nonCreate
+          builder += nonMixingClause
           prevCreate = None
 
         case (nonCreate, None) =>
