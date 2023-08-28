@@ -510,7 +510,7 @@ abstract class Read
 
         var tokenSession = (DefaultTokenReadSession) session;
 
-        var indexCursor = (DefaultRelationshipTypeIndexCursor) cursor;
+        var indexCursor = (InternalRelationshipTypeIndexCursor) cursor;
         indexCursor.setRead(this);
         tokenSession.reader.query(indexCursor, constraints, query, cursorContext);
     }

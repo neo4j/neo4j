@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -34,15 +36,57 @@ import org.neo4j.storageengine.api.Reference;
  * {@link RelationshipTypeIndexCursor} which is relationship-based, i.e. the IDs driving the cursor are relationship IDs.
  * @see StorageEngineIndexingBehaviour
  */
-public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor
-        implements RelationshipTypeIndexCursor {
+public class DefaultRelationshipBasedRelationshipTypeIndexCursor
+        extends DefaultEntityTokenIndexCursor<DefaultRelationshipBasedRelationshipTypeIndexCursor>
+        implements InternalRelationshipTypeIndexCursor {
 
     private final DefaultRelationshipScanCursor relationshipScanCursor;
 
     DefaultRelationshipBasedRelationshipTypeIndexCursor(
-            CursorPool<DefaultRelationshipTypeIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor) {
+            CursorPool<DefaultRelationshipBasedRelationshipTypeIndexCursor> pool,
+            DefaultRelationshipScanCursor relationshipScanCursor) {
         super(pool);
         this.relationshipScanCursor = relationshipScanCursor;
+    }
+
+    @Override
+    public final int type() {
+        return tokenId;
+    }
+
+    @Override
+    public final float score() {
+        return Float.NaN;
+    }
+
+    @Override
+    public long relationshipReference() {
+        return entityReference();
+    }
+
+    @Override
+    public void source(NodeCursor cursor) {
+        read.singleNode(sourceNodeReference(), cursor);
+    }
+
+    @Override
+    public void target(NodeCursor cursor) {
+        read.singleNode(targetNodeReference(), cursor);
+    }
+
+    @Override
+    protected final boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token) {
+        return accessMode.allowsTraverseRelType(token) && accessMode.allowsTraverseAllLabels();
+    }
+
+    @Override
+    protected void traceNext(KernelReadTracer tracer, long entity) {
+        tracer.onRelationship(entity);
+    }
+
+    @Override
+    protected final void traceScan(KernelReadTracer tracer, int token) {
+        tracer.onRelationshipTypeScan(token);
     }
 
     @Override

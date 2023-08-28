@@ -113,4 +113,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
 
     @Override
     public void release() {}
+
+    @Override
+    public void setRead(Read read) {}
 }

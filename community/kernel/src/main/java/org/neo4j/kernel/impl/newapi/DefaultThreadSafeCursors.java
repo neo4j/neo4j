@@ -200,7 +200,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     allocateRelationshipTraversalCursor(cursorContext)));
         } else {
             return trace(new DefaultRelationshipBasedRelationshipTypeIndexCursor(
-                    DefaultRelationshipTypeIndexCursor::release, allocateRelationshipScanCursor(cursorContext)));
+                    DefaultRelationshipBasedRelationshipTypeIndexCursor::release,
+                    allocateRelationshipScanCursor(cursorContext)));
         }
     }
 
@@ -213,7 +214,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     allocateFullAccessRelationshipTraversalCursor(cursorContext)));
         } else {
             return trace(new FullAccessRelationshipTypeIndexCursor(
-                    DefaultRelationshipTypeIndexCursor::release,
+                    DefaultRelationshipBasedRelationshipTypeIndexCursor::release,
                     allocateFullAccessRelationshipScanCursor(cursorContext)));
         }
     }

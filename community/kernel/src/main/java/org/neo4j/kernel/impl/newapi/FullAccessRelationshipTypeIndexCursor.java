@@ -23,7 +23,8 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 
 public class FullAccessRelationshipTypeIndexCursor extends DefaultRelationshipBasedRelationshipTypeIndexCursor {
     FullAccessRelationshipTypeIndexCursor(
-            CursorPool<DefaultRelationshipTypeIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor) {
+            CursorPool<DefaultRelationshipBasedRelationshipTypeIndexCursor> pool,
+            DefaultRelationshipScanCursor relationshipScanCursor) {
         super(pool, relationshipScanCursor);
     }
 
