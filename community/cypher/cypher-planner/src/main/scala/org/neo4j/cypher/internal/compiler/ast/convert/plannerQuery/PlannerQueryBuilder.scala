@@ -138,26 +138,6 @@ object PlannerQueryBuilder {
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
-    def fixArgumentIdsOnMerge(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
-      val newMergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph.map {
-        qg =>
-          val nodesAndRels = qg.coveredIdsForPatterns
-          val predicateDependencies = qg.withoutArguments().dependencies
-          val requiredArguments = nodesAndRels ++ predicateDependencies
-          val availableArguments = qg.argumentIds
-          qg.withArgumentIds(requiredArguments intersect availableArguments)
-      }
-
-      val updatePQ = newMergeMatchGraph match {
-        case None =>
-          plannerQuery
-        case Some(qg) =>
-          plannerQuery.amendQueryGraph(_.withMergeMatch(qg))
-      }
-
-      updatePQ.updateTail(fixArgumentIdsOnMerge)
-    }
-
     def fixArgumentIdsOnQPPs(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       val qpps = plannerQuery.queryGraph.quantifiedPathPatterns
       val arguments = plannerQuery.queryGraph.argumentIds
@@ -199,7 +179,6 @@ object PlannerQueryBuilder {
     Function.chain[SinglePlannerQuery](List(
       fixArgumentIds,
       fixArgumentIdsOnOptionalMatch,
-      fixArgumentIdsOnMerge,
       fixArgumentIdsOnQPPs,
       groupInequalities,
       fixStandaloneArgumentPatternNodes

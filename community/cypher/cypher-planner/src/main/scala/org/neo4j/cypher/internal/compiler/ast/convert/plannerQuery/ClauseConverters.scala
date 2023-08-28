@@ -654,29 +654,36 @@ object ClauseConverters {
       // MERGE (n :L1:L2 {prop: 42})
       case PathPatternPart(NodePattern(Some(id), labelExpression, props, _)) =>
         val labels = getLabelNameSet(labelExpression)
-        val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
         val createNodePattern = CreateNode(id.name, labels, props)
 
+        val selections = asSelections(clause.where) ++ Selections.from(labelPredicates ++ propertyPredicates)
+
+        // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern, excluding the merged node
+        // itself, since it is provided by the MERGE.
+        val dependencies = selections.variableDependencies ++
+          createNodePattern.dependencies ++
+          onCreate.flatMap(_.dependencies) ++
+          onMatch.flatMap(_.dependencies) -
+          id.name
+        val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
+
         val matchGraph = QueryGraph(
           patternNodes = Set(id.name),
-          selections = Selections.from(labelPredicates ++ propertyPredicates),
-          argumentIds = currentlyAvailableVariables
+          selections = selections,
+          argumentIds = arguments
         )
 
+        val mergePattern = MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch)
         val queryGraph = QueryGraph.empty
-          .withArgumentIds(matchGraph.argumentIds)
-          .addMutatingPatterns(MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch))
+          .withArgumentIds(arguments)
+          .addMutatingPatterns(mergePattern)
 
         builder
           .withHorizon(PassthroughAllHorizon())
           .withTail(RegularSinglePlannerQuery(queryGraph = queryGraph))
-          .withHorizon(asQueryProjection(
-            distinct = false,
-            QueryProjection.forIds(queryGraph.allCoveredIds),
-            returningQueryProjection = false
-          ))
+          .withHorizon(PassthroughAllHorizon())
           .withTail(RegularSinglePlannerQuery())
 
       // MERGE (n)-[r: R]->(m)
@@ -707,13 +714,10 @@ object ClauseConverters {
             )
         }
 
-        val selections = asSelections(clause.where)
-
         val hasLabels = nodes.flatMap {
           case CreateNodeCommand(n, v) =>
             n.labels.map(l => HasLabels(v, Seq(l))(v.position))
         }
-
         val hasProps = nodes.flatMap {
           case CreateNodeCommand(n, v) =>
             toPropertySelection(v, toPropertyMap(n.properties))
@@ -721,6 +725,19 @@ object ClauseConverters {
           case CreateRelCommand(r, v) =>
             toPropertySelection(v, toPropertyMap(r.properties))
         }
+        val selections = asSelections(clause.where) ++ Selections.from(hasLabels ++ hasProps)
+
+        // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern,
+        // excluding nodes and rels to create, since they are provided by the MERGE.
+        val dependencies = selections.variableDependencies ++
+          nodesCreatedBefore.map(_.create.idName) ++
+          nodesToCreate.map(_.create).flatMap(_.dependencies) ++
+          rels.map(_.create).flatMap(_.dependencies) ++
+          onCreate.flatMap(_.dependencies) ++
+          onMatch.flatMap(_.dependencies) --
+          nodesToCreate.map(_.create.idName) --
+          rels.map(_.create.idName)
+        val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
 
         val matchGraph = QueryGraph(
           patternNodes = nodes.map(_.create.idName).toSet,
@@ -728,12 +745,12 @@ object ClauseConverters {
             case CreateRelCommand(r, _) =>
               PatternRelationship(r.idName, (r.leftNode, r.rightNode), r.direction, Seq(r.relType), SimplePatternLength)
           }.toSet,
-          selections = selections ++ Selections.from(hasLabels ++ hasProps),
-          argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.create.idName)
+          selections = selections,
+          argumentIds = arguments
         )
 
         val queryGraph = QueryGraph.empty
-          .withArgumentIds(matchGraph.argumentIds)
+          .withArgumentIds(arguments)
           .addMutatingPatterns(MergeRelationshipPattern(
             nodesToCreate.map(_.create),
             rels.map(_.create),
@@ -742,15 +759,10 @@ object ClauseConverters {
             onMatch
           ))
 
-        builder.withHorizon(PassthroughAllHorizon()).withTail(
-          RegularSinglePlannerQuery(queryGraph = queryGraph)
-        ).withHorizon(asQueryProjection(
-          distinct = false,
-          QueryProjection.forIds(queryGraph.allCoveredIds),
-          returningQueryProjection = false
-        )).withTail(
-          RegularSinglePlannerQuery()
-        )
+        builder.withHorizon(PassthroughAllHorizon())
+          .withTail(RegularSinglePlannerQuery(queryGraph = queryGraph))
+          .withHorizon(PassthroughAllHorizon())
+          .withTail(RegularSinglePlannerQuery())
 
       case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
     }

@@ -51,8 +51,10 @@ import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.AppendedClues
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AppendedClues {
+class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AppendedClues
+    with TableDrivenPropertyChecks {
 
   override val semanticFeatures: List[SemanticFeature] = List(
     SemanticFeature.GpmShortestPath
@@ -294,6 +296,43 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val projection = RegularQueryProjection(projections = Map("x" -> varFor("x")), isTerminating = true)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
+  }
+
+  test("should use correct arguments in MERGE") {
+    val merges = Table(
+      "Merge query" -> "Expected dependencies",
+      "MERGE (a) ON MATCH SET a.p = five" -> Set("five"),
+      "MERGE (a) ON CREATE SET a.p = five" -> Set("five"),
+      "MERGE (a {p: five})" -> Set("five"),
+      "MERGE (prev)-[r:R]->(a) ON MATCH SET a.p = five" -> Set("prev", "five"),
+      "MERGE (prev)-[r:R]->(a) ON CREATE SET a.p = five" -> Set("prev", "five"),
+      "MERGE (prev)-[r:R]->(a) ON MATCH SET prev.p = five" -> Set("prev", "five"),
+      "MERGE (prev)-[r:R]->(a) ON CREATE SET prev.p = five" -> Set("prev", "five"),
+      "MERGE (prev)-[r:R]->(a {p: five})" -> Set("prev", "five"),
+      "MERGE (prev)-[r:R {p: five}]->(a)" -> Set("prev", "five"),
+      "MERGE (prev)-[r:R {p: a.p}]->(a)" -> Set("prev"),
+      "MERGE (prev)-[r:R {p: prev.p}]->(a)" -> Set("prev"),
+      "MERGE (prev)-[r:R]->(a)" -> Set("prev"),
+      "MERGE (prev)-[r:R]->(a)-[r2:R]->(b)" -> Set("prev"),
+      "MERGE (prev)-[r:R]->(a)-[r2:R {p:r.p}]->(b)" -> Set("prev")
+    )
+
+    forAll(merges) {
+      case (merge, expectedDeps) =>
+        val query = buildSinglePlannerQuery(
+          s"""
+             |MATCH (prev)
+             |WITH prev, 5 AS five
+             |$merge
+             |""".stripMargin
+        )
+        // MERGE is always isolated in an own query graph, which is why we find the MERGE
+        // in the _second_ last query graph.
+        query.allPlannerQueries(query.allPlannerQueries.length - 2)
+          .queryGraph
+          .mergeQueryGraph
+          .map(_.argumentIds) shouldEqual Some(expectedDeps)
+    }
   }
 
   private def nodes(names: String*) = {
