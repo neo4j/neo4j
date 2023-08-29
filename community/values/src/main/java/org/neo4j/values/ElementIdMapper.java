@@ -31,27 +31,16 @@ public abstract class ElementIdMapper {
     public record ElementId(UUID databaseId, long entityId, EntityType entityType) {}
 
     public static ElementId decode(String id, EntityType expectedType) {
-        try {
-            var parts = readParts(id);
-            var header = Byte.parseByte(parts[0]);
-            verifyVersion(id, header);
-
-            var databaseId = UUID.fromString(parts[1]);
-            var entityId = Long.parseLong(parts[2]);
-            var entityType = decodeEntityType(id, header);
-            verifyEntityType(id, entityType, expectedType);
-            return new ElementId(databaseId, entityId, entityType);
-        } catch (IllegalArgumentException iae) {
-            throw iae;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id), e);
-        }
+        var elementId = decode( id );
+        verifyEntityType( id, elementId.entityType, expectedType );
+        return elementId;
     }
 
     public static ElementId decode(String id) {
         try {
             var parts = readParts(id);
             var header = Byte.parseByte(parts[0]);
+            verifyVersion(id, header);
 
             var databaseId = UUID.fromString(parts[1]);
             var entityId = Long.parseLong(parts[2]);
