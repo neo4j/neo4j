@@ -193,6 +193,13 @@ case class Catalog(
     }.toArray
   }
 
+  def nameById(databaseId: UUID, securityContext: SecurityContext): Option[String] = {
+    val alias = findPrimaryAlias(databaseId)
+    val hasAccessToDb = ref => securityContext.databaseAccessMode.canAccessDatabase(ref)
+
+    alias.filter(hasAccessToDb).map(_.alias().name())
+  }
+
   private def canAccessDatabase(graph: Catalog.Graph, securityContext: SecurityContext): Boolean = {
     val hasAccessToDb = ref => securityContext.databaseAccessMode.canAccessDatabase(ref)
 

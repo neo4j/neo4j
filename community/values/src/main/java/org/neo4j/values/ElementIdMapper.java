@@ -26,11 +26,11 @@ import org.neo4j.common.EntityType;
 
 public abstract class ElementIdMapper {
 
-    protected byte ELEMENT_ID_FORMAT_VERSION = 1;
+    protected static byte ELEMENT_ID_FORMAT_VERSION = 1;
 
-    protected record ElementId(UUID databaseId, long entityId, EntityType entityType) {}
+    public record ElementId(UUID databaseId, long entityId, EntityType entityType) {}
 
-    protected ElementId decode(String id, EntityType expectedType) {
+    public static ElementId decode(String id, EntityType expectedType) {
         try {
             var parts = readParts(id);
             var header = Byte.parseByte(parts[0]);
@@ -38,7 +38,8 @@ public abstract class ElementIdMapper {
 
             var databaseId = UUID.fromString(parts[1]);
             var entityId = Long.parseLong(parts[2]);
-            var entityType = decodeEntityType(id, header, expectedType);
+            var entityType = decodeEntityType(id, header);
+            verifyEntityType(id, entityType, expectedType);
             return new ElementId(databaseId, entityId, entityType);
         } catch (IllegalArgumentException iae) {
             throw iae;
@@ -47,7 +48,23 @@ public abstract class ElementIdMapper {
         }
     }
 
-    private String[] readParts(String id) {
+    public static ElementId decode(String id) {
+        try {
+            var parts = readParts(id);
+            var header = Byte.parseByte(parts[0]);
+
+            var databaseId = UUID.fromString(parts[1]);
+            var entityId = Long.parseLong(parts[2]);
+            var entityType = decodeEntityType(id, header);
+            return new ElementId(databaseId, entityId, entityType);
+        } catch (IllegalArgumentException iae) {
+            throw iae;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id), e);
+        }
+    }
+
+    private static String[] readParts(String id) {
         String[] parts = id.split(":");
         if (parts.length != 3) {
             throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id));
@@ -55,28 +72,25 @@ public abstract class ElementIdMapper {
         return parts;
     }
 
-    private void verifyVersion(String id, byte header) {
+    private static void verifyVersion(String id, byte header) {
         byte version = (byte) (header >>> 2);
         if (version != ELEMENT_ID_FORMAT_VERSION) {
             throw new IllegalArgumentException(format("Element ID %s has an unexpected version %d", id, version));
         }
     }
 
-    private EntityType decodeEntityType(String id, byte header, EntityType expectedType) {
+    private static EntityType decodeEntityType(String id, byte header) {
         byte entityTypeId = (byte) (header & 0x3);
-        var actualType =
-                switch (entityTypeId) {
-                    case 0 -> EntityType.NODE;
-                    case 1 -> EntityType.RELATIONSHIP;
-                    default -> throw new IllegalArgumentException(
-                            format("Element ID %s has unknown entity type ID %s", id, entityTypeId));
-                };
-        verifyEntityType(id, actualType, expectedType);
 
-        return actualType;
+        return switch (entityTypeId) {
+            case 0 -> EntityType.NODE;
+            case 1 -> EntityType.RELATIONSHIP;
+            default -> throw new IllegalArgumentException(
+                    format("Element ID %s has unknown entity type ID %s", id, entityTypeId));
+        };
     }
 
-    private void verifyEntityType(String id, EntityType actual, EntityType expected) {
+    private static void verifyEntityType(String id, EntityType actual, EntityType expected) {
         if (actual != expected) {
             throw new IllegalArgumentException(
                     format("Element ID %s has unexpected entity type %s, was expecting %s", id, actual, expected));
