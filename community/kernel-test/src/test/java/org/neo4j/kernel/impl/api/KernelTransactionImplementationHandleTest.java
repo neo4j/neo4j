@@ -27,9 +27,17 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.context.OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
+import org.neo4j.io.pagecache.context.VersionContext;
+import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -42,6 +50,9 @@ class KernelTransactionImplementationHandleTest {
 
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
         when(tx.isOpen()).thenReturn(true);
+        when(tx.cursorContext())
+                .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
+                        .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(userTransactionId);
 
         KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
@@ -55,6 +66,9 @@ class KernelTransactionImplementationHandleTest {
         long nextUserTransactionId = 4242;
 
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.cursorContext())
+                .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
+                        .create("test"));
         when(tx.isOpen()).thenReturn(true);
         when(tx.getTransactionSequenceNumber())
                 .thenReturn(initialUserTransactionId)
@@ -71,6 +85,9 @@ class KernelTransactionImplementationHandleTest {
         Status.Transaction terminationReason = Status.Transaction.Terminated;
 
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.cursorContext())
+                .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
+                        .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(userTransactionId);
 
         KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
@@ -82,6 +99,9 @@ class KernelTransactionImplementationHandleTest {
     @Test
     void markForTerminationReturnsTrueWhenSuccessful() {
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.cursorContext())
+                .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
+                        .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(42L);
         when(tx.markForTermination(anyLong(), any())).thenReturn(true);
 
@@ -92,6 +112,9 @@ class KernelTransactionImplementationHandleTest {
     @Test
     void markForTerminationReturnsFalseWhenNotSuccessful() {
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.cursorContext())
+                .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
+                        .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(42L);
         when(tx.markForTermination(anyLong(), any())).thenReturn(false);
 
@@ -102,10 +125,28 @@ class KernelTransactionImplementationHandleTest {
     @Test
     void transactionStatisticForReusedTransactionIsNotAvailable() {
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
+        when(tx.cursorContext())
+                .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
+                        .create("test"));
         when(tx.isOpen()).thenReturn(true);
         when(tx.getTransactionSequenceNumber()).thenReturn(2L).thenReturn(3L);
 
         KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
         assertSame(TransactionExecutionStatistic.NOT_AVAILABLE, handle.transactionStatistic());
+    }
+
+    private static class TestVersionContextSupplier implements VersionContextSupplier {
+        @Override
+        public void init(
+                TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+                OldestTransactionIdFactory oldestTransactionIdFactory) {}
+
+        @Override
+        public VersionContext createVersionContext() {
+            var context = new TransactionVersionContext(
+                    TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY, EMPTY_OLDEST_ID_FACTORY);
+            context.initRead();
+            return context;
+        }
     }
 }

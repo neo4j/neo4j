@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -135,10 +136,17 @@ class DatabaseShutdownTest {
                                         String databaseName,
                                         ImmutableSet<OpenOption> openOptions,
                                         IOController ioController,
+                                        EvictionBouncer evictionGuard,
                                         VersionStorage versionStorage)
                                         throws IOException {
                                     PagedFile pagedFile = super.map(
-                                            path, pageSize, databaseName, openOptions, ioController, versionStorage);
+                                            path,
+                                            pageSize,
+                                            databaseName,
+                                            openOptions,
+                                            ioController,
+                                            evictionGuard,
+                                            versionStorage);
                                     return new DelegatingPagedFile(pagedFile) {
                                         @Override
                                         public void flushAndForce(FileFlushEvent flushEvent) throws IOException {

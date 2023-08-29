@@ -196,4 +196,12 @@ public interface PageSwapper extends Closeable {
      * Tracer of this page swapper. Each page swapper has an ability to get newly allocated tracer on creation to be able to tracer individual page cache events
      */
     PageFileSwapperTracer fileSwapperTracer();
+
+    /**
+     * It's not always the case that we want to flush even modified page.
+     * In multi versioned stores page may be already obsolete - in a way that no one will ever try to read this version of the page anymore.
+     * @param pageRef page ref to check
+     * @return true if we still need to flush page, false otherwise
+     */
+    boolean isPageFlushable(long pageRef);
 }

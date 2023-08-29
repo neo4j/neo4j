@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
@@ -60,6 +61,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
             boolean createIfNotExist,
             boolean useDirectIO,
             IOController ioController,
+            EvictionBouncer evictionBouncer,
             SwapperSet swappers)
             throws IOException {
         if (!createIfNotExist && !fs.fileExists(file)) {
@@ -75,7 +77,8 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
                 swappers,
                 pageCacheTracer.createFileSwapperTracer(),
                 blockSwapper,
-                nativeAccessFactory());
+                nativeAccessFactory(),
+                evictionBouncer);
     }
 
     private static BlockSwapper createBlockSwapper(MemoryTracker memoryTracker) {

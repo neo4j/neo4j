@@ -65,6 +65,7 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -408,10 +409,11 @@ class DatabaseIT {
                 String databaseName,
                 ImmutableSet<OpenOption> openOptions,
                 IOController ioController,
+                EvictionBouncer evictionBouncer,
                 VersionStorage versionStorage)
                 throws IOException {
             PageFileWrapper pageFileWrapper = new PageFileWrapper(
-                    super.map(path, pageSize, databaseName, openOptions, ioController, versionStorage),
+                    super.map(path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage),
                     fileFlushes,
                     ioController,
                     disabledIOController,

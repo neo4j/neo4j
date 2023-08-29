@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public class FabricTransactionMonitor extends TransactionMonitor {
-    private final Map<FabricTransactionImpl, MonitoredTransaction> transactions = new ConcurrentHashMap<>();
+public class FabricTransactionMonitor extends TransactionMonitor<FabricTransactionMonitor.FabricMonitoredTransaction> {
+    private final Map<FabricTransactionImpl, FabricMonitoredTransaction> transactions = new ConcurrentHashMap<>();
     private final SystemNanoClock clock;
     private final FabricConfig fabricConfig;
 
@@ -68,16 +68,16 @@ public class FabricTransactionMonitor extends TransactionMonitor {
     }
 
     @Override
-    protected Set<MonitoredTransaction> getActiveTransactions() {
+    protected Set<FabricMonitoredTransaction> getActiveTransactions() {
         return new HashSet<>(transactions.values());
     }
 
-    private static class FabricMonitoredTransaction implements MonitoredTransaction {
+    static class FabricMonitoredTransaction implements MonitoredTransaction {
         private final FabricTransactionImpl fabricTransaction;
         private final long startTimeNanos;
         private final TransactionTimeout timeout;
 
-        FabricMonitoredTransaction(
+        private FabricMonitoredTransaction(
                 FabricTransactionImpl fabricTransaction, long startTimeNanos, TransactionTimeout timeout) {
             this.fabricTransaction = fabricTransaction;
             this.startTimeNanos = startTimeNanos;

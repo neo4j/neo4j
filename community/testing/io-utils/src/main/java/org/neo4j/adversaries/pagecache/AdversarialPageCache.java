@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
@@ -61,6 +62,7 @@ public class AdversarialPageCache implements PageCache {
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
             IOController ioController,
+            EvictionBouncer evictionBouncer,
             VersionStorage versionStorage)
             throws IOException {
         if (openOptions.contains(CREATE)) {
@@ -68,7 +70,8 @@ public class AdversarialPageCache implements PageCache {
         } else {
             adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
         }
-        PagedFile pagedFile = delegate.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
+        PagedFile pagedFile =
+                delegate.map(path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
         return new AdversarialPagedFile(pagedFile, adversary);
     }
 

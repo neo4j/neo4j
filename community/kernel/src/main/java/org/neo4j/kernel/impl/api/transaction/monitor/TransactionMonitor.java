@@ -39,7 +39,7 @@ import org.neo4j.time.SystemNanoClock;
  * and for being stuck in a terminating state (stale).
  * In case if transaction timed out it will be terminated.
  */
-public abstract class TransactionMonitor implements Runnable {
+public abstract class TransactionMonitor<T extends TransactionMonitor.MonitoredTransaction> implements Runnable {
     private final Config config;
     private final SystemNanoClock clock;
     private final InternalLog log;
@@ -52,14 +52,16 @@ public abstract class TransactionMonitor implements Runnable {
 
     @Override
     public void run() {
-        long nowNanos = clock.nanos();
-        Set<MonitoredTransaction> activeTransactions = getActiveTransactions();
-        checkActiveTransactions(activeTransactions, nowNanos);
+        var activeTransactions = getActiveTransactions();
+        checkActiveTransactions(activeTransactions, clock.nanos());
+        updateActiveTransactionBoundaries(activeTransactions);
     }
 
-    protected abstract Set<MonitoredTransaction> getActiveTransactions();
+    protected void updateActiveTransactionBoundaries(Set<T> activeTransactions) {}
 
-    private void checkExpiredTransaction(MonitoredTransaction transaction, long nowNanos) {
+    protected abstract Set<T> getActiveTransactions();
+
+    private void checkExpiredTransaction(T transaction, long nowNanos) {
         long transactionTimeoutNanos = transaction.timeout().timeout().toNanos();
         if (transactionTimeoutNanos > 0) {
             if (isTransactionExpired(transaction, nowNanos, transactionTimeoutNanos)
@@ -100,11 +102,11 @@ public abstract class TransactionMonitor implements Runnable {
         }
     }
 
-    private void checkActiveTransactions(Set<MonitoredTransaction> activeTransactions, long nowNanos) {
+    private void checkActiveTransactions(Set<T> activeTransactions, long nowNanos) {
         long terminationTimeoutNanos = config.get(GraphDatabaseInternalSettings.transaction_termination_timeout)
                 .toNanos();
 
-        for (MonitoredTransaction activeTransaction : activeTransactions) {
+        for (T activeTransaction : activeTransactions) {
             checkExpiredTransaction(activeTransaction, nowNanos);
 
             if (terminationTimeoutNanos > 0) {

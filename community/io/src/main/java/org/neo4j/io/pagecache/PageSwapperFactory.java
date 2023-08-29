@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.neo4j.annotations.service.Service;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 
 /**
@@ -51,6 +52,7 @@ public interface PageSwapperFactory {
      * @param useDirectIO When true, direct io open open will gonna be used for underlying channel.
      * Option supported only on Linux with certain limitations.
      * @param ioController controller to report swapper io's
+     * @param evictionBouncer eviction bouncer to check if flushing for the dirty page is still required or can be skipped
      * @param swappers set of already registered swappers
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
@@ -64,6 +66,7 @@ public interface PageSwapperFactory {
             boolean createIfNotExist,
             boolean useDirectIO,
             IOController ioController,
+            EvictionBouncer evictionBouncer,
             SwapperSet swappers)
             throws IOException;
 }

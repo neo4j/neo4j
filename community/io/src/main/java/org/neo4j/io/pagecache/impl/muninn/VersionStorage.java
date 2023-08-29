@@ -22,35 +22,13 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public interface VersionStorage extends AutoCloseable {
+public interface VersionStorage extends AutoCloseable, Lifecycle {
     int NEXT_REFERENCE_OFFSET = Long.BYTES;
 
-    VersionStorage EMPTY_STORAGE = new VersionStorage() {
-        private static final long EMPTY_PAGE_REFERENCE = 0;
-
-        @Override
-        public void loadReadSnapshot(MuninnPageCursor pageCursor, VersionContext versionContext, PinEvent pinEvent) {}
-
-        @Override
-        public long createPageSnapshot(
-                MuninnPageCursor pageCursor, VersionContext versionContext, long chainHeadVersion, PinEvent pinEvent) {
-            return EMPTY_PAGE_REFERENCE;
-        }
-
-        @Override
-        public long size() {
-            return 0;
-        }
-
-        @Override
-        public VersionStorageAccessor accessor() {
-            return VersionStorageAccessor.EMPTY_ACCESSOR;
-        }
-
-        @Override
-        public void close() {}
-    };
+    VersionStorage EMPTY_STORAGE = new EmptyVersionStorage();
 
     /**
      * Load snapshot of the page as determined by version context into provided page cursor.
@@ -85,4 +63,30 @@ public interface VersionStorage extends AutoCloseable {
 
     @Override
     void close();
+
+    class EmptyVersionStorage extends LifecycleAdapter implements VersionStorage {
+        private static final long EMPTY_PAGE_REFERENCE = 0;
+
+        @Override
+        public void loadReadSnapshot(MuninnPageCursor pageCursor, VersionContext versionContext, PinEvent pinEvent) {}
+
+        @Override
+        public long createPageSnapshot(
+                MuninnPageCursor pageCursor, VersionContext versionContext, long chainHeadVersion, PinEvent pinEvent) {
+            return EMPTY_PAGE_REFERENCE;
+        }
+
+        @Override
+        public long size() {
+            return 0;
+        }
+
+        @Override
+        public VersionStorageAccessor accessor() {
+            return VersionStorageAccessor.EMPTY_ACCESSOR;
+        }
+
+        @Override
+        public void close() {}
+    }
 }

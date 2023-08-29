@@ -111,6 +111,11 @@ public class DelegatingPageSwapper implements PageSwapper {
     }
 
     @Override
+    public boolean isPageFlushable(long pageRef) {
+        return delegate.isPageFlushable(pageRef);
+    }
+
+    @Override
     public void closeAndDelete() throws IOException {
         delegate.closeAndDelete();
     }

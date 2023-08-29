@@ -169,6 +169,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             String databaseName,
             int faultLockStriping,
             IOController ioController,
+            EvictionBouncer evictionBouncer,
             boolean multiVersioned,
             int reservedBytes,
             VersionStorage versionStorage,
@@ -207,7 +208,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
         swapper = swapperFactory.createPageSwapper(
-                path, filePageSize, onEviction, createIfNotExists, useDirectIo, ioController, getSwappers());
+                path,
+                filePageSize,
+                onEviction,
+                createIfNotExists,
+                useDirectIo,
+                ioController,
+                evictionBouncer,
+                getSwappers());
         if (truncateExisting) {
             swapper.truncate();
         }

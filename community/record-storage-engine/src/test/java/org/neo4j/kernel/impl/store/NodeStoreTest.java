@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,6 +79,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
@@ -221,7 +222,7 @@ class NodeStoreTest {
 
         // WHEN
         DynamicRecord dynamicRecord = new DynamicRecord(1);
-        record.setLabelField(0x8000000001L, asList(dynamicRecord));
+        record.setLabelField(0x8000000001L, singletonList(dynamicRecord));
 
         // THEN
         assertFalse(record.isLight());
@@ -313,13 +314,15 @@ class NodeStoreTest {
                             String databaseName,
                             ImmutableSet<OpenOption> openOptions,
                             IOController ioController,
+                            EvictionBouncer evictionGuard,
                             VersionStorage versionStorage)
                             throws IOException {
                         if (path.getFileName().toString().toLowerCase().endsWith(".id")) {
                             fired.setTrue();
                             throw new IOException("Proving a point here");
                         }
-                        return super.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
+                        return super.map(
+                                path, pageSize, databaseName, openOptions, ioController, evictionGuard, versionStorage);
                     }
                 };
 

@@ -444,7 +444,11 @@ class PageList implements PageReferenceTranslator {
                 evictionEvent.setSwapper(swapper);
 
                 if (isModified(pageRef)) {
-                    flushModifiedPage(pageRef, evictionEvent, filePageId, swapper, this);
+                    if (swapper.isPageFlushable(pageRef)) {
+                        flushModifiedPage(pageRef, evictionEvent, filePageId, swapper, this);
+                    } else {
+                        explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
+                    }
                 }
                 swapper.evicted(filePageId);
             }

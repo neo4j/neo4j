@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Optional.ofNullable;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TerminationMark;
@@ -60,6 +62,8 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     private final TransactionInitializationTrace initializationTrace;
     private final KernelTransactionStamp transactionStamp;
     private final String databaseName;
+    private final long lastClosedTxId;
+    private final long transactionHorizon;
 
     KernelTransactionImplementationHandle(KernelTransactionImplementation tx, SystemNanoClock clock) {
         this.transactionStamp = new KernelTransactionStamp(tx);
@@ -75,6 +79,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
         this.databaseName = tx.getDatabaseName();
+        var versionContext = tx.cursorContext().getVersionContext();
+        this.lastClosedTxId = versionContext.lastClosedTransactionId();
+        this.transactionHorizon = transactionHorizon(versionContext);
         this.tx = tx;
         this.clock = clock;
     }
@@ -184,6 +191,16 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     }
 
     @Override
+    public long getLastClosedTxId() {
+        return lastClosedTxId;
+    }
+
+    @Override
+    public long getTransactionHorizon() {
+        return transactionHorizon;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -204,5 +221,16 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     public String toString() {
         return "KernelTransactionImplementationHandle{transactionSequenceNumber="
                 + transactionStamp.getTransactionSequenceNumber() + ", tx=" + tx + "}";
+    }
+
+    private long transactionHorizon(VersionContext versionContext) {
+        // if transaction has already started committing its horizon is oldestVisibleTransactionNumber which was
+        // recorded at the time commit started
+        var oldestVisibleTransactionNumber = versionContext.oldestVisibleTransactionNumber();
+        if (oldestVisibleTransactionNumber > BASE_TX_ID) {
+            return oldestVisibleTransactionNumber;
+        }
+        // otherwise, its horizon is the latest gap free closed transaction at the time it started
+        return versionContext.lastClosedTransactionId();
     }
 }

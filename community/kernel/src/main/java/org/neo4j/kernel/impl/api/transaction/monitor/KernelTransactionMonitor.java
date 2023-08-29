@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.transaction.monitor;
 
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -28,12 +31,16 @@ import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public class KernelTransactionMonitor extends TransactionMonitor {
+public class KernelTransactionMonitor extends TransactionMonitor<KernelTransactionMonitor.MonitoredKernelTransaction>
+        implements TransactionVisibilityProvider {
     private final KernelTransactions kernelTransactions;
+    private final AtomicLong oldestVisibilityBoundary = new AtomicLong(BASE_TX_ID);
+    private final AtomicLong oldestVisibleClosedTransactionId = new AtomicLong(BASE_TX_ID);
 
     public KernelTransactionMonitor(
             KernelTransactions kernelTransactions, Config config, SystemNanoClock clock, LogService logService) {
@@ -41,17 +48,56 @@ public class KernelTransactionMonitor extends TransactionMonitor {
         this.kernelTransactions = kernelTransactions;
     }
 
+    protected void updateActiveTransactionBoundaries(Set<MonitoredKernelTransaction> activeTransactions) {
+        long oldestTxId = Long.MAX_VALUE;
+        long oldestHorizon = Long.MAX_VALUE;
+
+        for (var monitoredTx : activeTransactions) {
+            if (monitoredTx.terminationMark().isEmpty()) {
+                oldestTxId = Math.min(oldestTxId, monitoredTx.kernelTransaction.getLastClosedTxId());
+                oldestHorizon = Math.min(oldestHorizon, monitoredTx.kernelTransaction.getTransactionHorizon());
+            }
+        }
+        if (oldestTxId != Long.MAX_VALUE) {
+            oldestVisibleClosedTransactionId.setRelease(oldestTxId);
+        }
+        if (oldestHorizon != Long.MAX_VALUE) {
+            oldestVisibilityBoundary.setRelease(oldestHorizon);
+        }
+    }
+
     @Override
-    protected Set<MonitoredTransaction> getActiveTransactions() {
+    protected Set<MonitoredKernelTransaction> getActiveTransactions() {
         return kernelTransactions.activeTransactions().stream()
                 .map(MonitoredKernelTransaction::new)
                 .collect(Collectors.toSet());
     }
 
-    private static class MonitoredKernelTransaction implements MonitoredTransaction {
+    @Override
+    public long oldestVisibleClosedTransactionId() {
+        return oldestVisibleClosedTransactionId.getAcquire();
+    }
+
+    @Override
+    public long oldestObservableHorizon() {
+        return oldestVisibilityBoundary.getAcquire();
+    }
+
+    @Override
+    public long youngestObservableHorizon() {
+        long youngestHorizon = Long.MIN_VALUE;
+        for (var monitoredTx : getActiveTransactions()) {
+            if (monitoredTx.terminationMark().isEmpty()) {
+                youngestHorizon = Math.max(youngestHorizon, monitoredTx.kernelTransaction.getTransactionHorizon());
+            }
+        }
+        return youngestHorizon;
+    }
+
+    static class MonitoredKernelTransaction implements MonitoredTransaction {
         private final KernelTransactionHandle kernelTransaction;
 
-        MonitoredKernelTransaction(KernelTransactionHandle kernelTransaction) {
+        private MonitoredKernelTransaction(KernelTransactionHandle kernelTransaction) {
             this.kernelTransaction = kernelTransaction;
         }
 

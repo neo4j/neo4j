@@ -17,29 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.io.pagecache.impl.muninn;
 
-public interface TransactionVisibilityProvider {
-    TransactionVisibilityProvider EMPTY_VISIBILITY_PROVIDER = new TransactionVisibilityProvider() {
-        @Override
-        public long oldestVisibleClosedTransactionId() {
-            return Long.MAX_VALUE;
-        }
+@FunctionalInterface
+public interface EvictionBouncer {
+    EvictionBouncer ALWAYS_ALLOW = pageRef -> true;
 
-        @Override
-        public long oldestObservableHorizon() {
-            return Long.MIN_VALUE;
-        }
-
-        @Override
-        public long youngestObservableHorizon() {
-            return Long.MAX_VALUE;
-        }
-    };
-
-    long oldestVisibleClosedTransactionId();
-
-    long oldestObservableHorizon();
-
-    long youngestObservableHorizon();
+    boolean allowPageFlush(long pageRef);
 }

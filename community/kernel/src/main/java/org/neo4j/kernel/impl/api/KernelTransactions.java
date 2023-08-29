@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +49,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -98,10 +96,7 @@ import org.neo4j.values.ElementIdMapper;
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
 public class KernelTransactions extends LifecycleAdapter
-        implements TransactionRegistry,
-                Supplier<IdController.TransactionSnapshot>,
-                IdController.IdFreeCondition,
-                TransactionVisibilityProvider {
+        implements TransactionRegistry, Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition {
     public static final long SYSTEM_TRANSACTION_ID = 0;
     private final LockManager lockManager;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -309,55 +304,6 @@ public class KernelTransactions extends LifecycleAdapter
                 .map(this::createHandle)
                 .filter(KernelTransactionHandle::isOpen)
                 .collect(toSet());
-    }
-
-    @Override
-    public long oldestVisibleTransactionNumber() {
-        long oldestVisibleTransactionNumber = Long.MAX_VALUE;
-        for (KernelTransactionImplementation transaction : allTransactions) {
-            if (transaction.isOpen() && !transaction.isTerminated()) {
-                oldestVisibleTransactionNumber = Math.min(
-                        oldestVisibleTransactionNumber,
-                        transaction.cursorContext().getVersionContext().lastClosedTransactionId());
-            }
-        }
-        return oldestVisibleTransactionNumber;
-    }
-
-    @Override
-    public long oldestObservableHorizon() {
-        long oldestHorizon = Long.MAX_VALUE;
-        for (KernelTransactionImplementation transaction : allTransactions) {
-            if (transaction.isOpen() && !transaction.isTerminated()) {
-                oldestHorizon = Math.min(
-                        oldestHorizon,
-                        transactionHorizon(transaction.cursorContext().getVersionContext()));
-            }
-        }
-        return oldestHorizon;
-    }
-
-    @Override
-    public long youngestObservableHorizon() {
-        long youngest = Long.MIN_VALUE;
-        for (KernelTransactionImplementation transaction : allTransactions) {
-            if (transaction.isOpen() && !transaction.isTerminated()) {
-                youngest = Math.max(
-                        youngest, transactionHorizon(transaction.cursorContext().getVersionContext()));
-            }
-        }
-        return youngest;
-    }
-
-    private long transactionHorizon(VersionContext versionContext) {
-        // if transaction has already started committing its horizon is oldestVisibleTransactionNumber which was
-        // recorded at the time commit started
-        var oldestVisibleTransactionNumber = versionContext.oldestVisibleTransactionNumber();
-        if (oldestVisibleTransactionNumber > BASE_TX_ID) {
-            return oldestVisibleTransactionNumber;
-        }
-        // ortherwise its horizon is the latest gap free closed transaction at the time it started
-        return versionContext.lastClosedTransactionId();
     }
 
     public long oldestActiveTransactionSequenceNumber() {

@@ -104,6 +104,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.CacheLiveLockException;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.randomharness.Record;
@@ -4492,10 +4493,18 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     boolean createIfNotExist,
                     boolean useDirectIO,
                     IOController ioController,
+                    EvictionBouncer evictionBouncer,
                     SwapperSet swappers)
                     throws IOException {
                 PageSwapper swapper = super.createPageSwapper(
-                        path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers);
+                        path,
+                        filePageSize,
+                        onEviction,
+                        createIfNotExist,
+                        useDirectIO,
+                        ioController,
+                        evictionBouncer,
+                        swappers);
                 return new DelegatingPageSwapper(swapper) {
                     @Override
                     public long write(long filePageId, long bufferAddress) throws IOException {

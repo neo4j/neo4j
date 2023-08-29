@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.io.pagecache.impl.muninn.EvictionBouncer.ALWAYS_ALLOW;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
@@ -93,7 +95,14 @@ public interface PageCache extends AutoCloseable {
      */
     default PagedFile map(Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        return map(path, pageSize, databaseName, openOptions, IOController.DISABLED, VersionStorage.EMPTY_STORAGE);
+        return map(
+                path,
+                pageSize,
+                databaseName,
+                openOptions,
+                IOController.DISABLED,
+                ALWAYS_ALLOW,
+                VersionStorage.EMPTY_STORAGE);
     }
 
     default PagedFile map(
@@ -103,7 +112,7 @@ public interface PageCache extends AutoCloseable {
             ImmutableSet<OpenOption> openOptions,
             IOController ioController)
             throws IOException {
-        return map(path, pageSize, databaseName, openOptions, ioController, VersionStorage.EMPTY_STORAGE);
+        return map(path, pageSize, databaseName, openOptions, ioController, ALWAYS_ALLOW, VersionStorage.EMPTY_STORAGE);
     }
 
     /**
@@ -135,6 +144,7 @@ public interface PageCache extends AutoCloseable {
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
             IOController ioController,
+            EvictionBouncer evictionBouncer,
             VersionStorage versionStorage)
             throws IOException;
 

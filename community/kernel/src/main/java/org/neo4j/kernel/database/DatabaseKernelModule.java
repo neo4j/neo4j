@@ -23,6 +23,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 
@@ -31,6 +32,7 @@ class DatabaseKernelModule {
     private final KernelImpl kernel;
     private final KernelTransactions kernelTransactions;
     private final StoreFileListing fileListing;
+    private final KernelTransactionMonitor transactionMonitor;
     private final TransactionIdGenerator transactionIdGenerator;
 
     DatabaseKernelModule(
@@ -38,15 +40,21 @@ class DatabaseKernelModule {
             KernelImpl kernel,
             KernelTransactions kernelTransactions,
             StoreFileListing fileListing,
+            KernelTransactionMonitor transactionMonitor,
             TransactionIdGenerator transactionIdGenerator) {
         this.transactionCommitProcess = transactionCommitProcess;
         this.kernel = kernel;
         this.kernelTransactions = kernelTransactions;
         this.fileListing = fileListing;
+        this.transactionMonitor = transactionMonitor;
         this.transactionIdGenerator = transactionIdGenerator;
     }
 
-    public TransactionIdGenerator getTransactionIdGenerator() {
+    public KernelTransactionMonitor transactionMonitor() {
+        return transactionMonitor;
+    }
+
+    public TransactionIdGenerator transactionIdGenerator() {
         return transactionIdGenerator;
     }
 

@@ -96,9 +96,9 @@ class MuninnPageCacheExplicitPreallocateTest {
                 pageFile.preAllocate(3);
                 pageFile.preAllocate(7);
 
-                verify(swapper).allocate(pageFile.pageSize() * 2);
-                verify(swapper).allocate(pageFile.pageSize() * 3);
-                verify(swapper).allocate(pageFile.pageSize() * 7);
+                verify(swapper).allocate(pageFile.pageSize() * 2L);
+                verify(swapper).allocate(pageFile.pageSize() * 3L);
+                verify(swapper).allocate(pageFile.pageSize() * 7L);
             }
         }
     }
@@ -127,8 +127,8 @@ class MuninnPageCacheExplicitPreallocateTest {
                 pageFile.preAllocate(PAGE_CACHE_CHUNK_SIZE + 123);
                 pageFile.preAllocate(PAGE_CACHE_CHUNK_SIZE + 1234);
 
-                verify(swapper).allocate(pageFile.pageSize() * (PAGE_CACHE_CHUNK_SIZE + 123));
-                verify(swapper).allocate(pageFile.pageSize() * (PAGE_CACHE_CHUNK_SIZE + 1234));
+                verify(swapper).allocate(pageFile.pageSize() * (PAGE_CACHE_CHUNK_SIZE + 123L));
+                verify(swapper).allocate(pageFile.pageSize() * (PAGE_CACHE_CHUNK_SIZE + 1234L));
             }
         }
     }
@@ -145,7 +145,14 @@ class MuninnPageCacheExplicitPreallocateTest {
         MuninnPageCache.Configuration configuration =
                 MuninnPageCache.config(allocator).preallocateStoreFiles(automaticPreAllocation);
         PageSwapperFactory pageSwapperFactory =
-                (path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers) -> {
+                (path,
+                        filePageSize,
+                        onEviction,
+                        createIfNotExist,
+                        useDirectIO,
+                        ioController,
+                        evictionGuard,
+                        swappers) -> {
                     when(swapper.swapperId()).thenReturn(swappers.allocate(swapper));
                     when(swapper.path()).thenReturn(path);
                     return swapper;

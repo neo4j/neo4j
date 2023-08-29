@@ -46,7 +46,7 @@ class AccessCheckingPageCacheTest {
         PagedFile mockedPagedFile = mock(PagedFile.class);
         PageCursor mockedCursor = mock(PageCursor.class);
         when(mockedPagedFile.io(anyLong(), anyInt(), any())).thenReturn(mockedCursor);
-        when(mockedPageCache.map(any(Path.class), anyInt(), any(), any(), any(), any()))
+        when(mockedPageCache.map(any(Path.class), anyInt(), any(), any(), any(), any(), any()))
                 .thenReturn(mockedPagedFile);
         pageCache = new AccessCheckingPageCache(mockedPageCache);
         PagedFile file = pageCache.map(Path.of("some file"), 512, "database");
@@ -141,7 +141,7 @@ class AccessCheckingPageCacheTest {
     }
 
     @Test
-    void shouldFail_read_next() throws Exception {
+    void shouldFail_read_next() {
         // GIVEN
         cursor.getByte(0);
 

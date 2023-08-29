@@ -341,6 +341,7 @@ public class Database extends AbstractDatabase {
                 databaseConfig);
         databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage);
 
+        life.add(versionStorage);
         life.add(onShutdown(() -> databaseLockManager.close()));
         life.add(new LockerLifecycleAdapter(fileLockerService.createDatabaseLocker(fs, databaseLayout)));
         life.add(databaseConfig);
@@ -695,7 +696,7 @@ public class Database extends AbstractDatabase {
                         CursorContext.NULL_CONTEXT,
                         storeCursors,
                         commitmentFactory.newCommitment(),
-                        kernelModule.getTransactionIdGenerator());
+                        kernelModule.transactionIdGenerator());
                 TransactionCommitProcess commitProcess =
                         databaseDependencies.resolveDependency(TransactionCommitProcess.class);
                 commitProcess.commit(toApply, TransactionWriteEvent.NULL, TransactionApplicationMode.INTERNAL);
@@ -1037,7 +1038,7 @@ public class Database extends AbstractDatabase {
                 transactionValidatorFactory,
                 internalLogProvider));
 
-        buildTransactionMonitor(kernelTransactions, databaseConfig);
+        var transactionMonitor = buildTransactionMonitor(kernelTransactions, databaseConfig);
 
         KernelImpl kernel = new KernelImpl(
                 kernelTransactions,
@@ -1055,20 +1056,26 @@ public class Database extends AbstractDatabase {
         databaseDependencies.satisfyDependency(fileListing);
 
         return new DatabaseKernelModule(
-                transactionCommitProcess, kernel, kernelTransactions, fileListing, transactionIdGenerator);
+                transactionCommitProcess,
+                kernel,
+                kernelTransactions,
+                fileListing,
+                transactionMonitor,
+                transactionIdGenerator);
     }
 
-    private void buildTransactionMonitor(KernelTransactions kernelTransactions, Config config) {
-        KernelTransactionMonitor kernelTransactionTimeoutMonitor =
+    private KernelTransactionMonitor buildTransactionMonitor(KernelTransactions kernelTransactions, Config config) {
+        var kernelTransactionMonitor =
                 new KernelTransactionMonitor(kernelTransactions, config, clock, databaseLogService);
-        databaseDependencies.satisfyDependency(kernelTransactionTimeoutMonitor);
+        databaseDependencies.satisfyDependency(kernelTransactionMonitor);
         TransactionMonitorScheduler transactionMonitorScheduler = new TransactionMonitorScheduler(
-                kernelTransactionTimeoutMonitor,
+                kernelTransactionMonitor,
                 scheduler,
                 config.get(GraphDatabaseSettings.transaction_monitor_check_interval)
                         .toMillis(),
                 namedDatabaseId.name());
         life.add(transactionMonitorScheduler);
+        return kernelTransactionMonitor;
     }
 
     @Override
@@ -1269,7 +1276,7 @@ public class Database extends AbstractDatabase {
             DatabaseConfig databaseConfig, Supplier<DatabaseKernelModule> kernelModule) {
         return isNotMultiVersioned(databaseConfig)
                 ? OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY
-                : (() -> kernelModule.get().kernelTransactions().oldestVisibleTransactionNumber());
+                : (() -> kernelModule.get().transactionMonitor().oldestVisibleClosedTransactionId());
     }
 
     private static boolean isNotMultiVersioned(DatabaseConfig databaseConfig) {
@@ -1278,18 +1285,18 @@ public class Database extends AbstractDatabase {
 
     private class KernelTransactionVisibilityProvider implements TransactionVisibilityProvider {
         @Override
-        public long oldestVisibleTransactionNumber() {
-            return kernelModule.kernelTransactions().oldestVisibleTransactionNumber();
+        public long oldestVisibleClosedTransactionId() {
+            return kernelModule.transactionMonitor().oldestVisibleClosedTransactionId();
         }
 
         @Override
         public long oldestObservableHorizon() {
-            return kernelModule.kernelTransactions().oldestObservableHorizon();
+            return kernelModule.transactionMonitor().oldestObservableHorizon();
         }
 
         @Override
         public long youngestObservableHorizon() {
-            return kernelModule.kernelTransactions().youngestObservableHorizon();
+            return kernelModule.transactionMonitor().youngestObservableHorizon();
         }
     }
 }

@@ -583,6 +583,7 @@ public class MuninnPageCache implements PageCache {
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
             IOController ioController,
+            EvictionBouncer evictionBouncer,
             VersionStorage versionStorage)
             throws IOException {
         assertHealthy();
@@ -669,6 +670,7 @@ public class MuninnPageCache implements PageCache {
                 databaseName,
                 faultLockStriping,
                 ioController,
+                evictionBouncer,
                 multiVersioned,
                 multiVersioned ? pageReservedBytes : 0,
                 versionStorage,

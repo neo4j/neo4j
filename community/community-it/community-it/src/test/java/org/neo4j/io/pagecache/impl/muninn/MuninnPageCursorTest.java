@@ -178,10 +178,18 @@ class MuninnPageCursorTest {
                     boolean createIfNotExist,
                     boolean useDirectIO,
                     IOController ioController,
+                    EvictionBouncer evictionBouncer,
                     SwapperSet swappers)
                     throws IOException {
                 PageSwapper actualSwapper = actual.createPageSwapper(
-                        path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers);
+                        path,
+                        filePageSize,
+                        onEviction,
+                        createIfNotExist,
+                        useDirectIO,
+                        ioController,
+                        evictionBouncer,
+                        swappers);
                 return new DelegatingPageSwapper(actualSwapper) {
                     @Override
                     public long read(long filePageId, long bufferAddress) throws IOException {

@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
@@ -72,6 +73,7 @@ public class SingleFilePageSwapper implements PageSwapper {
     private final PageFileSwapperTracer fileSwapperTracer;
     private final BlockSwapper blockSwapper;
     private final NativeAccess nativeAccess;
+    private final EvictionBouncer evictionBouncer;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -100,7 +102,8 @@ public class SingleFilePageSwapper implements PageSwapper {
             SwapperSet swapperSet,
             PageFileSwapperTracer fileSwapperTracer,
             BlockSwapper blockSwapper,
-            NativeAccessFactory nativeAccessFactory)
+            NativeAccessFactory nativeAccessFactory,
+            EvictionBouncer evictionBouncer)
             throws IOException {
         this.fs = fs;
         this.path = path;
@@ -133,6 +136,7 @@ public class SingleFilePageSwapper implements PageSwapper {
         this.swapperId = swapperSet.allocate(this);
         this.blockSwapper = blockSwapper;
         this.nativeAccess = nativeAccessFactory.create(path);
+        this.evictionBouncer = evictionBouncer;
     }
 
     private StoreChannel createStoreChannel() throws IOException {
@@ -593,6 +597,11 @@ public class SingleFilePageSwapper implements PageSwapper {
     @Override
     public PageFileSwapperTracer fileSwapperTracer() {
         return fileSwapperTracer;
+    }
+
+    @Override
+    public boolean isPageFlushable(long pageRef) {
+        return evictionBouncer.allowPageFlush(pageRef);
     }
 
     @Override

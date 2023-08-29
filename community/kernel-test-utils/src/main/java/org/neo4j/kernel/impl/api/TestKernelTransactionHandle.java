@@ -155,6 +155,16 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle {
     }
 
     @Override
+    public long getLastClosedTxId() {
+        return tx.cursorContext().getVersionContext().lastClosedTransactionId();
+    }
+
+    @Override
+    public long getTransactionHorizon() {
+        return tx.cursorContext().getVersionContext().oldestVisibleTransactionNumber();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;

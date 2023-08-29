@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.transaciton.monitor;
 
+import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -61,5 +63,40 @@ class KernelTransactionMonitorTest {
         // then
         verify(oldSchemaTransaction, times(1)).isSchemaTransaction();
         verify(oldSchemaTransaction, never()).markForTermination(any());
+    }
+
+    @Test
+    void readOldestVisibilityBoundaries() {
+        KernelTransactions kernelTransactions = mock(KernelTransactions.class);
+        KernelTransactionMonitor transactionMonitor = new KernelTransactionMonitor(
+                kernelTransactions, Config.defaults(), new FakeClock(100, MINUTES), NullLogService.getInstance());
+
+        assertEquals(1, transactionMonitor.oldestVisibleClosedTransactionId());
+        assertEquals(1, transactionMonitor.oldestObservableHorizon());
+
+        // no transactions - default boundaries
+        transactionMonitor.run();
+        assertEquals(1, transactionMonitor.oldestVisibleClosedTransactionId());
+        assertEquals(1, transactionMonitor.oldestObservableHorizon());
+
+        KernelTransactionHandle txHandle = mock(KernelTransactionHandle.class);
+        when(txHandle.isSchemaTransaction()).thenReturn(true);
+        when(txHandle.startTime()).thenReturn(17L);
+        when(txHandle.timeout()).thenReturn(new TransactionTimeout(Duration.ofMinutes(1), TransactionTimedOut));
+        when(txHandle.getTransactionHorizon()).thenReturn(5L);
+        when(txHandle.getLastClosedTxId()).thenReturn(15L);
+        when(kernelTransactions.activeTransactions()).thenReturn(Iterators.asSet(txHandle));
+
+        // one active transaction - new boundaries
+        transactionMonitor.run();
+        assertEquals(15, transactionMonitor.oldestVisibleClosedTransactionId());
+        assertEquals(5, transactionMonitor.oldestObservableHorizon());
+
+        when(kernelTransactions.activeTransactions()).thenReturn(emptySet());
+
+        // no active transaction again - no changes in boundaries
+        transactionMonitor.run();
+        assertEquals(15, transactionMonitor.oldestVisibleClosedTransactionId());
+        assertEquals(5, transactionMonitor.oldestObservableHorizon());
     }
 }

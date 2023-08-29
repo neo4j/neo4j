@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.transaction_termination_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.io.pagecache.context.OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -41,6 +42,12 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
+import org.neo4j.io.pagecache.context.VersionContext;
+import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.TransactionTimeout;
@@ -49,6 +56,7 @@ import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
+import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -237,6 +245,9 @@ class KernelTransactionTimeoutMonitorTest {
     private static KernelTransactionImplementation prepareTxMock(
             long userTxId, long startMillis, long timeoutMillis, Status timoutStatus) {
         KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
+        when(transaction.cursorContext())
+                .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
+                        .create("test"));
         when(transaction.startTime()).thenReturn(startMillis);
         when(transaction.getTransactionSequenceNumber()).thenReturn(userTxId);
         when(transaction.getTransactionSequenceNumber()).thenReturn(EXPECTED_USER_TRANSACTION_ID);
@@ -244,5 +255,20 @@ class KernelTransactionTimeoutMonitorTest {
         when(transaction.markForTermination(EXPECTED_USER_TRANSACTION_ID, timoutStatus))
                 .thenReturn(true);
         return transaction;
+    }
+
+    private static class TestVersionContextSupplier implements VersionContextSupplier {
+        @Override
+        public void init(
+                TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+                OldestTransactionIdFactory oldestTransactionIdFactory) {}
+
+        @Override
+        public VersionContext createVersionContext() {
+            var context = new TransactionVersionContext(
+                    TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY, EMPTY_OLDEST_ID_FACTORY);
+            context.initRead();
+            return context;
+        }
     }
 }

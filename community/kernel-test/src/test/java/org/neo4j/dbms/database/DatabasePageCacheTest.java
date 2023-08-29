@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.impl.muninn.EvictionBouncer.ALWAYS_ALLOW;
 import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.EMPTY_STORAGE;
 
 import java.io.IOException;
@@ -78,7 +79,7 @@ class DatabasePageCacheTest {
     void setUp() throws IOException {
         globalPageCache = mock(PageCache.class);
         pagedFileMapper = new PagedFileAnswer();
-        when(globalPageCache.map(any(Path.class), eq(PAGE_SIZE), any(), any(), any(), any()))
+        when(globalPageCache.map(any(Path.class), eq(PAGE_SIZE), any(), any(), any(), any(), any()))
                 .then(pagedFileMapper);
         databasePageCache = createPageCache();
     }
@@ -96,7 +97,8 @@ class DatabasePageCacheTest {
         PagedFile pagedFile = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty());
 
         assertNotNull(pagedFile);
-        verify(globalPageCache).map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty(), DISABLED, EMPTY_STORAGE);
+        verify(globalPageCache)
+                .map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty(), DISABLED, ALWAYS_ALLOW, EMPTY_STORAGE);
     }
 
     @Test

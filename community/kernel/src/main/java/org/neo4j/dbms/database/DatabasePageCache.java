@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -78,12 +79,13 @@ public class DatabasePageCache implements PageCache {
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
             IOController ignoredController,
+            EvictionBouncer evictionBouncer,
             VersionStorage ignoredVersionStorage)
             throws IOException {
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
-        PagedFile pagedFile =
-                globalPageCache.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
+        PagedFile pagedFile = globalPageCache.map(
+                path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
         // Our default page cache handles mapping a file multiple times, where additional mappings for the
         // same file just returns the existing mapping. The DatabasePageCache needs to keep track of when
         // a file is mapped the first time _for this particular instance_ tho, so that listeners can be

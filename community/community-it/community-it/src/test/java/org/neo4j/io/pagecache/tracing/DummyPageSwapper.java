@@ -102,6 +102,11 @@ public class DummyPageSwapper implements PageSwapper {
     }
 
     @Override
+    public boolean isPageFlushable(long pageRef) {
+        return true;
+    }
+
+    @Override
     public void closeAndDelete() {}
 
     @Override

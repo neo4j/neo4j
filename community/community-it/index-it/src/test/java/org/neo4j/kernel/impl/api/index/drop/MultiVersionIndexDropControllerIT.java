@@ -284,7 +284,7 @@ class MultiVersionIndexDropControllerIT {
         }
 
         @Override
-        public long oldestVisibleTransactionNumber() {
+        public long oldestVisibleClosedTransactionId() {
             return 0;
         }
 
