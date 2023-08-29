@@ -150,15 +150,15 @@
                 <executions>
                     <!-- The purpose of this execution is to provide a user-friendly error message when started with an unsupported jvm -->
                     <execution>
-                        <id>compile-java7</id>
+                        <id>compile-java8</id>
                         <goals>
                             <goal>compile</goal>
                         </goals>
                         <configuration>
-                            <source>1.7</source>
-                            <target>1.7</target>
+                            <source>1.8</source>
+                            <target>1.8</target>
                             <compileSourceRoots>
-                                <compileSourceRoot>${project.basedir}/src/main/java7</compileSourceRoot>
+                                <compileSourceRoot>${project.basedir}/src/main/java8</compileSourceRoot>
                             </compileSourceRoots>
                         </configuration>
                     </execution>

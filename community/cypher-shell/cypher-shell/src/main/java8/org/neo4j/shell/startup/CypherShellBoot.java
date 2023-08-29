@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup;
+package org.neo4j.shell.startup;
 
-public class Neo4jBoot {
+public class CypherShellBoot {
 
     /**
      * IMPORTANT NOTE!
-     * This class is compiled using Java 7 and can not use any dependencies or include any other class.
-     * Its only purpose is to print a useful error message when Neo4j (bootloader) is started using an old, unsupported java.
+     * This class is compiled using Java 8 and can not use any dependencies or include any other classes.
+     * Its only purpose is to print a useful error message when Cypher Shell is started using an old, unsupported java.
      */
     public static void main(String[] args) {
         printJavaVersionErrorMessage();
@@ -33,6 +33,6 @@ public class Neo4jBoot {
     static void printJavaVersionErrorMessage() {
         String version = System.getProperty("java.version");
         System.out.println("Unsupported Java " + version
-                + " detected. Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j Server.");
+                + " detected. Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Cypher Shell.");
     }
 }
