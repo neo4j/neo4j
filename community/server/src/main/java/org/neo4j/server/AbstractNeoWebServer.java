@@ -284,6 +284,9 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
             webServer.start();
             registerHttpAddressAfterStartup();
             registerHttpsAddressAfterStartup();
+            var protocol = httpsListenAddress != null ? "HTTPS" : "HTTP";
+            var url = httpsListenAddress != null ? httpsListenAddress : httpListenAddress;
+            log.info("%s enabled on %s.", protocol, url);
             log.info("Remote interface available at %s", getBaseUri());
         } catch (Exception e) {
             SocketAddress address = httpListenAddress != null ? httpListenAddress : httpsListenAddress;
