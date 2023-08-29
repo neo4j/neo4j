@@ -195,9 +195,9 @@ case class Catalog(
 
   def nameById(databaseId: UUID, securityContext: SecurityContext): Option[String] = {
     val alias = findPrimaryAlias(databaseId)
-    val hasAccessToDb = ref => securityContext.databaseAccessMode.canAccessDatabase(ref)
+    val canSeeDb = ref => securityContext.databaseAccessMode.canSeeDatabase(ref)
 
-    alias.filter(hasAccessToDb).map(_.alias().name())
+    alias.filter(canSeeDb).map(_.alias().name())
   }
 
   private def canAccessDatabase(graph: Catalog.Graph, securityContext: SecurityContext): Boolean = {
