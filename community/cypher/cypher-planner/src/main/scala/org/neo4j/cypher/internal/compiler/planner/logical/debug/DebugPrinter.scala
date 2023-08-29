@@ -67,6 +67,10 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     context.planContext.statistics.nodesAllCardinality()
 
     val (plan, newStatement, newReturnColumnts) = stringToLogicalPlan(string)
+
+    // We need to set attributes for the new plan
+    copyAttributes(from, plan)
+
     from.copy(
       maybeLogicalPlan = Some(plan),
       maybeStatement = Some(newStatement),
@@ -96,6 +100,13 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     val newReturnColumns = Seq("col")
 
     (logicalPlan, newStatement, newReturnColumns)
+  }
+
+  private def copyAttributes(from: LogicalPlanState, plan: LogicalPlan) = {
+    from.planningAttributes.solveds.copy(from.logicalPlan.id, plan.id)
+    from.planningAttributes.cardinalities.copy(from.maybeLogicalPlan.get.id, plan.id)
+    from.planningAttributes.providedOrders.copy(from.logicalPlan.id, plan.id)
+    from.planningAttributes.effectiveCardinalities.copy(from.logicalPlan.id, plan.id)
   }
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
