@@ -177,10 +177,10 @@ public class VectorIndexProcedures {
         if (vector == null) {
             throw switch (similarityFunction) {
                 case EUCLIDEAN -> new IllegalArgumentException(
-                        "Index query vector must contain finite values. Provided: %s".formatted(candidate));
+                        "Index query vector must contain finite values. Provided: " + candidate);
                 case COSINE -> new IllegalArgumentException(
-                        "Index query vector must contain finite values, and have finite L2-norm. Provided: %s"
-                                .formatted(candidate));
+                        "Index query vector must contain finite values, and have positive and finite l2-norm."
+                                + " Provided: " + candidate);
             };
         }
         return vector;

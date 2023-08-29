@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.helpers.MathUtil.ceil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -61,7 +62,7 @@ class VectorIndexProceduresIT {
     abstract static class VectorIndexProceduresITBase {
         private static final int NUMBER_OF_NODES = 1000;
         private static final int MAX_PARTITION_SIZE = 400;
-        private static final int VECTOR_DIMENSIONALITY = 1000;
+        protected static final int VECTOR_DIMENSIONALITY = 1000;
         private static final Label LABEL = Label.label("Vector");
         private static final String PROPERTY_KEY = "vector";
         private static final String INDEX_NAME = "VectorIndex";
@@ -73,10 +74,10 @@ class VectorIndexProceduresIT {
         }
 
         @Inject
-        private GraphDatabaseService db;
+        protected GraphDatabaseService db;
 
         @Inject
-        private RandomSupport random;
+        protected RandomSupport random;
 
         @ExtensionCallback
         void configure(TestDatabaseManagementServiceBuilder builder) {
@@ -178,7 +179,7 @@ class VectorIndexProceduresIT {
         }
 
         @Test
-        void cannotQueryWithInvalidVector() {
+        void cannotQueryWithNonFiniteVector() {
             createIndex();
             final var query = randomVector();
             query[random.nextInt(query.length)] = Float.NaN;
@@ -276,7 +277,7 @@ class VectorIndexProceduresIT {
             assertThat(nearest).hasSize(k).isSorted();
         }
 
-        private void createIndex() {
+        protected void createIndex() {
             db.executeTransactionally(
                     "CALL db.index.vector.createNodeIndex($name, $label, $propertyKey, $dimensions, $similarity)",
                     Map.of(
@@ -294,7 +295,7 @@ class VectorIndexProceduresIT {
             }
         }
 
-        private static Result queryNodes(Transaction tx, int k, float[] query) {
+        protected static Result queryNodes(Transaction tx, int k, float[] query) {
             return tx.execute(
                     """
                     CALL db.index.vector.queryNodes($name, $k, $query) YIELD node, score
@@ -367,7 +368,7 @@ class VectorIndexProceduresIT {
             return trueNearestFound / (double) exact.size();
         }
 
-        private float[] randomVector() {
+        protected float[] randomVector() {
             return randomVector(VECTOR_DIMENSIONALITY);
         }
 
@@ -392,6 +393,36 @@ class VectorIndexProceduresIT {
     class Cosine extends VectorIndexProceduresITBase {
         Cosine() {
             super(VectorSimilarityFunction.COSINE);
+        }
+
+        @Test
+        void cannotQueryWithZerol2NormVector() {
+            createIndex();
+            final var query = new float[VECTOR_DIMENSIONALITY];
+            Arrays.fill(query, 0.f);
+            try (final var tx = db.beginTx()) {
+                final var results = queryNodes(tx, 10, query);
+
+                assertThatThrownBy(results::resultAsString, "zero l2-norm query vector should throw")
+                        .rootCause()
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("have positive and finite l2-norm", "Provided");
+            }
+        }
+
+        @Test
+        void cannotQueryWithNonFinitel2NormVector() {
+            createIndex();
+            final var query = randomVector();
+            query[random.nextInt(query.length)] = Float.MAX_VALUE;
+            try (final var tx = db.beginTx()) {
+                final var results = queryNodes(tx, 10, query);
+
+                assertThatThrownBy(results::resultAsString, "non-finite l2-norm query vector should throw")
+                        .rootCause()
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("have positive and finite l2-norm", "Provided");
+            }
         }
     }
 }
