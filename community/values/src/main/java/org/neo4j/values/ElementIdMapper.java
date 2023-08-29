@@ -31,8 +31,8 @@ public abstract class ElementIdMapper {
     public record ElementId(UUID databaseId, long entityId, EntityType entityType) {}
 
     public static ElementId decode(String id, EntityType expectedType) {
-        var elementId = decode( id );
-        verifyEntityType( id, elementId.entityType, expectedType );
+        var elementId = decode(id);
+        verifyEntityType(id, elementId.entityType, expectedType);
         return elementId;
     }
 
