@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.error;
+package org.neo4j.bolt.protocol.error.streaming;
+
+import org.neo4j.bolt.protocol.error.BoltNetworkException;
 
 /**
  * Notifies a caller about an error condition which occurred while attempting to stream a result set.
  */
-public abstract class BoltStreamingException extends RuntimeException {
+public abstract class BoltStreamingException extends BoltNetworkException {
 
     public BoltStreamingException() {
         super();

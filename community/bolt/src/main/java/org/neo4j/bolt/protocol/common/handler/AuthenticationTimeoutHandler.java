@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.error.ClientTimeoutException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.memory.HeapEstimator;
@@ -87,11 +88,11 @@ public class AuthenticationTimeoutHandler extends ChannelInboundHandlerAdapter {
                     null);
         }
 
-        throw new BoltConnectionFatality(
-                format(
-                        "Terminated connection '%s' (%s) as the client failed to authenticate within %d ms.",
-                        this.connection.id(), ctx.channel(), timeout.toMillis()),
-                null);
+        // throw ClientTimeoutException instead of BoltConnectionFatality as we do not consider
+        // client induced errors to be as severe as server caused timeouts
+        throw new ClientTimeoutException(format(
+                "Terminated connection '%s' (%s) as the client failed to authenticate within %d ms.",
+                this.connection.id(), ctx.channel(), timeout.toMillis()));
     }
 
     public void setRequestReceived(boolean requestReceived) {

@@ -48,6 +48,7 @@ import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
+import org.neo4j.bolt.protocol.error.BoltNetworkException;
 import org.neo4j.bolt.tx.Transaction;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
@@ -280,7 +281,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             } else {
                 // if there are no jobs, we'll terminate unless there are open transactions or statements remaining
                 // which require us to remain on this thread
-                if (!this.transaction().isPresent()) {
+                if (this.transaction().isEmpty()) {
                     break;
                 }
 
@@ -351,9 +352,14 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
             log.warn("[" + this.id + "] Terminating connection due to state machine error", ex);
         } catch (Throwable ex) {
-            this.close();
 
-            userLog.error("[" + this.id + "] Terminating connection due to unexpected error", ex);
+            if (ex instanceof BoltNetworkException) {
+                userLog.warn("[" + this.id + "] Terminating connection due to network error", ex);
+            } else {
+                userLog.error("[" + this.id + "] Terminating connection due to unexpected error", ex);
+            }
+
+            this.close();
         } finally {
             this.channel.write(StateSignal.END_JOB_PROCESSING);
         }

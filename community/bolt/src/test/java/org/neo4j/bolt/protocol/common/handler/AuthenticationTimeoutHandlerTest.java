@@ -30,6 +30,7 @@ import io.netty.util.concurrent.EventExecutor;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.protocol.error.ClientTimeoutException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 
@@ -57,7 +58,7 @@ class AuthenticationTimeoutHandlerTest {
 
         timeoutHandler.handlerAdded(ctx);
 
-        var ex = assertThrows(BoltConnectionFatality.class, () -> timeoutHandler.authTimerEnded(ctx));
+        var ex = assertThrows(ClientTimeoutException.class, () -> timeoutHandler.authTimerEnded(ctx));
         assertEquals(
                 "Terminated connection 'bolt-test-connection' (test) as the client failed to authenticate within "
                         + TIMEOUT_DURATION.toMillis() + " ms.",

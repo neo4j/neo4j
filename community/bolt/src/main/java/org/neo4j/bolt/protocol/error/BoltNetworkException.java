@@ -17,27 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.error.streaming;
+package org.neo4j.bolt.protocol.error;
 
-/**
- * Notifies a caller about an error condition in which the server is unable to write to its buffers or flush the buffer
- * contents to the underlying network connection while streaming a result set.
- */
-public class BoltStreamingWriteException extends BoltStreamingException {
+public abstract class BoltNetworkException extends RuntimeException {
 
-    public BoltStreamingWriteException() {
-        super();
-    }
+    public BoltNetworkException() {}
 
-    public BoltStreamingWriteException(String message) {
+    public BoltNetworkException(String message) {
         super(message);
     }
 
-    public BoltStreamingWriteException(String message, Throwable cause) {
+    public BoltNetworkException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public BoltStreamingWriteException(Throwable cause) {
+    public BoltNetworkException(Throwable cause) {
         super(cause);
     }
 }

@@ -46,6 +46,7 @@ import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.bolt.protocol.error.streaming.BoltStreamingWriteException;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.AuthenticationResult;
 import org.neo4j.bolt.security.error.AuthenticationException;
@@ -56,6 +57,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.Level;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -63,6 +65,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.FakeClock;
 
 class AtomicSchedulingConnectionTest {
+
     private static final String CONNECTOR_ID = "bolt";
     private static final String CONNECTION_ID = "bolt-test";
     private static final long CONNECTION_TIME = 424242;
@@ -983,5 +986,45 @@ class AtomicSchedulingConnectionTest {
                 .withNoCause();
 
         Mockito.verifyNoMoreInteractions(listener);
+    }
+
+    @Test
+    void shouldLogNetworkErrorsAsWarnings() throws AuthenticationException {
+        this.selectProtocol();
+        this.authenticate();
+
+        this.connection.submit((fsm, responseHandler) -> {
+            throw new BoltStreamingWriteException("Test");
+        });
+
+        var captor = ArgumentCaptor.forClass(Runnable.class);
+        Mockito.verify(this.executorService).submit(captor.capture());
+
+        captor.getValue().run();
+
+        LogAssertions.assertThat(this.userLogProvider)
+                .forLevel(Level.WARN)
+                .forClass(AtomicSchedulingConnection.class)
+                .containsMessages("Terminating connection due to network error");
+    }
+
+    @Test
+    void shouldServerErrorsAsErrors() throws AuthenticationException {
+        this.selectProtocol();
+        this.authenticate();
+
+        this.connection.submit((fsm, responseHandler) -> {
+            throw new RuntimeException("Test");
+        });
+
+        var captor = ArgumentCaptor.forClass(Runnable.class);
+        Mockito.verify(this.executorService).submit(captor.capture());
+
+        captor.getValue().run();
+
+        LogAssertions.assertThat(this.userLogProvider)
+                .forLevel(Level.ERROR)
+                .forClass(AtomicSchedulingConnection.class)
+                .containsMessages("Terminating connection due to unexpected error");
     }
 }
