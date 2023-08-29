@@ -200,6 +200,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true") // here to make sure we fuse
       .unionNodeByLabelsScan("x", Seq("Dud", "Decoy"), IndexOrderNone)
       .build()
 
@@ -208,7 +209,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be(
+    queryProfile.operatorProfile(2).dbHits() should (be(
       6 + 2 /*label scan*/ + 2 * costOfLabelLookup
     )) // union label scan
   }
@@ -222,6 +223,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true") // here to make sure we fuse
       .intersectionNodeByLabelsScan("x", Seq("Dud", "Decoy"), IndexOrderNone)
       .build()
 
@@ -230,7 +232,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be(
+    queryProfile.operatorProfile(2).dbHits() should (be(
       6 + 2 /*label scan*/ + 2 * costOfLabelLookup
     )) // union label scan
   }
@@ -250,7 +252,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val seekProfile = profileIndexSeek(s"x:Language(difficulty >= ${sizeHint / 2})")
     // then
-    seekProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 10 / 2 + 1) // node index seek
+    seekProfile.operatorProfile(2).dbHits() shouldBe (sizeHint / 10 / 2 + 1) // node index seek
   }
 
   test("should profile dbHits of node index seek with IN predicate") {
@@ -328,7 +330,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val scanProfile = profileIndexSeek("x:Language(difficulty)")
     // then
-    scanProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 10 + 1) // node index scan
+    scanProfile.operatorProfile(2).dbHits() shouldBe (sizeHint / 10 + 1) // node index scan
   }
 
   test("should profile dbHits of node index contains") {
@@ -346,13 +348,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val seekProfile = profileIndexSeek(s"x:Language(difficulty CONTAINS '1')", IndexType.TEXT)
     // then
-    seekProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 2 + 1) // node index contains
+    seekProfile.operatorProfile(2).dbHits() shouldBe (sizeHint / 2 + 1) // node index contains
   }
 
   private def profileIndexSeek(indexSeekString: String, indexType: IndexType = IndexType.RANGE): QueryProfile = {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true") // here to make sure we fuse
       .nodeIndexOperator(indexSeekString, indexType = indexType)
       .build()
 
@@ -521,13 +524,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true") // here to make sure we fuse
       .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]-(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 + 1)
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be(sizeHint / 10 + 1)
   }
 
   test("should profile dbHits of undirected relationship range index seek") {
@@ -544,13 +548,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true") // here to make sure we fuse
       .relationshipIndexOperator(s"(x)-[r:R(difficulty >= ${sizeHint / 2})]-(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 / 2 + 1)
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be(sizeHint / 10 / 2 + 1)
   }
 
   test("should profile dbHits of undirected relationship multiple index exact seek") {
@@ -566,13 +571,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true") // here to make sure we fuse
       .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]-(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2))
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be(sizeHint / 5 + 2))
   }
 
   test("should profile dbHits of directed relationship index scan") {
@@ -612,6 +618,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true") // here to make sure we fuse
       .relationshipIndexOperator(s"(x)-[r:R(difficulty)]-(y)")
       .build()
 
@@ -619,7 +626,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe sizeHint / 10 + 1
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe sizeHint / 10 + 1
   }
 
   test("should profile dbHits of node by id") {

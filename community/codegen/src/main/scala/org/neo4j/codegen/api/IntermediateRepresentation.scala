@@ -1437,6 +1437,8 @@ object IntermediateRepresentation {
    */
   def increment(value: String): IntermediateRepresentation = assign(value, add(load[Int](value), constant(1)))
 
+  def increment(value: InstanceField): IntermediateRepresentation = setField(value, add(loadField(value), constant(1)))
+
   def subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Subtract(lhs, rhs)
 
@@ -1498,9 +1500,10 @@ object IntermediateRepresentation {
     NotEq(lhs, rhs)
 
   def block(ops: IntermediateRepresentation*): IntermediateRepresentation = {
-    if (ops.isEmpty) noop()
-    else if (ops.length == 1) ops.head
-    else Block(ops)
+    val reducedOps = ops.filter(_ != Noop)
+    if (reducedOps.isEmpty) noop()
+    else if (reducedOps.length == 1) reducedOps.head
+    else Block(reducedOps)
   }
 
   def block(ops: collection.Seq[IntermediateRepresentation]): IntermediateRepresentation = {
