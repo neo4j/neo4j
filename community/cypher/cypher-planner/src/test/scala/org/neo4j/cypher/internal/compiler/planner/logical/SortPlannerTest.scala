@@ -556,4 +556,17 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       context.planningAttributes.solveds.get(sortedPlan.id) should equal(context.planningAttributes.solveds.get(inputPlan.id))
     }
   }
+
+  test("should return None if required sort is an aggregation function") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(count(prop("x", "foo"))))
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
+
+      // Then
+      sortedPlan shouldBe None
+    }
+  }
 }
