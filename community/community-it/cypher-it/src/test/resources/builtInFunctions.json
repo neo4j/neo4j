@@ -843,6 +843,34 @@
     "isDeprecated": false
   },
   {
+    "name": "db.nameFromElementId",
+    "category": "Database",
+    "description": "Resolves the database name for the given element id",
+    "signature": "db.nameFromElementId(elementId :: STRING?) :: (String?)",
+    "isBuiltIn": true,
+    "enterpriseOnly": true,
+    "argumentDescription": [
+      {
+        "name": "elementId",
+        "description": "elementId :: STRING?",
+        "type": "STRING?",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
     "name": "degrees",
     "category": "Trigonometric",
     "description": "Converts radians to degrees.",
