@@ -149,6 +149,21 @@ public class RandomSupport {
         return nextLong(bound - origin) + origin;
     }
 
+    /**
+     * Runs a {@link Runnable} with specified probability.
+     *
+     * @param probability
+     * @param runnable
+     * @return if run
+     */
+    public boolean withProbability(double probability, Runnable runnable) {
+        final var run = nextDouble() < probability;
+        if (run) {
+            runnable.run();
+        }
+        return run;
+    }
+
     // ============================
     // Methods from RandomValues
     // ============================
