@@ -2322,6 +2322,76 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }
 
+  test("should convert query with path selector and var-length relationship under REPEATABLE ELEMENTS") {
+    val query = buildSinglePlannerQuery(
+      """MATCH REPEATABLE ELEMENTS SHORTEST 1 GROUP (start)-[r*1..5]->(end)
+        |RETURN 1 AS one""".stripMargin
+    )
+
+    val rel =
+      PatternRelationship(
+        name = "r",
+        boundaryNodes = ("start", "end"),
+        dir = SemanticDirection.OUTGOING,
+        types = Nil,
+        length = VarPatternLength(1, Some(5))
+      )
+
+    val shortestPathPattern =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(rel)),
+        selections = Selections.from(Seq(
+          varLengthLowerLimitPredicate("r", 1),
+          varLengthUpperLimitPredicate("r", 5)
+        )),
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addSelectivePathPattern(shortestPathPattern)
+
+    val projection = RegularQueryProjection(projections = Map("one" -> literalInt(1)), isTerminating = true)
+
+    query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
+  }
+
+  test("should convert query with qpp under REPEATABLE ELEMENTS") {
+    val query = buildSinglePlannerQuery(
+      """MATCH REPEATABLE ELEMENTS SHORTEST 1 GROUP (start)-[r*1..5]->(end)
+        |RETURN 1 AS one""".stripMargin
+    )
+
+    val rel =
+      PatternRelationship(
+        name = "r",
+        boundaryNodes = ("start", "end"),
+        dir = SemanticDirection.OUTGOING,
+        types = Nil,
+        length = VarPatternLength(1, Some(5))
+      )
+
+    val shortestPathPattern =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(rel)),
+        selections = Selections.from(Seq(
+          varLengthLowerLimitPredicate("r", 1),
+          varLengthUpperLimitPredicate("r", 5)
+        )),
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addSelectivePathPattern(shortestPathPattern)
+
+    val projection = RegularQueryProjection(projections = Map("one" -> literalInt(1)), isTerminating = true)
+
+    query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
+  }
+
   test("should convert query with path selector, path assignment, and predicates") {
     val query = buildSinglePlannerQuery(
       """MATCH p = ANY SHORTEST ((start:Start)((a)-[r:R]->(b))+(end) WHERE start.prop < size(r))

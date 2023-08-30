@@ -63,13 +63,20 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     assertIsNotRewritten("MATCH (n)-[r1]->(m) MATCH (m)-[r2]->(x) RETURN x")
   }
 
-  test("Match with repeatable elements should not introduce uniqueness predicates") {
-    assertIsNotRewritten("MATCH REPEATABLE ELEMENTS (b)-[r*0..1]->(c) RETURN *")
-    assertIsNotRewritten("MATCH REPEATABLE ELEMENTS (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *")
-    assertIsNotRewritten("MATCH REPEATABLE ELEMENTS (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c)-[r3:R1|R2*0..1]->(d) RETURN *")
-    assertIsNotRewritten("MATCH REPEATABLE ELEMENTS (a)-[r1]->(b)-[r2]->(c) RETURN *")
-    assertIsNotRewritten("MATCH REPEATABLE ELEMENTS (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r*]->(b)) RETURN *")
-    assertIsNotRewritten("MATCH REPEATABLE ELEMENTS (a)-[r]->(b)-[r]->(c) RETURN *")
+  test("MATCH with REPEATABLE ELEMENTS should not introduce uniqueness predicates") {
+    Seq(
+      "(b)-[r*0..1]->(c)",
+      "(a)-[r1]->(b)-[r2*0..1]->(c)",
+      "(a)-[r1:R1]->(b)-[r2:R2*0..1]->(c)-[r3:R1|R2*0..1]->(d)",
+      "(a)-[r1]->(b)-[r2]->(c)",
+      "(a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r*]->(b))",
+      "(a)-[r]->(b)-[r]->(c)",
+      "(a)-[r]->+(b)-[r]->(c)",
+      "(a)(()-[r]->(b)-[r]->())+(c)",
+      "SHORTEST 1 (a)-[r]->+(b)-[r]->(c)"
+    ).foreach { pattern =>
+      assertIsNotRewritten(s"MATCH REPEATABLE ELEMENTS $pattern RETURN *")
+    }
   }
 
   test("uniqueness check is done for one variable length relationship") {
