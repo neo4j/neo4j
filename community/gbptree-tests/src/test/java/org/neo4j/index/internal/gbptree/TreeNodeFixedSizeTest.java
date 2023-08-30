@@ -24,8 +24,7 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.io.pagecache.PageCursor;
 
-public class TreeNodeFixedSizeTest
-        extends TreeNodeTestBase<MutableLong, MutableLong, TreeNodeFixedSize<MutableLong, MutableLong>> {
+class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong, MutableLong> {
     private final SimpleLongLayout layout = longLayout().build();
 
     @Override
@@ -34,15 +33,22 @@ public class TreeNodeFixedSizeTest
     }
 
     @Override
-    protected TreeNodeFixedSize<MutableLong, MutableLong> getNode(
+    protected LeafNodeBehaviour<MutableLong, MutableLong> getLeaf(
             int pageSize,
             Layout<MutableLong, MutableLong> layout,
             OffloadStore<MutableLong, MutableLong> offloadStore) {
-        return new TreeNodeFixedSize<>(pageSize, layout);
+        return new LeafNodeFixedSize<>(pageSize, layout);
     }
 
     @Override
-    void assertAdditionalHeader(
-            PageCursor cursor, TreeNode<MutableLong, MutableLong> node, int pageSize) { // no addition header
+    protected InternalNodeBehaviour<MutableLong> getInternal(
+            int pageSize,
+            Layout<MutableLong, MutableLong> layout,
+            OffloadStore<MutableLong, MutableLong> offloadStore) {
+        return new InternalNodeFixedSize<>(pageSize, layout);
+    }
+
+    @Override
+    void assertAdditionalHeader(PageCursor cursor, int pageSize) { // no addition header
     }
 }

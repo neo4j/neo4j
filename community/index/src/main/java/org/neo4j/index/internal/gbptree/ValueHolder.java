@@ -19,21 +19,25 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes, RawBytes> {
-    @Override
-    TestLayout<RawBytes, RawBytes> getLayout() {
-        return new SimpleByteArrayLayout();
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContext;
+
+/**
+ * Holds VALUE and `defined` flag. See {@link #valueAt(PageCursor, ValueHolder, int, CursorContext)}
+ * and {@link #keyValueAt(PageCursor, Object, ValueHolder, int, CursorContext)}
+ *
+ * @param <VALUE>
+ */
+public final class ValueHolder<VALUE> {
+    VALUE value;
+    boolean defined;
+
+    public ValueHolder(VALUE value) {
+        this(value, false);
     }
 
-    @Override
-    protected LeafNodeBehaviour<RawBytes, RawBytes> getLeaf(
-            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new LeafNodeDynamicSize<>(pageSize, layout, offloadStore);
-    }
-
-    @Override
-    protected InternalNodeBehaviour<RawBytes> getInternal(
-            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new InternalNodeDynamicSize<>(pageSize, layout, offloadStore);
+    public ValueHolder(VALUE value, boolean defined) {
+        this.value = value;
+        this.defined = defined;
     }
 }

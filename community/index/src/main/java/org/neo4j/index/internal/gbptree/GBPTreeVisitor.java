@@ -56,7 +56,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
 
     void historyEnd();
 
-    void historicalValue(long version, TreeNode.ValueHolder<DATA_VALUE> value);
+    void historicalValue(long version, ValueHolder<DATA_VALUE> value);
 
     class Adaptor<ROOT_KEY, DATA_KEY, DATA_VALUE> implements GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         @Override
@@ -108,7 +108,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
         public void historyEnd() {}
 
         @Override
-        public void historicalValue(long version, TreeNode.ValueHolder<DATA_VALUE> value) {}
+        public void historicalValue(long version, ValueHolder<DATA_VALUE> value) {}
 
         @Override
         public void beginFreelistPage(long pageId) {}

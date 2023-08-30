@@ -23,15 +23,10 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-interface LeafNodeBehaviour<KEY, VALUE> {
-    void writeAdditionalHeader(PageCursor cursor);
+public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> {
+    void initialize(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration);
 
-    long offloadIdAt(PageCursor cursor, int pos);
-
-    KEY keyAt(PageCursor cursor, KEY into, int pos, CursorContext cursorContext);
-
-    void keyValueAt(
-            PageCursor cursor, KEY intoKey, TreeNode.ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext)
+    void keyValueAt(PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext)
             throws IOException;
 
     void insertKeyValueAt(
@@ -64,8 +59,7 @@ interface LeafNodeBehaviour<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException;
 
-    TreeNode.ValueHolder<VALUE> valueAt(
-            PageCursor cursor, TreeNode.ValueHolder<VALUE> into, int pos, CursorContext cursorContext)
+    ValueHolder<VALUE> valueAt(PageCursor cursor, ValueHolder<VALUE> into, int pos, CursorContext cursorContext)
             throws IOException;
 
     boolean setValueAt(
@@ -85,7 +79,7 @@ interface LeafNodeBehaviour<KEY, VALUE> {
 
     int maxKeyCount();
 
-    TreeNode.Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue);
+    Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue);
 
     int availableSpace(PageCursor cursor, int currentKeyCount);
 
@@ -144,4 +138,6 @@ interface LeafNodeBehaviour<KEY, VALUE> {
 
     <ROOT_KEY> void deepVisitValue(PageCursor cursor, int pos, GBPTreeVisitor<ROOT_KEY, KEY, VALUE> visitor)
             throws IOException;
+
+    boolean reasonableKeyCount(int keyCount);
 }

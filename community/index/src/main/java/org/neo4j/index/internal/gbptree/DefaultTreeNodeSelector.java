@@ -22,55 +22,80 @@ package org.neo4j.index.internal.gbptree;
 import org.neo4j.common.DependencyResolver;
 
 /**
- * Able to select implementation of {@link TreeNode} to use in different scenarios, should be used in favor of directly
- * instantiating {@link TreeNode} instances.
+ * Default {@link TreeNodeSelector} creating fixed or dynamic size node behaviours.
  */
 public class DefaultTreeNodeSelector {
+
     /**
-     * Creates {@link TreeNodeFixedSize} instances.
+     * Creates instances for fixed size node behaviours.
      */
     private static final TreeNodeSelector.Factory FIXED = new TreeNodeSelector.Factory() {
-        @Override
-        public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize,
-                Layout<KEY, VALUE> layout,
-                OffloadStore<KEY, VALUE> offloadStore,
-                DependencyResolver dependencyResolver) {
-            return new TreeNodeFixedSize<>(pageSize, layout);
-        }
+
+        static final byte FORMAT_IDENTIFIER = 2;
+        static final byte FORMAT_VERSION = 0;
 
         @Override
-        public byte formatIdentifier() {
-            return TreeNodeFixedSize.FORMAT_IDENTIFIER;
-        }
-
-        @Override
-        public byte formatVersion() {
-            return TreeNodeFixedSize.FORMAT_VERSION;
-        }
-    };
-
-    /**
-     * Creates {@link TreeNodeDynamicSize} instances.
-     */
-    private static final TreeNodeSelector.Factory DYNAMIC = new TreeNodeSelector.Factory() {
-        @Override
-        public <KEY, VALUE> TreeNode<KEY, VALUE> create(
+        public <KEY, VALUE> LeafNodeBehaviour<KEY, VALUE> createLeafBehaviour(
                 int payloadSize,
                 Layout<KEY, VALUE> layout,
                 OffloadStore<KEY, VALUE> offloadStore,
                 DependencyResolver dependencyResolver) {
-            return new TreeNodeDynamicSize<>(payloadSize, layout, offloadStore);
+            return new LeafNodeFixedSize<>(payloadSize, layout);
+        }
+
+        @Override
+        public <KEY, VALUE> InternalNodeBehaviour<KEY> createInternalBehaviour(
+                int payloadSize,
+                Layout<KEY, VALUE> layout,
+                OffloadStore<KEY, VALUE> offloadStore,
+                DependencyResolver dependencyResolver) {
+            return new InternalNodeFixedSize<>(payloadSize, layout);
         }
 
         @Override
         public byte formatIdentifier() {
-            return TreeNodeDynamicSize.FORMAT_IDENTIFIER;
+            return FORMAT_IDENTIFIER;
         }
 
         @Override
         public byte formatVersion() {
-            return TreeNodeDynamicSize.FORMAT_VERSION;
+            return FORMAT_VERSION;
+        }
+    };
+
+    /**
+     * Creates instances for dynamic size node behaviours.
+     */
+    private static final TreeNodeSelector.Factory DYNAMIC = new TreeNodeSelector.Factory() {
+        static final byte FORMAT_IDENTIFIER = 3;
+        static final byte FORMAT_VERSION = 0;
+
+        @Override
+        public <KEY, VALUE> LeafNodeBehaviour<KEY, VALUE> createLeafBehaviour(
+                int payloadSize,
+                Layout<KEY, VALUE> layout,
+                OffloadStore<KEY, VALUE> offloadStore,
+                DependencyResolver dependencyResolver) {
+            return new LeafNodeDynamicSize<>(payloadSize, layout, offloadStore);
+        }
+
+        @Override
+        public <KEY, VALUE> InternalNodeBehaviour<KEY> createInternalBehaviour(
+                int payloadSize,
+                Layout<KEY, VALUE> layout,
+                OffloadStore<KEY, VALUE> offloadStore,
+                DependencyResolver dependencyResolver) {
+            return new InternalNodeDynamicSize<>(payloadSize, layout, offloadStore);
+        }
+
+        @Override
+        public byte formatIdentifier() {
+            return FORMAT_IDENTIFIER;
+        }
+
+        @Override
+        public byte formatVersion() {
+            return FORMAT_VERSION;
         }
     };
 

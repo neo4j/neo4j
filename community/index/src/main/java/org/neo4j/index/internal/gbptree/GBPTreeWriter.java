@@ -54,7 +54,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     private final StructurePropagation<K> structurePropagation;
     private final PagedFile pagedFile;
     private final TreeWriterCoordination coordination;
-    private final TreeNode<K, V> bTreeNode;
+    private final LeafNodeBehaviour<K, V> leafNode;
+    private final InternalNodeBehaviour<K> internalNode;
     private final boolean parallel;
     private final TreeRootExchange rootExchange;
     private final Layout<K, V> layout;
@@ -74,7 +75,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             PagedFile pagedFile,
             TreeWriterCoordination coordination,
             InternalTreeLogic<K, V> treeLogic,
-            TreeNode<K, V> bTreeNode,
+            LeafNodeBehaviour<K, V> leafNode,
+            InternalNodeBehaviour<K> internalNode,
             boolean parallel,
             TreeRootExchange rootExchange,
             ReadWriteLock checkpointLock,
@@ -87,7 +89,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         this.layout = layout;
         this.pagedFile = pagedFile;
         this.coordination = coordination;
-        this.bTreeNode = bTreeNode;
+        this.leafNode = leafNode;
+        this.internalNode = internalNode;
         this.parallel = parallel;
         this.rootExchange = rootExchange;
         this.structurePropagation = new StructurePropagation<>(layout.newKey(), layout.newKey(), layout.newKey());
@@ -273,7 +276,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         var isInternal = isInternal(cursor);
         return coordination.arrivedAtChild(
                 isInternal,
-                bTreeNode.availableSpace(cursor, keyCount, isInternal),
+                (isInternal ? internalNode : leafNode).availableSpace(cursor, keyCount),
                 generation(cursor) != unstableGeneration,
                 keyCount);
     }
@@ -285,7 +288,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
 
     @Override
     public V remove(K key) {
-        var removedValue = new TreeNode.ValueHolder<>(layout.newValue());
+        var removedValue = new ValueHolder<>(layout.newValue());
         InternalTreeLogic.RemoveResult result;
         try {
             // Try optimistic mode
@@ -447,9 +450,9 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             long newRootId = freeList.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
             PageCursorUtil.goTo(cursor, "new root", newRootId);
 
-            bTreeNode.initializeInternal(cursor, treeLogic.layerType, stableGeneration, unstableGeneration);
-            bTreeNode.setChildAt(cursor, structurePropagation.midChild, 0, stableGeneration, unstableGeneration);
-            bTreeNode.insertKeyAndRightChildAt(
+            internalNode.initialize(cursor, treeLogic.layerType, stableGeneration, unstableGeneration);
+            internalNode.setChildAt(cursor, structurePropagation.midChild, 0, stableGeneration, unstableGeneration);
+            internalNode.insertKeyAndRightChildAt(
                     cursor,
                     structurePropagation.rightKey,
                     structurePropagation.rightChild,

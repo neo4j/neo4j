@@ -35,7 +35,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * </pre>
  *
  * A free-list node is a page in the same {@link org.neo4j.io.pagecache.PagedFile mapped page cache file}
- * as a {@link TreeNode}. They distinguish themselves from one another by a "node type" one-byte header.
+ * as a tree node. They distinguish themselves from one another by a "node type" one-byte header.
  */
 class FreelistNode {
     private static final int PAGE_ID_SIZE = GenerationSafePointer.POINTER_SIZE;

@@ -37,11 +37,11 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putTombstone;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readOffloadId;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.recordAliveBlocks;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.setAllocOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.setDeadSpace;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.validateInlineCap;
 import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.SIZE_PAGE_REFERENCE;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.insertSlotsAt;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.readDynamicKey;
@@ -52,6 +52,7 @@ import static org.neo4j.io.pagecache.PageCursorUtil.putUnsignedShort;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.StringJoiner;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -114,8 +115,10 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
     }
 
     @Override
-    public void writeAdditionalHeader(PageCursor cursor) {
-        DynamicSizeUtil.setAllocOffset(cursor, payloadSize);
+    public void initialize(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration) {
+        TreeNodeUtil.writeBaseHeader(
+                cursor, TreeNodeUtil.INTERNAL_FLAG, layerType, stableGeneration, unstableGeneration);
+        setAllocOffset(cursor, payloadSize);
         setDeadSpace(cursor, 0);
     }
 
@@ -129,6 +132,11 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
     public KEY keyAt(PageCursor cursor, KEY into, int pos, CursorContext cursorContext) {
         placeCursorAtActualKey(cursor, pos);
         return readDynamicKey(layout, offloadStore, cursor, into, pos, cursorContext, keySizeCap);
+    }
+
+    @Override
+    public Comparator<KEY> keyComparator() {
+        return layout;
     }
 
     @Override
@@ -164,7 +172,7 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
         }
 
         // Update alloc space
-        DynamicSizeUtil.setAllocOffset(cursor, newKeyOffset);
+        setAllocOffset(cursor, newKeyOffset);
 
         // Write to offset array
         int childPos = pos + 1;
@@ -281,13 +289,9 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
         writeChild(cursor, child, stableGeneration, unstableGeneration, pos, childOffset);
     }
 
-    boolean reasonableKeyCount(int keyCount) {
-        return keyCount >= 0 && keyCount <= maxKeyCount;
-    }
-
     @Override
-    public boolean reasonableChildCount(int childCount) {
-        return reasonableKeyCount(childCount);
+    public boolean reasonableKeyCount(int keyCount) {
+        return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
     @Override
@@ -458,7 +462,7 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
             toCursor.setOffset(keyPosOffsetInternal(toPos));
             putUnsignedShort(toCursor, toAllocOffset);
         }
-        DynamicSizeUtil.setAllocOffset(toCursor, toAllocOffset);
+        setAllocOffset(toCursor, toAllocOffset);
 
         // Update deadSpace
         int deadSpace = getDeadSpace(fromCursor);

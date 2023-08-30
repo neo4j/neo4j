@@ -21,8 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -46,23 +44,29 @@ import org.neo4j.util.Preconditions;
  * @param <DATA_VALUE>> type of values in the data trees.
  */
 public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
-    private final TreeNode<ROOT_KEY, RootMappingValue> rootTreeNode;
+    private final LeafNodeBehaviour<ROOT_KEY, RootMappingValue> rootLeaf;
+    private final InternalNodeBehaviour<ROOT_KEY> rootInternal;
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
-    private final TreeNode<DATA_KEY, DATA_VALUE> dataTreeNode;
+    private final LeafNodeBehaviour<DATA_KEY, DATA_VALUE> dataLeaf;
+    private final InternalNodeBehaviour<DATA_KEY> dataInternal;
     private final Layout<DATA_KEY, DATA_VALUE> dataLayout;
     private final long stableGeneration;
     private final long unstableGeneration;
 
     GBPTreeStructure(
-            TreeNode<ROOT_KEY, RootMappingValue> rootTreeNode,
             Layout<ROOT_KEY, RootMappingValue> rootLayout,
-            TreeNode<DATA_KEY, DATA_VALUE> dataTreeNode,
+            LeafNodeBehaviour<ROOT_KEY, RootMappingValue> rootLeaf,
+            InternalNodeBehaviour<ROOT_KEY> rootInternal,
             Layout<DATA_KEY, DATA_VALUE> dataLayout,
+            LeafNodeBehaviour<DATA_KEY, DATA_VALUE> dataLeaf,
+            InternalNodeBehaviour<DATA_KEY> dataInternal,
             long stableGeneration,
             long unstableGeneration) {
-        this.rootTreeNode = rootTreeNode;
+        this.rootLeaf = rootLeaf;
+        this.rootInternal = rootInternal;
         this.rootLayout = rootLayout;
-        this.dataTreeNode = dataTreeNode;
+        this.dataLeaf = dataLeaf;
+        this.dataInternal = dataInternal;
         this.dataLayout = dataLayout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -214,7 +218,8 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             isDataNode = TreeNodeUtil.layerType(cursor) == TreeNodeUtil.DATA_LAYER_FLAG;
             generation = TreeNodeUtil.generation(cursor);
         } while (cursor.shouldRetry());
-        Preconditions.checkState(treeNode(isDataNode).reasonableKeyCount(keyCount), "Unexpected keyCount %d", keyCount);
+        Preconditions.checkState(
+                keyCount >= 0 && keyCount <= treeNodeMaxKeyCount(isDataNode), "Unexpected keyCount %d", keyCount);
         visitor.beginNode(cursor.getCurrentPageId(), isLeaf, generation, keyCount);
 
         for (int i = 0; i < keyCount; i++) {
@@ -227,7 +232,8 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         if (!isLeaf) {
             long child;
             do {
-                child = pointer(treeNode(isDataNode).childAt(cursor, keyCount, stableGeneration, unstableGeneration));
+                child = pointer(
+                        internalNode(isDataNode).childAt(cursor, keyCount, stableGeneration, unstableGeneration));
             } while (cursor.shouldRetry());
             visitor.position(keyCount);
             visitor.child(child);
@@ -235,8 +241,15 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         visitor.endNode(cursor.getCurrentPageId());
     }
 
-    private TreeNode<?, ?> treeNode(boolean isDataNode) {
-        return isDataNode ? dataTreeNode : rootTreeNode;
+    private int treeNodeMaxKeyCount(boolean isDataNode) {
+        if (isDataNode) {
+            return Math.max(dataInternal.maxKeyCount(), dataLeaf.maxKeyCount());
+        }
+        return Math.max(rootInternal.maxKeyCount(), rootLeaf.maxKeyCount());
+    }
+
+    private InternalNodeBehaviour<?> internalNode(boolean isDataNode) {
+        return isDataNode ? dataInternal : rootInternal;
     }
 
     private void visitDataEntry(
@@ -247,17 +260,17 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             int i)
             throws IOException {
         DATA_KEY key = dataLayout.newKey();
-        var value = new TreeNode.ValueHolder<>(dataLayout.newValue());
+        var value = new ValueHolder<>(dataLayout.newValue());
         long offloadId;
         long child = -1;
         do {
-            TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
-            offloadId = dataTreeNode.offloadIdAt(cursor, i, type);
             if (isLeaf) {
-                dataTreeNode.keyValueAt(cursor, key, value, i, cursorContext);
+                offloadId = dataLeaf.offloadIdAt(cursor, i);
+                dataLeaf.keyValueAt(cursor, key, value, i, cursorContext);
             } else {
-                dataTreeNode.keyAt(cursor, key, i, type, cursorContext);
-                child = pointer(dataTreeNode.childAt(cursor, i, stableGeneration, unstableGeneration));
+                offloadId = dataInternal.offloadIdAt(cursor, i);
+                dataInternal.keyAt(cursor, key, i, cursorContext);
+                child = pointer(dataInternal.childAt(cursor, i, stableGeneration, unstableGeneration));
             }
         } while (cursor.shouldRetry());
 
@@ -265,7 +278,7 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         if (isLeaf) {
             visitor.key(key, isLeaf, offloadId);
             visitor.value(value.value);
-            dataTreeNode.deepVisitValue(cursor, i, visitor);
+            dataLeaf.deepVisitValue(cursor, i, visitor);
         } else {
             visitor.child(child);
             visitor.key(key, isLeaf, offloadId);
@@ -280,17 +293,17 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             int i)
             throws IOException {
         ROOT_KEY key = rootLayout.newKey();
-        var value = new TreeNode.ValueHolder<>(rootLayout.newValue());
+        var value = new ValueHolder<>(rootLayout.newValue());
         long offloadId;
         long child = -1;
         do {
-            TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
-            offloadId = rootTreeNode.offloadIdAt(cursor, i, type);
             if (isLeaf) {
-                rootTreeNode.keyValueAt(cursor, key, value, i, cursorContext);
+                offloadId = rootLeaf.offloadIdAt(cursor, i);
+                rootLeaf.keyValueAt(cursor, key, value, i, cursorContext);
             } else {
-                rootTreeNode.keyAt(cursor, key, i, type, cursorContext);
-                child = pointer(rootTreeNode.childAt(cursor, i, stableGeneration, unstableGeneration));
+                offloadId = rootInternal.offloadIdAt(cursor, i);
+                rootInternal.keyAt(cursor, key, i, cursorContext);
+                child = pointer(rootInternal.childAt(cursor, i, stableGeneration, unstableGeneration));
             }
         } while (cursor.shouldRetry());
 
@@ -315,7 +328,7 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
 
         if (isInternal) {
             do {
-                leftmostSibling = treeNode(isDataNode).childAt(cursor, 0, stableGeneration, unstableGeneration);
+                leftmostSibling = internalNode(isDataNode).childAt(cursor, 0, stableGeneration, unstableGeneration);
             } while (cursor.shouldRetry());
             TreeNodeUtil.goTo(cursor, "child", leftmostSibling);
         }

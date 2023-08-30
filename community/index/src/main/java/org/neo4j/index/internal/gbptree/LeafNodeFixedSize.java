@@ -31,8 +31,7 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.removeSlotsAt;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.setKeyCount;
 
 import java.io.IOException;
-import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
-import org.neo4j.index.internal.gbptree.TreeNode.ValueHolder;
+import java.util.Comparator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
@@ -92,8 +91,8 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public void writeAdditionalHeader(PageCursor cursor) {
-        // no-op
+    public void initialize(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration) {
+        TreeNodeUtil.writeBaseHeader(cursor, TreeNodeUtil.LEAF_FLAG, layerType, stableGeneration, unstableGeneration);
     }
 
     @Override
@@ -106,6 +105,11 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         cursor.setOffset(keyOffset(pos));
         layout.readKey(cursor, into, FIXED_SIZE_KEY);
         return into;
+    }
+
+    @Override
+    public Comparator<KEY> keyComparator() {
+        return layout;
     }
 
     @Override
@@ -440,4 +444,9 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     @Override
     public <ROOT_KEY> void deepVisitValue(PageCursor cursor, int pos, GBPTreeVisitor<ROOT_KEY, KEY, VALUE> visitor)
             throws IOException {}
+
+    @Override
+    public boolean reasonableKeyCount(int keyCount) {
+        return keyCount >= 0 && keyCount <= maxKeyCount;
+    }
 }

@@ -19,21 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes, RawBytes> {
-    @Override
-    TestLayout<RawBytes, RawBytes> getLayout() {
-        return new SimpleByteArrayLayout();
-    }
-
-    @Override
-    protected LeafNodeBehaviour<RawBytes, RawBytes> getLeaf(
-            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new LeafNodeDynamicSize<>(pageSize, layout, offloadStore);
-    }
-
-    @Override
-    protected InternalNodeBehaviour<RawBytes> getInternal(
-            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new InternalNodeDynamicSize<>(pageSize, layout, offloadStore);
-    }
+public enum Overflow {
+    YES,
+    NO,
+    NO_NEED_DEFRAG
 }

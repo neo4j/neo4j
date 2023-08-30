@@ -23,10 +23,8 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_LEFTSIBLING
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_SUCCESSOR;
 
-import java.util.Objects;
-
-public interface GBPTreePointerType {
-    int offset(TreeNode node);
+public sealed interface GBPTreePointerType {
+    int offset(InternalNodeBehaviour<?> node);
 
     static GBPTreePointerType leftSibling() {
         return SimplePointer.LEFT_SIBLING;
@@ -51,7 +49,7 @@ public interface GBPTreePointerType {
     enum SimplePointer implements GBPTreePointerType {
         NO_POINTER {
             @Override
-            public int offset(TreeNode node) {
+            public int offset(InternalNodeBehaviour<?> node) {
                 return 0;
             }
 
@@ -62,7 +60,7 @@ public interface GBPTreePointerType {
         },
         LEFT_SIBLING {
             @Override
-            public int offset(TreeNode node) {
+            public int offset(InternalNodeBehaviour<?> node) {
                 return BYTE_POS_LEFTSIBLING;
             }
 
@@ -73,7 +71,7 @@ public interface GBPTreePointerType {
         },
         RIGHT_SIBLING {
             @Override
-            public int offset(TreeNode node) {
+            public int offset(InternalNodeBehaviour<?> node) {
                 return BYTE_POS_RIGHTSIBLING;
             }
 
@@ -84,7 +82,7 @@ public interface GBPTreePointerType {
         },
         SUCCESSOR {
             @Override
-            public int offset(TreeNode node) {
+            public int offset(InternalNodeBehaviour<?> node) {
                 return BYTE_POS_SUCCESSOR;
             }
 
@@ -95,38 +93,16 @@ public interface GBPTreePointerType {
         }
     }
 
-    class ChildPointer implements GBPTreePointerType {
-        private final int pos;
-
-        ChildPointer(int pos) {
-            this.pos = pos;
-        }
+    record ChildPointer(int pos) implements GBPTreePointerType {
 
         @Override
-        public int offset(TreeNode node) {
+        public int offset(InternalNodeBehaviour<?> node) {
             return node.childOffset(pos);
         }
 
         @Override
         public String toString() {
             return "child(" + pos + ")";
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            ChildPointer that = (ChildPointer) o;
-            return pos == that.pos;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(pos);
         }
     }
 }

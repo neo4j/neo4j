@@ -23,8 +23,6 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.IdSpace.MIN_TREE_NODE_ID;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.NO_OFFLOAD_ID;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.goTo;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.isNode;
@@ -70,7 +68,8 @@ import org.neo4j.util.concurrent.Futures;
 class GBPTreeConsistencyChecker<KEY> {
     private static final String TAG_CHECK = "check gbptree consistency";
 
-    private final TreeNode<KEY, ?> node;
+    private final LeafNodeBehaviour<KEY, ?> leafNode;
+    private final InternalNodeBehaviour<KEY> internalNode;
     private final Comparator<KEY> comparator;
     private final Layout<KEY, ?> layout;
     private final ConsistencyCheckState state;
@@ -84,7 +83,8 @@ class GBPTreeConsistencyChecker<KEY> {
     private final int numThreads;
 
     GBPTreeConsistencyChecker(
-            TreeNode<KEY, ?> node,
+            LeafNodeBehaviour<KEY, ?> leafNode,
+            InternalNodeBehaviour<KEY> internalNode,
             Layout<KEY, ?> layout,
             ConsistencyCheckState state,
             int numThreads,
@@ -95,8 +95,9 @@ class GBPTreeConsistencyChecker<KEY> {
             ThrowingFunction<CursorContext, PageCursor, IOException> cursorFactory,
             Root root,
             CursorContextFactory contextFactory) {
-        this.node = node;
-        this.comparator = node.keyComparator();
+        this.leafNode = leafNode;
+        this.internalNode = internalNode;
+        this.comparator = layout;
         this.layout = layout;
         this.state = state;
         this.numThreads = numThreads;
@@ -245,22 +246,26 @@ class GBPTreeConsistencyChecker<KEY> {
                 visitor,
                 reportDirty);
 
-        boolean reasonableKeyCount = node.reasonableKeyCount(keyCount);
+        boolean reasonableKeyCount =
+                isLeaf ? leafNode.reasonableKeyCount(keyCount) : internalNode.reasonableKeyCount(keyCount);
         if (!reasonableKeyCount) {
             visitor.unreasonableKeyCount(pageId, keyCount, file);
         } else {
-            var offloadIds = assertKeyOrder(cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, visitor, cursorContext);
+            var offloadIds =
+                    assertKeyOrder(cursor, range, keyCount, isLeaf ? leafNode : internalNode, visitor, cursorContext);
             offloadIds.forEach(id -> addToSeenList(file, seenIds, id, state.lastId, visitor));
         }
 
         String nodeMetaReport;
-        boolean consistentNodeMeta;
         do {
-            nodeMetaReport = node.checkMetaConsistency(cursor, keyCount, isLeaf ? LEAF : INTERNAL, visitor);
-            consistentNodeMeta = nodeMetaReport.isEmpty();
+            if (isLeaf) {
+                nodeMetaReport = leafNode.checkMetaConsistency(cursor, keyCount, visitor);
+            } else {
+                nodeMetaReport = internalNode.checkMetaConsistency(cursor, keyCount, visitor);
+            }
         } while (cursor.shouldRetry());
         checkAfterShouldRetry(cursor);
-        if (!consistentNodeMeta) {
+        if (!nodeMetaReport.isEmpty()) {
             visitor.nodeMetaInconsistency(pageId, nodeMetaReport, file);
         }
 
@@ -279,7 +284,7 @@ class GBPTreeConsistencyChecker<KEY> {
                         visitor);
         checkSuccessorPointerGeneration(cursor, successor, visitor);
 
-        if (!isInternal || !reasonableKeyCount || !consistentNodeMeta) {
+        if (!isInternal || !reasonableKeyCount || !nodeMetaReport.isEmpty()) {
             if (isLeaf) {
                 monitor.dataKeysSeen(keyCount);
             }
@@ -427,13 +432,13 @@ class GBPTreeConsistencyChecker<KEY> {
                     stableGeneration,
                     unstableGeneration,
                     GBPTreePointerType.child(pos),
-                    node.childOffset(pos),
+                    internalNode.childOffset(pos),
                     visitor,
                     reportDirty);
             do {
                 child = childAt(cursor, pos, generationTarget);
                 childGeneration = generationTarget.generation;
-                node.keyAt(cursor, readKey, pos, INTERNAL, cursorContext);
+                internalNode.keyAt(cursor, readKey, pos, cursorContext);
             } while (cursor.shouldRetry());
             checkAfterShouldRetry(cursor);
 
@@ -456,7 +461,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 stableGeneration,
                 unstableGeneration,
                 GBPTreePointerType.child(pos),
-                node.childOffset(pos),
+                internalNode.childOffset(pos),
                 visitor,
                 reportDirty);
         do {
@@ -474,14 +479,14 @@ class GBPTreeConsistencyChecker<KEY> {
     }
 
     private long childAt(PageCursor cursor, int pos, GBPTreeGenerationTarget childGeneration) {
-        return node.childAt(cursor, pos, stableGeneration, unstableGeneration, childGeneration);
+        return internalNode.childAt(cursor, pos, stableGeneration, unstableGeneration, childGeneration);
     }
 
     private LongList assertKeyOrder(
             PageCursor cursor,
             KeyRange<KEY> range,
             int keyCount,
-            TreeNode.Type type,
+            SharedNodeBehaviour<KEY> node,
             GBPTreeConsistencyCheckVisitor visitor,
             CursorContext cursorContext)
             throws IOException {
@@ -494,7 +499,7 @@ class GBPTreeConsistencyChecker<KEY> {
             KEY readKey = layout.newKey();
             boolean first = true;
             for (int pos = 0; pos < keyCount; pos++) {
-                node.keyAt(cursor, readKey, pos, type, cursorContext);
+                node.keyAt(cursor, readKey, pos, cursorContext);
                 if (!range.inRange(readKey)) {
                     KEY keyCopy = layout.newKey();
                     layout.copyKey(readKey, keyCopy);
@@ -509,7 +514,7 @@ class GBPTreeConsistencyChecker<KEY> {
                     first = false;
                 }
                 layout.copyKey(readKey, prev);
-                long offloadId = node.offloadIdAt(cursor, pos, type);
+                long offloadId = node.offloadIdAt(cursor, pos);
                 if (offloadId != NO_OFFLOAD_ID) {
                     offloadIds.add(offloadId);
                 }

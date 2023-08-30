@@ -53,8 +53,8 @@ class CrashGenerationCleaner {
     private static final long MIN_BATCH_SIZE = 10;
     static final long MAX_BATCH_SIZE = 100;
     private final PagedFile pagedFile;
-    private final TreeNode<?, ?> dataTreeNode;
-    private final TreeNode<?, ?> rootTreeNode;
+    private final InternalNodeBehaviour<?> dataTreeNode;
+    private final InternalNodeBehaviour<?> rootTreeNode;
     private final long lowTreeNodeId;
     private final long highTreeNodeId;
     private final long stableGeneration;
@@ -65,8 +65,8 @@ class CrashGenerationCleaner {
 
     CrashGenerationCleaner(
             PagedFile pagedFile,
-            TreeNode<?, ?> rootTreeNode,
-            TreeNode<?, ?> dataTreeNode,
+            InternalNodeBehaviour<?> rootTreeNode,
+            InternalNodeBehaviour<?> dataTreeNode,
             long lowTreeNodeId,
             long highTreeNodeId,
             long stableGeneration,
@@ -178,7 +178,7 @@ class CrashGenerationCleaner {
         } while (cursor.shouldRetry());
         PointerChecking.checkOutOfBounds(cursor);
 
-        TreeNode<?, ?> treeNode = selectTreeNode(layerType);
+        var treeNode = selectTreeNode(layerType);
         boolean hasCrashed;
         do {
             hasCrashed = hasCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_SUCCESSOR)
@@ -186,7 +186,7 @@ class CrashGenerationCleaner {
                     || hasCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_RIGHTSIBLING);
 
             if (!hasCrashed && TreeNodeUtil.isInternal(cursor)) {
-                for (int i = 0; i <= keyCount && treeNode.reasonableChildCount(i) && !hasCrashed; i++) {
+                for (int i = 0; i <= keyCount && treeNode.reasonableKeyCount(i) && !hasCrashed; i++) {
                     hasCrashed = hasCrashedGSPP(cursor, treeNode.childOffset(i));
                 }
             }
@@ -195,7 +195,7 @@ class CrashGenerationCleaner {
         return hasCrashed;
     }
 
-    private TreeNode<?, ?> selectTreeNode(byte layerType) {
+    private InternalNodeBehaviour<?> selectTreeNode(byte layerType) {
         return layerType == TreeNodeUtil.DATA_LAYER_FLAG ? dataTreeNode : rootTreeNode;
     }
 
@@ -219,8 +219,8 @@ class CrashGenerationCleaner {
         if (TreeNodeUtil.isInternal(cursor)) {
             int keyCount = TreeNodeUtil.keyCount(cursor);
             byte layerType = TreeNodeUtil.layerType(cursor);
-            TreeNode<?, ?> treeNode = selectTreeNode(layerType);
-            for (int i = 0; i <= keyCount && treeNode.reasonableChildCount(i); i++) {
+            var treeNode = selectTreeNode(layerType);
+            for (int i = 0; i <= keyCount && treeNode.reasonableKeyCount(i); i++) {
                 cleanCrashedGSPP(cursor, treeNode.childOffset(i), cleanedPointers);
             }
         }

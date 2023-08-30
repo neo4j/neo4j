@@ -23,12 +23,9 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-sealed interface InternalNodeBehaviour<KEY> permits InternalNodeDynamicSize, InternalNodeFixedSize {
-    void writeAdditionalHeader(PageCursor cursor);
-
-    long offloadIdAt(PageCursor cursor, int pos);
-
-    KEY keyAt(PageCursor cursor, KEY into, int pos, CursorContext cursorContext);
+public sealed interface InternalNodeBehaviour<KEY> extends SharedNodeBehaviour<KEY>
+        permits InternalNodeDynamicSize, InternalNodeFixedSize {
+    void initialize(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration);
 
     void insertKeyAndRightChildAt(
             PageCursor cursor,
@@ -63,13 +60,13 @@ sealed interface InternalNodeBehaviour<KEY> permits InternalNodeDynamicSize, Int
 
     void setChildAt(PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration);
 
-    boolean reasonableChildCount(int childCount);
+    boolean reasonableKeyCount(int keyCount);
 
     int childOffset(int pos);
 
     int maxKeyCount();
 
-    TreeNode.Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey);
+    Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey);
 
     int availableSpace(PageCursor cursor, int currentKeyCount);
 

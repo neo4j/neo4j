@@ -36,10 +36,9 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putOffloadMarker;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putTombstone;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readOffloadId;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.setAllocOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.setDeadSpace;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.validateInlineCap;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
-import static org.neo4j.index.internal.gbptree.TreeNode.ValueHolder;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.isUnreliableKeyValueSize;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.readDynamicKey;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.readUnreliableKeyValueSize;
@@ -49,6 +48,7 @@ import static org.neo4j.io.pagecache.PageCursorUtil.putUnsignedShort;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.StringJoiner;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -112,8 +112,9 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public void writeAdditionalHeader(PageCursor cursor) {
-        DynamicSizeUtil.setAllocOffset(cursor, payloadSize);
+    public void initialize(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration) {
+        TreeNodeUtil.writeBaseHeader(cursor, TreeNodeUtil.LEAF_FLAG, layerType, stableGeneration, unstableGeneration);
+        setAllocOffset(cursor, payloadSize);
         setDeadSpace(cursor, 0);
     }
 
@@ -127,6 +128,11 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     public KEY keyAt(PageCursor cursor, KEY into, int pos, CursorContext cursorContext) {
         placeCursorAtActualKey(cursor, pos);
         return readDynamicKey(layout, offloadStore, cursor, into, pos, cursorContext, keyValueSizeCap());
+    }
+
+    @Override
+    public Comparator<KEY> keyComparator() {
+        return layout;
     }
 
     @Override
@@ -195,7 +201,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         }
 
         // Update alloc space
-        DynamicSizeUtil.setAllocOffset(cursor, newKeyValueOffset);
+        setAllocOffset(cursor, newKeyValueOffset);
 
         // Write to offset array
         TreeNodeUtil.insertSlotsAt(cursor, pos, 1, keyCount, keyPosOffsetLeaf(0), DynamicSizeUtil.OFFSET_SIZE);
@@ -358,7 +364,8 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         return maxKeyCount;
     }
 
-    protected boolean reasonableKeyCount(int keyCount) {
+    @Override
+    public boolean reasonableKeyCount(int keyCount) {
         return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
@@ -577,7 +584,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
             toCursor.setOffset(keyPosOffsetLeaf(toPos));
             putUnsignedShort(toCursor, toAllocOffset);
         }
-        DynamicSizeUtil.setAllocOffset(toCursor, toAllocOffset);
+        setAllocOffset(toCursor, toAllocOffset);
 
         // Update deadSpace
         int deadSpace = getDeadSpace(fromCursor);
@@ -639,7 +646,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
             toCursor.setOffset(keyPosOffsetLeaf(toPos));
             putUnsignedShort(toCursor, toAllocOffset);
         }
-        DynamicSizeUtil.setAllocOffset(toCursor, toAllocOffset);
+        setAllocOffset(toCursor, toAllocOffset);
     }
 
     /**

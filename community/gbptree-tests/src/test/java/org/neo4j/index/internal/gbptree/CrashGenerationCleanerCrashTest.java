@@ -91,10 +91,11 @@ class CrashGenerationCleanerCrashTest {
                 return super.io(pageId, pf_flags, context);
             }
         };
+        var layout = SimpleLongLayout.longLayout().build();
         return new CrashGenerationCleaner(
                 pagedFile,
                 null,
-                new TreeNodeFixedSize<>(pageSize, SimpleLongLayout.longLayout().build()),
+                new InternalNodeFixedSize<>(pageSize, layout),
                 0,
                 MAX_BATCH_SIZE * 1_000_000_000,
                 5,

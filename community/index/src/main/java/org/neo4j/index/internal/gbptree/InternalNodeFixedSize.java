@@ -32,7 +32,7 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.setKeyCount;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.splitPos;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.writeChild;
 
-import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
+import java.util.Comparator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
@@ -74,8 +74,9 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
     }
 
     @Override
-    public void writeAdditionalHeader(PageCursor cursor) {
-        // no-op
+    public void initialize(PageCursor cursor, byte layerType, long stableGeneration, long unstableGeneration) {
+        TreeNodeUtil.writeBaseHeader(
+                cursor, TreeNodeUtil.INTERNAL_FLAG, layerType, stableGeneration, unstableGeneration);
     }
 
     @Override
@@ -88,6 +89,11 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
         cursor.setOffset(keyOffset(pos));
         layout.readKey(cursor, into, FIXED_SIZE_KEY);
         return into;
+    }
+
+    @Override
+    public Comparator<KEY> keyComparator() {
+        return layout;
     }
 
     @Override
@@ -140,11 +146,6 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
         int childOffset = childOffset(pos);
         cursor.setOffset(childOffset);
         writeChild(cursor, child, stableGeneration, unstableGeneration, pos, childOffset);
-    }
-
-    @Override
-    public boolean reasonableChildCount(int childCount) {
-        return childCount >= 0 && childCount <= maxKeyCount;
     }
 
     @Override
@@ -335,6 +336,11 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
             GBPTreeGenerationTarget generationTarget) {
         cursor.setOffset(childOffset(pos));
         return read(cursor, stableGeneration, unstableGeneration, generationTarget);
+    }
+
+    @Override
+    public boolean reasonableKeyCount(int keyCount) {
+        return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
     @Override

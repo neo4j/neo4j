@@ -92,9 +92,14 @@ class RootLayerSupport {
     }
 
     <K, V> SeekCursor<K, V> internalAllocateSeeker(
-            Layout<K, V> layout, TreeNode<K, V> bTreeNode, CursorContext cursorContext) throws IOException {
+            Layout<K, V> layout,
+            CursorContext cursorContext,
+            LeafNodeBehaviour<K, V> leafNode,
+            InternalNodeBehaviour<K> internalNode)
+            throws IOException {
         PageCursor cursor = pagedFile.io(0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext);
-        return new SeekCursor<>(cursor, bTreeNode, layout, generationSupplier, exceptionDecorator, cursorContext);
+        return new SeekCursor<>(
+                cursor, layout, leafNode, internalNode, generationSupplier, exceptionDecorator, cursorContext);
     }
 
     <K, V> Seeker<K, V> initializeSeeker(
@@ -152,11 +157,13 @@ class RootLayerSupport {
      * If concurrent updates causes changes higher up in the tree while searching in lower levels, some splitter keys can be missed or
      * extra splitter keys may be included. This can lead to partitions being more unevenly sized but it will not affect correctness.
      *
-     * @param fromInclusive lower bound of the target range to seek (inclusive).
-     * @param toExclusive higher bound of the target range to seek (exclusive).
+     * @param leafNode
+     * @param internalNode
+     * @param fromInclusive             lower bound of the target range to seek (inclusive).
+     * @param toExclusive               higher bound of the target range to seek (exclusive).
      * @param desiredNumberOfPartitions number of partitions desired by the caller. If the tree is small a lower number of partitions may be returned.
-     * The number of partitions will never be higher than the provided {@code desiredNumberOfPartitions}.
-     * @param cursorContext underlying page cursor cursorContext for the thread doing the partitioning.
+     *                                  The number of partitions will never be higher than the provided {@code desiredNumberOfPartitions}.
+     * @param cursorContext             underlying page cursor cursorContext for the thread doing the partitioning.
      * @return sorted {@link List} of {@code KEY}s, corresponding to the edges of each partition. Collectively they
      * seek across the whole provided range.
      * The number of partitions is given by the size of the collection.
@@ -164,7 +171,8 @@ class RootLayerSupport {
      */
     <K, V> List<K> internalPartitionedSeek(
             Layout<K, V> layout,
-            TreeNode<K, V> bTreeNode,
+            LeafNodeBehaviour<K, V> leafNode,
+            InternalNodeBehaviour<K> internalNode,
             K fromInclusive,
             K toExclusive,
             int desiredNumberOfPartitions,
@@ -184,7 +192,7 @@ class RootLayerSupport {
             final var localFrom = layout.copyKey(fromInclusive, layout.newKey());
             final var localTo = layout.copyKey(toExclusive, layout.newKey());
             try (var seek = initializeSeeker(
-                    internalAllocateSeeker(layout, bTreeNode, cursorContext),
+                    internalAllocateSeeker(layout, cursorContext, leafNode, internalNode),
                     rootSupplier,
                     localFrom,
                     localTo,
@@ -210,22 +218,25 @@ class RootLayerSupport {
 
     <K, V> Writer<K, V> internalParallelWriter(
             Layout<K, V> layout,
-            TreeNode<K, V> treeNode,
+            LeafNodeBehaviour<K, V> leafNode,
+            InternalNodeBehaviour<K> internalNode,
             double ratioToKeepInLeftOnSplit,
             CursorContext cursorContext,
             TreeRootExchange rootChangeMonitor,
             byte layerType)
             throws IOException {
         TreeWriterCoordination traversalMonitor =
-                new LatchCrabbingCoordination(latchService, treeNode.leafUnderflowThreshold(), DEFAULT_RESET_FREQUENCY);
-        GBPTreeWriter<K, V> writer = newWriter(layout, rootChangeMonitor, treeNode, traversalMonitor, true, layerType);
+                new LatchCrabbingCoordination(latchService, leafNode.underflowThreshold(), DEFAULT_RESET_FREQUENCY);
+        GBPTreeWriter<K, V> writer =
+                newWriter(layout, rootChangeMonitor, leafNode, internalNode, traversalMonitor, true, layerType);
         return initializeWriter(writer, ratioToKeepInLeftOnSplit, cursorContext);
     }
 
     <K, V> GBPTreeWriter<K, V> newWriter(
             Layout<K, V> layout,
             TreeRootExchange rootChangeMonitor,
-            TreeNode<K, V> treeNode,
+            LeafNodeBehaviour<K, V> leafNode,
+            InternalNodeBehaviour<K> internalNode,
             TreeWriterCoordination traversalMonitor,
             boolean parallel,
             byte layerType) {
@@ -233,8 +244,9 @@ class RootLayerSupport {
                 layout,
                 pagedFile,
                 traversalMonitor,
-                new InternalTreeLogic<>(freeList, treeNode, layout, monitor, traversalMonitor, layerType),
-                treeNode,
+                new InternalTreeLogic<>(freeList, leafNode, internalNode, layout, monitor, traversalMonitor, layerType),
+                leafNode,
+                internalNode,
                 parallel,
                 rootChangeMonitor,
                 checkpointLock,
@@ -321,13 +333,14 @@ class RootLayerSupport {
         return generationSupplier.getAsLong();
     }
 
-    <K, V> void initializeNewRoot(Root root, TreeNode<K, V> treeNode, byte layerType, CursorContext cursorContext)
+    <K, V> void initializeNewRoot(
+            Root root, LeafNodeBehaviour<K, V> leafNode, byte layerType, CursorContext cursorContext)
             throws IOException {
         try (PageCursor cursor = openRootCursor(root, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
             long generation = generationSupplier.getAsLong();
             long stableGeneration = stableGeneration(generation);
             long unstableGeneration = unstableGeneration(generation);
-            treeNode.initializeLeaf(cursor, layerType, stableGeneration, unstableGeneration);
+            leafNode.initialize(cursor, layerType, stableGeneration, unstableGeneration);
             changesSinceLastCheckpoint.set(true);
             checkOutOfBounds(cursor);
         }
@@ -338,7 +351,11 @@ class RootLayerSupport {
     }
 
     <K, V> void unsafe(
-            GBPTreeUnsafe<K, V> unsafe, Layout<K, V> layout, TreeNode<K, V> treeNode, CursorContext cursorContext)
+            GBPTreeUnsafe<K, V> unsafe,
+            Layout<K, V> layout,
+            LeafNodeBehaviour<K, V> leafNode,
+            InternalNodeBehaviour<K> internalNode,
+            CursorContext cursorContext)
             throws IOException {
         TreeState state;
         try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
@@ -347,11 +364,13 @@ class RootLayerSupport {
                     TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
             state = TreeStatePair.selectNewestValidOrFirst(states);
         }
-        unsafe.access(pagedFile, layout, treeNode, state);
+        unsafe.access(pagedFile, layout, leafNode, internalNode, state);
     }
 
     CrashGenerationCleaner createCrashGenerationCleaner(
-            TreeNode<?, ?> rootTreeNode, TreeNode<?, ?> dataTreeNode, CursorContextFactory contextFactory) {
+            InternalNodeBehaviour<?> rootTreeNode,
+            InternalNodeBehaviour<?> dataTreeNode,
+            CursorContextFactory contextFactory) {
         long generation = generation();
         long stableGeneration = stableGeneration(generation);
         long unstableGeneration = unstableGeneration(generation);
@@ -375,7 +394,11 @@ class RootLayerSupport {
     }
 
     <K, V> long estimateNumberOfEntriesInTree(
-            Layout<K, V> layout, TreeNode<K, V> treeNode, RootSupplier rootSupplier, CursorContext cursorContext)
+            Layout<K, V> layout,
+            final LeafNodeBehaviour<K, V> leafNode,
+            final InternalNodeBehaviour<K> internalNode,
+            RootSupplier rootSupplier,
+            CursorContext cursorContext)
             throws IOException {
         K low = layout.newKey();
         layout.initializeAsLowest(low);
@@ -388,7 +411,7 @@ class RootLayerSupport {
             Seeker.Factory<K, V> monitoredSeeks = new Seeker.Factory<>() {
                 @Override
                 public Seeker<K, V> allocateSeeker(CursorContext cursorContext) throws IOException {
-                    return internalAllocateSeeker(layout, treeNode, cursorContext);
+                    return internalAllocateSeeker(layout, cursorContext, leafNode, internalNode);
                 }
 
                 @Override
@@ -402,7 +425,8 @@ class RootLayerSupport {
                         throws IOException {
                     return internalPartitionedSeek(
                             layout,
-                            treeNode,
+                            leafNode,
+                            internalNode,
                             fromInclusive,
                             toExclusive,
                             numberOfPartitions,
@@ -410,8 +434,8 @@ class RootLayerSupport {
                             cursorContext);
                 }
             };
-            List<K> partitionEdges =
-                    internalPartitionedSeek(layout, treeNode, low, high, sampleSize, rootSupplier, cursorContext);
+            List<K> partitionEdges = internalPartitionedSeek(
+                    layout, leafNode, internalNode, low, high, sampleSize, rootSupplier, cursorContext);
             for (int i = 0; i < partitionEdges.size() - 1; i++) {
                 // Simply make sure the first one is found so that the supplied monitor have been notified about the
                 // path down to it

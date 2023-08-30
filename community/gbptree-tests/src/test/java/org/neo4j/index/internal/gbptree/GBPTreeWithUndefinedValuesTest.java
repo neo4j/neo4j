@@ -213,14 +213,14 @@ public class GBPTreeWithUndefinedValuesTest {
         public TreeNodeSelector createSelector(ImmutableSet<OpenOption> openOptions) {
             return layout -> new TreeNodeSelector.Factory() {
                 @Override
-                public <KEY, VALUE> TreeNode<KEY, VALUE> create(
+                public <KEY, VALUE> LeafNodeBehaviour<KEY, VALUE> createLeafBehaviour(
                         int pageSize,
                         Layout<KEY, VALUE> layout,
                         OffloadStore<KEY, VALUE> offloadStore,
                         DependencyResolver dependencyResolver) {
-                    return new TreeNodeFixedSize<>(pageSize, layout) {
+                    return new LeafNodeFixedSize<>(pageSize, layout) {
                         @Override
-                        void keyValueAt(
+                        public void keyValueAt(
                                 PageCursor cursor,
                                 KEY intoKey,
                                 ValueHolder<VALUE> intoValue,
@@ -232,7 +232,7 @@ public class GBPTreeWithUndefinedValuesTest {
                         }
 
                         @Override
-                        ValueHolder<VALUE> valueAt(
+                        public ValueHolder<VALUE> valueAt(
                                 PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext)
                                 throws IOException {
                             var valueHolder = super.valueAt(cursor, value, pos, cursorContext);
@@ -240,6 +240,15 @@ public class GBPTreeWithUndefinedValuesTest {
                             return valueHolder;
                         }
                     };
+                }
+
+                @Override
+                public <KEY, VALUE> InternalNodeBehaviour<KEY> createInternalBehaviour(
+                        int pageSize,
+                        Layout<KEY, VALUE> layout,
+                        OffloadStore<KEY, VALUE> offloadStore,
+                        DependencyResolver dependencyResolver) {
+                    return new InternalNodeFixedSize<>(pageSize, layout);
                 }
 
                 @Override

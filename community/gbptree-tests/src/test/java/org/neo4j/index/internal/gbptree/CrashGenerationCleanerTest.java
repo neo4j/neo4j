@@ -26,7 +26,6 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.ROOT_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.setKeyCount;
@@ -86,9 +85,15 @@ class CrashGenerationCleanerTest {
     private PagedFile pagedFile;
     private PageCache pageCache;
     private final Layout<MutableLong, MutableLong> dataLayout = longLayout().build();
-    private final TreeNode<MutableLong, MutableLong> dataTreeNode = new TreeNodeFixedSize<>(PAGE_SIZE, dataLayout);
+    private final LeafNodeFixedSize<MutableLong, MutableLong> dataLeafNode =
+            new LeafNodeFixedSize<>(PAGE_SIZE, dataLayout);
+    private final InternalNodeFixedSize<MutableLong> dataInternalNode =
+            new InternalNodeFixedSize<>(PAGE_SIZE, dataLayout);
     private final Layout<RawBytes, RawBytes> rootLayout = new SimpleByteArrayLayout();
-    private final TreeNode<RawBytes, RawBytes> rootTreeNode = new TreeNodeDynamicSize<>(PAGE_SIZE, rootLayout, null);
+    private final LeafNodeDynamicSize<RawBytes, RawBytes> rootLeafNode =
+            new LeafNodeDynamicSize<>(PAGE_SIZE, rootLayout, null);
+    private final InternalNodeDynamicSize<RawBytes> rootInternalNode =
+            new InternalNodeDynamicSize<>(PAGE_SIZE, rootLayout, null);
     private static ExecutorService executorService;
     private static CleanupJob.Executor executor;
     private final TreeState checkpointedTreeState = new TreeState(0, 9, 10, 0, 0, 0, 0, 0, 0, 0, true, true);
@@ -298,7 +303,7 @@ class CrashGenerationCleanerTest {
         var cleaner = new CrashGenerationCleaner(
                 pagedFile,
                 null,
-                dataTreeNode,
+                dataInternalNode,
                 0,
                 pages.length,
                 unstableTreeState.stableGeneration(),
@@ -317,8 +322,8 @@ class CrashGenerationCleanerTest {
             PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId, SimpleCleanupMonitor monitor) {
         return new CrashGenerationCleaner(
                 pagedFile,
-                rootTreeNode,
-                dataTreeNode,
+                rootInternalNode,
+                dataInternalNode,
                 lowTreeNodeId,
                 highTreeNodeId,
                 unstableTreeState.stableGeneration(),
@@ -332,9 +337,11 @@ class CrashGenerationCleanerTest {
         try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT)) {
             for (Page page : pages) {
                 cursor.next();
-                TreeNode treeNode = page.type.isData ? dataTreeNode : rootTreeNode;
-                Layout layout = page.type.isData ? dataLayout : rootLayout;
-                page.write(cursor, treeNode, layout, checkpointedTreeState, unstableTreeState);
+                var data = page.type.isData;
+                var leafNode = data ? dataLeafNode : rootLeafNode;
+                var internalNode = data ? dataInternalNode : rootInternalNode;
+                var layout = data ? dataLayout : rootLayout;
+                page.write(cursor, leafNode, internalNode, layout, checkpointedTreeState, unstableTreeState);
             }
         }
     }
@@ -437,14 +444,15 @@ class CrashGenerationCleanerTest {
 
         private void write(
                 PageCursor cursor,
-                TreeNode<MutableLong, MutableLong> node,
-                Layout<MutableLong, MutableLong> layout,
+                LeafNodeBehaviour leafNode,
+                InternalNodeBehaviour internalNode,
+                Layout layout,
                 TreeState checkpointedTreeState,
                 TreeState unstableTreeState)
                 throws IOException {
-            type.write(cursor, node, layout, checkpointedTreeState);
+            type.write(cursor, leafNode, internalNode, layout, checkpointedTreeState);
             for (GBPTreeCorruption.PageCorruption<MutableLong, MutableLong> pc : pageCorruptions) {
-                pc.corrupt(cursor, layout, node, unstableTreeState);
+                pc.corrupt(cursor, layout, leafNode, internalNode, unstableTreeState);
             }
         }
     }
@@ -452,39 +460,71 @@ class CrashGenerationCleanerTest {
     enum PageType {
         DATA_LEAF(true) {
             @Override
-            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
-                treeNode.initializeLeaf(
-                        cursor, DATA_LAYER_FLAG, treeState.stableGeneration(), treeState.unstableGeneration());
+            <KEY> void write(
+                    PageCursor cursor,
+                    LeafNodeBehaviour<KEY, ?> leafNode,
+                    InternalNodeBehaviour<KEY> internalNode,
+                    Layout<KEY, ?> layout,
+                    TreeState treeState) {
+                long stableGeneration = treeState.stableGeneration();
+                long unstableGeneration = treeState.unstableGeneration();
+                leafNode.initialize(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
             }
         },
         DATA_INTERNAL(true) {
             @Override
-            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
-                writeInternal(cursor, DATA_LAYER_FLAG, treeNode, layout, treeState);
+            <KEY> void write(
+                    PageCursor cursor,
+                    LeafNodeBehaviour<KEY, ?> leafNode,
+                    InternalNodeBehaviour<KEY> internalNode,
+                    Layout<KEY, ?> layout,
+                    TreeState treeState) {
+                writeInternal(cursor, DATA_LAYER_FLAG, internalNode, layout, treeState);
             }
         },
         ROOT_LEAF(false) {
             @Override
-            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
-                treeNode.initializeLeaf(
-                        cursor, ROOT_LAYER_FLAG, treeState.stableGeneration(), treeState.unstableGeneration());
+            <KEY> void write(
+                    PageCursor cursor,
+                    LeafNodeBehaviour<KEY, ?> leafNode,
+                    InternalNodeBehaviour<KEY> internalNode,
+                    Layout<KEY, ?> layout,
+                    TreeState treeState) {
+                long stableGeneration = treeState.stableGeneration();
+                long unstableGeneration = treeState.unstableGeneration();
+                leafNode.initialize(cursor, ROOT_LAYER_FLAG, stableGeneration, unstableGeneration);
             }
         },
         ROOT_INTERNAL(false) {
             @Override
-            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
-                writeInternal(cursor, ROOT_LAYER_FLAG, treeNode, layout, treeState);
+            <KEY> void write(
+                    PageCursor cursor,
+                    LeafNodeBehaviour<KEY, ?> leafNode,
+                    InternalNodeBehaviour<KEY> internalNode,
+                    Layout<KEY, ?> layout,
+                    TreeState treeState) {
+                writeInternal(cursor, ROOT_LAYER_FLAG, internalNode, layout, treeState);
             }
         },
         OFFLOAD(true) {
             @Override
-            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
+            <KEY> void write(
+                    PageCursor cursor,
+                    LeafNodeBehaviour<KEY, ?> leafNode,
+                    InternalNodeBehaviour<KEY> internalNode,
+                    Layout<KEY, ?> layout,
+                    TreeState treeState) {
                 OffloadStoreImpl.writeHeader(cursor);
             }
         },
         FREELIST(true) {
             @Override
-            <KEY> void write(PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState) {
+            <KEY> void write(
+                    PageCursor cursor,
+                    LeafNodeBehaviour<KEY, ?> leafNode,
+                    InternalNodeBehaviour<KEY> internalNode,
+                    Layout<KEY, ?> layout,
+                    TreeState treeState) {
                 FreelistNode.initialize(cursor);
             }
         };
@@ -496,24 +536,29 @@ class CrashGenerationCleanerTest {
         }
 
         abstract <KEY> void write(
-                PageCursor cursor, TreeNode<KEY, ?> treeNode, Layout<KEY, ?> layout, TreeState treeState);
+                PageCursor cursor,
+                LeafNodeBehaviour<KEY, ?> leafNode,
+                InternalNodeBehaviour<KEY> internalNode,
+                Layout<KEY, ?> layout,
+                TreeState treeState);
 
         <KEY> void writeInternal(
                 PageCursor cursor,
                 byte layerType,
-                TreeNode<KEY, ?> treeNode,
+                InternalNodeBehaviour<KEY> internalNode,
                 Layout<KEY, ?> layout,
                 TreeState treeState) {
-            treeNode.initializeInternal(
-                    cursor, layerType, treeState.stableGeneration(), treeState.unstableGeneration());
+            long stableGeneration = treeState.stableGeneration();
+            long unstableGeneration = treeState.unstableGeneration();
+            internalNode.initialize(cursor, layerType, stableGeneration, unstableGeneration);
             long base = IdSpace.MIN_TREE_NODE_ID;
             int keyCount;
-            for (keyCount = 0;
-                    treeNode.internalOverflow(cursor, keyCount, layout.newKey()) == Overflow.NO;
-                    keyCount++) {
+            KEY newKey = layout.newKey();
+            for (keyCount = 0; internalNode.overflow(cursor, keyCount, newKey) == Overflow.NO; keyCount++) {
                 long child = base + keyCount;
-                treeNode.setChildAt(
-                        cursor, child, keyCount, treeState.stableGeneration(), treeState.unstableGeneration());
+                long stableGeneration1 = treeState.stableGeneration();
+                long unstableGeneration1 = treeState.unstableGeneration();
+                internalNode.setChildAt(cursor, child, keyCount, stableGeneration1, unstableGeneration1);
             }
             setKeyCount(cursor, keyCount);
         }

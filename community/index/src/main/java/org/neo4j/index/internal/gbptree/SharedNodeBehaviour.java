@@ -19,21 +19,16 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes, RawBytes> {
-    @Override
-    TestLayout<RawBytes, RawBytes> getLayout() {
-        return new SimpleByteArrayLayout();
-    }
+import java.util.Comparator;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContext;
 
-    @Override
-    protected LeafNodeBehaviour<RawBytes, RawBytes> getLeaf(
-            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new LeafNodeDynamicSize<>(pageSize, layout, offloadStore);
-    }
+public interface SharedNodeBehaviour<KEY> {
+    long offloadIdAt(PageCursor cursor, int pos);
 
-    @Override
-    protected InternalNodeBehaviour<RawBytes> getInternal(
-            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new InternalNodeDynamicSize<>(pageSize, layout, offloadStore);
-    }
+    KEY keyAt(PageCursor cursor, KEY into, int pos, CursorContext cursorContext);
+
+    Comparator<KEY> keyComparator();
+
+    int availableSpace(PageCursor cursor, int currentKeyCount);
 }

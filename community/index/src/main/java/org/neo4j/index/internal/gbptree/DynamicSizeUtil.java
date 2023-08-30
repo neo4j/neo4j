@@ -357,10 +357,10 @@ public class DynamicSizeUtil {
         return allocOffset - endOfOffsetArray;
     }
 
-    static TreeNode.Overflow calculateOverflow(int neededSpace, int deadSpace, int allocSpace) {
+    static Overflow calculateOverflow(int neededSpace, int deadSpace, int allocSpace) {
         return neededSpace <= allocSpace
-                ? TreeNode.Overflow.NO
-                : neededSpace <= allocSpace + deadSpace ? TreeNode.Overflow.NO_NEED_DEFRAG : TreeNode.Overflow.YES;
+                ? Overflow.NO
+                : neededSpace <= allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
     }
 
     /**

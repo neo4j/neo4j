@@ -206,8 +206,7 @@ class PartitionedSeekTest {
 
     @Test
     void shouldPartitionSeekersDuringTreeModifications() throws IOException {
-        TreeNodeFixedSize<MutableLong, MutableLong> treeNode = new TreeNodeFixedSize<>(pageCache.pageSize(), layout);
-        int internalMaxKeyCount = treeNode.internalMaxKeyCount();
+        int internalMaxKeyCount = new InternalNodeFixedSize<>(pageCache.pageSize(), layout).maxKeyCount();
         try (GBPTree<MutableLong, MutableLong> tree = instantiateTree()) {
             // given a tree with half filled root
             int stride = 15;

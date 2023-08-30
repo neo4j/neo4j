@@ -27,10 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO_NEED_DEFRAG;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
+import static org.neo4j.index.internal.gbptree.Overflow.NO_NEED_DEFRAG;
+import static org.neo4j.index.internal.gbptree.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.NO_NODE_FLAG;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -41,14 +39,13 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 @ExtendWith(RandomExtension.class)
-public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VALUE>> {
+public abstract class TreeNodeTestBase<KEY, VALUE> {
     static final int STABLE_GENERATION = 1;
     static final int UNSTABLE_GENERATION = 3;
     private static final int HIGH_GENERATION = 4;
@@ -57,7 +54,9 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
     PageAwareByteArrayCursor cursor;
 
     private TestLayout<KEY, VALUE> layout;
-    NODE node;
+    LeafNodeBehaviour<KEY, VALUE> leaf;
+    InternalNodeBehaviour<KEY> internal;
+
     private final GenerationKeeper generationTarget = new GenerationKeeper();
 
     @Inject
@@ -69,7 +68,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         cursor.next();
         layout = getLayout();
         OffloadStoreImpl<KEY, VALUE> offloadStore = createOffloadStore();
-        node = getNode(PAGE_SIZE, layout, offloadStore);
+        leaf = getLeaf(PAGE_SIZE, layout, offloadStore);
+        internal = getInternal(PAGE_SIZE, layout, offloadStore);
     }
 
     OffloadStoreImpl<KEY, VALUE> createOffloadStore() {
@@ -81,9 +81,13 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
 
     protected abstract TestLayout<KEY, VALUE> getLayout();
 
-    protected abstract NODE getNode(int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
+    protected abstract LeafNodeBehaviour<KEY, VALUE> getLeaf(
+            int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
 
-    abstract void assertAdditionalHeader(PageCursor cursor, TreeNode<KEY, VALUE> node, int pageSize);
+    protected abstract InternalNodeBehaviour<KEY> getInternal(
+            int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
+
+    abstract void assertAdditionalHeader(PageCursor cursor, int pageSize);
 
     private KEY key(long seed) {
         return layout.key(seed);
@@ -107,7 +111,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         assertEquals(NO_NODE_FLAG, leftSibling(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
         assertEquals(NO_NODE_FLAG, rightSibling(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
         assertEquals(NO_NODE_FLAG, successor(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
-        assertAdditionalHeader(cursor, node, PAGE_SIZE);
+        assertAdditionalHeader(cursor, PAGE_SIZE);
     }
 
     @Test
@@ -124,7 +128,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         assertEquals(NO_NODE_FLAG, leftSibling(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
         assertEquals(NO_NODE_FLAG, rightSibling(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
         assertEquals(NO_NODE_FLAG, successor(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
-        assertAdditionalHeader(cursor, node, PAGE_SIZE);
+        assertAdditionalHeader(cursor, PAGE_SIZE);
     }
 
     @Test
@@ -168,73 +172,63 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         // WHEN
         KEY firstKey = key(1);
         VALUE firstValue = value(10);
-        node.insertKeyValueAt(cursor, firstKey, firstValue, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, firstKey, firstValue, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 1);
 
         // THEN
-        KEY actualKey = node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT);
+        KEY actualKey = leaf.keyAt(cursor, readKey, 0, NULL_CONTEXT);
         assertKeyEquals(firstKey, actualKey);
-        assertValueEquals(
-                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
+        assertValueEquals(firstValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
 
         // WHEN
         KEY secondKey = key(3);
         VALUE secondValue = value(30);
-        node.insertKeyValueAt(
+        leaf.insertKeyValueAt(
                 cursor, secondKey, secondValue, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 2);
 
         // THEN
-        assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
-        assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
+        assertKeyEquals(firstKey, leaf.keyAt(cursor, readKey, 0, NULL_CONTEXT));
+        assertValueEquals(firstValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
+        assertKeyEquals(secondKey, leaf.keyAt(cursor, readKey, 1, NULL_CONTEXT));
+        assertValueEquals(secondValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
 
         // WHEN
         KEY removedKey = key(2);
         VALUE removedValue = value(20);
-        node.insertKeyValueAt(
+        leaf.insertKeyValueAt(
                 cursor, removedKey, removedValue, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 3);
 
         // THEN
-        assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
-        assertKeyEquals(removedKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                removedValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
-        assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 2, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 2, NULL_CONTEXT).value);
+        assertKeyEquals(firstKey, leaf.keyAt(cursor, readKey, 0, NULL_CONTEXT));
+        assertValueEquals(firstValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
+        assertKeyEquals(removedKey, leaf.keyAt(cursor, readKey, 1, NULL_CONTEXT));
+        assertValueEquals(removedValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
+        assertKeyEquals(secondKey, leaf.keyAt(cursor, readKey, 2, NULL_CONTEXT));
+        assertValueEquals(secondValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 2, NULL_CONTEXT).value);
 
         // WHEN
-        node.removeKeyValueAt(cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 2);
 
         // THEN
-        assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
-        assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
+        assertKeyEquals(firstKey, leaf.keyAt(cursor, readKey, 0, NULL_CONTEXT));
+        assertValueEquals(firstValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
+        assertKeyEquals(secondKey, leaf.keyAt(cursor, readKey, 1, NULL_CONTEXT));
+        assertValueEquals(secondValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
 
         // WHEN
         VALUE overwriteValue = value(666);
         assertTrue(
-                node.setValueAt(cursor, overwriteValue, 0, NULL_CONTEXT, STABLE_GENERATION, UNSTABLE_GENERATION),
+                leaf.setValueAt(cursor, overwriteValue, 0, NULL_CONTEXT, STABLE_GENERATION, UNSTABLE_GENERATION),
                 String.format("Could not overwrite value, oldValue=%s, newValue=%s", firstValue, overwriteValue));
 
         // THEN
-        assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                overwriteValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
-        assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(
-                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
+        assertKeyEquals(firstKey, leaf.keyAt(cursor, readKey, 0, NULL_CONTEXT));
+        assertValueEquals(overwriteValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
+        assertKeyEquals(secondKey, leaf.keyAt(cursor, readKey, 1, NULL_CONTEXT));
+        assertValueEquals(secondValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
     }
 
     @Test
@@ -244,12 +238,13 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         var from = 2;
         var to = initialKeyCount - 2;
         for (int i = 0; i < initialKeyCount; i++) {
-            node.insertKeyValueAt(
-                    cursor, key(i), value(10 + i), i, i, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+            KEY key = key(i);
+            VALUE value = value(10 + i);
+            leaf.insertKeyValueAt(cursor, key, value, i, i, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         }
         TreeNodeUtil.setKeyCount(cursor, initialKeyCount);
 
-        var newKeyCount = node.removeKeyValues(
+        var newKeyCount = leaf.removeKeyValues(
                 cursor, from, to, initialKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         assertThat(newKeyCount).isEqualTo(initialKeyCount - to + from);
         TreeNodeUtil.setKeyCount(cursor, newKeyCount);
@@ -261,10 +256,9 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
             if (i >= from) {
                 seed += to - from;
             }
-            assertKeyEquals(key(seed), node.keyAt(cursor, readKey, i, LEAF, NULL_CONTEXT));
+            assertKeyEquals(key(seed), leaf.keyAt(cursor, readKey, i, NULL_CONTEXT));
             assertValueEquals(
-                    value(10 + seed),
-                    node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), i, NULL_CONTEXT).value);
+                    value(10 + seed), leaf.valueAt(cursor, new ValueHolder<>(readValue), i, NULL_CONTEXT).value);
         }
     }
 
@@ -277,7 +271,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         long zeroChild = 5;
 
         // WHEN
-        node.setChildAt(cursor, zeroChild, 0, stable, unstable);
+        internal.setChildAt(cursor, zeroChild, 0, stable, unstable);
 
         // THEN
         assertKeysAndChildren(stable, unstable, zeroChild);
@@ -285,7 +279,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         // WHEN
         long firstKey = 1;
         long firstChild = 10;
-        node.insertKeyAndRightChildAt(cursor, key(firstKey), firstChild, 0, 0, stable, unstable, NULL_CONTEXT);
+        KEY key2 = key(firstKey);
+        internal.insertKeyAndRightChildAt(cursor, key2, firstChild, 0, 0, stable, unstable, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 1);
 
         // THEN
@@ -294,7 +289,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         // WHEN
         long secondKey = 3;
         long secondChild = 30;
-        node.insertKeyAndRightChildAt(cursor, key(secondKey), secondChild, 1, 1, stable, unstable, NULL_CONTEXT);
+        KEY key1 = key(secondKey);
+        internal.insertKeyAndRightChildAt(cursor, key1, secondChild, 1, 1, stable, unstable, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 2);
 
         // THEN
@@ -303,7 +299,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         // WHEN
         long removedKey = 2;
         long removedChild = 20;
-        node.insertKeyAndRightChildAt(cursor, key(removedKey), removedChild, 1, 2, stable, unstable, NULL_CONTEXT);
+        KEY key = key(removedKey);
+        internal.insertKeyAndRightChildAt(cursor, key, removedChild, 1, 2, stable, unstable, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 3);
 
         // THEN
@@ -311,14 +308,14 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
                 stable, unstable, zeroChild, firstKey, firstChild, removedKey, removedChild, secondKey, secondChild);
 
         // WHEN
-        node.removeKeyAndRightChildAt(cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        internal.removeKeyAndRightChildAt(cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 2);
 
         // THEN
         assertKeysAndChildren(stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild);
 
         // WHEN
-        node.removeKeyAndLeftChildAt(cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        internal.removeKeyAndLeftChildAt(cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 1);
 
         // THEN
@@ -326,7 +323,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
 
         // WHEN
         long overwriteChild = 666;
-        node.setChildAt(cursor, overwriteChild, 0, stable, unstable);
+        internal.setChildAt(cursor, overwriteChild, 0, stable, unstable);
 
         // THEN
         assertKeysAndChildren(stable, unstable, overwriteChild, secondKey, secondChild);
@@ -339,24 +336,24 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         long unstable = 4;
         int keyCount = 0;
         long childId = 10;
-        node.setChildAt(cursor, childId, 0, stable, unstable);
+        internal.setChildAt(cursor, childId, 0, stable, unstable);
         childId++;
         KEY key = key(childId);
-        for (; node.internalOverflow(cursor, keyCount, key) == Overflow.NO; childId++, keyCount++, key = key(childId)) {
-            node.insertKeyAndRightChildAt(cursor, key, childId, keyCount, keyCount, stable, unstable, NULL_CONTEXT);
+        for (; internal.overflow(cursor, keyCount, key) == Overflow.NO; childId++, keyCount++, key = key(childId)) {
+            internal.insertKeyAndRightChildAt(cursor, key, childId, keyCount, keyCount, stable, unstable, NULL_CONTEXT);
         }
 
         // Assert children
         long firstChild = 10;
         for (int i = 0; i <= keyCount; i++) {
-            assertEquals(firstChild + i, pointer(node.childAt(cursor, i, stable, unstable)));
+            assertEquals(firstChild + i, pointer(internal.childAt(cursor, i, stable, unstable)));
         }
 
         // Assert keys
         int firstKey = 11;
         KEY readKey = layout.newKey();
         for (int i = 0; i < keyCount; i++) {
-            assertKeyEquals(key(firstKey + i), node.keyAt(cursor, readKey, i, INTERNAL, NULL_CONTEXT));
+            assertKeyEquals(key(firstKey + i), internal.keyAt(cursor, readKey, i, NULL_CONTEXT));
         }
     }
 
@@ -400,8 +397,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         assertEquals(123, successor(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
     }
 
-    protected void defragmentLeaf(NODE treeNode, PageAwareByteArrayCursor cursor) {
-        treeNode.defragmentLeaf(cursor);
+    protected void defragmentLeaf(LeafNodeBehaviour<KEY, VALUE> leaf, PageAwareByteArrayCursor cursor) {
+        leaf.defragment(cursor);
     }
 
     @Test
@@ -410,20 +407,21 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
-        node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(2);
         value = value(2);
-        node.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
 
         // AND
-        node.removeKeyValueAt(cursor, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 1);
 
         // WHEN
-        defragmentLeaf(node, cursor);
+        defragmentLeaf(leaf, cursor);
 
         // THEN
-        assertKeyEquals(key(1), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
+        KEY into = layout.newKey();
+        assertKeyEquals(key(1), leaf.keyAt(cursor, into, 0, NULL_CONTEXT));
     }
 
     @Test
@@ -432,20 +430,21 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
-        node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(2);
         value = value(2);
-        node.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
 
         // AND
-        node.removeKeyValueAt(cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 1);
 
         // WHEN
-        defragmentLeaf(node, cursor);
+        defragmentLeaf(leaf, cursor);
 
         // THEN
-        assertKeyEquals(key(2), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
+        KEY into = layout.newKey();
+        assertKeyEquals(key(2), leaf.keyAt(cursor, into, 0, NULL_CONTEXT));
     }
 
     @Test
@@ -454,24 +453,26 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
-        node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(2);
         value = value(2);
-        node.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(3);
         value = value(3);
-        node.insertKeyValueAt(cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
 
         // AND
-        node.removeKeyValueAt(cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 2);
 
         // WHEN
-        defragmentLeaf(node, cursor);
+        defragmentLeaf(leaf, cursor);
 
         // THEN
-        assertKeyEquals(key(1), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
-        assertKeyEquals(key(3), node.keyAt(cursor, layout.newKey(), 1, LEAF, NULL_CONTEXT));
+        KEY into1 = layout.newKey();
+        assertKeyEquals(key(1), leaf.keyAt(cursor, into1, 0, NULL_CONTEXT));
+        KEY into = layout.newKey();
+        assertKeyEquals(key(3), leaf.keyAt(cursor, into, 1, NULL_CONTEXT));
     }
 
     @Test
@@ -480,32 +481,35 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
-        node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(2);
         value = value(2);
-        node.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(3);
         value = value(3);
-        node.insertKeyValueAt(cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(4);
         value = value(4);
-        node.insertKeyValueAt(cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(5);
         value = value(5);
-        node.insertKeyValueAt(cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
 
         // AND
-        node.removeKeyValueAt(cursor, 1, 5, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
-        node.removeKeyValueAt(cursor, 2, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 1, 5, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 2, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 3);
 
         // WHEN
-        defragmentLeaf(node, cursor);
+        defragmentLeaf(leaf, cursor);
 
         // THEN
-        assertKeyEquals(key(1), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
-        assertKeyEquals(key(3), node.keyAt(cursor, layout.newKey(), 1, LEAF, NULL_CONTEXT));
-        assertKeyEquals(key(5), node.keyAt(cursor, layout.newKey(), 2, LEAF, NULL_CONTEXT));
+        KEY into2 = layout.newKey();
+        assertKeyEquals(key(1), leaf.keyAt(cursor, into2, 0, NULL_CONTEXT));
+        KEY into1 = layout.newKey();
+        assertKeyEquals(key(3), leaf.keyAt(cursor, into1, 1, NULL_CONTEXT));
+        KEY into = layout.newKey();
+        assertKeyEquals(key(5), leaf.keyAt(cursor, into, 2, NULL_CONTEXT));
     }
 
     @Test
@@ -514,32 +518,34 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         initializeLeaf();
         KEY key = key(1);
         VALUE value = value(1);
-        node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(2);
         value = value(2);
-        node.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(3);
         value = value(3);
-        node.insertKeyValueAt(cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(4);
         value = value(4);
-        node.insertKeyValueAt(cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 3, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         key = key(5);
         value = value(5);
-        node.insertKeyValueAt(cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.insertKeyValueAt(cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
 
         // AND
-        node.removeKeyValueAt(cursor, 0, 5, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
-        node.removeKeyValueAt(cursor, 1, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
-        node.removeKeyValueAt(cursor, 2, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 0, 5, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 1, 4, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        leaf.removeKeyValueAt(cursor, 2, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         TreeNodeUtil.setKeyCount(cursor, 2);
 
         // WHEN
-        defragmentLeaf(node, cursor);
+        defragmentLeaf(leaf, cursor);
 
         // THEN
-        assertKeyEquals(key(2), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
-        assertKeyEquals(key(4), node.keyAt(cursor, layout.newKey(), 1, LEAF, NULL_CONTEXT));
+        KEY into1 = layout.newKey();
+        assertKeyEquals(key(2), leaf.keyAt(cursor, into1, 0, NULL_CONTEXT));
+        KEY into = layout.newKey();
+        assertKeyEquals(key(4), leaf.keyAt(cursor, into, 1, NULL_CONTEXT));
     }
 
     @Test
@@ -562,15 +568,15 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
                 } while (contains(expectedKeys, newKey, layout));
                 VALUE newValue = value(random.nextLong());
 
-                Overflow overflow = node.leafOverflow(cursor, expectedKeyCount, newKey, newValue);
+                Overflow overflow = leaf.overflow(cursor, expectedKeyCount, newKey, newValue);
                 if (overflow == NO_NEED_DEFRAG) {
-                    node.defragmentLeaf(cursor);
+                    leaf.defragment(cursor);
                     assertContent(expectedKeys, expectedValues, expectedKeyCount);
                 }
                 if (overflow != YES) { // there's room
                     int position = expectedKeyCount == 0 ? 0 : random.nextInt(expectedKeyCount);
                     // ensure unique
-                    node.insertKeyValueAt(
+                    leaf.insertKeyValueAt(
                             cursor,
                             newKey,
                             newValue,
@@ -589,9 +595,9 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
                     int position = random.nextInt(expectedKeyCount);
                     var readKey = layout.newKey();
                     var readValue = layout.newValue();
-                    node.keyAt(cursor, readKey, position, LEAF, NULL_CONTEXT);
-                    node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), position, NULL_CONTEXT);
-                    node.removeKeyValueAt(
+                    leaf.keyAt(cursor, readKey, position, NULL_CONTEXT);
+                    leaf.valueAt(cursor, new ValueHolder<>(readValue), position, NULL_CONTEXT);
+                    leaf.removeKeyValueAt(
                             cursor, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
                     KEY expectedKey = expectedKeys.remove(position);
                     VALUE expectedValue = expectedValues.remove(position);
@@ -623,14 +629,14 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         assertEquals(expectedKeyCount, TreeNodeUtil.keyCount(cursor));
         for (int i = 0; i < expectedKeyCount; i++) {
             KEY expectedKey = expectedKeys.get(i);
-            node.keyAt(cursor, actualKey, i, LEAF, NULL_CONTEXT);
+            leaf.keyAt(cursor, actualKey, i, NULL_CONTEXT);
             assertEquals(
                     0,
                     layout.compare(expectedKey, actualKey),
                     "Key differ with expected, actualKey=" + actualKey + ", expectedKey=" + expectedKey);
 
             VALUE expectedValue = expectedValues.get(i);
-            node.valueAt(cursor, new TreeNode.ValueHolder<>(actualValue), i, NULL_CONTEXT);
+            leaf.valueAt(cursor, new ValueHolder<>(actualValue), i, NULL_CONTEXT);
             assertEquals(
                     0,
                     layout.compareValue(expectedValue, actualValue),
@@ -639,11 +645,18 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
     }
 
     @Test
-    void shouldAssertPageSizeBigEnoughForAtLeastTwoKeys() {
+    void shouldAssertPageSizeBigEnoughForAtLeastTwoKeysLeaf() {
         assertThrows(
                 MetadataMismatchException.class,
-                () -> new TreeNodeFixedSize<>(
+                () -> new LeafNodeFixedSize<>(
                         TreeNodeUtil.BASE_HEADER_LENGTH + layout.keySize(null) + layout.valueSize(null), layout));
+    }
+
+    @Test
+    void shouldAssertPageSizeBigEnoughForAtLeastTwoKeysInternal() {
+        assertThrows(
+                MetadataMismatchException.class,
+                () -> new InternalNodeFixedSize<>(TreeNodeUtil.BASE_HEADER_LENGTH + layout.keySize(null), layout));
     }
 
     @Test
@@ -688,10 +701,10 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         long generation = UNSTABLE_GENERATION;
         long pointer = 12;
         int childPos = 2;
-        node.setChildAt(cursor, pointer, childPos, STABLE_GENERATION, generation);
+        internal.setChildAt(cursor, pointer, childPos, STABLE_GENERATION, generation);
 
         // WHEN
-        long readResult = node.childAt(cursor, childPos, STABLE_GENERATION, generation, generationTarget);
+        long readResult = internal.childAt(cursor, childPos, STABLE_GENERATION, generation, generationTarget);
         long readGeneration = generationTarget.generation;
 
         // THEN
@@ -706,10 +719,10 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         long generation = UNSTABLE_GENERATION;
         long pointer = 12;
         int childPos = 0;
-        node.setChildAt(cursor, pointer, childPos, STABLE_GENERATION, generation);
+        internal.setChildAt(cursor, pointer, childPos, STABLE_GENERATION, generation);
 
         // WHEN
-        long readResult = node.childAt(cursor, childPos, STABLE_GENERATION, generation, generationTarget);
+        long readResult = internal.childAt(cursor, childPos, STABLE_GENERATION, generation, generationTarget);
         long readGeneration = generationTarget.generation;
 
         // THEN
@@ -725,11 +738,11 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         long oldPointer = 13;
         long pointer = 12;
         int childPos = 0;
-        node.setChildAt(cursor, oldPointer, childPos, STABLE_GENERATION, UNSTABLE_GENERATION);
-        node.setChildAt(cursor, pointer, childPos, UNSTABLE_GENERATION, generation);
+        internal.setChildAt(cursor, oldPointer, childPos, STABLE_GENERATION, UNSTABLE_GENERATION);
+        internal.setChildAt(cursor, pointer, childPos, UNSTABLE_GENERATION, generation);
 
         // WHEN
-        long readResult = node.childAt(cursor, childPos, UNSTABLE_GENERATION, generation, generationTarget);
+        long readResult = internal.childAt(cursor, childPos, UNSTABLE_GENERATION, generation, generationTarget);
         long readGeneration = generationTarget.generation;
 
         // THEN
@@ -745,11 +758,11 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
         long oldPointer = 12;
         long pointer = 123;
         int childPos = 2;
-        node.setChildAt(cursor, oldPointer, childPos, STABLE_GENERATION, UNSTABLE_GENERATION);
-        node.setChildAt(cursor, pointer, childPos, UNSTABLE_GENERATION, generation);
+        internal.setChildAt(cursor, oldPointer, childPos, STABLE_GENERATION, UNSTABLE_GENERATION);
+        internal.setChildAt(cursor, pointer, childPos, UNSTABLE_GENERATION, generation);
 
         // WHEN
-        long readResult = node.childAt(cursor, childPos, UNSTABLE_GENERATION, generation, generationTarget);
+        long readResult = internal.childAt(cursor, childPos, UNSTABLE_GENERATION, generation, generationTarget);
         long readGeneration = generationTarget.generation;
 
         // THEN
@@ -780,21 +793,21 @@ public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VA
             if (i % 2 == 0) {
                 assertEquals(
                         keysAndChildren[i],
-                        GenerationSafePointerPair.pointer(node.childAt(cursor, pos, stable, unstable)));
+                        GenerationSafePointerPair.pointer(internal.childAt(cursor, pos, stable, unstable)));
             } else {
                 KEY expectedKey = key(keysAndChildren[i]);
-                node.keyAt(cursor, actualKey, pos, INTERNAL, NULL_CONTEXT);
+                internal.keyAt(cursor, actualKey, pos, NULL_CONTEXT);
                 assertEquals(0, layout.compare(expectedKey, actualKey));
             }
         }
     }
 
     private void initializeLeaf() {
-        node.initializeLeaf(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
+        leaf.initialize(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
     }
 
     private void initializeInternal() {
-        node.initializeInternal(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
+        internal.initialize(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
     }
 
     private static long rightSibling(PageCursor cursor, long stableGeneration, long unstableGeneration) {

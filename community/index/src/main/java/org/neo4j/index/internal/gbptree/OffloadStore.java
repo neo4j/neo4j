@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
- * Store used by {@link TreeNodeDynamicSize} to store keys and values that are too large to be inlined in {@link GBPTree}.
+ * Store used to store dynamic sized keys and values that are too large to be inlined in {@link GBPTree}.
  */
 public interface OffloadStore<KEY, VALUE> {
     /**

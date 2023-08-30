@@ -20,8 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.io.IOUtils.closeAllSilently;
 
 import java.io.IOException;
@@ -188,7 +186,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     /**
      * Value instances to use for reading values from current node.
      */
-    private TreeNode.ValueHolder<VALUE>[] mutableValues;
+    private ValueHolder<VALUE>[] mutableValues;
 
     /**
      * Index into {@link #mutableKeys}/{@link #mutableValues}, i.e. which key/value to consider as result next.
@@ -230,9 +228,14 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     private final Layout<KEY, VALUE> layout;
 
     /**
-     * Logic for reading data from tree nodes.
+     * Logic for reading data from leaf tree nodes.
      */
-    private final TreeNode<KEY, VALUE> bTreeNode;
+    private final LeafNodeBehaviour<KEY, VALUE> leafNode;
+
+    /**
+     * Logic for reading data from internal tree nodes.
+     */
+    private final InternalNodeBehaviour<KEY> internalNode;
 
     /**
      * Contains the highest returned key, i.e. from the last call to {@link #next()} returning {@code true}.
@@ -301,7 +304,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
      * Generation of the pointer which was last followed, either a
      * {@link TreeNodeUtil#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
      * {@link TreeNodeUtil#successor(PageCursor, long, long) successor} or
-     * {@link TreeNode#childAt(PageCursor, int, long, long) child}.
+     * {@link InternalNodeBehaviour#childAt(PageCursor, int, long, long) child}.
      */
     private long lastFollowedPointerGeneration;
 
@@ -436,10 +439,13 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
      */
     private final GenerationKeeper generationKeeper = new GenerationKeeper();
 
+    private final int maxKeyCount;
+
     SeekCursor(
             PageCursor cursor,
-            TreeNode<KEY, VALUE> bTreeNode,
             Layout<KEY, VALUE> layout,
+            LeafNodeBehaviour<KEY, VALUE> leafNode,
+            InternalNodeBehaviour<KEY> internalNode,
             LongSupplier generationSupplier,
             Consumer<Throwable> exceptionDecorator,
             CursorContext cursorContext) {
@@ -448,10 +454,12 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         this.layout = layout;
         this.exceptionDecorator = exceptionDecorator;
         this.generationSupplier = generationSupplier;
-        this.bTreeNode = bTreeNode;
+        this.leafNode = leafNode;
+        this.internalNode = internalNode;
         this.prevKey = layout.newKey();
         this.expectedFirstAfterGoToNext = layout.newKey();
         this.firstKeyInNode = layout.newKey();
+        this.maxKeyCount = Math.max(leafNode.maxKeyCount(), internalNode.maxKeyCount());
     }
 
     @SuppressWarnings("unchecked")
@@ -487,9 +495,9 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         int batchSize = exactMatch ? 1 : maxReadAhead;
         if (mutableKeys == null || batchSize > mutableKeys.length) {
             this.mutableKeys = (KEY[]) new Object[batchSize];
-            this.mutableValues = new TreeNode.ValueHolder[batchSize];
+            this.mutableValues = new ValueHolder[batchSize];
             this.mutableKeys[0] = layout.newKey();
-            this.mutableValues[0] = new TreeNode.ValueHolder<>(layout.newValue());
+            this.mutableValues[0] = new ValueHolder<>(layout.newValue());
         }
         this.ended = false;
         this.pos = 0;
@@ -543,19 +551,19 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                         continue;
                     }
 
-                    if (isInternal) {
-                        searchResult = KeySearch.searchInternal(
-                                cursor, bTreeNode, fromInclusive, mutableKeys[0], keyCount, cursorContext);
-                    } else {
-                        searchResult = KeySearch.searchLeaf(
-                                cursor, bTreeNode, fromInclusive, mutableKeys[0], keyCount, cursorContext);
-                    }
+                    searchResult = KeySearch.search(
+                            cursor,
+                            isInternal ? internalNode : leafNode,
+                            fromInclusive,
+                            mutableKeys[0],
+                            keyCount,
+                            cursorContext);
                     lookingForChild = isInternal && currentReadLevel < searchLevel;
                     pos = positionOf(searchResult, lookingForChild);
 
                     if (lookingForChild) {
-                        pointerId =
-                                bTreeNode.childAt(cursor, pos, stableGeneration, unstableGeneration, generationKeeper);
+                        pointerId = internalNode.childAt(
+                                cursor, pos, stableGeneration, unstableGeneration, generationKeeper);
                         pointerGeneration = generationKeeper.generation;
                     }
                 } catch (Exception e) {
@@ -705,7 +713,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
 
                 if (verifyExpectedFirstAfterGoToNext) {
                     pos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt(cursor, firstKeyInNode, pos, isInternal ? INTERNAL : LEAF, cursorContext);
+                    (isInternal ? internalNode : leafNode).keyAt(cursor, firstKeyInNode, pos, cursorContext);
                 }
 
                 if (concurrentWriteHappened) {
@@ -713,13 +721,8 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                     // moving position back until we find previously returned key
                     KEY key = first ? fromInclusive : prevKey;
 
-                    if (isInternal) {
-                        searchResult = KeySearch.searchInternal(
-                                cursor, bTreeNode, key, mutableKeys[0], keyCount, cursorContext);
-                    } else {
-                        searchResult =
-                                KeySearch.searchLeaf(cursor, bTreeNode, key, mutableKeys[0], keyCount, cursorContext);
-                    }
+                    searchResult = KeySearch.search(
+                            cursor, isInternal ? internalNode : leafNode, key, mutableKeys[0], keyCount, cursorContext);
 
                     pos = positionOf(searchResult, false);
 
@@ -743,13 +746,13 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                     if (mutableKeys[cachedLength] == null) {
                         // Lazy instantiation of key/value
                         mutableKeys[cachedLength] = layout.newKey();
-                        mutableValues[cachedLength] = new TreeNode.ValueHolder<>(layout.newValue());
+                        mutableValues[cachedLength] = new ValueHolder<>(layout.newValue());
                     }
                     if (!isInternal) {
-                        bTreeNode.keyValueAt(
+                        leafNode.keyValueAt(
                                 cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorContext);
                     } else {
-                        bTreeNode.keyAtInternal(cursor, mutableKeys[cachedLength], readPos, cursorContext);
+                        internalNode.keyAt(cursor, mutableKeys[cachedLength], readPos, cursorContext);
                     }
 
                     if (insideEndRange(exactMatch, cachedLength)) {
@@ -1038,9 +1041,9 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             if (nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE) {
                 keyCount = TreeNodeUtil.keyCount(scout);
                 // if keyCount is 0 we observed intermediate state and caller will retry
-                if (keyCountIsSane(keyCount) && keyCount > 0) {
+                if (keyCount <= maxKeyCount && keyCount > 0) {
                     int firstPos = keyCount - 1;
-                    bTreeNode.keyAtLeaf(scout, expectedFirstAfterGoToNext, firstPos, cursorContext);
+                    leafNode.keyAt(scout, expectedFirstAfterGoToNext, firstPos, cursorContext);
                 }
             }
 
@@ -1054,7 +1057,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             }
             checkOutOfBounds(this.cursor);
         }
-        return nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && keyCountIsSane(keyCount) && keyCount > 0;
+        return nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && keyCount <= maxKeyCount && keyCount > 0;
     }
 
     /**
@@ -1108,7 +1111,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     private boolean keyCountIsSane(int keyCount) {
         // if keyCount is out of bounds of what a tree node can hold, it must be that we're
         // reading from an evicted page that just happened to look like a tree node.
-        return bTreeNode.reasonableKeyCount(keyCount);
+        return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
     private boolean saneRead() {

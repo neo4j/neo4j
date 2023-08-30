@@ -22,10 +22,8 @@ package org.neo4j.index.internal.gbptree;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
-import static org.neo4j.index.internal.gbptree.KeySearch.searchInternal;
-import static org.neo4j.index.internal.gbptree.KeySearch.searchLeaf;
+import static org.neo4j.index.internal.gbptree.Overflow.NO;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
 import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -50,7 +48,8 @@ class KeySearchTest {
     private static final int PAGE_SIZE = 512;
     private final PageCursor cursor = wrap(new byte[PAGE_SIZE], 0, PAGE_SIZE);
     private final Layout<MutableLong, MutableLong> layout = longLayout().build();
-    private final TreeNode<MutableLong, MutableLong> node = new TreeNodeFixedSize<>(PAGE_SIZE, layout);
+    private final LeafNodeFixedSize<MutableLong, MutableLong> leaf = new LeafNodeFixedSize<>(PAGE_SIZE, layout);
+    private final InternalNodeFixedSize<MutableLong> internal = new InternalNodeFixedSize<>(PAGE_SIZE, layout);
     private final MutableLong readKey = layout.newKey();
     private final MutableLong searchKey = layout.newKey();
     private final MutableLong insertKey = layout.newKey();
@@ -66,7 +65,7 @@ class KeySearchTest {
         int keyCount = TreeNodeUtil.keyCount(cursor);
 
         // then
-        int result = searchLeaf(cursor, node, searchKey, readKey, keyCount, NULL_CONTEXT);
+        int result = KeySearch.search(cursor, leaf, searchKey, readKey, keyCount, NULL_CONTEXT);
         assertSearchResult(false, 0, result);
     }
 
@@ -77,7 +76,7 @@ class KeySearchTest {
         int keyCount = TreeNodeUtil.keyCount(cursor);
 
         // then
-        final int result = searchInternal(cursor, node, searchKey, readKey, keyCount, NULL_CONTEXT);
+        final int result = KeySearch.search(cursor, internal, searchKey, readKey, keyCount, NULL_CONTEXT);
         assertSearchResult(false, 0, result);
     }
 
@@ -386,7 +385,7 @@ class KeySearchTest {
         MutableLong key = layout.newKey();
         for (int i = 0; i < KEY_COUNT; i++) {
             key.setValue(key(i));
-            int result = searchLeaf(cursor, node, key, readKey, KEY_COUNT, NULL_CONTEXT);
+            int result = KeySearch.search(cursor, leaf, key, readKey, KEY_COUNT, NULL_CONTEXT);
 
             // THEN
             assertSearchResult(true, i, result);
@@ -402,7 +401,7 @@ class KeySearchTest {
         MutableLong key = layout.newKey();
         for (int i = 1; i < KEY_COUNT - 1; i++) {
             key.setValue(key(i) - 1);
-            int result = searchLeaf(cursor, node, key, readKey, KEY_COUNT, NULL_CONTEXT);
+            int result = KeySearch.search(cursor, leaf, key, readKey, KEY_COUNT, NULL_CONTEXT);
 
             // THEN
             assertSearchResult(false, i, result);
@@ -421,12 +420,12 @@ class KeySearchTest {
         while (true) {
             MutableLong expectedKey = layout.newKey();
             key.setValue(currentKey);
-            if (node.leafOverflow(cursor, keyCount, key, dummyValue) != NO) {
+            if (leaf.overflow(cursor, keyCount, key, dummyValue) != NO) {
                 break;
             }
             layout.copyKey(key, expectedKey);
             keys.add(keyCount, expectedKey);
-            node.insertKeyValueAt(
+            leaf.insertKeyValueAt(
                     cursor, key, dummyValue, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
             currentKey += random.nextInt(100) + 10;
             keyCount++;
@@ -437,7 +436,7 @@ class KeySearchTest {
         MutableLong searchKey = layout.newKey();
         for (int i = 0; i < 1_000; i++) {
             searchKey.setValue(random.nextInt(currentKey + 10));
-            int searchResult = searchLeaf(cursor, node, searchKey, readKey, keyCount, NULL_CONTEXT);
+            int searchResult = KeySearch.search(cursor, leaf, searchKey, readKey, keyCount, NULL_CONTEXT);
 
             // THEN position should be as expected
             boolean exists = contains(keys, searchKey, layout);
@@ -467,9 +466,9 @@ class KeySearchTest {
         int keyCount = TreeNodeUtil.keyCount(cursor);
         searchKey.setValue(key);
         if (TreeNodeUtil.isInternal(cursor)) {
-            return searchInternal(cursor, node, searchKey, readKey, keyCount, NULL_CONTEXT);
+            return KeySearch.search(cursor, internal, searchKey, readKey, keyCount, NULL_CONTEXT);
         }
-        return searchLeaf(cursor, node, searchKey, readKey, keyCount, NULL_CONTEXT);
+        return KeySearch.search(cursor, leaf, searchKey, readKey, keyCount, NULL_CONTEXT);
     }
 
     private void appendKey(long key) throws IOException {
@@ -477,7 +476,7 @@ class KeySearchTest {
         int keyCount = TreeNodeUtil.keyCount(cursor);
         if (TreeNodeUtil.isInternal(cursor)) {
             long dummyChild = 10;
-            node.insertKeyAndRightChildAt(
+            internal.insertKeyAndRightChildAt(
                     cursor,
                     insertKey,
                     dummyChild,
@@ -487,7 +486,7 @@ class KeySearchTest {
                     UNSTABLE_GENERATION,
                     NULL_CONTEXT);
         } else {
-            node.insertKeyValueAt(
+            leaf.insertKeyValueAt(
                     cursor,
                     insertKey,
                     dummyValue,
@@ -511,7 +510,7 @@ class KeySearchTest {
         MutableLong key = layout.newKey();
         for (int i = 0; i < KEY_COUNT; i++) {
             key.setValue(key(i));
-            node.insertKeyValueAt(cursor, key, dummyValue, i, i, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+            leaf.insertKeyValueAt(cursor, key, dummyValue, i, i, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         }
         TreeNodeUtil.setKeyCount(cursor, KEY_COUNT);
     }
@@ -521,10 +520,10 @@ class KeySearchTest {
     }
 
     private void initializeLeaf() {
-        node.initializeLeaf(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
+        leaf.initialize(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
     }
 
     private void initializeInternal() {
-        node.initializeInternal(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
+        internal.initialize(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
     }
 }

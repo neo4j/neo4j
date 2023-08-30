@@ -28,8 +28,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCursor;
 
-public class TreeNodeDynamicSizeTest
-        extends TreeNodeTestBase<RawBytes, RawBytes, TreeNodeDynamicSize<RawBytes, RawBytes>> {
+public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes> {
     private static final long STABLE_GENERATION = 3;
     private static final long UNSTABLE_GENERATION = 4;
 
@@ -41,15 +40,21 @@ public class TreeNodeDynamicSizeTest
     }
 
     @Override
-    protected TreeNodeDynamicSize<RawBytes, RawBytes> getNode(
+    protected LeafNodeBehaviour<RawBytes, RawBytes> getLeaf(
             int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
+        return new LeafNodeDynamicSize<>(pageSize, layout, offloadStore);
     }
 
     @Override
-    void assertAdditionalHeader(PageCursor cursor, TreeNode<RawBytes, RawBytes> node, int pageSize) {
+    protected InternalNodeBehaviour<RawBytes> getInternal(
+            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
+        return new InternalNodeDynamicSize<>(pageSize, layout, offloadStore);
+    }
+
+    @Override
+    void assertAdditionalHeader(PageCursor cursor, int pageSize) {
         // When
-        int currentAllocSpace = ((TreeNodeDynamicSize<RawBytes, RawBytes>) node).getAllocOffset(cursor);
+        int currentAllocSpace = DynamicSizeUtil.getAllocOffset(cursor);
 
         // Then
         assertEquals(pageSize, currentAllocSpace, "allocSpace point to end of page");
@@ -60,7 +65,7 @@ public class TreeNodeDynamicSizeTest
         int oneByteKeyMax = DynamicSizeUtil.MASK_ONE_BYTE_KEY_SIZE;
         int oneByteValueMax = DynamicSizeUtil.MASK_ONE_BYTE_VALUE_SIZE;
 
-        TreeNodeDynamicSize<RawBytes, RawBytes> node = getNode(PAGE_SIZE, layout, createOffloadStore());
+        var node = getLeaf(PAGE_SIZE, layout, createOffloadStore());
 
         verifyOverhead(node, oneByteKeyMax, 0, 1);
         verifyOverhead(node, oneByteKeyMax, 1, 2);
@@ -73,29 +78,29 @@ public class TreeNodeDynamicSizeTest
     }
 
     private void verifyOverhead(
-            TreeNodeDynamicSize<RawBytes, RawBytes> node, int keySize, int valueSize, int expectedOverhead)
+            LeafNodeBehaviour<RawBytes, RawBytes> leaf, int keySize, int valueSize, int expectedOverhead)
             throws IOException {
         cursor.zapPage();
-        node.initializeLeaf(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
+        leaf.initialize(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
 
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[keySize];
         value.bytes = new byte[valueSize];
 
-        int allocOffsetBefore = node.getAllocOffset(cursor);
-        node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
-        int allocOffsetAfter = node.getAllocOffset(cursor);
+        int allocOffsetBefore = DynamicSizeUtil.getAllocOffset(cursor);
+        leaf.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
+        int allocOffsetAfter = DynamicSizeUtil.getAllocOffset(cursor);
         assertEquals(allocOffsetBefore - keySize - valueSize - expectedOverhead, allocOffsetAfter);
     }
 
     @Override
-    protected void defragmentLeaf(TreeNodeDynamicSize<RawBytes, RawBytes> treeNode, PageAwareByteArrayCursor cursor) {
-        var allocOffsetBefore = treeNode.getAllocOffset(cursor);
-        treeNode.defragmentLeaf(cursor);
-        var allocOffsetAfter = treeNode.getAllocOffset(cursor);
+    protected void defragmentLeaf(LeafNodeBehaviour<RawBytes, RawBytes> leaf, PageAwareByteArrayCursor cursor) {
+        var allocOffsetBefore = DynamicSizeUtil.getAllocOffset(cursor);
+        leaf.defragment(cursor);
+        var allocOffsetAfter = DynamicSizeUtil.getAllocOffset(cursor);
         assertThat(allocOffsetAfter).isGreaterThan(allocOffsetBefore);
-        var deadSpaceAfter = treeNode.getDeadSpace(cursor);
+        var deadSpaceAfter = DynamicSizeUtil.getDeadSpace(cursor);
         assertThat(deadSpaceAfter).isEqualTo(0);
     }
 }

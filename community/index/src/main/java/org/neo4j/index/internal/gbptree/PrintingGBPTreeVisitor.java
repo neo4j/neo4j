@@ -110,7 +110,7 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
     }
 
     @Override
-    public void historicalValue(long version, TreeNode.ValueHolder<VALUE> value) {
+    public void historicalValue(long version, ValueHolder<VALUE> value) {
         if (printHistory) {
             out.print(" " + version + ":" + value.value + (value.defined ? "[D]" : "[U]"));
         }

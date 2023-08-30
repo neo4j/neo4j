@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -39,9 +38,15 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     }
 
     @Override
-    protected TreeNode<RawBytes, RawBytes> getTreeNode(
+    protected LeafNodeBehaviour<RawBytes, RawBytes> getLeaf(
             int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
-        return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
+        return new LeafNodeDynamicSize<>(pageSize, layout, offloadStore);
+    }
+
+    @Override
+    protected InternalNodeBehaviour<RawBytes> getInternal(
+            int pageSize, Layout<RawBytes, RawBytes> layout, OffloadStore<RawBytes, RawBytes> offloadStore) {
+        return new InternalNodeDynamicSize<>(pageSize, layout, offloadStore);
     }
 
     @Override
@@ -73,7 +78,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     void shouldFailToInsertTooLargeKeys() {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
-        key.bytes = new byte[node.keyValueSizeCap() + 1];
+        key.bytes = new byte[leaf.keyValueSizeCap() + 1];
         value.bytes = EMPTY_BYTE_ARRAY;
 
         shouldFailToInsertTooLargeKeyAndValue(key, value);
@@ -83,7 +88,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     void shouldFailToInsertTooLargeKeyAndValueLargeKey() {
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
-        key.bytes = new byte[node.keyValueSizeCap()];
+        key.bytes = new byte[leaf.keyValueSizeCap()];
         value.bytes = new byte[1];
 
         shouldFailToInsertTooLargeKeyAndValue(key, value);
@@ -94,7 +99,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
         RawBytes key = layout.newKey();
         RawBytes value = layout.newValue();
         key.bytes = new byte[1];
-        value.bytes = new byte[node.keyValueSizeCap()];
+        value.bytes = new byte[leaf.keyValueSizeCap()];
 
         shouldFailToInsertTooLargeKeyAndValue(key, value);
     }
@@ -117,7 +122,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
         }
 
         // when
-        RawBytes rawBytes = keyAt(root.id(), 0, INTERNAL);
+        RawBytes rawBytes = keyAt(root.id(), 0, true);
 
         // then
         assertEquals(Long.BYTES, rawBytes.bytes.length, "expected no tail on internal key but was " + rawBytes);
