@@ -25,6 +25,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
@@ -46,6 +47,8 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.HeapDumpDiagnostics;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -57,11 +60,16 @@ public class DbmsDiagnosticsManager {
     private final Dependencies dependencies;
     private final boolean enabled;
     private final InternalLog internalLog;
+    private final Boolean splitIntoSections;
+    private final JobScheduler jobScheduler;
 
     public DbmsDiagnosticsManager(Dependencies dependencies, LogService logService) {
         this.internalLog = logService.getInternalLog(DiagnosticsManager.class);
         this.dependencies = dependencies;
-        this.enabled = dependencies.resolveDependency(Config.class).get(GraphDatabaseInternalSettings.dump_diagnostics);
+        Config config = dependencies.resolveDependency(Config.class);
+        this.enabled = config.get(GraphDatabaseInternalSettings.dump_diagnostics);
+        this.splitIntoSections = config.get(GraphDatabaseInternalSettings.split_diagnostics);
+        this.jobScheduler = splitIntoSections ? dependencies.resolveDependency(JobScheduler.class) : null;
     }
 
     public void dumpSystemDiagnostics() {
@@ -99,8 +107,7 @@ public class DbmsDiagnosticsManager {
         }
     }
 
-    private static void dumpConciseDiagnostics(
-            Collection<? extends DatabaseContext> databaseContexts, InternalLog log) {
+    private void dumpConciseDiagnostics(Collection<? extends DatabaseContext> databaseContexts, InternalLog log) {
         var startedDbs = databaseContexts.stream()
                 .flatMap(ctx -> ctx.optionalDatabase().stream())
                 .filter(Database::isStarted)
@@ -110,13 +117,14 @@ public class DbmsDiagnosticsManager {
                 .filter(not(Database::isStarted))
                 .collect(toList());
 
-        dumpAsSingleMessage(log, stringJoiner -> {
-            logDatabasesState(stringJoiner::add, startedDbs, "Started");
-            logDatabasesState(stringJoiner::add, stoppedDbs, "Stopped");
+        dumpAsSingleMessage(log, diagnosticsLogger -> {
+            logDatabasesState(diagnosticsLogger, startedDbs, "Started");
+            diagnosticsLogger.newSegment();
+            logDatabasesState(diagnosticsLogger, stoppedDbs, "Stopped");
         });
     }
 
-    private static void logDatabasesState(DiagnosticsLogger log, List<Database> databases, String state) {
+    private void logDatabasesState(ExtendedDiagnosticsLogger log, List<Database> databases, String state) {
         DiagnosticsManager.section(log, state + " Databases");
         if (databases.isEmpty()) {
             log.log(format("There are no %s databases", state.toLowerCase()));
@@ -126,41 +134,51 @@ public class DbmsDiagnosticsManager {
         for (int i = CONCISE_DATABASE_NAMES_PER_ROW; i < databases.size(); i += CONCISE_DATABASE_NAMES_PER_ROW) {
             var subList = databases.subList(lastIndex, i);
             logDatabases(log, subList);
+            log.newSegment();
             lastIndex = i;
         }
         var lastDbs = databases.subList(lastIndex, databases.size());
+        log.newSegment();
         logDatabases(log, lastDbs);
     }
 
-    private static void logDatabases(DiagnosticsLogger log, List<Database> subList) {
+    private void logDatabases(DiagnosticsLogger log, List<Database> subList) {
         log.log(subList.stream()
                 .map(database -> database.getNamedDatabaseId().name())
                 .collect(joining(", ")));
     }
 
     private void dumpSystemDiagnostics(InternalLog log) {
-        dumpAsSingleMessage(log, stringJoiner -> {
+        dumpAsSingleMessage(log, diagnosticsLogger -> {
             Config config = dependencies.resolveDependency(Config.class);
 
-            DiagnosticsManager.section(stringJoiner::add, "System diagnostics");
-            DiagnosticsManager.dump(SystemDiagnostics.class, log, stringJoiner::add);
-            DiagnosticsManager.dump(new ConfigDiagnostics(config), log, stringJoiner::add);
-            DiagnosticsManager.dump(new PackagingDiagnostics(config), log, stringJoiner::add);
+            DiagnosticsManager.section(diagnosticsLogger, "System diagnostics");
+            diagnosticsLogger.newSegment();
+            for (SystemDiagnostics diagnostics : SystemDiagnostics.values()) {
+                DiagnosticsManager.dump(diagnostics, log, diagnosticsLogger);
+                diagnosticsLogger.newSegment();
+            }
+            diagnosticsLogger.newSegment();
+            DiagnosticsManager.dump(new ConfigDiagnostics(config), log, diagnosticsLogger);
+            diagnosticsLogger.newSegment();
+            DiagnosticsManager.dump(new PackagingDiagnostics(config), log, diagnosticsLogger);
+            diagnosticsLogger.newSegment();
             // dump any custom additional diagnostics that can be registered by specific edition
             dependencies
                     .resolveTypeDependencies(DiagnosticsProvider.class)
-                    .forEach(provider -> DiagnosticsManager.dump(provider, log, stringJoiner::add));
+                    .forEach(provider -> DiagnosticsManager.dump(provider, log, diagnosticsLogger));
+            diagnosticsLogger.newSegment();
         });
     }
 
-    private static void dumpDatabaseDiagnostics(Database database, InternalLog log, boolean checkStatus) {
+    private void dumpDatabaseDiagnostics(Database database, InternalLog log, boolean checkStatus) {
         dumpAsSingleMessageWithDbPrefix(
                 log,
-                stringJoiner -> {
-                    dumpDatabaseSectionName(database, stringJoiner::add);
+                diagnosticsLogger -> {
+                    dumpDatabaseSectionName(database, diagnosticsLogger);
                     if (checkStatus) {
-                        logDatabaseStatus(database, stringJoiner::add);
-
+                        logDatabaseStatus(database, diagnosticsLogger);
+                        diagnosticsLogger.newSegment();
                         if (!database.isStarted()) {
                             return;
                         }
@@ -174,46 +192,102 @@ public class DbmsDiagnosticsManager {
                     StorageEngine storageEngine = databaseResolver.resolveDependency(StorageEngine.class);
 
                     DiagnosticsManager.dump(
-                            new VersionDiagnostics(dbmsInfo, database.getStoreId()), log, stringJoiner::add);
+                            new VersionDiagnostics(dbmsInfo, database.getStoreId()), log, diagnosticsLogger);
+                    diagnosticsLogger.newSegment();
                     DiagnosticsManager.dump(
                             new StoreFilesDiagnostics(
                                     storageEngineFactory, fs, database.getDatabaseLayout(), deviceMapper),
                             log,
-                            stringJoiner::add);
-                    DiagnosticsManager.dump(new TransactionRangeDiagnostics(database), log, stringJoiner::add);
-                    storageEngine.dumpDiagnostics(log, stringJoiner::add);
+                            diagnosticsLogger);
+                    diagnosticsLogger.newSegment();
+                    DiagnosticsManager.dump(new TransactionRangeDiagnostics(database), log, diagnosticsLogger);
+                    diagnosticsLogger.newSegment();
+                    storageEngine.dumpDiagnostics(log, diagnosticsLogger);
+                    diagnosticsLogger.newSegment();
                 },
                 database.getNamedDatabaseId());
     }
 
-    private static void dumpAsSingleMessageWithDbPrefix(
-            InternalLog log, Consumer<StringJoiner> dumpFunction, NamedDatabaseId db) {
+    private void dumpAsSingleMessageWithDbPrefix(
+            InternalLog log, Consumer<ExtendedDiagnosticsLogger> dumpFunction, NamedDatabaseId db) {
         dumpAsSingleMessageWithPrefix(log, dumpFunction, "[" + db.logPrefix() + "] ");
     }
 
-    private static void dumpAsSingleMessage(InternalLog log, Consumer<StringJoiner> dumpFunction) {
+    private void dumpAsSingleMessage(InternalLog log, Consumer<ExtendedDiagnosticsLogger> dumpFunction) {
         dumpAsSingleMessageWithPrefix(log, dumpFunction, "");
     }
 
     /**
      * Messages will be buffered and logged as one single message to make sure that diagnostics are grouped together in the log.
      */
-    private static void dumpAsSingleMessageWithPrefix(
-            InternalLog log, Consumer<StringJoiner> dumpFunction, String prefix) {
+    private void dumpAsSingleMessageWithPrefix(
+            InternalLog log, Consumer<ExtendedDiagnosticsLogger> dumpFunction, String prefix) {
         // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
         // This is first and foremost useful for speeding up testing.
         if (log == NullLog.getInstance()) {
             return;
         }
+        ExtendedDiagnosticsLogger diagnosticsLogger = new ExtendedDiagnosticsLogger(prefix);
+        dumpFunction.accept(diagnosticsLogger);
 
-        StringJoiner message = new StringJoiner(
-                System.lineSeparator() + " ".repeat(64) + prefix,
-                prefix + System.lineSeparator() + " ".repeat(64) + prefix,
-                "");
-        dumpFunction.accept(message);
-        String messageStr = message.toString();
-        HeapDumpDiagnostics.addDiagnostics(prefix, messageStr);
-        log.info(messageStr);
+        String message = diagnosticsLogger.asMessage();
+        HeapDumpDiagnostics.addDiagnostics(prefix, message);
+
+        if (splitIntoSections) {
+            List<String> segments = diagnosticsLogger.asSegments();
+            jobScheduler.schedule(Group.LOG_ROTATION, () -> {
+                // Synchronize here avoid risk of interleaving sections with other concurrent diagnostic messages
+                synchronized (DbmsDiagnosticsManager.this) {
+                    segments.forEach(log::info);
+                }
+            });
+        } else {
+            log.info(message);
+        }
+    }
+
+    private static class ExtendedDiagnosticsLogger implements DiagnosticsLogger {
+        private final StringJoiner messages;
+        private final List<Integer> segmentIndexes = new ArrayList<>();
+
+        ExtendedDiagnosticsLogger(String prefix) {
+            this.messages = new StringJoiner(
+                    System.lineSeparator() + " ".repeat(64) + prefix,
+                    prefix + System.lineSeparator() + " ".repeat(64) + prefix,
+                    "");
+        }
+
+        @Override
+        public void log(String logMessage) {
+            messages.add(logMessage);
+        }
+
+        void newSegment() {
+            int lastIndex = segmentIndexes.isEmpty() ? 0 : segmentIndexes.get(segmentIndexes.size() - 1);
+            int currIndex = messages.length();
+            if (currIndex > lastIndex) {
+                segmentIndexes.add(currIndex);
+            }
+        }
+
+        String asMessage() {
+            return messages.toString();
+        }
+
+        List<String> asSegments() {
+            String message = asMessage();
+            List<String> segments = new ArrayList<>();
+            int prevIndex = 0;
+            for (int index : segmentIndexes) {
+                segments.add(message.substring(prevIndex, index));
+                prevIndex = index;
+            }
+            String lastMessage = message.substring(prevIndex);
+            if (!lastMessage.isEmpty()) {
+                segments.add(lastMessage);
+            }
+            return segments;
+        }
     }
 
     private static void logDatabaseStatus(Database database, DiagnosticsLogger log) {

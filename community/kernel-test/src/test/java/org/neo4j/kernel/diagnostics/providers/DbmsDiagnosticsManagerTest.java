@@ -20,6 +20,7 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import static java.util.Collections.singletonMap;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,8 +31,10 @@ import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFil
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -43,6 +46,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -54,10 +58,12 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -166,6 +172,65 @@ class DbmsDiagnosticsManagerTest {
                         string -> assertThat(string)
                                 .containsSubsequence(
                                         "Testlog message", "Database: ", "Version", "Store files", "Transaction log"));
+    }
+
+    @Test
+    void dumpDatabaseDiagnosticInSegments() throws Exception {
+        try (JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler()) {
+            var dependencies = dependenciesOf(
+                    Config.defaults(GraphDatabaseInternalSettings.split_diagnostics, true),
+                    databaseContextProvider,
+                    jobScheduler);
+            var diagnosticsManager = new DbmsDiagnosticsManager(dependencies, new SimpleLogService(logProvider));
+            diagnosticsManager.dumpDatabaseDiagnostics(defaultDatabase);
+
+            assertThat(logProvider)
+                    .containsMessagesEventually(
+                            MINUTES.toMillis(1), "Database: ", "Version", "Store files", "Transaction log");
+            assertThat(logProvider)
+                    .messageCount("[ Database:", "[ Store files ]", "[ Transaction log ]")
+                    .isEqualTo(3);
+        }
+    }
+
+    @Test
+    void dumpDatabaseDiagnosticInSegmentsNotInterleaved() throws Throwable {
+        try (JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler()) {
+            var dependencies = dependenciesOf(
+                    Config.defaults(GraphDatabaseInternalSettings.split_diagnostics, true),
+                    databaseContextProvider,
+                    jobScheduler);
+            var diagnosticsManager = new DbmsDiagnosticsManager(dependencies, new SimpleLogService(logProvider));
+
+            int numDbs = 5;
+            List<NamedDatabaseId> dbs = new ArrayList<>();
+            Race race = new Race();
+            for (int i = 0; i < numDbs; i++) {
+                NamedDatabaseId dbId = from("database" + i, UUID.randomUUID());
+                Database database = prepareDatabase(dbId);
+                dbs.add(dbId);
+                race.addContestant(() -> diagnosticsManager.dumpDatabaseDiagnostics(database));
+            }
+            race.go();
+
+            String[] messages = dbs.stream().map(NamedDatabaseId::logPrefix).toArray(String[]::new);
+            assertThat(logProvider).containsMessagesEventually(MINUTES.toMillis(1), messages);
+
+            // Assert that segments are not interleaved
+            var logCalls = logProvider.getLogCalls().stream()
+                    .map(AssertableLogProvider.LogCall::toString)
+                    .map(s -> s.substring(s.indexOf('[') + 1, s.indexOf(']')))
+                    .toList();
+            List<String> order = new ArrayList<>();
+            String prev = null;
+            for (String logCall : logCalls) {
+                if (!logCall.equals(prev)) {
+                    prev = logCall;
+                    order.add(logCall);
+                }
+            }
+            assertThat(order).hasSize(numDbs);
+        }
     }
 
     @Test

@@ -775,6 +775,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     // === SETTINGS FROM FEATURE TOGGLES ===
 
     @Internal
+    @Description(
+            "Whether or not to split diagnostics messages into multiple logged messages. Can be useful if there is a log message length limitation, as the diagnostics can be very long")
+    public static final Setting<Boolean> split_diagnostics =
+            newBuilder("internal.dbms.split_diagnostics", BOOL, Boolean.FALSE).build();
+
+    @Internal
     @Description("Validate if transaction statements are properly closed")
     public static final Setting<Boolean> track_tx_statement_close = newBuilder(
                     "internal.dbms.debug.track_tx_statement_close", BOOL, false)

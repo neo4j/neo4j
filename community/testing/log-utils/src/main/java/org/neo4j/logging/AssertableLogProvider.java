@@ -62,7 +62,7 @@ public class AssertableLogProvider extends AbstractLogProvider<InternalLog> {
         ERROR
     }
 
-    static final class LogCall {
+    public static final class LogCall {
         private final String context;
         private final Level level;
         private final String message;
