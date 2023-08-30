@@ -64,6 +64,12 @@ class ReadOnlyArray[T](private val inner: Array[T]) {
     */
   def toSeq: Seq[T] = inner.toSeq
 
+  def toArray: Array[T] = {
+    val result = new Array[Any](length)
+    System.arraycopy(inner, 0, result, 0, length)
+    result.asInstanceOf[Array[T]]
+  }
+
   /**
     * Return a copy of this array with an appended element `t`. Not for hot path use.
     */
