@@ -2535,4 +2535,26 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .allNodeScan("a")
       .build()
   }
+
+  test("Should not plan an aggregation inside a regular projection as part of sort planning") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:HAS_ATTRIBUTE]->()", 1500)
+      .build()
+
+    val q =
+      """
+        |MATCH (x)-[:HAS_ATTRIBUTE]->(y)
+        |WITH x, count(y) as common
+        |RETURN x
+        |ORDER BY common
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("common ASC")
+      .aggregation(Seq("x AS x"), Seq("count(y) AS common"))
+      .relationshipTypeScan("(x)-[anon_0:HAS_ATTRIBUTE]->(y)", IndexOrderNone)
+      .build()
+  }
 }

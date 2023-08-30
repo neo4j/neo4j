@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir
@@ -161,9 +162,14 @@ object SortPlanner {
 
     def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean): LogicalPlan = {
       val projectionDeps = projections.flatMap(e => e._2.dependencies)
-      if (projections.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e)))
-        projection(plan, projections, if (updateSolved) Some(projections) else None, keepAllColumns = true, context)
-      else
+      val projectionsToMarkSolved = projections.filter(_._2 match {
+        case IsAggregate(_) => false
+        case _              => true
+      })
+      if (projectionsToMarkSolved.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e))) {
+        val keepAllColumns = if (updateSolved) Some(projectionsToMarkSolved) else None
+        projection(plan, projectionsToMarkSolved, keepAllColumns, keepAllColumns = true, context)
+      } else
         plan
     }
 
