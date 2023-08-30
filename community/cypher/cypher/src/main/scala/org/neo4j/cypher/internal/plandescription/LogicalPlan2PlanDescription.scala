@@ -2500,6 +2500,8 @@ case class LogicalPlan2PlanDescription(
           Option.when(count > 1)(count - 1)
         )
       }.toSeq
+    case EagernessReason.ProcedureCallEager =>
+      Seq(formatEagernessReason(pretty"Eager ProcedureCall"))
     case EagernessReason.Unknown =>
       Seq.empty
   }

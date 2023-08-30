@@ -63,28 +63,40 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     if (context.eagerAnalyzer != CypherEagerAnalyzerOption.lp) return from
-    if (from.logicalPlan.readOnly) return from
 
     val attributes: Attributes[LogicalPlan] = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
-    val cardinalities = from.planningAttributes.cardinalities
+    val lPStateWithEagerProcedureCall = eagerizeProcedureCalls(from, attributes)
+
+    if (from.logicalPlan.readOnly) return lPStateWithEagerProcedureCall
+
+    val cardinalities = lPStateWithEagerProcedureCall.planningAttributes.cardinalities
 
     val newPlan = context.updateStrategy match {
       case `eagerUpdateStrategy` => EagerEverywhereRewriter(attributes).eagerize(
-          from.logicalPlan,
-          from.semanticTable(),
-          from.anonymousVariableNameGenerator
+          lPStateWithEagerProcedureCall.logicalPlan,
+          lPStateWithEagerProcedureCall.semanticTable(),
+          lPStateWithEagerProcedureCall.anonymousVariableNameGenerator
         )
       case `defaultUpdateStrategy` =>
         val shouldCompressReasons = !context.debugOptions.verboseEagernessReasons
         EagerWhereNeededRewriter(cardinalities, attributes, shouldCompressReasons).eagerize(
-          from.logicalPlan,
-          from.semanticTable(),
-          from.anonymousVariableNameGenerator
+          lPStateWithEagerProcedureCall.logicalPlan,
+          lPStateWithEagerProcedureCall.semanticTable(),
+          lPStateWithEagerProcedureCall.anonymousVariableNameGenerator
         )
     }
 
-    from.withMaybeLogicalPlan(Some(newPlan))
+    lPStateWithEagerProcedureCall.withMaybeLogicalPlan(Some(newPlan))
   }
+
+  private def eagerizeProcedureCalls(from: LogicalPlanState,
+                                     attributes: Attributes[LogicalPlan]): LogicalPlanState =
+    from.withMaybeLogicalPlan(Some(
+      EagerProcedureCallRewriter(attributes).eagerize(
+      from.logicalPlan,
+      from.semanticTable(),
+      from.anonymousVariableNameGenerator
+    )))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriter operates on the LogicalPlan

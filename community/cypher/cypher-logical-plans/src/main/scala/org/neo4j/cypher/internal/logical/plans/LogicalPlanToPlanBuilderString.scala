@@ -1590,6 +1590,7 @@ object LogicalPlanToPlanBuilderString {
       case EagernessReason.Unknown                      => objectName(EagernessReason.Unknown)
       case EagernessReason.UpdateStrategyEager          => objectName(EagernessReason.UpdateStrategyEager)
       case EagernessReason.WriteAfterCallInTransactions => objectName(EagernessReason.WriteAfterCallInTransactions)
+      case EagernessReason.ProcedureCallEager           => objectName(EagernessReason.ProcedureCallEager)
       case r: EagernessReason.NonUnique                 => nonUniqueEagernessReasonStr(r)
       case EagernessReason.ReasonWithConflict(reason, conflict) =>
         s"${nonUniqueEagernessReasonStr(reason)}.withConflict(${conflictStr(conflict)})"

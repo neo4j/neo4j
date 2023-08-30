@@ -45,6 +45,7 @@ object EagernessReason {
   case object Unknown extends EagernessReason
   case object UpdateStrategyEager extends EagernessReason
   case object WriteAfterCallInTransactions extends EagernessReason
+  case object ProcedureCallEager extends EagernessReason
 
   /**
    * Non-unique reasons can be reported by multiple conflicting plan pairs.
