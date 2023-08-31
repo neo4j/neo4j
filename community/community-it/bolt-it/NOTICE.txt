@@ -50,28 +50,9 @@ Apache Software License, Version 2.0
   Apache Shiro :: Cryptography :: Hashing
   Apache Shiro :: Event
   Apache Shiro :: Lang
-  Arrow Flight Core
-  Arrow Format
-  Arrow Memory - Core
-  Arrow Vectors
   Caffeine cache
-  error-prone annotations
   fastinfoset
-  FindBugs-jsr305
-  FlatBuffers Java API
-  Guava InternalFutureFailureAccess and InternalFutures
-  Guava ListenableFuture only
-  Guava: Google Core Libraries for Java
-  io.grpc:grpc-api
-  io.grpc:grpc-context
-  io.grpc:grpc-core
-  io.grpc:grpc-netty
-  io.grpc:grpc-protobuf
-  io.grpc:grpc-protobuf-lite
-  io.grpc:grpc-stub
   IPAddress
-  J2ObjC Annotations
-  Jackson datatype: JSR310
   Jackson module: Old JAXB Annotations (javax.xml.bind)
   Jackson-annotations
   Jackson-core
@@ -101,11 +82,9 @@ Apache Software License, Version 2.0
   Netty/Buffer
   Netty/Codec
   Netty/Codec/HTTP
-  Netty/Codec/HTTP2
   Netty/Common
   Netty/Handler
   Netty/Resolver
-  Netty/TomcatNative [BoringSSL - Static]
   Netty/Transport
   Netty/Transport/Classes/Epoll
   Netty/Transport/Classes/KQueue
@@ -114,7 +93,6 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
   picocli
-  proto-google-common-protos
   Scala Reflect
   scala-collection-contrib
   WMI4Java
@@ -127,14 +105,10 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  Protocol Buffers [Core]
   Zstandard
 
 BSD License 2-clause
   zstd-jni
-
-Common Development and Distribution License Version 1.1
-  javax.annotation API
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -174,7 +148,6 @@ GNU General Public License, version 2 with the Classpath Exception
   HK2 Implementation Utilities
   Jakarta Annotations API
   jakarta.ws.rs-api
-  javax.annotation API
   javax.inject:1 as OSGi bundle
   jersey-container-servlet
   jersey-container-servlet-core
@@ -185,7 +158,6 @@ GNU General Public License, version 2 with the Classpath Exception
   ServiceLocator Default Implementation
 
 MIT License
-  Checker Qual
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
@@ -238,10 +210,6 @@ fastinfoset
 
 jakarta.ws.rs-api
   Eclipse Public License v2.0
-  GNU General Public License, version 2 with the Classpath Exception
-
-javax.annotation API
-  Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 
 javax.inject:1 as OSGi bundle

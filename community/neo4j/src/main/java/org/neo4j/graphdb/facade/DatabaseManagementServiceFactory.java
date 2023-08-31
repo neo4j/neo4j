@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.neo4j.arrow.ArrowServer;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
@@ -46,7 +45,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.connectors.ArrowConnectorInternalSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.DatabaseStateService;
@@ -204,11 +202,6 @@ public class DatabaseManagementServiceFactory {
                 globalModule.getLogService().getUserLogProvider());
         globalDependencies.satisfyDependency(webServer);
         globalLife.add(webServer);
-
-        createArrowServer(globalModule).ifPresent(arrowServer -> {
-            globalLife.add(arrowServer);
-            globalDependencies.satisfyDependencies(arrowServer);
-        });
 
         globalLife.add(globalModule.getCapabilitiesService());
 
@@ -438,15 +431,6 @@ public class DatabaseManagementServiceFactory {
                 globalModule.getMemoryPools(),
                 routingService,
                 edition.getDefaultDatabaseResolver());
-    }
-
-    private static Optional<ArrowServer> createArrowServer(GlobalModule globalModule) {
-        var globalConfig = globalModule.getGlobalConfig();
-        if (!globalConfig.get(ArrowConnectorInternalSettings.enabled)) {
-            return Optional.empty();
-        }
-        return Optional.of(
-                new ArrowServer(globalConfig, globalModule.getLogService().getInternalLog(ArrowServer.class)));
     }
 
     private static void dumpDbmsInfo(InternalLog log, GraphDatabaseAPI system) {

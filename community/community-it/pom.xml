@@ -29,7 +29,6 @@
         <module>security-it</module>
         <module>no-opens-it</module>
         <module>slf4j-logging-it</module>
-        <module>arrow-it</module>
     </modules>
 
     <profiles>
