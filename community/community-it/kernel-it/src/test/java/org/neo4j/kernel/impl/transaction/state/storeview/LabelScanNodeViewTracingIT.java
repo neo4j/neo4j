@@ -96,7 +96,8 @@ class LabelScanNodeViewTracingIT {
                 false,
                 jobScheduler,
                 contextFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         scan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
         assertThatTracing(database)

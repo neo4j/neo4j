@@ -125,7 +125,8 @@ class NodeStoreScanTest {
                 false,
                 jobScheduler,
                 CONTEXT_FACTORY,
-                INSTANCE);
+                INSTANCE,
+                false);
 
         // when
         PopulationProgress progressBeforeStarted = scan.getProgress();
@@ -177,7 +178,8 @@ class NodeStoreScanTest {
                 false,
                 jobScheduler,
                 CONTEXT_FACTORY,
-                INSTANCE);
+                INSTANCE,
+                false);
         assertThat(scan.getProgress().getCompleted()).isZero();
 
         scan.run(StoreScan.NO_EXTERNAL_UPDATES);

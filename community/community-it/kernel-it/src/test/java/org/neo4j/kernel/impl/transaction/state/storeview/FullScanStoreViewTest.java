@@ -310,7 +310,8 @@ class FullScanStoreViewTest {
                 false,
                 jobScheduler,
                 contextFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         scan.run(NO_EXTERNAL_UPDATES);
 
         assertThat(propertyScanConsumer.batches.get(0).size()).isEqualTo(2);
@@ -341,7 +342,8 @@ class FullScanStoreViewTest {
                 false,
                 jobScheduler,
                 contextFactory,
-                INSTANCE);
+                INSTANCE,
+                false);
         scan.run(NO_EXTERNAL_UPDATES);
 
         assertThat(propertyScanConsumer.batches.get(0).size()).isEqualTo(2);

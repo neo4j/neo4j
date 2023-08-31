@@ -49,7 +49,8 @@ public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreS
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean multiversioned) {
         super(
                 config,
                 storageReader,
@@ -62,7 +63,8 @@ public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreS
                 parallelWrite,
                 scheduler,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                multiversioned);
         this.tokenIndexReader = tokenIndexReader;
     }
 

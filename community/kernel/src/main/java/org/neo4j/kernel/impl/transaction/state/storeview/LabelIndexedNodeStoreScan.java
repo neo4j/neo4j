@@ -49,7 +49,8 @@ public class LabelIndexedNodeStoreScan extends NodeStoreScan {
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean multiversioned) {
         super(
                 config,
                 storageReader,
@@ -62,7 +63,8 @@ public class LabelIndexedNodeStoreScan extends NodeStoreScan {
                 parallelWrite,
                 scheduler,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                multiversioned);
         this.tokenIndexReader = tokenIndexReader;
     }
 

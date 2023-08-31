@@ -136,6 +136,7 @@ class RelationshipIndexedRelationshipStoreScanTest {
                 false,
                 jobScheduler,
                 new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
-                INSTANCE);
+                INSTANCE,
+                false);
     }
 }

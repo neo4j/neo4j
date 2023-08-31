@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.EntityType;
@@ -128,6 +129,7 @@ public class BatchingMultipleIndexPopulatorTest {
         var indexingBehaviour = mock(StorageEngineIndexingBehaviour.class);
         when(storageEngine.indexingBehaviour()).thenReturn(indexingBehaviour);
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
+        when(storageEngine.getOpenOptions()).thenReturn(Sets.immutable.empty());
         FullScanStoreView storeView =
                 new FullScanStoreView(LockService.NO_LOCK_SERVICE, storageEngine, Config.defaults(), jobScheduler);
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(

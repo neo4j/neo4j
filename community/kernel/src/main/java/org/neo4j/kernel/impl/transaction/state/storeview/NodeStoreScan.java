@@ -59,7 +59,8 @@ public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCurso
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean multiversioned) {
         super(
                 config,
                 storageReader,
@@ -75,7 +76,7 @@ public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCurso
                 scheduler,
                 contextFactory,
                 memoryTracker,
-                true);
+                !multiversioned);
     }
 
     static long getNodeCount(StorageReader storageReader, CursorContextFactory contextFactory) {

@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -110,7 +111,8 @@ public class DynamicIndexStoreView implements IndexStoreView {
                             parallelWrite,
                             fullScanStoreView.scheduler,
                             contextFactory,
-                            memoryTracker);
+                            memoryTracker,
+                            storageEngine.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED));
                     var indexedStoreScan = new IndexedStoreScan(lockClient, nodeStoreScan);
                     instantiatedIndexedScan = true;
                     return indexedStoreScan;
@@ -183,7 +185,8 @@ public class DynamicIndexStoreView implements IndexStoreView {
                                 parallelWrite,
                                 fullScanStoreView.scheduler,
                                 contextFactory,
-                                memoryTracker);
+                                memoryTracker,
+                                storageEngine.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED));
                     }
                     var indexedStoreScan = new IndexedStoreScan(lockClient, storeScan);
                     instantiatedIndexedScan = true;

@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
@@ -367,6 +368,7 @@ class DynamicIndexStoreViewTest {
         when(indexingBehaviour.useNodeIdsInRelationshipTokenIndex()).thenReturn(nodeBased);
         when(storageEngine.indexingBehaviour()).thenReturn(indexingBehaviour);
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
+        when(storageEngine.getOpenOptions()).thenReturn(Sets.immutable.empty());
         return storageEngine;
     }
 }

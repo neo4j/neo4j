@@ -610,7 +610,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     false,
                     jobScheduler,
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
-                    INSTANCE);
+                    INSTANCE,
+                    false);
             this.delegate = delegate;
             this.customAction = customAction;
         }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -73,7 +74,8 @@ public class FullScanStoreView implements IndexStoreView {
                 parallelWrite,
                 scheduler,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                storageEngine.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED));
     }
 
     @Override
@@ -122,7 +124,8 @@ public class FullScanStoreView implements IndexStoreView {
                 parallelWrite,
                 scheduler,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                storageEngine.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED));
     }
 
     @Override

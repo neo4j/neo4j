@@ -59,7 +59,8 @@ public class RelationshipStoreScan extends PropertyAwareEntityStoreScan<StorageR
             boolean parallelWrite,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean multiversioned) {
         super(
                 config,
                 storageReader,
@@ -75,7 +76,7 @@ public class RelationshipStoreScan extends PropertyAwareEntityStoreScan<StorageR
                 scheduler,
                 contextFactory,
                 memoryTracker,
-                true);
+                !multiversioned);
     }
 
     private static long getRelationshipCount(StorageReader storageReader, CursorContextFactory contextFactory) {
