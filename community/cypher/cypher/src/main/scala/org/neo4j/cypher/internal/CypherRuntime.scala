@@ -176,7 +176,7 @@ case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[Runtim
  * @param requestedRuntime the requested runtime, used to provide error messages
  */
 class FallbackRuntime[CONTEXT <: RuntimeContext](
-  runtimes: Seq[CypherRuntime[CONTEXT]],
+  runtimes: IndexedSeq[CypherRuntime[CONTEXT]],
   requestedRuntime: CypherRuntimeOption
 ) extends CypherRuntime[CONTEXT] {
 

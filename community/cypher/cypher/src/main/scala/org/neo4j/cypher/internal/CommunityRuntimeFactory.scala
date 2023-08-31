@@ -22,19 +22,24 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.exceptions.RuntimeUnsupportedException
 
+import scala.collection.immutable.ArraySeq
+
 object CommunityRuntimeFactory {
 
   val interpreted =
-    new FallbackRuntime[RuntimeContext](List(SchemaCommandRuntime, InterpretedRuntime), CypherRuntimeOption.interpreted)
+    new FallbackRuntime[RuntimeContext](
+      ArraySeq(SchemaCommandRuntime, InterpretedRuntime),
+      CypherRuntimeOption.interpreted
+    )
 
   val slotted = new FallbackRuntime[RuntimeContext](
-    List(SchemaCommandRuntime, CommunitySlottedRuntime),
+    ArraySeq(SchemaCommandRuntime, CommunitySlottedRuntime),
     CypherRuntimeOption.slotted
   )
 
   val default =
     new FallbackRuntime[RuntimeContext](
-      List(SchemaCommandRuntime, CommunitySlottedRuntime),
+      ArraySeq(SchemaCommandRuntime, CommunitySlottedRuntime),
       CypherRuntimeOption.default
     )
 
@@ -52,7 +57,7 @@ object CommunityRuntimeFactory {
         throw new RuntimeUnsupportedException(s"This version of Neo4j does not support requested runtime: $unsupported")
 
       case unsupported => new FallbackRuntime[RuntimeContext](
-          List(UnknownRuntime(unsupported.name), SchemaCommandRuntime, InterpretedRuntime),
+          ArraySeq(UnknownRuntime(unsupported.name), SchemaCommandRuntime, InterpretedRuntime),
           unsupported
         )
     }
