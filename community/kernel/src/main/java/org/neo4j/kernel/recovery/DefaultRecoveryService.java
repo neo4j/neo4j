@@ -34,6 +34,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -66,6 +67,7 @@ public class DefaultRecoveryService implements RecoveryService {
     private final Clock clock;
     private final boolean doParallelRecovery;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
+    private final CursorContextFactory contextFactory;
 
     DefaultRecoveryService(
             StorageEngine storageEngine,
@@ -78,7 +80,8 @@ public class DefaultRecoveryService implements RecoveryService {
             InternalLog log,
             Clock clock,
             boolean doParallelRecovery,
-            BinarySupportedKernelVersions binarySupportedKernelVersions) {
+            BinarySupportedKernelVersions binarySupportedKernelVersions,
+            CursorContextFactory contextFactory) {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
@@ -89,6 +92,7 @@ public class DefaultRecoveryService implements RecoveryService {
         this.clock = clock;
         this.doParallelRecovery = doParallelRecovery;
         this.binarySupportedKernelVersions = binarySupportedKernelVersions;
+        this.contextFactory = contextFactory;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor);
     }
 
@@ -192,6 +196,9 @@ public class DefaultRecoveryService implements RecoveryService {
                     lastRecoveredBatch.consensusIndex(),
                     lastRecoveredTransactionPosition.getByteOffset(),
                     lastRecoveredTransactionPosition.getLogVersion());
+            var lastRecoveredTxId = lastRecoveredBatch.txId();
+            // if there will be index population after that, it will have proper visibility
+            contextFactory.init(() -> new TransactionIdSnapshot(lastRecoveredTxId), () -> lastRecoveredTxId);
         } else {
             // we do not have last recovered transaction but recovery was still triggered
             // this happens when we read past end of the log file or can't read it at all but recovery was enforced

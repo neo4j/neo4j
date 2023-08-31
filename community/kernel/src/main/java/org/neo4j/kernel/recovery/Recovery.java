@@ -852,7 +852,8 @@ public final class Recovery {
                 log,
                 clock,
                 doParallelRecovery,
-                binarySupportedKernelVersions);
+                binarySupportedKernelVersions,
+                contextFactory);
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator(
                 databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker);
         ProgressReporter progressReporter = new LogProgressReporter(log);

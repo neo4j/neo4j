@@ -231,7 +231,8 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             Clocks.systemClock(),
                             false,
-                            LatestVersions.BINARY_VERSIONS) {
+                            LatestVersions.BINARY_VERSIONS,
+                            contextFactory) {
                         private int nr;
 
                         @Override
@@ -348,7 +349,8 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             Clocks.systemClock(),
                             false,
-                            LatestVersions.BINARY_VERSIONS),
+                            LatestVersions.BINARY_VERSIONS,
+                            contextFactory),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -646,7 +648,8 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             Clocks.systemClock(),
                             false,
-                            LatestVersions.BINARY_VERSIONS),
+                            LatestVersions.BINARY_VERSIONS,
+                            contextFactory),
                     logPruner,
                     schemaLife,
                     monitor,
