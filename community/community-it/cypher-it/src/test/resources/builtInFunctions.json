@@ -846,7 +846,7 @@
     "name": "db.nameFromElementId",
     "category": "Database",
     "description": "Resolves the database name for the given element id",
-    "signature": "db.nameFromElementId(elementId :: STRING?) :: (String?)",
+    "signature": "db.nameFromElementId(elementId :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "enterpriseOnly": true,
     "argumentDescription": [
