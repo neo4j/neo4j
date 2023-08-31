@@ -137,9 +137,19 @@ public class CachingExpandInto extends DefaultCloseListenable {
             long firstNode,
             int[] types,
             long secondNode) {
+        Direction reverseDirection = direction.reverse();
         // First of all check if the cursor can do this efficiently itself and if so make use of that faster path
         if (nodeCursor.supportsFastRelationshipsTo()) {
-            return fastExpandInto(nodeCursor, traversalCursor, firstNode, types, secondNode);
+            // The operation is fast on the store level, however if we have a high degree in the tx state it may still
+            // pay off to
+            // start on the node with the lesser degree.
+            int txStateDegreeFirst = calculateDegreeInTxState(firstNode, selection(types, direction));
+            int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, reverseDirection));
+            if (txStateDegreeSecond >= txStateDegreeFirst) {
+                return fastExpandInto(nodeCursor, traversalCursor, firstNode, types, secondNode);
+            } else {
+                return fastExpandInto(nodeCursor, traversalCursor, secondNode, types, firstNode);
+            }
         }
 
         // Check if we've already done this before for these two nodes in this query
@@ -162,7 +172,6 @@ public class CachingExpandInto extends DefaultCloseListenable {
             return calculateTotalDegree(nodeCursor, direction, types);
         });
 
-        Direction reverseDirection = direction.reverse();
         int secondDegree = degreeCache.getIfAbsentPut(
                 secondNode,
                 reverseDirection,
