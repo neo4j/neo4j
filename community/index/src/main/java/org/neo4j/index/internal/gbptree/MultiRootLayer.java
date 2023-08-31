@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static java.lang.Integer.max;
-import static java.lang.Math.abs;
 import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -40,11 +38,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
+import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -68,8 +66,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
     private final LeafNodeBehaviour<ROOT_KEY, RootMappingValue> rootLeafNode;
     private final InternalNodeBehaviour<ROOT_KEY> rootInternalNode;
-    private final AtomicReferenceArray<DataTreeRoot<ROOT_KEY>> rootMappingCache;
-    private final TreeNodeLatchService rootMappingCacheLatches = new TreeNodeLatchService();
+    private final LfuCache<ROOT_KEY, DataTreeRoot<ROOT_KEY>> rootMappingCache;
     private final ValueMerger<ROOT_KEY, RootMappingValue> DONT_ALLOW_CREATE_EXISTING_ROOT =
             (existingKey, newKey, existingValue, newValue) -> {
                 throw new DataTreeAlreadyExistsException(existingKey);
@@ -92,9 +89,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         this.rootLayout = rootLayout;
         this.dataLayout = dataLayout;
-        int numCachedRoots = rootCacheSizeInBytes / BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT;
-        this.rootMappingCache = new AtomicReferenceArray<>(max(numCachedRoots, 10));
-
+        this.rootMappingCache = new LfuCache<>("Root mapping cache", 5);
         var rootMappingFormat = treeNodeSelector.selectByLayout(this.rootLayout);
         var format = treeNodeSelector.selectByLayout(dataLayout);
         OffloadStoreImpl<ROOT_KEY, RootMappingValue> rootOffloadStore = support.buildOffload(this.rootLayout);
@@ -132,6 +127,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     void create(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
+        Root dataRoot;
         var cursorCreator = bind(support, PF_SHARED_WRITE_LOCK, cursorContext);
         try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
                 rootLayout,
@@ -147,23 +143,21 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             long unstableGeneration = unstableGeneration(generation);
             long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorCreator);
             try {
-                Root dataRoot = new Root(rootId, unstableGeneration);
+                dataRoot = new Root(rootId, unstableGeneration);
                 support.initializeNewRoot(dataRoot, dataLeafNode, DATA_LAYER_FLAG, cursorContext);
                 // Write it to the root mapping tree
                 rootMappingWriter.merge(
                         dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
-                // Cache the created root
-                cache(new DataTreeRoot<>(dataRootKey, dataRoot));
             } catch (DataTreeAlreadyExistsException e) {
                 support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorCreator);
                 throw e;
             }
         }
+        rootMappingCache.putIfAbsent(dataRootKey, new DataTreeRoot<>(dataRootKey, dataRoot));
     }
 
     @Override
     void delete(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
-        int cacheIndex = cacheIndex(dataRootKey);
         try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
                 rootLayout,
                 rootLeafNode,
@@ -196,13 +190,6 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                                         throw new DataTreeNotEmptyException(dataRootKey);
                                     }
                                     rootIdToRelease.setValue(existingValue.rootId);
-
-                                    // Remove it from the cache if it's present
-                                    DataTreeRoot<ROOT_KEY> cachedRoot = rootMappingCache.get(cacheIndex);
-                                    if (cachedRoot != null && rootLayout.compare(cachedRoot.key, dataRootKey) == 0) {
-                                        rootMappingCache.compareAndSet(cacheIndex, cachedRoot, null);
-                                    }
-
                                     return ValueMerger.MergeResult.REMOVED;
                                 } catch (IOException e) {
                                     throw new UncheckedIOException(e);
@@ -231,10 +218,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 }
             }
         }
-    }
-
-    private static long cacheIndexAsTreeNodeId(int cacheIndex) {
-        return (cacheIndex & 0xFFFFFFFFL) + 1;
+        rootMappingCache.remove(dataRootKey);
     }
 
     @Override
@@ -489,15 +473,6 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         }
     }
 
-    private void cache(DataTreeRoot<ROOT_KEY> dataRoot) {
-        rootMappingCache.set(cacheIndex(dataRoot.key), dataRoot);
-    }
-
-    private int cacheIndex(ROOT_KEY dataRootKey) {
-        int hashCode = dataRootKey.hashCode();
-        return (hashCode == Integer.MIN_VALUE) ? 0 : (abs(hashCode) % rootMappingCache.length());
-    }
-
     @Override
     void visitAllDataTreeRoots(CursorContext cursorContext, TreeRootsVisitor<ROOT_KEY> visitor) throws IOException {
         try (Seeker<ROOT_KEY, RootMappingValue> seek = allRootsSeek(cursorContext)) {
@@ -511,88 +486,55 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     private class RootMappingInteraction implements TreeRootExchange {
         private final ROOT_KEY dataRootKey;
-        private final int cacheIndex;
 
         RootMappingInteraction(ROOT_KEY dataRootKey) {
             this.dataRootKey = dataRootKey;
-            this.cacheIndex = cacheIndex(dataRootKey);
         }
 
         @Override
         public Root getRoot(CursorContext context) {
-            DataTreeRoot<ROOT_KEY> dataRoot = rootMappingCache.get(cacheIndex);
-            if (dataRoot != null && rootLayout.compare(dataRoot.key, dataRootKey) == 0) {
-                return dataRoot.root;
-            }
-
-            // Acquire a read latch for this cache slot, which will act as a guard for this scenario:
-            // - Existing root R1
-            // - Reader (we) searches and finds R1
-            // - A new root for this data tree is set to R2 and placed in the cache
-            // - Another root enters, with the same cache index, and places its root on this slot
-            // - Reader (we) put the old R1 into cache
-            var rootMappingLatch = rootMappingCacheLatches.latch(cacheIndexAsTreeNodeId(cacheIndex));
-            rootMappingLatch.acquireRead();
-            try (Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
-                    support.internalAllocateSeeker(rootLayout, context, rootLeafNode, rootInternalNode),
-                    c -> root,
-                    dataRootKey,
-                    dataRootKey,
-                    DEFAULT_MAX_READ_AHEAD,
-                    LEAF_LEVEL,
-                    SeekCursor.NO_MONITOR)) {
-                if (seek.next()) {
-                    Root root = seek.value().asRoot();
-                    cacheReadRoot(root);
-                    return root;
-                }
-                throw new DataTreeNotFoundException(dataRootKey);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } finally {
-                rootMappingLatch.releaseRead();
-                rootMappingLatch.deref();
-            }
-        }
-
-        private void cacheReadRoot(Root root) {
-            DataTreeRoot<ROOT_KEY> from;
-            DataTreeRoot<ROOT_KEY> to = new DataTreeRoot<>(dataRootKey, root);
-            do {
-                from = rootMappingCache.get(cacheIndex);
-                if (from != null && rootLayout.compare(from.key, dataRootKey) == 0) {
-                    // If there's already a cached entry for this key then don't update it - it's up to the writer to do
-                    // this,
-                    // otherwise this "lookup" will race with a writer changing the root ID of this data root -
-                    // potentially
-                    // overwriting that cache slot with the old root
-                    break;
-                }
-            } while (!rootMappingCache.compareAndSet(cacheIndex, from, to));
+            return rootMappingCache
+                    .computeIfAbsent(dataRootKey, key -> {
+                        try (Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
+                                support.internalAllocateSeeker(rootLayout, context, rootLeafNode, rootInternalNode),
+                                c -> root,
+                                key,
+                                key,
+                                DEFAULT_MAX_READ_AHEAD,
+                                LEAF_LEVEL,
+                                SeekCursor.NO_MONITOR)) {
+                            if (!seek.next()) {
+                                throw new DataTreeNotFoundException(key);
+                            }
+                            return new DataTreeRoot<>(key, seek.value().asRoot());
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    })
+                    .root();
         }
 
         @Override
-        public void setRoot(Root newRoot, CursorContext context) throws IOException {
-            var rootMappingLatch = rootMappingCacheLatches.latch(cacheIndexAsTreeNodeId(cacheIndex));
-            rootMappingLatch.acquireWrite();
-            try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                    rootLayout,
-                    rootLeafNode,
-                    rootInternalNode,
-                    DEFAULT_SPLIT_RATIO,
-                    context,
-                    MultiRootLayer.this,
-                    DATA_LAYER_FLAG)) {
-                cache(new DataTreeRoot<>(dataRootKey, newRoot));
-                TrackingValueMerger<ROOT_KEY, RootMappingValue> merger = new TrackingValueMerger<>(overwrite());
-                rootMappingWriter.mergeIfExists(dataRootKey, new RootMappingValue().initialize(newRoot), merger);
-                if (!merger.wasMerged()) {
-                    throw new DataTreeNotFoundException(dataRootKey);
+        public void setRoot(Root newRoot, CursorContext context) {
+            rootMappingCache.compute(dataRootKey, (key, ignored) -> {
+                try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
+                        rootLayout,
+                        rootLeafNode,
+                        rootInternalNode,
+                        DEFAULT_SPLIT_RATIO,
+                        context,
+                        MultiRootLayer.this,
+                        DATA_LAYER_FLAG)) {
+                    TrackingValueMerger<ROOT_KEY, RootMappingValue> merger = new TrackingValueMerger<>(overwrite());
+                    rootMappingWriter.mergeIfExists(key, new RootMappingValue().initialize(newRoot), merger);
+                    if (!merger.wasMerged()) {
+                        throw new DataTreeNotFoundException(key);
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
-            } finally {
-                rootMappingLatch.releaseWrite();
-                rootMappingLatch.deref();
-            }
+                return new DataTreeRoot<>(key, newRoot);
+            });
         }
     }
 

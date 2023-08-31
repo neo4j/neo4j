@@ -26,7 +26,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Thread safe implementation of cache.
@@ -38,6 +41,7 @@ public class LfuCache<K, E> {
     private final String name;
     private final int maxSize;
     private final Cache<K, E> cache;
+    private final ConcurrentMap<K, E> cacheMapView;
 
     /**
      * Creates a LFU cache. If {@code maxSize < 1} an
@@ -67,6 +71,7 @@ public class LfuCache<K, E> {
             caffeineBuilder.removalListener(listener);
         }
         this.cache = caffeineBuilder.build();
+        this.cacheMapView = this.cache.asMap();
     }
 
     public String getName() {
@@ -91,6 +96,24 @@ public class LfuCache<K, E> {
     public E get(K key) {
         requireNonNull(key);
         return cache.getIfPresent(key);
+    }
+
+    public E computeIfAbsent(K key, Function<K, E> mappingFunction) {
+        requireNonNull(key);
+        requireNonNull(mappingFunction);
+        return cache.get(key, mappingFunction);
+    }
+
+    public E putIfAbsent(K key, E element) {
+        requireNonNull(key);
+        requireNonNull(element);
+        return cacheMapView.putIfAbsent(key, element);
+    }
+
+    public E compute(K key, BiFunction<K, E, E> mappingFunction) {
+        requireNonNull(key);
+        requireNonNull(mappingFunction);
+        return cacheMapView.compute(key, mappingFunction);
     }
 
     public void remove(K key) {

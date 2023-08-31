@@ -130,9 +130,12 @@ class MultiRootGBPTreeTest {
     @AfterEach
     void stop() throws IOException {
         if (tree != null) {
-            assertThat(consistencyCheckStrict(tree)).isTrue();
-            tree.close();
-            tree = null;
+            try {
+                assertThat(consistencyCheckStrict(tree)).isTrue();
+            } finally {
+                tree.close();
+                tree = null;
+            }
         }
     }
 
