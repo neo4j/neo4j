@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -96,7 +97,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 0, 1)
   }
 
   test("should profile memory of grouping aggregation - one large group") {
@@ -327,6 +328,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   //noinspection SameParameterValue
   protected def assertOnMemory(logicalQuery: LogicalQuery, input: InputValues, numOperators: Int, allocatingOperators: Int*): Unit = {
+    require(logicalQuery.logicalPlan.isInstanceOf[ProduceResult])
+    val produceResultId = logicalQuery.logicalPlan.id
     val runtimeResult = profile(logicalQuery, runtime, input.stream())
     consume(runtimeResult)
 
@@ -335,6 +338,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       withClue(s"Memory allocations of plan $i: ") {
         if (allocatingOperators.contains(i)) {
           queryProfile.operatorProfile(i).maxAllocatedMemory() should be > 0L
+        } else if (i == produceResultId.x) {
+          queryProfile.operatorProfile(i).maxAllocatedMemory() should (be(OperatorProfile.NO_DATA) or be(0))
         } else {
           queryProfile.operatorProfile(i).maxAllocatedMemory() should be(OperatorProfile.NO_DATA)
         }

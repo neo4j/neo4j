@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ValuePopulation.populate
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.memory.MemoryTracker
 
 case class ProduceResultsPipe(source: Pipe, columns: Array[String])
                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
@@ -36,12 +37,12 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
     // key-value pairs and thus should not have any stats
     val subscriber = state.subscriber
     if (state.prePopulateResults) {
-
+      val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
       val query = state.query
       val cursors = query.createExpressionCursors() // NOTE: We need to create these through the QueryContext so that they get a profiling tracer if profiling is enabled
       input.map {
         original =>
-          produceAndPopulate(original, subscriber, query, cursors)
+          produceAndPopulate(original, subscriber, query, cursors, memoryTracker)
           original
       }
     } else {
@@ -56,7 +57,8 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
   private def produceAndPopulate(original: CypherRow,
                                  subscriber: QuerySubscriber,
                                  query: QueryContext,
-                                 cursors: ExpressionCursors): Unit = {
+                                 cursors: ExpressionCursors,
+                                 memoryTracker: MemoryTracker): Unit = {
 
     val nodeCursor = cursors.nodeCursor
     val relCursor = cursors.relationshipScanCursor
@@ -64,7 +66,7 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
     var i = 0
     subscriber.onRecord()
     while (i < columns.length) {
-      subscriber.onField(i, populate(original.getByName(columns(i)), query, nodeCursor, relCursor, propertyCursor))
+      subscriber.onField(i, populate(original.getByName(columns(i)), query, nodeCursor, relCursor, propertyCursor, memoryTracker))
       i += 1
     }
     subscriber.onRecordCompleted()
