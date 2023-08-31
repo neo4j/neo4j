@@ -36,9 +36,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
-import org.neo4j.graphdb.RelationshipType
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.impl.api.KernelTransactions
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
@@ -1014,6 +1015,16 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     }
     val runtimeResult = profile(query, runtime, input())
     consume(runtimeResult)
-    runtimeResult.runtimeResult.queryProfile().maxAllocatedMemory()
+    if (isParallel) {
+      // TODO: Parallel runtime does not yet support heap high watermark through query profile
+      //       For now, create a very rough estimate from how much heap was grabbed from the transaction memory pool
+      val kernelTransactions =
+        graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[KernelTransactions])
+      val activeTransactions = kernelTransactions.activeTransactions()
+      activeTransactions.size() should be(1)
+      activeTransactions.iterator().next().transactionStatistic().getEstimatedUsedHeapMemory
+    } else {
+      runtimeResult.runtimeResult.queryProfile().maxAllocatedMemory()
+    }
   }
 }
