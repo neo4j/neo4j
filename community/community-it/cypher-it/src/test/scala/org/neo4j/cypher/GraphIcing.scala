@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import java.util.concurrent.TimeUnit
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 trait GraphIcing {
@@ -445,6 +446,30 @@ trait GraphIcing {
       })
       awaitIndexesOnline()
       getIndex()
+    }
+
+    // Create vector index
+
+    def createNodeVectorIndex(
+      name: String,
+      label: String,
+      property: String,
+      dimensions: Int,
+      similarityFunction: String
+    ): Unit = {
+      withTx(tx =>
+        tx.execute(
+          "CALL db.index.vector.createNodeIndex($name, $label, $prop, $dimensions, $simFunc)",
+          Map[String, AnyRef](
+            "name" -> name,
+            "label" -> label,
+            "prop" -> property,
+            "dimensions" -> dimensions.asInstanceOf[AnyRef],
+            "simFunc" -> similarityFunction
+          ).asJava
+        )
+      )
+      awaitIndexesOnline()
     }
 
     // Create and drop lookup index
