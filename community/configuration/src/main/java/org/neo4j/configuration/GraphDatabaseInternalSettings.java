@@ -1184,4 +1184,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     listOf(STRING),
                     List.of("db.*", "dbms.*", "internal.*", "tx.*", "unsupported.*"))
             .build();
+
+    @Internal
+    @Description("Enables the available reserved space metric, as well as the job that computes it.")
+    public static final Setting<Boolean> available_reserved_space_metric_enabled = newBuilder(
+                    "internal.server.metrics.available_reserved_space_metric_enabled", BOOL, false)
+            .build();
 }
