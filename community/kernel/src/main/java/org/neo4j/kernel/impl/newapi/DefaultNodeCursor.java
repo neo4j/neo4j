@@ -247,7 +247,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     @Override
     public boolean supportsFastDegreeLookup() {
-        return currentAddedInTx == NO_ID && storeCursor.supportsFastDegreeLookup() && allowsTraverseAll();
+        return (currentAddedInTx != NO_ID || storeCursor.supportsFastDegreeLookup()) && allowsTraverseAll();
     }
 
     @Override
