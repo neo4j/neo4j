@@ -193,11 +193,13 @@ case class QueryGraph(
     patternRelationships ++
       optionalMatches.flatMap(_.allPatternRelationshipsRead) ++
       shortestRelationshipPatterns.map(_.rel) ++
+      quantifiedPathPatterns.flatMap(_.asQueryGraph.allPatternRelationshipsRead) ++
       selectivePathPatterns.flatMap(_.asQueryGraph.allPatternRelationshipsRead)
 
   def allPatternNodesRead: Set[String] =
     patternNodes ++
       optionalMatches.flatMap(_.allPatternNodesRead) ++
+      quantifiedPathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead) ++
       selectivePathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead)
 
   def addShortestRelationships(shortestRelationships: ShortestRelationshipPattern*): QueryGraph =

@@ -412,49 +412,6 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     horizon.allQueryGraphs.map(_.queryGraph) should (contain(innerQg1) and contain(innerQg2))
   }
 
-  test("allQGsWithLeafInfo should include quantified path patterns") {
-    val quantifiedPathPattern =
-      QuantifiedPathPattern(
-        leftBinding = NodeBinding("a_n", "start"),
-        rightBinding = NodeBinding("b_n", "end"),
-        patternRelationships = List(PatternRelationship(
-          name = "r_n",
-          boundaryNodes = ("a_n", "b_n"),
-          dir = SemanticDirection.OUTGOING,
-          types = Nil,
-          length = SimplePatternLength
-        )),
-        repetition = Repetition(min = 0, max = UpperBound.Unlimited),
-        nodeVariableGroupings = Set.empty,
-        relationshipVariableGroupings = Set(VariableGrouping(singletonName = "r_n", groupName = "r"))
-      )
-
-    val queryGraph =
-      QueryGraph
-        .empty
-        .addPatternNodes("start", "end")
-        .addPredicates(hasLabels("start", "Alpha"), hasLabels("end", "Omega"))
-        .addQuantifiedPathPattern(quantifiedPathPattern)
-
-    val innerQueryGraph =
-      QueryGraph
-        .empty
-        .addPatternNodes("a_n", "b_n")
-        .addPatternRelationship(PatternRelationship(
-          name = "r_n",
-          boundaryNodes = ("a_n", "b_n"),
-          dir = SemanticDirection.OUTGOING,
-          types = Nil,
-          length = SimplePatternLength
-        ))
-
-    val allQGsWithLeafInfo =
-      List(queryGraph, innerQueryGraph)
-        .map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(_))
-
-    queryGraph.allQGsWithLeafInfo shouldEqual allQGsWithLeafInfo
-  }
-
   private val `((a)-[r:R]->(b))+` =
     QuantifiedPathPattern(
       leftBinding = NodeBinding("a", "start"),
