@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
@@ -49,6 +51,8 @@ import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 
 case object planShortestRelationships {
+
+  private val prettifier = Prettifier(ExpressionStringifier())
 
   def apply(
     inner: LogicalPlan,
@@ -127,8 +131,9 @@ case object planShortestRelationships {
     context: LogicalPlanningContext
   ) = {
     // create warning for planning a shortest path fallback
+    val prettyPathPredicates = pathPredicates.map(prettifier.expr.apply)
     context.staticComponents.notificationLogger.log(
-      ExhaustiveShortestPathForbiddenNotification(shortestRelationship.expr.position)
+      ExhaustiveShortestPathForbiddenNotification(shortestRelationship.expr.position, prettyPathPredicates)
     )
 
     val lpp = context.staticComponents.logicalPlanProducer

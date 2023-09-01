@@ -116,6 +116,10 @@ public class NotificationDetail {
         return createNotificationDetail("the missing relationship type", relType, true);
     }
 
+    public static String pathPredicates(final Set<String> predicates) {
+        return String.join(", ", predicates);
+    }
+
     public static String procedureWarning(final String procedure, final String warning) {
         return String.format(warning, procedure);
     }

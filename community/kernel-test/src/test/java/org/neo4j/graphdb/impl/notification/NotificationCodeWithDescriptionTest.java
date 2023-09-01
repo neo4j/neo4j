@@ -490,7 +490,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_EXHAUSTIVE_SHORTEST_PATH() {
-        NotificationImplementation notification = exhaustiveShortestPath(InputPosition.empty);
+        NotificationImplementation notification = exhaustiveShortestPath(InputPosition.empty, "length(p) > 1");
 
         verifyNotification(
                 notification,
@@ -503,7 +503,9 @@ class NotificationCodeWithDescriptionTest {
                         + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
                         + "MATCH containing the shortest path from the existential predicates on that path.",
                 NotificationCategory.PERFORMANCE,
-                null);
+                "The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. Use "
+                        + "`WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
+                        + "for suggestions.");
     }
 
     @Test

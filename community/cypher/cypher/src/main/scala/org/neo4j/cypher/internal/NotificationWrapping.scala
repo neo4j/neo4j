@@ -144,8 +144,11 @@ object NotificationWrapping {
       )
     case UnboundedShortestPathNotification(pos, pattern) =>
       NotificationCodeWithDescription.unboundedShortestPath(pos.withOffset(offset).asInputPosition, pattern)
-    case ExhaustiveShortestPathForbiddenNotification(pos) =>
-      NotificationCodeWithDescription.exhaustiveShortestPath(pos.withOffset(offset).asInputPosition)
+    case ExhaustiveShortestPathForbiddenNotification(pos, pathPredicates) =>
+      NotificationCodeWithDescription.exhaustiveShortestPath(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.pathPredicates(pathPredicates.asJava)
+      )
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
       if (newName == null || newName.trim.isEmpty)
         NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement(

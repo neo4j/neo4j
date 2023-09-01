@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 
@@ -50,7 +51,8 @@ case class MissingRelTypeNotification(position: InputPosition, relType: String) 
 
 case class MissingPropertyNameNotification(position: InputPosition, name: String) extends InternalNotification
 
-case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition) extends InternalNotification
+case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition, pathPredicates: Set[String])
+    extends InternalNotification
 
 case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String)
     extends InternalNotification
