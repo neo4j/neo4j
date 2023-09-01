@@ -130,12 +130,12 @@ object NotificationWrapping {
     case MissingLabelNotification(pos, label) =>
       NotificationCodeWithDescription.missingLabel(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.label(label)
+        NotificationDetail.missingLabel(label)
       )
     case MissingRelTypeNotification(pos, relType) =>
       NotificationCodeWithDescription.missingRelType(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.relationshipType(relType)
+        NotificationDetail.missingRelationshipType(relType)
       )
     case MissingPropertyNameNotification(pos, name) =>
       NotificationCodeWithDescription.missingPropertyName(
