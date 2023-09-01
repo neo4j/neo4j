@@ -24,6 +24,7 @@ import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertT
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -72,6 +73,61 @@ public class NotificationsConfigIT {
                         17,
                         1,
                         18);
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldReturnSingleCartesianProductWarning(BoltWire wire, @Negotiated TransportConnection connection)
+            throws Throwable {
+        connection.send(wire.hello(x -> {
+            x.withDisabledCategories(Set.of(NotificationConfiguration.Category.UNRECOGNIZED));
+            return x;
+        }));
+        connection.send(wire.logon());
+        connection
+                .send(wire.run("MATCH (n:thisLabelDoesNotExist), (m:thisLabelDoesNotExist) return m, n"))
+                .send(wire.pull());
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
+        // Then
+        assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")).size())
+                        .isEqualTo(1));
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldReturnSingleUnboundedVariableLengthWarning(
+            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+        connection.send(wire.hello(x -> {
+            x.withDisabledCategories(Set.of(NotificationConfiguration.Category.UNRECOGNIZED));
+            return x;
+        }));
+        connection.send(wire.logon());
+        connection
+                .send(wire.run("MATCH shortestPath((n:A)-[*]->(m:B)) return m, n"))
+                .send(wire.pull());
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
+        // Then
+        assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")).size())
+                        .isEqualTo(1));
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldReturnSingleRepeatedRelationshipWarning(BoltWire wire, @Negotiated TransportConnection connection)
+            throws Throwable {
+        connection.send(wire.hello());
+        connection.send(wire.logon());
+        connection.send(wire.run("MATCH ()-[r]-()-[r]-() RETURN r AS r")).send(wire.pull());
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
+        // Then
+        assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")).size())
+                        .isEqualTo(1));
     }
 
     @ProtocolTest

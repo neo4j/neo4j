@@ -203,7 +203,7 @@ object CompilationPhases {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*)
+      SemanticAnalysis(warn = false, config.semanticFeatures: _*)
   }
 
   // Phase 2
