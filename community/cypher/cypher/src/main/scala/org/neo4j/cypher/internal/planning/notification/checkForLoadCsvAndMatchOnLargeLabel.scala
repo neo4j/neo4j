@@ -39,22 +39,22 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
 
     sealed trait SearchState
     case object NoneFound extends SearchState
-    case object LargeLabelFound extends SearchState
-    case object LargeLabelWithLoadCsvFound extends SearchState
+    case class LargeLabelFound(labelName: String) extends SearchState
+    case class LargeLabelWithLoadCsvFound(labelName: String) extends SearchState
 
     // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv
     val resultState = plan.folder.reverseTreeFold[SearchState](NoneFound) {
       case _: LoadCSV => {
-        case LargeLabelFound => TraverseChildren(LargeLabelWithLoadCsvFound)
-        case e               => SkipChildren(e)
+        case LargeLabelFound(labelName) => TraverseChildren(LargeLabelWithLoadCsvFound(labelName))
+        case e                          => SkipChildren(e)
       }
       case NodeByLabelScan(_, label, _, _) if cardinality(label.name) > threshold =>
-        _ => TraverseChildren(LargeLabelFound)
+        _ => TraverseChildren(LargeLabelFound(label.name))
     }
 
     resultState match {
-      case LargeLabelWithLoadCsvFound => Seq(LargeLabelWithLoadCsvNotification)
-      case _                          => Seq.empty
+      case LargeLabelWithLoadCsvFound(labelName) => Seq(LargeLabelWithLoadCsvNotification(labelName))
+      case _                                     => Seq.empty
     }
   }
 

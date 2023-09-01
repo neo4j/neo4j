@@ -123,7 +123,9 @@ public enum NotificationCodeWithDescription {
     LARGE_LABEL_LOAD_CSV(
             Status.Statement.NoApplicableIndex,
             "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
-                    + "not perform well on large data sets. Please consider using a schema index."),
+                    + "not perform well on large data sets. Please consider using a schema index.",
+            "`LOAD CSV` in combination with `MATCH` or `MERGE` on a property that does not have an index may "
+                    + "result in long execution times. Consider adding an index for label `%s`."),
     MISSING_LABEL(
             Status.Statement.UnknownLabelWarning,
             "One of the labels in your query is not available in the database, make sure you didn't "
@@ -334,8 +336,8 @@ public enum NotificationCodeWithDescription {
                 position, new String[] {oldDetail}, new String[] {deprecatedFormat, newFormat});
     }
 
-    public static NotificationImplementation largeLabelLoadCsv(InputPosition position) {
-        return LARGE_LABEL_LOAD_CSV.notification(position);
+    public static NotificationImplementation largeLabelLoadCsv(InputPosition position, String labelName) {
+        return LARGE_LABEL_LOAD_CSV.notificationWithMessage(position, new String[] {}, new String[] {labelName});
     }
 
     public static NotificationImplementation missingLabel(InputPosition position, String param) {

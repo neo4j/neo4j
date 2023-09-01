@@ -108,6 +108,10 @@ public class NotificationDetail {
         return createNotificationDetail("index", indexFormatString, true);
     }
 
+    public static String labelOrRelationshipType(final String labelName) {
+        return ":" + labelName;
+    }
+
     public static String missingLabel(final String labelName) {
         return createNotificationDetail("the missing label name", labelName, true);
     }
