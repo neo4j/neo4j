@@ -115,7 +115,9 @@ public enum NotificationCodeWithDescription {
             "Using LOAD CSV with a large data set in a query where the execution plan contains the "
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
-                    + "how problems could be avoided."),
+                    + "how problems could be avoided.",
+            "The query execution plan contains the `EAGER` operator. `LOAD CSV` in combination with `EAGER` "
+                    + "can consume a lot of memory. See Status Codes documentation for suggestions."),
     DEPRECATED_FORMAT(
             Status.Request.DeprecatedFormat,
             "The requested format has been deprecated. (%s)",
@@ -327,7 +329,7 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation eagerLoadCsv(InputPosition position) {
-        return EAGER_LOAD_CSV.notification(position);
+        return EAGER_LOAD_CSV.notificationWithMessage(position, new String[] {}, new String[] {});
     }
 
     public static NotificationImplementation deprecatedFormat(

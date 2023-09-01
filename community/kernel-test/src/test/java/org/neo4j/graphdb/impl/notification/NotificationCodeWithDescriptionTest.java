@@ -392,7 +392,8 @@ class NotificationCodeWithDescriptionTest {
                         + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                         + "how problems could be avoided.",
                 NotificationCategory.PERFORMANCE,
-                null);
+                "The query execution plan contains the `EAGER` operator. `LOAD CSV` in combination with "
+                        + "`EAGER` can consume a lot of memory. See Status Codes documentation for suggestions.");
     }
 
     @Test
@@ -412,7 +413,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_LARGE_LABEL_LOAD_CSV() {
-        NotificationImplementation notification = largeLabelLoadCsv(InputPosition.empty, "Label");
+        NotificationImplementation notification =
+                largeLabelLoadCsv(InputPosition.empty, NotificationDetail.prettyLabelOrRelationshipType("Label"));
 
         verifyNotification(
                 notification,
@@ -423,7 +425,7 @@ class NotificationCodeWithDescriptionTest {
                         + "not perform well on large data sets. Please consider using a schema index.",
                 NotificationCategory.PERFORMANCE,
                 "`LOAD CSV` in combination with `MATCH` or `MERGE` on a property that does not have an index may "
-                        + "result in long execution times. Consider adding an index for label `:Label`");
+                        + "result in long execution times. Consider adding an index for label `:Label`.");
     }
 
     @Test
