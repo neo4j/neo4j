@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.testing.api.CypherExecutorException
@@ -29,6 +30,8 @@ import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService.TestApiKin
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
+
+import java.time.Duration
 
 class TransactionalQueryErrorBoltAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase
     with FeatureDatabaseManagementService.TestUsingBolt
@@ -109,5 +112,8 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
 
   override def createBackingDbms(config: Config): DatabaseManagementService =
     new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
+
+  override def baseConfig: Config.Builder = super.baseConfig
+    .set(GraphDatabaseSettings.transaction_timeout, Duration.ofMinutes(10))
 
 }
