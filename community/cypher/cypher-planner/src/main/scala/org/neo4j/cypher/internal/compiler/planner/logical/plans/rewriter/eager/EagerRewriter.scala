@@ -89,14 +89,14 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     lPStateWithEagerProcedureCall.withMaybeLogicalPlan(Some(newPlan))
   }
 
-  private def eagerizeProcedureCalls(from: LogicalPlanState,
-                                     attributes: Attributes[LogicalPlan]): LogicalPlanState =
+  private def eagerizeProcedureCalls(from: LogicalPlanState, attributes: Attributes[LogicalPlan]): LogicalPlanState =
     from.withMaybeLogicalPlan(Some(
       EagerProcedureCallRewriter(attributes).eagerize(
-      from.logicalPlan,
-      from.semanticTable(),
-      from.anonymousVariableNameGenerator
-    )))
+        from.logicalPlan,
+        from.semanticTable(),
+        from.anonymousVariableNameGenerator
+      )
+    ))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriter operates on the LogicalPlan
