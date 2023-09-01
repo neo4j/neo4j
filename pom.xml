@@ -1725,7 +1725,7 @@
       <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java</artifactId>
-        <version>3.21.1</version>
+        <version>3.23.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.errorprone</groupId>
