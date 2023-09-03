@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -79,7 +80,11 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
         this.databaseName = tx.getDatabaseName();
-        var versionContext = tx.cursorContext().getVersionContext();
+        CursorContext cursorContext = tx.cursorContext();
+        if (cursorContext == null) {
+            cursorContext = CursorContext.NULL_CONTEXT;
+        }
+        var versionContext = cursorContext.getVersionContext();
         this.lastClosedTxId = versionContext.lastClosedTransactionId();
         this.transactionHorizon = transactionHorizon(versionContext);
         this.tx = tx;
