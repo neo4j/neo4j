@@ -141,8 +141,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         // First of all check if the cursor can do this efficiently itself and if so make use of that faster path
         if (nodeCursor.supportsFastRelationshipsTo()) {
             // The operation is fast on the store level, however if we have a high degree in the tx state it may still
-            // pay off to
-            // start on the node with the lesser degree.
+            // pay off to start on the node with the lesser degree.
             int txStateDegreeFirst = calculateDegreeInTxState(firstNode, selection(types, direction));
             int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, reverseDirection));
             if (txStateDegreeSecond >= txStateDegreeFirst) {
