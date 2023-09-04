@@ -482,12 +482,16 @@ object ClauseConverters {
     val converter = new PatternConverters(anonymousVariableNameGenerator)
     val pathPatterns = converter.convertPattern(clause.pattern)
 
+    // If a QPP depends on a non-local variable from a previous clause, we need to insert a horizon. This is to
+    // guarantee that the non-local variable is bound prior to QPP plan, so that the QPP plan may use it.
     def qppHasDependencyToPreviousClauses: Boolean = {
       val qppDependencies = pathPatterns.allQuantifiedPathPatterns.flatMap(_.dependencies).toSet
       val availableVars = acc.currentlyAvailableVariables
       qppDependencies.intersect(availableVars).nonEmpty
     }
 
+    // If a selective path contains an interior variable that overlaps with another pattern node, we need to insert a
+    // horizon.
     def hasPatternOverlapOnInteriorVars: Boolean = {
       // MATCH SHORTEST (()--())+ ()-[r]-() (()--())+ MATCH (a)-[r]-(b)
       val previousStrictInteriorVars =
@@ -506,13 +510,39 @@ object ClauseConverters {
       hasReferenceFromThisPatternToInterior || hasInteriorReferringToPreviouslyBoundVar
     }
 
+    // This workaround targets a single-connected-component logical planning limitation that happens when the following
+    // conditions are met:
+    //   - All node connections have been compacted into groups, and there are no remaining individual node connections.
+    //     The smallest possible amount of node connections this can happen for is 4, where the node connections get
+    //     compacted into two groups of 2.
+    //   - At least one of the compacted groups has no overlapping nodes with the other groups (it only has overlapping
+    //     relationships). The smallest possible amount of exhaustive node connections this can happen for is 2, where
+    //     the two node connections end up being in the same compacted group.
+    //
+    // When such conditions are met, expandSolverStep cannot generate any candidates because it only generates
+    // candidates if individual node connections still exist, and joinSolverStep cannot generate any candidates because
+    // it needs the compacted groups to have overlapping nodes.
+    //
+    // Because this is a single-connected-component planning limitation, this situation should theoretically also occur
+    // for a single MATCH clause. Currently, AddUniquenessPredicates insert "WHERE false" if there is a relationship
+    // equijoin on a single MATCH clause, and UnfulfillableQueryRewriter short-circuits the query before logical
+    // planning.
+    def isPotentiallyUnsolvable: Boolean = {
+      val allNodeConnections = pathPatterns.allNodeConnections ++ acc.currentQueryGraph.nodeConnections
+      val allNodeConnectionsOverlappingOnlyOnRelationship = allNodeConnections
+        .subsets(2)
+        .filter(connections => {
+          val overlappingNodes = connections.head.nodes.intersect(connections.last.nodes)
+          val overlappingRelationships = connections.head.relationships.intersect(connections.last.relationships)
+          overlappingNodes.isEmpty && overlappingRelationships.nonEmpty
+        })
+        .flatten
+
+      allNodeConnections.size >= 4 && allNodeConnectionsOverlappingOnlyOnRelationship.size >= 2
+    }
+
     val accWithMaybeHorizon =
-      if (
-        // If a QPP depends on a variable from a previous clause, we need to insert a horizon.
-        qppHasDependencyToPreviousClauses ||
-        // also, if we have an interior variable that overlaps with another pattern node, we may not squash these.
-        hasPatternOverlapOnInteriorVars
-      ) {
+      if (qppHasDependencyToPreviousClauses || hasPatternOverlapOnInteriorVars || isPotentiallyUnsolvable) {
         acc
           .withHorizon(PassthroughAllHorizon())
           .withTail(RegularSinglePlannerQuery(QueryGraph()))

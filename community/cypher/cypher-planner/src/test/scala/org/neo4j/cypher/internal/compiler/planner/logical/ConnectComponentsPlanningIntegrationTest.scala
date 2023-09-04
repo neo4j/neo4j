@@ -1464,4 +1464,36 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .nodeByLabelScan("b", "B")
       .build()
   }
+
+  test("Should plan connected component overlapping exclusively on relationship variables") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold, Int.box(16))
+      .build()
+
+    val plan = planner.plan(
+      """
+        |MATCH (a)-[r]->(b)
+        |MATCH (c)-[r]->(d)
+        |MATCH (e)-[r]->(f)
+        |MATCH (g)-[r]->(h)
+        |MATCH (i)-[r]->(j)
+        |MATCH (k)-[r]->(l)
+        |RETURN *
+        |""".stripMargin
+    )
+      .stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .apply()
+      .|.projectEndpoints("(i)-[r]->(j)", startInScope = false, endInScope = false)
+      .|.projectEndpoints("(g)-[r]->(h)", startInScope = false, endInScope = false)
+      .|.projectEndpoints("(k)-[r]->(l)", startInScope = false, endInScope = false)
+      .|.argument("e", "d", "r", "b", "f", "a", "c")
+      .projectEndpoints("(e)-[r]->(f)", startInScope = false, endInScope = false)
+      .projectEndpoints("(a)-[r]->(b)", startInScope = false, endInScope = false)
+      .allRelationshipsScan("(c)-[r]->(d)")
+      .build()
+  }
 }

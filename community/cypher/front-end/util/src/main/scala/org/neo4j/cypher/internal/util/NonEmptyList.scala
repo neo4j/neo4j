@@ -129,7 +129,7 @@ object NonEmptyList {
 // must be converted using to{Seq|Set|List|Iterable} explicitly due to
 // the differing signatures.
 //
-sealed trait NonEmptyList[+T] {
+sealed trait NonEmptyList[+T] extends IterableOnce[T] {
 
   self =>
 
@@ -200,7 +200,7 @@ sealed trait NonEmptyList[+T] {
   final def exists[X >: T](predicate: X => Boolean): Boolean = self match {
     case Last(elem)                      => predicate(elem)
     case Fby(elem, _) if predicate(elem) => true
-    case Fby(_, tail)                    => tail.exists(predicate)
+    case Fby(_, tail)                    => tail.exists[X](predicate)
   }
 
   final def map[S](f: T => S): NonEmptyList[S] = self match {
@@ -276,22 +276,7 @@ sealed trait NonEmptyList[+T] {
   final def max[X >: T](implicit ordering: Ordering[X]): X =
     min(ordering.reverse)
 
-  def toIterable: Iterable[T] = new Iterable[T] {
-
-    def iterator = new Iterator[T] {
-      private var remaining: Option[NonEmptyList[T]] = Some(self)
-
-      override def hasNext: Boolean = remaining.nonEmpty
-
-      override def next(): T = remaining match {
-        case Some(nel) =>
-          remaining = nel.tailOption
-          nel.head
-        case None =>
-          throw new NoSuchElementException("next on empty iterator")
-      }
-    }
-  }
+  def toIterable: Iterable[T] = iterator.to(Iterable)
 
   def size: Int
 
@@ -388,6 +373,9 @@ sealed trait NonEmptyList[+T] {
 }
 
 final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T] {
+
+  self =>
+
   override def last: T = tail.last
   override def tailOption: Option[NonEmptyList[T]] = Some(tail)
 
@@ -397,16 +385,47 @@ final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T]
   }
   override def hasTail: Boolean = true
   override def isLast: Boolean = false
-  override def toString = s"${head.toString}, ${tail.toString}"
-  override def size = 1 + tail.size
+  override def toString: String = s"${head.toString}, ${tail.toString}"
+  override def size: Int = 1 + tail.size
+
+  override def iterator: Iterator[T] = new Iterator[T] {
+    private var remaining: Option[NonEmptyList[T]] = Some(self)
+
+    override def hasNext: Boolean = remaining.nonEmpty
+
+    override def next(): T = remaining match {
+      case Some(nel) =>
+        remaining = nel.tailOption
+        nel.head
+      case None =>
+        throw new NoSuchElementException("next on empty iterator")
+    }
+  }
 }
 
 final case class Last[+T](head: T) extends NonEmptyList[T] {
+
+  self =>
+
   override def last: T = head
   override def tailOption: Option[NonEmptyList[T]] = None
   override def initOption: Option[NonEmptyList[T]] = None
   override def hasTail: Boolean = false
   override def isLast: Boolean = true
-  override def toString = s"${head.toString}"
-  override def size = 1
+  override def toString: String = s"${head.toString}"
+  override def size: Int = 1
+
+  override def iterator: Iterator[T] = new Iterator[T] {
+    private var remaining: Option[NonEmptyList[T]] = Some(self)
+
+    override def hasNext: Boolean = remaining.nonEmpty
+
+    override def next(): T = remaining match {
+      case Some(nel) =>
+        remaining = None
+        nel.head
+      case None =>
+        throw new NoSuchElementException("next on empty iterator")
+    }
+  }
 }

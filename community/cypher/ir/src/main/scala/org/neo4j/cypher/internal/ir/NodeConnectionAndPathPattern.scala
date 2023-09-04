@@ -41,6 +41,8 @@ sealed trait NodeConnection {
 
   val left: String
   val right: String
+  val nodes: Set[String]
+  val relationships: Set[String]
 
   /**
    * The nodes connected by this node connection. That is, the outer-most nodes in this part of the pattern.
@@ -117,6 +119,8 @@ final case class PatternRelationship(
 
   override val left: String = boundaryNodes._1
   override val right: String = boundaryNodes._2
+  override val nodes: Set[String] = Set(left, right)
+  override val relationships: Set[String] = Set(name)
 
   override def withLeft(left: String): PatternRelationship = copy(boundaryNodes = (left, right))
 
@@ -247,6 +251,8 @@ final case class QuantifiedPathPattern(
 
   override val left: String = leftBinding.outer
   override val right: String = rightBinding.outer
+  override val nodes: Set[String] = Set(left, right) ++ nodeVariableGroupings.map(_.groupName)
+  override val relationships: Set[String] = relationshipVariableGroupings.map(_.groupName)
 
   override val boundaryNodes: (String, String) = (left, right)
 
@@ -302,6 +308,11 @@ sealed trait PathPattern {
    * @return all quantified sub-path patterns contained in this path pattern
    */
   def allQuantifiedPathPatterns: Set[QuantifiedPathPattern]
+
+  /**
+   * @return all node connection sub-path patterns contained in this path pattern
+   */
+  def allNodeConnections: Set[NodeConnection]
 }
 
 /**
@@ -314,6 +325,12 @@ case class PathPatterns(pathPatterns: List[PathPattern]) extends AnyVal {
    */
   def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] =
     pathPatterns.view.flatMap(_.allQuantifiedPathPatterns).toSet
+
+  /**
+   * @return all node connections in these path patterns
+   */
+  def allNodeConnections: Set[NodeConnection] =
+    pathPatterns.view.flatMap(_.allNodeConnections).toSet
 }
 
 /**
@@ -335,6 +352,7 @@ object ExhaustivePathPattern {
    */
   final case class SingleNode[A <: ExhaustiveNodeConnection](name: String) extends ExhaustivePathPattern[A] {
     override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
+    override def allNodeConnections: Set[NodeConnection] = Set.empty
   }
 
   /**
@@ -351,6 +369,9 @@ object ExhaustivePathPattern {
         case qpp: QuantifiedPathPattern => qpp
       }
     }
+
+    override def allNodeConnections: Set[NodeConnection] =
+      connections.toSet
   }
 }
 
@@ -368,8 +389,12 @@ final case class SelectivePathPattern(
 ) extends PathPattern with NodeConnection {
   override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = pathPattern.allQuantifiedPathPatterns
 
+  override def allNodeConnections: Set[NodeConnection] = pathPattern.allNodeConnections
+
   override val left: String = pathPattern.connections.head.left
   override val right: String = pathPattern.connections.last.right
+  override val nodes: Set[String] = pathPattern.connections.map(_.nodes).toSet.flatten
+  override val relationships: Set[String] = pathPattern.connections.map(_.relationships).toSet.flatten
   override val boundaryNodes: (String, String) = (left, right)
 
   override def withLeft(left: String): SelectivePathPattern = copy(
@@ -479,6 +504,8 @@ final case class ShortestRelationshipPattern(name: Option[String], rel: PatternR
   def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
 
   override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
+
+  override def allNodeConnections: Set[NodeConnection] = Set.empty
 }
 
 object ShortestRelationshipPattern {
