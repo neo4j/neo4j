@@ -18,12 +18,6 @@ Feature "QuantifiedPathPatternAcceptance": Scenario "References to non-local unc
 // Uses enterprise procedure
 Feature "CollectExpressionAcceptance": Scenario "COLLECT with updating procedure and yield should fail"
 
-// CIP-101: item-by-item visibility for CREATE
-Feature "Create": Scenario "Creating patterns first evaluates all contained pattern expressions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained pattern comprehensions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained count expressions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained exists expressions"
-
 // Path selectors currently are not supported. Will be solved by https://trello.com/c/aRGMlLiS
 Feature "PathSelectorAcceptance": Scenario "Find same paths with different noise words (PATH, PATHS, GROUP vs GROUPS) - no predicate"
 Feature "PathSelectorAcceptance": Scenario "Find ANY paths with different noise words (PATH, PATHS) - no predicate"
