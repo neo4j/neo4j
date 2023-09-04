@@ -167,8 +167,8 @@ import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
-import org.neo4j.cypher.internal.ast.NamedDatabaseScope
-import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NamedDatabasesScope
+import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
@@ -275,6 +275,7 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.SingleNamedDatabaseScope
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -2353,12 +2354,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _databasePrivilege: Gen[PrivilegeCommand] = for {
     databaseAction <- _databaseAction
-    namedScope <- oneOrMore(_databaseName).map(_.map(n => NamedDatabaseScope(n)(pos)))
+    dbNames <- oneOrMore(_databaseName)
     databaseScope <- oneOf(
-      namedScope,
-      List(AllDatabasesScope()(pos)),
-      List(DefaultDatabaseScope()(pos)),
-      List(HomeDatabaseScope()(pos))
+      NamedDatabasesScope(dbNames)(pos),
+      AllDatabasesScope()(pos),
+      DefaultDatabaseScope()(pos),
+      HomeDatabaseScope()(pos)
     )
     databaseQualifier <- _databaseQualifier(databaseAction.isInstanceOf[TransactionManagementAction])
     roleNames <- _listOfNameOfEither
@@ -2382,9 +2383,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _graphPrivilege: Gen[PrivilegeCommand] = for {
     graphAction <- _graphAction
-    namedScope <- oneOrMore(_databaseName).map(_.map(n => NamedGraphScope(n)(pos)))
+    graphNames <- oneOrMore(_databaseName)
     graphScope <-
-      oneOf(namedScope, List(AllGraphsScope()(pos)), List(DefaultGraphScope()(pos)), List(HomeGraphScope()(pos)))
+      oneOf(NamedGraphsScope(graphNames)(pos), AllGraphsScope()(pos), DefaultGraphScope()(pos), HomeGraphScope()(pos))
     (qualifier, maybeResource) <- _graphQualifierAndResource(graphAction)
     roleNames <- _listOfNameOfEither
     revokeType <- _revokeType
@@ -2413,7 +2414,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _showDatabase: Gen[ShowDatabase] = for {
     dbName <- _databaseName
     scope <- oneOf(
-      NamedDatabaseScope(dbName)(pos),
+      SingleNamedDatabaseScope(dbName)(pos),
       AllDatabasesScope()(pos),
       DefaultDatabaseScope()(pos),
       HomeDatabaseScope()(pos)

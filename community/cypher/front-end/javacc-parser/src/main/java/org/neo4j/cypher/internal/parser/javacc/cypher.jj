@@ -5813,21 +5813,21 @@ PRIVILEGE_TYPE allPrivilege(Token start, boolean immutable) throws Exception:
         t=<DEFAULT_TOKEN> (
              <GRAPH> {
                  assertValidType( t, type, "GRAPH" );
-                 return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScopes( pos( t ), null, ScopeType.DEFAULT ), null, astFactory.allQualifier(), immutable );
+                 return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScope( pos( t ), null, ScopeType.DEFAULT ), null, astFactory.allQualifier(), immutable );
              }
              | <DATABASE> {
                 assertValidType( t, type, "DATABASE" );
-                return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScopes( pos( t ), null, ScopeType.DEFAULT ), astFactory.allDatabasesQualifier(), immutable );
+                return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScope( pos( t ), null, ScopeType.DEFAULT ), astFactory.allDatabasesQualifier(), immutable );
              }
         )
         | t=<HOME> (
             <GRAPH> {
                 assertValidType( t, type, "GRAPH" );
-                return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScopes( pos( t ), null, ScopeType.HOME ), null, astFactory.allQualifier(), immutable );
+                return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScope( pos( t ), null, ScopeType.HOME ), null, astFactory.allQualifier(), immutable );
             }
             | <DATABASE> {
                 assertValidType( t, type, "DATABASE" );
-                return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScopes( pos( t ), null, ScopeType.HOME ), astFactory.allDatabasesQualifier(), immutable );
+                return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScope( pos( t ), null, ScopeType.HOME ), astFactory.allDatabasesQualifier(), immutable );
             }
         )
         | t=<DBMS> {
@@ -5836,11 +5836,11 @@ PRIVILEGE_TYPE allPrivilege(Token start, boolean immutable) throws Exception:
         }
         | (t=<GRAPH> | t=<GRAPHS>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicAliasNameList()) {
             assertValidType( t, type, "GRAPH" );
-            return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScopes( pos( t ), names, scopeType ), null, astFactory.allQualifier(), immutable );
+            return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScope( pos( t ), names, scopeType ), null, astFactory.allQualifier(), immutable );
         }
         | (t=<DATABASE> | t=<DATABASES>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicAliasNameList() ) {
             assertValidType( t, type, "DATABASE" );
-            return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScopes( pos( t ), names, scopeType ), astFactory.allDatabasesQualifier(), immutable );
+            return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScope( pos( t ), names, scopeType ), astFactory.allDatabasesQualifier(), immutable );
         }
     )
 }
@@ -5849,8 +5849,8 @@ PRIVILEGE_TYPE createPrivilege(Token start, boolean immutable):
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
-    List<DATABASE_SCOPE> databases = null;
-    List<GRAPH_SCOPE> graphs = null;
+    DATABASE_SCOPE database = null;
+    GRAPH_SCOPE graph = null;
     List<PRIVILEGE_QUALIFIER> qualifier = new ArrayList<>();
 }
 {
@@ -5865,7 +5865,7 @@ PRIVILEGE_TYPE createPrivilege(Token start, boolean immutable):
                    | (<RELATIONSHIP>)? (<TYPE> | <TYPES>) { action = astFactory.privilegeAction( ActionType.CREATE_RELTYPE ); }
                    | (<PROPERTY>)? (<NAME> | <NAMES>) { action = astFactory.privilegeAction( ActionType.CREATE_PROPERTYKEY ); }
                )
-           ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, astFactory.allDatabasesQualifier(), immutable ); }
+           ) <ON> database=DatabaseScope() { privilege = astFactory.databasePrivilege( pos(start), action, database, astFactory.allDatabasesQualifier(), immutable ); }
        ) | (
            (
                <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_CREATE ); }
@@ -5874,7 +5874,7 @@ PRIVILEGE_TYPE createPrivilege(Token start, boolean immutable):
                | <USER> { action = astFactory.privilegeAction( ActionType.USER_CREATE ); }
                | <COMPOSITE> <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_COMPOSITE_CREATE ); }
            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action,  astFactory.allQualifier(), immutable ); }
-       ) | ( <ON> graphs=graphScopeList() qualifier=graphQualifier() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_CREATE ), graphs, null, qualifier, immutable ); } )
+       ) | ( <ON> graph=GraphScope() qualifier=graphQualifier() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_CREATE ), graph, null, qualifier, immutable ); } )
     ) { return privilege; }
 }
 
@@ -5882,7 +5882,7 @@ PRIVILEGE_TYPE dropPrivilege(Token start, boolean immutable):
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
-    List<DATABASE_SCOPE> databases = null;
+    DATABASE_SCOPE database = null;
 }
 {
     <DROP>
@@ -5891,7 +5891,7 @@ PRIVILEGE_TYPE dropPrivilege(Token start, boolean immutable):
            (
                (<INDEX> | <INDEXES>) { action = astFactory.privilegeAction( ActionType.INDEX_DROP ); }
                | (<CONSTRAINT> | <CONSTRAINTS>) { action = astFactory.privilegeAction( ActionType.CONSTRAINT_DROP ); }
-           ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, astFactory.allDatabasesQualifier(), immutable ); }
+           ) <ON> database=DatabaseScope() { privilege = astFactory.databasePrivilege( pos(start), action, database, astFactory.allDatabasesQualifier(), immutable ); }
        ) | (
            (
                <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_DROP ); }
@@ -5908,7 +5908,7 @@ PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
-    List<DATABASE_SCOPE> databases = null;
+    DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> databaseQualifier = astFactory.allDatabasesQualifier();
     List<PRIVILEGE_QUALIFIER> dbmsQualifier = astFactory.allQualifier();
     List<SimpleEither<String, PARAMETER>>qualifiers = null;
@@ -5922,7 +5922,7 @@ PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
                 | (<CONSTRAINT> | <CONSTRAINTS>) { action = astFactory.privilegeAction( ActionType.CONSTRAINT_SHOW ); }
                 | (<TRANSACTION> | <TRANSACTIONS>) { action = astFactory.privilegeAction( ActionType.TRANSACTION_SHOW ); databaseQualifier = astFactory.allUsersQualifier(); }
                     ( <LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { databaseQualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN> )?
-            ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, databaseQualifier, immutable ); }
+            ) <ON> database=DatabaseScope() { privilege = astFactory.databasePrivilege( pos(start), action, database, databaseQualifier, immutable ); }
         ) | (
             (
                 <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_SHOW ); }
@@ -5940,7 +5940,7 @@ PRIVILEGE_TYPE setPrivilege(Token start, boolean immutable):
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
-    List<GRAPH_SCOPE> graphs = null;
+    GRAPH_SCOPE graph = null;
     PRIVILEGE_RESOURCE resource = null;
     List<PRIVILEGE_QUALIFIER> qualifier = null;
 }
@@ -5957,8 +5957,8 @@ PRIVILEGE_TYPE setPrivilege(Token start, boolean immutable):
                 | <DATABASE> <ACCESS> { action = astFactory.privilegeAction( ActionType.SET_DATABASE_ACCESS); }
             ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier(), immutable ); }
         ) | (
-            ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_LABEL_SET ), graphs, resource, List.of( astFactory.allLabelsQualifier( pos(start) ) ), immutable ); } )
-            | ( <PROPERTY> resource=propertyResource() <ON> graphs=graphScopeList() qualifier=graphQualifier() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_PROPERTY_SET ), graphs, resource, qualifier, immutable ); } )
+            ( <LABEL> resource=labelResource() <ON> graph=GraphScope() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_LABEL_SET ), graph, resource, List.of( astFactory.allLabelsQualifier( pos(start) ) ), immutable ); } )
+            | ( <PROPERTY> resource=propertyResource() <ON> graph=GraphScope() qualifier=graphQualifier() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_PROPERTY_SET ), graph, resource, qualifier, immutable ); } )
         )
     ) { return privilege; }
 }
@@ -5966,7 +5966,7 @@ PRIVILEGE_TYPE setPrivilege(Token start, boolean immutable):
 PRIVILEGE_TYPE removePrivilege(Token start, boolean immutable):
 {
     PRIVILEGE_TYPE privilege = null;
-    List<GRAPH_SCOPE> graphs = null;
+    GRAPH_SCOPE graph = null;
     PRIVILEGE_RESOURCE resource = null;
     ADMINISTRATION_ACTION action = null;
 }
@@ -5978,26 +5978,26 @@ PRIVILEGE_TYPE removePrivilege(Token start, boolean immutable):
                 <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_REMOVE ); }
                 | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_REMOVE ); }
             ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier(), immutable ); }
-        ) | ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_LABEL_REMOVE ), graphs, resource, List.of( astFactory.allLabelsQualifier( pos(start) ) ), immutable ); } )
+        ) | ( <LABEL> resource=labelResource() <ON> graph=GraphScope() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_LABEL_REMOVE ), graph, resource, List.of( astFactory.allLabelsQualifier( pos(start) ) ), immutable ); } )
     ) { return privilege; }
 }
 
 PRIVILEGE_TYPE writePrivilege(Token start, boolean immutable):
 {
-    List<GRAPH_SCOPE> graphs = null;
+    GRAPH_SCOPE graph = null;
     List<SimpleEither<String, PARAMETER>> qualifiers = null;
 }
 {
-    <WRITE> <ON> graphs=graphScopeList()
+    <WRITE> <ON> graph=GraphScope()
     {
-        return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_WRITE ), graphs, null, List.of( astFactory.allElementsQualifier( pos(start) ) ), immutable );
+        return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_WRITE ), graph, null, List.of( astFactory.allElementsQualifier( pos(start) ) ), immutable );
     }
 }
 
 PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable):
 {
     ADMINISTRATION_ACTION action = null;
-    List<DATABASE_SCOPE> databases = null;
+    DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
     List<SimpleEither<String, PARAMETER>>qualifiers = null;
 }
@@ -6012,9 +6012,9 @@ PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable):
         | <TERMINATE> (<TRANSACTION> | <TRANSACTIONS>) { qualifier = astFactory.allUsersQualifier(); } (<LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN>)? { action = astFactory.privilegeAction( ActionType.TRANSACTION_TERMINATE ); }
         | <NAME> (<MANAGEMENT>)? { action = astFactory.privilegeAction( ActionType.CREATE_TOKEN ); }
     )
-    <ON> databases=DatabaseScopeList()
+    <ON> database=DatabaseScope()
     {
-        return astFactory.databasePrivilege( pos(start), action, databases, qualifier, immutable );
+        return astFactory.databasePrivilege( pos(start), action, database, qualifier, immutable );
     }
 }
 
@@ -6112,7 +6112,7 @@ List<String> globs():
 PRIVILEGE_TYPE qualifiedGraphPrivilegesWithProperty(Token start, boolean immutable):
 {
     ADMINISTRATION_ACTION action = null;
-    List<GRAPH_SCOPE> graphs = null;
+    GRAPH_SCOPE graph = null;
     List<PRIVILEGE_QUALIFIER> qualifier = null;
     PRIVILEGE_RESOURCE resource = null;
 }
@@ -6122,16 +6122,16 @@ PRIVILEGE_TYPE qualifiedGraphPrivilegesWithProperty(Token start, boolean immutab
         | ( <READ> { action = astFactory.privilegeAction( ActionType.GRAPH_READ ); } resource=propertyResource() )
         | ( <MATCH> { action = astFactory.privilegeAction( ActionType.GRAPH_MATCH ); } resource=propertyResource() )
     )
-    <ON> graphs=graphScopeList() qualifier=graphQualifier() (<LPAREN> <TIMES> <RPAREN>)?
+    <ON> graph=GraphScope() qualifier=graphQualifier() (<LPAREN> <TIMES> <RPAREN>)?
     {
-        return astFactory.graphPrivilege( pos(start), action, graphs, resource, qualifier, immutable );
+        return astFactory.graphPrivilege( pos(start), action, graph, resource, qualifier, immutable );
     }
 }
 
 PRIVILEGE_TYPE qualifiedGraphPrivileges(Token start, boolean immutable):
 {
     ADMINISTRATION_ACTION action = null;
-    List<GRAPH_SCOPE> graphs = null;
+    GRAPH_SCOPE graph = null;
     List<PRIVILEGE_QUALIFIER> qualifier = null;
     PRIVILEGE_RESOURCE resource = null;
 }
@@ -6140,9 +6140,9 @@ PRIVILEGE_TYPE qualifiedGraphPrivileges(Token start, boolean immutable):
         <DELETE> { action = astFactory.privilegeAction( ActionType.GRAPH_DELETE ); }
         | <MERGE> resource=propertyResource() { action = astFactory.privilegeAction( ActionType.GRAPH_MERGE ); }
     )
-    <ON> graphs=graphScopeList() qualifier=graphQualifier()
+    <ON> graph=GraphScope() qualifier=graphQualifier()
     {
-        return astFactory.graphPrivilege( pos(start), action, graphs, resource, qualifier, immutable );
+        return astFactory.graphPrivilege( pos(start), action, graph, resource, qualifier, immutable );
     }
 }
 
@@ -6438,7 +6438,7 @@ STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ) throws Ex
    }
 }
 
-List<DATABASE_SCOPE> DatabaseScopeList():
+DATABASE_SCOPE DatabaseScope():
 {
     Token start = null;
     List<DATABASE_NAME> names = null;
@@ -6451,11 +6451,11 @@ List<DATABASE_SCOPE> DatabaseScopeList():
         | start=<HOME> <DATABASE> { type = ScopeType.HOME; }
     )
   {
-    return astFactory.databaseScopes( pos( start ), names, type );
+    return astFactory.databaseScope( pos( start ), names, type );
   }
 }
 
-List<GRAPH_SCOPE> graphScopeList():
+GRAPH_SCOPE GraphScope():
 {
     Token start = null;
     List<DATABASE_NAME> names = null;
@@ -6468,7 +6468,7 @@ List<GRAPH_SCOPE> graphScopeList():
         | start=<HOME> <GRAPH> { type = ScopeType.HOME; }
     )
     {
-        return astFactory.graphScopes( pos( start ), names, type );
+        return astFactory.graphScope( pos( start ), names, type );
     }
 }
 

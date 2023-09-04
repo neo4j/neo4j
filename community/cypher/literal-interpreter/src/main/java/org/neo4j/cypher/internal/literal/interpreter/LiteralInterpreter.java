@@ -788,7 +788,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL databasePrivilege(NULL p, NULL action, List<NULL> scope, List<NULL> qualifier, boolean immutable) {
+    public NULL databasePrivilege(NULL p, NULL action, NULL scope, List<NULL> qualifier, boolean immutable) {
         throw new UnsupportedOperationException("databasePrivilege is not a literal");
     }
 
@@ -799,7 +799,7 @@ public class LiteralInterpreter
 
     @Override
     public NULL graphPrivilege(
-            NULL p, NULL action, List<NULL> scope, NULL resource, List<NULL> qualifier, boolean immutable) {
+            NULL p, NULL action, NULL scope, NULL resource, List<NULL> qualifier, boolean immutable) {
         throw new UnsupportedOperationException("graphPrivilege is not a literal");
     }
 
@@ -904,13 +904,13 @@ public class LiteralInterpreter
     }
 
     @Override
-    public List<NULL> graphScopes(NULL p, List<NULL> graphNames, ScopeType scopeType) {
-        throw new UnsupportedOperationException("graphScopes is not a literal");
+    public NULL graphScope(NULL p, List<NULL> graphNames, ScopeType scopeType) {
+        throw new UnsupportedOperationException("graphScope is not a literal");
     }
 
     @Override
-    public List<NULL> databaseScopes(NULL p, List<NULL> databaseNames, ScopeType scopeType) {
-        throw new UnsupportedOperationException("databaseScopes is not a literal");
+    public NULL databaseScope(NULL p, List<NULL> databaseNames, ScopeType scopeType) {
+        throw new UnsupportedOperationException("databaseScope is not a literal");
     }
 
     // Server commands

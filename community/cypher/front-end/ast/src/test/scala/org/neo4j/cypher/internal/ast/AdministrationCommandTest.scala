@@ -78,7 +78,7 @@ class AdministrationCommandTest extends CypherFunSuite {
 
   test("it should not be possible to administer privileges on the default graph") {
     val privilege = new GrantPrivilege(
-      GraphPrivilege(AllGraphAction, List(DefaultGraphScope()(p)))(p),
+      GraphPrivilege(AllGraphAction, DefaultGraphScope()(p))(p),
       false,
       Some(DatabaseResource()(p)),
       List(AllQualifier()(p)),
@@ -91,7 +91,7 @@ class AdministrationCommandTest extends CypherFunSuite {
 
   test("it should not be possible to administer privileges on the default database") {
     val privilege = new GrantPrivilege(
-      DatabasePrivilege(AllConstraintActions, List(DefaultDatabaseScope()(p)))(p),
+      DatabasePrivilege(AllConstraintActions, DefaultDatabaseScope()(p))(p),
       false,
       Some(DatabaseResource()(p)),
       List(AllQualifier()(p)),

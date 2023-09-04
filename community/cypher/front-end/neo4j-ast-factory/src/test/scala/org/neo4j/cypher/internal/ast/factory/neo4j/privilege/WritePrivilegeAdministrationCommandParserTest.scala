@@ -34,7 +34,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -43,7 +43,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPHS foo $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -54,7 +54,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH * $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(ast.AllGraphsScope()(_)))(pos),
+              ast.GraphPrivilege(ast.WriteAction, ast.AllGraphsScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -63,7 +63,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPHS * $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(ast.AllGraphsScope()(_)))(pos),
+              ast.GraphPrivilege(ast.WriteAction, ast.AllGraphsScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -72,7 +72,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo, baz $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeFooBaz)(pos),
               List(ast.ElementsAllQualifier() _),
               List(literalRole),
               immutable
@@ -81,7 +81,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPHS foo, baz $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo, graphScopeBaz))(pos),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeFooBaz)(pos),
               List(ast.ElementsAllQualifier() _),
               List(literalRole),
               immutable
@@ -92,7 +92,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON HOME GRAPH $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(ast.HomeGraphScope()(_)))(pos),
+              ast.GraphPrivilege(ast.WriteAction, ast.HomeGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -101,7 +101,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON DEFAULT GRAPH $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(ast.DefaultGraphScope()(_)))(pos),
+              ast.GraphPrivilege(ast.WriteAction, ast.DefaultGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -112,7 +112,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition role1, role2") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(_),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole1, literalRole2),
               immutable
@@ -123,7 +123,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH $$foo $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeParamFoo))(pos),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeParamFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -132,7 +132,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH `f:oo` $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(ast.NamedGraphScope(namespacedName("f:oo"))(_)))(pos),
+              ast.GraphPrivilege(ast.WriteAction, ast.NamedGraphsScope(Seq(namespacedName("f:oo")))(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
@@ -141,7 +141,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition $$role") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(paramRole),
               immutable
@@ -150,7 +150,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition `r:ole`") {
             yields(func(
-              ast.GraphPrivilege(ast.WriteAction, List(graphScopeFoo))(pos),
+              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRColonOle),
               immutable

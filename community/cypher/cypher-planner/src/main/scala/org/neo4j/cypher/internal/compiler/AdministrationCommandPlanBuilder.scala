@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.ast.AddedInRewrite
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
@@ -72,6 +74,8 @@ import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
+import org.neo4j.cypher.internal.ast.HomeDatabaseScope
+import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
@@ -116,6 +120,8 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.SingleNamedDatabaseScope
+import org.neo4j.cypher.internal.ast.SingleNamedGraphScope
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
@@ -143,8 +149,6 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Alias
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.CompositeDatabase
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.DatabaseOrLocalAlias
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -203,7 +207,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case _      => plans.WaitForCompletion(logicalPlan, databaseName, waitUntilComplete)
     }
 
-    def planSystemProcedureCall(resolved: ResolvedCall, returns: Option[Return]): LogicalPlan = {
+    def planSystemProcedureCall(resolved: plans.ResolvedCall, returns: Option[Return]): plans.LogicalPlan = {
       val SemanticCheckResult(_, errors) = resolved.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
       errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
       val signature = resolved.signature
@@ -226,6 +230,18 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
     def assignPrivilegeAction(immutable: Boolean) =
       if (immutable) AssignImmutablePrivilegeAction else AssignPrivilegeAction
+
+    val mapDatabaseScope: PartialFunction[DatabaseScope, plans.PrivilegeCommandScope] = {
+      case SingleNamedDatabaseScope(db) => plans.NamedScope(db)
+      case AllDatabasesScope()          => plans.AllScope
+      case HomeDatabaseScope()          => plans.HomeScope
+    }
+
+    val mapGraphScope: PartialFunction[GraphScope, plans.PrivilegeCommandScope] = {
+      case SingleNamedGraphScope(graph) => plans.NamedScope(graph)
+      case AllGraphsScope()             => plans.AllScope
+      case HomeGraphScope()             => plans.HomeScope
+    }
 
     val maybeLogicalPlan: Option[plans.LogicalPlan] = from.statement() match {
       // SHOW USERS
@@ -496,22 +512,23 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // GRANT _ ON DATABASE foo TO role
       case c @ GrantPrivilege(privilege @ DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
         val plan = (for (
-          dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
+          dbScope <- dbScopes.simplify; roleName <- roleNames; qualifier <- qualifiers;
+          simpleQualifiers <- qualifier.simplify
         ) yield {
-          (roleName, simpleQualifiers, dbScope)
+          (roleName, simpleQualifiers, dbScope, mapDatabaseScope(dbScope))
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
-          case (source, (role, qualifier, dbScope: DatabaseScope)) =>
+          case (source, (role, qualifier, dbScope, runtimeScope)) =>
             val subCommand = c.copy(
-              privilege = privilege.copy(scope = List(dbScope))(privilege.position),
+              privilege = privilege.copy(scope = dbScope)(privilege.position),
               qualifier = List(qualifier),
               roleNames = List(role)
             )(c.position)
             plans.GrantDatabaseAction(
               source,
               action,
-              dbScope,
+              runtimeScope,
               qualifier,
               role,
               immutable,
@@ -523,22 +540,23 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // DENY _ ON DATABASE foo TO role
       case c @ DenyPrivilege(privilege @ DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
         val plan = (for (
-          dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
+          dbScope <- dbScopes.simplify; roleName <- roleNames; qualifier <- qualifiers;
+          simpleQualifiers <- qualifier.simplify
         ) yield {
-          (roleName, simpleQualifiers, dbScope)
+          (roleName, simpleQualifiers, dbScope, mapDatabaseScope(dbScope))
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
-          case (source, (role, qualifier, dbScope: DatabaseScope)) =>
+          case (source, (role, qualifier, dbScope, runtimeScope)) =>
             val subCommand = c.copy(
-              privilege = privilege.copy(scope = List(dbScope))(privilege.position),
+              privilege = privilege.copy(scope = dbScope)(privilege.position),
               qualifier = List(qualifier),
               roleNames = List(role)
             )(c.position)
             plans.DenyDatabaseAction(
               source,
               action,
-              dbScope,
+              runtimeScope,
               qualifier,
               role,
               immutable,
@@ -557,17 +575,18 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           revokeType
         ) =>
         val plan = (for (
-          dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
+          dbScope <- dbScopes.simplify; roleName <- roleNames; qualifier <- qualifiers;
+          simpleQualifiers <- qualifier.simplify
         ) yield {
-          (roleName, simpleQualifiers, dbScope)
+          (roleName, simpleQualifiers, dbScope, mapDatabaseScope(dbScope))
         }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
-          case (plan, (role, qualifier, dbScope: DatabaseScope)) =>
+          case (plan, (role, qualifier, dbScope, runtimeScope)) =>
             planRevokes(
               plan,
               revokeType,
               (s, r) => {
                 val subCommand = c.copy(
-                  privilege = privilege.copy(scope = List(dbScope))(privilege.position),
+                  privilege = privilege.copy(scope = dbScope)(privilege.position),
                   qualifier = List(qualifier),
                   roleNames = List(role),
                   revokeType = r
@@ -576,10 +595,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   planRevokes(
                     s,
                     revokeType,
-                    (s, r) => plans.AssertDatabasePrivilegeCanBeMutated(s, action, dbScope, qualifier, role, r.relType)
+                    (s, r) =>
+                      plans.AssertDatabasePrivilegeCanBeMutated(s, action, runtimeScope, qualifier, role, r.relType)
                   ),
                   action,
-                  dbScope,
+                  runtimeScope,
                   qualifier,
                   role,
                   r.relType,
@@ -601,16 +621,16 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         ) =>
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (
-          graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers;
+          graphScope <- graphScopes.simplify; roleName <- roleNames; qualifier <- qualifiers;
           simpleQualifier <- qualifier.simplify; resource <- resources.simplify
         ) yield {
-          (roleName, simpleQualifier, resource, graphScope)
+          (roleName, simpleQualifier, resource, graphScope, mapGraphScope(graphScope))
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
-          case (source, (roleName, simpleQualifier, resource, graphScope: GraphScope)) =>
+          case (source, (roleName, simpleQualifier, resource, graphScope, runtimeScope)) =>
             val subCommand = c.copy(
-              privilege = privilege.copy(scope = List(graphScope))(privilege.position),
+              privilege = privilege.copy(scope = graphScope)(privilege.position),
               qualifier = List(simpleQualifier),
               roleNames = List(roleName)
             )(c.position)
@@ -618,7 +638,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               source,
               action,
               resource,
-              graphScope,
+              runtimeScope,
               simpleQualifier,
               roleName,
               immutable,
@@ -637,16 +657,16 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         ) =>
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (
-          graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers;
+          graphScope <- graphScopes.simplify; roleName <- roleNames; qualifier <- qualifiers;
           simpleQualifier <- qualifier.simplify; resource <- resources.simplify
         ) yield {
-          (roleName, simpleQualifier, resource, graphScope)
+          (roleName, simpleQualifier, resource, graphScope, mapGraphScope(graphScope))
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
-          case (source, (roleName, simpleQualifier, resource, graphScope: GraphScope)) =>
+          case (source, (roleName, simpleQualifier, resource, graphScope, runtimeScope)) =>
             val subCommand = c.copy(
-              privilege = privilege.copy(scope = List(graphScope))(privilege.position),
+              privilege = privilege.copy(scope = graphScope)(privilege.position),
               qualifier = List(simpleQualifier),
               roleNames = List(roleName)
             )(c.position)
@@ -654,7 +674,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               source,
               action,
               resource,
-              graphScope,
+              runtimeScope,
               simpleQualifier,
               roleName,
               immutable,
@@ -674,18 +694,18 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         ) =>
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (
-          graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers;
+          graphScope <- graphScopes.simplify; roleName <- roleNames; qualifier <- qualifiers;
           simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
         ) yield {
-          (roleName, simpleQualifiers, resource, graphScope)
+          (roleName, simpleQualifiers, resource, graphScope, mapGraphScope(graphScope))
         }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
-          case (source, (roleName, segment, resource, graphScope: GraphScope)) =>
+          case (source, (roleName, segment, resource, graphScope, runtimeScope)) =>
             planRevokes(
               source,
               revokeType,
               (s, r) => {
                 val subCommand = c.copy(
-                  privilege = privilege.copy(scope = List(graphScope))(privilege.position),
+                  privilege = privilege.copy(scope = graphScope)(privilege.position),
                   qualifier = List(segment),
                   resource = if (resource.isInstanceOf[NoResource]) None else Some(resource),
                   roleNames = List(roleName),
@@ -700,7 +720,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                         s,
                         action,
                         resource,
-                        graphScope,
+                        runtimeScope,
                         segment,
                         roleName,
                         r.relType
@@ -708,7 +728,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   ),
                   action,
                   resource,
-                  graphScope,
+                  runtimeScope,
                   segment,
                   roleName,
                   r.relType,

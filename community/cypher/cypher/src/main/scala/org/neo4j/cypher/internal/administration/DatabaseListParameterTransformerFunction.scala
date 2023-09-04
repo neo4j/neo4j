@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.administration.ShowDatabaseExecutionPlanner.acc
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
-import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ShowDatabase.DATABASE_ID_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_COMMITTED_TX_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.REPLICATION_LAG_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.STORE_COL
+import org.neo4j.cypher.internal.ast.SingleNamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterTransformerOutput
@@ -98,7 +98,7 @@ class DatabaseListParameterTransformerFunction(
       case _: HomeDatabaseScope =>
         val homeDatabase = defaultDatabaseResolver.defaultDatabase(securityContext.subject().executingUser())
         (allReferences.filter(ref => ref.isPrimary && ref.alias().name().equals(homeDatabase)), Set.empty)
-      case namedDatabaseScope: NamedDatabaseScope =>
+      case namedDatabaseScope: SingleNamedDatabaseScope =>
         filterReferencesByName(allReferences, namedDatabaseScope, userParams)
       case _ =>
         (allReferences, Set.empty)
@@ -130,7 +130,7 @@ class DatabaseListParameterTransformerFunction(
 
   private def filterReferencesByName(
     databaseReferences: Set[DatabaseReference],
-    namedDatabaseScope: NamedDatabaseScope,
+    namedDatabaseScope: SingleNamedDatabaseScope,
     params: MapValue
   ): (Set[DatabaseReference], Set[InternalNotification]) = {
     val (name, namespace, notifications)

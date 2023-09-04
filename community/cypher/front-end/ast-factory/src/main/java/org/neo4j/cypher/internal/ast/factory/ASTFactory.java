@@ -523,7 +523,7 @@ public interface ASTFactory<
     PRIVILEGE_TYPE databasePrivilege(
             POS p,
             ADMINISTRATION_ACTION action,
-            List<DATABASE_SCOPE> scope,
+            DATABASE_SCOPE scope,
             List<PRIVILEGE_QUALIFIER> qualifier,
             boolean immutable);
 
@@ -533,7 +533,7 @@ public interface ASTFactory<
     PRIVILEGE_TYPE graphPrivilege(
             POS p,
             ADMINISTRATION_ACTION action,
-            List<GRAPH_SCOPE> scope,
+            GRAPH_SCOPE scope,
             PRIVILEGE_RESOURCE resource,
             List<PRIVILEGE_QUALIFIER> qualifier,
             boolean immutable);
@@ -580,9 +580,9 @@ public interface ASTFactory<
 
     List<PRIVILEGE_QUALIFIER> settingQualifier(POS p, List<String> names);
 
-    List<GRAPH_SCOPE> graphScopes(POS p, List<DATABASE_NAME> graphNames, ScopeType scopeType);
+    GRAPH_SCOPE graphScope(POS p, List<DATABASE_NAME> graphNames, ScopeType scopeType);
 
-    List<DATABASE_SCOPE> databaseScopes(POS p, List<DATABASE_NAME> databaseNames, ScopeType scopeType);
+    DATABASE_SCOPE databaseScope(POS p, List<DATABASE_NAME> databaseNames, ScopeType scopeType);
 
     // Server Administration Commands
 

@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.GraphAction
-import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.Options
@@ -261,7 +260,7 @@ case class AssertDbmsPrivilegeCanBeMutated(
 case class GrantDatabaseAction(
   source: PrivilegePlan,
   action: DatabaseAction,
-  database: DatabaseScope,
+  database: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   immutable: Boolean,
@@ -271,7 +270,7 @@ case class GrantDatabaseAction(
 case class DenyDatabaseAction(
   source: PrivilegePlan,
   action: DatabaseAction,
-  database: DatabaseScope,
+  database: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   immutable: Boolean,
@@ -281,7 +280,7 @@ case class DenyDatabaseAction(
 case class RevokeDatabaseAction(
   source: PrivilegePlan,
   action: DatabaseAction,
-  database: DatabaseScope,
+  database: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String,
@@ -292,7 +291,7 @@ case class RevokeDatabaseAction(
 case class AssertDatabasePrivilegeCanBeMutated(
   source: PrivilegePlan,
   action: DatabaseAction,
-  database: DatabaseScope,
+  database: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String
@@ -302,7 +301,7 @@ case class GrantGraphAction(
   source: PrivilegePlan,
   action: GraphAction,
   resource: ActionResource,
-  graph: GraphScope,
+  graph: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   immutable: Boolean,
@@ -313,7 +312,7 @@ case class DenyGraphAction(
   source: PrivilegePlan,
   action: GraphAction,
   resource: ActionResource,
-  graph: GraphScope,
+  graph: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   immutable: Boolean,
@@ -324,7 +323,7 @@ case class RevokeGraphAction(
   source: PrivilegePlan,
   action: GraphAction,
   resource: ActionResource,
-  graph: GraphScope,
+  graph: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String,
@@ -336,7 +335,7 @@ case class AssertGraphPrivilegeCanBeMutated(
   source: PrivilegePlan,
   action: GraphAction,
   resource: ActionResource,
-  graph: GraphScope,
+  graph: PrivilegeCommandScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String

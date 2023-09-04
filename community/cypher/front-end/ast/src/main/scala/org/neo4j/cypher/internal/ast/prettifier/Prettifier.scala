@@ -112,8 +112,8 @@ import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
-import org.neo4j.cypher.internal.ast.NamedDatabaseScope
-import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NamedDatabasesScope
+import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.OnCreate
@@ -183,6 +183,8 @@ import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.SingleNamedDatabaseScope
+import org.neo4j.cypher.internal.ast.SingleNamedGraphScope
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.StartDatabase
@@ -694,8 +696,8 @@ case class Prettifier(
       case x @ ShowDatabase(scope, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         val optionalName = scope match {
-          case NamedDatabaseScope(dbName) => s" ${Prettifier.escapeName(dbName)}"
-          case _                          => ""
+          case SingleNamedDatabaseScope(dbName) => s" ${Prettifier.escapeName(dbName)}"
+          case _                                => ""
         }
         s"${x.name}$optionalName$y$r"
 
@@ -1331,7 +1333,7 @@ object Prettifier {
 
   def prettifyDatabasePrivilege(
     privilegeName: String,
-    dbScope: List[DatabaseScope],
+    dbScope: DatabaseScope,
     qualifier: List[PrivilegeQualifier],
     preposition: String,
     roleNames: Seq[Either[String, Parameter]]
@@ -1350,7 +1352,7 @@ object Prettifier {
 
   def prettifyGraphPrivilege(
     privilegeName: String,
-    graphScope: List[GraphScope],
+    graphScope: GraphScope,
     qualifierString: String,
     resource: Option[ActionResource],
     preposition: String,
@@ -1426,22 +1428,23 @@ object Prettifier {
     }
   }
 
-  def extractDbScope(dbScope: List[DatabaseScope]): (String, Boolean, Boolean) = dbScope match {
-    case NamedDatabaseScope(name) :: Nil => (escapeName(name), false, false)
-    case AllDatabasesScope() :: Nil      => ("*", false, false)
-    case DefaultDatabaseScope() :: Nil   => ("DEFAULT", true, false)
-    case HomeDatabaseScope() :: Nil      => ("HOME", true, false)
-    case namedDatabaseScopes =>
-      (escapeNames(namedDatabaseScopes.collect { case NamedDatabaseScope(name) => name }), false, true)
+  def extractDbScope(dbScope: DatabaseScope): (String, Boolean, Boolean) = dbScope match {
+    case SingleNamedDatabaseScope(name)           => (escapeName(name), false, false)
+    case AllDatabasesScope()                      => ("*", false, false)
+    case DefaultDatabaseScope()                   => ("DEFAULT", true, false)
+    case HomeDatabaseScope()                      => ("HOME", true, false)
+    case NamedDatabasesScope(databaseName :: Nil) => (escapeName(databaseName), false, false)
+    case NamedDatabasesScope(databaseNames)       => (escapeNames(databaseNames), false, true)
   }
 
-  def extractGraphScope(graphScope: List[GraphScope]): String = {
+  def extractGraphScope(graphScope: GraphScope): String = {
     graphScope match {
-      case NamedGraphScope(name) :: Nil => s"GRAPH ${escapeName(name)}"
-      case AllGraphsScope() :: Nil      => "GRAPH *"
-      case DefaultGraphScope() :: Nil   => "DEFAULT GRAPH"
-      case HomeGraphScope() :: Nil      => "HOME GRAPH"
-      case namedGraphScopes => s"GRAPHS ${escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name })}"
+      case SingleNamedGraphScope(name)    => s"GRAPH ${escapeName(name)}"
+      case AllGraphsScope()               => "GRAPH *"
+      case DefaultGraphScope()            => "DEFAULT GRAPH"
+      case HomeGraphScope()               => "HOME GRAPH"
+      case NamedGraphsScope(graph :: Nil) => s"GRAPH ${escapeName(graph)}"
+      case NamedGraphsScope(graphs)       => s"GRAPHS ${escapeNames(graphs)}"
     }
   }
 

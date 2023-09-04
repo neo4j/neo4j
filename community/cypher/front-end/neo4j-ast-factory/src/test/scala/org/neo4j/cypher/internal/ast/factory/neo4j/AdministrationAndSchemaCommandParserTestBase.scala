@@ -99,9 +99,9 @@ class AdministrationAndSchemaCommandParserTestBase
   val relQualifierB: InputPosition => ast.RelationshipQualifier = ast.RelationshipQualifier("B")(_)
   val elemQualifierA: InputPosition => ast.ElementQualifier = ast.ElementQualifier("A")(_)
   val elemQualifierB: InputPosition => ast.ElementQualifier = ast.ElementQualifier("B")(_)
-  val graphScopeFoo: InputPosition => ast.NamedGraphScope = ast.NamedGraphScope(literalFoo)(_)
-  val graphScopeParamFoo: InputPosition => ast.NamedGraphScope = ast.NamedGraphScope(namespacedParamFoo)(_)
-  val graphScopeBaz: InputPosition => ast.NamedGraphScope = ast.NamedGraphScope(literal("baz"))(_)
+  val graphScopeFoo: InputPosition => ast.NamedGraphsScope = ast.NamedGraphsScope(Seq(literalFoo))(_)
+  val graphScopeParamFoo: InputPosition => ast.NamedGraphsScope = ast.NamedGraphsScope(Seq(namespacedParamFoo))(_)
+  val graphScopeFooBaz: InputPosition => ast.NamedGraphsScope = ast.NamedGraphsScope(Seq(literalFoo, literal("baz")))(_)
 
   def literal[T](name: String)(implicit convertor: String => T): T = convertor(name)
 
@@ -154,14 +154,14 @@ class AdministrationAndSchemaCommandParserTestBase
   type databasePrivilegeFunc =
     (
       ast.DatabaseAction,
-      List[ast.DatabaseScope],
+      ast.DatabaseScope,
       Seq[Either[String, Parameter]],
       Immutable
     ) => InputPosition => ast.Statement
 
   type transactionPrivilegeFunc = (
     ast.DatabaseAction,
-    List[ast.DatabaseScope],
+    ast.DatabaseScope,
     List[ast.DatabasePrivilegeQualifier],
     Seq[Either[String, Parameter]],
     Immutable
@@ -212,7 +212,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def grantDatabasePrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -220,7 +220,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def grantTransactionPrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable
@@ -277,7 +277,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def denyDatabasePrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -285,7 +285,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def denyTransactionPrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable
@@ -342,7 +342,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def revokeGrantDatabasePrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -350,7 +350,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def revokeGrantTransactionPrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable
@@ -407,7 +407,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def revokeDenyDatabasePrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -415,7 +415,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def revokeDenyTransactionPrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable
@@ -472,7 +472,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def revokeDatabasePrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -480,7 +480,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   def revokeTransactionPrivilege(
     d: ast.DatabaseAction,
-    s: List[ast.DatabaseScope],
+    s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable

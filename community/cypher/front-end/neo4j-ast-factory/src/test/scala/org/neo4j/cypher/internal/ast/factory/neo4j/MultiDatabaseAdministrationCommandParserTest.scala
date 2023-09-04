@@ -37,18 +37,39 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     ("DATABASES", ast.ShowDatabase.apply(ast.AllDatabasesScope()(pos), _: ast.YieldOrWhere) _),
     ("DEFAULT DATABASE", ast.ShowDatabase.apply(ast.DefaultDatabaseScope()(pos), _: ast.YieldOrWhere) _),
     ("HOME DATABASE", ast.ShowDatabase.apply(ast.HomeDatabaseScope()(pos), _: ast.YieldOrWhere) _),
-    ("DATABASE $db", ast.ShowDatabase.apply(ast.NamedDatabaseScope(stringParamName("db"))(pos), _: ast.YieldOrWhere) _),
+    (
+      "DATABASE $db",
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(stringParamName("db"))(pos), _: ast.YieldOrWhere) _
+    ),
     (
       "DATABASES $db",
-      ast.ShowDatabase.apply(ast.NamedDatabaseScope(stringParamName("db"))(pos), _: ast.YieldOrWhere) _
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(stringParamName("db"))(pos), _: ast.YieldOrWhere) _
     ),
-    ("DATABASE neo4j", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _),
-    ("DATABASES neo4j", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _),
+    (
+      "DATABASE neo4j",
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _
+    ),
+    (
+      "DATABASES neo4j",
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _
+    ),
     // vvv naming the database yield/where should not fail either vvv
-    ("DATABASE yield", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("yield"))(pos), _: ast.YieldOrWhere) _),
-    ("DATABASES yield", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("yield"))(pos), _: ast.YieldOrWhere) _),
-    ("DATABASE where", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("where"))(pos), _: ast.YieldOrWhere) _),
-    ("DATABASES where", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("where"))(pos), _: ast.YieldOrWhere) _)
+    (
+      "DATABASE yield",
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(literal("yield"))(pos), _: ast.YieldOrWhere) _
+    ),
+    (
+      "DATABASES yield",
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(literal("yield"))(pos), _: ast.YieldOrWhere) _
+    ),
+    (
+      "DATABASE where",
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(literal("where"))(pos), _: ast.YieldOrWhere) _
+    ),
+    (
+      "DATABASES where",
+      ast.ShowDatabase.apply(ast.SingleNamedDatabaseScope(literal("where"))(pos), _: ast.YieldOrWhere) _
+    )
   ).foreach { case (dbType, privilege) =>
     test(s"SHOW $dbType") {
       yields(privilege(None))
@@ -119,11 +140,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("SHOW DATABASE `foo.bar`") {
-    yields(ast.ShowDatabase(ast.NamedDatabaseScope(namespacedName("foo.bar"))(pos), None))
+    yields(ast.ShowDatabase(ast.SingleNamedDatabaseScope(namespacedName("foo.bar"))(pos), None))
   }
 
   test("SHOW DATABASE foo.bar") {
-    yields(ast.ShowDatabase(ast.NamedDatabaseScope(namespacedName("foo", "bar"))(pos), None))
+    yields(ast.ShowDatabase(ast.SingleNamedDatabaseScope(namespacedName("foo", "bar"))(pos), None))
   }
 
   test("SHOW DATABASE blah YIELD *,blah RETURN user") {

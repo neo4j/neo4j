@@ -39,7 +39,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               val immutableString = immutableOrEmpty(immutable)
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
@@ -48,7 +48,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo ELEMENTS A $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(elemQualifierA),
                   Seq(literalRole),
                   immutable
@@ -57,7 +57,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo NODE A $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(labelQualifierA),
                   Seq(literalRole),
                   immutable
@@ -66,7 +66,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
@@ -77,7 +77,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
@@ -86,7 +86,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role1, role2") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole1, literalRole2),
                   immutable
@@ -95,7 +95,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition $$role1, role2") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(paramRole1, literalRole2),
                   immutable
@@ -104,7 +104,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH RELATIONSHIPS * $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
@@ -120,7 +120,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
@@ -129,7 +129,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role1, role2") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole1, literalRole2),
                   immutable
@@ -138,7 +138,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition $$role1, role2") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(paramRole1, literalRole2),
                   immutable
@@ -147,7 +147,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH RELATIONSHIPS * $preposition role") {
                 yields(func(
-                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
                   immutable

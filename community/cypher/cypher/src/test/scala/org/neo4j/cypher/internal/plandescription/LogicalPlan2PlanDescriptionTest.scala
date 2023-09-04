@@ -24,7 +24,6 @@ import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllFunctions
-import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -36,7 +35,6 @@ import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DateTypeName
-import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.DurationTypeName
@@ -55,7 +53,6 @@ import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.ListTypeName
 import org.neo4j.cypher.internal.ast.LocalTimeTypeName
 import org.neo4j.cypher.internal.ast.LookupIndexes
-import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
@@ -143,6 +140,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AllScope
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterDatabase
 import org.neo4j.cypher.internal.logical.plans.AlterLocalDatabaseAlias
@@ -234,6 +232,7 @@ import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
 import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
+import org.neo4j.cypher.internal.logical.plans.HomeScope
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
@@ -254,6 +253,7 @@ import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
+import org.neo4j.cypher.internal.logical.plans.NamedScope
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -5896,7 +5896,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         GrantDatabaseAction(
           privLhsLP,
           CreateNodeLabelAction,
-          NamedDatabaseScope(NamespacedName("foo")(pos))(pos),
+          NamedScope(NamespacedName("foo")(pos)),
           UserAllQualifier()(pos),
           util.Left("role1"),
           immutable = false,
@@ -5912,7 +5912,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         DenyDatabaseAction(
           privLhsLP,
           CreateNodeLabelAction,
-          AllDatabasesScope()(pos),
+          AllScope,
           UserQualifier(util.Left("user1"))(pos),
           util.Left("role1"),
           immutable = false,
@@ -5928,7 +5928,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         RevokeDatabaseAction(
           privLhsLP,
           CreateNodeLabelAction,
-          AllDatabasesScope()(pos),
+          AllScope,
           UserQualifier(util.Left("user1"))(pos),
           util.Left("role1"),
           "GRANTED",
@@ -5946,7 +5946,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           privLhsLP,
           TraverseAction,
           NoResource()(pos),
-          DefaultGraphScope()(pos),
+          HomeScope,
           LabelQualifier("Label1")(pos),
           util.Left("role1"),
           immutable = false,
@@ -5963,7 +5963,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           privLhsLP,
           ReadAction,
           AllPropertyResource()(pos),
-          DefaultGraphScope()(pos),
+          HomeScope,
           LabelQualifier("Label1")(pos),
           util.Left("role1"),
           immutable = false,
@@ -5980,7 +5980,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           privLhsLP,
           WriteAction,
           NoResource()(pos),
-          AllGraphsScope()(pos),
+          AllScope,
           ElementsAllQualifier()(pos),
           util.Left("role1"),
           "GRANTED",

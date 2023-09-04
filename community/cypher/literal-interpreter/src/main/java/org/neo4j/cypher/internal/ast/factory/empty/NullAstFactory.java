@@ -1134,7 +1134,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL databasePrivilege(NULL p, NULL aNull, List<NULL> scope, List<NULL> qualifier, boolean immutable) {
+    public NULL databasePrivilege(NULL p, NULL aNull, NULL scope, List<NULL> qualifier, boolean immutable) {
         return null;
     }
 
@@ -1144,8 +1144,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL graphPrivilege(
-            NULL p, NULL aNull, List<NULL> scope, NULL aNull2, List<NULL> qualifier, boolean immutable) {
+    public NULL graphPrivilege(NULL p, NULL aNull, NULL scope, NULL aNull2, List<NULL> qualifier, boolean immutable) {
         return null;
     }
 
@@ -1250,12 +1249,12 @@ public class NullAstFactory
     }
 
     @Override
-    public List<NULL> graphScopes(NULL p, List<NULL> graphNames, ScopeType scopeType) {
+    public NULL graphScope(NULL p, List<NULL> graphNames, ScopeType scopeType) {
         return null;
     }
 
     @Override
-    public List<NULL> databaseScopes(NULL p, List<NULL> databaseNames, ScopeType scopeType) {
+    public NULL databaseScope(NULL p, List<NULL> databaseNames, ScopeType scopeType) {
         return null;
     }
 

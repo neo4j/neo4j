@@ -184,8 +184,8 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAdminAction
-import org.neo4j.cypher.internal.ast.NamedDatabaseScope
-import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NamedDatabasesScope
+import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
@@ -300,6 +300,7 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.SingleNamedDatabaseScope
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -2331,12 +2332,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
   override def databasePrivilege(
     p: InputPosition,
     action: AdministrationAction,
-    scope: util.List[DatabaseScope],
+    scope: DatabaseScope,
     qualifier: util.List[PrivilegeQualifier],
     immutable: Boolean
   ): Privilege =
     Privilege(
-      DatabasePrivilege(action.asInstanceOf[DatabaseAction], scope.asScala.toList)(p),
+      DatabasePrivilege(action.asInstanceOf[DatabaseAction], scope)(p),
       null,
       qualifier,
       immutable
@@ -2353,12 +2354,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
   override def graphPrivilege(
     p: InputPosition,
     action: AdministrationAction,
-    scope: util.List[GraphScope],
+    scope: GraphScope,
     resource: ActionResource,
     qualifier: util.List[PrivilegeQualifier],
     immutable: Boolean
   ): Privilege =
-    Privilege(GraphPrivilege(action.asInstanceOf[GraphAction], scope.asScala.toList)(p), resource, qualifier, immutable)
+    Privilege(GraphPrivilege(action.asInstanceOf[GraphAction], scope)(p), resource, qualifier, immutable)
 
   override def privilegeAction(action: ActionType): AdministrationAction = action match {
     case ActionType.DATABASE_ALL          => AllDatabaseAction
@@ -2509,36 +2510,30 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
     list
   }
 
-  override def graphScopes(
+  override def graphScope(
     p: InputPosition,
     graphNames: util.List[DatabaseName],
     scopeType: ScopeType
-  ): util.List[GraphScope] = {
-    val list = new util.ArrayList[GraphScope]()
+  ): GraphScope = {
     scopeType match {
-      case ScopeType.ALL     => list.add(AllGraphsScope()(p))
-      case ScopeType.HOME    => list.add(HomeGraphScope()(p))
-      case ScopeType.DEFAULT => list.add(DefaultGraphScope()(p))
-      case ScopeType.NAMED =>
-        graphNames.asScala.foreach(db => list.add(NamedGraphScope(db)(p)))
+      case ScopeType.ALL     => AllGraphsScope()(p)
+      case ScopeType.HOME    => HomeGraphScope()(p)
+      case ScopeType.DEFAULT => DefaultGraphScope()(p)
+      case ScopeType.NAMED   => NamedGraphsScope(graphNames.asScala.toSeq)(p)
     }
-    list
   }
 
-  override def databaseScopes(
+  override def databaseScope(
     p: InputPosition,
     databaseNames: util.List[DatabaseName],
     scopeType: ScopeType
-  ): util.List[DatabaseScope] = {
-    val list = new util.ArrayList[DatabaseScope]()
+  ): DatabaseScope = {
     scopeType match {
-      case ScopeType.ALL     => list.add(AllDatabasesScope()(p))
-      case ScopeType.HOME    => list.add(HomeDatabaseScope()(p))
-      case ScopeType.DEFAULT => list.add(DefaultDatabaseScope()(p))
-      case ScopeType.NAMED =>
-        databaseNames.asScala.foreach(db => list.add(NamedDatabaseScope(db)(p)))
+      case ScopeType.ALL     => AllDatabasesScope()(p)
+      case ScopeType.HOME    => HomeDatabaseScope()(p)
+      case ScopeType.DEFAULT => DefaultDatabaseScope()(p)
+      case ScopeType.NAMED   => NamedDatabasesScope(databaseNames.asScala.toSeq)(p)
     }
-    list
   }
 
   // Server commands
@@ -2689,7 +2684,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
     isHome: Boolean
   ): DatabaseScope = {
     if (databaseName != null) {
-      NamedDatabaseScope(databaseName)(p)
+      SingleNamedDatabaseScope(databaseName)(p)
     } else if (isDefault) {
       DefaultDatabaseScope()(p)
     } else if (isHome) {

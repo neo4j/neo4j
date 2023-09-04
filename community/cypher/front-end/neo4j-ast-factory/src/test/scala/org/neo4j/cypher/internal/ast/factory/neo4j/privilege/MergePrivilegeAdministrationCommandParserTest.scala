@@ -34,7 +34,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString MERGE { prop } ON GRAPH foo $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -46,7 +46,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { * } ON GRAPH foo $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -56,7 +56,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON GRAPH foo $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -68,7 +68,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { * } ON HOME GRAPH $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(ast.HomeGraphScope()(_)))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, ast.HomeGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -78,7 +78,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON HOME GRAPH RELATIONSHIP * $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(ast.HomeGraphScope()(_)))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, ast.HomeGraphScope()(_))(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.RelationshipAllQualifier()(_)),
               Seq(literalRole),
@@ -90,7 +90,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { * } ON DEFAULT GRAPH $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(ast.DefaultGraphScope()(_)))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, ast.DefaultGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -100,7 +100,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON DEFAULT GRAPH RELATIONSHIP * $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(ast.DefaultGraphScope()(_)))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, ast.DefaultGraphScope()(_))(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.RelationshipAllQualifier()(_)),
               Seq(literalRole),
@@ -112,7 +112,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS * $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(ast.AllGraphsScope()(_)))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, ast.AllGraphsScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -122,7 +122,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo,baz $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo, graphScopeBaz))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFooBaz)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -134,7 +134,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo ELEMENTS A,B $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(elemQualifierA, elemQualifierB),
               Seq(literalRole),
@@ -144,7 +144,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo ELEMENT A $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(elemQualifierA),
               Seq(literalRole),
@@ -154,7 +154,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo NODES A,B $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(labelQualifierA, labelQualifierB),
               Seq(literalRole),
@@ -164,7 +164,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo NODES * $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.LabelAllQualifier()(_)),
               Seq(literalRole),
@@ -174,7 +174,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo RELATIONSHIPS A,B $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(relQualifierA, relQualifierB),
               Seq(literalRole),
@@ -184,7 +184,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo RELATIONSHIP * $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.RelationshipAllQualifier()(_)),
               Seq(literalRole),
@@ -196,7 +196,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo $preposition role1, role2") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole1, literalRole2),
@@ -208,7 +208,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPH $$foo $preposition role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeParamFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeParamFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
@@ -218,7 +218,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPH foo $preposition $$role") {
             yields(func(
-              ast.GraphPrivilege(ast.MergeAdminAction, List(graphScopeFoo))(_),
+              ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(paramRole),

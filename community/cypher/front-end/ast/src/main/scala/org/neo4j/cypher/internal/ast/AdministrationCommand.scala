@@ -554,14 +554,10 @@ sealed abstract class PrivilegeCommand(
     privilege match {
       case DbmsPrivilege(u: UnassignableAction) =>
         error(s"`GRANT`, `DENY` and `REVOKE` are not supported for `${u.name}`", position)
-      case GraphPrivilege(_, scope) if scope.exists {
-          case _: DefaultGraphScope => true
-          case _                    => false
-        } => error("`ON DEFAULT GRAPH` is not supported. Use `ON HOME GRAPH` instead.", position)
-      case DatabasePrivilege(_, scope) if scope.exists {
-          case _: DefaultDatabaseScope => true
-          case _                       => false
-        } => error("`ON DEFAULT DATABASE` is not supported. Use `ON HOME DATABASE` instead.", position)
+      case GraphPrivilege(_, _: DefaultGraphScope) =>
+        error("`ON DEFAULT GRAPH` is not supported. Use `ON HOME GRAPH` instead.", position)
+      case DatabasePrivilege(_, _: DefaultDatabaseScope) =>
+        error("`ON DEFAULT DATABASE` is not supported. Use `ON HOME DATABASE` instead.", position)
       case _ => showSettingFeatureCheck chain super.semanticCheck chain
           SemanticState.recordCurrentScope(this)
     }
@@ -591,7 +587,7 @@ object GrantPrivilege {
   def databaseAction(
     action: DatabaseAction,
     immutable: Boolean,
-    scope: List[DatabaseScope],
+    scope: DatabaseScope,
     roleNames: Seq[Either[String, Parameter]],
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => GrantPrivilege =
@@ -601,7 +597,7 @@ object GrantPrivilege {
     action: GraphAction,
     immutable: Boolean,
     resource: Option[ActionResource],
-    scope: List[GraphScope],
+    scope: GraphScope,
     qualifier: List[T],
     roleNames: Seq[Either[String, Parameter]]
   ): InputPosition => GrantPrivilege =
@@ -640,7 +636,7 @@ object DenyPrivilege {
   def databaseAction(
     action: DatabaseAction,
     immutable: Boolean,
-    scope: List[DatabaseScope],
+    scope: DatabaseScope,
     roleNames: Seq[Either[String, Parameter]],
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => DenyPrivilege =
@@ -650,7 +646,7 @@ object DenyPrivilege {
     action: GraphAction,
     immutable: Boolean,
     resource: Option[ActionResource],
-    scope: List[GraphScope],
+    scope: GraphScope,
     qualifier: List[T],
     roleNames: Seq[Either[String, Parameter]]
   ): InputPosition => DenyPrivilege =
@@ -695,7 +691,7 @@ object RevokePrivilege {
   def databaseAction(
     action: DatabaseAction,
     immutable: Boolean,
-    scope: List[DatabaseScope],
+    scope: DatabaseScope,
     roleNames: Seq[Either[String, Parameter]],
     revokeType: RevokeType,
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
@@ -713,7 +709,7 @@ object RevokePrivilege {
     action: GraphAction,
     immutable: Boolean,
     resource: Option[ActionResource],
-    scope: List[GraphScope],
+    scope: GraphScope,
     qualifier: List[T],
     roleNames: Seq[Either[String, Parameter]],
     revokeType: RevokeType
@@ -874,10 +870,10 @@ final case class ShowDatabase(
   override val defaultColumnSet: List[ShowColumn] = defaultColumns.columns
 
   override def name: String = scope match {
-    case _: NamedDatabaseScope   => "SHOW DATABASE"
-    case _: AllDatabasesScope    => "SHOW DATABASES"
-    case _: DefaultDatabaseScope => "SHOW DEFAULT DATABASE"
-    case _: HomeDatabaseScope    => "SHOW HOME DATABASE"
+    case _: SingleNamedDatabaseScope                   => "SHOW DATABASE"
+    case _: AllDatabasesScope | _: NamedDatabasesScope => "SHOW DATABASES"
+    case _: DefaultDatabaseScope                       => "SHOW DEFAULT DATABASE"
+    case _: HomeDatabaseScope                          => "SHOW HOME DATABASE"
   }
 
   override def semanticCheck: SemanticCheck =
