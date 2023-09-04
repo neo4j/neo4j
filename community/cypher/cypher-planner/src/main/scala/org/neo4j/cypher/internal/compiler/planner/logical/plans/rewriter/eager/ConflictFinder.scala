@@ -55,12 +55,14 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 
@@ -123,6 +125,18 @@ object ConflictFinder {
     }
   }
 
+  private def canConflictWithCreateOrDelete(lp: LogicalPlan): Boolean = {
+    !lp.isInstanceOf[UpdatingPlan] || containsNestedPlanExpression(lp)
+  }
+
+  private def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
+    lp.folder.treeFold(false) {
+      case _: NestedPlanExpression => _ => SkipChildren(true)
+      // We do not want to find NestedPlanExpressions in child plans.
+      case otherLP: LogicalPlan if otherLP ne lp => _ => SkipChildren(false)
+    }
+  }
+
   private def createConflicts[T <: LabelExpressionLeafName, C <: WriteFinder.CreatedEntity[T]](
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan,
@@ -145,7 +159,7 @@ object ConflictFinder {
         )((x, _) => x)
 
       // Filter out Create vs Create conflicts
-      readPlans = plansThatIntroduceVariable.filter(!_.value.isInstanceOf[UpdatingPlan])
+      readPlans = plansThatIntroduceVariable.filter(ref => canConflictWithCreateOrDelete(ref.value))
       if readPlans.nonEmpty
 
       createdEntity <- createdEntities
@@ -238,7 +252,7 @@ object ConflictFinder {
         deleteReadVariables(readsAndWrites, writePlan, possibleDeleteConflictPlans, possibleDeleteConflictPlanSnapshots)
 
       // Filter out Delete vs Create conflicts
-      readPlans = plansThatIntroduceVar.filter(!_.plan.isInstanceOf[UpdatingPlan])
+      readPlans = plansThatIntroduceVar.filter(ptiv => canConflictWithCreateOrDelete(ptiv.plan))
       if readPlans.nonEmpty
 
       deletedEntity <- deletedEntities

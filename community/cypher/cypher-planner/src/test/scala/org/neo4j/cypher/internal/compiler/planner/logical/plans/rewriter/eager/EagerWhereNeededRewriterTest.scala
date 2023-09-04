@@ -63,6 +63,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.create.CreateNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -2109,6 +2110,41 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("inserts eager between create and all nodes read in nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .aggregation(Seq(), Seq("count(*) AS count"))
+      .allNodeScan("m")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      nestedPlan,
+      s"COUNT { MATCH (m) }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.p AS x")
+      .setNodeProperty("n", "p", nestedPlanExpression)
+      .create(createNode("n"))
+      .unwind("[1,2] AS x")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .projection("n.p AS x")
+        .eager(ListSet(PropertyReadSetConflict(propName("p")).withConflict(Conflict(Id(2), Id(1)))))
+        .setNodeProperty("n", "p", nestedPlanExpression)
+        .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(3), Id(2)))))
+        .create(createNode("n"))
+        .unwind("[1,2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
   // Read vs Merge conflicts
 
   test("inserts no eager between Merge and AllNodeScan if read through stable iterator") {
@@ -3847,6 +3883,41 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(4)))))
         .apply()
         .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node conflicts with unstable node from nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .aggregation(Seq(), Seq("count(*) AS count"))
+      .allNodeScan("m")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      nestedPlan,
+      s"COUNT { MATCH (m) }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("n")
+      .create(CreateNode(varFor("x"), Set.empty, Some(mapOf("p" -> nestedPlanExpression))))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode("n")
+        .eager(ListSet(
+          ReadDeleteConflict("x").withConflict(Conflict(Id(2), Id(3))),
+          ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(3)))
+        ))
+        .create(CreateNode(varFor("x"), Set.empty, Some(mapOf("p" -> nestedPlanExpression))))
         .allNodeScan("n")
         .build()
     )
