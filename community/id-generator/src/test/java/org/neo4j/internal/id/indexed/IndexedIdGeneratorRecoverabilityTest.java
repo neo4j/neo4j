@@ -258,7 +258,8 @@ class IndexedIdGeneratorRecoverabilityTest {
                 NO_MONITOR,
                 Sets.immutable.empty(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL);
+                PageCacheTracer.NULL,
+                true);
     }
 
     private static PageCache getPageCache(FileSystemAbstraction fs) {

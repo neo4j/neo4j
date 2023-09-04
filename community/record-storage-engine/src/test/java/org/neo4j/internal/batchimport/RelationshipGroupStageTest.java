@@ -74,7 +74,7 @@ class RelationshipGroupStageTest {
     @BeforeEach
     void openStore() {
         var idGeneratorFactory = new DefaultIdGeneratorFactory(
-                directory.getFileSystem(), immediate(), false, PageCacheTracer.NULL, "db");
+                directory.getFileSystem(), immediate(), false, PageCacheTracer.NULL, "db", true);
         stores = new StoreFactory(
                         DatabaseLayout.ofFlat(directory.homePath()),
                         Config.defaults(),

@@ -86,7 +86,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
     }
 
     @Override
-    public void clearCache(CursorContext cursorContext) {
+    public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         // nothing
     }
 
@@ -162,7 +162,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public void clearCache(CursorContext cursorContext) {
+        public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
             // nothing
         }
 

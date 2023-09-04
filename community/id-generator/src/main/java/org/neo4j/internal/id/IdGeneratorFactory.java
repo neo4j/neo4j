@@ -63,7 +63,7 @@ public interface IdGeneratorFactory {
 
     void visit(Consumer<IdGenerator> visitor);
 
-    void clearCache(CursorContext cursorContext);
+    void clearCache(boolean allocationEnabled, CursorContext cursorContext);
 
     Collection<Path> listIdFiles();
 

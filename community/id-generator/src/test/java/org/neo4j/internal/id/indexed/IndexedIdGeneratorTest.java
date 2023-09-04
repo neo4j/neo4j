@@ -164,7 +164,8 @@ class IndexedIdGeneratorTest {
                 monitor,
                 getOpenOptions(),
                 slotDistribution,
-                PageCacheTracer.NULL);
+                PageCacheTracer.NULL,
+                true);
     }
 
     protected ImmutableSet<OpenOption> getOpenOptions() {
@@ -289,7 +290,7 @@ class IndexedIdGeneratorTest {
         race.addContestants(2, freer(allocations, expectedInUse));
         race.addContestant(throwing(() -> {
             Thread.sleep(300);
-            idGenerator.clearCache(NULL_CONTEXT);
+            idGenerator.clearCache(true, NULL_CONTEXT);
         }));
 
         // when
@@ -564,7 +565,7 @@ class IndexedIdGeneratorTest {
         markUsed(id);
         markDeleted(id);
         markFree(id);
-        try (IdRangeMarker marker = idGenerator.lockAndInstantiateMarker(true, NULL_CONTEXT)) {
+        try (IdRangeMarker marker = idGenerator.lockAndInstantiateMarker(true, false, NULL_CONTEXT)) {
             marker.markReserved(id);
         }
 
@@ -660,7 +661,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL);
+                PageCacheTracer.NULL,
+                true);
 
         // then
         verify(highIdSupplier).getAsLong();
@@ -695,7 +697,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL);
+                PageCacheTracer.NULL,
+                true);
 
         // then
         verifyNoMoreInteractions(highIdSupplier);
@@ -724,7 +727,8 @@ class IndexedIdGeneratorTest {
                         NO_MONITOR,
                         getOpenOptions(),
                         SINGLE_IDS,
-                        PageCacheTracer.NULL));
+                        PageCacheTracer.NULL,
+                        true));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
     }
 
@@ -747,7 +751,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
@@ -769,7 +774,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         }
     }
@@ -822,7 +828,7 @@ class IndexedIdGeneratorTest {
         idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         // two times, one in start and one now in checkpoint
         verify(monitor, times(1)).checkpoint(anyLong(), anyLong());
-        idGenerator.clearCache(NULL_CONTEXT);
+        idGenerator.clearCache(true, NULL_CONTEXT);
         verify(monitor).clearingCache();
         verify(monitor).clearedCache();
 
@@ -882,7 +888,7 @@ class IndexedIdGeneratorTest {
                 pageCacheTracer.createPageCursorTracer("noPageCacheActivityWithNoMaintenanceOnOnNextId"))) {
             idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             markDeleted(1);
-            idGenerator.clearCache(NULL_CONTEXT);
+            idGenerator.clearCache(true, NULL_CONTEXT);
             idGenerator.maintenance(cursorContext);
 
             var cursorTracer = cursorContext.getCursorTracer();
@@ -928,7 +934,7 @@ class IndexedIdGeneratorTest {
             markDeleted(1);
             markFree(1);
             idGenerator.maintenance(NULL_CONTEXT);
-            idGenerator.clearCache(cursorContext);
+            idGenerator.clearCache(true, cursorContext);
 
             assertThat(cursorTracer.pins()).isEqualTo(2);
             assertThat(cursorTracer.unpins()).isEqualTo(2);
@@ -955,7 +961,7 @@ class IndexedIdGeneratorTest {
             assertThat(cursorTracer.hits()).isZero();
 
             markDeleted(1);
-            idGenerator.clearCache(NULL_CONTEXT);
+            idGenerator.clearCache(true, NULL_CONTEXT);
             idGenerator.maintenance(cursorContext);
 
             assertThat(cursorTracer.pins()).isOne();
@@ -999,8 +1005,8 @@ class IndexedIdGeneratorTest {
 
             // 2 state pages involved into checkpoint (twice) + one more pin/hit/unpin on maintenance + range marker
             // writer
-            assertThat(cursorTracer.pins()).isEqualTo(5);
-            assertThat(cursorTracer.unpins()).isEqualTo(5);
+            assertThat(cursorTracer.pins()).isEqualTo(4);
+            assertThat(cursorTracer.unpins()).isEqualTo(4);
         }
     }
 
@@ -1022,7 +1028,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             prepareIndexWithoutRebuild.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
         try (var idGenerator = new IndexedIdGenerator(
@@ -1041,7 +1048,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             var pageCacheTracer = new DefaultPageCacheTracer();
             try (var cursorContext = CONTEXT_FACTORY.create(
                     pageCacheTracer.createPageCursorTracer("tracePageCacheOnIdGeneratorStartWithoutRebuild"))) {
@@ -1282,7 +1290,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
@@ -1304,7 +1313,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             assertDoesNotThrow(() -> operation.apply(readOnlyGenerator));
         }
@@ -1385,7 +1395,7 @@ class IndexedIdGeneratorTest {
         markUsed(id);
         markDeleted(id);
         markFree(id);
-        idGenerator.clearCache(NULL_CONTEXT);
+        idGenerator.clearCache(true, NULL_CONTEXT);
 
         // when
         try (var t2 = new OtherThreadExecutor("T2")) {
@@ -1520,7 +1530,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
@@ -1542,7 +1553,8 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL)) {
+                PageCacheTracer.NULL,
+                true)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             var e = assertThrows(Exception.class, operation.apply(readOnlyGenerator));
             assertThat(e).isInstanceOf(IllegalStateException.class);

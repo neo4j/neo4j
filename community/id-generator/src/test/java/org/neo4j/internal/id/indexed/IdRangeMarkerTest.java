@@ -226,6 +226,7 @@ class IdRangeMarkerTest {
                 1,
                 new AtomicLong(0),
                 true,
+                false,
                 NO_MONITOR)) {
             verify(writer, never()).close();
         }
@@ -252,6 +253,7 @@ class IdRangeMarkerTest {
                 1,
                 new AtomicLong(reservedId - 1),
                 true,
+                false,
                 NO_MONITOR)) {
             for (long id = reservedId - 1; id <= reservedId + 1; id++) {
                 marker.markDeleted(id);
@@ -280,6 +282,7 @@ class IdRangeMarkerTest {
                 1,
                 new AtomicLong(0),
                 true,
+                false,
                 NO_MONITOR)) {
             // when
             marker.markUsed(10);
@@ -307,6 +310,7 @@ class IdRangeMarkerTest {
                 1,
                 new AtomicLong(-1),
                 true,
+                false,
                 NO_MONITOR)) {
             // when
             marker.markDeletedAndFree(5, 3);
@@ -340,6 +344,7 @@ class IdRangeMarkerTest {
                 1,
                 highestWritternId,
                 true,
+                false,
                 NO_MONITOR);
     }
 

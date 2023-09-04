@@ -189,7 +189,7 @@ class IdContextFactoryBuilderTest {
             try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 marker.markDeleted(1);
             }
-            idGeneratorFactory.clearCache(NULL_CONTEXT);
+            idGeneratorFactory.clearCache(true, NULL_CONTEXT);
 
             long initialPins = cacheTracer.pins();
             long initialUnpins = cacheTracer.unpins();

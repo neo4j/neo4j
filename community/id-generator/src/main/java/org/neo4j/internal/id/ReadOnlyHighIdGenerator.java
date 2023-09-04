@@ -119,7 +119,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
-    public void clearCache(CursorContext cursorContext) {
+    public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         // no-op
     }
 

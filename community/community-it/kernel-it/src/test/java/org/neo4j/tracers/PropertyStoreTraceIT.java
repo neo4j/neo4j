@@ -127,6 +127,6 @@ class PropertyStoreTraceIT {
         try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
             marker.markFree(1L);
         }
-        idGenerator.clearCache(NULL_CONTEXT);
+        idGenerator.clearCache(true, NULL_CONTEXT);
     }
 }

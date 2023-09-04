@@ -739,7 +739,8 @@ class NeoStoresTest {
                         IndexedIdGenerator.NO_MONITOR,
                         openOptions,
                         slotDistribution,
-                        PageCacheTracer.NULL) {
+                        PageCacheTracer.NULL,
+                        true) {
                     @Override
                     public synchronized void close() {
                         super.close();

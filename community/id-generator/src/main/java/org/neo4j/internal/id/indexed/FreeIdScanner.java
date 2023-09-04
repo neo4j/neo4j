@@ -82,6 +82,7 @@ class FreeIdScanner {
     private volatile Long ongoingScanRangeIndex;
 
     private final AtomicLong numBufferedIds = new AtomicLong();
+    private final AtomicBoolean allocationEnabled;
 
     FreeIdScanner(
             int idsPerEntry,
@@ -92,7 +93,8 @@ class FreeIdScanner {
             MarkerProvider markerProvider,
             long generation,
             boolean strictlyPrioritizeFreelistOverHighId,
-            IndexedIdGenerator.Monitor monitor) {
+            IndexedIdGenerator.Monitor monitor,
+            AtomicBoolean allocationEnabled) {
         this.idsPerEntry = idsPerEntry;
         this.tree = tree;
         this.layout = layout;
@@ -104,6 +106,7 @@ class FreeIdScanner {
                 ? ScanLock.lockyAndPessimistic()
                 : ScanLock.lockFreeAndOptimistic();
         this.monitor = monitor;
+        this.allocationEnabled = allocationEnabled;
     }
 
     /**
@@ -119,6 +122,9 @@ class FreeIdScanner {
 
         if (scanLock(blocking)) {
             try {
+                if (!allocationEnabled.get()) {
+                    return;
+                }
                 handleQueuedIds(cursorContext);
                 if (shouldFindFreeIdsByScan()) {
                     var availableSpaceById = new MutableInt(cache.availableSpaceById());
@@ -200,18 +206,24 @@ class FreeIdScanner {
         return lock.tryLock();
     }
 
-    void clearCache(CursorContext cursorContext) {
+    void clearCache(boolean allocationWillBeEnabled, CursorContext cursorContext) {
         lock.lock();
         try {
             // Restart scan from the beginning after cache is cleared
+            var allocationEnabled = this.allocationEnabled.get();
             ongoingScanRangeIndex = null;
 
-            // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache
-            // revert that by marking them as unreserved
-            try (var marker = markerProvider.getMarker(cursorContext)) {
-                cache.drain(marker::markUncached);
+            if (allocationEnabled) {
+                // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache
+                // revert that by marking them as unreserved
+                try (var marker = markerProvider.getMarker(cursorContext)) {
+                    cache.drain(marker::markUncached);
+                }
+                atLeastOneIdOnFreelist.set(true);
+            } else {
+                cache.drain((id, size) -> {});
             }
-            atLeastOneIdOnFreelist.set(true);
+            this.allocationEnabled.set(allocationWillBeEnabled);
         } finally {
             lock.unlock();
         }

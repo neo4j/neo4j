@@ -92,6 +92,11 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     private final boolean bridgeIdGaps;
 
     /**
+     * When marking an ID as deleted, also immediately mark it as freed.
+     */
+    private final boolean deleteAlsoFrees;
+
+    /**
      * {@link IdRangeKey} instance to populate with data as ids are being written.
      */
     private final IdRangeKey key;
@@ -117,6 +122,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
             long generation,
             AtomicLong highestWrittenId,
             boolean bridgeIdGaps,
+            boolean deleteAlsoFrees,
             IndexedIdGenerator.Monitor monitor) {
         this.idsPerEntry = idsPerEntry;
         this.writer = writer;
@@ -129,6 +135,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
         this.generation = generation;
         this.highestWrittenId = highestWrittenId;
         this.bridgeIdGaps = bridgeIdGaps;
+        this.deleteAlsoFrees = deleteAlsoFrees;
         this.monitor = monitor;
     }
 
@@ -159,11 +166,15 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
 
     @Override
     public void markDeleted(long id, int numberOfIds) {
-        if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(id, true);
-            value.setBits(BITSET_COMMIT, idOffset(id), numberOfIds);
-            writer.merge(key, value, merger);
-            monitor.markedAsDeleted(id, numberOfIds);
+        if (!deleteAlsoFrees) {
+            if (!hasReservedIdInRange(id, id + numberOfIds)) {
+                prepareRange(id, true);
+                value.setBits(BITSET_COMMIT, idOffset(id), numberOfIds);
+                writer.merge(key, value, merger);
+                monitor.markedAsDeleted(id, numberOfIds);
+            }
+        } else {
+            markDeletedAndFree(id, numberOfIds);
         }
     }
 

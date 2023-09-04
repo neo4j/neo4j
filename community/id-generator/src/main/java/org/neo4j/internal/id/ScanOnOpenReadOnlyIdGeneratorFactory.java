@@ -101,8 +101,8 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory 
     }
 
     @Override
-    public void clearCache(CursorContext cursorContext) {
-        idGenerators.values().forEach(idGenerator -> idGenerator.clearCache(cursorContext));
+    public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
+        idGenerators.values().forEach(idGenerator -> idGenerator.clearCache(allocationEnabled, cursorContext));
     }
 
     @Override

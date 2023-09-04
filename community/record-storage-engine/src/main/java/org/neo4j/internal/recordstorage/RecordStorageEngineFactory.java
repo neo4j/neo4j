@@ -824,8 +824,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         CursorContextFactory contextFactory = NULL_CONTEXT_FACTORY;
         RecordFormats recordFormats =
                 selectForStore(databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
-        var idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), false, PageCacheTracer.NULL, layout.getDatabaseName());
+        var idGeneratorFactory = new DefaultIdGeneratorFactory(
+                fs, immediate(), false, PageCacheTracer.NULL, layout.getDatabaseName(), true);
         try (NeoStores neoStores = new StoreFactory(
                         databaseLayout,
                         config,

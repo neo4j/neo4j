@@ -439,7 +439,7 @@ class FreeIdScannerTest {
 
         // when
         long cacheSizeBeforeClear = cache.size();
-        scanner.clearCache(NULL_CONTEXT);
+        scanner.clearCache(true, NULL_CONTEXT);
 
         // then
         assertThat(cacheSizeBeforeClear).isEqualTo(5);
@@ -469,7 +469,7 @@ class FreeIdScannerTest {
         // when
         try (OtherThreadExecutor clearThread = new OtherThreadExecutor("clear")) {
             // Wait for the clear call
-            Future<Object> clear = clearThread.executeDontWait(command(() -> scanner.clearCache(NULL_CONTEXT)));
+            Future<Object> clear = clearThread.executeDontWait(command(() -> scanner.clearCache(true, NULL_CONTEXT)));
             barrier.awaitUninterruptibly();
 
             // Attempt trigger a scan
@@ -503,7 +503,7 @@ class FreeIdScannerTest {
         try (OtherThreadExecutor clearThread = new OtherThreadExecutor("clear");
                 OtherThreadExecutor scanThread = new OtherThreadExecutor("scan")) {
             // Wait for the clear call
-            Future<Object> clear = clearThread.executeDontWait(command(() -> scanner.clearCache(NULL_CONTEXT)));
+            Future<Object> clear = clearThread.executeDontWait(command(() -> scanner.clearCache(true, NULL_CONTEXT)));
             barrier.awaitUninterruptibly();
 
             // Attempt trigger a scan
@@ -547,7 +547,7 @@ class FreeIdScannerTest {
             barrier.awaitUninterruptibly();
 
             // Make sure clear waits for the scan call
-            Future<Object> clear = clearThread.executeDontWait(command(() -> scanner.clearCache(NULL_CONTEXT)));
+            Future<Object> clear = clearThread.executeDontWait(command(() -> scanner.clearCache(true, NULL_CONTEXT)));
             clearThread.waitUntilWaiting();
 
             // Let the threads finish
@@ -613,7 +613,7 @@ class FreeIdScannerTest {
         });
 
         // when
-        scanner.clearCache(NULL_CONTEXT); // should clear cacheSize/2 - cacheSize
+        scanner.clearCache(true, NULL_CONTEXT); // should clear cacheSize/2 - cacheSize
         tryLoadFreeIdsIntoCache(scanner, false);
         assertCacheHasIdsNonExhaustive(range(0, halfCacheSize));
         assertCacheHasIdsNonExhaustive(range(halfCacheSize, cacheSize));
@@ -654,7 +654,7 @@ class FreeIdScannerTest {
             assertThat(cursorTracer.unpins()).isZero();
             assertThat(cursorTracer.hits()).isZero();
 
-            scanner.clearCache(cursorContext);
+            scanner.clearCache(true, cursorContext);
 
             assertThat(cursorTracer.pins()).isOne();
             assertThat(cursorTracer.unpins()).isOne();
@@ -728,7 +728,16 @@ class FreeIdScannerTest {
         this.atLeastOneFreeId = new AtomicBoolean();
         this.recordingMonitor = new RecordingMonitor();
         return new FreeIdScanner(
-                idsPerEntry, tree, layout, cache, atLeastOneFreeId, reuser, generation, strict, recordingMonitor);
+                idsPerEntry,
+                tree,
+                layout,
+                cache,
+                atLeastOneFreeId,
+                reuser,
+                generation,
+                strict,
+                recordingMonitor,
+                new AtomicBoolean(true));
     }
 
     private void assertCacheHasIdsNonExhaustive(Range... ranges) {
@@ -774,6 +783,7 @@ class FreeIdScannerTest {
                 generation,
                 new AtomicLong(),
                 bridgeIdGaps,
+                false,
                 NO_MONITOR);
     }
 
@@ -841,6 +851,7 @@ class FreeIdScannerTest {
                         atLeastOneFreeId,
                         generation,
                         highestWrittenId,
+                        false,
                         false,
                         NO_MONITOR);
             } catch (IOException e) {

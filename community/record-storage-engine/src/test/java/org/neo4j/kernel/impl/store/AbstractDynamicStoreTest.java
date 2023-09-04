@@ -195,7 +195,7 @@ class AbstractDynamicStoreTest {
         try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markDeleted(1L);
         }
-        idGenerator.clearCache(NULL_CONTEXT);
+        idGenerator.clearCache(true, NULL_CONTEXT);
     }
 
     private static void assertOneCursor(CursorContext cursorContext) {

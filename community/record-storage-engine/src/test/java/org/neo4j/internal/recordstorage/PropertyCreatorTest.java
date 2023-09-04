@@ -380,7 +380,7 @@ class PropertyCreatorTest {
         var idGenerator = store.getIdGenerator();
         var marker = idGenerator.transactionalMarker(NULL_CONTEXT);
         marker.markDeleted(1L);
-        idGenerator.clearCache(NULL_CONTEXT);
+        idGenerator.clearCache(true, NULL_CONTEXT);
     }
 
     private void assertZeroCursor() {

@@ -81,7 +81,7 @@ public final class IdContextFactoryBuilder {
             // Note on the RecoveryCleanupWorkCollector: this is just using the immediate() because we aren't
             // expecting any cleanup to be performed on main startup (this is after recovery).
             idGeneratorFactoryProvider =
-                    defaultIdGeneratorFactoryProvider(fileSystemAbstraction, config, pageCacheTracer);
+                    defaultIdGeneratorFactoryProvider(fileSystemAbstraction, config, pageCacheTracer, true);
         }
         if (factoryWrapper == null) {
             factoryWrapper = identity();
@@ -90,7 +90,7 @@ public final class IdContextFactoryBuilder {
     }
 
     public static Function<NamedDatabaseId, IdGeneratorFactory> defaultIdGeneratorFactoryProvider(
-            FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer) {
+            FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, boolean allocationEnabled) {
         return databaseId -> {
             // There's no point allocating large ID caches for the system database because it generally sees very low
             // activity.
@@ -99,7 +99,7 @@ public final class IdContextFactoryBuilder {
             boolean allowLargeIdCaches =
                     !config.get(GraphDatabaseInternalSettings.force_small_id_cache) && !databaseId.isSystemDatabase();
             return new DefaultIdGeneratorFactory(
-                    fs, immediate(), allowLargeIdCaches, pageCacheTracer, databaseId.name());
+                    fs, immediate(), allowLargeIdCaches, pageCacheTracer, databaseId.name(), allocationEnabled);
         };
     }
 }

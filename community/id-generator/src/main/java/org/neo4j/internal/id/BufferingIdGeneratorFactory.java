@@ -107,12 +107,14 @@ public class BufferingIdGeneratorFactory extends AbstractBufferingIdGeneratorFac
     }
 
     @Override
-    public void clearCache(CursorContext cursorContext) {
+    public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         bufferReadLock.lock();
         bufferWriteLock.lock();
         try {
             bufferQueue.clear();
-            overriddenIdGenerators.values().forEach(generator -> generator.clearCache(cursorContext));
+            overriddenIdGenerators
+                    .values()
+                    .forEach(generator -> generator.clearCache(allocationEnabled, cursorContext));
         } finally {
             bufferWriteLock.unlock();
             bufferReadLock.unlock();

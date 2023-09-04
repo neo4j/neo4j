@@ -101,11 +101,11 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
     }
 
     @Override
-    public synchronized void clearCache(CursorContext cursorContext) {
+    public synchronized void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         if (!bufferedDeletedIds.isEmpty()) {
             newFreeBuffer();
         }
-        delegate.clearCache(cursorContext);
+        delegate.clearCache(allocationEnabled, cursorContext);
     }
 
     public void releaseRanges() {

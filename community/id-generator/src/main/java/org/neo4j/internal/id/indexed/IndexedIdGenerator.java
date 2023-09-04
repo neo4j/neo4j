@@ -87,7 +87,6 @@ import org.neo4j.util.Preconditions;
  * that is if the {@link #transactionalMarker(CursorContext)} is only used for applying committed data.
  */
 public class IndexedIdGenerator implements IdGenerator {
-
     public interface Monitor extends AutoCloseable {
         void opened(long highestWrittenId, long highId);
 
@@ -309,6 +308,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private final int biggestSlotSize;
 
     private final Set<Long> lockedPageRanges;
+    private final AtomicBoolean allocationEnabled;
 
     public IndexedIdGenerator(
             PageCache pageCache,
@@ -326,7 +326,8 @@ public class IndexedIdGenerator implements IdGenerator {
             Monitor monitor,
             ImmutableSet<OpenOption> openOptions,
             IdSlotDistribution slotDistribution,
-            PageCacheTracer tracer) {
+            PageCacheTracer tracer,
+            boolean allocationEnabled) {
         this.fileSystem = fileSystem;
         this.path = path;
         this.readOnly = readOnly;
@@ -392,6 +393,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
         this.strictlyPrioritizeFreelist = config.get(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist);
         this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
+        this.allocationEnabled = new AtomicBoolean(allocationEnabled);
         this.scanner = new FreeIdScanner(
                 idsPerEntry,
                 tree,
@@ -401,7 +403,8 @@ public class IndexedIdGenerator implements IdGenerator {
                 this::contextualMarker,
                 generation,
                 strictlyPrioritizeFreelist,
-                monitor);
+                monitor,
+                this.allocationEnabled);
     }
 
     private GBPTree<IdRangeKey, IdRange> instantiateTree(
@@ -442,6 +445,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public long nextId(CursorContext cursorContext) {
+        assert allocationEnabled.get();
         do {
             // If strictly prioritizing the freelist then the method below will block on the current scan,
             // if there's any ongoing, otherwise it will not block.
@@ -473,6 +477,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
+        assert allocationEnabled.get();
         checkRefillCache(cursorContext);
         long[] reusedIds = cache.drainRange(idsPerPage);
         if (reusedIds.length > 0) {
@@ -485,7 +490,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 return range;
             } else {
                 // we mark optimistically allocated range as unallocated and fallback to new ids
-                try (var marker = lockAndInstantiateMarker(false, cursorContext)) {
+                try (var marker = lockAndInstantiateMarker(false, false, cursorContext)) {
                     for (long reusedId : reusedIds) {
                         marker.markUnallocated(reusedId);
                     }
@@ -587,18 +592,19 @@ public class IndexedIdGenerator implements IdGenerator {
             return NOOP_MARKER;
         }
 
-        return lockAndInstantiateMarker(true, cursorContext);
+        return lockAndInstantiateMarker(true, !allocationEnabled.get(), cursorContext);
     }
 
     @Override
     public ContextualMarker contextualMarker(CursorContext cursorContext) {
+        Preconditions.checkState(allocationEnabled.get(), "Shouldn't be doing this");
         if (!started && needsRebuild) {
             // If we're in recovery and know that we're building the id generator from scratch after recovery has
             // completed then don't make any updates
             return NOOP_MARKER;
         }
 
-        var realMarker = instantiateMarker(null, true, cursorContext);
+        var realMarker = instantiateMarker(null, true, false, cursorContext);
         return new ContextualMarker.Delegate(realMarker) {
             @Override
             public void markFree(long id, int numberOfIds) {
@@ -622,17 +628,18 @@ public class IndexedIdGenerator implements IdGenerator {
         };
     }
 
-    IdRangeMarker lockAndInstantiateMarker(boolean bridgeIdGaps, CursorContext cursorContext) {
+    IdRangeMarker lockAndInstantiateMarker(boolean bridgeIdGaps, boolean deleteAlsoFrees, CursorContext cursorContext) {
         transactionalMarkerLock.lock();
         try {
-            return instantiateMarker(transactionalMarkerLock, bridgeIdGaps, cursorContext);
+            return instantiateMarker(transactionalMarkerLock, bridgeIdGaps, deleteAlsoFrees, cursorContext);
         } catch (Exception e) {
             transactionalMarkerLock.unlock();
             throw e;
         }
     }
 
-    private IdRangeMarker instantiateMarker(Lock lock, boolean bridgeIdGaps, CursorContext cursorContext) {
+    private IdRangeMarker instantiateMarker(
+            Lock lock, boolean bridgeIdGaps, boolean deleteAlsoFrees, CursorContext cursorContext) {
         try {
             return new IdRangeMarker(
                     idsPerEntry,
@@ -645,6 +652,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     generation,
                     highestWrittenId,
                     bridgeIdGaps,
+                    deleteAlsoFrees,
                     monitor);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -682,13 +690,12 @@ public class IndexedIdGenerator implements IdGenerator {
             // This id generator was created right now, it needs to be populated with all free ids from its owning store
             // so that it's in sync
             var visitsDeletedIds = freeIdsForRebuild.visitsDeletedIds();
-            try (IdRangeMarker idRangeMarker = lockAndInstantiateMarker(!visitsDeletedIds, cursorContext)) {
+            try (IdRangeMarker idRangeMarker = lockAndInstantiateMarker(!visitsDeletedIds, true, cursorContext)) {
                 // We can mark the ids as free right away since this is before started which means we get the very
                 // liberal merger
                 var highestId = freeIdsForRebuild.accept((id, numberOfIds) -> {
                     if (visitsDeletedIds) {
                         idRangeMarker.markDeleted(id, numberOfIds);
-                        idRangeMarker.markFree(id, numberOfIds);
                     } else {
                         idRangeMarker.markUsed(id, numberOfIds);
                     }
@@ -716,7 +723,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public void maintenance(CursorContext cursorContext) {
-        if (started && !cache.isFull() && !readOnly) {
+        if (started && !cache.isFull() && !readOnly && allocationEnabled.get()) {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache(true, true, cursorContext);
         }
@@ -730,11 +737,11 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     @Override
-    public void clearCache(CursorContext cursorContext) {
+    public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
         if (!readOnly) {
             // Make the scanner clear it because it needs to coordinate with the scan lock
             monitor.clearingCache();
-            scanner.clearCache(cursorContext);
+            scanner.clearCache(allocationEnabled, cursorContext);
             monitor.clearedCache();
         }
     }

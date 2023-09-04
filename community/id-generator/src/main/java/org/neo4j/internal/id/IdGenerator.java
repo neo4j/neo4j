@@ -121,7 +121,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     /**
      * Clears internal ID caches. This should only be used in specific scenarios where ID states have changed w/o the cache knowing about it.
      */
-    void clearCache(CursorContext cursorContext);
+    void clearCache(boolean allocationEnabled, CursorContext cursorContext);
 
     /**
      *
@@ -375,8 +375,8 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public void clearCache(CursorContext cursorContext) {
-            delegate.clearCache(cursorContext);
+        public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
+            delegate.clearCache(allocationEnabled, cursorContext);
         }
 
         @Override
