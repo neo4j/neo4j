@@ -227,6 +227,16 @@ object Deprecations {
         ))
 
       case Create(pattern) =>
+        /*
+        Note: When this deprecation turns into a semantic error in 6.0,
+        we can clean up some code.
+
+        The rewriter IsolateSubqueriesInMutatingPatterns currently
+        does not rewrite CREATE clauses if the subquery has a cross-reference.
+        This check won't be needed in the future because such queries will have led to an error already.
+        Even though it won't need to look at the SemanticTable any more, it will still depend on
+        SemanticAnalysis having run, so that these queries don't reach the IsolateSubqueriesInMutatingPatterns.
+         */
         propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
           Deprecation(None, Some(DeprecatedPropertyReferenceInCreate(e.position, e.name)))
         }

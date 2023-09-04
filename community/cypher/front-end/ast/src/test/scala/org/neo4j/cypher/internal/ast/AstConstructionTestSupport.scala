@@ -802,6 +802,9 @@ trait AstConstructionTestSupport {
   def with_(items: ReturnItem*): With =
     With(ReturnItems(includeExisting = false, items)(pos))(pos)
 
+  def withAll(items: ReturnItem*): With =
+    With(ReturnItems(includeExisting = true, items)(pos))(pos)
+
   def withAll(where: Option[Where] = None): With =
     With(distinct = false, returnAllItems, None, None, None, where = where)(pos)
 

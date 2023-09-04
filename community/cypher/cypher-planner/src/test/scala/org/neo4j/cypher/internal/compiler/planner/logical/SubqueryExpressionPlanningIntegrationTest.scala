@@ -1770,10 +1770,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .create(createNodeWithProperties("n", Seq(), "{foo: reduce(sum = 0, x IN anon_2 | sum + x)}"))
-      .rollUpApply("anon_2", "anon_0")
-      .|.projection("b.age AS anon_0")
-      .|.allRelationshipsScan("(a)-[anon_1]->(b)")
+      .create(createNodeWithProperties("n", Seq(), "{foo: anon_0}"))
+      .eager(ListSet(EagernessReason.Unknown))
+      .projection("reduce(sum = 0, x IN anon_3 | sum + x) AS anon_0")
+      .rollUpApply("anon_3", "anon_1")
+      .|.projection("b.age AS anon_1")
+      .|.allRelationshipsScan("(a)-[anon_2]->(b)")
       .argument()
       .build())
   }
@@ -1885,15 +1887,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_1]->(b)")
+      .projection("b.age AS anon_1")
+      .allRelationshipsScan("(a)-[anon_2]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
-        """COLLECT { MATCH (a)-[`anon_1`]->(b)
-          |RETURN b.age AS `anon_0` }""".stripMargin
+        varFor("anon_1"),
+        """COLLECT { MATCH (a)-[`anon_2`]->(b)
+          |RETURN b.age AS `anon_1` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -1907,12 +1909,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
-      .deleteNode(expr)
+      .deleteNode("anon_0")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("nodes"),
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
+      .projection(Map("anon_0" -> expr))
       .projection("[n] AS nodes")
       .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
       .allNodeScan("n")
@@ -1932,15 +1934,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_3]->(b)")
+      .projection("b.age AS anon_1")
+      .allRelationshipsScan("(a)-[anon_4]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
-        """COLLECT { MATCH (a)-[`anon_3`]->(b)
-          |RETURN b.age AS `anon_0` }""".stripMargin
+        varFor("anon_1"),
+        """COLLECT { MATCH (a)-[`anon_4`]->(b)
+          |RETURN b.age AS `anon_1` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -1954,18 +1956,18 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
-      .deleteRelationship(expr)
+      .deleteRelationship("anon_0")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("rels"),
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
+      .projection(Map("anon_0" -> expr))
       .projection("[r] AS rels")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_1"),
-        EagernessReason.ReadDeleteConflict("anon_2")
+        EagernessReason.ReadDeleteConflict("anon_2"),
+        EagernessReason.ReadDeleteConflict("anon_3")
       ))
-      .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
+      .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
       .build())
   }
 
@@ -1982,15 +1984,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_3]->(b)")
+      .projection("b.age AS anon_1")
+      .allRelationshipsScan("(a)-[anon_4]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
-        """COLLECT { MATCH (a)-[`anon_3`]->(b)
-          |RETURN b.age AS `anon_0` }""".stripMargin
+        varFor("anon_1"),
+        """COLLECT { MATCH (a)-[`anon_4`]->(b)
+          |RETURN b.age AS `anon_1` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -2005,18 +2007,18 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
-      .deleteExpression(expr)
+      .deleteExpression("anon_0")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("rels"),
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
+      .projection(Map("anon_0" -> expr))
       .projection("{rel: r} AS rels")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_1"),
-        EagernessReason.ReadDeleteConflict("anon_2")
+        EagernessReason.ReadDeleteConflict("anon_2"),
+        EagernessReason.ReadDeleteConflict("anon_3")
       ))
-      .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
+      .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
       .build())
   }
 
@@ -3730,7 +3732,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
   }
 
-  test("should plan remote with entity expressed through lazy subquery expression") {
+  test("should plan remove with entity expressed through lazy subquery expression") {
     // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
     // This saves us from windows line break mismatches in those strings.
     implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
@@ -3758,7 +3760,9 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults()
         .emptyResult()
-        .setProperty(indexExpression, "prop", nullLiteral)
+        .setProperty("anon_0", "prop", "NULL")
+        .eager(ListSet(EagernessReason.Unknown))
+        .projection(Map("anon_0" -> indexExpression))
         .sort("`n.p` ASC")
         .projection("n.p AS `n.p`")
         .allNodeScan("n")
