@@ -418,7 +418,7 @@ final case class SelectivePathPattern(
   def solvedString: String = {
     val where =
       if (selections.isEmpty) ""
-      else selections.flatPredicates.map(QueryGraph.stringifier(_)).mkString(" WHERE ", " AND ", "")
+      else selections.flatPredicates.map(QueryGraph.stringifier(_)).sorted.mkString(" WHERE ", " AND ", "")
 
     s"${selector.solvedString} (${ExhaustiveNodeConnection.solvedString(pathPattern.connections.toIndexedSeq)}$where)"
   }

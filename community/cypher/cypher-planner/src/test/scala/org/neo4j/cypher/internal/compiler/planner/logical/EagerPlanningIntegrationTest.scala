@@ -990,7 +990,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start) ((a)-[r]->(b) WHERE NOT `a`:Label AND NOT `r`:R AND NOT `b`:Label){1, } (end) WHERE unique(`r`) AND NOT end:Label)",
+          "SHORTEST 1 ((start) ((a)-[r]->(b) WHERE NOT `a`:Label AND NOT `r`:R AND NOT `b`:Label){1, } (end) WHERE NOT end:Label AND unique(`r`))",
           None,
           Set(),
           Set(),
@@ -1032,7 +1032,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE unique(`r`) AND NOT end:Label)",
+          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE NOT end:Label AND unique(`r`))",
           None,
           Set(),
           Set(),
