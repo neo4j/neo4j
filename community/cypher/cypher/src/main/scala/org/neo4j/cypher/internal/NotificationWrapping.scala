@@ -109,9 +109,11 @@ object NotificationWrapping {
       }
       NotificationCodeWithDescription.indexHintUnfulfillable(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>
+      val javaVariables = variables.asJava
       NotificationCodeWithDescription.joinHintUnfulfillable(
         graphdb.InputPosition.empty,
-        NotificationDetail.joinKey(variables.asJava)
+        NotificationDetail.joinKey(javaVariables),
+        NotificationDetail.commaSeparated(javaVariables)
       )
     case NodeIndexLookupUnfulfillableNotification(labels) =>
       val javaLabels = labels.asJava

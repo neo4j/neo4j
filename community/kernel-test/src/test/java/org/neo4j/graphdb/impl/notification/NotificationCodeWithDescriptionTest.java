@@ -165,7 +165,9 @@ class NotificationCodeWithDescriptionTest {
         idents.add("n");
         idents.add("node2");
         String identifierDetail = NotificationDetail.joinKey(idents);
-        NotificationImplementation notification = joinHintUnfulfillable(InputPosition.empty, identifierDetail);
+        String variableNames = NotificationDetail.commaSeparated(idents);
+        NotificationImplementation notification =
+                joinHintUnfulfillable(InputPosition.empty, identifierDetail, variableNames);
 
         verifyNotification(
                 notification,
@@ -176,7 +178,8 @@ class NotificationCodeWithDescriptionTest {
                         + "please try using a different join key or restructure your query. "
                         + "(hinted join key identifiers are: n, node2)",
                 NotificationCategory.HINT,
-                null);
+                "Unable to create a plan with `JOIN` on `n, node2`. Try to change the join key(s) or restructure "
+                        + "your query. See Status Codes documentation for suggestions.");
     }
 
     @Test

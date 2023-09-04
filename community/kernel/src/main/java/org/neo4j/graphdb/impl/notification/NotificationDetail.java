@@ -29,6 +29,10 @@ import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
 public class NotificationDetail {
 
+    public static String commaSeparated(final Iterable<String> values) {
+        return String.join(", ", values);
+    }
+
     public static String deprecatedName(final String oldName) {
         return String.format(": `%s`.", oldName);
     }

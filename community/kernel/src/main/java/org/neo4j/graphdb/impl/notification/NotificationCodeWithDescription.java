@@ -48,7 +48,9 @@ public enum NotificationCodeWithDescription {
     JOIN_HINT_UNFULFILLABLE(
             Status.Statement.JoinHintUnfulfillableWarning,
             "The hinted join was not planned. This could happen because no generated plan contained the join key, "
-                    + "please try using a different join key or restructure your query. (%s)"),
+                    + "please try using a different join key or restructure your query. (%s)",
+            "Unable to create a plan with `JOIN` on `%s`. Try to change the join key(s) or restructure your "
+                    + "query. See Status Codes documentation for suggestions."),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
             Status.Statement.DynamicProperty,
             "Using a dynamic property makes it impossible to use an index lookup for this query (%s)",
@@ -251,8 +253,10 @@ public enum NotificationCodeWithDescription {
         return INDEX_HINT_UNFULFILLABLE.notification(position, param);
     }
 
-    public static NotificationImplementation joinHintUnfulfillable(InputPosition position, String param) {
-        return JOIN_HINT_UNFULFILLABLE.notification(position, param);
+    public static NotificationImplementation joinHintUnfulfillable(
+            InputPosition position, String oldDetail, String variableNames) {
+        return JOIN_HINT_UNFULFILLABLE.notificationWithMessage(
+                position, new String[] {oldDetail}, new String[] {variableNames});
     }
 
     public static NotificationImplementation indexLookupForDynamicProperty(
