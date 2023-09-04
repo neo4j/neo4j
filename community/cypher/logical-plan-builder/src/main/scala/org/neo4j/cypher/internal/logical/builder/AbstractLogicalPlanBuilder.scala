@@ -1989,9 +1989,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
-  def setPropertyExpression(entity: Expression, propertyKey: String, value: String): IMPL = {
+  def setProperty(entity: Expression, propertyKey: String, value: Expression): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
-      SetProperty(source, entity, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
+      SetProperty(source, entity, PropertyKeyName(propertyKey)(pos), value)(_)
     ))
   }
 
@@ -2020,6 +2020,19 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     )
   }
 
+  def setRelationshipProperty(relationship: String, propertyKey: String, value: Expression): IMPL = {
+    appendAtCurrentIndent(
+      UnaryOperator(source =>
+        SetRelationshipProperty(
+          source,
+          varFor(relationship),
+          PropertyKeyName(propertyKey)(pos),
+          value
+        )(_)
+      )
+    )
+  }
+
   def setProperties(entity: String, items: (String, String)*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetProperties(
@@ -2030,12 +2043,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
-  def setPropertiesExpression(entity: Expression, items: (String, String)*): IMPL = {
+  def setPropertiesExpression(entity: Expression, items: (String, Expression)*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetProperties(
         source,
         entity,
-        items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
+        items.map(item => (PropertyKeyName(item._1)(pos), item._2))
       )(_)
     ))
   }
@@ -2050,6 +2063,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
+  def setNodePropertiesExpression(node: String, items: (String, Expression)*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetNodeProperties(
+        source,
+        varFor(node),
+        items.map(item => (PropertyKeyName(item._1)(pos), item._2))
+      )(_)
+    ))
+  }
+
   def setRelationshipProperties(relationship: String, items: (String, String)*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetRelationshipProperties(
@@ -2060,9 +2083,25 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
+  def setRelationshipPropertiesExpression(relationship: String, items: (String, Expression)*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetRelationshipProperties(
+        source,
+        varFor(relationship),
+        items.map(item => (PropertyKeyName(item._1)(pos), item._2))
+      )(_)
+    ))
+  }
+
   def setPropertiesFromMap(entity: String, map: String, removeOtherProps: Boolean): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetPropertiesFromMap(source, parseExpression(entity), parseExpression(map), removeOtherProps)(_)
+    ))
+  }
+
+  def setPropertiesFromMap(entity: String, map: Expression, removeOtherProps: Boolean): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetPropertiesFromMap(source, parseExpression(entity), map, removeOtherProps)(_)
     ))
   }
 
@@ -2072,9 +2111,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
+  def setNodePropertiesFromMap(node: String, map: Expression, removeOtherProps: Boolean): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetNodePropertiesFromMap(source, varFor(node), map, removeOtherProps)(_)
+    ))
+  }
+
   def setRelationshipPropertiesFromMap(relationship: String, map: String, removeOtherProps: Boolean): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetRelationshipPropertiesFromMap(source, varFor(relationship), parseExpression(map), removeOtherProps)(_)
+    ))
+  }
+
+  def setRelationshipPropertiesFromMap(relationship: String, map: Expression, removeOtherProps: Boolean): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetRelationshipPropertiesFromMap(source, varFor(relationship), map, removeOtherProps)(_)
     ))
   }
 

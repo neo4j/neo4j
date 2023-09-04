@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -69,7 +68,6 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
-
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.tools.nsc.Settings
@@ -79,7 +77,7 @@ import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 /**
  * If you reference something new and a type was not found an import needs to be added to [[interpretPlanBuilder]]
  */
-class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
+class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
 
   private val testedOperators = mutable.Set[String]()
 
@@ -1136,15 +1134,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .produceResults("x", "y")
       .setProperty("x", "prop", "42")
       .setProperty("head([x])", "prop", "42")
-      .argument()
-      .build()
-  )
-
-  testPlan(
-    "setPropertyExpression",
-    new TestPlanBuilder()
-      .produceResults("x", "y")
-      .setPropertyExpression(varFor("x"), "prop", "42")
+      .setProperty(varFor("x"), "prop", varFor("42"))
       .argument()
       .build()
   )
@@ -1154,6 +1144,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setNodeProperty("x", "prop", "42")
+      .setNodeProperty("x", "prop", varFor("42"))
       .argument()
       .build()
   )
@@ -1163,6 +1154,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setRelationshipProperty("x", "prop", "42")
+      .setRelationshipProperty("x", "prop", varFor("42"))
       .argument()
       .build()
   )
@@ -1180,7 +1172,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "setPropertiesExpression",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .setPropertiesExpression(varFor("x"), ("p1", "42"), ("p1", "42"))
+      .setPropertiesExpression(varFor("x"), ("p1", varFor("42")), ("p1", varFor("42")))
       .argument()
       .build()
   )
@@ -1195,6 +1187,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "setNodePropertiesExpression",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setNodePropertiesExpression("x", ("p1", varFor("42")), ("p1", varFor("42")))
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "setRelationshipProperties",
     new TestPlanBuilder()
       .produceResults("x", "y")
@@ -1204,10 +1205,20 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "setRelationshipPropertiesExpression",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setRelationshipPropertiesExpression("x", ("p1", varFor("42")), ("p1", varFor("42")))
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "setPropertiesFromMap",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setPropertiesFromMap("x", "{prop: 42, foo: x.bar}", removeOtherProps = true)
+      .setPropertiesFromMap("x", mapOfInt("prop" -> 42), removeOtherProps = true)
       .argument()
       .build()
   )
@@ -1217,6 +1228,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setNodePropertiesFromMap("x", "{prop: 42, foo: x.bar}", removeOtherProps = true)
+      .setNodePropertiesFromMap("x", mapOfInt("prop" -> 42), removeOtherProps = true)
       .argument()
       .build()
   )
@@ -1226,6 +1238,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .setRelationshipPropertiesFromMap("x", "{prop: 42, foo: x.bar}", removeOtherProps = false)
+      .setRelationshipPropertiesFromMap("x", mapOfInt("prop" -> 42), removeOtherProps = true)
       .argument()
       .build()
   )
