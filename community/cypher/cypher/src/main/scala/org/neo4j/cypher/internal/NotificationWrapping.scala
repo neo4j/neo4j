@@ -114,14 +114,18 @@ object NotificationWrapping {
         NotificationDetail.joinKey(variables.asJava)
       )
     case NodeIndexLookupUnfulfillableNotification(labels) =>
+      val javaLabels = labels.asJava
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
-        NotificationDetail.nodeIndexSeekOrScan(labels.asJava)
+        NotificationDetail.nodeIndexSeekOrScan(javaLabels),
+        NotificationDetail.prettyLabelOrRelationshipTypes(javaLabels)
       )
     case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
+      val javaRelTypes = relTypes.asJava
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
-        NotificationDetail.relationshipIndexSeekOrScan(relTypes.asJava)
+        NotificationDetail.relationshipIndexSeekOrScan(javaRelTypes),
+        NotificationDetail.prettyLabelOrRelationshipTypes(javaRelTypes)
       )
     case EagerLoadCsvNotification =>
       NotificationCodeWithDescription.eagerLoadCsv(graphdb.InputPosition.empty)

@@ -22,6 +22,7 @@ package org.neo4j.graphdb.impl.notification;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
@@ -112,6 +113,12 @@ public class NotificationDetail {
         return ":" + labelName;
     }
 
+    public static String prettyLabelOrRelationshipTypes(final Set<String> labelNames) {
+        return labelNames.stream()
+                .map(NotificationDetail::prettyLabelOrRelationshipType)
+                .collect(Collectors.joining(", "));
+    }
+
     public static String missingLabel(final String labelName) {
         return createNotificationDetail("the missing label name", labelName, true);
     }
@@ -161,11 +168,17 @@ public class NotificationDetail {
     }
 
     public static String nodeIndexSeekOrScan(Set<String> labels) {
-        return createNotificationDetail(labels, "indexed label", "indexed labels");
+        final var prettyLabels = labels.stream()
+                .map(NotificationDetail::prettyLabelOrRelationshipType)
+                .collect(Collectors.toSet());
+        return createNotificationDetail(prettyLabels, "indexed label", "indexed labels");
     }
 
     public static String relationshipIndexSeekOrScan(Set<String> labels) {
-        return createNotificationDetail(labels, "indexed relationship type", "indexed relationship types");
+        final var prettyLabels = labels.stream()
+                .map(NotificationDetail::prettyLabelOrRelationshipType)
+                .collect(Collectors.toSet());
+        return createNotificationDetail(prettyLabels, "indexed relationship type", "indexed relationship types");
     }
 
     public static String deprecatedField(final String procedure, final String field) {

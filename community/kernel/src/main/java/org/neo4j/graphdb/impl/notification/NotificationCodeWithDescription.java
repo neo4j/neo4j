@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 
 /**
  * This bundles a specific description with a (potentially) more generic NotificationCode.
- *
+ * <p>
  * If changing or adding a notification, please make sure you follow the guidelines here: <a href="https://github.com/neo4j/docs-status-codes/blob/dev/README.adoc">NOTIFICATION GUIDELINES</a>
  */
 public enum NotificationCodeWithDescription {
@@ -51,7 +51,9 @@ public enum NotificationCodeWithDescription {
                     + "please try using a different join key or restructure your query. (%s)"),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
             Status.Statement.DynamicProperty,
-            "Using a dynamic property makes it impossible to use an index lookup for this query (%s)"),
+            "Using a dynamic property makes it impossible to use an index lookup for this query (%s)",
+            "An index exists on label/type(s) `%s`. It is not possible to use these indexes for dynamic "
+                    + "properties. Consider using static properties. See Status Codes documentation for suggestions."),
     DEPRECATED_FUNCTION_WITHOUT_REPLACEMENT(
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated function%s",
@@ -253,8 +255,10 @@ public enum NotificationCodeWithDescription {
         return JOIN_HINT_UNFULFILLABLE.notification(position, param);
     }
 
-    public static NotificationImplementation indexLookupForDynamicProperty(InputPosition position, String param) {
-        return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(position, param);
+    public static NotificationImplementation indexLookupForDynamicProperty(
+            InputPosition position, String oldDetails, String parameters) {
+        return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notificationWithMessage(
+                position, new String[] {oldDetails}, new String[] {parameters});
     }
 
     public static NotificationImplementation deprecatedFunctionWithoutReplacement(

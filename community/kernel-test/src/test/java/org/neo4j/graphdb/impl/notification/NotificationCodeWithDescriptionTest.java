@@ -227,16 +227,20 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY() {
-        NotificationImplementation notification = indexLookupForDynamicProperty(InputPosition.empty, "m[n.x]");
+        NotificationImplementation notification = indexLookupForDynamicProperty(
+                InputPosition.empty,
+                NotificationDetail.nodeIndexSeekOrScan(Set.of("A")),
+                NotificationDetail.prettyLabelOrRelationshipTypes(Set.of("A")));
 
         verifyNotification(
                 notification,
                 "Queries using dynamic properties will use neither index seeks nor index scans for those properties",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.DynamicProperty",
-                "Using a dynamic property makes it impossible to use an index lookup for this query (m[n.x])",
+                "Using a dynamic property makes it impossible to use an index lookup for this query (indexed label is: (:A))",
                 NotificationCategory.PERFORMANCE,
-                null);
+                "An index exists on label/type(s) `:A`. It is not possible to use these indexes for dynamic "
+                        + "properties. Consider using static properties. See Status Codes documentation for suggestions.");
     }
 
     @Test
