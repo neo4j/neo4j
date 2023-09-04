@@ -16,15 +16,11 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Foldable
 
-case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(
-  val position: InputPosition
-) extends ASTNode with HasMappableExpressions[Range] {
+trait HasMappableExpressions[T] extends Foldable {
+  self: T =>
 
-  override def mapExpressions(f: Expression => Expression): Range = copy(
-    lower.map(f).asInstanceOf[Option[UnsignedIntegerLiteral]],
-    upper.map(f).asInstanceOf[Option[UnsignedIntegerLiteral]]
-  )(this.position)
+  def mapExpressions(f: Expression => Expression): T
+  def identity: T = self
 }

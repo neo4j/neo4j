@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
@@ -232,7 +233,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
   def clauseSpecificSemanticCheck: SemanticCheck
 }
 
-sealed trait UpdateClause extends Clause {
+sealed trait UpdateClause extends Clause with HasMappableExpressions[UpdateClause] {
   override def returnVariables: ReturnVariables = ReturnVariables.empty
 }
 
@@ -865,6 +866,9 @@ case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], whe
 
   override protected def shouldRunGpmChecks: Boolean = false
 
+  override def mapExpressions(f: Expression => Expression): UpdateClause =
+    copy(pattern.mapExpressions(f), actions.map(_.mapExpressions(f)), where.map(_.mapExpressions(f)))(this.position)
+
   private def checkNoSubqueryInMerge: SemanticCheck = {
     val hasSubqueryExpression = Seq(pattern, actions).folder.treeCollect {
       case e: FullSubqueryExpression => e
@@ -900,6 +904,9 @@ case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(pattern)
 
   override protected def shouldRunGpmChecks: Boolean = false
+
+  override def mapExpressions(f: Expression => Expression): UpdateClause =
+    copy(pattern.mapExpressions(f))(this.position)
 }
 
 case class CreateUnique(pattern: Pattern.ForUpdate)(val position: InputPosition) extends UpdateClause {
@@ -908,12 +915,17 @@ case class CreateUnique(pattern: Pattern.ForUpdate)(val position: InputPosition)
   override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticError("CREATE UNIQUE is no longer supported. Please use MERGE instead", position)
 
+  override def mapExpressions(f: Expression => Expression): UpdateClause =
+    copy(pattern.mapExpressions(f))(this.position)
 }
 
 case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends UpdateClause {
   override def name = "SET"
 
   override def clauseSpecificSemanticCheck: SemanticCheck = items.semanticCheck
+
+  override def mapExpressions(f: Expression => Expression): UpdateClause =
+    copy(items.map(_.mapExpressions(f)))(this.position)
 }
 
 case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: InputPosition) extends UpdateClause {
@@ -928,12 +940,17 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
     expressions.filter(e => e.isInstanceOf[LabelExpressionPredicate]) map {
       e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.position)
     }
+
+  override def mapExpressions(f: Expression => Expression): UpdateClause = copy(expressions.map(f))(this.position)
 }
 
 case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends UpdateClause {
   override def name = "REMOVE"
 
   override def clauseSpecificSemanticCheck: SemanticCheck = items.semanticCheck
+
+  override def mapExpressions(f: Expression => Expression): UpdateClause =
+    copy(items.map(_.mapExpressions(f)))(this.position)
 }
 
 case class Foreach(
@@ -942,6 +959,18 @@ case class Foreach(
   updates: Seq[Clause]
 )(val position: InputPosition) extends UpdateClause {
   override def name = "FOREACH"
+
+  override def mapExpressions(f: Expression => Expression): UpdateClause = {
+    val mappedUpdates = updates.map {
+      case uc: UpdateClause => uc.mapExpressions(f)
+      case _                => throw new IllegalStateException("Foreach is expected to only have updating sub-clauses.")
+    }
+    copy(
+      f(variable).asInstanceOf[Variable],
+      f(expression),
+      mappedUpdates
+    )(this.position)
+  }
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain

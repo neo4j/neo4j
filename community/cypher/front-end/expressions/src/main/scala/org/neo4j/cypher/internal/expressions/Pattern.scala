@@ -43,6 +43,11 @@ object Pattern {
   final case class ForMatch(patternParts: Seq[PatternPartWithSelector])(val position: InputPosition) extends Pattern
 
   final case class ForUpdate(patternParts: Seq[NonPrefixedPatternPart])(val position: InputPosition) extends Pattern
+      with HasMappableExpressions[ForUpdate] {
+
+    override def mapExpressions(f: Expression => Expression): ForUpdate =
+      copy(patternParts.map(_.mapExpressions(f)))(this.position)
+  }
 
   sealed trait SemanticContext {
     def name: String = SemanticContext.name(this)
@@ -87,7 +92,7 @@ sealed abstract class PatternPart extends ASTNode {
   def isFixedLength: Boolean
 }
 
-sealed trait NonPrefixedPatternPart extends PatternPart
+sealed trait NonPrefixedPatternPart extends PatternPart with HasMappableExpressions[NonPrefixedPatternPart]
 
 case class PatternPartWithSelector(selector: Selector, part: NonPrefixedPatternPart) extends PatternPart {
   override def position: InputPosition = part.position
@@ -122,6 +127,9 @@ case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPar
   override def isBounded: Boolean = patternPart.isBounded
 
   override def isFixedLength: Boolean = patternPart.isFixedLength
+
+  override def mapExpressions(f: Expression => Expression): NonPrefixedPatternPart =
+    copy(patternPart = patternPart.mapExpressions(f).asInstanceOf[AnonymousPatternPart])(this.position)
 }
 
 sealed trait AnonymousPatternPart extends NonPrefixedPatternPart {
@@ -136,6 +144,9 @@ case class PathPatternPart(element: PatternElement) extends AnonymousPatternPart
   override def dup(children: Seq[AnyRef]): this.type = {
     PathPatternPart(children.head.asInstanceOf[PatternElement]).asInstanceOf[this.type]
   }
+
+  override def mapExpressions(f: Expression => Expression): NonPrefixedPatternPart =
+    copy(element.mapExpressions(f))
 }
 
 case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)
@@ -149,6 +160,9 @@ case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(va
 
   override def isBounded: Boolean = true
   override def isFixedLength: Boolean = false
+
+  override def mapExpressions(f: Expression => Expression): NonPrefixedPatternPart =
+    copy(element.mapExpressions(f))(this.position)
 }
 
 object PatternPart {
@@ -213,6 +227,9 @@ case class PathConcatenation(factors: Seq[PathFactor])(val position: InputPositi
   override def isBounded: Boolean = factors.forall(_.isBounded)
 
   override def isFixedLength: Boolean = factors.forall(_.isFixedLength)
+
+  override def mapExpressions(f: Expression => Expression): PatternElement =
+    copy(factors.map(_.mapExpressions(f)).asInstanceOf[Seq[PathFactor]])(this.position)
 }
 
 /**
@@ -246,6 +263,13 @@ case class QuantifiedPath(
     case IntervalQuantifier(Some(lower), Some(upper)) if lower.value == upper.value => true
     case _                                                                          => false
   }
+
+  override def mapExpressions(f: Expression => Expression): PatternElement = copy(
+    part.mapExpressions(f),
+    quantifier.mapExpressions(f),
+    optionalWhereExpression.map(f),
+    variableGroupings.map(_.mapExpressions(f))
+  )(this.position)
 }
 
 object QuantifiedPath {
@@ -271,7 +295,13 @@ object QuantifiedPath {
  * @param group the group variable exposed outside of the QuantifiedPath.
  */
 case class VariableGrouping(singleton: LogicalVariable, group: LogicalVariable)(val position: InputPosition)
-    extends ASTNode
+    extends ASTNode with HasMappableExpressions[VariableGrouping] {
+
+  override def mapExpressions(f: Expression => Expression): VariableGrouping = copy(
+    f(singleton).asInstanceOf[LogicalVariable],
+    f(group).asInstanceOf[LogicalVariable]
+  )(this.position)
+}
 
 // We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated and unwrap them otherwise.
 case class ParenthesizedPath(
@@ -287,6 +317,9 @@ case class ParenthesizedPath(
   override def isBounded: Boolean = part.isBounded
 
   override def isFixedLength: Boolean = part.isFixedLength
+
+  override def mapExpressions(f: Expression => Expression): PatternElement =
+    copy(part.mapExpressions(f), optionalWhereClause.map(f))(this.position)
 }
 
 object ParenthesizedPath {
@@ -295,7 +328,7 @@ object ParenthesizedPath {
     ParenthesizedPath(part, None)(position)
 }
 
-sealed abstract class PatternElement extends ASTNode {
+sealed abstract class PatternElement extends ASTNode with HasMappableExpressions[PatternElement] {
   def allVariables: Set[LogicalVariable]
   def variable: Option[LogicalVariable]
   def isBounded: Boolean
@@ -358,6 +391,12 @@ case class RelationshipChain(
     case node: NodePattern      => node
     case rel: RelationshipChain => rel.leftNode
   }
+
+  override def mapExpressions(f: Expression => Expression): PatternElement = copy(
+    element.mapExpressions(f).asInstanceOf[SimplePattern],
+    relationship.mapExpressions(f),
+    rightNode.mapExpressions(f).asInstanceOf[NodePattern]
+  )(this.position)
 }
 
 /**
@@ -380,6 +419,23 @@ case class NodePattern(
   override def isBounded: Boolean = true
 
   override def isFixedLength: Boolean = true
+
+  override def mapExpressions(f: Expression => Expression): PatternElement = {
+    // The parser only allows parameters and Map literals in the properties position of a pattern.
+    // The AST allows arbitrary expressions, however.
+    // In order to make sure that queries can still be prettified to parseable Cypher, even after using
+    // mapExpressions, we try to rewrite the items inside a MapExpression, instead of the whole MapExpression.
+    val mappedProperties = properties.map {
+      case me: MapExpression => me.mapExpressions(f)
+      case x                 => f(x)
+    }
+
+    copy(
+      variable = variable.map(f).asInstanceOf[Option[LogicalVariable]],
+      properties = mappedProperties,
+      predicate = predicate.map(f)
+    )(this.position)
+  }
 }
 
 /**
@@ -392,7 +448,7 @@ case class RelationshipPattern(
   properties: Option[Expression],
   predicate: Option[Expression],
   direction: SemanticDirection
-)(val position: InputPosition) extends ASTNode with PatternAtom {
+)(val position: InputPosition) extends ASTNode with PatternAtom with HasMappableExpressions[RelationshipPattern] {
 
   def isSingleLength: Boolean = length.isEmpty
 
@@ -402,5 +458,23 @@ case class RelationshipPattern(
     case Some(Some(Range(_, Some(_)))) => true
     case None                          => true
     case _                             => false
+  }
+
+  override def mapExpressions(f: Expression => Expression): RelationshipPattern = {
+    // The parser only allows parameters and Map literals in the properties position of a pattern.
+    // The AST allows arbitrary expressions, however.
+    // In order to make sure that queries can still be prettified to parseable Cypher, even after using
+    // mapExpressions, we try to rewrite the items inside a MapExpression, instead of the whole MapExpression.
+    val mappedProperties = properties.map {
+      case me: MapExpression => me.mapExpressions(f)
+      case x                 => f(x)
+    }
+
+    copy(
+      variable = variable.map(f).asInstanceOf[Option[LogicalVariable]],
+      length = length.map(_.map(_.mapExpressions(f))),
+      properties = mappedProperties,
+      predicate = predicate.map(f)
+    )(this.position)
   }
 }
