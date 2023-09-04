@@ -89,7 +89,7 @@ object CompilationPhases {
     defaultSemanticFeatures ++ extra.map(SemanticFeature.fromString)
 
   // these steps work on LogicalPlanState.maybeStatement, up until LogicalPlanState.maybeQuery is created
-  private val AccumulatedSteps(astPlanPipelineSteps, astPlanPipielinePostConditions) =
+  private val AccumulatedSteps(astPlanPipelineSteps, astPlanPipelinePostConditions) =
     StepSequencer[StepSequencer.Step with PlanPipelineTransformerFactory]()
       .orderSteps(
         Set(
@@ -128,7 +128,7 @@ object CompilationPhases {
           VarLengthQuantifierMerger,
           CheckForUnresolvedTokens
         ),
-        initialConditions = astPlanPipielinePostConditions
+        initialConditions = astPlanPipelinePostConditions
       )
 
   // these steps work on LogicalPlanState.maybeLogicalPlan
