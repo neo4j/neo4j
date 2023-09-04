@@ -126,10 +126,9 @@ object NotificationWrapping {
     case EagerLoadCsvNotification =>
       NotificationCodeWithDescription.eagerLoadCsv(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification(labelName) =>
-      val lb = NotificationDetail.labelOrRelationshipType(labelName)
       NotificationCodeWithDescription.largeLabelLoadCsv(
         graphdb.InputPosition.empty,
-        NotificationDetail.labelOrRelationshipType(labelName)
+        NotificationDetail.prettyLabelOrRelationshipType(labelName)
       )
     case MissingLabelNotification(pos, label) =>
       NotificationCodeWithDescription.missingLabel(

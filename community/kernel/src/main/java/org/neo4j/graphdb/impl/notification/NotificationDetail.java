@@ -108,7 +108,7 @@ public class NotificationDetail {
         return createNotificationDetail("index", indexFormatString, true);
     }
 
-    public static String labelOrRelationshipType(final String labelName) {
+    public static String prettyLabelOrRelationshipType(final String labelName) {
         return ":" + labelName;
     }
 
