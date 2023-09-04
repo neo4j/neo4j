@@ -26,6 +26,7 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
@@ -235,10 +236,24 @@ public class DbmsDiagnosticsManager {
 
         if (splitIntoSections) {
             List<String> segments = diagnosticsLogger.asSegments();
+            List<String> chunksToLog = new ArrayList<>();
+            for (String segment : segments) {
+                // Segments can be long. Allow at most 50 lines per message
+                String[] split = segment.split(System.lineSeparator());
+                int chunkSize = 50;
+                if (split.length <= chunkSize) {
+                    chunksToLog.add(segment);
+                } else {
+                    for (int i = 0; i < split.length; i += chunkSize) {
+                        String[] chunk = Arrays.copyOfRange(split, i, Math.min(i + chunkSize, split.length));
+                        chunksToLog.add(String.join(System.lineSeparator(), chunk));
+                    }
+                }
+            }
             jobScheduler.schedule(Group.LOG_ROTATION, () -> {
                 // Synchronize here avoid risk of interleaving sections with other concurrent diagnostic messages
                 synchronized (DbmsDiagnosticsManager.this) {
-                    segments.forEach(log::info);
+                    chunksToLog.forEach(log::info);
                 }
             });
         } else {
