@@ -145,9 +145,9 @@ public class CachingExpandInto extends DefaultCloseListenable {
             int txStateDegreeFirst = calculateDegreeInTxState(firstNode, selection(types, direction));
             int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, reverseDirection));
             if (txStateDegreeSecond >= txStateDegreeFirst) {
-                return fastExpandInto(nodeCursor, traversalCursor, firstNode, types, secondNode);
+                return fastExpandInto(nodeCursor, traversalCursor, firstNode, types, direction, secondNode);
             } else {
-                return fastExpandInto(nodeCursor, traversalCursor, secondNode, types, firstNode);
+                return fastExpandInto(nodeCursor, traversalCursor, secondNode, types, reverseDirection, firstNode);
             }
         }
 
@@ -209,6 +209,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
             RelationshipTraversalCursor traversalCursor,
             long firstNode,
             int[] types,
+            Direction direction,
             long secondNode) {
         read.singleNode(firstNode, nodeCursor);
         if (nodeCursor.next()) {
