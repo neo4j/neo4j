@@ -21,6 +21,7 @@ package org.neo4j.fabric.eval
 
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union
@@ -61,6 +62,13 @@ class StaticUseEvaluation {
     }
 
   private def leadingGraphSelection(statement: Statement): Option[GraphSelection] = {
+    statement match {
+      case sc: SchemaCommand => sc.useGraph
+      case _                 => queryLeadingGraphSelection(statement)
+    }
+  }
+
+  private def queryLeadingGraphSelection(statement: Statement): Option[GraphSelection] = {
     val singleQuery = leftmostSingleQuery(statement)
     val clause = singleQuery.flatMap(_.clauses.headOption)
     clause.collect {
