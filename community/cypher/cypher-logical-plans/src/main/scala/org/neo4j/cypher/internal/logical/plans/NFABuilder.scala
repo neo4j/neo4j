@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.State
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.StateImpl
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.Transition
+import org.neo4j.cypher.internal.macros.AssertMacros
 
 import scala.collection.mutable
 
@@ -117,6 +118,10 @@ class NFABuilder protected (_startState: State) {
    */
   protected def getOrCreateState(id: Int, variable: LogicalVariable): State = {
     val state = StateImpl(id, states.getOrElseUpdate(id, variable))
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      state.variable == variable,
+      s"Found state with id $id to be `${state.variable.name}` instead of `${variable.name}`"
+    )
     lastState = state
     state
   }
