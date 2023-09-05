@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
@@ -48,22 +48,32 @@ import scala.collection.immutable.ListSet
 object ConvertToNFA {
 
   /**
-   *
-   * @return the NFA representing the selective path pattern and the selections from the spp that could not be inlined.
+   * @return (
+   *           the NFA representing the selective path pattern,
+   *           the selections from the spp that could not be inlined,
+   *           map for each var-length relationship the synthetic singleton relationship
+   *         )
    */
   def convertToNfa(
     spp: SelectivePathPattern,
     fromLeft: Boolean,
     availableSymbols: Set[String],
     predicatesOnTargetNode: Seq[Expression],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    varLengthGroupings: Seq[VariableGrouping]
-  ): (NFA, Selections) = {
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): (NFA, Selections, Map[String, String]) = {
     val firstNodeName = if (fromLeft) spp.left else spp.right
 
     val builder = new NFABuilder(varFor(firstNodeName))
     val connections = spp.pathPattern.connections
     val directedConnections = if (fromLeft) connections else connections.reverse
+
+    val syntheticVarLengthSingletons = spp.varLengthRelationshipNames.map { relName =>
+      val singletonRelName = Namespacer.genName(
+        anonymousVariableNameGenerator,
+        relName
+      )
+      relName -> singletonRelName
+    }.toMap
 
     val nonInlinedSelections =
       convertToNfa(
@@ -73,12 +83,12 @@ object ConvertToNFA {
         fromLeft,
         availableSymbols,
         anonymousVariableNameGenerator,
-        varLengthGroupings
+        syntheticVarLengthSingletons
       )
 
     val lastNode = builder.getLastState
     builder.addFinalState(lastNode)
-    (builder.build(), nonInlinedSelections)
+    (builder.build(), nonInlinedSelections, syntheticVarLengthSingletons)
   }
 
   /**
@@ -92,7 +102,7 @@ object ConvertToNFA {
     fromLeft: Boolean,
     availableSymbols: Set[String],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    varLengthGroupings: Seq[VariableGrouping]
+    syntheticVarLengthSingleton: Map[String, String]
   ): Selections = {
     // we cannot inline uniqueness predicates but we do not have to solve them as the algorithm for finding shortest paths will do that.
     val selectionsWithoutUniquenessPredicates = selections.filter(_.expr match {
@@ -151,30 +161,53 @@ object ConvertToNFA {
             val targetName = if (fromLeft) right else left
             addRelationship(relationshipName, targetName, dir, types)
 
-          case PatternRelationship(relationshipName, (left, right), dir, types, VarPatternLength(min, max)) =>
-            val singletonRelationshipName = varLengthGroupings
-              .find(_.groupName == relationshipName)
-              .getOrElse(throw new IllegalStateException(
-                s"Could not find grouping for var-length relationship `$relationshipName`"
-              ))
-              .singletonName
+          case PatternRelationship(relationshipName, (left, right), dir, types, VarPatternLength(lowerBound, max)) =>
+            /*
+             * We introduce anonymous nodes for the nodes that we traverse while evaluating a var-length relationship.
+             * Furthermore, we try to use a similar logic to that from QPPs also for var-length relationships.
+             * That is, we
+             * 1. Jump to the first node that is part of the var-length relationship via juxtaposing sourceState to innerState
+             * 2. Reiterate the var-length relationship as many times as the lower bound needs us to.
+             * Now we could potentially exit the var-length relationship. But we also need to make sure that the upper bound is observed by
+             * 3. a) Either reiterating the pattern until we reach the upper bound or
+             *    b) adding a relationship to the state itself, so that we can re-iterate the relationship indefinitely
+             * 4. For all states which could potentially exit the var-length relationship, we juxtapose exitableState to targetState.
+             *
+             * E.g. For the pattern `(start)-[r*2..3]->(end)`
+             *
+             *
+             *
+             *                                                                                ┌───────────────────────────────────────────┐
+             *                                                                                |                                   [4]────>|
+             *                                                                                |                                    |      v
+             * ┌──────────┐     ┌───────────┐  ()-[r]->()   ┌───────────┐  ()-[r]->()   ┌───────────┐  ()-[r]->()   ┌───────────┐  v  ╔════════╗
+             * │ 0, start │ ──> │ 1, anon_1 │ ────────────> │ 2, anon_2 │ ────────────> │ 3, anon_3 │ ────────────> │ 4, anon_4 │ ──> ║ 5, end ║
+             * └──────────┘     └───────────┘               └───────────┘               └───────────┘               └───────────┘     ╚════════╝
+             *               ^  \__________________________________________________________________/ \__________________________/
+             *               |                                   |                                               |
+             *              [1]                                 [2]                                            [3.a]
+             *
+             *
+             * (kudos to https://github.com/ggerganov/dot-to-ascii)
+             */
+            val singletonRelationshipName = syntheticVarLengthSingleton(relationshipName)
             val sourceState = builder.getLastState
 
-            val lastSourceInnerState = builder.addAndGetState(varFor(anonymousVariableNameGenerator.nextName))
+            val innerState = builder.addAndGetState(varFor(anonymousVariableNameGenerator.nextName))
             builder.addTransition(
               sourceState,
-              lastSourceInnerState,
+              innerState,
               NFA.NodeJuxtapositionPredicate(None)
             )
 
-            for (_ <- 1 to min) {
+            for (_ <- 1 to lowerBound) {
               addRelationship(singletonRelationshipName, anonymousVariableNameGenerator.nextName, dir, types)
             }
 
             val exitableState = builder.getLastState
             val furtherExitableStates = max match {
-              case Some(maxValue) =>
-                for (_ <- min until maxValue) yield {
+              case Some(upperBound) =>
+                for (_ <- lowerBound until upperBound) yield {
                   addRelationship(singletonRelationshipName, anonymousVariableNameGenerator.nextName, dir, types)
                   builder.getLastState
                 }
@@ -193,17 +226,19 @@ object ConvertToNFA {
 
             val targetName = if (fromLeft) right else left
             val targetState = builder.addAndGetState(varFor(targetName))
+            val (predicatesOnTargetNode, variablePredicateOnTargetNode) = getVariablePredicates(targetName)
             (exitableState +: furtherExitableStates).foreach { exitableState =>
               builder.addTransition(
                 exitableState,
                 targetState,
-                NFA.NodeJuxtapositionPredicate(None)
+                NFA.NodeJuxtapositionPredicate(variablePredicateOnTargetNode)
               )
             }
 
-            val (predicatesOnTargetNode, _) = getVariablePredicates(targetName)
+            // The part of the automaton that we created should make sure that we observe the lower and upper bound
+            // of the var-length relationship. We therefore can claim to have solved these predicates.
             val varLengthPredicates = selections.flatPredicates.filter {
-              case VarLengthLowerBound(Variable(`relationshipName`), `min`) => true
+              case VarLengthLowerBound(Variable(`relationshipName`), `lowerBound`) => true
               case VarLengthUpperBound(Variable(`relationshipName`), upperBound) if max.contains(upperBound.intValue) =>
                 true
               case _ => false
@@ -273,7 +308,7 @@ object ConvertToNFA {
                 fromLeft,
                 availableSymbols,
                 anonymousVariableNameGenerator,
-                varLengthGroupings
+                syntheticVarLengthSingleton
               )
 
             val nonInlinedQppSelections = addQppInnerTransitions()

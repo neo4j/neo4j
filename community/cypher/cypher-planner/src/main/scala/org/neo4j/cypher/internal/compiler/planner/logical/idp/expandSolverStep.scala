@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -553,25 +552,14 @@ object expandSolverStep {
     maybeHiddenFilter: Option[Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val varLengthRelationshipNames = spp.pathPattern.connections.toIndexedSeq.collect {
-      case PatternRelationship(name, _, _, _, _: VarPatternLength) => name
-    }
-    val varLengthGroupings = varLengthRelationshipNames.map { relName =>
-      val singletonRelName = Namespacer.genName(
-        context.staticComponents.anonymousVariableNameGenerator,
-        relName
-      )
-      VariableGrouping(singletonRelName, relName)
-    }
 
-    val (nfa, nonInlinedSelections) =
+    val (nfa, nonInlinedSelections, syntheticVarLengthSingletons) =
       ConvertToNFA.convertToNfa(
         spp,
         fromLeft,
         availableSymbols,
         unsolvedPredicatesOnTargetNode,
-        context.staticComponents.anonymousVariableNameGenerator,
-        varLengthGroupings
+        context.staticComponents.anonymousVariableNameGenerator
       )
 
     val solvedExpressionAsString =
@@ -583,12 +571,12 @@ object expandSolverStep {
       spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings.map(convertGroupingFromIr))
     val relationshipVariableGroupings =
       spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings.map(convertGroupingFromIr)) ++
-        varLengthGroupings.map(convertGroupingFromIr)
+        syntheticVarLengthSingletons.map(entry => Trail.VariableGrouping(varFor(entry._2), varFor(entry._1)))
     val nonInlinablePreFilters =
       Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
 
     val singletonVariableNames =
-      spp.coveredIds -- spp.allQuantifiedPathPatterns.flatMap(_.groupings) -- varLengthRelationshipNames - startNode
+      spp.coveredIds -- spp.allQuantifiedPathPatterns.flatMap(_.groupings) -- spp.varLengthRelationshipNames - startNode
     val singletonVariables = singletonVariableNames.map[LogicalVariable](varFor)
 
     context.staticComponents.logicalPlanProducer.planStatefulShortest(

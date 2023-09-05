@@ -125,6 +125,46 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("should plan SHORTEST with var-length relationship and predicates") {
+    val query = "MATCH ANY SHORTEST (u:User)-[r:R* {prop: 42}]->(v {prop: 3})-[s]->(w {prop: 4})-[t:R|T*1..2]->(x) RETURN *"
+
+    val nfa =
+      new TestNFABuilder(0, "u")
+        .addTransition(0, 1, "(u) (anon_3)")
+        .addTransition(1, 2, "(anon_3)-[r:R]->(anon_4)")
+        .addTransition(2, 2, "(anon_4)-[r:R]->(anon_4)")
+        .addTransition(2, 3, "(anon_4) (v WHERE v.prop = 3)")
+        .addTransition(3, 4, "(v)-[s]->(w WHERE w.prop = 4)")
+        .addTransition(4, 5, "(w) (anon_6)")
+        .addTransition(5, 6, "(anon_6)-[t:R|T]->(anon_7)")
+        .addTransition(6, 7, "(anon_7)-[t:R|T]->(anon_8)")
+        .addTransition(6, 8, "(anon_7) (x)")
+        .addTransition(7, 8, "(anon_8) (x)")
+        .addFinalState(8)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "x",
+          "SHORTEST 1 ((u)-[r:R*]->(v)-[s]->(w)-[t:R|T*1..2]->(x) WHERE" +
+            " NOT s IN r AND NOT s IN t AND all(`anon_0` IN r WHERE `anon_0`.prop IN [42])" +
+            " AND disjoint(t, r) AND size(r) >= 1 AND size(t) <= 2 AND size(t) >= 1 AND unique(r) AND unique(t)" +
+            " AND v.prop IN [3] AND w.prop IN [4])",
+          Some("all(anon_0 IN r WHERE anon_0.prop = 42)"),
+          groupNodes = Set(),
+          groupRelationships = Set(("r", "r"), ("t", "t")),
+          singletonVariables = Set("v", "s", "w", "x"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
   test("should plan SHORTEST with 1 QPP, + quantifier, no predicates, right-to-left") {
     val query = "MATCH ANY SHORTEST (u)((n)-[r]->(m))+(v:User) RETURN *"
 

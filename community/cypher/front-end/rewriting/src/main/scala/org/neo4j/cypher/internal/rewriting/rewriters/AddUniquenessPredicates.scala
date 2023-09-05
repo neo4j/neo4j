@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
@@ -27,8 +26,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
-import org.neo4j.cypher.internal.expressions.ParenthesizedPath
-import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
@@ -50,87 +47,22 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
-import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.overlaps
 import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniqueness.NodeConnection
 import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniqueness.RelationshipGroup
 import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniqueness.SingleRelationship
-import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
-
-trait AddRelationshipPredicates[NC] extends Step with ASTRewriterFactory {
-
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedNodesAndRelationships
-  )
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
-
-  val rewriter: Rewriter
-
-  override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = rewriter
-
-  protected def rewriteSelectivePatternPart(part: PatternPartWithSelector): PatternPartWithSelector =
-    part.element match {
-      case path: ParenthesizedPath =>
-        val nodeConnections = collectNodeConnections(path.part.element)
-        val predicate = createPredicateFor(nodeConnections, path.position)
-        val whereExpr = path.optionalWhereClause
-        val newPredicate = Where.combineOrCreateExpressionBeforeCnf(whereExpr, predicate)(whereExpr.map(_.position))
-        val newElement = path.copy(optionalWhereClause = newPredicate)(path.position)
-        part.replaceElement(newElement)
-      case otherElement =>
-        val nodeConnections = collectNodeConnections(otherElement)
-        createPredicateFor(nodeConnections, part.position) match {
-          // We should not wrap the pattern in new parentheses if there is no predicate to add
-          case None => part
-          case Some(predicate) =>
-            val syntheticPatternPart = PathPatternPart(otherElement)
-            val newElement = ParenthesizedPath(syntheticPatternPart, Some(predicate))(part.position)
-            part.replaceElement(newElement)
-        }
-    }
-
-  protected def withPredicates(pattern: ASTNode, nodeConnections: Seq[NC], where: Option[Where]): Option[Where] = {
-    val pos = pattern.position
-    val maybePredicate: Option[Expression] = createPredicateFor(nodeConnections, pos)
-    Where.combineOrCreateBeforeCnf(where, maybePredicate)(pos)
-  }
-
-  protected def createPredicateFor(nodeConnections: Seq[NC], pos: InputPosition): Option[Expression] = {
-    createPredicatesFor(nodeConnections, pos).reduceOption(expressions.And(_, _)(pos))
-  }
-
-  def createPredicatesFor(nodeConnections: Seq[NC], pos: InputPosition): Seq[Expression]
-
-  def collectNodeConnections(pattern: ASTNode): Seq[NC]
-
-  def createPredicatesFor(pattern: ASTNode): Seq[Expression] = {
-    val connections = collectNodeConnections(pattern)
-    createPredicatesFor(connections, pattern.position)
-  }
-}
 
 case object AddUniquenessPredicates extends AddRelationshipPredicates[NodeConnection] {
   case object rewritten extends StepSequencer.Condition

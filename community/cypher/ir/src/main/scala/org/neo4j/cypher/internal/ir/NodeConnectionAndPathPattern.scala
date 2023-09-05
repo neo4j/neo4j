@@ -446,6 +446,9 @@ final case class SelectivePathPattern(
       }
     }.addSelections(selections)
 
+  lazy val varLengthRelationshipNames: Seq[String] = pathPattern.connections.toIndexedSeq.collect {
+    case PatternRelationship(name, _, _, _, _: VarPatternLength) => name
+  }
 }
 
 object SelectivePathPattern {
