@@ -373,7 +373,7 @@ object LogicalPlanToPlanBuilderString {
           s"Set(${wrapVarsInQuotationsAndMkString(singletonVariables)})",
           objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
           nfaString(nfa)
-        ).mkString(", ")
+        ).mkString(s"\n${indent}", s",\n${indent}", "")
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
@@ -1198,7 +1198,7 @@ object LogicalPlanToPlanBuilderString {
     val build = s"${indent}${indent}.build()"
 
     val lines = Seq(constructor) ++ transitions ++ finalStates :+ build
-    lines.mkString("\n", "\n", "\n")
+    lines.mkString("", "\n", "\n")
   }
 
   private def transitionString(from: State, nfaPredicate: Predicate, to: State): String = {
