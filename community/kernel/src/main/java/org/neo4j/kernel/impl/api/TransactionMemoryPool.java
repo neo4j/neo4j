@@ -45,7 +45,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final BooleanSupplier openCheck;
     private final LogProvider logProvider;
     private final LocalMemoryTracker transactionTracker;
-    private boolean hasExecutionContextMemoryTrackers = false;
+    private volatile boolean hasExecutionContextMemoryTrackers = false;
 
     public TransactionMemoryPool(
             ScopedMemoryPool delegate, Config config, BooleanSupplier openCheck, LogProvider logProvider) {
@@ -152,10 +152,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     public void reset() {
         transactionTracker.reset();
         if (hasExecutionContextMemoryTrackers) {
-            long usedHeap = usedHeap();
-            if (usedHeap > 0L) {
-                releaseHeap(usedHeap);
-            }
+            releaseHeap(usedHeap());
             hasExecutionContextMemoryTrackers = false;
         }
 
