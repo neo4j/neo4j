@@ -20,9 +20,6 @@
 package org.neo4j.procedure.impl;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -88,12 +85,9 @@ class ProcedureJarLoader {
             return Callables.empty();
         }
 
-        URL[] jarFilesURLs = jarFiles.stream().map(this::toURL).toArray(URL[]::new);
-        URLClassLoader loader = new URLClassLoader(jarFilesURLs, this.getClass().getClassLoader());
-
         Callables out = new Callables();
         for (Path jarFile : jarFiles) {
-            loadProcedures(jarFile, loader, out, methodNameFilter);
+            loadProcedures(jarFile, ProcedureClassLoader.of(jarFiles), out, methodNameFilter);
         }
         return out;
     }
@@ -131,14 +125,6 @@ class ProcedureJarLoader {
                         "Failed to load procedures from class %s in %s/%s: %s",
                         next.getSimpleName(), jar.getParent().getFileName(), jar.getFileName(), exc.getMessage());
             }
-        }
-    }
-
-    private URL toURL(Path f) {
-        try {
-            return f.toUri().toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
         }
     }
 
