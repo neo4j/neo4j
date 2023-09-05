@@ -138,7 +138,8 @@ public enum NotificationCodeWithDescription {
     MISSING_LABEL(
             Status.Statement.UnknownLabelWarning,
             "One of the labels in your query is not available in the database, make sure you didn't "
-                    + "misspell it or that the label is available when you run this statement in your application (%s)"),
+                    + "misspell it or that the label is available when you run this statement in your application (%s)",
+            "The label `%s` does not exist. Verify that the spelling is correct."),
     MISSING_REL_TYPE(
             Status.Statement.UnknownRelationshipTypeWarning,
             "One of the relationship types in your query is not available in the database, make sure you didn't "
@@ -355,8 +356,8 @@ public enum NotificationCodeWithDescription {
         return LARGE_LABEL_LOAD_CSV.notificationWithMessage(position, new String[] {}, new String[] {labelName});
     }
 
-    public static NotificationImplementation missingLabel(InputPosition position, String param) {
-        return MISSING_LABEL.notification(position, param);
+    public static NotificationImplementation missingLabel(InputPosition position, String oldDetail, String labelName) {
+        return MISSING_LABEL.notificationWithMessage(position, new String[] {oldDetail}, new String[] {labelName});
     }
 
     public static NotificationImplementation missingRelType(InputPosition position, String param) {

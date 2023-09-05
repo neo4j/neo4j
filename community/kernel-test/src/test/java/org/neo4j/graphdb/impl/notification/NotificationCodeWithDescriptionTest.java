@@ -462,7 +462,10 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_MISSING_LABEL() {
-        NotificationImplementation notification = missingLabel(InputPosition.empty, "Label");
+        NotificationImplementation notification = missingLabel(
+                InputPosition.empty,
+                NotificationDetail.missingLabel("Label"),
+                NotificationDetail.prettyLabelOrRelationshipType("Label"));
 
         verifyNotification(
                 notification,
@@ -470,9 +473,9 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                 "One of the labels in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application (Label)",
+                        + "misspell it or that the label is available when you run this statement in your application (the missing label name is: Label)",
                 NotificationCategory.UNRECOGNIZED,
-                null);
+                "The label `:Label` does not exist. Verify that the spelling is correct.");
     }
 
     @Test
