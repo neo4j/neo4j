@@ -167,7 +167,8 @@ public enum NotificationCodeWithDescription {
     RUNTIME_EXPERIMENTAL(Status.Statement.RuntimeExperimental, "You are using an experimental feature (%s)"),
     MISSING_PARAMETERS_FOR_EXPLAIN(
             Status.Statement.ParameterNotProvided,
-            "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (%s)"),
+            "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (%s)",
+            "The query plan cannot be cached and is not executable without EXPLAIN due to the undefined parameter(s) `%s`. Provide the parameter(s)."),
     CODE_GENERATION_FAILED(
             Status.Statement.CodeGenerationFailed,
             "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)"),
@@ -388,8 +389,10 @@ public enum NotificationCodeWithDescription {
         return RUNTIME_EXPERIMENTAL.notification(position, param);
     }
 
-    public static NotificationImplementation missingParameterForExplain(InputPosition position, String param) {
-        return MISSING_PARAMETERS_FOR_EXPLAIN.notification(position, param);
+    public static NotificationImplementation missingParameterForExplain(
+            InputPosition position, String oldDetails, String parameters) {
+        return MISSING_PARAMETERS_FOR_EXPLAIN.notificationWithMessage(
+                position, new String[] {oldDetails}, new String[] {parameters});
     }
 
     public static NotificationImplementation codeGenerationFailed(InputPosition position, String param) {

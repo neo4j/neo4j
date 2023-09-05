@@ -567,7 +567,10 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_MISSING_PARAMETERS_FOR_EXPLAIN() {
-        NotificationImplementation notification = missingParameterForExplain(InputPosition.empty, "param");
+        NotificationImplementation notification = missingParameterForExplain(
+                InputPosition.empty,
+                NotificationDetail.missingParameters(Set.of("param1")),
+                NotificationDetail.prettyParameters(Set.of("param1")));
 
         verifyNotification(
                 notification,
@@ -575,9 +578,10 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.ParameterNotProvided",
                 "Did not supply query with enough parameters. "
-                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (param)",
+                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (the missing parameter is: (param1))",
                 NotificationCategory.GENERIC,
-                null);
+                "The query plan cannot be cached and is not executable without EXPLAIN due to the undefined "
+                        + "parameter(s) `$param1`. Provide the parameter(s).");
     }
 
     @Test

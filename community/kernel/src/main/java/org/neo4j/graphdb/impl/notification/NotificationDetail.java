@@ -133,12 +133,20 @@ public class NotificationDetail {
                 .collect(Collectors.joining(", "));
     }
 
+    public static String prettyParameters(final Set<String> parameters) {
+        return parameters.stream().map(parameter -> "$" + parameter).collect(Collectors.joining(", "));
+    }
+
     public static String missingLabel(final String labelName) {
         return createNotificationDetail("the missing label name", labelName, true);
     }
 
     public static String missingRelationshipType(final String relType) {
         return createNotificationDetail("the missing relationship type", relType, true);
+    }
+
+    public static String missingParameters(final Set<String> parameters) {
+        return createNotificationDetail(parameters, "the missing parameter", "the missing parameters");
     }
 
     public static String pathPredicates(final Set<String> predicates) {
