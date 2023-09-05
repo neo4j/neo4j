@@ -174,7 +174,10 @@ public enum NotificationCodeWithDescription {
     SUBQUERY_VARIABLE_SHADOWING(
             Status.Statement.SubqueryVariableShadowing,
             "Variable in subquery is shadowing a variable with the same name from the outer scope. "
-                    + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (%s)"),
+                    + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (%s)",
+            "The variable `%s` in the subquery uses the same name as a variable from the outer query. Use "
+                    + "`WITH %s` in the subquery to import the one from the outer scope unless you want it to be a "
+                    + "new variable."),
     UNION_RETURN_ORDER(
             Status.Statement.FeatureDeprecationWarning,
             "All subqueries in a UNION [ALL] should have the same ordering for the return columns. "
@@ -393,8 +396,10 @@ public enum NotificationCodeWithDescription {
         return CODE_GENERATION_FAILED.notification(position, param);
     }
 
-    public static NotificationImplementation subqueryVariableShadowing(InputPosition position, String param) {
-        return SUBQUERY_VARIABLE_SHADOWING.notification(position, param);
+    public static NotificationImplementation subqueryVariableShadowing(
+            InputPosition position, String oldDetail, String variable) {
+        return SUBQUERY_VARIABLE_SHADOWING.notificationWithMessage(
+                position, new String[] {oldDetail}, new String[] {variable, variable});
     }
 
     public static NotificationImplementation unionReturnOrder(InputPosition position) {

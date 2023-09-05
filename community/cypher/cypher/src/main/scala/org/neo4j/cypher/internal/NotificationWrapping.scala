@@ -243,7 +243,8 @@ object NotificationWrapping {
     case SubqueryVariableShadowing(pos, varName) =>
       NotificationCodeWithDescription.subqueryVariableShadowing(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.shadowingVariable(varName)
+        NotificationDetail.shadowingVariable(varName),
+        varName
       )
     case UnionReturnItemsInDifferentOrder(pos) =>
       NotificationCodeWithDescription.unionReturnOrder(

@@ -596,7 +596,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_SUBQUERY_VARIABLE_SHADOWING() {
-        NotificationImplementation notification = subqueryVariableShadowing(InputPosition.empty, "v");
+        NotificationImplementation notification =
+                subqueryVariableShadowing(InputPosition.empty, NotificationDetail.shadowingVariable("v"), "v");
 
         verifyNotification(
                 notification,
@@ -604,9 +605,11 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.SubqueryVariableShadowing",
                 "Variable in subquery is shadowing a variable with the same name from the outer scope. "
-                        + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (v)",
+                        + "If you want to use that variable instead, it must be imported into the subquery using "
+                        + "importing WITH clause. (the shadowing variable is: v)",
                 NotificationCategory.GENERIC,
-                null);
+                "The variable `v` in the subquery uses the same name as a variable from the outer query. Use "
+                        + "`WITH v` in the subquery to import the one from the outer scope unless you want it to be a new variable.");
     }
 
     @Test
