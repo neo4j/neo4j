@@ -66,7 +66,7 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     // We need to do this, otherwise the produced graph statistics won't work for creating an executable plan
     context.planContext.statistics.nodesAllCardinality()
 
-    val (plan, newStatement, newReturnColumnts) = stringToLogicalPlan(string)
+    val (plan, newStatement, newReturnColumns) = stringToLogicalPlan(string)
 
     // We need to set attributes for the new plan
     copyAttributes(from, plan)
@@ -74,14 +74,14 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     from.copy(
       maybeLogicalPlan = Some(plan),
       maybeStatement = Some(newStatement),
-      maybeReturnColumns = Some(newReturnColumnts)
+      maybeReturnColumns = Some(newReturnColumns)
     )
   }
 
   private def stringToLogicalPlan(string: String): (LogicalPlan, Statement, Seq[String]) = {
     implicit val idGen = new SequentialIdGen()
     val pos = InputPosition(0, 0, 0)
-    val stringValues = string.split(System.lineSeparator()).map(s => StringLiteral(s)(pos))
+    val stringValues = string.split("\r\n").flatMap(_.split(System.lineSeparator())).map(s => StringLiteral(s)(pos))
     val expression = ListLiteral(stringValues.toSeq)(pos)
     val unwind = UnwindCollection(Argument(Set.empty), varFor("col"), expression)
     val logicalPlan = ProduceResult(unwind, Seq(varFor("col")))
