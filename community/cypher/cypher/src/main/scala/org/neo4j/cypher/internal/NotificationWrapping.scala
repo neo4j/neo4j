@@ -149,12 +149,14 @@ object NotificationWrapping {
     case MissingRelTypeNotification(pos, relType) =>
       NotificationCodeWithDescription.missingRelType(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.missingRelationshipType(relType)
+        NotificationDetail.missingRelationshipType(relType),
+        NotificationDetail.prettyLabelOrRelationshipType(relType)
       )
-    case MissingPropertyNameNotification(pos, name) =>
+    case MissingPropertyNameNotification(pos, entity, property) =>
       NotificationCodeWithDescription.missingPropertyName(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.propertyName(name)
+        NotificationDetail.propertyName(property),
+        NotificationDetail.property(entity, property)
       )
     case UnboundedShortestPathNotification(pos, pattern) =>
       NotificationCodeWithDescription.unboundedShortestPath(pos.withOffset(offset).asInputPosition, pattern)

@@ -143,11 +143,13 @@ public enum NotificationCodeWithDescription {
     MISSING_REL_TYPE(
             Status.Statement.UnknownRelationshipTypeWarning,
             "One of the relationship types in your query is not available in the database, make sure you didn't "
-                    + "misspell it or that the label is available when you run this statement in your application (%s)"),
+                    + "misspell it or that the label is available when you run this statement in your application (%s)",
+            "The relationship type `%s` does not exist. Verify that the spelling is correct."),
     MISSING_PROPERTY_NAME(
             Status.Statement.UnknownPropertyKeyWarning,
             "One of the property names in your query is not available in the database, make sure you didn't "
-                    + "misspell it or that the label is available when you run this statement in your application (%s)"),
+                    + "misspell it or that the label is available when you run this statement in your application (%s)",
+            "The property `%s` does not exist. Verify that the spelling is correct."),
     UNBOUNDED_SHORTEST_PATH(
             Status.Statement.UnboundedVariableLengthPattern,
             "Using shortest path with an unbounded pattern will likely result in long execution times. "
@@ -360,12 +362,14 @@ public enum NotificationCodeWithDescription {
         return MISSING_LABEL.notificationWithMessage(position, new String[] {oldDetail}, new String[] {labelName});
     }
 
-    public static NotificationImplementation missingRelType(InputPosition position, String param) {
-        return MISSING_REL_TYPE.notification(position, param);
+    public static NotificationImplementation missingRelType(InputPosition position, String oldDetail, String relType) {
+        return MISSING_REL_TYPE.notificationWithMessage(position, new String[] {oldDetail}, new String[] {relType});
     }
 
-    public static NotificationImplementation missingPropertyName(InputPosition position, String param) {
-        return MISSING_PROPERTY_NAME.notification(position, param);
+    public static NotificationImplementation missingPropertyName(
+            InputPosition position, String oldDetails, String property) {
+        return MISSING_PROPERTY_NAME.notificationWithMessage(
+                position, new String[] {oldDetails}, new String[] {property});
     }
 
     public static NotificationImplementation unboundedShortestPath(InputPosition position, String pattern) {

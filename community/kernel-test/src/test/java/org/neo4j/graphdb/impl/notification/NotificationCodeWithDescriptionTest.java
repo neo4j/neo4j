@@ -480,7 +480,10 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_MISSING_REL_TYPE() {
-        NotificationImplementation notification = missingRelType(InputPosition.empty, "Rel");
+        NotificationImplementation notification = missingRelType(
+                InputPosition.empty,
+                NotificationDetail.missingRelationshipType("Rel"),
+                NotificationDetail.prettyLabelOrRelationshipType("Rel"));
 
         verifyNotification(
                 notification,
@@ -488,14 +491,15 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
                 "One of the relationship types in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application (Rel)",
+                        + "misspell it or that the label is available when you run this statement in your application (the missing relationship type is: Rel)",
                 NotificationCategory.UNRECOGNIZED,
-                null);
+                "The relationship type `:Rel` does not exist. Verify that the spelling is correct.");
     }
 
     @Test
     void shouldConstructNotificationsFor_MISSING_PROPERTY_NAME() {
-        NotificationImplementation notification = missingPropertyName(InputPosition.empty, "prop");
+        NotificationImplementation notification = missingPropertyName(
+                InputPosition.empty, NotificationDetail.propertyName("prop"), NotificationDetail.property("n", "prop"));
 
         verifyNotification(
                 notification,
@@ -503,9 +507,10 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
                 "One of the property names in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application (prop)",
+                        + "misspell it or that the label is available when you run this statement in your application "
+                        + "(the missing property name is: prop)",
                 NotificationCategory.UNRECOGNIZED,
-                null);
+                "The property `n.prop` does not exist. Verify that the spelling is correct.");
     }
 
     @Test

@@ -246,7 +246,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
       case x: MissingRelTypeNotification =>
         tc.kernelTransaction().tokenRead().relationshipType(x.relType) != TokenRead.NO_TOKEN
       case x: MissingPropertyNameNotification =>
-        tc.kernelTransaction().tokenRead().propertyKey(x.name) != TokenRead.NO_TOKEN
+        tc.kernelTransaction().tokenRead().propertyKey(x.property) != TokenRead.NO_TOKEN
       case _ => false
     }
 
