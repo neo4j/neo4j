@@ -76,8 +76,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index() {
-        String indexDetail = NotificationDetail.nodeAnyIndex("person", "Person", "name");
-        NotificationImplementation notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
+        NotificationImplementation notification = indexHintUnfulfillable(
+                InputPosition.empty,
+                NotificationDetail.nodeAnyIndex("person", "Person", "name"),
+                NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
                 notification,
@@ -86,13 +88,15 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                null);
+                "Unable to create a plan with `INDEX` for `:Person(name)` because the index(es) do not exist. See Status Codes documentation for suggestions.");
     }
 
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_text_index() {
-        String indexDetail = NotificationDetail.nodeTextIndex("person", "Person", "name");
-        NotificationImplementation notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
+        NotificationImplementation notification = indexHintUnfulfillable(
+                InputPosition.empty,
+                NotificationDetail.nodeTextIndex("person", "Person", "name"),
+                NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
                 notification,
@@ -101,13 +105,15 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                null);
+                "Unable to create a plan with `INDEX` for `:Person(name)` because the index(es) do not exist. See Status Codes documentation for suggestions.");
     }
 
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_index() {
-        String indexDetail = NotificationDetail.relationshipAnyIndex("person", "Person", "name");
-        NotificationImplementation notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
+        NotificationImplementation notification = indexHintUnfulfillable(
+                InputPosition.empty,
+                NotificationDetail.relationshipAnyIndex("person", "Person", "name"),
+                NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
                 notification,
@@ -116,13 +122,15 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                null);
+                "Unable to create a plan with `INDEX` for `:Person(name)` because the index(es) do not exist. See Status Codes documentation for suggestions.");
     }
 
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_text_index() {
-        String indexDetail = NotificationDetail.relationshipTextIndex("person", "Person", "name");
-        NotificationImplementation notification = indexHintUnfulfillable(InputPosition.empty, indexDetail);
+        NotificationImplementation notification = indexHintUnfulfillable(
+                InputPosition.empty,
+                NotificationDetail.relationshipTextIndex("person", "Person", "name"),
+                NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
                 notification,
@@ -131,7 +139,24 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                null);
+                "Unable to create a plan with `INDEX` for `:Person(name)` because the index(es) do not exist. See Status Codes documentation for suggestions.");
+    }
+
+    @Test
+    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_multiple_properties() {
+        NotificationImplementation notification = indexHintUnfulfillable(
+                InputPosition.empty,
+                NotificationDetail.relationshipTextIndex("person", "Person", "name", "age"),
+                NotificationDetail.indexes("Person", List.of("name", "age")));
+
+        verifyNotification(
+                notification,
+                "The request (directly or indirectly) referred to an index that does not exist.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Schema.HintedIndexNotFound",
+                "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`age`))",
+                NotificationCategory.HINT,
+                "Unable to create a plan with `INDEX` for `:Person(name, age)` because the index(es) do not exist. See Status Codes documentation for suggestions.");
     }
 
     @Test

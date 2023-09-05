@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
+import org.neo4j.function.TriFunction;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
@@ -120,11 +121,25 @@ public class NotificationTestSupport {
             InputPosition pos,
             String detail,
             BiFunction<InputPosition, String, NotificationImplementation> createNotification) {
+        shouldNotifyInStreamWithDetailAndMessage(
+                query,
+                pos,
+                detail,
+                null,
+                (localPos, localDetail, ignored) -> createNotification.apply(localPos, localDetail));
+    }
+
+    void shouldNotifyInStreamWithDetailAndMessage(
+            String query,
+            InputPosition pos,
+            String oldDetail,
+            String detail,
+            TriFunction<InputPosition, String, String, NotificationImplementation> createNotification) {
         try (Transaction transaction = db.beginTx()) {
             // when
             try (Result result = transaction.execute(query)) {
                 // then
-                NotificationImplementation notification = createNotification.apply(pos, detail);
+                NotificationImplementation notification = createNotification.apply(pos, oldDetail, detail);
                 assertThat(result.getNotifications()).contains(notification);
             }
             transaction.commit();

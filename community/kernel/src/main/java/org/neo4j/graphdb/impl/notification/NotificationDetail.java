@@ -41,6 +41,12 @@ public class NotificationDetail {
         return String.format(". ('%s' has been replaced by '%s')", oldName, newName);
     }
 
+    public static String indexes(final String label, final List<String> propertyKeys) {
+        final var prettyProperties = commaSeparated(propertyKeys);
+        final var prettyLabel = prettyLabelOrRelationshipType(label);
+        return prettyLabel + "(" + prettyProperties + ")";
+    }
+
     public static String nodeAnyIndex(
             final String variableName, final String labelName, final String... propertyKeyNames) {
         String indexFormatString = IndexHintException.indexFormatString(

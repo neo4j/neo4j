@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.javacompat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.nodeAnyIndex;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.nodeTextIndex;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +31,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
+import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 class NotificationAcceptanceTest extends NotificationTestSupport {
@@ -65,10 +64,11 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled() {
-        shouldNotifyInStreamWithDetail(
+        shouldNotifyInStreamWithDetailAndMessage(
                 " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n",
                 InputPosition.empty,
-                nodeAnyIndex("n", "Person", "name"),
+                NotificationDetail.nodeAnyIndex("n", "Person", "name"),
+                NotificationDetail.indexes("Person", List.of("name")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
     }
 
@@ -82,25 +82,29 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' AND o.text STARTS WITH 'a' "
                 + "RETURN n";
 
-        shouldNotifyInStreamWithDetail(
+        shouldNotifyInStreamWithDetailAndMessage(
                 query,
                 InputPosition.empty,
-                nodeAnyIndex("n", "Person", "name"),
+                NotificationDetail.nodeAnyIndex("n", "Person", "name"),
+                NotificationDetail.indexes("Person", List.of("name")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
-        shouldNotifyInStreamWithDetail(
+        shouldNotifyInStreamWithDetailAndMessage(
                 query,
                 InputPosition.empty,
-                nodeAnyIndex("m", "Party", "city"),
+                NotificationDetail.nodeAnyIndex("m", "Party", "city"),
+                NotificationDetail.indexes("Party", List.of("city")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
-        shouldNotifyInStreamWithDetail(
+        shouldNotifyInStreamWithDetailAndMessage(
                 query,
                 InputPosition.empty,
-                nodeAnyIndex("k", "Animal", "species"),
+                NotificationDetail.nodeAnyIndex("k", "Animal", "species"),
+                NotificationDetail.indexes("Animal", List.of("species")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
-        shouldNotifyInStreamWithDetail(
+        shouldNotifyInStreamWithDetailAndMessage(
                 query,
                 InputPosition.empty,
-                nodeTextIndex("o", "Other", "text"),
+                NotificationDetail.nodeTextIndex("o", "Other", "text"),
+                NotificationDetail.indexes("Other", List.of("text")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
     }
 

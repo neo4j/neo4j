@@ -44,7 +44,10 @@ public enum NotificationCodeWithDescription {
             Status.Statement.RuntimeUnsupportedWarning,
             "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)"),
     INDEX_HINT_UNFULFILLABLE(
-            Status.Schema.HintedIndexNotFound, "The hinted index does not exist, please check the schema (%s)"),
+            Status.Schema.HintedIndexNotFound,
+            "The hinted index does not exist, please check the schema (%s)",
+            "Unable to create a plan with `INDEX` for `%s` because the index(es) do not exist. See Status "
+                    + "Codes documentation for suggestions."),
     JOIN_HINT_UNFULFILLABLE(
             Status.Statement.JoinHintUnfulfillableWarning,
             "The hinted join was not planned. This could happen because no generated plan contained the join key, "
@@ -249,8 +252,10 @@ public enum NotificationCodeWithDescription {
         return RUNTIME_UNSUPPORTED.notification(position, param);
     }
 
-    public static NotificationImplementation indexHintUnfulfillable(InputPosition position, String param) {
-        return INDEX_HINT_UNFULFILLABLE.notification(position, param);
+    public static NotificationImplementation indexHintUnfulfillable(
+            InputPosition position, String oldDetail, String indexes) {
+        return INDEX_HINT_UNFULFILLABLE.notificationWithMessage(
+                position, new String[] {oldDetail}, new String[] {indexes});
     }
 
     public static NotificationImplementation joinHintUnfulfillable(
