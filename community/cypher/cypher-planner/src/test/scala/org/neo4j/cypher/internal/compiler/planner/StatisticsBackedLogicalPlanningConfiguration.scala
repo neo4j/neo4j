@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -261,6 +262,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
   existenceConstraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
   propertyTypeConstraints: Seq[PropertyTypeDefinition] = Seq.empty,
   procedures: Set[ProcedureSignature] = Set.empty,
+  functions: Set[UserFunctionSignature] = Set.empty,
   settings: Map[Setting[_], AnyRef] = Map.empty
 ) {
 
@@ -488,6 +490,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
   def addProcedure(signature: ProcedureSignature): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(procedures = this.procedures + signature)
+  }
+
+  def addFunction(signature: UserFunctionSignature): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(functions = this.functions + signature)
   }
 
   private def fail(message: String): Nothing =
@@ -853,6 +859,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = {
         procedures.find(_.name == name).getOrElse(fail(s"No procedure signature for $name"))
+      }
+
+      override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
+        functions.find(_.name == name)
       }
 
       override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {

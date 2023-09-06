@@ -19,16 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport.FunctionSignatureBuilder
 import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport.ProcedureSignatureBuilder
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 trait ProcedureTestSupport {
   def procedureSignature(qualifiedName: String): ProcedureSignatureBuilder = ProcedureSignatureBuilder(qualifiedName)
+  def functionSignature(qualifiedName: String): FunctionSignatureBuilder = FunctionSignatureBuilder(qualifiedName)
 }
 
 object ProcedureTestSupport {
@@ -60,6 +64,36 @@ object ProcedureTestSupport {
         deprecationInfo = deprecationInfo,
         accessMode = accessMode,
         id = 1
+      )
+    }
+  }
+
+  case class FunctionSignatureBuilder(
+                                       qualifiedName: String,
+                                       inputSignature: IndexedSeq[FieldSignature] = IndexedSeq(),
+                                       outputType: CypherType = CTAny,
+                                       deprecationInfo: Option[String] = None,
+                                       isAggregate: Boolean = false
+                                     ) {
+
+    def withInputField(name: String, inputType: CypherType): FunctionSignatureBuilder =
+      copy(inputSignature = inputSignature :+ FieldSignature(name, inputType))
+
+    def withOutputType(outputType: CypherType): FunctionSignatureBuilder =
+      copy(outputType = outputType)
+
+    def build(): UserFunctionSignature = {
+      val splitName = qualifiedName.split("\\.")
+
+      UserFunctionSignature(
+        name = QualifiedName(splitName.init.toSeq, splitName.last),
+        inputSignature = inputSignature,
+        outputType = outputType,
+        deprecationInfo = deprecationInfo,
+        description = None,
+        isAggregate = isAggregate,
+        id = 1,
+        builtIn = true
       )
     }
   }
