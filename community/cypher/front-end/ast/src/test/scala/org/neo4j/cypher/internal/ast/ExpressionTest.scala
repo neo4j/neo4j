@@ -292,4 +292,14 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       Set(varFor("b"))
     )
   }
+
+  test("replaceAllOccurrencesBy accepts call-by-name parameter") {
+    val list = listOf(varFor("a"), varFor("a"))
+    var i = 0
+    def replacement = { i += 1; varFor(s"var$i") }
+
+    list.replaceAllOccurrencesBy(varFor("a"), replacement) should equal(
+      listOf(varFor("var1"), varFor("var2"))
+    )
+  }
 }
