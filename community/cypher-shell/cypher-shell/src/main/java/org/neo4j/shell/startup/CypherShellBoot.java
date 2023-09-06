@@ -26,11 +26,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.collections.api.factory.primitive.IntSets;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.shell.Main;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 public class CypherShellBoot {
+
+    private static final IntSet SUPPORTED_JVM_VERSIONS = IntSets.immutable.of(17, 21);
 
     /**
      * IMPORTANT NOTE!
@@ -63,9 +67,9 @@ public class CypherShellBoot {
     }
 
     private static void jvmCheck() {
-        if (Runtime.version().feature() < 17) {
+        if (!SUPPORTED_JVM_VERSIONS.contains(Runtime.version().feature())) {
             System.err.println(
-                    "You are using an unsupported version of the Java runtime. Please use Oracle(R) Java(TM) 17 or OpenJDK(TM) 17.");
+                    "You are using an unsupported version of the Java runtime. Please use Java(TM) 17 or Java(TM) 21.");
         }
     }
 

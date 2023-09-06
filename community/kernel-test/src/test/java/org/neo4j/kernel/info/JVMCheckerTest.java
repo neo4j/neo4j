@@ -51,6 +51,14 @@ class JVMCheckerTest {
     }
 
     @Test
+    void shouldNotIssueWarningWhenUsingVm21() {
+        new JvmChecker(log, new CannedJvmMetadataRepository("Java HotSpot(TM) 64-Bit Server VM", "21"))
+                .checkJvmCompatibilityAndIssueWarning();
+
+        assertThat(logProvider).doesNotContainMessage(INCOMPATIBLE_JVM_VERSION_WARNING);
+    }
+
+    @Test
     void shouldIssueWarningWhenUsingUnsupportedJvmVersion() {
         new JvmChecker(log, new CannedJvmMetadataRepository("Java HotSpot(TM) 64-Bit Server VM", "22.33.44.55"))
                 .checkJvmCompatibilityAndIssueWarning();

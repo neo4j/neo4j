@@ -22,6 +22,8 @@ package org.neo4j.server.startup;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
+import static org.neo4j.kernel.info.JvmChecker.NEO4J_JAVA_WARNING_MESSAGE;
+import static org.neo4j.kernel.info.JvmChecker.SUPPORTED_JAVA_NAME_PATTERN;
 import static org.neo4j.server.startup.Bootloader.ENV_HEAP_SIZE;
 import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_CP;
@@ -160,7 +162,7 @@ abstract class BootloaderOsAbstraction {
     private void printBadRuntime() {
         var err = bootloader.environment.err();
         err.println("WARNING! You are using an unsupported Java runtime.");
-        err.println("* Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j.");
+        err.println("* " + NEO4J_JAVA_WARNING_MESSAGE);
         err.println("* Please see https://neo4j.com/docs/ for Neo4j installation instructions.");
     }
 
@@ -171,13 +173,14 @@ abstract class BootloaderOsAbstraction {
     }
 
     private void checkJavaVersion() {
-        if (bootloader.environment.version().feature() != 17) {
+        int version = bootloader.environment.version().feature();
+        if (version != 17 && version != 21) {
             // too new java
             printBadRuntime();
         } else {
             // correct version
             String runtime = bootloader.getProp(PROP_VM_NAME);
-            if (!runtime.matches("(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM")) {
+            if (!SUPPORTED_JAVA_NAME_PATTERN.matcher(runtime).matches()) {
                 printBadRuntime();
             }
         }

@@ -33,6 +33,6 @@ public class Neo4jBoot {
     static void printJavaVersionErrorMessage() {
         String version = System.getProperty("java.version");
         System.out.println("Unsupported Java " + version
-                + " detected. Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j Server.");
+                + " detected. Please use Java(TM) 17 or Java(TM) 21 to run Neo4j Server.");
     }
 }

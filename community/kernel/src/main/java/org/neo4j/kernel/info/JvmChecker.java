@@ -27,16 +27,19 @@ import java.lang.management.MemoryUsage;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import org.eclipse.collections.api.factory.primitive.IntSets;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.logging.InternalLog;
 
 public class JvmChecker {
-    private static final int SUPPORTED_FEATURE_VERSION = 17;
-    static final String INCOMPATIBLE_JVM_WARNING =
-            "You are using an unsupported Java runtime. Please" + " use Oracle(R) Java(TM) 17, OpenJDK(TM) 17.";
-    static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of "
-            + "the Java runtime. Please use Oracle(R) Java(TM) 17 or OpenJDK(TM) 17.";
-    private static final Pattern SUPPORTED_JAVA_NAME_PATTERN =
+    public static final Pattern SUPPORTED_JAVA_NAME_PATTERN =
             compile("(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server) VM");
+    public static final String NEO4J_JAVA_WARNING_MESSAGE = "Please use Java(TM) 17 or Java(TM) 21 to run Neo4j.";
+    private static final IntSet SUPPORTED_JVM_VERSIONS = IntSets.immutable.of(17, 21);
+    static final String INCOMPATIBLE_JVM_WARNING =
+            "You are using an unsupported Java runtime. " + NEO4J_JAVA_WARNING_MESSAGE;
+    static final String INCOMPATIBLE_JVM_VERSION_WARNING =
+            "You are using an unsupported version of the Java runtime. " + NEO4J_JAVA_WARNING_MESSAGE;
 
     private final InternalLog log;
     private final JvmMetadataRepository jvmMetadataRepository;
@@ -52,7 +55,7 @@ public class JvmChecker {
 
         if (!SUPPORTED_JAVA_NAME_PATTERN.matcher(javaVmName).matches()) {
             log.warn(INCOMPATIBLE_JVM_WARNING);
-        } else if (javaVersion.feature() != SUPPORTED_FEATURE_VERSION) {
+        } else if (!SUPPORTED_JVM_VERSIONS.contains(javaVersion.feature())) {
             log.warn(INCOMPATIBLE_JVM_VERSION_WARNING);
         }
         List<String> jvmArguments = jvmMetadataRepository.getJvmInputArguments();

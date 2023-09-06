@@ -243,9 +243,6 @@ function Get-Java
 
     Write-Verbose "Java detected at '$javaCMD'"
 
-    $javaVersion = Get-JavaVersion -Path $javaCMD
-    if (-not $javaVersion.isValid) { Write-Error "This instance of Java is not supported"; return $null }
-
     # Shell arguments for the Neo4jServer
     $ShellArgs = @()
     $ClassPath = "$($Neo4jHome)/lib/*"
@@ -253,69 +250,6 @@ function Get-Java
 	  $ShellArgs += @("-Dbasedir=`"$Neo4jHome`"")
     $ShellArgs += @($StartingClass)
     Write-Output @{ 'java' = $javaCMD; 'args' = $ShellArgs }
-  }
-}
-
-function Get-JavaVersion
-{
-  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
-  param(
-    [Parameter(Mandatory = $true,ValueFromPipeline = $false)]
-    [string]$Path
-  )
-
-  process {
-    $result = Invoke-ExternalCommand -Command $Path -CommandArgs @('-version')
-
-    # Check the output
-    if ($result.exitCode -ne 0) {
-      Write-Warning "Unable to determine Java Version"
-      Write-Host $result.capturedOutput
-      return @{ 'isValid' = $true; 'isJava17' = $true }
-    }
-
-    if ($result.capturedOutput.Count -eq 0) {
-      Write-Verbose "Java did not output version information"
-      Write-Warning "Unable to determine Java Version"
-      return @{ 'isValid' = $true; 'isJava17' = $true }
-    }
-
-    $javaHelpText = "* Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j Server.`n" +
-    "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
-
-    # Read the contents of the redirected output
-    $content = $result.capturedOutput -join "`n`r"
-
-    # Use a simple regular expression to extract the java version
-    Write-Verbose "Java version response: $content"
-    if ($matches -ne $null) { $matches.Clear() }
-    if ($content -match 'version \"(.+)\"') {
-      $javaVersion = $matches[1]
-      Write-Verbose "Java Version detected as $javaVersion"
-    } else {
-      Write-Verbose "Could not determine the Java Version"
-      Write-Warning "Unable to determine Java Version"
-      return @{ 'isValid' = $true; 'isJava17' = $true }
-    }
-
-    # Check for Java Version Compatibility
-    # Anything less than Java 17 will block execution
-    if (($javaVersion -lt '17') -or ($javaVersion -match '^9')) {
-      Write-Warning "ERROR! Neo4j cannot be started using java version $($javaVersion)"
-      Write-Warning $javaHelpText
-      return @{ 'isValid' = $false; 'isJava17' = $false }
-    }
-    # Anything less then 18 is some Java 17 version
-    $isJava17 = $javaVersion -lt '18'
-
-    # Check for Java Edition
-    $regex = '(Java HotSpot\(TM\)|OpenJDK) (64-Bit Server|Server) VM'
-    if (-not ($content -match $regex)) {
-      Write-Warning "WARNING! You are using an unsupported Java runtime"
-      Write-Warning $javaHelpText
-    }
-
-    Write-Output @{ 'isValid' = $true; 'isJava17' = $isJava17 }
   }
 }
 

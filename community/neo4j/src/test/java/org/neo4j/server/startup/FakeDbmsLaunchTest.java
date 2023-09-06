@@ -237,6 +237,14 @@ class FakeDbmsLaunchTest {
         }
 
         @Test
+        void shouldNotComplainOnJava21() {
+            Runtime.Version version = Runtime.Version.parse("21.0.1");
+            Map<String, String> java = Map.of(Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM");
+            assertThat(execute(List.of("start"), java, version)).isEqualTo(EXIT_CODE_OK);
+            assertThat(err.toString()).doesNotContain("WARNING! You are using an unsupported Java runtime");
+        }
+
+        @Test
         void shouldComplainWhenJavaVersionIsTooNew() {
             Runtime.Version version = Runtime.Version.parse("15.0.1+2");
             Map<String, String> java = Map.of(Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM");
