@@ -435,8 +435,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
         Map("a" -> varFor("a")),
         Map(
           "agg1" -> min(size(varFor("r2"))),
-          "agg2" -> min(length(path(varFor("a"), varFor("r1"), varFor("b")))),
-          "agg3" -> min(length(path(varFor("a"), varFor("r1"), varFor("b"))))
+          "agg2" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b")))),
+          "agg3" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b"))))
         )
       )
       .expand("(b)-[r2*0..3]-(c)")
@@ -466,8 +466,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
         Map("a" -> varFor("a")),
         Map(
           "agg1" -> min(size(varFor("r2"))),
-          "agg2" -> min(length(path(varFor("a"), varFor("r1"), varFor("b")))),
-          "agg3" -> min(length(path(varFor("a"), varFor("r1"), varFor("b"))))
+          "agg2" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b")))),
+          "agg3" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b"))))
         )
       )
       .expand("(b)-[r2*1..3]-(c)")
@@ -667,10 +667,20 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("a AS a")
       .valueHashJoin("pathA=pathB")
-      .|.projection(Map("pathB" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .|.projection(Map("pathB" -> varLengthPathExpression(
+        varFor("a"),
+        varFor("r"),
+        varFor("b"),
+        SemanticDirection.BOTH
+      )))
       .|.expand("(b)-[r:R*2..3]-(a)")
       .|.allNodeScan("b")
-      .projection(Map("pathA" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .projection(Map("pathA" -> varLengthPathExpression(
+        varFor("a"),
+        varFor("r"),
+        varFor("b"),
+        SemanticDirection.BOTH
+      )))
       .expand("(a)-[r:R*2..3]-(b)")
       .allNodeScan("a")
       .build()
@@ -682,10 +692,20 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("a AS a")
       .valueHashJoin("pathA=pathB")
-      .|.projection(Map("pathB" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .|.projection(Map("pathB" -> varLengthPathExpression(
+        varFor("a"),
+        varFor("r"),
+        varFor("b"),
+        SemanticDirection.BOTH
+      )))
       .|.expand("(b)-[r:R*1..3]-(a)")
       .|.allNodeScan("b")
-      .projection(Map("pathA" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .projection(Map("pathA" -> varLengthPathExpression(
+        varFor("a"),
+        varFor("r"),
+        varFor("b"),
+        SemanticDirection.BOTH
+      )))
       .expand("(a)-[r:R*1..3]-(b)")
       .allNodeScan("a")
       .build()
@@ -1042,7 +1062,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("d AS d")
       .projection("nodes(path) AS d")
-      .projection(Map("path" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .projection(Map("path" -> varLengthPathExpression(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
       .expand("(from)-[r*0..2]-(to)")
       .allNodeScan("from")
       .build()
@@ -1561,7 +1581,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
-        Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))))
+        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
       )
       .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
@@ -1582,7 +1602,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
-        Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))))
+        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
       )
       .expand("(a)-[r*1..]-(b)")
       .allNodeScan("a")
@@ -1603,7 +1623,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
-        Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))))
+        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
       )
       .expand("(a)-[r*2..]-(b)")
       .allNodeScan("a")
@@ -1614,7 +1634,10 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("use bfs pruning with aggregation when grouping aggregation function is min(length(path)) when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
+      .aggregation(
+        Map("a" -> varFor("a")),
+        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+      )
       .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
       .build()
@@ -1634,7 +1657,10 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     "use bfs pruning with aggregation when grouping aggregation function is min(length(path)) when min depth is 1"
   ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
+      .aggregation(
+        Map("a" -> varFor("a")),
+        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+      )
       .expand("(a)-[r*1..]-(b)")
       .allNodeScan("a")
       .build()
@@ -1652,7 +1678,10 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("do not use pruning with aggregation when grouping aggregation function is min(length(path))") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
+      .aggregation(
+        Map("a" -> varFor("a")),
+        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+      )
       .expand("(a)-[r*2..]-(b)")
       .allNodeScan("a")
       .build()
@@ -1729,7 +1758,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .aggregation(
         Map("from" -> varFor("from")),
         Map(
-          "valid1" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))),
+          "valid1" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))),
           "valid2" -> min(size(varFor("r"))),
           "valid3" -> collect(varFor("to"), distinct = true),
           "invalid" -> collect(varFor("r"), distinct = true)

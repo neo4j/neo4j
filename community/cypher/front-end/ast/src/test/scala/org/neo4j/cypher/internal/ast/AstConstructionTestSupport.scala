@@ -381,7 +381,7 @@ trait AstConstructionTestSupport {
   def length(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Length.name)(pos))
 
-  def path(
+  def varLengthPathExpression(
     start: LogicalVariable,
     relationships: LogicalVariable,
     end: LogicalVariable,
