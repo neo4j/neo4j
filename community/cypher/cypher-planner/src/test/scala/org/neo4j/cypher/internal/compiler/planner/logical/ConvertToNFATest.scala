@@ -776,7 +776,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         Seq(relTypeName("R"), relTypeName("T")),
         VarPatternLength(0, Some(3))
       )
-    val relationshipPredicate = allInList(varFor("r_inner"), varFor("r"), in(prop("r_inner", "prop"), listOf(literalInt(2))))
+    val relationshipPredicate =
+      allInList(varFor("r_inner"), varFor("r"), in(prop("r_inner", "prop"), listOf(literalInt(2))))
     val startNodePredicate = hasLabels("start", "Label")
     val endNodePredicate = in(prop("end", "prop"), listOf(literalInt(42)))
     val spp =
