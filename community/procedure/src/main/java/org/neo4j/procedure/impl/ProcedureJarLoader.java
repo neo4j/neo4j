@@ -19,13 +19,17 @@
  */
 package org.neo4j.procedure.impl;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -34,6 +38,7 @@ import java.util.zip.ZipFile;
 import org.neo4j.collection.AbstractPrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -45,10 +50,13 @@ import org.neo4j.string.Globbing;
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
  * instances.
  */
-class ProcedureJarLoader {
+class ProcedureJarLoader implements AutoCloseable {
 
     private final ProcedureCompiler compiler;
     private final InternalLog log;
+
+    private final Set<Closeable> closeables =
+            Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     ProcedureJarLoader(ProcedureCompiler compiler, InternalLog log) {
         this.compiler = compiler;
@@ -81,13 +89,20 @@ class ProcedureJarLoader {
                     String.join(", ", failedJarFiles)));
         }
 
-        if (jarFiles.size() == 0) {
+        if (jarFiles.isEmpty()) {
             return Callables.empty();
         }
 
+        // On Windows, it is not possible to modify files when they are used by a process.
+        // To support our test infrastructure, we want to ensure that we properly close
+        // all open file handles for procedures when we shutdown. To do this, we keep
+        // a weak reference to the classloader, and tidy up in a close-method.
+        var loader = ProcedureClassLoader.of(jarFiles);
+        closeables.add(loader);
+
         Callables out = new Callables();
         for (Path jarFile : jarFiles) {
-            loadProcedures(jarFile, ProcedureClassLoader.of(jarFiles), out, methodNameFilter);
+            loadProcedures(jarFile, loader, out, methodNameFilter);
         }
         return out;
     }
@@ -171,6 +186,15 @@ class ProcedureJarLoader {
                 }
             }
         };
+    }
+
+    @Override
+    public void close() throws Exception {
+        try {
+            IOUtils.closeAll(closeables);
+        } finally {
+            closeables.clear();
+        }
     }
 
     public static class Callables {
