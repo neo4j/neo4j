@@ -262,11 +262,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def check(selector: PatternPart.Selector): SemanticCheck = selector match {
     case ShortestGroups(countOfGroups) if countOfGroups.value <= 0 =>
       error("The group count needs to be greater than 0.", countOfGroups.position)
-    case ShortestGroups(countOfGroups) if countOfGroups.value >= 2 =>
-      error(
-        s"The path selector `${selector.prettified}` with a group count greater than 1 is not supported yet.",
-        countOfGroups.position
-      )
     case sel: CountedSelector if sel.count.value <= 0 =>
       error("The path count needs to be greater than 0.", sel.count.position)
     case _ => success

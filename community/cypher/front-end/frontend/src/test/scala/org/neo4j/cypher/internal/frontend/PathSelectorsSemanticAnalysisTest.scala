@@ -171,9 +171,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
   test(s"MATCH SHORTEST 2 PATH GROUPS ((a)-[r]->(b))+ RETURN count(*)") {
     val result =
       runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
-    result.errorMessages shouldBe Seq(
-      "The path selector `SHORTEST 2 PATH GROUPS` with a group count greater than 1 is not supported yet."
-    )
+    result.errorMessages shouldBe Seq.empty
   }
 
   // WHERE clauses in Parenthesized Path Patterns
