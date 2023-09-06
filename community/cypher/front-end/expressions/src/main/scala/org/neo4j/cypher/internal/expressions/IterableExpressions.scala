@@ -146,7 +146,7 @@ case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val 
 
 object AllIterablePredicate extends IterableExpressionWithInfo {
   val name = "all"
-  val description = "Returns true if the predicate holds for all elements in the given list."
+  val description = "Returns true if the predicate holds for all elements in the given `LIST<ANY>`."
 
   def apply(
     variable: LogicalVariable,
@@ -163,7 +163,7 @@ case class AnyIterablePredicate(scope: FilterScope, expression: Expression)(val 
 
 object AnyIterablePredicate extends IterableExpressionWithInfo {
   val name = "any"
-  val description = "Returns true if the predicate holds for at least one element in the given list."
+  val description = "Returns true if the predicate holds for at least one element in the given `LIST<ANY>`."
 
   def apply(
     variable: LogicalVariable,
@@ -180,7 +180,7 @@ case class NoneIterablePredicate(scope: FilterScope, expression: Expression)(val
 
 object NoneIterablePredicate extends IterableExpressionWithInfo {
   val name = "none"
-  val description = "Returns true if the predicate holds for no element in the given list."
+  val description = "Returns true if the predicate holds for no element in the given `LIST<ANY>`."
 
   def apply(
     variable: LogicalVariable,
@@ -197,7 +197,7 @@ case class SingleIterablePredicate(scope: FilterScope, expression: Expression)(v
 
 object SingleIterablePredicate extends IterableExpressionWithInfo {
   val name = "single"
-  val description = "Returns true if the predicate holds for exactly one of the elements in the given list."
+  val description = "Returns true if the predicate holds for exactly one of the elements in the given `LIST<ANY>`."
 
   def apply(
     variable: LogicalVariable,

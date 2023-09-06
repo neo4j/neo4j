@@ -27,7 +27,7 @@ case object Trim extends Function {
       this,
       CTString,
       CTString,
-      "Returns the original string with leading and trailing whitespace removed.",
+      "Returns the given `STRING` with leading and trailing whitespace removed.",
       Category.STRING
     )
   )

@@ -29,7 +29,7 @@ case object ToStringList extends Function {
       this,
       CTList(CTAny),
       CTList(CTString),
-      "Converts a list of values to a list of string values. If any values are not convertible to string they will be null in the list returned.",
+      "Converts a `LIST<ANY>` to a `LIST<STRING>` values. If any values are not convertible to `STRING` they will be null in the `LIST<STRING>` returned.",
       Category.LIST
     )
   )

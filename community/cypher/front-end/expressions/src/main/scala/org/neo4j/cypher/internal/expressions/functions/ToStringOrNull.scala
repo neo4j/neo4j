@@ -28,7 +28,7 @@ case object ToStringOrNull extends Function {
       this,
       CTAny,
       CTString,
-      "Converts an integer, float, boolean, point or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string, or null if the value cannot be converted.",
+      "Converts an `INTEGER`, `FLOAT`, `BOOLEAN`, `POINT` or temporal type (i.e. `DATE`, `ZONED TIME`, `LOCAL TIME`, `ZONED DATETIME`, `LOCAL DATETIME` or `DURATION`) value to a `STRING`, or null if the value cannot be converted.",
       Category.STRING
     )
     // TODO: Also Category.SCALAR, in case we entangle the categories. For now we keep the same as toString

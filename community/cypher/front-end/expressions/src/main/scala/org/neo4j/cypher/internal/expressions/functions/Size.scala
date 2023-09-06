@@ -26,7 +26,7 @@ case object Size extends Function {
   def name = "size"
 
   override val signatures = Vector(
-    TypeSignature(this, CTList(CTAny), CTInteger, "Returns the number of items in a list.", Category.SCALAR),
-    TypeSignature(this, CTString, CTInteger, "Returns the number of Unicode characters in a string.", Category.SCALAR)
+    TypeSignature(this, CTList(CTAny), CTInteger, "Returns the number of items in a `LIST<ANY>`.", Category.SCALAR),
+    TypeSignature(this, CTString, CTInteger, "Returns the number of Unicode characters in a `STRING`.", Category.SCALAR)
   )
 }

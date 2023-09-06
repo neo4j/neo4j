@@ -29,7 +29,7 @@ case object Replace extends Function {
       argumentTypes = Vector(CTString, CTString, CTString),
       outputType = CTString,
       description =
-        "Returns a string in which all occurrences of a specified search string in the original string have been replaced by another (specified) replace string.",
+        "Returns a `STRING` in which all occurrences of a specified search `STRING` in the given `STRING` have been replaced by another (specified) replacement `STRING`.",
       category = Category.STRING
     )
   )

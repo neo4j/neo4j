@@ -30,7 +30,7 @@ case object Split extends Function {
       argumentTypes = Vector(CTString, CTString),
       outputType = CTList(CTString),
       description =
-        "Returns a list of strings resulting from the splitting of the original string around matches of the given delimiter.",
+        "Returns a `LIST<STRING>` resulting from the splitting of the given `STRING` around matches of the given delimiter.",
       category = Category.STRING
     ),
     FunctionTypeSignature(
@@ -39,7 +39,7 @@ case object Split extends Function {
       argumentTypes = Vector(CTString, CTList(CTString)),
       outputType = CTList(CTString),
       description =
-        "Returns a list of strings resulting from the splitting of the original string around matches of any of the given delimiters.",
+        "Returns a `LIST<STRING>` resulting from the splitting of the given `STRING` around matches of any of the given delimiters.",
       category = Category.STRING
     )
   )

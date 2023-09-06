@@ -45,7 +45,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-@Description("Construct a Duration value.")
+@Description("Creates a `DURATION` value.")
 class DurationFunction implements CallableUserFunction {
     private static final String CATEGORY = Category.TEMPORAL();
 
@@ -95,7 +95,7 @@ class DurationFunction implements CallableUserFunction {
 
     private static class Between implements CallableUserFunction {
         private static final String DESCRIPTION =
-                "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in %s.";
+                "Computes the `DURATION` between the `from` instant (inclusive) and the `to` instant (exclusive) in %s.";
         private static final List<FieldSignature> SIGNATURE =
                 Arrays.asList(inputField("from", Neo4jTypes.NTAny), inputField("to", Neo4jTypes.NTAny));
         private final UserFunctionSignature signature;

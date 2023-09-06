@@ -26,7 +26,7 @@ case object Rand extends Function {
     TypeSignature.noArg(
       this,
       CTFloat,
-      "Returns a random floating point number in the range from 0 (inclusive) to 1 (exclusive); i.e. [0,1).",
+      "Returns a random `FLOAT` in the range from 0 (inclusive) to 1 (exclusive).",
       Category.NUMERIC
     )
   )

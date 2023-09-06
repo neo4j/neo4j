@@ -32,7 +32,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-@Description("Create a LocalTime instant.")
+@Description("Creates a `LOCAL TIME` instant.")
 class LocalTimeFunction extends TemporalFunction<LocalTimeValue> {
     LocalTimeFunction(Supplier<ZoneId> defaultZone) {
         super(NTLocalTime, defaultZone);
@@ -62,5 +62,10 @@ class LocalTimeFunction extends TemporalFunction<LocalTimeValue> {
     protected LocalTimeValue truncate(
             TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone) {
         return LocalTimeValue.truncate(unit, input, fields, defaultZone);
+    }
+
+    @Override
+    protected String getTemporalCypherTypeName() {
+        return "LOCAL TIME";
     }
 }

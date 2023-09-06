@@ -29,7 +29,7 @@ case object Relationships extends Function {
       this,
       CTPath,
       CTList(CTRelationship),
-      "Returns a list containing all the relationships in a path.",
+      "Returns a `LIST<RELATIONSHIP>` containing all the `RELATIONSHIP` values in a `PATH`.",
       Category.LIST
     )
   )

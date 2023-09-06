@@ -30,7 +30,7 @@ case object Sum extends AggregatingFunction {
       names = Vector("input"),
       argumentTypes = Vector(CTInteger),
       outputType = CTInteger,
-      description = "Returns the sum of a set of integers",
+      description = "Returns the sum of a set of `INTEGER` values",
       category = Category.AGGREGATING
     ),
     FunctionTypeSignature(
@@ -38,7 +38,7 @@ case object Sum extends AggregatingFunction {
       names = Vector("input"),
       argumentTypes = Vector(CTFloat),
       outputType = CTFloat,
-      description = "Returns the sum of a set of floats",
+      description = "Returns the sum of a set of `FLOAT` values",
       category = Category.AGGREGATING
     ),
     FunctionTypeSignature(
@@ -46,7 +46,7 @@ case object Sum extends AggregatingFunction {
       names = Vector("input"),
       argumentTypes = Vector(CTDuration),
       outputType = CTDuration,
-      description = "Returns the sum of a set of durations",
+      description = "Returns the sum of a set of `DURATION` values",
       category = Category.AGGREGATING
     )
   )

@@ -28,7 +28,7 @@ case object Tail extends Function {
       this,
       CTList(CTAny),
       CTList(CTAny),
-      description = "Returns all but the first element in a list.",
+      description = "Returns all but the first element in a `LIST<ANY>`.",
       category = Category.LIST
     )
   )

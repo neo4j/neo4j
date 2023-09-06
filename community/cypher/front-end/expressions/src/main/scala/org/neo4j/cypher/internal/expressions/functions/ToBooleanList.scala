@@ -29,7 +29,7 @@ case object ToBooleanList extends Function {
       this,
       CTList(CTAny),
       CTList(CTBoolean),
-      "Converts a list of values to a list of boolean values. If any values are not convertible to boolean they will be null in the list returned.",
+      "Converts a `LIST<ANY>` of values to a `LIST<BOOLEAN>` values. If any values are not convertible to `BOOLEAN` they will be null in the `LIST<BOOLEAN>` returned.",
       Category.LIST
     )
   )

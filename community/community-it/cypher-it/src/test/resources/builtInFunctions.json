@@ -2,7 +2,7 @@
   {
     "name": "abs",
     "category": "Numeric",
-    "description": "Returns the absolute value of an integer.",
+    "description": "Returns the absolute value of an `INTEGER`.",
     "signature": "abs(input :: INTEGER?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -29,7 +29,7 @@
   {
     "name": "abs",
     "category": "Numeric",
-    "description": "Returns the absolute value of a floating point number.",
+    "description": "Returns the absolute value of a `FLOAT`.",
     "signature": "abs(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -56,7 +56,7 @@
   {
     "name": "acos",
     "category": "Trigonometric",
-    "description": "Returns the arccosine of a number in radians.",
+    "description": "Returns the arccosine of a `FLOAT` in radians.",
     "signature": "acos(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -83,7 +83,7 @@
   {
     "name": "all",
     "category": "Predicate",
-    "description": "Returns true if the predicate holds for all elements in the given list.",
+    "description": "Returns true if the predicate holds for all elements in the given `LIST<ANY>`.",
     "signature": "all(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -116,7 +116,7 @@
   {
     "name": "any",
     "category": "Predicate",
-    "description": "Returns true if the predicate holds for at least one element in the given list.",
+    "description": "Returns true if the predicate holds for at least one element in the given `LIST<ANY>`.",
     "signature": "any(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -149,7 +149,7 @@
   {
     "name": "asin",
     "category": "Trigonometric",
-    "description": "Returns the arcsine of a number in radians.",
+    "description": "Returns the arcsine of a `FLOAT` in radians.",
     "signature": "asin(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -176,7 +176,7 @@
   {
     "name": "atan",
     "category": "Trigonometric",
-    "description": "Returns the arctangent of a number in radians.",
+    "description": "Returns the arctangent of a `FLOAT` in radians.",
     "signature": "atan(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -236,7 +236,7 @@
   {
     "name": "avg",
     "category": "Aggregating",
-    "description": "Returns the average of a set of integer values.",
+    "description": "Returns the average of a set of `INTEGER` values.",
     "signature": "avg(input :: INTEGER?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -263,7 +263,7 @@
   {
     "name": "avg",
     "category": "Aggregating",
-    "description": "Returns the average of a set of floating point values.",
+    "description": "Returns the average of a set of `FLOAT` values.",
     "signature": "avg(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -290,7 +290,7 @@
   {
     "name": "avg",
     "category": "Aggregating",
-    "description": "Returns the average of a set of duration values.",
+    "description": "Returns the average of a set of `DURATION` values.",
     "signature": "avg(input :: DURATION?) :: (DURATION?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -317,7 +317,7 @@
   {
     "name": "ceil",
     "category": "Numeric",
-    "description": "Returns the smallest floating point number that is greater than or equal to a number and equal to a mathematical integer.",
+    "description": "Returns the smallest `FLOAT` that is greater than or equal to a number and equal to an `INTEGER`.",
     "signature": "ceil(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -398,7 +398,7 @@
   {
     "name": "cos",
     "category": "Trigonometric",
-    "description": "Returns the cosine  of a number.",
+    "description": "Returns the cosine of a `FLOAT`.",
     "signature": "cos(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -425,7 +425,7 @@
   {
     "name": "cot",
     "category": "Trigonometric",
-    "description": "Returns the cotangent of a number.",
+    "description": "Returns the cotangent of a `FLOAT`.",
     "signature": "cot(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -479,7 +479,7 @@
   {
     "name": "date",
     "category": "Temporal",
-    "description": "Create a Date instant.",
+    "description": "Creates a `DATE` instant.",
     "signature": "date(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -507,7 +507,7 @@
   {
     "name": "date.realtime",
     "category": "Temporal",
-    "description": "Get the current Date instant using the realtime clock.",
+    "description": "Returns the current `DATE` instant using the realtime clock.",
     "signature": "date.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -535,7 +535,7 @@
   {
     "name": "date.statement",
     "category": "Temporal",
-    "description": "Get the current Date instant using the statement clock.",
+    "description": "Returns the current `DATE` instant using the statement clock.",
     "signature": "date.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -563,7 +563,7 @@
   {
     "name": "date.transaction",
     "category": "Temporal",
-    "description": "Get the current Date instant using the transaction clock.",
+    "description": "Returns the current `DATE` instant using the transaction clock.",
     "signature": "date.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -591,7 +591,7 @@
   {
     "name": "date.truncate",
     "category": "Temporal",
-    "description": "Truncate the input temporal value to a Date instant using the specified unit.",
+    "description": "Truncates the given temporal value to a `DATE` instant using the specified unit.",
     "signature": "date.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (DATE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -632,7 +632,7 @@
   {
     "name": "datetime",
     "category": "Temporal",
-    "description": "Create a DateTime instant.",
+    "description": "Creates a `ZONED DATETIME` instant.",
     "signature": "datetime(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -660,7 +660,7 @@
   {
     "name": "datetime.fromepoch",
     "category": "Temporal",
-    "description": "Create a DateTime given the seconds and nanoseconds since the start of the epoch.",
+    "description": "Creates a `ZONED DATETIME` given the seconds and nanoseconds since the start of the epoch.",
     "signature": "datetime.fromepoch(seconds :: NUMBER?, nanoseconds :: NUMBER?) :: (DATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -693,7 +693,7 @@
   {
     "name": "datetime.fromepochmillis",
     "category": "Temporal",
-    "description": "Create a DateTime given the milliseconds since the start of the epoch.",
+    "description": "Creates a `ZONED DATETIME` given the milliseconds since the start of the epoch.",
     "signature": "datetime.fromepochmillis(milliseconds :: NUMBER?) :: (DATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -720,7 +720,7 @@
   {
     "name": "datetime.realtime",
     "category": "Temporal",
-    "description": "Get the current DateTime instant using the realtime clock.",
+    "description": "Returns the current `ZONED DATETIME` instant using the realtime clock.",
     "signature": "datetime.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -748,7 +748,7 @@
   {
     "name": "datetime.statement",
     "category": "Temporal",
-    "description": "Get the current DateTime instant using the statement clock.",
+    "description": "Returns the current `ZONED DATETIME` instant using the statement clock.",
     "signature": "datetime.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -776,7 +776,7 @@
   {
     "name": "datetime.transaction",
     "category": "Temporal",
-    "description": "Get the current DateTime instant using the transaction clock.",
+    "description": "Returns the current `ZONED DATETIME` instant using the transaction clock.",
     "signature": "datetime.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -804,7 +804,7 @@
   {
     "name": "datetime.truncate",
     "category": "Temporal",
-    "description": "Truncate the input temporal value to a DateTime instant using the specified unit.",
+    "description": "Truncates the given temporal value to a `ZONED DATETIME` instant using the specified unit.",
     "signature": "datetime.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (DATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -900,7 +900,7 @@
   {
     "name": "duration",
     "category": "Temporal",
-    "description": "Construct a Duration value.",
+    "description": "Creates a `DURATION` value.",
     "signature": "duration(input :: ANY?) :: (DURATION?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -927,7 +927,7 @@
   {
     "name": "duration.between",
     "category": "Temporal",
-    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in logical units.",
+    "description": "Computes the `DURATION` between the `from` instant (inclusive) and the `to` instant (exclusive) in logical units.",
     "signature": "duration.between(from :: ANY?, to :: ANY?) :: (DURATION?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -960,7 +960,7 @@
   {
     "name": "duration.inDays",
     "category": "Temporal",
-    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in days.",
+    "description": "Computes the `DURATION` between the `from` instant (inclusive) and the `to` instant (exclusive) in days.",
     "signature": "duration.inDays(from :: ANY?, to :: ANY?) :: (DURATION?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -993,7 +993,7 @@
   {
     "name": "duration.inMonths",
     "category": "Temporal",
-    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in months.",
+    "description": "Computes the `DURATION` between the `from` instant (inclusive) and the `to` instant (exclusive) in months.",
     "signature": "duration.inMonths(from :: ANY?, to :: ANY?) :: (DURATION?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1026,7 +1026,7 @@
   {
     "name": "duration.inSeconds",
     "category": "Temporal",
-    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in seconds.",
+    "description": "Computes the `DURATION` between the `from` instant (inclusive) and the `to` instant (exclusive) in seconds.",
     "signature": "duration.inSeconds(from :: ANY?, to :: ANY?) :: (DURATION?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1079,7 +1079,7 @@
   {
     "name": "elementId",
     "category": "Scalar",
-    "description": "Returns the element id of a node.",
+    "description": "Returns the element id of a `NODE`.",
     "signature": "elementId(input :: NODE?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1106,7 +1106,7 @@
   {
     "name": "elementId",
     "category": "Scalar",
-    "description": "Returns the element id of a relationship.",
+    "description": "Returns the element id of a `RELATIONSHIP`.",
     "signature": "elementId(input :: RELATIONSHIP?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1133,7 +1133,7 @@
   {
     "name": "endNode",
     "category": "Scalar",
-    "description": "Returns the end node of a relationship.",
+    "description": "Returns the end `NODE` of a `RELATIONSHIP`.",
     "signature": "endNode(input :: RELATIONSHIP?) :: (NODE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1234,7 +1234,7 @@
   {
     "name": "floor",
     "category": "Numeric",
-    "description": "Returns the largest floating point number that is less than or equal to a number and equal to a mathematical integer.",
+    "description": "Returns the largest `FLOAT` that is less than or equal to a number and equal to an `INTEGER`.",
     "signature": "floor(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1261,7 +1261,7 @@
   {
     "name": "graph.names",
     "category": "Graph",
-    "description": "Lists the names of graph in the current database",
+    "description": "Lists the names of graphs in the current database.",
     "signature": "graph.names() :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "enterpriseOnly": true,
@@ -1282,7 +1282,7 @@
   {
     "name": "graph.propertiesByName",
     "category": "Graph",
-    "description": "Returns the map of properties associated with a graph",
+    "description": "Returns the `MAP` of properties associated with a graph.",
     "signature": "graph.propertiesByName(graphName :: STRING?) :: (MAP?)",
     "isBuiltIn": true,
     "enterpriseOnly": true,
@@ -1337,7 +1337,7 @@
   {
     "name": "head",
     "category": "Scalar",
-    "description": "Returns the first element in a list.",
+    "description": "Returns the first element in a `LIST<ANY>`.",
     "signature": "head(list :: LIST? OF ANY?) :: (ANY?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1364,7 +1364,7 @@
   {
     "name": "id",
     "category": "Scalar",
-    "description": "Returns the id of a node.",
+    "description": "Returns the id of a `NODE`.",
     "signature": "id(input :: NODE?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1391,7 +1391,7 @@
   {
     "name": "id",
     "category": "Scalar",
-    "description": "Returns the id of a relationship.",
+    "description": "Returns the id of a `RELATIONSHIP`.",
     "signature": "id(input :: RELATIONSHIP?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1418,7 +1418,7 @@
   {
     "name": "isEmpty",
     "category": "Predicate",
-    "description": "Checks whether a list is empty.",
+    "description": "Checks whether a `LIST<ANY>` is empty.",
     "signature": "isEmpty(input :: LIST? OF ANY?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1445,7 +1445,7 @@
   {
     "name": "isEmpty",
     "category": "Predicate",
-    "description": "Checks whether a map is empty.",
+    "description": "Checks whether a `MAP` is empty.",
     "signature": "isEmpty(input :: MAP?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1472,7 +1472,7 @@
   {
     "name": "isEmpty",
     "category": "Predicate",
-    "description": "Checks whether a string is empty.",
+    "description": "Checks whether a `STRING` is empty.",
     "signature": "isEmpty(input :: STRING?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1499,7 +1499,7 @@
   {
     "name": "isNaN",
     "category": "Numeric",
-    "description": "Returns whether the given integer is NaN.",
+    "description": "Returns whether the given `INTEGER` is NaN.",
     "signature": "isNaN(input :: INTEGER?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1526,7 +1526,7 @@
   {
     "name": "isNaN",
     "category": "Numeric",
-    "description": "Returns whether the given floating point number is NaN.",
+    "description": "Returns whether the given `FLOAT` is NaN.",
     "signature": "isNaN(input :: FLOAT?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1553,7 +1553,7 @@
   {
     "name": "keys",
     "category": "List",
-    "description": "Returns a list containing the string representations for all the property names of a node.",
+    "description": "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `NODE`.",
     "signature": "keys(input :: NODE?) :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1580,7 +1580,7 @@
   {
     "name": "keys",
     "category": "List",
-    "description": "Returns a list containing the string representations for all the property names of a relationship",
+    "description": "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `RELATIONSHIP`.",
     "signature": "keys(input :: RELATIONSHIP?) :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1607,7 +1607,7 @@
   {
     "name": "keys",
     "category": "List",
-    "description": "Returns a list containing the string representations for all the property names of a map.",
+    "description": "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `MAP`.",
     "signature": "keys(input :: MAP?) :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1634,7 +1634,7 @@
   {
     "name": "labels",
     "category": "List",
-    "description": "Returns a list containing the string representations for all the labels of a node.",
+    "description": "Returns a `LIST<STRING>` containing the `STRING` representations for all the labels of a `NODE`.",
     "signature": "labels(input :: NODE?) :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1661,7 +1661,7 @@
   {
     "name": "last",
     "category": "Scalar",
-    "description": "Returns the last element in a list.",
+    "description": "Returns the last element in a `LIST<ANY>`.",
     "signature": "last(list :: LIST? OF ANY?) :: (ANY?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1688,7 +1688,7 @@
   {
     "name": "left",
     "category": "String",
-    "description": "Returns a string containing the specified number of leftmost characters of the original string.",
+    "description": "Returns a `STRING` containing the specified number (`INTEGER`) of leftmost characters in the given `STRING`.",
     "signature": "left(original :: STRING?, length :: INTEGER?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1721,7 +1721,7 @@
   {
     "name": "length",
     "category": "Scalar",
-    "description": "Returns the length of a path.",
+    "description": "Returns the length of a `PATH`.",
     "signature": "length(input :: PATH?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1768,7 +1768,7 @@
   {
     "name": "localdatetime",
     "category": "Temporal",
-    "description": "Create a LocalDateTime instant.",
+    "description": "Creates a `LOCAL DATETIME` instant.",
     "signature": "localdatetime(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1796,7 +1796,7 @@
   {
     "name": "localdatetime.realtime",
     "category": "Temporal",
-    "description": "Get the current LocalDateTime instant using the realtime clock.",
+    "description": "Returns the current `LOCAL DATETIME` instant using the realtime clock.",
     "signature": "localdatetime.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1824,7 +1824,7 @@
   {
     "name": "localdatetime.statement",
     "category": "Temporal",
-    "description": "Get the current LocalDateTime instant using the statement clock.",
+    "description": "Returns the current `LOCAL DATETIME` instant using the statement clock.",
     "signature": "localdatetime.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1852,7 +1852,7 @@
   {
     "name": "localdatetime.transaction",
     "category": "Temporal",
-    "description": "Get the current LocalDateTime instant using the transaction clock.",
+    "description": "Returns the current `LOCAL DATETIME` instant using the transaction clock.",
     "signature": "localdatetime.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1880,7 +1880,7 @@
   {
     "name": "localdatetime.truncate",
     "category": "Temporal",
-    "description": "Truncate the input temporal value to a LocalDateTime instant using the specified unit.",
+    "description": "Truncates the given temporal value to a `LOCAL DATETIME` instant using the specified unit.",
     "signature": "localdatetime.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (LOCALDATETIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1921,7 +1921,7 @@
   {
     "name": "localtime",
     "category": "Temporal",
-    "description": "Create a LocalTime instant.",
+    "description": "Creates a `LOCAL TIME` instant.",
     "signature": "localtime(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1949,7 +1949,7 @@
   {
     "name": "localtime.realtime",
     "category": "Temporal",
-    "description": "Get the current LocalTime instant using the realtime clock.",
+    "description": "Returns the current `LOCAL TIME` instant using the realtime clock.",
     "signature": "localtime.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -1977,7 +1977,7 @@
   {
     "name": "localtime.statement",
     "category": "Temporal",
-    "description": "Get the current LocalTime instant using the statement clock.",
+    "description": "Returns the current `LOCAL TIME` instant using the statement clock.",
     "signature": "localtime.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2005,7 +2005,7 @@
   {
     "name": "localtime.transaction",
     "category": "Temporal",
-    "description": "Get the current LocalTime instant using the transaction clock.",
+    "description": "Returns the current `LOCAL TIME` instant using the transaction clock.",
     "signature": "localtime.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2033,7 +2033,7 @@
   {
     "name": "localtime.truncate",
     "category": "Temporal",
-    "description": "Truncate the input temporal value to a LocalTime instant using the specified unit.",
+    "description": "Truncates the given temporal value to a `LOCAL TIME` instant using the specified unit.",
     "signature": "localtime.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (LOCALTIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2074,7 +2074,7 @@
   {
     "name": "log",
     "category": "Logarithmic",
-    "description": "Returns the natural logarithm of a number.",
+    "description": "Returns the natural logarithm of a `FLOAT`.",
     "signature": "log(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2101,7 +2101,7 @@
   {
     "name": "log10",
     "category": "Logarithmic",
-    "description": "Returns the common logarithm (base 10) of a number.",
+    "description": "Returns the common logarithm (base 10) of a `FLOAT`.",
     "signature": "log10(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2128,7 +2128,7 @@
   {
     "name": "ltrim",
     "category": "String",
-    "description": "Returns the original string with leading whitespace removed.",
+    "description": "Returns the given `STRING` with leading whitespace removed.",
     "signature": "ltrim(input :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2209,7 +2209,7 @@
   {
     "name": "nodes",
     "category": "List",
-    "description": "Returns a list containing all the nodes in a path.",
+    "description": "Returns a `LIST<NODE>` containing all the `NODE` values in a `PATH`.",
     "signature": "nodes(input :: PATH?) :: (LIST? OF NODE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2236,7 +2236,7 @@
   {
     "name": "none",
     "category": "Predicate",
-    "description": "Returns true if the predicate holds for no element in the given list.",
+    "description": "Returns true if the predicate holds for no element in the given `LIST<ANY>`.",
     "signature": "none(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2302,7 +2302,7 @@
   {
     "name": "percentileDisc",
     "category": "Aggregating",
-    "description": "Returns the nearest integer value to the given percentile over a group using a rounding method.",
+    "description": "Returns the nearest `INTEGER` value to the given percentile over a group using a rounding method.",
     "signature": "percentileDisc(input :: INTEGER?, percentile :: FLOAT?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2335,7 +2335,7 @@
   {
     "name": "percentileDisc",
     "category": "Aggregating",
-    "description": "Returns the nearest floating point value to the given percentile over a group using a rounding method.",
+    "description": "Returns the nearest `FLOAT` value to the given percentile over a group using a rounding method.",
     "signature": "percentileDisc(input :: FLOAT?, percentile :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2415,7 +2415,7 @@
   {
     "name": "point.distance",
     "category": "Spatial",
-    "description": "Returns a floating point number representing the geodesic distance between any two points in the same CRS.",
+    "description": "Returns a `FLOAT` representing the geodesic distance between any two points in the same CRS.",
     "signature": "point.distance(from :: POINT?, to :: POINT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2487,7 +2487,7 @@
   {
     "name": "properties",
     "category": "Scalar",
-    "description": "Returns a map containing all the properties of a node.",
+    "description": "Returns a `MAP` containing all the properties of a `NODE`.",
     "signature": "properties(input :: NODE?) :: (MAP?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2514,7 +2514,7 @@
   {
     "name": "properties",
     "category": "Scalar",
-    "description": "Returns a map containing all the properties of a relationship.",
+    "description": "Returns a `MAP` containing all the properties of a `RELATIONSHIP`.",
     "signature": "properties(input :: RELATIONSHIP?) :: (MAP?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2541,7 +2541,7 @@
   {
     "name": "properties",
     "category": "Scalar",
-    "description": "Returns a map containing all the properties of a map.",
+    "description": "Returns a `MAP` containing all the properties of a `MAP`.",
     "signature": "properties(input :: MAP?) :: (MAP?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2595,7 +2595,7 @@
   {
     "name": "rand",
     "category": "Numeric",
-    "description": "Returns a random floating point number in the range from 0 (inclusive) to 1 (exclusive); i.e. [0,1).",
+    "description": "Returns a random `FLOAT` in the range from 0 (inclusive) to 1 (exclusive).",
     "signature": "rand() :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [],
@@ -2635,7 +2635,7 @@
   {
     "name": "range",
     "category": "List",
-    "description": "Returns a list comprising all integer values within a specified range.",
+    "description": "Returns a `LIST<INTEGER>` comprising all `INTEGER` values within a specified range.",
     "signature": "range(start :: INTEGER?, end :: INTEGER?) :: (LIST? OF INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2668,7 +2668,7 @@
   {
     "name": "range",
     "category": "List",
-    "description": "Returns a list comprising all integer values within a specified range created with step length.",
+    "description": "Returns a `LIST<INTEGER>` comprising all `INTEGER` values within a specified range created with step length.",
     "signature": "range(start :: INTEGER?, end :: INTEGER?, step :: INTEGER?) :: (LIST? OF INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2707,7 +2707,7 @@
   {
     "name": "reduce",
     "category": "List",
-    "description": "Runs an expression against individual elements of a list, storing the result of the expression in an accumulator.",
+    "description": "Runs an expression against individual elements of a `LIST<ANY>`, storing the result of the expression in an accumulator.",
     "signature": "reduce(accumulator :: VARIABLE = initial :: ANY?, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2740,7 +2740,7 @@
   {
     "name": "relationships",
     "category": "List",
-    "description": "Returns a list containing all the relationships in a path.",
+    "description": "Returns a `LIST<RELATIONSHIP>` containing all the `RELATIONSHIP` values in a `PATH`.",
     "signature": "relationships(input :: PATH?) :: (LIST? OF RELATIONSHIP?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2767,7 +2767,7 @@
   {
     "name": "replace",
     "category": "String",
-    "description": "Returns a string in which all occurrences of a specified search string in the original string have been replaced by another (specified) replace string.",
+    "description": "Returns a `STRING` in which all occurrences of a specified search `STRING` in the given `STRING` have been replaced by another (specified) replacement `STRING`.",
     "signature": "replace(original :: STRING?, search :: STRING?, replace :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2806,7 +2806,7 @@
   {
     "name": "reverse",
     "category": "String",
-    "description": "Returns a string in which the order of all characters in the original string have been reversed.",
+    "description": "Returns a `STRING` in which the order of all characters in the given `STRING` have been reversed.",
     "signature": "reverse(input :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2833,7 +2833,7 @@
   {
     "name": "reverse",
     "category": "List",
-    "description": "Returns a list in which the order of all elements in the original list have been reversed.",
+    "description": "Returns a `LIST<ANY>` in which the order of all elements in the given `LIST<ANY>` have been reversed.",
     "signature": "reverse(input :: LIST? OF ANY?) :: (LIST? OF ANY?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2860,7 +2860,7 @@
   {
     "name": "right",
     "category": "String",
-    "description": "Returns a string containing the specified number of rightmost characters of the original string.",
+    "description": "Returns a `STRING` containing the specified number of rightmost characters in the given `STRING`.",
     "signature": "right(original :: STRING?, length :: INTEGER?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2893,7 +2893,7 @@
   {
     "name": "round",
     "category": "Numeric",
-    "description": "Returns the value of a number rounded to the nearest integer.",
+    "description": "Returns the value of a number rounded to the nearest `INTEGER`.",
     "signature": "round(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -2992,7 +2992,7 @@
   {
     "name": "rtrim",
     "category": "String",
-    "description": "Returns the original string with trailing whitespace removed.",
+    "description": "Returns the given `STRING` with trailing whitespace removed.",
     "signature": "rtrim(input :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3019,7 +3019,7 @@
   {
     "name": "sign",
     "category": "Numeric",
-    "description": "Returns the signum of an integer number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
+    "description": "Returns the signum of an `INTEGER`: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
     "signature": "sign(input :: INTEGER?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3046,7 +3046,7 @@
   {
     "name": "sign",
     "category": "Numeric",
-    "description": "Returns the signum of a floating point number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
+    "description": "Returns the signum of a `FLOAT`: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
     "signature": "sign(input :: FLOAT?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3073,7 +3073,7 @@
   {
     "name": "sin",
     "category": "Trigonometric",
-    "description": "Returns the sine of a number.",
+    "description": "Returns the sine of a `FLOAT`.",
     "signature": "sin(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3100,7 +3100,7 @@
   {
     "name": "single",
     "category": "Predicate",
-    "description": "Returns true if the predicate holds for exactly one of the elements in the given list.",
+    "description": "Returns true if the predicate holds for exactly one of the elements in the given `LIST<ANY>`.",
     "signature": "single(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3133,7 +3133,7 @@
   {
     "name": "size",
     "category": "Scalar",
-    "description": "Returns the number of items in a list.",
+    "description": "Returns the number of items in a `LIST<ANY>`.",
     "signature": "size(input :: LIST? OF ANY?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3160,7 +3160,7 @@
   {
     "name": "size",
     "category": "Scalar",
-    "description": "Returns the number of Unicode characters in a string.",
+    "description": "Returns the number of Unicode characters in a `STRING`.",
     "signature": "size(input :: STRING?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3187,7 +3187,7 @@
   {
     "name": "split",
     "category": "String",
-    "description": "Returns a list of strings resulting from the splitting of the original string around matches of the given delimiter.",
+    "description": "Returns a `LIST<STRING>` resulting from the splitting of the given `STRING` around matches of the given delimiter.",
     "signature": "split(original :: STRING?, splitDelimiter :: STRING?) :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3220,7 +3220,7 @@
   {
     "name": "split",
     "category": "String",
-    "description": "Returns a list of strings resulting from the splitting of the original string around matches of any of the given delimiters.",
+    "description": "Returns a `LIST<STRING>` resulting from the splitting of the given `STRING` around matches of any of the given delimiters.",
     "signature": "split(original :: STRING?, splitDelimiters :: LIST? OF STRING?) :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3253,7 +3253,7 @@
   {
     "name": "sqrt",
     "category": "Logarithmic",
-    "description": "Returns the square root of a number.",
+    "description": "Returns the square root of a `FLOAT`.",
     "signature": "sqrt(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3280,7 +3280,7 @@
   {
     "name": "startNode",
     "category": "Scalar",
-    "description": "Returns the start node of a relationship.",
+    "description": "Returns the start `NODE` of a `RELATIONSHIP`.",
     "signature": "startNode(input :: RELATIONSHIP?) :: (NODE?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3361,7 +3361,7 @@
   {
     "name": "substring",
     "category": "String",
-    "description": "Returns a substring of the original string, beginning with a 0-based index start.",
+    "description": "Returns a substring of the given `STRING`, beginning with a 0-based index start.",
     "signature": "substring(original :: STRING?, start :: INTEGER?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3394,7 +3394,7 @@
   {
     "name": "substring",
     "category": "String",
-    "description": "Returns a substring of length 'length' of the original string, beginning with a 0-based index start.",
+    "description": "Returns a substring of a given `length` from the given `STRING`, beginning with a 0-based index start.",
     "signature": "substring(original :: STRING?, start :: INTEGER?, length :: INTEGER?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3433,7 +3433,7 @@
   {
     "name": "sum",
     "category": "Aggregating",
-    "description": "Returns the sum of a set of integers",
+    "description": "Returns the sum of a set of `INTEGER` values",
     "signature": "sum(input :: INTEGER?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3460,7 +3460,7 @@
   {
     "name": "sum",
     "category": "Aggregating",
-    "description": "Returns the sum of a set of floats",
+    "description": "Returns the sum of a set of `FLOAT` values",
     "signature": "sum(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3487,7 +3487,7 @@
   {
     "name": "sum",
     "category": "Aggregating",
-    "description": "Returns the sum of a set of durations",
+    "description": "Returns the sum of a set of `DURATION` values",
     "signature": "sum(input :: DURATION?) :: (DURATION?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3514,7 +3514,7 @@
   {
     "name": "tail",
     "category": "List",
-    "description": "Returns all but the first element in a list.",
+    "description": "Returns all but the first element in a `LIST<ANY>`.",
     "signature": "tail(input :: LIST? OF ANY?) :: (LIST? OF ANY?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3541,7 +3541,7 @@
   {
     "name": "tan",
     "category": "Trigonometric",
-    "description": "Returns the tangent of a number.",
+    "description": "Returns the tangent of a `FLOAT`.",
     "signature": "tan(input :: FLOAT?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3568,7 +3568,7 @@
   {
     "name": "time",
     "category": "Temporal",
-    "description": "Create a Time instant.",
+    "description": "Creates a `ZONED TIME` instant.",
     "signature": "time(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3596,7 +3596,7 @@
   {
     "name": "time.realtime",
     "category": "Temporal",
-    "description": "Get the current Time instant using the realtime clock.",
+    "description": "Returns the current `ZONED TIME` instant using the realtime clock.",
     "signature": "time.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3624,7 +3624,7 @@
   {
     "name": "time.statement",
     "category": "Temporal",
-    "description": "Get the current Time instant using the statement clock.",
+    "description": "Returns the current `ZONED TIME` instant using the statement clock.",
     "signature": "time.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3652,7 +3652,7 @@
   {
     "name": "time.transaction",
     "category": "Temporal",
-    "description": "Get the current Time instant using the transaction clock.",
+    "description": "Returns the current `ZONED TIME` instant using the transaction clock.",
     "signature": "time.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3680,7 +3680,7 @@
   {
     "name": "time.truncate",
     "category": "Temporal",
-    "description": "Truncate the input temporal value to a Time instant using the specified unit.",
+    "description": "Truncates the given temporal value to a `ZONED TIME` instant using the specified unit.",
     "signature": "time.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (TIME?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3721,7 +3721,7 @@
   {
     "name": "toBoolean",
     "category": "Scalar",
-    "description": "Converts a string value to a boolean value.",
+    "description": "Converts a `STRING` value to a `BOOLEAN` value.",
     "signature": "toBoolean(input :: STRING?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3748,7 +3748,7 @@
   {
     "name": "toBoolean",
     "category": "Scalar",
-    "description": "Converts a boolean value to a boolean value.",
+    "description": "Converts a `BOOLEAN` value to a `BOOLEAN` value.",
     "signature": "toBoolean(input :: BOOLEAN?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3775,7 +3775,7 @@
   {
     "name": "toBoolean",
     "category": "Scalar",
-    "description": "Converts a integer value to a boolean value. 0 is defined to be FALSE and any other integer is defined to be TRUE.",
+    "description": "Converts an `INTEGER` value to a `BOOLEAN` value. 0 is defined to be false and any other `INTEGER` is defined to be true.",
     "signature": "toBoolean(input :: INTEGER?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3802,7 +3802,7 @@
   {
     "name": "toBooleanList",
     "category": "List",
-    "description": "Converts a list of values to a list of boolean values. If any values are not convertible to boolean they will be null in the list returned.",
+    "description": "Converts a `LIST<ANY>` of values to a `LIST<BOOLEAN>` values. If any values are not convertible to `BOOLEAN` they will be null in the `LIST<BOOLEAN>` returned.",
     "signature": "toBooleanList(input :: LIST? OF ANY?) :: (LIST? OF BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3829,7 +3829,7 @@
   {
     "name": "toBooleanOrNull",
     "category": "Scalar",
-    "description": "Converts a value to a boolean value, or null if the value cannot be converted.",
+    "description": "Converts a value to a `BOOLEAN` value, or null if the value cannot be converted.",
     "signature": "toBooleanOrNull(input :: ANY?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3856,7 +3856,7 @@
   {
     "name": "toFloat",
     "category": "Scalar",
-    "description": "Converts a string value to a floating point value.",
+    "description": "Converts a `STRING` value to a `FLOAT` value.",
     "signature": "toFloat(input :: STRING?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3883,7 +3883,7 @@
   {
     "name": "toFloat",
     "category": "Scalar",
-    "description": "Converts an integer value to a floating point value.",
+    "description": "Converts an `INTEGER` value to a `FLOAT` value.",
     "signature": "toFloat(input :: NUMBER?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3910,7 +3910,7 @@
   {
     "name": "toFloatList",
     "category": "List",
-    "description": "Converts a list of values to a list of float values. If any values are not convertible to float they will be null in the list returned.",
+    "description": "Converts a `LIST<ANY>` to a `LIST<FLOAT>` values. If any values are not convertible to `FLOAT` they will be null in the `LIST<FLOAT>` returned.",
     "signature": "toFloatList(input :: LIST? OF ANY?) :: (LIST? OF FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3937,7 +3937,7 @@
   {
     "name": "toFloatOrNull",
     "category": "Scalar",
-    "description": "Converts a value to a floating point value, or null if the value cannot be converted.",
+    "description": "Converts a value to a `FLOAT` value, or null if the value cannot be converted.",
     "signature": "toFloatOrNull(input :: ANY?) :: (FLOAT?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3964,7 +3964,7 @@
   {
     "name": "toInteger",
     "category": "Scalar",
-    "description": "Converts a string value to an integer value.",
+    "description": "Converts a `STRING` value to an `INTEGER` value.",
     "signature": "toInteger(input :: STRING?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -3991,7 +3991,7 @@
   {
     "name": "toInteger",
     "category": "Scalar",
-    "description": "Converts a floating point value to an integer value.",
+    "description": "Converts a `FLOAT` value to an `INTEGER` value.",
     "signature": "toInteger(input :: NUMBER?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4018,7 +4018,7 @@
   {
     "name": "toInteger",
     "category": "Scalar",
-    "description": "Converts a boolean to an integer value. TRUE is defined to be 1 and FALSE is defined to be 0.",
+    "description": "Converts a `BOOLEAN` to an `INTEGER` value. True is defined to be 1 and false is defined to be 0.",
     "signature": "toInteger(input :: BOOLEAN?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4045,7 +4045,7 @@
   {
     "name": "toIntegerList",
     "category": "List",
-    "description": "Converts a list of values to a list of integer values. If any values are not convertible to integer they will be null in the list returned.",
+    "description": "Converts a `LIST<ANY>` to a `LIST<INTEGER>` values. If any values are not convertible to `INTEGER` they will be null in the `LIST<INTEGER>` returned.",
     "signature": "toIntegerList(input :: LIST? OF ANY?) :: (LIST? OF INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4072,7 +4072,7 @@
   {
     "name": "toIntegerOrNull",
     "category": "Scalar",
-    "description": "Converts a value to an integer value, or null if the value cannot be converted.",
+    "description": "Converts a value to an `INTEGER` value, or null if the value cannot be converted.",
     "signature": "toIntegerOrNull(input :: ANY?) :: (INTEGER?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4099,7 +4099,7 @@
   {
     "name": "toLower",
     "category": "String",
-    "description": "Returns the original string in lowercase.",
+    "description": "Returns the given `STRING` in lowercase.",
     "signature": "toLower(input :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4126,7 +4126,7 @@
   {
     "name": "toString",
     "category": "String",
-    "description": "Converts an integer, float, boolean, point or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string.",
+    "description": "Converts an `INTEGER`, `FLOAT`, `BOOLEAN`, `POINT` or temporal type (i.e. `DATE`, `ZONED TIME`, `LOCAL TIME`, `ZONED DATETIME`, `LOCAL DATETIME` or `DURATION`) value to a `STRING`.",
     "signature": "toString(input :: ANY?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4153,7 +4153,7 @@
   {
     "name": "toStringList",
     "category": "List",
-    "description": "Converts a list of values to a list of string values. If any values are not convertible to string they will be null in the list returned.",
+    "description": "Converts a `LIST<ANY>` to a `LIST<STRING>` values. If any values are not convertible to `STRING` they will be null in the `LIST<STRING>` returned.",
     "signature": "toStringList(input :: LIST? OF ANY?) :: (LIST? OF STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4180,7 +4180,7 @@
   {
     "name": "toStringOrNull",
     "category": "String",
-    "description": "Converts an integer, float, boolean, point or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string, or null if the value cannot be converted.",
+    "description": "Converts an `INTEGER`, `FLOAT`, `BOOLEAN`, `POINT` or temporal type (i.e. `DATE`, `ZONED TIME`, `LOCAL TIME`, `ZONED DATETIME`, `LOCAL DATETIME` or `DURATION`) value to a `STRING`, or null if the value cannot be converted.",
     "signature": "toStringOrNull(input :: ANY?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4207,7 +4207,7 @@
   {
     "name": "toUpper",
     "category": "String",
-    "description": "Returns the original string in uppercase.",
+    "description": "Returns the given `STRING` in uppercase.",
     "signature": "toUpper(input :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4234,7 +4234,7 @@
   {
     "name": "trim",
     "category": "String",
-    "description": "Returns the original string with leading and trailing whitespace removed.",
+    "description": "Returns the given `STRING` with leading and trailing whitespace removed.",
     "signature": "trim(input :: STRING?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [
@@ -4261,7 +4261,7 @@
   {
     "name": "type",
     "category": "Scalar",
-    "description": "Returns the string representation of the relationship type.",
+    "description": "Returns a `STRING` representation of the `RELATIONSHIP` type.",
     "signature": "type(input :: RELATIONSHIP?) :: (STRING?)",
     "isBuiltIn": true,
     "argumentDescription": [

@@ -24,6 +24,6 @@ case object StartNode extends Function {
   def name = "startNode"
 
   override val signatures = Vector(
-    TypeSignature(this, CTRelationship, CTNode, "Returns the start node of a relationship.", Category.SCALAR)
+    TypeSignature(this, CTRelationship, CTNode, "Returns the start `NODE` of a `RELATIONSHIP`.", Category.SCALAR)
   )
 }

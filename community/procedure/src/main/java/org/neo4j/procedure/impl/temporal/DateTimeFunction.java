@@ -47,7 +47,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-@Description("Create a DateTime instant.")
+@Description("Creates a `ZONED DATETIME` instant.")
 class DateTimeFunction extends TemporalFunction<DateTimeValue> {
     private static final String CATEGORY = Category.TEMPORAL();
 
@@ -89,7 +89,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
 
     private static class FromEpoch implements CallableUserFunction {
         private static final String DESCRIPTION =
-                "Create a DateTime given the seconds and nanoseconds since the start of the epoch.";
+                "Creates a `ZONED DATETIME` given the seconds and nanoseconds since the start of the epoch.";
         private static final List<FieldSignature> SIGNATURE = Arrays.asList(
                 inputField("seconds", Neo4jTypes.NTNumber), inputField("nanoseconds", Neo4jTypes.NTNumber));
         private final UserFunctionSignature signature;
@@ -129,7 +129,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
 
     private static class FromEpochMillis implements CallableUserFunction {
         private static final String DESCRIPTION =
-                "Create a DateTime given the milliseconds since the start of the epoch.";
+                "Creates a `ZONED DATETIME` given the milliseconds since the start of the epoch.";
         private static final List<FieldSignature> SIGNATURE =
                 Collections.singletonList(inputField("milliseconds", Neo4jTypes.NTNumber));
         private final UserFunctionSignature signature;
@@ -165,5 +165,10 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
                     "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                             + Arrays.toString(input));
         }
+    }
+
+    @Override
+    protected String getTemporalCypherTypeName() {
+        return "ZONED DATETIME";
     }
 }

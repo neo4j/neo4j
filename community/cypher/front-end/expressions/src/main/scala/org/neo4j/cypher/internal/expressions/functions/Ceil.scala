@@ -27,7 +27,7 @@ case object Ceil extends Function {
       this,
       CTFloat,
       CTFloat,
-      "Returns the smallest floating point number that is greater than or equal to a number and equal to a mathematical integer.",
+      "Returns the smallest `FLOAT` that is greater than or equal to a number and equal to an `INTEGER`.",
       Category.NUMERIC
     )
   )

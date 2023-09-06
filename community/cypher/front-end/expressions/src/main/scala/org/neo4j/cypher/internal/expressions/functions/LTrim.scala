@@ -27,7 +27,7 @@ case object LTrim extends Function {
       this,
       CTString,
       CTString,
-      "Returns the original string with leading whitespace removed.",
+      "Returns the given `STRING` with leading whitespace removed.",
       Category.STRING
     )
   )

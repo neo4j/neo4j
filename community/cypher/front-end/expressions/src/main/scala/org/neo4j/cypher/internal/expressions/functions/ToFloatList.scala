@@ -29,7 +29,7 @@ case object ToFloatList extends Function {
       this,
       CTList(CTAny),
       CTList(CTFloat),
-      "Converts a list of values to a list of float values. If any values are not convertible to float they will be null in the list returned.",
+      "Converts a `LIST<ANY>` to a `LIST<FLOAT>` values. If any values are not convertible to `FLOAT` they will be null in the `LIST<FLOAT>` returned.",
       Category.LIST
     )
   )

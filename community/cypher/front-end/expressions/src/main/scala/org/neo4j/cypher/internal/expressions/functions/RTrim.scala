@@ -27,7 +27,7 @@ case object RTrim extends Function {
       this,
       CTString,
       CTString,
-      "Returns the original string with trailing whitespace removed.",
+      "Returns the given `STRING` with trailing whitespace removed.",
       Category.STRING
     )
   )

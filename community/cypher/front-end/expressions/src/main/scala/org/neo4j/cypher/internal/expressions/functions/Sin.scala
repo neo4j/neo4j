@@ -23,6 +23,6 @@ case object Sin extends Function {
   def name = "sin"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat, "Returns the sine of a number.", Category.TRIGONOMETRIC)
+    TypeSignature(this, CTFloat, CTFloat, "Returns the sine of a `FLOAT`.", Category.TRIGONOMETRIC)
   )
 }

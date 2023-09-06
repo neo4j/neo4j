@@ -28,7 +28,7 @@ case object Type extends Function {
       this,
       CTRelationship,
       CTString,
-      "Returns the string representation of the relationship type.",
+      "Returns a `STRING` representation of the `RELATIONSHIP` type.",
       Category.SCALAR
     )
   )

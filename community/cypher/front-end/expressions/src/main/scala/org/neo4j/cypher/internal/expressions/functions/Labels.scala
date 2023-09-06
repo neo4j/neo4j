@@ -29,7 +29,7 @@ case object Labels extends Function {
       this,
       CTNode,
       CTList(CTString),
-      "Returns a list containing the string representations for all the labels of a node.",
+      "Returns a `LIST<STRING>` containing the `STRING` representations for all the labels of a `NODE`.",
       Category.LIST
     )
   )

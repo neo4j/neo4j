@@ -32,7 +32,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-@Description("Create a Date instant.")
+@Description("Creates a `DATE` instant.")
 class DateFunction extends TemporalFunction<DateValue> {
     DateFunction(Supplier<ZoneId> defaultZone) {
         super(NTDate, defaultZone);
@@ -62,5 +62,10 @@ class DateFunction extends TemporalFunction<DateValue> {
     protected DateValue truncate(
             TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone) {
         return DateValue.truncate(unit, input, fields, defaultZone);
+    }
+
+    @Override
+    protected String getTemporalCypherTypeName() {
+        return "DATE";
     }
 }

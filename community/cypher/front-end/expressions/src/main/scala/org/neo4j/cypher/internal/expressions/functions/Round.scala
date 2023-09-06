@@ -30,7 +30,7 @@ case object Round extends Function {
       this,
       CTFloat,
       CTFloat,
-      "Returns the value of a number rounded to the nearest integer.",
+      "Returns the value of a number rounded to the nearest `INTEGER`.",
       category = Category.NUMERIC
     ),
     FunctionTypeSignature(

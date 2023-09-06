@@ -24,6 +24,6 @@ case object Length extends Function {
   def name = "length"
 
   override val signatures = Vector(
-    TypeSignature(this, CTPath, CTInteger, "Returns the length of a path.", Category.SCALAR)
+    TypeSignature(this, CTPath, CTInteger, "Returns the length of a `PATH`.", Category.SCALAR)
   )
 }

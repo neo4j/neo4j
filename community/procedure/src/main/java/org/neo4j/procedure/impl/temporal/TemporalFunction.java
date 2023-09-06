@@ -97,6 +97,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private final UserFunctionSignature signature;
     private final Supplier<ZoneId> defaultZone;
 
+    protected abstract String getTemporalCypherTypeName();
+
     TemporalFunction(Neo4jTypes.AnyType result, Supplier<ZoneId> defaultZone) {
         String basename = basename(getClass());
         assert result.getClass().getSimpleName().equals(basename + "Type") : "result type should match function name";
@@ -214,7 +216,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                     clock,
                     SIGNATURE,
                     String.format(
-                            "Get the current %s instant using the %s clock.", basename(function.getClass()), clock));
+                            "Returns the current `%s` instant using the %s clock.",
+                            function.getTemporalCypherTypeName(), clock));
             switch (clock) {
                 case "transaction":
                     this.clockSupplier = Context::transactionClock;
@@ -259,8 +262,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                     "truncate",
                     SIGNATURE,
                     String.format(
-                            "Truncate the input temporal value to a %s instant using the specified unit.",
-                            basename(function.getClass())));
+                            "Truncates the given temporal value to a `%s` instant using the specified unit.",
+                            function.getTemporalCypherTypeName()));
         }
 
         @Override

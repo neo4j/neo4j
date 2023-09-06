@@ -23,6 +23,6 @@ case object Log10 extends Function {
   def name = "log10"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat, "Returns the common logarithm (base 10) of a number.", Category.LOGARITHMIC)
+    TypeSignature(this, CTFloat, CTFloat, "Returns the common logarithm (base 10) of a `FLOAT`.", Category.LOGARITHMIC)
   )
 }

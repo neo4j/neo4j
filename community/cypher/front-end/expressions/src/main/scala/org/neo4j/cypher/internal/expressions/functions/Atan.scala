@@ -23,6 +23,6 @@ case object Atan extends Function {
   def name = "atan"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat, "Returns the arctangent of a number in radians.", Category.TRIGONOMETRIC)
+    TypeSignature(this, CTFloat, CTFloat, "Returns the arctangent of a `FLOAT` in radians.", Category.TRIGONOMETRIC)
   )
 }

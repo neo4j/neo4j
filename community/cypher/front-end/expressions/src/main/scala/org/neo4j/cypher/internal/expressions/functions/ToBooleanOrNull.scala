@@ -28,7 +28,7 @@ case object ToBooleanOrNull extends Function {
       this,
       CTAny,
       CTBoolean,
-      "Converts a value to a boolean value, or null if the value cannot be converted.",
+      "Converts a value to a `BOOLEAN` value, or null if the value cannot be converted.",
       Category.SCALAR
     )
   )

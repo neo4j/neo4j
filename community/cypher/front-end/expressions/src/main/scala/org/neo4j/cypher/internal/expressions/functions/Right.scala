@@ -29,7 +29,8 @@ case object Right extends Function {
       names = Vector("original", "length"),
       argumentTypes = Vector(CTString, CTInteger),
       outputType = CTString,
-      description = "Returns a string containing the specified number of rightmost characters of the original string.",
+      description =
+        "Returns a `STRING` containing the specified number of rightmost characters in the given `STRING`.",
       category = Category.STRING
     )
   )

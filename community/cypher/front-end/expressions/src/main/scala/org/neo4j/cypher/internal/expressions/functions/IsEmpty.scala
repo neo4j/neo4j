@@ -27,8 +27,8 @@ case object IsEmpty extends Function {
   val name = "isEmpty"
 
   override val signatures = Vector(
-    TypeSignature(this, CTList(CTAny), CTBoolean, "Checks whether a list is empty.", Category.PREDICATE),
-    TypeSignature(this, CTMap, CTBoolean, "Checks whether a map is empty.", Category.PREDICATE),
-    TypeSignature(this, CTString, CTBoolean, "Checks whether a string is empty.", Category.PREDICATE)
+    TypeSignature(this, CTList(CTAny), CTBoolean, "Checks whether a `LIST<ANY>` is empty.", Category.PREDICATE),
+    TypeSignature(this, CTMap, CTBoolean, "Checks whether a `MAP` is empty.", Category.PREDICATE),
+    TypeSignature(this, CTString, CTBoolean, "Checks whether a `STRING` is empty.", Category.PREDICATE)
   )
 }

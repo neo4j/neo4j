@@ -28,7 +28,7 @@ case object ToIntegerOrNull extends Function {
       this,
       CTAny,
       CTInteger,
-      "Converts a value to an integer value, or null if the value cannot be converted.",
+      "Converts a value to an `INTEGER` value, or null if the value cannot be converted.",
       Category.SCALAR
     )
   )

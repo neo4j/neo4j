@@ -30,7 +30,7 @@ case object Distance extends Function {
       argumentTypes = Vector(CTPoint, CTPoint),
       outputType = CTFloat,
       description =
-        "Returns a floating point number representing the geodesic distance between any two points in the same CRS.",
+        "Returns a `FLOAT` representing the geodesic distance between any two points in the same CRS.",
       category = Category.SPATIAL
     )
   )

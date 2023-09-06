@@ -25,7 +25,7 @@ case object ElementId extends Function {
   def name = "elementId"
 
   override val signatures = Vector(
-    TypeSignature(this, CTNode, CTString, "Returns the element id of a node.", Category.SCALAR),
-    TypeSignature(this, CTRelationship, CTString, "Returns the element id of a relationship.", Category.SCALAR)
+    TypeSignature(this, CTNode, CTString, "Returns the element id of a `NODE`.", Category.SCALAR),
+    TypeSignature(this, CTRelationship, CTString, "Returns the element id of a `RELATIONSHIP`.", Category.SCALAR)
   )
 }

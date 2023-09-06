@@ -25,7 +25,7 @@ case object IsNaN extends Function {
   def name = "isNaN"
 
   override val signatures: IndexedSeq[TypeSignature] = Vector(
-    TypeSignature(this, CTInteger, CTBoolean, "Returns whether the given integer is NaN.", Category.NUMERIC),
-    TypeSignature(this, CTFloat, CTBoolean, "Returns whether the given floating point number is NaN.", Category.NUMERIC)
+    TypeSignature(this, CTInteger, CTBoolean, "Returns whether the given `INTEGER` is NaN.", Category.NUMERIC),
+    TypeSignature(this, CTFloat, CTBoolean, "Returns whether the given `FLOAT` is NaN.", Category.NUMERIC)
   )
 }

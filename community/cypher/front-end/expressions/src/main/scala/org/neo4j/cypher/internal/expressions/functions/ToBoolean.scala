@@ -25,13 +25,13 @@ case object ToBoolean extends Function {
   override def name = "toBoolean"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTBoolean, "Converts a string value to a boolean value.", Category.SCALAR),
-    TypeSignature(this, CTBoolean, CTBoolean, "Converts a boolean value to a boolean value.", Category.SCALAR),
+    TypeSignature(this, CTString, CTBoolean, "Converts a `STRING` value to a `BOOLEAN` value.", Category.SCALAR),
+    TypeSignature(this, CTBoolean, CTBoolean, "Converts a `BOOLEAN` value to a `BOOLEAN` value.", Category.SCALAR),
     TypeSignature(
       this,
       CTInteger,
       CTBoolean,
-      "Converts a integer value to a boolean value. 0 is defined to be FALSE and any other integer is defined to be TRUE.",
+      "Converts an `INTEGER` value to a `BOOLEAN` value. 0 is defined to be false and any other `INTEGER` is defined to be true.",
       Category.SCALAR
     )
   )

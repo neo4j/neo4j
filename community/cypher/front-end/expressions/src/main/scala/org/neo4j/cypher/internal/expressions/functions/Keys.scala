@@ -31,21 +31,21 @@ case object Keys extends Function {
       this,
       CTNode,
       CTList(CTString),
-      "Returns a list containing the string representations for all the property names of a node.",
+      "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `NODE`.",
       Category.LIST
     ),
     TypeSignature(
       this,
       CTRelationship,
       CTList(CTString),
-      "Returns a list containing the string representations for all the property names of a relationship",
+      "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `RELATIONSHIP`.",
       Category.LIST
     ),
     TypeSignature(
       this,
       CTMap,
       CTList(CTString),
-      "Returns a list containing the string representations for all the property names of a map.",
+      "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `MAP`.",
       Category.LIST
     )
   )

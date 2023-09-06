@@ -29,7 +29,7 @@ case object Range extends Function {
       names = Vector("start", "end"),
       argumentTypes = Vector(CTInteger, CTInteger),
       outputType = CTList(CTInteger),
-      description = "Returns a list comprising all integer values within a specified range.",
+      description = "Returns a `LIST<INTEGER>` comprising all `INTEGER` values within a specified range.",
       category = Category.LIST
     ),
     FunctionTypeSignature(
@@ -37,7 +37,8 @@ case object Range extends Function {
       names = Vector("start", "end", "step"),
       argumentTypes = Vector(CTInteger, CTInteger, CTInteger),
       outputType = CTList(CTInteger),
-      description = "Returns a list comprising all integer values within a specified range created with step length.",
+      description =
+        "Returns a `LIST<INTEGER>` comprising all `INTEGER` values within a specified range created with step length.",
       category = Category.LIST
     )
   )

@@ -29,7 +29,7 @@ case object Head extends Function {
       names = Vector("list"),
       argumentTypes = Vector(CTList(CTAny)),
       outputType = CTAny,
-      description = "Returns the first element in a list.",
+      description = "Returns the first element in a `LIST<ANY>`.",
       category = Category.SCALAR
     )
   )

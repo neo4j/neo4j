@@ -24,7 +24,7 @@ case object Abs extends Function {
   def name = "abs"
 
   override val signatures: IndexedSeq[TypeSignature] = Vector(
-    TypeSignature(this, CTInteger, CTInteger, "Returns the absolute value of an integer.", Category.NUMERIC),
-    TypeSignature(this, CTFloat, CTFloat, "Returns the absolute value of a floating point number.", Category.NUMERIC)
+    TypeSignature(this, CTInteger, CTInteger, "Returns the absolute value of an `INTEGER`.", Category.NUMERIC),
+    TypeSignature(this, CTFloat, CTFloat, "Returns the absolute value of a `FLOAT`.", Category.NUMERIC)
   )
 }

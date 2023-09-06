@@ -29,7 +29,8 @@ case object Left extends Function {
       names = Vector("original", "length"),
       argumentTypes = Vector(CTString, CTInteger),
       outputType = CTString,
-      description = "Returns a string containing the specified number of leftmost characters of the original string.",
+      description =
+        "Returns a `STRING` containing the specified number (`INTEGER`) of leftmost characters in the given `STRING`.",
       category = Category.STRING
     )
   )

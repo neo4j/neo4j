@@ -23,6 +23,6 @@ case object Tan extends Function {
   def name = "tan"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat, "Returns the tangent of a number.", Category.TRIGONOMETRIC)
+    TypeSignature(this, CTFloat, CTFloat, "Returns the tangent of a `FLOAT`.", Category.TRIGONOMETRIC)
   )
 }

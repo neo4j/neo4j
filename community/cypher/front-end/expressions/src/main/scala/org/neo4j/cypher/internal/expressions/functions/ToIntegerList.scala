@@ -29,7 +29,7 @@ case object ToIntegerList extends Function {
       this,
       CTList(CTAny),
       CTList(CTInteger),
-      "Converts a list of values to a list of integer values. If any values are not convertible to integer they will be null in the list returned.",
+      "Converts a `LIST<ANY>` to a `LIST<INTEGER>` values. If any values are not convertible to `INTEGER` they will be null in the `LIST<INTEGER>` returned.",
       Category.LIST
     )
   )

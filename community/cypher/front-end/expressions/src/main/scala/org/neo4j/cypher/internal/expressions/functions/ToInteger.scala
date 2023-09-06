@@ -26,13 +26,13 @@ case object ToInteger extends Function {
   override def name = "toInteger"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTInteger, "Converts a string value to an integer value.", Category.SCALAR),
-    TypeSignature(this, CTNumber, CTInteger, "Converts a floating point value to an integer value.", Category.SCALAR),
+    TypeSignature(this, CTString, CTInteger, "Converts a `STRING` value to an `INTEGER` value.", Category.SCALAR),
+    TypeSignature(this, CTNumber, CTInteger, "Converts a `FLOAT` value to an `INTEGER` value.", Category.SCALAR),
     TypeSignature(
       this,
       CTBoolean,
       CTInteger,
-      "Converts a boolean to an integer value. TRUE is defined to be 1 and FALSE is defined to be 0.",
+      "Converts a `BOOLEAN` to an `INTEGER` value. True is defined to be 1 and false is defined to be 0.",
       Category.SCALAR
     )
   )

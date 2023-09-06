@@ -28,7 +28,7 @@ case object ToFloatOrNull extends Function {
       this,
       CTAny,
       CTFloat,
-      "Converts a value to a floating point value, or null if the value cannot be converted.",
+      "Converts a value to a `FLOAT` value, or null if the value cannot be converted.",
       Category.SCALAR
     )
   )

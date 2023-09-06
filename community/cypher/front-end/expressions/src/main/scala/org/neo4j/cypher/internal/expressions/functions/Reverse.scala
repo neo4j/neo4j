@@ -29,14 +29,14 @@ case object Reverse extends Function {
       this,
       CTString,
       CTString,
-      "Returns a string in which the order of all characters in the original string have been reversed.",
+      "Returns a `STRING` in which the order of all characters in the given `STRING` have been reversed.",
       Category.STRING
     ),
     TypeSignature(
       this,
       CTList(CTAny),
       CTList(CTAny),
-      "Returns a list in which the order of all elements in the original list have been reversed.",
+      "Returns a `LIST<ANY>` in which the order of all elements in the given `LIST<ANY>` have been reversed.",
       Category.LIST
     )
   )

@@ -27,7 +27,7 @@ case object Floor extends Function {
       this,
       CTFloat,
       CTFloat,
-      "Returns the largest floating point number that is less than or equal to a number and equal to a mathematical integer.",
+      "Returns the largest `FLOAT` that is less than or equal to a number and equal to an `INTEGER`.",
       Category.NUMERIC
     )
   )

@@ -32,7 +32,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.MapValue;
 
-@Description("Create a Time instant.")
+@Description("Creates a `ZONED TIME` instant.")
 class TimeFunction extends TemporalFunction<TimeValue> {
     TimeFunction(Supplier<ZoneId> defaultZone) {
         super(NTTime, defaultZone);
@@ -62,5 +62,10 @@ class TimeFunction extends TemporalFunction<TimeValue> {
     protected TimeValue truncate(
             TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone) {
         return TimeValue.truncate(unit, input, fields, defaultZone);
+    }
+
+    @Override
+    protected String getTemporalCypherTypeName() {
+        return "ZONED TIME";
     }
 }

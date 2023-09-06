@@ -29,7 +29,7 @@ case object Substring extends Function {
       names = Vector("original", "start"),
       argumentTypes = Vector(CTString, CTInteger),
       outputType = CTString,
-      description = "Returns a substring of the original string, beginning with a 0-based index start.",
+      description = "Returns a substring of the given `STRING`, beginning with a 0-based index start.",
       category = Category.STRING
     ),
     FunctionTypeSignature(
@@ -38,7 +38,7 @@ case object Substring extends Function {
       argumentTypes = Vector(CTString, CTInteger, CTInteger),
       outputType = CTString,
       description =
-        "Returns a substring of length 'length' of the original string, beginning with a 0-based index start.",
+        "Returns a substring of a given `length` from the given `STRING`, beginning with a 0-based index start.",
       category = Category.STRING
     )
   )
