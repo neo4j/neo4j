@@ -46,7 +46,6 @@ object Expression {
     def mapData(f: A => A): TreeAcc[A] = copy(data = f(data))
 
     def inScope(variable: LogicalVariable): Boolean = list.exists(_.contains(variable))
-    def variablesInScope: Set[LogicalVariable] = list.toSet.flatten
 
     def pushScope(newVariable: LogicalVariable): TreeAcc[A] = pushScope(Set(newVariable))
     def pushScope(newVariables: Set[LogicalVariable]): TreeAcc[A] = copy(list = newVariables :: list)
@@ -118,24 +117,47 @@ abstract class Expression extends ASTNode {
   /** 
    * All (free) occurrences of variable in this expression or any of its children
    * (i.e. excluding occurrences referring to shadowing redefinitions of variable).
+   *
+   * This method must not be called before SemanticAnalysis has passed.
+   * Otherwise an [[ExpressionWithComputedDependencies]] will not have computed
+   * its dependencies.
    */
-  private def occurrences(variable: LogicalVariable): Set[Ref[Variable]] =
+  def occurrences(variable: LogicalVariable): Set[Ref[Variable]] = {
+    def visitOccurrence(
+      acc: Expression.TreeAcc[Set[Ref[Variable]]],
+      occurrence: Variable
+    ): Expression.TreeAcc[Set[Ref[Variable]]] = {
+      if (occurrence.name != variable.name || acc.inScope(occurrence)) acc
+      else acc.mapData(_ + Ref(occurrence))
+    }
+
     this.folder.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
-          val newAcc = acc.pushScope(scope.introducedVariables)
+          val accStep1 = scope match {
+            case ewcd: ExpressionWithComputedDependencies =>
+              // Also look for occurrences in scope dependencies.
+              // No need to look in introducedVariables, as they will always shadow and can't be an occurrence of the same
+              // variable.
+              val scopeDependencies = ewcd.scopeDependencies.asInstanceOf[Set[Variable]]
+              scopeDependencies.foldLeft(acc)(visitOccurrence)
+            case _ => acc
+          }
+          val newAcc = accStep1.pushScope(scope.introducedVariables)
           TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
-      case occurrence: Variable if occurrence.name == variable.name =>
-        acc => {
-          val newAcc = if (acc.inScope(occurrence)) acc else acc.mapData(_ + Ref(occurrence))
-          TraverseChildren(newAcc)
-        }
+      case occurrence: Variable =>
+        acc => TraverseChildren(visitOccurrence(acc, occurrence))
     }.data
+  }
 
   /**
-   * Replaces all occurrences of a variable in this Expression by the given replacements.
+   * Replaces all occurrences of a variable in this Expression by the given replacement.
    * This takes into account scoping and does not replace other Variables with the same name
    * in nested inner scopes.
+   *
+   * This method must not be called before SemanticAnalysis has passed.
+   * Otherwise an [[ExpressionWithComputedDependencies]] will not have computed
+   * its dependencies.
    *
    * @param variable    the variable to replace
    * @param replacement the replacement expression
@@ -145,6 +167,21 @@ abstract class Expression extends ASTNode {
     val occurrencesToReplace = occurrences(variable)
     self.endoRewrite(bottomUp(Rewriter.lift {
       case occurrence: Variable if occurrencesToReplace(Ref(occurrence)) => replacement
+      case ewcd: ExpressionWithComputedDependencies                      =>
+        // Rewrite scope dependencies.
+        // No need to rewrite introducedVariables, as they will always shadow and can't be an occurrence of the same
+        // variable.
+        val newScopeDependencies = ewcd.scopeDependencies.map {
+          case occurrence: Variable if occurrencesToReplace(Ref(occurrence)) =>
+            replacement match {
+              case lv: LogicalVariable => lv
+              case _ => throw new IllegalStateException(
+                  s"Cannot replace the dependency on variable $occurrence with a non-variable expression"
+                )
+            }
+          case x => x
+        }
+        ewcd.withComputedScopeDependencies(newScopeDependencies)
     }))
   }
 
