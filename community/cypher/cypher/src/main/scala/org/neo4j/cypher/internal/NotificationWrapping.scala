@@ -124,33 +124,33 @@ object NotificationWrapping {
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
         NotificationDetail.nodeIndexSeekOrScan(javaLabels),
-        NotificationDetail.prettyLabelOrRelationshipTypes(javaLabels)
+        NotificationDetail.labelsOrRelationshipTypes(javaLabels)
       )
     case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
       val javaRelTypes = relTypes.asJava
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
         NotificationDetail.relationshipIndexSeekOrScan(javaRelTypes),
-        NotificationDetail.prettyLabelOrRelationshipTypes(javaRelTypes)
+        NotificationDetail.labelsOrRelationshipTypes(javaRelTypes)
       )
     case EagerLoadCsvNotification =>
       NotificationCodeWithDescription.eagerLoadCsv(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification(labelName) =>
       NotificationCodeWithDescription.largeLabelLoadCsv(
         graphdb.InputPosition.empty,
-        NotificationDetail.prettyLabelOrRelationshipType(labelName)
+        NotificationDetail.labelOrRelationshipType(labelName)
       )
     case MissingLabelNotification(pos, label) =>
       NotificationCodeWithDescription.missingLabel(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.missingLabel(label),
-        NotificationDetail.prettyLabelOrRelationshipType(label)
+        NotificationDetail.labelOrRelationshipType(label)
       )
     case MissingRelTypeNotification(pos, relType) =>
       NotificationCodeWithDescription.missingRelType(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.missingRelationshipType(relType),
-        NotificationDetail.prettyLabelOrRelationshipType(relType)
+        NotificationDetail.labelOrRelationshipType(relType)
       )
     case MissingPropertyNameNotification(pos, entity, property) =>
       NotificationCodeWithDescription.missingPropertyName(
@@ -163,7 +163,7 @@ object NotificationWrapping {
     case ExhaustiveShortestPathForbiddenNotification(pos, pathPredicates) =>
       NotificationCodeWithDescription.exhaustiveShortestPath(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.pathPredicates(pathPredicates.asJava)
+        NotificationDetail.commaSeparated(pathPredicates.asJava)
       )
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
       if (newName == null || newName.trim.isEmpty)
@@ -235,7 +235,7 @@ object NotificationWrapping {
       NotificationCodeWithDescription.missingParameterForExplain(
         graphdb.InputPosition.empty,
         NotificationDetail.missingParameters(javaParameters),
-        NotificationDetail.prettyParameters(javaParameters)
+        NotificationDetail.parameters(javaParameters)
       )
     case CodeGenerationFailedNotification(msg) =>
       NotificationCodeWithDescription.codeGenerationFailed(

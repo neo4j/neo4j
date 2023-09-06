@@ -47,7 +47,7 @@ public class NotificationDetail {
 
     public static String indexes(final String label, final List<String> propertyKeys) {
         final var prettyProperties = commaSeparated(propertyKeys);
-        final var prettyLabel = prettyLabelOrRelationshipType(label);
+        final var prettyLabel = labelOrRelationshipType(label);
         return prettyLabel + "(" + prettyProperties + ")";
     }
 
@@ -123,17 +123,17 @@ public class NotificationDetail {
         return createNotificationDetail("index", indexFormatString, true);
     }
 
-    public static String prettyLabelOrRelationshipType(final String labelName) {
+    public static String labelOrRelationshipType(final String labelName) {
         return ":" + labelName;
     }
 
-    public static String prettyLabelOrRelationshipTypes(final Set<String> labelNames) {
+    public static String labelsOrRelationshipTypes(final Set<String> labelNames) {
         return labelNames.stream()
-                .map(NotificationDetail::prettyLabelOrRelationshipType)
+                .map(NotificationDetail::labelOrRelationshipType)
                 .collect(Collectors.joining(", "));
     }
 
-    public static String prettyParameters(final Set<String> parameters) {
+    public static String parameters(final Set<String> parameters) {
         return parameters.stream().map(parameter -> "$" + parameter).collect(Collectors.joining(", "));
     }
 
@@ -147,10 +147,6 @@ public class NotificationDetail {
 
     public static String missingParameters(final Set<String> parameters) {
         return createNotificationDetail(parameters, "the missing parameter", "the missing parameters");
-    }
-
-    public static String pathPredicates(final Set<String> predicates) {
-        return String.join(", ", predicates);
     }
 
     public static String procedureWarning(final String procedure, final String warning) {
@@ -190,16 +186,14 @@ public class NotificationDetail {
     }
 
     public static String nodeIndexSeekOrScan(Set<String> labels) {
-        final var prettyLabels = labels.stream()
-                .map(NotificationDetail::prettyLabelOrRelationshipType)
-                .collect(Collectors.toSet());
+        final var prettyLabels =
+                labels.stream().map(NotificationDetail::labelOrRelationshipType).collect(Collectors.toSet());
         return createNotificationDetail(prettyLabels, "indexed label", "indexed labels");
     }
 
     public static String relationshipIndexSeekOrScan(Set<String> labels) {
-        final var prettyLabels = labels.stream()
-                .map(NotificationDetail::prettyLabelOrRelationshipType)
-                .collect(Collectors.toSet());
+        final var prettyLabels =
+                labels.stream().map(NotificationDetail::labelOrRelationshipType).collect(Collectors.toSet());
         return createNotificationDetail(prettyLabels, "indexed relationship type", "indexed relationship types");
     }
 

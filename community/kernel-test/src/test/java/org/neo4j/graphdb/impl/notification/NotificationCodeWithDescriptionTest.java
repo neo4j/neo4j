@@ -61,7 +61,6 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.repeatedRelationship;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.unsatisfiableRelTypeExpression;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -186,13 +185,10 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_JOIN_HINT_UNFULFILLABLE() {
-        List<String> idents = new ArrayList<>();
-        idents.add("n");
-        idents.add("node2");
-        String identifierDetail = NotificationDetail.joinKey(idents);
-        String variableNames = NotificationDetail.commaSeparated(idents);
-        NotificationImplementation notification =
-                joinHintUnfulfillable(InputPosition.empty, identifierDetail, variableNames);
+        NotificationImplementation notification = joinHintUnfulfillable(
+                InputPosition.empty,
+                NotificationDetail.joinKey(List.of("n", "node2")),
+                NotificationDetail.commaSeparated(List.of("n", "node2")));
 
         verifyNotification(
                 notification,
@@ -258,7 +254,7 @@ class NotificationCodeWithDescriptionTest {
         NotificationImplementation notification = indexLookupForDynamicProperty(
                 InputPosition.empty,
                 NotificationDetail.nodeIndexSeekOrScan(Set.of("A")),
-                NotificationDetail.prettyLabelOrRelationshipTypes(Set.of("A")));
+                NotificationDetail.labelsOrRelationshipTypes(Set.of("A")));
 
         verifyNotification(
                 notification,
@@ -446,7 +442,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_LARGE_LABEL_LOAD_CSV() {
         NotificationImplementation notification =
-                largeLabelLoadCsv(InputPosition.empty, NotificationDetail.prettyLabelOrRelationshipType("Label"));
+                largeLabelLoadCsv(InputPosition.empty, NotificationDetail.labelOrRelationshipType("Label"));
 
         verifyNotification(
                 notification,
@@ -465,7 +461,7 @@ class NotificationCodeWithDescriptionTest {
         NotificationImplementation notification = missingLabel(
                 InputPosition.empty,
                 NotificationDetail.missingLabel("Label"),
-                NotificationDetail.prettyLabelOrRelationshipType("Label"));
+                NotificationDetail.labelOrRelationshipType("Label"));
 
         verifyNotification(
                 notification,
@@ -483,7 +479,7 @@ class NotificationCodeWithDescriptionTest {
         NotificationImplementation notification = missingRelType(
                 InputPosition.empty,
                 NotificationDetail.missingRelationshipType("Rel"),
-                NotificationDetail.prettyLabelOrRelationshipType("Rel"));
+                NotificationDetail.labelOrRelationshipType("Rel"));
 
         verifyNotification(
                 notification,
@@ -533,7 +529,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_EXHAUSTIVE_SHORTEST_PATH() {
-        NotificationImplementation notification = exhaustiveShortestPath(InputPosition.empty, "length(p) > 1");
+        NotificationImplementation notification =
+                exhaustiveShortestPath(InputPosition.empty, NotificationDetail.commaSeparated(Set.of("length(p) > 1")));
 
         verifyNotification(
                 notification,
@@ -570,7 +567,7 @@ class NotificationCodeWithDescriptionTest {
         NotificationImplementation notification = missingParameterForExplain(
                 InputPosition.empty,
                 NotificationDetail.missingParameters(Set.of("param1")),
-                NotificationDetail.prettyParameters(Set.of("param1")));
+                NotificationDetail.parameters(Set.of("param1")));
 
         verifyNotification(
                 notification,
