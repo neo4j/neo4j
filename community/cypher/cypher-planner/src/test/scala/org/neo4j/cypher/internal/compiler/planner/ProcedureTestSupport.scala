@@ -69,12 +69,12 @@ object ProcedureTestSupport {
   }
 
   case class FunctionSignatureBuilder(
-                                       qualifiedName: String,
-                                       inputSignature: IndexedSeq[FieldSignature] = IndexedSeq(),
-                                       outputType: CypherType = CTAny,
-                                       deprecationInfo: Option[String] = None,
-                                       isAggregate: Boolean = false
-                                     ) {
+    qualifiedName: String,
+    inputSignature: IndexedSeq[FieldSignature] = IndexedSeq(),
+    outputType: CypherType = CTAny,
+    deprecationInfo: Option[String] = None,
+    isAggregate: Boolean = false
+  ) {
 
     def withInputField(name: String, inputType: CypherType): FunctionSignatureBuilder =
       copy(inputSignature = inputSignature :+ FieldSignature(name, inputType))

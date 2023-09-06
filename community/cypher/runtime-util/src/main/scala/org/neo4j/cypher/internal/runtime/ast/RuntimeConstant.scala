@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 
@@ -35,4 +36,9 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 case class RuntimeConstant(variable: LogicalVariable, inner: Expression) extends RuntimeExpression {
   self =>
   override def isConstantForQuery: Boolean = true
+
+  override def asCanonicalStringVal: String = {
+    val stringifier = ExpressionStringifier(preferSingleQuotes = true)
+    stringifier(inner)
+  }
 }

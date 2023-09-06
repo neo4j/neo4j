@@ -38,6 +38,8 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.constraints.SchemaValueType
@@ -64,6 +66,12 @@ class IndexPlanningIntegrationTest
   private def plannerConfigForRangeIndexOnLabelPropTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForIndexOnLabelPropTests()
       .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
+      .addFunction(
+        functionSignature("datetime")
+          .withInputField("value", CTString)
+          .withOutputType(CTDateTime)
+          .build()
+      )
       .build()
 
   private def plannerConfigForRangeIndexOnRelationshipTypePropTests(): StatisticsBackedLogicalPlanningConfiguration =
@@ -2299,6 +2307,20 @@ class IndexPlanningIntegrationTest
     planState should haveSamePlanAndCardinalitiesAsBuilder(
       expected,
       AttributeComparisonStrategy.ComparingProvidedAttributesOnly
+    )
+  }
+
+  test("should stringify index seek with datetime function properly") {
+    val planner = plannerConfigForRangeIndexOnLabelPropTests()
+
+    planner.plan(
+      """MATCH (a:Label)
+        |  WHERE datetime('2021-01-01') < a.prop
+        |RETURN a""".stripMargin
+    ).asLogicalPlanBuilderString() should equal(
+      """.produceResults("a")
+        |.nodeIndexOperator("a:Label(prop > datetime('2021-01-01'))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue), unique = false, indexType = IndexType.RANGE)
+        |.build()""".stripMargin
     )
   }
 }
