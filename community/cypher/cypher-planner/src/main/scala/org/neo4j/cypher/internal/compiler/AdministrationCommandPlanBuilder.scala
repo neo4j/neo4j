@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.ast.AddedInRewrite
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllGraphsScope
@@ -127,6 +128,7 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -141,6 +143,7 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -1153,7 +1156,19 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         )) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
+      case SingleQuery(Seq(
+          UseGraph(Variable(SYSTEM_DATABASE_NAME)),
+          resolved @ plans.ResolvedCall(signature, _, _, _, _, _),
+          returns @ Return(_, _, _, _, _, _, _)
+        )) if signature.systemProcedure =>
+        Some(planSystemProcedureCall(resolved, Some(returns)))
+
       case SingleQuery(Seq(resolved @ plans.ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure =>
+        Some(planSystemProcedureCall(resolved, None))
+
+      case SingleQuery(
+          Seq(UseGraph(Variable(SYSTEM_DATABASE_NAME)), resolved @ plans.ResolvedCall(signature, _, _, _, _, _))
+        ) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
@@ -1202,6 +1217,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }
 
         val unsupportedClauses = q.folder.treeFold(List.empty[String]) {
+          case _: UseGraph   => acc => SkipChildren(acc)
           case _: CallClause => acc => SkipChildren(acc)
           case _: Return     => acc => SkipChildren(acc)
           case c: Clause     => acc => SkipChildren(acc :+ c.name)

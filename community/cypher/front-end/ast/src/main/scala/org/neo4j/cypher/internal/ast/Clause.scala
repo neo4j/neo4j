@@ -281,7 +281,8 @@ sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
   def expression: Expression
 }
 
-final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
+final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection
+    with ClauseAllowedOnSystem {
   override def name = "USE GRAPH"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
