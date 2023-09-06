@@ -881,7 +881,12 @@ case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], whe
       actions.semanticCheck chain
       checkRelTypes(pattern) chain
       where.semanticCheck chain
-      checkNoSubqueryInMerge
+      SemanticCheck.fromState { state =>
+        // Only check checkNoSubqueryInMerge the first time.
+        // Afterwards we can have rewritten PatternComprehensions to COLLECT subqueries which would now fail this check.
+        if (state.semanticCheckHasRunOnce) success
+        else checkNoSubqueryInMerge
+      }
 }
 
 case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) extends UpdateClause
