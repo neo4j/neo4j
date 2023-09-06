@@ -907,6 +907,41 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(plan)
   }
 
+  test("inserts no Eager between Create and Create if there is nested plan expression somewhere else") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .aggregation(Seq(), Seq("count(*) AS count"))
+      .allNodeScan("m")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      nestedPlan,
+      s"COUNT { MATCH (m) }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o"))
+      .create(createNode("m"))
+      .projection(Map("c" -> nestedPlanExpression))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("o"))
+        .create(createNode("m"))
+        .eager(ListSet(
+          ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
+          ReadCreateConflict.withConflict(Conflict(Id(2), Id(3)))
+        ))
+        .projection(Map("c" -> nestedPlanExpression))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test("inserts no Eager between Create and Create with subsequent filters") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
@@ -2111,6 +2146,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test("inserts eager between create and all nodes read in nested plan expression") {
+    // UNWIND [1,2] AS x
+    // CREATE (n)
+    // SET n.p = COUNT { MATCH (m) }
+    // RETURN n.p AS x
+
     val nestedPlan = subPlanBuilderWithIdOffset()
       .aggregation(Seq(), Seq("count(*) AS count"))
       .allNodeScan("m")
