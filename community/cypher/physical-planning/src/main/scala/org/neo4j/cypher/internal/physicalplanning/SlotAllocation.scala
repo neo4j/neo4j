@@ -352,7 +352,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans(current.id))
           allocateOneChild(current, nullable, sourceSlots, slots, recordArgument(_, argument), semanticTable)
-          discardUnusedSlots(current, sourceSlots, slots) // Only needed for unary plans currently
           allocateExpressionsOneChildOnOutput(current, nullable, slots, semanticTable)
           allocations.set(current.id, slots)
           resultStack.push(slots)
@@ -693,8 +692,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     slots: SlotConfiguration,
     recordArgument: LogicalPlan => Unit,
     semanticTable: SemanticTable
-  ): Unit =
-    lp match {
+  ): Unit = {
+    val result = lp match {
 
       case Aggregation(_, groupingExpressions, aggregationExpressions) =>
         recordArgument(lp)
@@ -765,7 +764,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case (key, _) =>
             slots.newReference(key, nullable = true, CTAny)
         }
-        p.discardSymbols.foreach(slots.markDiscarded)
 
       case OptionalExpand(_, _, _, _, to, rel, ExpandAll, _) =>
         // Note that OptionalExpand only is optional on the expand and not on incoming rows, so
@@ -895,20 +893,32 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
+    discardUnusedSlots(lp, source, None, slots)
+  }
 
   private def discardUnusedSlots(
     lp: LogicalPlan,
-    source: SlotConfiguration,
+    lhs: SlotConfiguration,
+    rhs: Option[SlotConfiguration],
     slots: SlotConfiguration
   ): Unit = lp match {
-    case _: DiscardingPlan =>
+    case discardingPlan: DiscardingPlan =>
+      val source = discardingPlan match {
+        case _: Eager              => lhs
+        case _: LeftOuterHashJoin  => lhs
+        case _: NodeHashJoin       => lhs
+        case _: RightOuterHashJoin => lhs
+        case _: Sort               => lhs
+        case _: Top                => lhs
+        case _: TransactionApply =>
+          rhs.getOrElse(throw new IllegalStateException(s"Missing rhs of ${discardingPlan.getClass.getSimpleName}"))
+      }
       // Operators for these plans will 'compact' the morsel, setting discarded ref slots to null,
       // before putting it in the eager buffer. This frees memory of those slots for the remainder
       // of the query execution.
       liveVariables.getOption(lp.id) match {
         case Some(live) if slots ne source =>
-          // This plan is 'breaking' the slot config,
-          // it's safe to discard the source slots.
+          // This plan is 'breaking' the slot config, it's safe to discard the source slots.
           val unusedVars = lp.availableSymbols.map(_.name).diff(live)
           unusedVars.foreach(source.markDiscarded)
         case _ =>
@@ -943,8 +953,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     rhs: SlotConfiguration,
     recordArgument: LogicalPlan => Unit,
     argument: SlotsAndArgument
-  ): SlotConfiguration =
-    lp match {
+  ): SlotConfiguration = {
+    val slots = lp match {
       case _: Apply =>
         rhs
 
@@ -1223,6 +1233,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
+    discardUnusedSlots(lp, lhs, Some(rhs), slots)
+    slots
+  }
 
   private def allocateLhsOfApply(
     plan: LogicalPlan,

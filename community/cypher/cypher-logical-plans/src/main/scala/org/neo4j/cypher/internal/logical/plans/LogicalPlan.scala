@@ -2051,7 +2051,7 @@ case class LeftOuterHashJoin(
   override val right: LogicalPlan
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
@@ -2352,7 +2352,7 @@ case class NodeCountFromCountStore(
  */
 case class NodeHashJoin(nodes: Set[LogicalVariable], override val left: LogicalPlan, override val right: LogicalPlan)(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
@@ -3000,7 +3000,7 @@ case class RightOuterHashJoin(
   override val right: LogicalPlan
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
@@ -3517,7 +3517,7 @@ case class TransactionApply(
   maybeReportAs: Option[LogicalVariable]
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with ApplyPlan {
+) extends LogicalBinaryPlan(idGen) with ApplyPlan with DiscardingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(right = newRHS)(idGen)
@@ -4128,7 +4128,7 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
  * This trait is currently only used for a specific mechanism in slot allocation. Other plans can be considered
  * discarding too, like Aggregation, but are not currently inheriting this trait.
  */
-sealed trait DiscardingPlan extends LogicalUnaryPlan
+sealed trait DiscardingPlan
 
 /**
  * Marker trait of light-weight simulations of a basic plans that can be used to test or benchmark runtime frameworks
