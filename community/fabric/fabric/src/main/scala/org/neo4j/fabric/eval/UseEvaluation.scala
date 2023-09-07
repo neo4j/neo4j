@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Rewritten.RewritingOps
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
@@ -63,7 +64,8 @@ object UseEvaluation {
     def evaluate(
       graphSelection: GraphSelection,
       parameters: MapValue,
-      context: java.util.Map[String, AnyValue]
+      context: java.util.Map[String, AnyValue],
+      sessionDb: DatabaseReference
     ): Catalog.Graph = Errors.errorContext(query, graphSelection) {
 
       graphSelection.expression match {
@@ -78,7 +80,7 @@ object UseEvaluation {
           val argValues = f.args
             .map(resolveFunctions)
             .map(expr => evaluator.evaluate(expr, parameters, ctx))
-          catalog.resolveView(nameFromFunc(f), argValues)
+          catalog.resolveView(nameFromFunc(f), argValues, sessionDb: DatabaseReference)
 
         case x =>
           Errors.openCypherUnexpected("graph or view reference", x)
