@@ -64,10 +64,13 @@ class ReadOnlyArray[T](private val inner: Array[T]) {
     */
   def toSeq: Seq[T] = inner.toSeq
 
-  def toArray: Array[T] = {
-    val result = new Array[Any](length)
+  /**
+   * Return a copy of the inner array.
+   */
+  def toArray[U >: T : ClassTag]: Array[U] = {
+    val result = new Array[U](length)
     System.arraycopy(inner, 0, result, 0, length)
-    result.asInstanceOf[Array[T]]
+    result
   }
 
   /**
