@@ -66,7 +66,8 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     private final long lastClosedTxId;
     private final long transactionHorizon;
 
-    KernelTransactionImplementationHandle(KernelTransactionImplementation tx, SystemNanoClock clock) {
+    KernelTransactionImplementationHandle(
+            KernelTransactionImplementation tx, SystemNanoClock clock, CursorContext cursorContext) {
         this.transactionStamp = new KernelTransactionStamp(tx);
         this.startTime = tx.startTime();
         this.startTimeNanos = tx.startTimeNanos();
@@ -80,10 +81,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
         this.databaseName = tx.getDatabaseName();
-        CursorContext cursorContext = tx.cursorContext();
-        if (cursorContext == null) {
-            cursorContext = CursorContext.NULL_CONTEXT;
-        }
         var versionContext = cursorContext.getVersionContext();
         this.lastClosedTxId = versionContext.lastClosedTransactionId();
         this.transactionHorizon = transactionHorizon(versionContext);

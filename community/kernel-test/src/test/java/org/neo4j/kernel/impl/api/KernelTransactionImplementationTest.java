@@ -661,14 +661,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
                 transaction, new AtomicReference<>(new ThreadBasedCpuClock()), false);
         PredictablePageCursorTracer tracer = new PredictablePageCursorTracer();
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
-        statistics.init(2, contextFactory.create(tracer));
+        statistics.init(2);
 
         assertEquals(2, statistics.cpuTimeMillis());
         assertEquals(mebiBytes(2), statistics.estimatedHeapMemory());
         assertEquals(14, statistics.usedNativeMemory());
         assertEquals(-1, statistics.heapAllocatedBytes());
-        assertEquals(1, statistics.totalTransactionPageCacheFaults());
-        assertEquals(4, statistics.totalTransactionPageCacheHits());
         statistics.addWaitingTime(1);
         assertEquals(1, statistics.getWaitingTimeNanos(0));
 
@@ -676,13 +674,11 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         statistics.reset();
         transaction.memoryTracker().reset();
 
-        statistics.init(4, contextFactory.create(tracer));
+        statistics.init(4);
         assertEquals(4, statistics.cpuTimeMillis());
         assertEquals(0, statistics.estimatedHeapMemory());
         assertEquals(0, statistics.usedNativeMemory());
         assertEquals(-1, statistics.heapAllocatedBytes());
-        assertEquals(2, statistics.totalTransactionPageCacheFaults());
-        assertEquals(6, statistics.totalTransactionPageCacheHits());
         assertEquals(0, statistics.getWaitingTimeNanos(0));
     }
 

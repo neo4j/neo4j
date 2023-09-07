@@ -50,12 +50,13 @@ class KernelTransactionImplementationHandleTest {
 
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
         when(tx.isOpen()).thenReturn(true);
-        when(tx.cursorContext())
+        when(tx.concurrentCursorContextLookup())
                 .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
                         .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(userTransactionId);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        KernelTransactionImplementationHandle handle =
+                new KernelTransactionImplementationHandle(tx, clock, tx.concurrentCursorContextLookup());
 
         assertTrue(handle.isOpen());
     }
@@ -66,7 +67,7 @@ class KernelTransactionImplementationHandleTest {
         long nextUserTransactionId = 4242;
 
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
-        when(tx.cursorContext())
+        when(tx.concurrentCursorContextLookup())
                 .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
                         .create("test"));
         when(tx.isOpen()).thenReturn(true);
@@ -74,7 +75,8 @@ class KernelTransactionImplementationHandleTest {
                 .thenReturn(initialUserTransactionId)
                 .thenReturn(nextUserTransactionId);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        KernelTransactionImplementationHandle handle =
+                new KernelTransactionImplementationHandle(tx, clock, tx.concurrentCursorContextLookup());
 
         assertFalse(handle.isOpen());
     }
@@ -85,12 +87,13 @@ class KernelTransactionImplementationHandleTest {
         Status.Transaction terminationReason = Status.Transaction.Terminated;
 
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
-        when(tx.cursorContext())
+        when(tx.concurrentCursorContextLookup())
                 .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
                         .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(userTransactionId);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        KernelTransactionImplementationHandle handle =
+                new KernelTransactionImplementationHandle(tx, clock, tx.concurrentCursorContextLookup());
         handle.markForTermination(terminationReason);
 
         verify(tx).markForTermination(userTransactionId, terminationReason);
@@ -99,39 +102,42 @@ class KernelTransactionImplementationHandleTest {
     @Test
     void markForTerminationReturnsTrueWhenSuccessful() {
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
-        when(tx.cursorContext())
+        when(tx.concurrentCursorContextLookup())
                 .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
                         .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(42L);
         when(tx.markForTermination(anyLong(), any())).thenReturn(true);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        KernelTransactionImplementationHandle handle =
+                new KernelTransactionImplementationHandle(tx, clock, tx.concurrentCursorContextLookup());
         assertTrue(handle.markForTermination(Status.Transaction.Terminated));
     }
 
     @Test
     void markForTerminationReturnsFalseWhenNotSuccessful() {
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
-        when(tx.cursorContext())
+        when(tx.concurrentCursorContextLookup())
                 .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
                         .create("test"));
         when(tx.getTransactionSequenceNumber()).thenReturn(42L);
         when(tx.markForTermination(anyLong(), any())).thenReturn(false);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        KernelTransactionImplementationHandle handle =
+                new KernelTransactionImplementationHandle(tx, clock, tx.concurrentCursorContextLookup());
         assertFalse(handle.markForTermination(Status.Transaction.Terminated));
     }
 
     @Test
     void transactionStatisticForReusedTransactionIsNotAvailable() {
         KernelTransactionImplementation tx = mock(KernelTransactionImplementation.class);
-        when(tx.cursorContext())
+        when(tx.concurrentCursorContextLookup())
                 .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
                         .create("test"));
         when(tx.isOpen()).thenReturn(true);
         when(tx.getTransactionSequenceNumber()).thenReturn(2L).thenReturn(3L);
 
-        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle(tx, clock);
+        KernelTransactionImplementationHandle handle =
+                new KernelTransactionImplementationHandle(tx, clock, tx.concurrentCursorContextLookup());
         assertSame(TransactionExecutionStatistic.NOT_AVAILABLE, handle.transactionStatistic());
     }
 

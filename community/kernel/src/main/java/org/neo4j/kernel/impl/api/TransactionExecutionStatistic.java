@@ -58,8 +58,9 @@ public class TransactionExecutionStatistic {
         this.nativeAllocatedBytes = nullIfNegative(statistics.usedNativeMemory());
         this.estimatedUsedHeapMemory = nullIfNegative(statistics.estimatedHeapMemory());
         this.cpuTimeMillis = nullIfNegative(statistics.cpuTimeMillis());
-        this.pageFaults = statistics.totalTransactionPageCacheFaults();
-        this.pageHits = statistics.totalTransactionPageCacheHits();
+        var tracer = tx.concurrentCursorContextLookup().getCursorTracer();
+        this.pageFaults = tracer.faults();
+        this.pageHits = tracer.hits();
         this.elapsedTimeMillis = nowMillis - startTimeMillis;
         this.idleTimeMillis =
                 this.cpuTimeMillis != null ? elapsedTimeMillis - this.cpuTimeMillis - waitTimeMillis : null;

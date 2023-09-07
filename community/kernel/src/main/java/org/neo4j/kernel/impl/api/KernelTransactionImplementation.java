@@ -24,7 +24,6 @@ import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
@@ -33,12 +32,15 @@ import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -178,6 +180,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
     private static final String TRANSACTION_TAG = "transaction";
+    private static final VarHandle CURSOR_CONTEXT_HANDLE;
+
+    static {
+        try {
+            CURSOR_CONTEXT_HANDLE = MethodHandles.lookup()
+                    .in(KernelTransactionImplementation.class)
+                    .findVarHandle(KernelTransactionImplementation.class, "cursorContext", CursorContext.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private final CollectionsFactory collectionsFactory;
 
@@ -203,8 +216,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintSemantics constraintSemantics;
     private final TransactionMemoryPool transactionMemoryPool;
     private final LogProvider logProvider;
-    private CursorContext cursorContext;
     private final CursorContextFactory contextFactory;
+    // For concurrent access by monitoring, jobs, etc CURSOR_CONTEXT_HANDLE should be used
+    private CursorContext cursorContext;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final TransactionIdGenerator transactionIdGenerator;
     private final ApplyEnrichmentStrategy enrichmentStrategy;
@@ -423,7 +437,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assert transactionMemoryPool.usedHeap() == 0;
         assert transactionMemoryPool.usedNative() == 0;
         assert !failedCleanup : "This transaction should not be reused since it did not close properly";
-        this.cursorContext = contextFactory.create(TRANSACTION_TAG);
+        CURSOR_CONTEXT_HANDLE.setRelease(this, contextFactory.create(TRANSACTION_TAG));
         this.transactionalCursors.reset(cursorContext);
         this.accessCapability = accessCapabilityFactory.newAccessCapability(readOnlyDatabaseChecker);
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
@@ -443,7 +457,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
-        this.statistics.init(currentThread().getId(), cursorContext);
+        this.statistics.init(currentThread().getId());
         this.commandCreationContext.initialize(
                 kernelVersionProvider,
                 cursorContext,
@@ -603,6 +617,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return cursorContext;
     }
 
+    public CursorContext concurrentCursorContextLookup() {
+        return (CursorContext) CURSOR_CONTEXT_HANDLE.getAcquire(this);
+    }
+
     @Override
     public ExecutionContext createExecutionContext() {
         if (hasTxStateWithChanges()) {
@@ -725,7 +743,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String statusDetails() {
         var details = statusDetails;
-        return defaultString(details, EMPTY);
+        return Objects.toString(details, EMPTY);
     }
 
     @Override
@@ -1289,6 +1307,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             try {
                 cursorContext.close();
+                CURSOR_CONTEXT_HANDLE.setRelease(this, CursorContext.NULL_CONTEXT);
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }
@@ -1405,7 +1424,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 operations.cursors(),
                 txState,
                 txStateVisitor,
-                cursorContext,
+                ((CursorContext) CURSOR_CONTEXT_HANDLE.get(this)),
                 memoryTracker);
     }
 
@@ -1487,7 +1506,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private volatile long heapAllocatedBytesWhenQueryStarted;
         private volatile long waitingTimeNanos;
         private volatile long transactionThreadId;
-        private volatile CursorContext cursorContext = CursorContext.NULL_CONTEXT;
         private final KernelTransactionImplementation transaction;
         private final AtomicReference<CpuClock> cpuClockRef;
         private CpuClock cpuClock;
@@ -1503,10 +1521,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     heapAllocationTracking ? HeapAllocation.HEAP_ALLOCATION : HeapAllocation.NOT_AVAILABLE;
         }
 
-        protected void init(long threadId, CursorContext cursorContext) {
+        protected void init(long threadId) {
             this.cpuClock = cpuClockRef.get();
             this.transactionThreadId = threadId;
-            this.cursorContext = cursorContext;
             this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos(transactionThreadId);
             this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes(transactionThreadId);
         }
@@ -1544,22 +1561,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         /**
-         * Return total number of page cache hits that current transaction performed
-         * @return total page cache hits
-         */
-        long totalTransactionPageCacheHits() {
-            return cursorContext.getCursorTracer().hits();
-        }
-
-        /**
-         * Return total number of page cache faults that current transaction performed
-         * @return total page cache faults
-         */
-        long totalTransactionPageCacheFaults() {
-            return cursorContext.getCursorTracer().faults();
-        }
-
-        /**
          * Report how long any particular query was waiting during it's execution
          * @param waitTimeNanos query waiting time in nanoseconds
          */
@@ -1585,7 +1586,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         void reset() {
-            cursorContext = CursorContext.NULL_CONTEXT;
             cpuTimeNanosWhenQueryStarted = 0;
             heapAllocatedBytesWhenQueryStarted = 0;
             waitingTimeNanos = 0;
