@@ -1443,4 +1443,108 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("a", "x", "y", "c").withRows(expected)
   }
+
+  test("should project endpoint with optional - end in scope") {
+    // (n1:START) → (n2) → (n3) → (n4)
+    given {
+      chainGraphs(1, "R", "R", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y", "x", "r")
+      .apply()
+      .|.projectEndpoints("(x)-[r]-(y)", startInScope = false, endInScope = true)
+      .|.argument("y", "r", "z", "q", "w")
+      .apply()
+      .|.optional("r", "w", "q")
+      .|.filter("z:NOT_A_LABEL")
+      .|.projectEndpoints("(z)<-[r]-(y)", startInScope = false, endInScope = false)
+      .|.argument("r")
+      .filter("w:START")
+      .allRelationshipsScan("(w)-[r]-(q)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("y", "x", "r").withNoRows()
+  }
+
+  test("should project endpoint with optional - start in scope") {
+    // (n1:START) → (n2) → (n3) → (n4)
+    given {
+      chainGraphs(1, "R", "R", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .apply()
+      .|.projectEndpoints("(y)-[r]-(x)", startInScope = true, endInScope = false)
+      .|.argument("y", "r", "z", "q", "w")
+      .apply()
+      .|.optional("r", "w", "q")
+      .|.filter("z:NOT_A_LABEL")
+      .|.projectEndpoints("(z)<-[r]-(y)", startInScope = false, endInScope = false)
+      .|.argument("r")
+      .filter("w:START")
+      .allRelationshipsScan("(w)-[r]-(q)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "y", "r").withNoRows()
+  }
+
+  test("should project endpoint with optional - varlength - end in scope") {
+    // (n1:START) → (n2) → (n3) → (n4)
+    given {
+      chainGraphs(1, "R", "R", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .apply()
+      .|.projectEndpoints("(x)-[r*]-(y)", startInScope = false, endInScope = true)
+      .|.filter(" size(r) >= 1 AND all(anon_2 IN r WHERE single(anon_3 IN r WHERE anon_2 = anon_3))")
+      .|.argument("y", "r", "z", "q", "w")
+      .apply()
+      .|.optional("w", "r", "q")
+      .|.filter("z:L3")
+      .|.projectEndpoints("(z)<-[r*]-(y)", startInScope = false, endInScope = false)
+      .|.filter("size(r) >= 1 AND all(anon_0 IN r WHERE single(anon_1 IN r WHERE anon_0 = anon_1))")
+      .|.argument("r")
+      .expandAll("(w)-[r*]-(q)")
+      .nodeByLabelScan("w", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "y", "r").withNoRows()
+  }
+
+  test("should project endpoint with optional - varlength - start in scope") {
+    // (n1:START) → (n2) → (n3) → (n4)
+    given {
+      chainGraphs(1, "R", "R", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .apply()
+      .|.projectEndpoints("(y)-[r*]-(x)", startInScope = true, endInScope = false)
+      .|.filter(" size(r) >= 1 AND all(anon_2 IN r WHERE single(anon_3 IN r WHERE anon_2 = anon_3))")
+      .|.argument("y", "r", "z", "q", "w")
+      .apply()
+      .|.optional("w", "r", "q")
+      .|.filter("z:L3")
+      .|.projectEndpoints("(z)<-[r*]-(y)", startInScope = false, endInScope = false)
+      .|.filter("size(r) >= 1 AND all(anon_0 IN r WHERE single(anon_1 IN r WHERE anon_0 = anon_1))")
+      .|.argument("r")
+      .expandAll("(w)-[r*]-(q)")
+      .nodeByLabelScan("w", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "y", "r").withNoRows()
+  }
 }

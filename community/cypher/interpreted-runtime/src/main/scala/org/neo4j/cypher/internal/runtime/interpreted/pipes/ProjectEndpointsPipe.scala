@@ -33,9 +33,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.vali
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.validateRels
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.validateRelsUndirectedNothingInScope
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.internal.kernel.api.Read.NO_ID
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -70,8 +74,8 @@ case class ProjectEndpointsPipe(
       validateRels(
         rels,
         direction,
-        Option.when(startInScope)(row.getByName(start).asInstanceOf[VirtualNodeValue].id()),
-        Option.when(endInScope)(row.getByName(end).asInstanceOf[VirtualNodeValue].id()),
+        Option.when(startInScope)(nodeId(row.getByName(start))),
+        Option.when(endInScope)(nodeId(row.getByName(end))),
         state.query,
         state.cursors.relationshipScanCursor,
         genTypeCheck(relTypes.types(state.query))
@@ -101,8 +105,8 @@ case class ProjectEndpointsPipe(
           validateRel(
             relValue.id(),
             direction,
-            Option.when(startInScope)(row.getByName(start).asInstanceOf[VirtualNodeValue].id()),
-            Option.when(endInScope)(row.getByName(end).asInstanceOf[VirtualNodeValue].id()),
+            Option.when(startInScope)(nodeId(row.getByName(start))),
+            Option.when(endInScope)(nodeId(row.getByName(end))),
             state.query,
             state.cursors.relationshipScanCursor,
             genTypeCheck(relTypes.types(state.query))
@@ -136,6 +140,16 @@ case class ProjectEndpointsPipe(
     }
     row
   }
+
+  private def nodeId(
+    node: AnyValue
+  ): Long =
+    node match {
+      case n: VirtualNodeValue       => n.id()
+      case x if x eq Values.NO_VALUE => StatementConstants.NO_SUCH_NODE
+      case value => throw new CypherTypeException(s"Expected NodeValue but got ${value.getTypeName}")
+    }
+
 }
 
 case object ProjectEndpoints {
