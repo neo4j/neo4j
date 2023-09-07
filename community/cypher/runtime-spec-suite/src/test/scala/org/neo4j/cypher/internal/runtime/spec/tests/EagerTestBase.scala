@@ -688,7 +688,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       .prober(probe2)
       .nonFuseable() // Needed because of limitation in prober
       // keep is discarded here but should not be removed since we don't put it in an eager buffer
-      .projection(project = Seq("0 as hi"), discard = Set("keep"))
+      .projection(project = Seq("keep + 'done' as hi"), discard = Set("keep"))
       .eager()
       .prober(probe1)
       .projection(project = Seq("keep as keep"), discard = Set("discard"))
@@ -706,6 +706,24 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
 
     probe2.seenRows.map(_.toSeq).toSeq should contain theSameElementsAs
       Range.inclusive(0, sizeHint).map(i => Seq(stringValue(s"bla$i"), null))
+  }
+
+  test("should discard columns under apply") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "c")
+      .apply()
+      .|.eager()
+      .|.projection("b+1 AS c", "b+2 AS d")
+      .|.argument("b")
+      .projection("a+1 AS b", "a+2 AS c")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    result should beColumns("a", "c")
+      .withRows(Range.inclusive(0, sizeHint).map(i => Array[Any](i, i + 2)))
   }
 
   protected def assertRows(expected: GenTraversable[_], actual: Seq[_], hasLimit: Boolean = false): Any = {

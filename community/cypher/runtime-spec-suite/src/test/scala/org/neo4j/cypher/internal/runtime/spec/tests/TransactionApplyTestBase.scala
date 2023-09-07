@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
-import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
@@ -752,7 +751,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   test("should not discard columns (slotted)") {
     assume(runtime.name == "slotted")
 
-    val probe = RecordingProbe("keepLhs", "discardLhs", "keepRhs", "discardRhs")
+    val probe = recordingProbe("keepLhs", "discardLhs", "keepRhs", "discardRhs")
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("keepLhs", "keepRhs", "comesFromDiscarded")
       .prober(probe)

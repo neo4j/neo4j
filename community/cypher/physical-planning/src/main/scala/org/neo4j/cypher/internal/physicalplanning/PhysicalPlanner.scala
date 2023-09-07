@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ApplyPlans
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.NestedPlanArgumentConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
@@ -54,6 +55,8 @@ object PhysicalPlanner {
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) =
       expressionVariableAllocation.allocate(beforeRewrite)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
+    val liveVariables =
+      if (config.freeMemoryOfUnusedColumns) LivenessAnalysis.computeLiveVariables(logicalPlan) else new LiveVariables
     val slotMetaData = SlotAllocation.allocateSlots(
       withSlottedParameters,
       semanticTable,
@@ -61,6 +64,7 @@ object PhysicalPlanner {
       availableExpressionVars,
       config,
       anonymousVariableNameGenerator,
+      liveVariables,
       allocatePipelinedSlots
     )
     val slottedRewriter = new SlottedRewriter(tokenContext)

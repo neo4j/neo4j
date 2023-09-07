@@ -41,7 +41,8 @@ object CypherRuntimeConfiguration {
       renderPlanDescription = config.renderPlanDescription,
       varExpandRelationshipIdSetThreshold = config.varExpandRelationshipIdSetThreshold,
       compiledExpressionMethodLimit = config.compiledExpressionMethodLimit,
-      operatorFusingMethodLimit = config.operatorFusingMethodLimit
+      operatorFusingMethodLimit = config.operatorFusingMethodLimit,
+      freeMemoryOfUnusedColumns = config.freeMemoryOfUnusedColumns
     )
   }
 
@@ -61,7 +62,8 @@ case class CypherRuntimeConfiguration(
   renderPlanDescription: Boolean,
   varExpandRelationshipIdSetThreshold: Int,
   compiledExpressionMethodLimit: Int,
-  operatorFusingMethodLimit: Int
+  operatorFusingMethodLimit: Int,
+  freeMemoryOfUnusedColumns: Boolean
 ) {
 
   Preconditions.checkArgument(

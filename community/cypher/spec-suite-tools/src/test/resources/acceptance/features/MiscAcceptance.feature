@@ -148,3 +148,23 @@ Feature: MiscAcceptance
       | result |
       | 2      |
     And no side effects
+
+  Scenario: Should not discard re-used variable names
+    Given an empty graph
+    When executing query:
+      """
+        UNWIND [1,2,3,4,5] AS a
+        WITH a, a*2 AS b
+        WITH a
+        WITH a, -a AS b
+        RETURN a
+        ORDER BY b
+      """
+    Then the result should be, in order:
+      | a |
+      | 5 |
+      | 4 |
+      | 3 |
+      | 2 |
+      | 1 |
+    And no side effects

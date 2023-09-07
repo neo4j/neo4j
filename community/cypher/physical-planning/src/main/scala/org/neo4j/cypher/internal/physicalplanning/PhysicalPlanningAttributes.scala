@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.physicalplanning
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
 import org.neo4j.cypher.internal.util.attribution.Attribute
@@ -33,5 +34,5 @@ object PhysicalPlanningAttributes {
   class TrailPlans extends Attribute[LogicalPlan, Id]
 
   class NestedPlanArgumentConfigurations extends Attribute[LogicalPlan, SlotConfiguration]
-
+  class LiveVariables extends Attribute[LogicalPlan, Set[String]]
 }

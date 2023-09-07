@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
@@ -62,6 +63,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DiscardingPlan
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
@@ -145,6 +147,7 @@ import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
 import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ApplyPlans
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.NestedPlanArgumentConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
@@ -225,6 +228,7 @@ object SlotAllocation {
     availableExpressionVariables: AvailableExpressionVariables,
     config: CypherRuntimeConfiguration,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    liveVariables: LiveVariables,
     allocatePipelinedSlots: Boolean = false
   ): SlotMetaData =
     new SingleQuerySlotAllocator(
@@ -232,7 +236,8 @@ object SlotAllocation {
       breakingPolicy,
       availableExpressionVariables,
       config,
-      anonymousVariableNameGenerator
+      anonymousVariableNameGenerator,
+      liveVariables = liveVariables
     ).allocateSlots(lp, semanticTable, None)
 
   final val LOAD_CSV_METADATA_KEY: String = "csv"
@@ -254,6 +259,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   private val argumentSizes: ArgumentSizes = new ArgumentSizes,
   private val applyPlans: ApplyPlans = new ApplyPlans,
   private val trailPlans: TrailPlans = new TrailPlans,
+  private val liveVariables: LiveVariables = new LiveVariables,
   private val nestedPlanArgumentConfigurations: NestedPlanArgumentConfigurations = new NestedPlanArgumentConfigurations
 ) {
 
@@ -346,6 +352,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans(current.id))
           allocateOneChild(current, nullable, sourceSlots, slots, recordArgument(_, argument), semanticTable)
+          discardUnusedSlots(current, sourceSlots, slots) // Only needed for unary plans currently
           allocateExpressionsOneChildOnOutput(current, nullable, slots, semanticTable)
           allocations.set(current.id, slots)
           resultStack.push(slots)
@@ -599,7 +606,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       argumentSizes,
       applyPlans,
       trailPlans,
-      nestedPlanArgumentConfigurations
+      nestedPlanArgumentConfigurations = nestedPlanArgumentConfigurations
     )
 
   /**
@@ -888,6 +895,37 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
+
+  private def discardUnusedSlots(
+    lp: LogicalPlan,
+    source: SlotConfiguration,
+    slots: SlotConfiguration
+  ): Unit = lp match {
+    case _: DiscardingPlan =>
+      // Operators for these plans will 'compact' the morsel, setting discarded ref slots to null,
+      // before putting it in the eager buffer. This frees memory of those slots for the remainder
+      // of the query execution.
+      liveVariables.getOption(lp.id) match {
+        case Some(live) if slots ne source =>
+          // This plan is 'breaking' the slot config,
+          // it's safe to discard the source slots.
+          val unusedVars = lp.availableSymbols.map(_.name).diff(live)
+          unusedVars.foreach(source.markDiscarded)
+        case _ =>
+        /*
+         * We could discard even when this plan is not breaking slot config,
+         * by only variables that was discarded before the last break.
+         *
+         * An example in slotted,
+         * AllNodeScan (n:A) -> Projection n.p * 2 AS unusedVar -> Expand (n)-->(m) -> Sort (m.p) -> Produce Result (m.p)
+         * Breaks slots                                            Breaks slots
+         *
+         * Sort do not break slots in slotted runtime, but would still be safe to discard `unusedVar`, because it has
+         * no usage after the previous slot break (Expand).
+         */
+      }
+    case _ =>
+  }
 
   /**
    * Compute the slot configuration of a branching logical plan operator `lp`.

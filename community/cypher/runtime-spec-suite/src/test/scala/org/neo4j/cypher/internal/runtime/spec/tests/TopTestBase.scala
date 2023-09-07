@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
-import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE
@@ -384,8 +383,8 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     assume(runtime.name == "slotted")
 
     val limit = 10000
-    val probe1 = RecordingProbe("keep", "discard")
-    val probe2 = RecordingProbe("keep", "discard")
+    val probe1 = recordingProbe("keep", "discard")
+    val probe2 = recordingProbe("keep", "discard")
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("keep")
       .prober(probe2)

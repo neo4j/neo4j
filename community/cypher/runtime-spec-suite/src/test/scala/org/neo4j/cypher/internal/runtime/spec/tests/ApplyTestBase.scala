@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherOperatorEngine
+import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_operator_engine
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.longValue
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -395,5 +399,79 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("discarding unused variables under nested applies") {
+    val isFused = runtimeUsed == Pipelined &&
+      edition.getSetting(cypher_operator_engine)
+        .exists(_ != CypherOperatorEngine.INTERPRETED)
+    assume(runtimeUsed != Parallel && !isFused)
+
+    val size = 32
+    val probe1 = recordingProbe("i", "a", "b", "c", "d", "e", "f", "g")
+    val probe2 = recordingProbe("i", "a", "b", "c", "d", "e", "f", "g")
+    val probe3 = recordingProbe("i", "a", "b", "c", "d", "e", "f", "g")
+    val probe4 = recordingProbe("i", "a", "b", "c", "d", "e", "f", "g")
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .prober(probe1)
+      .eager()
+      .apply()
+      .|.filter("c > 0")
+      .|.prober(probe2)
+      .|.eager()
+      .|.apply()
+      .|.|.filter("d > 0")
+      .|.|.prober(probe3)
+      .|.|.eager()
+      .|.|.apply()
+      .|.|.|.eager()
+      .|.|.|.prober(probe4)
+      .|.|.|.argument("a", "b", "c", "d")
+      .|.|.eager()
+      .|.|.argument("a", "b", "c", "d", "e")
+      .|.eager()
+      .|.argument("a", "b", "c", "d", "e", "f")
+      .eager()
+      .projection("i+1 AS a", "i+2 AS b", "i+3 AS c", "i+4 AS d", "i+5 AS e", "i+6 AS f", "i+7 AS g")
+      .unwind(s"range(0,$size) AS i")
+      .argument()
+      .build()
+
+    val result = execute(query, runtime)
+
+    // result should be correct
+    result should beColumns("a")
+      .withRows(Range.inclusive(0, size).map(i => Array[Any](i + 1)))
+
+    if (runtimeUsed != Interpreted && runtimeUsed != Parallel) {
+      // unused variables should be discarded in the driving table
+      probe1.seenRows shouldBe Range.inclusive(0, size)
+        .map(i => Array[AnyValue](null, longValue(i + 1), null, null, null, null, null, null))
+        .toArray
+
+      probe2.seenRows shouldBe Range.inclusive(0, size)
+        .map(i => Array[AnyValue](null, longValue(i + 1), null, longValue(i + 3), null, null, null, null))
+        .toArray
+
+      probe3.seenRows shouldBe Range.inclusive(0, size)
+        .map(i => Array[AnyValue](null, longValue(i + 1), null, longValue(i + 3), longValue(i + 4), null, null, null))
+        .toArray
+
+      probe4.seenRows shouldBe Range.inclusive(0, size)
+        .map(i =>
+          Array[AnyValue](
+            null,
+            longValue(i + 1),
+            longValue(i + 2),
+            longValue(i + 3),
+            longValue(i + 4),
+            null,
+            null,
+            null
+          )
+        )
+        .toArray
+    }
   }
 }

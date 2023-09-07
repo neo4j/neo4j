@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
-import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.values.storable.Values.stringValue
 
@@ -260,12 +259,53 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       sortedRange.map(i => Seq(stringValue(s"bla$i"), null))
   }
 
+  test("should discard unused columns") {
+    val probe1 = recordingProbe("keep", "discard")
+    val probe2 = recordingProbe("keep", "discard")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("keep")
+      .prober(probe2)
+      .nonFuseable() // Needed because of limitation in prober
+      .sort("keep ASC")
+      .prober(probe1)
+      .projection("'bla' + a as keep", "'blö' + a as discard")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val sortedRange = Range.inclusive(0, sizeHint)
+      .map(_.toString)
+      .sorted
+    result should beColumns("keep")
+      .withRows(inOrder(sortedRange.map(i => Array(s"bla$i"))))
+
+    if (runtimeUsed == Interpreted || runtimeUsed == Slotted) {
+      // Sort do not break in slotted
+      probe1.seenRows.map(_.toSeq).toSeq shouldBe
+        Range.inclusive(0, sizeHint)
+          .map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
+
+      probe2.seenRows.map(_.toSeq).toSeq shouldBe
+        sortedRange.map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
+    } else if (runtimeUsed != Parallel) {
+      probe1.seenRows.map(_.toSeq).toSeq shouldBe
+        Range.inclusive(0, sizeHint)
+          .map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
+
+      probe2.seenRows.map(_.toSeq).toSeq shouldBe
+        sortedRange.map(i => Seq(stringValue(s"bla$i"), null))
+
+    }
+  }
+
   // Sort do not break in slotted, so should not discard
   test("should not discard columns (slotted)") {
     assume(runtime.name == "slotted")
 
-    val probe1 = RecordingProbe("keep", "discard")
-    val probe2 = RecordingProbe("keep", "discard")
+    val probe1 = recordingProbe("keep", "discard")
+    val probe2 = recordingProbe("keep", "discard")
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("keep")
       .prober(probe2)

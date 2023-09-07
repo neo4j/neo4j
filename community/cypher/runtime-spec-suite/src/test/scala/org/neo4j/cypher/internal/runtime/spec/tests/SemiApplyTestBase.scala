@@ -456,4 +456,25 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(expectedValues)
   }
+
+  test("discard columns") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .eager()
+      .semiApply()
+      .|.eager()
+      .|.projection("a+3 AS d")
+      .|.argument("a")
+      .eager()
+      .projection("a+1 AS b", "a+2 AS c")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    // then
+    val result = execute(logicalQuery, runtime)
+    result should beColumns("a", "b")
+      .withRows(Range.inclusive(0, sizeHint).map(i => Array[Any](i, i + 1)))
+  }
 }

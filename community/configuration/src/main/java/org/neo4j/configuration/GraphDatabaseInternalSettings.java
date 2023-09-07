@@ -443,6 +443,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Enable freeing memory of unused columns during Cypher query execution")
+    public static final Setting<Boolean> cypher_free_memory_of_unused_columns = newBuilder(
+                    "internal.cypher.free_memory_of_unused_columns", BOOL, true)
+            .build();
+
+    @Internal
     @Description("Max number of recent queries to collect in the data collector module. Will round down to the"
             + " nearest power of two. The default number (8192 query invocations) "
             + " was chosen as a trade-off between getting a useful amount of queries, and not"

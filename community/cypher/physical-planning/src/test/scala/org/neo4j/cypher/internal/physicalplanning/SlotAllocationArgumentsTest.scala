@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
+import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.SlotMetaData
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
@@ -56,7 +58,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = AllNodesScan(varFor("x"), Set.empty)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -76,7 +78,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val expand = Expand(leaf, varFor("x"), INCOMING, Seq.empty, varFor("z"), varFor("r"), ExpandAll)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       expand,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -94,7 +96,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val argument = Argument(Set.empty)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       argument,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -115,7 +117,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(pipe(lhs, 1, 0), rhs)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -137,7 +139,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(pipe(lhs, 0, 1), rhs)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -159,7 +161,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(pipe(lhs, 17, 11), rhs)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -190,7 +192,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(applyRight(pipe(leaf1, 1, 0), pipe(leaf2, 0, 1)), leaf3)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -222,7 +224,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(applyLeft(pipe(leaf1, 1, 0), pipe(leaf2, 0, 1)), leaf3)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -253,7 +255,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = pipe(applyLeft(pipe(leaf1, 1, 0), leaf2), 0, 1)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -283,7 +285,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(pipe(leaf1, 1, 0), pipe(break(leaf2), 0, 1))
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -312,7 +314,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(pipe(leaf1, 1, 0), optional)
 
     // when
-    val arguments = SlotAllocation.allocateSlots(
+    val arguments = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -347,7 +349,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(lhs, distinct)
 
     // when
-    val slots = SlotAllocation.allocateSlots(
+    val slots = allocateSlots(
       plan,
       semanticTable,
       BREAK_FOR_LEAFS,
@@ -387,7 +389,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val plan = applyRight(lhs, aggregation)
 
     // when
-    val slots = SlotAllocation.allocateSlots(
+    val slots = allocateSlots(
       plan,
       semanticTable,
       PipelineBreakingPolicy.breakFor(leaf1, leaf2, aggregation),
@@ -428,4 +430,21 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     }
     curr
   }
+
+  private def allocateSlots(
+    lp: LogicalPlan,
+    semanticTable: SemanticTable,
+    breakingPolicy: PipelineBreakingPolicy,
+    availableExpressionVariables: AvailableExpressionVariables,
+    config: CypherRuntimeConfiguration,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): SlotMetaData = SlotAllocation.allocateSlots(
+    lp,
+    semanticTable,
+    breakingPolicy,
+    availableExpressionVariables,
+    config,
+    anonymousVariableNameGenerator,
+    new LiveVariables()
+  )
 }

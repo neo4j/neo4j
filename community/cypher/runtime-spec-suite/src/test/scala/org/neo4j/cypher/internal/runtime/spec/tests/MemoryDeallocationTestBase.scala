@@ -697,29 +697,30 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
         data = Some(_ => createInputRow().asInstanceOf[Array[Any]])
       )
 
-    def plan(discard: Set[String]) = {
+    def plan(discard: Boolean) = {
+      val produce = if (discard) Seq("res") else Seq("res", "x")
       if (runtime.name == "slotted") {
         new LogicalQueryBuilder(this)
-          .produceResults("res")
+          .produceResults(produce: _*)
           .eager()
           // Limitation of discarding in slotted makes us need an extra pipeline break
           .unwind("[0] as needExtraPipelineBreak")
-          .projection(project = Seq("size(x) as res"), discard = discard)
+          .projection("size(x) as res")
           .input(variables = Seq("x"))
           .build()
       } else {
         new LogicalQueryBuilder(this)
-          .produceResults("res")
+          .produceResults(produce: _*)
           .eager()
-          .projection(project = Seq("size(x) as res"), discard = discard)
+          .projection("size(x) as res")
           .input(variables = Seq("x"))
           .build()
       }
     }
 
     // given
-    val planWithoutDiscard = plan(Set.empty)
-    val planWithDiscard = plan(Set("x"))
+    val planWithoutDiscard = plan(discard = false)
+    val planWithDiscard = plan(discard = true)
 
     // then
     val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput)
@@ -748,18 +749,19 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
         data = Some(_ => createInputRow().asInstanceOf[Array[Any]])
       )
 
-    def plan(discard: Set[String]) = {
+    def plan(discard: Boolean) = {
+      val produce = if (discard) Seq("res") else Seq("res", "x")
       new LogicalQueryBuilder(this)
-        .produceResults("res")
+        .produceResults(produce: _*)
         .sort("res ASC")
-        .projection(project = Seq("size(x) as res"), discard = discard)
+        .projection("size(x) as res")
         .input(variables = Seq("x"))
         .build()
     }
 
     // given
-    val planWithoutDiscard = plan(Set.empty)
-    val planWithDiscard = plan(Set("x"))
+    val planWithoutDiscard = plan(false)
+    val planWithDiscard = plan(true)
 
     // then
     val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput)

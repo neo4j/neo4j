@@ -1565,7 +1565,7 @@ case class Distinct(
 case class Eager(
   override val source: LogicalPlan,
   reasons: ListSet[EagernessReason] = ListSet(EagernessReason.Unknown)
-)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -3241,7 +3241,7 @@ case class Skip(override val source: LogicalPlan, count: Expression)(implicit id
  * Buffer all source rows and sort them according to 'sortItems'. Produce the rows in sorted order.
  */
 case class Sort(override val source: LogicalPlan, sortItems: Seq[ColumnOrder])(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
+    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -3279,7 +3279,7 @@ case class SubqueryForeach(override val left: LogicalPlan, override val right: L
  * produced once source if fully consumed.
  */
 case class Top(override val source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
+    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
   override val distinctness: Distinctness = Distinctness.distinctColumnsOfLimit(limit, source)
@@ -3994,6 +3994,14 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
 
   override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
+
+/**
+ * Marker trait for plans that might discard variables during slot allocation.
+ *
+ * This trait is currently only used for a specific mechanism in slot allocation. Other plans can be considered
+ * discarding too, like Aggregation, but are not currently inheriting this trait.
+ */
+sealed trait DiscardingPlan extends LogicalUnaryPlan
 
 /**
  * Marker trait of light-weight simulations of a basic plans that can be used to test or benchmark runtime frameworks

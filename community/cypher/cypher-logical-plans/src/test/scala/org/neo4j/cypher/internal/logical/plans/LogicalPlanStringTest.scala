@@ -120,7 +120,7 @@ class LogicalPlanStringTest extends CypherFunSuite {
              |
              |$path: ${cls.getSimpleName}
              |
-             |It's of great importance that we don't reference variables by strings (future rewriter relies on it).
+             |It's of great importance that we don't reference variables by strings (org.neo4j.cypher.internal.physicalplanning.LivenessAnalysis relies on it).
              |
              |You need to take one of the following actions:
              |
