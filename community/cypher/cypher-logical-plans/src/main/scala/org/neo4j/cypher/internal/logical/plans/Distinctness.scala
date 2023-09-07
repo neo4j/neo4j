@@ -77,12 +77,6 @@ sealed trait Distinctness {
   def covers(expressions: Iterable[Expression]): Boolean
 
   /**
-   * Return a new Distinctness where it has been taken into account that the columns `discardSymbols` have been discarded.
-   * If a distinct column has been discarded, the result will be [[NotDistinct]].
-   */
-  def withDiscardedColumns(discardSymbols: Set[LogicalVariable]): Distinctness
-
-  /**
    * Return a new Distinctness with distinct columns renamed according to the given projectExpressions.
    */
   def renameColumns(projectExpressions: Map[LogicalVariable, Expression]): Distinctness
@@ -110,13 +104,6 @@ case class DistinctColumns private (columns: Set[LogicalVariable]) extends Disti
     }
     columns.subsetOf(vars.toSet)
   }
-
-  override def withDiscardedColumns(discardSymbols: Set[LogicalVariable]): Distinctness =
-    if (columns.intersect(discardSymbols).nonEmpty) {
-      NotDistinct
-    } else {
-      this
-    }
 
   override def renameColumns(projectExpressions: Map[LogicalVariable, Expression]): Distinctness = {
     DistinctColumns(columns.map {
@@ -149,15 +136,11 @@ object DistinctColumns {
 case object AtMostOneRow extends Distinctness {
   override def covers(expressions: Iterable[Expression]): Boolean = true
 
-  override def withDiscardedColumns(discardSymbols: Set[LogicalVariable]): Distinctness = AtMostOneRow
-
   override def renameColumns(projectExpressions: Map[LogicalVariable, Expression]): Distinctness = AtMostOneRow
 }
 
 case object NotDistinct extends Distinctness {
   override def covers(expressions: Iterable[Expression]): Boolean = false
-
-  override def withDiscardedColumns(discardSymbols: Set[LogicalVariable]): Distinctness = NotDistinct
 
   override def renameColumns(projectExpressions: Map[LogicalVariable, Expression]): Distinctness = NotDistinct
 }

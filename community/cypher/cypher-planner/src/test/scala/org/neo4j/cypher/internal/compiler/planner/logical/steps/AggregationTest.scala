@@ -91,7 +91,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val startPlan = newMockedLogicalPlan()
 
     val projectionPlan: LogicalPlan =
-      Projection(startPlan, Set.empty, groupingMap.map { case (key, value) => varFor(key) -> value })
+      Projection(startPlan, groupingMap.map { case (key, value) => varFor(key) -> value })
 
     // When
     val result = aggregation(projectionPlan, projection, InterestingOrder.empty, None, context)

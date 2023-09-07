@@ -707,7 +707,7 @@ object ReadFinder {
       //  * Unwind
       //  * [Ordered]Aggregation
       //  * [Ordered]Distinct
-      case Projection(_, _, projectExpressions) =>
+      case Projection(_, projectExpressions) =>
         projectExpressions.foldLeft(PlanReads()) {
 
           // Don't introduce new variables for aliases: WITH a AS b

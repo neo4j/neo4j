@@ -351,7 +351,7 @@ class IndexPlanningIntegrationTest
     val cfg = plannerConfigWithPointIndexForDistancePredicateTests()
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheN[p.location] AS point"), discard = Set("p", "r", "x"))
+      .projection("cacheN[p.location] AS point")
       .filter(
         "x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))",
         "x:Preference"
@@ -371,7 +371,7 @@ class IndexPlanningIntegrationTest
     val cfg = plannerConfigWithPointIndexForDistancePredicateTests()
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheN[p.location] AS point"), discard = Set("maxDistance", "p"))
+      .projection("cacheN[p.location] AS point")
       .filter("point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance")
       .apply()
       .|.pointDistanceNodeIndexSeekExpr(
@@ -400,7 +400,7 @@ class IndexPlanningIntegrationTest
     val cfg = plannerConfigWithPointIndexForDistancePredicateTests()
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheN[p.location] AS point"), discard = Set("x", "p"))
+      .projection("cacheN[p.location] AS point")
       .filter("x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))")
       .apply()
       .|.pointDistanceNodeIndexSeekExpr(
@@ -636,7 +636,7 @@ class IndexPlanningIntegrationTest
 
     plan shouldEqual planner.planBuilder()
       .produceResults("p")
-      .projection(project = Seq("n.prop AS p"), discard = Set("n"))
+      .projection("n.prop AS p")
       .nodeIndexOperator("n:Label(prop)", indexType = IndexType.RANGE)
       .build()
   }
@@ -656,7 +656,7 @@ class IndexPlanningIntegrationTest
 
     plan shouldEqual planner.planBuilder()
       .produceResults("p")
-      .projection(project = Seq("r.prop AS p"), discard = Set("r", "a", "b"))
+      .projection("r.prop AS p")
       .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
       .build()
   }
@@ -676,7 +676,7 @@ class IndexPlanningIntegrationTest
 
     plan shouldEqual planner.planBuilder()
       .produceResults("p")
-      .projection(project = Seq("n.prop AS p"), discard = Set("n"))
+      .projection("n.prop AS p")
       .filter("n.x = 1")
       .nodeIndexOperator("n:Label(prop)", indexType = IndexType.RANGE)
       .build()
@@ -697,7 +697,7 @@ class IndexPlanningIntegrationTest
 
     plan shouldEqual planner.planBuilder()
       .produceResults("p")
-      .projection(project = Seq("r.prop AS p"), discard = Set("r", "a", "b"))
+      .projection("r.prop AS p")
       .filter("r.x = 1")
       .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
       .build()
@@ -1189,7 +1189,7 @@ class IndexPlanningIntegrationTest
 
     val plan = planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r, r.prop").stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .filter("cacheRFromStore[r.prop] IS NOT NULL")
       .relationshipTypeScan("(a)-[r:REL]->(b)")
       .build()
@@ -1512,7 +1512,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("a", "b"))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
         .build()
     }
@@ -1520,7 +1520,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
           s"(a)-[r:REL(prop $op 'hello')]->(b)",
           getValue = Map("prop" -> GetValue),
@@ -1531,7 +1531,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .filter(s"cacheRFromStore[r.prop] $op 'hello'")
         .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
         .build()
@@ -1557,7 +1557,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("a", "b"))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
         .build()
     }
@@ -1565,7 +1565,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .filter(s"cacheRFromStore[r.prop] $op 'hello'")
         .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
         .build()
@@ -1574,7 +1574,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
           s"(a)-[r:REL(prop $op 'hello')]->(b)",
           getValue = Map("prop" -> GetValue),
@@ -1607,7 +1607,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("a", "b"))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
         .build()
     }
@@ -1615,7 +1615,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("STARTS WITH", "<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("a", "b"))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.RANGE)
         .build()
     }
@@ -1623,7 +1623,7 @@ class IndexPlanningIntegrationTest
     for (op <- List("=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
           s"(a)-[r:REL(prop $op 'hello')]->(b)",
           getValue = Map("prop" -> GetValue),
@@ -1652,7 +1652,7 @@ class IndexPlanningIntegrationTest
     // sanity check
     val indexPlan = cfg.plan(queryStr("=", "'string'")).stripProduceResults
     indexPlan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .relationshipIndexOperator(
         "(a)-[r:R(prop = 'string')]->(b)",
         getValue = Map("prop" -> GetValue),
@@ -1666,7 +1666,7 @@ class IndexPlanningIntegrationTest
         val plan = cfg.plan(query).stripProduceResults
         withClue(query) {
           plan shouldEqual cfg.subPlanBuilder()
-            .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+            .projection("cacheR[r.prop] AS `r.prop`")
             .filter(s"cacheRFromStore[r.prop] $op $arg")
             .relationshipTypeScan("(a)-[r:R]->(b)")
             .build()
@@ -1729,7 +1729,7 @@ class IndexPlanningIntegrationTest
       val plan = cfg.plan(query)
       plan shouldEqual cfg.planBuilder()
         .produceResults("r", "`r.prop`")
-        .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("anon_0", "anon_1"))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator("(anon_0)-[r:R(prop > 10)]->(anon_1)", indexType = IndexType.RANGE)
         .build()
     }
@@ -1830,7 +1830,7 @@ class IndexPlanningIntegrationTest
     val plan =
       cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop = point({x:1.0, y:2.0}) RETURN r, r.prop").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop = ???)]->(b)",
         paramExpr = Some(point(1.0, 2.0)),
@@ -1846,7 +1846,7 @@ class IndexPlanningIntegrationTest
       s"MATCH (a)-[r:REL]->(b) WHERE point.distance(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop"
     ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .filter("point.distance(cacheRFromStore[r.prop], point({x:1, y:2})) < 1.0")
       .pointDistanceRelationshipIndexSeek("r", "a", "b", "REL", "prop", "{x:1, y:2}", 1.0, indexType = IndexType.POINT)
       .build()
@@ -1858,7 +1858,7 @@ class IndexPlanningIntegrationTest
       s"MATCH (a)-[r:REL]->(b) WHERE pOinT.dIsTaNcE(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop"
     ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .filter("pOinT.dIsTaNcE(cacheRFromStore[r.prop], point({x:1, y:2})) < 1.0")
       .pointDistanceRelationshipIndexSeek("r", "a", "b", "REL", "prop", "{x:1, y:2}", 1.0, indexType = IndexType.POINT)
       .build()
@@ -1870,7 +1870,7 @@ class IndexPlanningIntegrationTest
       s"MATCH (a)-[r:REL]->(b) WHERE point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN r, r.prop"
     ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("a", "b"))
+      .projection("r.prop AS `r.prop`")
       .pointBoundingBoxRelationshipIndexSeek(
         "r",
         "a",
@@ -1901,7 +1901,7 @@ class IndexPlanningIntegrationTest
       val plan =
         cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op point({x:1, y:2}) RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .filter(s"cacheRFromStore[r.prop] $op point({x:1, y:2})")
         .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT)
         .build()
@@ -1912,7 +1912,7 @@ class IndexPlanningIntegrationTest
     val cfg = plannerConfigForRelPointIndex
     val plan = cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r, r.prop").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .filter("cacheRFromStore[r.prop] IS NOT NULL")
       .relationshipTypeScan("(a)-[r:REL]->(b)")
       .build()

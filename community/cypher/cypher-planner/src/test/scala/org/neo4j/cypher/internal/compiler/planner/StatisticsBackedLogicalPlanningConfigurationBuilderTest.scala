@@ -165,7 +165,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(Seq("cache[p.name] AS name"), discard = Set("p"))
+      .projection("cache[p.name] AS name")
       .nodeIndexOperator("p:Person(name)", getValue = _ => GetValue)
       .build())
   }
@@ -227,7 +227,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(Seq("cache[p.name] AS name"), discard = Set("p"))
+      .projection("cache[p.name] AS name")
       .nodeIndexOperator("p:Person(name, surname)", getValue = Map("name" -> GetValue, "surname" -> DoNotGetValue))
       .build())
   }
@@ -289,7 +289,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.since] AS since"), discard = Set("r", "anon_0", "anon_1"))
+      .projection("cacheR[r.since] AS since")
       .relationshipIndexOperator("(anon_0)-[r:KNOWS(since)]->(anon_1)", getValue = _ => GetValue)
       .build())
   }

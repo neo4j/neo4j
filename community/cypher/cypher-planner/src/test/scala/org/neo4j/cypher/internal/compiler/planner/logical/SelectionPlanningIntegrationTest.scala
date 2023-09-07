@@ -148,7 +148,6 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
             )),
             NodeByLabelScan(LogicalVariable("n"), LabelName("N"), `noArgs`, IndexOrderNone)
           ),
-          _,
           _
         ) => ()
     }
@@ -175,7 +174,6 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
             )),
             _
           ),
-          _,
           _
         ) => ()
     }
@@ -209,7 +207,6 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
               )),
               NodeByLabelScan(LogicalVariable("n"), LabelName("N"), `noArgs`, IndexOrderNone)
             ),
-            _,
             _
           ) => ()
       }

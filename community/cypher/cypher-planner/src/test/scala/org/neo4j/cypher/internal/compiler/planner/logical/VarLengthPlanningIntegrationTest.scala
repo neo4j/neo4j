@@ -401,7 +401,7 @@ class VarLengthPlanningIntegrationTest
       .apply()
       .|.projectEndpoints("(anon_2)-[e:Type]->(anon_3)", startInScope = false, endInScope = false)
       .|.argument("e", "dummy")
-      .projection(project = Seq("1 AS dummy"), discard = Set("anon_0", "anon_1"))
+      .projection("1 AS dummy")
       .allRelationshipsScan("(anon_0)-[e]->(anon_1)")
       .build()
   }
@@ -441,7 +441,7 @@ class VarLengthPlanningIntegrationTest
       .|.projectEndpoints("(anon_2)-[e:Type*2..3]->(anon_3)", startInScope = false, endInScope = false)
       .|.filter("all(anon_4 IN e WHERE single(anon_5 IN e WHERE anon_4 = anon_5))", "size(e) >= 2", "size(e) <= 3")
       .|.argument("e", "dummy")
-      .projection(project = Seq("1 AS dummy"), discard = Set("anon_0", "anon_1"))
+      .projection("1 AS dummy")
       .expand("(anon_0)-[e*1..2]->(anon_1)")
       .allNodeScan("anon_0")
       .build()

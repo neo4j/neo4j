@@ -172,7 +172,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.merge(relationships = mergeRelationships, lockNodes = mergeLockNodes)
       .|.expandInto("(a)-[r:T]->(b)")
       .|.argument("a", "b")
-      .projection(project = Seq("n AS a", "m AS b"), discard = Set("n", "m"))
+      .projection("n AS a", "m AS b")
       .cartesianProduct()
       .|.allNodeScan("m")
       .allNodeScan("n")
@@ -195,7 +195,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.merge(mergeNodes, mergeRelationships, lockNodes = Set("a"))
       .|.expandAll("(a)-[r:T]->(b)")
       .|.argument("a")
-      .projection(project = Seq("n AS a"), discard = Set("n"))
+      .projection("n AS a")
       .allNodeScan("n")
       .build()
   }

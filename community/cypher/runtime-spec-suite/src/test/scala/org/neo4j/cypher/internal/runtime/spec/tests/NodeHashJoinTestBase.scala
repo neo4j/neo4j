@@ -912,13 +912,13 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
       .produceResults("lhsKeep", "rhsKeep", "rhsDiscard")
       .prober(probe)
       // We discard here but should not remove since we don't put it in an eager buffer
-      .projection(project = Seq("0 as hi"), discard = Set("lhsKeep", "rhsKeep"))
+      .projection("0 as hi")
       .nodeHashJoin("n")
       // Note, discarding from rhs is not implemented
-      .|.projection(project = Seq("rhsKeep AS rhsKeep"), discard = Set("rhsDiscard"))
+      .|.projection("rhsKeep AS rhsKeep")
       .|.projection("toString(n.p + 2) AS rhsKeep", "toString(n.p + 3) AS rhsDiscard")
       .|.allNodeScan("n")
-      .projection(project = Seq("lhsKeep AS lhsKeep"), discard = Set("lhsDiscard"))
+      .projection("lhsKeep AS lhsKeep")
       .projection("toString(n.p) AS lhsKeep", "toString(n.p + 1) AS lhsDiscard")
       .allNodeScan("n")
       .build()

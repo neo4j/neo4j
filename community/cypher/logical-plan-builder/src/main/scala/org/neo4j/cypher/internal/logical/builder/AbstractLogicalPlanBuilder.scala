@@ -989,31 +989,20 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def projection(projectionStrings: String*): IMPL = {
-    projectionWithDiscard(parseProjections(projectionStrings: _*), Set.empty)
+    doProjection(parseProjections(projectionStrings: _*))
   }
 
   def projection(projectExpressions: Map[String, Expression]): IMPL = {
-    projectionWithDiscard(toVarMap(projectExpressions), Set.empty)
+    doProjection(toVarMap(projectExpressions))
   }
 
-  def projection(project: Seq[String], discard: Set[String]): IMPL = {
-    projectionWithDiscard(parseProjections(project: _*), discard)
-  }
-
-  def projection(project: Map[String, Expression], discard: Set[String]): IMPL = {
-    projectionWithDiscard(toVarMap(project), discard)
-  }
-
-  private def projectionWithDiscard(
-    projectExpressions: Map[LogicalVariable, Expression],
-    discard: Set[String]
-  ): IMPL = {
+  private def doProjection(projectExpressions: Map[LogicalVariable, Expression]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
       val rewrittenProjections = projectExpressions.map { case (name, expr) =>
         name -> expr.endoRewrite(expressionRewriter)
       }
       projectExpressions.foreach { case (name, expr) => newAlias(name, expr) }
-      Projection(lp, discard.map(varFor), rewrittenProjections)(_)
+      Projection(lp, rewrittenProjections)(_)
     }))
     self
   }
@@ -2250,7 +2239,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       // TODO Set.empty?
       Projection(
         lhs,
-        Set.empty,
         Map(varFor(resultList) -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE))
       )(_)
     ))
@@ -2258,8 +2246,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      // TODO Set.empty?
-      Projection(lhs, Set.empty, Map(varFor(resultList) -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
+      Projection(lhs, Map(varFor(resultList) -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
     ))
   }
 
@@ -2268,7 +2255,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       // TODO Set.empty?
       Projection(
         lhs,
-        Set.empty,
         Map(varFor(resultName) -> NestedPlanGetByNameExpression(rhs, varFor(columnNameToGet), "getByName(...)")(NONE))
       )(_)
     ))

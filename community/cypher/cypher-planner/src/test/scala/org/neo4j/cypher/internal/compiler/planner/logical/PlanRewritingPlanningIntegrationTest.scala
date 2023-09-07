@@ -31,7 +31,7 @@ class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (n) RETURN size([p=(n)-->() | p]) AS deg").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Map("deg" -> getDegree(varFor("n"), OUTGOING)), discard = Set("n"))
+      .projection(Map("deg" -> getDegree(varFor("n"), OUTGOING)))
       .allNodeScan("n")
       .build()
   }

@@ -129,7 +129,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
       would just write to the row the data that is already in it, we can just skip them
        */
-      case oldPlan @ Projection(_, _, expressions) =>
+      case oldPlan @ Projection(_, expressions) =>
         val slotConfiguration = slotConfigurations(oldPlan.id)
         val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations, trailPlans)
 

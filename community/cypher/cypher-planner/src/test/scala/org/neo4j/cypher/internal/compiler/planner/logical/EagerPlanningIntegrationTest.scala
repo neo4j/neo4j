@@ -739,7 +739,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     plan should equal(
       planner.planBuilder()
         .produceResults("`end.prop2`")
-        .projection(project = Seq("end.prop2 AS `end.prop2`"), discard = Set("a", "end", "start", "r"))
+        .projection("end.prop2 AS `end.prop2`")
         .statefulShortestPath(
           "end",
           "start",
@@ -909,7 +909,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
     val topPlan = planner.planBuilder()
       .produceResults("1")
-      .projection(project = Seq("1 AS 1"), discard = Set("start", "r", "end"))
+      .projection("1 AS 1")
       .detachDeleteNode("end")
       .eager(ListSet(ReadDeleteConflict("end"))) // This eager is unnecessary since we are limited to one shortest
     val expected = statefulShortestPath(topPlan, `(start)-[r:R]->(end)`)
@@ -1059,7 +1059,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .filter("NOT start:Label")
         .apply()
         .|.allNodeScan("start", "z")
-        .projection(project = Seq("1 AS z"), discard = Set("x"))
+        .projection("1 AS z")
         .eager(ListSet(
           EagernessReason.ReadDeleteConflict("start"),
           EagernessReason.ReadDeleteConflict("end"),

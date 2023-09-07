@@ -74,7 +74,7 @@ case class CollectUnwindOnTop(
           val projections = columns.map { c =>
             c -> Property(unwoundRowVar, PropertyKeyName(c.name)(pos))(pos)
           }.toMap
-          val project = Projection(unwind, discardSymbols = Set.empty, projections)(ctx.idGen)
+          val project = Projection(unwind, projections)(ctx.idGen)
           ProduceResult(project, columns)(SameId(pr.id))
       },
       onlyRewriteLogicalPlansStopper

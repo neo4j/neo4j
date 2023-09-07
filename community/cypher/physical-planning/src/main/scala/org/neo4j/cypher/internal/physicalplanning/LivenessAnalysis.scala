@@ -83,9 +83,9 @@ object LivenessAnalysis {
   private def findVariablesInPlan(plan: AnyRef, planId: Id): Set[String] = {
     plan.folder.treeFold(Set.empty[String]) {
       case otherPlan: LogicalPlan if otherPlan.id != planId => acc => SkipChildren(acc)
-      case Projection(_, _, projections) => acc => SkipChildren(acc ++ findVariablesInPlan(projections, planId))
-      case v: LogicalVariable            => acc => SkipChildren(acc + v.name)
-      case np: NestedPlanExpression      =>
+      case Projection(_, projections) => acc => SkipChildren(acc ++ findVariablesInPlan(projections, planId))
+      case v: LogicalVariable         => acc => SkipChildren(acc + v.name)
+      case np: NestedPlanExpression   =>
         // Nested plan expressions can have dependencies to the outer plan.
         // Only through Argument, but lets be conservative here.
         acc => SkipChildren(acc ++ findAllVariables(np))

@@ -355,7 +355,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable() // Needed because of limitation in prober
       .top(limit, "keep ASC")
       .prober(probe1)
-      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("keep as keep")
       .projection("'bla' + a as keep", "'blö' + a as discard")
       .unwind(s"range(0, $sizeHint) AS a")
       .argument()
@@ -390,7 +390,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .prober(probe2)
       .top(limit, "keep ASC")
       .prober(probe1)
-      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("keep as keep")
       .projection("'bla' + a as keep", "'blö' + a as discard")
       .unwind(s"range(0, $sizeHint) AS a")
       .argument()

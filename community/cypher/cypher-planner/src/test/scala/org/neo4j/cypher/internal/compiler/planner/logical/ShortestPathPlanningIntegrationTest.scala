@@ -768,7 +768,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("a", "d", "b", "r"))
+      .projection(Map("p" -> path))
       .statefulShortestPath(
         "a",
         "d",
@@ -817,7 +817,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("a", "b", "c", "e", "f", "r", "anon_0", "anon_1"))
+      .projection(Map("p" -> path))
       .statefulShortestPath(
         "a",
         "f",
@@ -859,7 +859,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("a", "r", "b"))
+      .projection(Map("p" -> path))
       .statefulShortestPath(
         "a",
         "b",

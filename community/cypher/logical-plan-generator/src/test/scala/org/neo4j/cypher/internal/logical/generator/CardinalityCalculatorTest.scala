@@ -453,7 +453,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("Projection") {
-    val plan = Projection(Argument(), Set.empty, Map.empty)
+    val plan = Projection(Argument(), Map.empty)
 
     val c = CardinalityCalculator.projectionCardinality(
       plan,

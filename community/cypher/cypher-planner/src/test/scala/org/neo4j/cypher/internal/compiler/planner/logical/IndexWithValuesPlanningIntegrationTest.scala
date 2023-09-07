@@ -86,7 +86,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             ),
             Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2"))
           ),
-          Set(varFor("n")),
           Map(varFor("n.prop1") -> cachedNodeProp("n", "prop1"), varFor("n.prop2") -> cachedNodeProp("n", "prop2"))
         )
       case _ => sys.error("the impossible happened")
@@ -116,7 +115,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             ),
             Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2", "n", knownToAccessStore = true))
           ),
-          Set(varFor("n")),
           Map(cachedNodePropertyProj("n", "prop1"), varFor("n.prop2") -> cachedNodeProp("n", "prop2"))
         )
       case _ => sys.error("the impossible happened")
@@ -146,7 +144,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             ),
             Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2", "n", knownToAccessStore = false))
           ),
-          Set(varFor("n")),
           Map(varFor("n.prop1") -> cachedNodeProp("n", "prop1"), varFor("n.prop2") -> cachedNodeProp("n", "prop2"))
         )
       case _ => sys.error("the impossible happened")
@@ -163,7 +160,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       } getLogicalPlanFor "MATCH (n:Awesome:Awesome2) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
 
     // We don't want to assert on the produce results or the projection in this test
-    val Projection(unionPlan, _, _) = plan._1.asInstanceOf[Projection]
+    val Projection(unionPlan, _) = plan._1.asInstanceOf[Projection]
 
     val hasLabel1 = hasLabels("n", "Awesome")
     val hasLabel2 = hasLabels("n", "Awesome2")
@@ -210,7 +207,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -225,7 +221,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -241,7 +236,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42)", _ => DoNotGetValue),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -257,7 +251,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"), cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -275,7 +268,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           ands(equals(modulo(cachedNodeProp("n", "prop"), literalInt(2)), literalInt(0))),
           nodeIndexSeek("n:Awesome(prop <= 42)", _ => GetValue)
         ),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -303,7 +295,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             varFor("r")
           )
         ),
-        Set(varFor("n"), varFor("r"), varFor("m")),
         Map(varFor("n.foo") -> cachedNodeProp("n", "foo"))
       )
     )
@@ -328,7 +319,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               IndexOrderNone,
               IndexType.RANGE
             ),
-            Set(varFor("n")),
             Map(varFor("m") -> varFor("n"))
           ),
           varFor("m"),
@@ -337,7 +327,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           varFor("o"),
           varFor("r")
         ),
-        Set(varFor("m"), varFor("r"), varFor("o")),
         Map(varFor("m.prop") -> cachedNodeProp("n", "prop", "m"))
       )
     )
@@ -355,7 +344,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           ands(lessThan(cachedNodeProp("n", "prop", "m"), literalInt(50))),
           Projection(
             nodeIndexSeek("n:Awesome(prop > 42)", _ => GetValue),
-            Set(varFor("n")),
             Map(varFor("m") -> varFor("n"))
           )
         ),
@@ -377,7 +365,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("foo", "n", "prop"))
       )
     )
@@ -393,10 +380,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Projection(
           nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue),
-          Set(varFor("n")),
           Map(cachedNodePropertyProj("foo", "n", "prop"), varFor("bar") -> trueLiteral)
         ),
-        Set(varFor("bar")),
         Map(varFor("baz") -> varFor("bar"))
       )
     )
@@ -421,7 +406,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               IndexOrderNone,
               IndexType.RANGE
             ),
-            Set(varFor("n")),
             Map(varFor("m") -> varFor("n"))
           ),
           varFor("m"),
@@ -430,7 +414,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           varFor("n"),
           varFor("r")
         ),
-        Set(varFor("m"), varFor("n"), varFor("r")),
         Map(varFor("n.prop") -> prop("n", "prop"))
       )
     )
@@ -452,7 +435,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           varFor("m"),
           varFor("r")
         ),
-        Set(varFor("n"), varFor("r"), varFor("m")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -467,7 +449,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 'foo')", _ => GetValue),
-        Set(varFor("n")),
         Map(varFor("toUpper(n.prop)") -> function("toUpper", cachedNodeProp("n", "prop")))
       )
     )
@@ -487,12 +468,10 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               "n:Awesome(prop = 'foo')",
               _ => GetValue
             ),
-            Set.empty,
             Map(varFor("toUpper(n.prop)") -> function("toUpper", cachedNodeProp("n", "prop")))
           ),
           Seq(Ascending(varFor("toUpper(n.prop)")))
         ),
-        Set(varFor("n"), varFor("toUpper(n.prop)")),
         Map(varFor("n.foo") -> prop("n", "foo"))
       )
     )
@@ -601,7 +580,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop STARTS WITH 'foo')", _ => GetValue),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -616,7 +594,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop STARTS WITH 'foo')", _ => DoNotGetValue),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop"))
       )
     )
@@ -632,7 +609,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop STARTS WITH 'foo')", _ => DoNotGetValue),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -649,7 +625,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop > 'foo')", _ => GetValue),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -664,7 +639,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop > 'foo')", _ => DoNotGetValue),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop"))
       )
     )
@@ -680,7 +654,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop > 'foo')", _ => DoNotGetValue),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -697,7 +670,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop > 'foo')", _ => GetValue, unique = true),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -714,7 +686,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop > 'foo')", _ => DoNotGetValue, unique = true),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop"))
       )
     )
@@ -730,7 +701,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop > 'foo')", _ => DoNotGetValue, unique = true),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -764,7 +734,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq.empty,
           Set.empty
         ),
-        Set(varFor("n")),
         Map(varFor("n.prop") -> cachedNodeProp("n", "prop"))
       )
     )
@@ -796,7 +765,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq.empty,
           Set.empty
         ),
-        Set(varFor("n")),
         Map(varFor("n.prop") -> cachedNodeProp("n", "prop"))
       )
     )
@@ -829,7 +797,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq.empty,
           Set.empty
         ),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -846,7 +813,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => GetValue),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -863,7 +829,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => GetValue),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -880,7 +845,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => DoNotGetValue),
-        Set(varFor("n")),
         Map(varFor("n.bar") -> prop("n", "bar"))
       )
     )
@@ -895,7 +859,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", Map("prop" -> GetValue, "foo" -> DoNotGetValue)),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -912,7 +875,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", _ => GetValue, indexType = IndexType.TEXT),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -927,7 +889,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop"))
       )
     )
@@ -943,7 +904,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -962,7 +922,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("`r.prop`")
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop CONTAINS 'foo')]-(b)",
           indexOrder = IndexOrderNone,
@@ -989,7 +949,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("`r.prop`")
-        .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("r", "a", "b"))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop CONTAINS 'foo')]-(b)",
           indexOrder = IndexOrderNone,
@@ -1016,7 +976,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("`r.foo`")
-        .projection(project = Seq("r.foo AS `r.foo`"), discard = Set("r", "a", "b"))
+        .projection("r.foo AS `r.foo`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop CONTAINS 'foo')]-(b)",
           indexOrder = IndexOrderNone,
@@ -1046,7 +1006,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           IndexOrderNone,
           IndexType.RANGE
         ),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -1067,7 +1026,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
@@ -1089,7 +1048,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("count", "r", "a", "b"))
+      .projection("r.prop AS `r.prop`")
       .apply()
       .|.allRelationshipsScan("(a)-[r]-(b)", "count")
       .aggregation(Seq(), Seq("count(*) AS count"))
@@ -1113,7 +1072,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           IndexOrderNone,
           IndexType.RANGE
         ),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop"))
       )
     )
@@ -1134,7 +1092,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("r", "a", "b"))
+      .projection("r.prop AS `r.prop`")
       .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
       .build())
   }
@@ -1158,7 +1116,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           IndexOrderNone,
           IndexType.RANGE
         ),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -1180,7 +1137,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
@@ -1202,7 +1159,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           IndexOrderNone,
           IndexType.RANGE
         ),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop"))
       )
     )
@@ -1226,7 +1182,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("r", "a", "b"))
+      .projection("r.prop AS `r.prop`")
       .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
       .build())
   }
@@ -1248,7 +1204,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           IndexOrderNone,
           IndexType.RANGE
         ),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop2"))
       )
     )
@@ -1272,7 +1227,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     withClue("Index scan on two properties should be planned if they are only available through constraint") {
       plan should equal(planner.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop2] AS `r.prop2`"), discard = Set("r", "a", "b"))
+        .projection("cacheR[r.prop2] AS `r.prop2`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop1, prop2)]-(b)",
           getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
@@ -1300,7 +1255,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     withClue("Index scan on two properties should be planned if they are only available through constraint") {
       plan should equal(planner.subPlanBuilder()
-        .projection(project = Seq("cacheN[a.prop2] AS `a.prop2`"), discard = Set("a"))
+        .projection("cacheN[a.prop2] AS `a.prop2`")
         .nodeIndexOperator(
           "a:A(prop1, prop2)",
           getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
@@ -1329,7 +1284,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           IndexOrderNone,
           IndexType.RANGE
         ),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop2"))
       )
     )
@@ -1354,7 +1308,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("r.prop2 AS `r.prop2`"), discard = Set("r", "a", "b"))
+      .projection("r.prop2 AS `r.prop2`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1, prop2)]-(b)",
         getValue = _ => DoNotGetValue,
@@ -1374,7 +1328,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", _ => GetValue, indexType = IndexType.TEXT),
-        Set(varFor("n")),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -1389,7 +1342,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT),
-        Set(varFor("n")),
         Map(propertyProj("n", "prop"))
       )
     )
@@ -1405,7 +1357,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._1 should equal(
       Projection(
         nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT),
-        Set(varFor("n")),
         Map(propertyProj("n", "foo"))
       )
     )
@@ -1423,12 +1374,10 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Sort(
           Projection(
             nodeIndexSeek("n:Awesome(prop < 2)", _ => GetValue),
-            Set.empty,
             Map(varFor("n.foo") -> prop("n", "foo"))
           ),
           Seq(Ascending(varFor("n.foo")))
         ),
-        Set(varFor("n"), varFor("n.foo")),
         Map(varFor("n.prop") -> cachedNodeProp("n", "prop"))
       )
     )
@@ -1447,7 +1396,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("`r.prop`")
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
+        .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop ENDS WITH 'foo')]-(b)",
           indexOrder = IndexOrderNone,
@@ -1474,7 +1423,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("`r.prop`")
-        .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("r", "a", "b"))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop ENDS WITH 'foo')]-(b)",
           indexOrder = IndexOrderNone,
@@ -1501,7 +1450,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("`r.foo`")
-        .projection(project = Seq("r.foo AS `r.foo`"), discard = Set("r", "a", "b"))
+        .projection("r.foo AS `r.foo`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop ENDS WITH 'foo')]-(b)",
           indexOrder = IndexOrderNone,
@@ -1700,7 +1649,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .relationshipIndexOperator("(a)-[r:REL(prop = 123)]-(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
@@ -1722,7 +1671,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("count", "r", "a", "b"))
+      .projection("r.prop AS `r.prop`")
       .apply()
       .|.allRelationshipsScan("(a)-[r]-(b)", "count")
       .aggregation(Seq(), Seq("count(*) AS count"))
@@ -1744,7 +1693,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("r.prop AS `r.prop`"), discard = Set("r", "a", "b"))
+      .projection("r.prop AS `r.prop`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]-(b)",
         getValue = _ => DoNotGetValue,
@@ -1834,7 +1783,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     withClue("Index seek on two properties should be planned if they are only available through constraint") {
       plan shouldBe planner.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop2] AS `r.prop2`"), discard = Set("r", "a", "b"))
+        .projection("cacheR[r.prop2] AS `r.prop2`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop1 > 123, prop2)]-(b)",
           getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
@@ -1856,7 +1805,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(project = Seq("r.prop2 AS `r.prop2`"), discard = Set("r", "a", "b"))
+      .projection("r.prop2 AS `r.prop2`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 123, prop2)]-(b)",
         getValue = _ => DoNotGetValue,
@@ -1871,10 +1820,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     val plan = planner.plan(q).stripProduceResults
 
     plan shouldBe planner.subPlanBuilder()
-      .projection(
-        project = Seq("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`"),
-        discard = Set("r", "a", "b")
-      )
+      .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
         getValue = _ => GetValue,
@@ -1891,10 +1837,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     val plan = planner.plan(q).stripProduceResults
 
     plan shouldBe planner.subPlanBuilder()
-      .projection(
-        project = Seq("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`"),
-        discard = Set("r", "a", "b")
-      )
+      .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
         getValue = _ => GetValue,
@@ -1911,7 +1854,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     val plan = planner.plan(q).stripProduceResults
 
     plan shouldBe planner.subPlanBuilder()
-      .projection(project = Seq("r.otherProp AS `r.otherProp`"), discard = Set("r", "a", "b"))
+      .projection("r.otherProp AS `r.otherProp`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
         getValue = _ => DoNotGetValue,

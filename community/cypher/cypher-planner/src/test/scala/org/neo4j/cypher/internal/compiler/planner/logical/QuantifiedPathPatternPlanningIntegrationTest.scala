@@ -754,7 +754,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.|.argument("n", "prop")
         .|.filter("anon_0.prop > prop")
         .|.allNodeScan("anon_0", "prop")
-        .projection(project = Seq("a.prop AS prop"), discard = Set("a"))
+        .projection("a.prop AS prop")
         .allNodeScan("a")
         .build()
     )
@@ -1966,7 +1966,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Seq("1 AS 1"), discard = Set("anon_0", "anon_1"))
+      .projection("1 AS 1")
       .expandAll("(anon_0)-[r*1..]->(anon_1)")
       .allNodeScan("anon_0")
       .build()
@@ -2011,7 +2011,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("a", "d", "b", "r"))
+      .projection(Map("p" -> path))
       .trail(`(a) ((b)-[r]->(c))+ (d)`)
       .|.filterExpression(isRepeatTrailUnique("r"))
       .|.expandAll("(b)-[r]->(c)")
@@ -2070,7 +2070,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("  UNNAMED2", "  UNNAMED0", "  UNNAMED8", "  y@5"))
+      .projection(Map("p" -> path))
       .trail(`(()-[y]->(z))+`)
       .|.filterExpression(isRepeatTrailUnique("  y@3"))
       .|.expandAll("(`  UNNAMED7`)-[`  y@3`]->(`  z@4`)")
@@ -2118,7 +2118,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("  UNNAMED0", "  UNNAMED3", "  UNNAMED9", "  UNNAMED7"))
+      .projection(Map("p" -> path))
       .trail(`(()-[y]->(z))+`)
       .|.filterExpression(isRepeatTrailUnique("  UNNAMED4"))
       .|.expandAll("(`  UNNAMED8`)-[`  UNNAMED4`]->(`  z@5`)")

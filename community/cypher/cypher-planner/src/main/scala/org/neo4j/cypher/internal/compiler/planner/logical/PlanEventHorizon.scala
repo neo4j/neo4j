@@ -165,7 +165,6 @@ case object PlanEventHorizon extends EventHorizonPlanner {
               limited,
               regularProjection.projections,
               Some(regularProjection.projections),
-              keepAllColumns = false,
               context
             )
           }

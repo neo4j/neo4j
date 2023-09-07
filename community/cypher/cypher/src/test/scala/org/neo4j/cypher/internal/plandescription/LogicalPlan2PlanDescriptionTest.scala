@@ -4886,12 +4886,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )(pos))(pos)
 
     assertGood(
-      attach(Projection(lhsLP, Set.empty, Map(varFor("x") -> varFor("y"))), 2345.0),
+      attach(Projection(lhsLP, Map(varFor("x") -> varFor("y"))), 2345.0),
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details("y AS x")), Set("a", "x"))
     )
 
     assertGood(
-      attach(Projection(lhsLP, Set.empty, Map(varFor("x") -> pathExpression)), 2345.0),
+      attach(Projection(lhsLP, Map(varFor("x") -> pathExpression)), 2345.0),
       planDescription(
         id,
         "Projection",
@@ -4903,7 +4903,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        Projection(lhsLP, Set.empty, Map(varFor("x") -> varFor("  UNNAMED42"), varFor("n.prop") -> prop("n", "prop"))),
+        Projection(lhsLP, Map(varFor("x") -> varFor("  UNNAMED42"), varFor("n.prop") -> prop("n", "prop"))),
         2345.0
       ),
       planDescription(
@@ -4918,7 +4918,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // Projection should show up in the order they were specified in
     assertGood(
       attach(
-        Projection(lhsLP, Set.empty, Map(varFor("n.prop") -> prop("n", "prop"), varFor("x") -> varFor("y"))),
+        Projection(lhsLP, Map(varFor("n.prop") -> prop("n", "prop"), varFor("x") -> varFor("y"))),
         2345.0
       ),
       planDescription(
@@ -6740,7 +6740,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Projection(
           lhsLP,
-          Set.empty,
           immutable.Map(varFor("function") -> RuntimeConstant(varFor("x"), functionInvocation))
         ),
         12345.0

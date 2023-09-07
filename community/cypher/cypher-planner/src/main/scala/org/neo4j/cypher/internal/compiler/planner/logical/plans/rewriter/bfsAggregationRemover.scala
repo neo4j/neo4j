@@ -264,7 +264,6 @@ case object bfsAggregationRemover extends Rewriter {
           case aggregation: Aggregation if replacementPlans.aggregatingPlansToRemove.contains(aggregation) =>
             Projection(
               aggregation.source,
-              discardSymbols = Set.empty,
               projectExpressions = replacementPlans.aggregatingPlansToRemove(aggregation).map {
                 case (key, value) => varFor(key) -> value
               }
@@ -282,7 +281,6 @@ case object bfsAggregationRemover extends Rewriter {
           case aggregation: OrderedAggregation if replacementPlans.aggregatingPlansToRemove.contains(aggregation) =>
             Projection(
               aggregation.source,
-              discardSymbols = Set.empty,
               projectExpressions = replacementPlans.aggregatingPlansToRemove(aggregation).map {
                 case (key, value) => varFor(key) -> value
               }
@@ -300,14 +298,12 @@ case object bfsAggregationRemover extends Rewriter {
           case distinct: Distinct if replacementPlans.aggregatingPlansToRemove.contains(distinct) =>
             Projection(
               distinct.source,
-              discardSymbols = Set.empty,
               projectExpressions = distinct.groupingExpressions
             )(SameId(distinct.id))
 
           case distinct: OrderedDistinct if replacementPlans.aggregatingPlansToRemove.contains(distinct) =>
             Projection(
               distinct.source,
-              discardSymbols = Set.empty,
               projectExpressions = distinct.groupingExpressions
             )(SameId(distinct.id))
         })

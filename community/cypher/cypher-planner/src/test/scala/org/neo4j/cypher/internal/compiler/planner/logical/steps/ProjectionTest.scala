@@ -41,10 +41,10 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, Some(projections), keepAllColumns = true, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
-    result should equal(Projection(startPlan, Set.empty, projections.map { case (key, value) => varFor(key) -> value }))
+    result should equal(Projection(startPlan, projections.map { case (key, value) => varFor(key) -> value }))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
@@ -58,10 +58,10 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, Some(projectionsToMarkSolved), keepAllColumns = true, context)
+    val result = projection(startPlan, projections, Some(projectionsToMarkSolved), context)
 
     // then
-    result should equal(Projection(startPlan, Set.empty, projections.map { case (key, value) => varFor(key) -> value }))
+    result should equal(Projection(startPlan, projections.map { case (key, value) => varFor(key) -> value }))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projectionsToMarkSolved)
     )
@@ -73,7 +73,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, Some(projections), keepAllColumns = true, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
     result should equal(startPlan)
@@ -88,13 +88,12 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, Some(projections), keepAllColumns = true, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
     val actualProjections = Map("42" -> literalInt(42))
     result should equal(Projection(
       startPlan,
-      Set.empty,
       actualProjections.map { case (key, value) => varFor(key) -> value }
     ))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
@@ -108,10 +107,10 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, Some(projections), keepAllColumns = true, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
-    result should equal(Projection(startPlan, Set.empty, projections.map { case (key, value) => varFor(key) -> value }))
+    result should equal(Projection(startPlan, projections.map { case (key, value) => varFor(key) -> value }))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )

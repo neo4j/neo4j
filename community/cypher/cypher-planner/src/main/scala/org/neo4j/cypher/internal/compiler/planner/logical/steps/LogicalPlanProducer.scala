@@ -1833,7 +1833,6 @@ case class LogicalPlanProducer(
    */
   def planRegularProjection(
     inner: LogicalPlan,
-    discardSymbols: Set[String],
     expressions: Map[String, Expression],
     reported: Option[Map[String, Expression]],
     context: LogicalPlanningContext
@@ -1843,7 +1842,7 @@ case class LogicalPlanProducer(
       innerSolved.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     }
 
-    planRegularProjectionHelper(inner, discardSymbols.map(varFor), expressions, context, solved)
+    planRegularProjectionHelper(inner, expressions, context, solved)
   }
 
   /**
@@ -2404,7 +2403,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     annotate(
-      Projection(inner, Set.empty, expressions.map { case (key, value) => varFor(key) -> value }),
+      Projection(inner, expressions.map { case (key, value) => varFor(key) -> value }),
       solveds.get(inner.id),
       providedOrders.get(inner.id).fromLeft,
       context
@@ -2561,9 +2560,7 @@ case class LogicalPlanProducer(
         DistinctQueryProjection(reported)
       ))
 
-    val discardSymbols = left.availableSymbols -- reported.keySet.map(varFor)
-
-    planRegularProjectionHelper(left, discardSymbols, expressions, context, solved)
+    planRegularProjectionHelper(left, expressions, context, solved)
   }
 
   /**
@@ -3189,7 +3186,6 @@ case class LogicalPlanProducer(
 
   private def planRegularProjectionHelper(
     inner: LogicalPlan,
-    discardSymbols: Set[LogicalVariable],
     expressions: Map[String, Expression],
     context: LogicalPlanningContext,
     solved: SinglePlannerQuery
@@ -3197,7 +3193,7 @@ case class LogicalPlanProducer(
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
     val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     annotate(
-      Projection(inner, discardSymbols, expressions.map { case (key, value) => varFor(key) -> value }),
+      Projection(inner, expressions.map { case (key, value) => varFor(key) -> value }),
       solved,
       providedOrder,
       context

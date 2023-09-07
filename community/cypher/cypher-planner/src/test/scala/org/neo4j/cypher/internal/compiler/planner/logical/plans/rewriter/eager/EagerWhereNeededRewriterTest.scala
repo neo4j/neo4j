@@ -7105,7 +7105,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
-      .projection(Seq("1 AS one"), discard = Set("m"))
+      .projection("1 AS one")
       .cartesianProduct()
       .|.nodeByLabelScan("m", "B")
       .nodeByLabelScan("n", "A")
@@ -7118,11 +7118,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (Projection)
-        .eager(ListSet(
-          ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(5)))
-        ))
-        .projection(Seq("1 AS one"), discard = Set("m"))
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("m").withConflict(EagernessReason.Conflict(Id(2), Id(5)))))
+        .projection("1 AS one")
         .cartesianProduct()
         .|.nodeByLabelScan("m", "B")
         .nodeByLabelScan("n", "A")

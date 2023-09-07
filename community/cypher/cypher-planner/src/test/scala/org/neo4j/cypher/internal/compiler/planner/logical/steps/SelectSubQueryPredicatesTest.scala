@@ -245,7 +245,6 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
 
     val projection = Projection(
       source = expand,
-      discardSymbols = Set.empty,
       projectExpressions = Map(varFor("item") -> literalInt(1))
     )
 

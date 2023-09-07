@@ -237,7 +237,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable() // Needed because of limitation in prober
       .sort("keep ASC")
       .prober(probe1)
-      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("keep as keep")
       .projection("'bla' + a as keep", "'blö' + a as discard")
       .unwind(s"range(0, $sizeHint) AS a")
       .argument()
@@ -310,10 +310,10 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .produceResults("keep")
       .prober(probe2)
       // We discard here but should not remove because there's no eager buffer after this point
-      .projection(project = Seq("0 as hi"), discard = Set("keep"))
+      .projection("0 as hi")
       .sort("keep ASC")
       .prober(probe1)
-      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("keep as keep")
       .projection("'bla' + a as keep", "'blö' + a as discard")
       .unwind(s"range(0, $sizeHint) AS a")
       .argument()

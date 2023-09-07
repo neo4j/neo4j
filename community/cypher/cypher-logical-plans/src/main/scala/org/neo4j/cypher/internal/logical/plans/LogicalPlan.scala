@@ -510,11 +510,6 @@ sealed trait ProjectingPlan extends LogicalUnaryPlan {
 
   def aliases: Map[LogicalVariable, Expression] =
     projectExpressions.filter { case (_, expr) => expr.isInstanceOf[LogicalVariable] }
-
-  /**
-   * Columns from the source plan that can be discarded after this plan.
-   */
-  def discardSymbols: Set[LogicalVariable] = Set.empty
 }
 
 sealed abstract class AbstractVarExpand(
@@ -1561,7 +1556,7 @@ case class DirectedRelationshipUniqueIndexSeek(
 }
 
 /**
- * Produce one row for every relationship in the graph that has at least one of the provided types. 
+ * Produce one row for every relationship in the graph that has at least one of the provided types.
  * This row contains the relationship (assigned to 'idName') and the contents of argument.
  */
 case class DirectedUnionRelationshipTypesScan(
@@ -2900,7 +2895,7 @@ case class ProjectEndpoints(
 /**
  * For each source row produce:
  * - the projected expressions (`projectExpressions`)
- * - columns from the source that are not discarded (`discardSymbols`)
+ * - all columns from the source
  *
  * For each entry in 'expressions', the produced row get an extra variable
  * name as the key, with the value of the expression.
@@ -2910,34 +2905,23 @@ case class ProjectEndpoints(
  */
 case class Projection(
   override val source: LogicalPlan,
-  override val discardSymbols: Set[LogicalVariable],
   projectExpressions: Map[LogicalVariable, Expression]
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan {
 
-  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-    discardSymbols.diff(source.availableSymbols).isEmpty,
-    s"Unknown discard symbols: ${discardSymbols.diff(source.availableSymbols)}"
-  )
-
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[LogicalVariable] =
-    (source.availableSymbols -- discardSymbols) ++ projectExpressions.keySet
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ projectExpressions.keySet
 
-  override val distinctness: Distinctness = source.distinctness
-    .renameColumns(projectExpressions)
-    .withDiscardedColumns(discardSymbols)
+  override val distinctness: Distinctness = source.distinctness.renameColumns(projectExpressions)
 
   /**
    * Custom copy method to make rewriting work.
    */
   def copy(
     source: LogicalPlan = this.source,
-    discardSymbols: Set[LogicalVariable] = this.discardSymbols,
     projectExpressions: Map[LogicalVariable, Expression] = this.projectExpressions
   )(implicit idGen: IdGen = this.idGen): Projection = {
-    val newDiscardSymbols = discardSymbols.intersect(source.availableSymbols)
-    Projection(source, newDiscardSymbols, projectExpressions)(idGen)
+    Projection(source, projectExpressions)(idGen)
   }
 }
 

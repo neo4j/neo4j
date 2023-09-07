@@ -432,7 +432,7 @@ class LogicalPlanGenerator(
     WithState(source, state) <- innerLogicalPlan(state)
     WithState(map, state) <- projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression)
   } yield {
-    val plan = Projection(source, Set.empty, map)(state.idGen)
+    val plan = Projection(source, map)(state.idGen)
     annotate(plan, state)
   }
 

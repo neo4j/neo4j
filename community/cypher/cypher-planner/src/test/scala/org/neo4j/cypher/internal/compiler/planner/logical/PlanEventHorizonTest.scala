@@ -74,7 +74,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
-      producedPlan should equal(Projection(inputPlan, Set.empty, Map(varFor("a") -> literal)))
+      producedPlan should equal(Projection(inputPlan, Map(varFor("a") -> literal)))
     }
   }
 
@@ -170,7 +170,6 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // Then
       producedPlan should equal(Projection(
         Sort(inputPlan, Seq(Ascending(varFor("a")))),
-        Set.empty,
         Map(varFor("b") -> literal, varFor("c") -> literal)
       ))
     }
@@ -192,8 +191,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       producedPlan should equal(Projection(
-        Sort(Projection(inputPlan, Set.empty, Map(varFor("a") -> literal)), Seq(Ascending(varFor("a")))),
-        Set.empty,
+        Sort(Projection(inputPlan, Map(varFor("a") -> literal)), Seq(Ascending(varFor("a")))),
         Map(varFor("b") -> literal, varFor("c") -> literal)
       ))
     }

@@ -62,7 +62,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
-        .projection(project = Seq("2 AS y"), discard = Set("x"))
+        .projection("2 AS y")
         .projection("1 AS x")
         .argument()
         .build()
@@ -135,7 +135,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
-        .projection(project = Seq("3 AS y"), discard = Set("x"))
+        .projection("3 AS y")
         .distinct("x AS x")
         .union()
         .|.projection("x AS x")
@@ -214,7 +214,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("res", "y")
-        .projection(project = Seq("x + 1 AS res"), discard = Set("x"))
+        .projection("x + 1 AS res")
         .cartesianProduct()
         .|.filter("y.prop = 5")
         .|.allNodeScan("y")
@@ -229,7 +229,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("res", "sum")
-        .projection(project = Seq("x + 1 AS res"), discard = Set("x"))
+        .projection("x + 1 AS res")
         .cartesianProduct()
         .|.aggregation(Seq.empty, Seq("sum(y.prop) AS sum"))
         .|.allNodeScan("y")
@@ -295,7 +295,7 @@ class SubqueryCallPlanningIntegrationTest
     cfg.plan(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("five")
-        .projection(project = Seq("5 AS five"), discard = Set("x", "r", "y"))
+        .projection("5 AS five")
         .cartesianProduct()
         .|.expand("(x)<-[r]-(y)")
         .|.nodeByLabelScan("x", "X")
@@ -665,10 +665,7 @@ class SubqueryCallPlanningIntegrationTest
     cfg.plan(query) should equal {
       new LogicalPlanBuilder()
         .produceResults("`  q@7`", "`  a@8`", "`  b@9`")
-        .projection(
-          project = Seq("`  a@5` AS `  q@7`", "`  b@6` AS `  a@8`", "`  q@0` AS `  b@9`"),
-          discard = Set("  q@0", "  a@5", "  b@6")
-        )
+        .projection("`  a@5` AS `  q@7`", "`  b@6` AS `  a@8`", "`  q@0` AS `  b@9`")
         .apply()
         .|.distinct("`  a@5` AS `  a@5`", "`  b@6` AS `  b@6`")
         .|.union()
@@ -835,7 +832,7 @@ class SubqueryCallPlanningIntegrationTest
         .produceResults("n", "x")
         .apply()
         .|.allNodeScan("n", "x")
-        .projection(project = Seq("n AS x"), discard = Set("n"))
+        .projection("n AS x")
         .projection("1 AS n")
         .argument()
         .build()
@@ -1272,7 +1269,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("a.prop AS `a.prop`"), discard = Set("a"))
+      .projection("a.prop AS `a.prop`")
       .eager()
       .transactionForeach()
       .|.setNodeProperty("a", "prop", "1")
@@ -1299,7 +1296,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("1 AS x"), discard = Set("line"))
+      .projection("1 AS x")
       .transactionForeach()
       .|.setNodeProperty("n", "prop", "1")
       .|.allNodeScan("n")
@@ -1330,7 +1327,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(project = Seq("1 AS x"), discard = Set("a"))
+      .projection("1 AS x")
       .transactionForeach()
       .|.setNodeProperty("n", "prop", "1")
       .|.allNodeScan("n")
@@ -1364,10 +1361,7 @@ class SubqueryCallPlanningIntegrationTest
     val plan = cfg.plan(query).stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(
-        project = Seq("cacheN[a.prop] AS otherProp"),
-        discard = Set("c", "b", "a", "anon_1", "anon_0", "dummy")
-      )
+      .projection("cacheN[a.prop] AS otherProp")
       .expandAll("(b)-[anon_1]->(c)")
       .cacheProperties("cacheNFromStore[a.prop]")
       .transactionForeach()

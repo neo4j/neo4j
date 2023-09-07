@@ -1419,7 +1419,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case Projection(_, _, expr) =>
+      case Projection(_, expr) =>
         val expressions = Details(projectedExpressionInfo(expr))
         PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables, withRawCardinalities)
 

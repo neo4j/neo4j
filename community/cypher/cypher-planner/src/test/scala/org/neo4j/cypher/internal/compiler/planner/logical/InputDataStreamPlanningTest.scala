@@ -86,7 +86,6 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
       Sort(
         Projection(
           Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))),
-          Set.empty,
           Map(varFor("name") -> prop("a", "name"))
         ),
         List(Ascending(varFor("name")))

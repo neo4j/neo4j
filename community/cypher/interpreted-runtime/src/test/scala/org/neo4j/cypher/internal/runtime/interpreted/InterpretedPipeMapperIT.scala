@@ -110,7 +110,6 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
   test("projection only query") {
     val logicalPlan = Projection(
       Argument(),
-      Set.empty,
       Map(varFor("42") -> literalInt(42))
     )
     val pipe = build(logicalPlan)

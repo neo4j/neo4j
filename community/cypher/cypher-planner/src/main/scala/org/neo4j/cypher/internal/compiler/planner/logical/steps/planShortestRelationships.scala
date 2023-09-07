@@ -236,7 +236,7 @@ case object planShortestRelationships {
         rhsVarExpand.id
       ).asSinglePlannerQuery.lastQueryGraph.selections.predicates
 
-    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, Set.empty, map, Some(map), context)
+    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, Some(map), context)
 
     // Filter out predicates solved in var expand
     val filteredPredicates =
@@ -253,7 +253,7 @@ case object planShortestRelationships {
     val columnName = context.staticComponents.anonymousVariableNameGenerator.nextName
 
     val rhsProjMap = Map(columnName -> lengthOfPath)
-    val rhsProjected = lpp.planRegularProjection(rhsFiltered, Set.empty, rhsProjMap, Some(rhsProjMap), context)
+    val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, Some(rhsProjMap), context)
     val sortDescription = Seq(Ascending(varFor(columnName)))
     val plan =
       if (shortestRelationship.single) {

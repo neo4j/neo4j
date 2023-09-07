@@ -658,7 +658,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given
     val leaf = NodeByLabelScan(varFor("x"), LABEL, Set.empty, IndexOrderNone)
     val projection =
-      Projection(leaf, Set.empty, Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> prop("x", "propertyKey")))
+      Projection(leaf, Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> prop("x", "propertyKey")))
 
     // when
     val allocations = allocateSlots(
@@ -780,20 +780,16 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       Projection(
         Projection(
           NodeByLabelScan(varFor("x"), labelName("label1"), Set.empty, IndexOrderNone),
-          Set.empty,
           Map(varFor("cLhs") -> literalInt(1))
         ),
-        Set.empty,
         Map(varFor("cLhs2") -> varFor("cLhs"), varFor("xLhs2") -> varFor("x"))
       )
 
     val rhs = Projection(
       Projection(
         NodeByLabelScan(varFor("x"), labelName("label2"), Set.empty, IndexOrderNone),
-        Set.empty,
         Map(varFor("cRhs") -> literalInt(1))
       ),
-      Set.empty,
       Map(varFor("cRhs2") -> varFor("cRhs"), varFor("xRhs2") -> varFor("x"))
     )
 
@@ -838,20 +834,16 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       Projection(
         Projection(
           NodeByLabelScan(varFor("x"), labelName("label1"), Set.empty, IndexOrderNone),
-          Set.empty,
           Map(varFor("cLhs") -> literalInt(1))
         ),
-        Set.empty,
         Map(varFor("cLhs2") -> varFor("cLhs"), varFor("xLhs2") -> varFor("x"))
       )
 
     val rhs = Projection(
       Projection(
         NodeByLabelScan(varFor("x"), labelName("label2"), Set.empty, IndexOrderNone),
-        Set.empty,
         Map(varFor("cRhs") -> literalInt(1))
       ),
-      Set.empty,
       Map(varFor("cRhs2") -> varFor("cRhs"), varFor("xRhs2") -> varFor("x"))
     )
 
@@ -1211,8 +1203,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("argument on two sides of Apply") {
     val arg1 = Argument()
     val arg2 = Argument()
-    val pr1 = Projection(arg1, Set.empty, Map(varFor("x") -> literalInt(42)))
-    val pr2 = Projection(arg2, Set.empty, Map(varFor("y") -> literalInt(666)))
+    val pr1 = Projection(arg1, Map(varFor("x") -> literalInt(42)))
+    val pr2 = Projection(arg2, Map(varFor("y") -> literalInt(666)))
     val apply = Apply(pr1, pr2)
 
     // when
@@ -1294,7 +1286,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       varFor("prop") -> prop("x", "prop"),
       varFor("r") -> varFor("r")
     )
-    val rhsProjection = Projection(expand, Set.empty, projectionExpressions)
+    val rhsProjection = Projection(expand, projectionExpressions)
 
     // RollUpApply(LHS, RHS, ...)
     val rollUp =
@@ -1342,8 +1334,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("should handle UNION of primitive node with alias under apply") {
     // given
-    val lhs = Projection(Argument(Set(varFor("x"))), Set.empty, Map(varFor("y") -> varFor("x")))
-    val rhs = Projection(Argument(Set(varFor("x"))), Set.empty, Map(varFor("y") -> varFor("x")))
+    val lhs = Projection(Argument(Set(varFor("x"))), Map(varFor("y") -> varFor("x")))
+    val rhs = Projection(Argument(Set(varFor("x"))), Map(varFor("y") -> varFor("x")))
     val union = Union(lhs, rhs)
     val ans = AllNodesScan(varFor("x"), Set.empty)
     val apply = Apply(ans, union)
@@ -1396,8 +1388,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("should handle UNION of projected variables") {
     val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
-    val lhs = Projection(allNodesScan, Set.empty, Map(varFor("A") -> varFor("x")))
-    val rhs = Projection(Argument(), Set.empty, Map(varFor("A") -> literalInt(42)))
+    val lhs = Projection(allNodesScan, Map(varFor("A") -> varFor("x")))
+    val rhs = Projection(Argument(), Map(varFor("A") -> literalInt(42)))
     val plan = Union(lhs, rhs)
 
     // when
@@ -1422,7 +1414,6 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val argument = Argument()
     val plan = Projection(
       argument,
-      Set.empty,
       Map(varFor("z") -> NestedPlanExpression.collect(nestedPlan, literalString("foo"), literalString("foo"))(pos))
     )
     val availableExpressionVariables = new AvailableExpressionVariables

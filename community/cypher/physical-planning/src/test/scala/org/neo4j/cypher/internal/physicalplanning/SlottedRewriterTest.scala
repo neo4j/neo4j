@@ -422,7 +422,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     // given
     val node = varFor("n")
     val allNodes = AllNodesScan(node, Set.empty)
-    val projection = Projection(allNodes, Set.empty, Map(varFor("n.prop") -> nProp))
+    val projection = Projection(allNodes, Map(varFor("n.prop") -> nProp))
     val produceResult = ProduceResult(projection, Seq(varFor("n.prop")))
     val nodeOffset = 0
     val slots =
@@ -443,7 +443,6 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
       ProduceResult(
         Projection(
           AllNodesScan(VariableRef("n"), Set.empty),
-          Set.empty,
           Map(VariableRef("n.prop") -> NodePropertyLate(nodeOffset, "prop", "n.prop")(nProp))
         ),
         Seq(VariableRef("n.prop"))
@@ -455,7 +454,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("rewriting variable should always work, even if Variable is not part of a bigger tree") {
     // given
     val leaf = NodeByLabelScan(varFor("x"), labelName("label"), Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Set.empty, Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> xPropKey))
+    val projection = Projection(leaf, Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> xPropKey))
     val tokenContext = mock[ReadTokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
@@ -476,7 +475,6 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     resultPlan should equal(
       Projection(
         NodeByLabelScan(VariableRef("x"), labelName("label"), Set.empty, IndexOrderNone),
-        Set.empty,
         Map(
           VariableRef("x") -> NodeFromSlot(0, "x"),
           VariableRef("x.propertyKey") -> NodeProperty(slots.getLongOffsetFor("x"), tokenId, "x.propertyKey")(xPropKey)
@@ -488,7 +486,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("make sure to handle nullable nodes correctly") {
     // given
     val leaf = NodeByLabelScan(varFor("x"), labelName("label"), Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Set.empty, Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> xPropKey))
+    val projection = Projection(leaf, Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> xPropKey))
     val tokenContext = mock[ReadTokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
@@ -510,7 +508,6 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     resultPlan should equal(
       Projection(
         NodeByLabelScan(VariableRef("x"), labelName("label"), Set.empty, IndexOrderNone),
-        Set.empty,
         Map(
           VariableRef("x") -> NullCheckVariable(0, NodeFromSlot(0, "x")),
           VariableRef("x.propertyKey") -> NullCheckProperty(
@@ -525,9 +522,9 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("argument on two sides of Apply") {
     val sr1 = Argument()
     val sr2 = Argument()
-    val pr1A = Projection(sr1, Set.empty, Map(varFor("x") -> literalInt(42)))
-    val pr1B = Projection(pr1A, Set.empty, Map(varFor("xx") -> varFor("x")))
-    val pr2 = Projection(sr2, Set.empty, Map(varFor("y") -> literalInt(666)))
+    val pr1A = Projection(sr1, Map(varFor("x") -> literalInt(42)))
+    val pr1B = Projection(pr1A, Map(varFor("xx") -> varFor("x")))
+    val pr2 = Projection(sr2, Map(varFor("y") -> literalInt(666)))
     val apply = Apply(pr1B, pr2)
 
     val lhsPipeline =
@@ -551,11 +548,10 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     resultPlan should equal(
       Apply(
         Projection(
-          Projection(Argument(), Set.empty, Map(VariableRef("x") -> literalInt(42))),
-          Set.empty,
+          Projection(Argument(), Map(VariableRef("x") -> literalInt(42))),
           Map(VariableRef("xx") -> ReferenceFromSlot(0, "x"))
         ),
-        Projection(Argument(), Set.empty, Map(VariableRef("y") -> literalInt(666)))
+        Projection(Argument(), Map(VariableRef("y") -> literalInt(666)))
       )
     )
 

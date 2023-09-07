@@ -106,10 +106,10 @@ case class unnestApply(
       unnestRightUnary(apply, lhs, oex)
 
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
-    case apply @ Apply(projection @ Projection(Argument(_), _, projections), rhsLeaf: LogicalLeafPlan)
+    case apply @ Apply(projection @ Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
-      val res = projection.copy(rhsCopy, projection.discardSymbols, projections)(attributes.copy(projection.id))
+      val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))
       solveds.copy(projection.id, res.id)
       cardinalities.copy(apply.id, res.id)
       providedOrders.copy(rhsLeaf.id, res.id)

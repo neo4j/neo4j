@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.PlanWithVariableGroupings
-import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -32,7 +31,7 @@ import org.neo4j.cypher.internal.util.topDown
 /**
  * Before
  * .produceResults("1 AS s")
- * .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r", "n", "m"))
+ * .projection("1 AS s")
  * .trail((a) ((n)-[r]->(m))+ (b), nodeGroupVariables = Set("n", "m"), relationshipGroupVariables = Set("r"))
  * .|.filter(isRepeatTrailUnique(r))
  * .|.expandAll((n)-[r]->(m))
@@ -41,7 +40,7 @@ import org.neo4j.cypher.internal.util.topDown
  *
  * After
  * .produceResults("1 AS s")
- * .projection(project = Seq("1 AS s"), discard = Set("a", "b"))
+ * .projection("1 AS s")
  * .trail((a) ((n)-[r]->(m))+ (b), nodeGroupVariables = Set.empty, relationshipGroupVariables = Set.empty)
  * .|.filter(isRepeatTrailUnique(r))
  * .|.expandAll((n)-[r]->(m))
@@ -84,17 +83,6 @@ case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
   def findAllVariableReferences(plan: AnyRef): Set[LogicalVariable] = {
     def inner(plan: AnyRef): Map[LogicalVariable, Int] =
       plan.folder.treeFold(Map.empty[LogicalVariable, Int]) {
-        // The folder is top-down which means that we will encounter any discarded variable first. We want
-        // to ignore discarded variables as they should not count as legitimate variable references. In a simpler world
-        // we would initialise the counter for the variable to 0. Instead we set the count for the variable to -1 when
-        // visiting the Projection, because the folder will then also visit Projection.discardedSymbols and increment
-        // the counter by 1, therefore setting to 0.
-        case plan: ProjectingPlan => acc =>
-            TraverseChildren(
-              plan.discardSymbols.foldLeft(acc) {
-                case (acc, variable) => acc + (variable -> -1)
-              }
-            )
         case variable: LogicalVariable => acc =>
             SkipChildren(
               acc.updatedWith(variable) {

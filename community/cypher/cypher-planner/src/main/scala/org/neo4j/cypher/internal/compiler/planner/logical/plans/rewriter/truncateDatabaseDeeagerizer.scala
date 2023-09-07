@@ -70,7 +70,6 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
     case ProduceResult(
         Projection(
           ReturningTruncate(_),
-          _,
           _
         ),
         _
@@ -103,7 +102,6 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
           NodeLeafPlan(n),
           Projection(
             DeletePlan(m),
-            _,
             _
           ),
           _,
@@ -114,7 +112,6 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
           NodeLeafPlan(n),
           Projection(
             DeletePlan(m),
-            _,
             _
           )
         ) if n == m => Some(n)

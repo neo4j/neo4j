@@ -286,7 +286,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
             .withAddedDependencies(expand.relationshipPredicates.map(_.predicate))
           (newHorizon, DistinctHorizon.empty)
 
-        case Projection(_, _, expressions) if distinctHorizon.isInDistinctHorizon =>
+        case Projection(_, expressions) if distinctHorizon.isInDistinctHorizon =>
           (distinctHorizon.withAddedDependencies(expressions.values), DistinctHorizon.empty)
 
         case Selection(Ands(predicates), _) if distinctHorizon.isInDistinctHorizon =>

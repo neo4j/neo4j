@@ -165,8 +165,8 @@ object VariableRefRewriter extends Rewriter {
               a.copy(groupingExpressions = varMap(grouping), aggregationExpressions = varMap(aggregation))(SameId(a.id))
             case d @ OrderedDistinct(_, grouping, _) =>
               d.copy(groupingExpressions = varMap(grouping))(SameId(d.id))
-            case p @ Projection(_, discard, project) =>
-              p.copy(discardSymbols = discard.map(varRef), projectExpressions = varMap(project))(SameId(p.id))
+            case p @ Projection(_, project) =>
+              p.copy(projectExpressions = varMap(project))(SameId(p.id))
 
           }
         case leaf: NodeLogicalLeafPlan => leaf match {

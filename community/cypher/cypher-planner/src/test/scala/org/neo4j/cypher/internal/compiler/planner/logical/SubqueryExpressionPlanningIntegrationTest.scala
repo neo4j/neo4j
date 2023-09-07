@@ -158,7 +158,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("result" -> resultExpr), discard = Set("a"))
+      .projection(Map("result" -> resultExpr))
       .eager(ListSet(EagernessReason.Unknown))
       .create(createNode("a"))
       .argument()
@@ -175,7 +175,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("result" -> resultExpr), discard = Set("a"))
+      .projection(Map("result" -> resultExpr))
       .create(createNode("a"))
       .argument()
       .build()
@@ -185,7 +185,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val q = "RETURN EXISTS { (a) } <> EXISTS { (b) } <> EXISTS { (c) } AS result"
     val plan = planner.plan(q).stripProduceResults
     plan should beLike {
-      case Projection(_, _, projectExpressions) =>
+      case Projection(_, projectExpressions) =>
         projectExpressions shouldBe Map(
           varFor("result") ->
             ands(
@@ -272,7 +272,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       "MATCH (a:Foo) RETURN COLLECT { MATCH (a)-[r]->(b), (a)<-[r2]-(b) RETURN a.prop } = [1, 2, 3] AS foo"
     ).stripProduceResults
     plan shouldBe planner.subPlanBuilder()
-      .projection(project = Seq("anon_0 = [1, 2, 3] AS foo"), discard = Set("a", "anon_0"))
+      .projection("anon_0 = [1, 2, 3] AS foo")
       .rollUpApply("anon_0", "a.prop")
       .|.projection("a.prop AS `a.prop`")
       .|.filter("not r = r2")
@@ -403,7 +403,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should (
       equal(
         planner.subPlanBuilder()
-          .projection(project = Map("clowns" -> projectionExpression), discard = Set("friends"))
+          .projection(Map("clowns" -> projectionExpression))
           .orderedAggregation(Seq("a AS a"), Seq("collect(b) AS friends"), Seq("a"))
           .filter("b:Person")
           .expandAll("(a)-[anon_0:KNOWS]->(b)")
@@ -413,7 +413,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         // TODO This plan is more expensive because of the aggregation (compared to ordered aggregation)
         //      but we never reach that cost comparison.
         planner.subPlanBuilder()
-          .projection(project = Map("clowns" -> projectionExpression), discard = Set("friends"))
+          .projection(Map("clowns" -> projectionExpression))
           .aggregation(Seq("a AS a"), Seq("collect(b) AS friends"))
           .filter("a:Person")
           .expandAll("(b)<-[anon_0:KNOWS]-(a)")
@@ -431,7 +431,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("`u.id`")
-        .projection(project = Seq("u.id AS `u.id`"), discard = Set("u", "anon_6"))
+        .projection("u.id AS `u.id`")
         .sort("anon_6 ASC")
         .apply()
         .|.aggregation(Seq(), Seq("count(*) AS anon_6"))
@@ -525,7 +525,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
           SemanticDirection.OUTGOING,
           literalInt(0)
         )(pos))
-        .projection(project = Seq("a AS b"), discard = Set("a"))
+        .projection("a AS b")
         .allNodeScan("a")
         .build()
     )
@@ -558,7 +558,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
           SemanticDirection.OUTGOING,
           literalInt(0)
         )(pos)))
-        .projection(project = Seq("a AS b"), discard = Set("a"))
+        .projection("a AS b")
         .allNodeScan("a")
         .build()
     )
@@ -974,7 +974,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .|.filter("anon_1:Foo")
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection(project = Seq("a AS b"), discard = Set("a"))
+        .projection("a AS b")
         .allNodeScan("a")
         .build()
     )
@@ -991,7 +991,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .|.filter("anon_1:Foo")
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection(project = Seq("a AS b"), discard = Set("a"))
+        .projection("a AS b")
         .allNodeScan("a")
         .build()
     )
@@ -1024,7 +1024,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .|.filter("anon_1:Foo")
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection(project = Seq("a AS b"), discard = Set("a"))
+        .projection("a AS b")
         .allNodeScan("a")
         .build()
     )
@@ -1041,7 +1041,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(project = Map("p" -> pathExpression), discard = Set("a", "b", "r"))
+        .projection(Map("p" -> pathExpression))
         .expand(
           "(a)-[r*1..]->(b)",
           expandMode = ExpandAll,
@@ -1064,7 +1064,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(project = Map("p" -> pathExpression), discard = Set("a", "b", "r"))
+        .projection(Map("p" -> pathExpression))
         .expand(
           "(a)-[r*1..]->(b)",
           expandMode = ExpandAll,
@@ -1569,7 +1569,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
     plan should equal(
       planner.subPlanBuilder()
-        .projection(project = Seq("[1, anon_2, 2] AS ages"), discard = Set("n", "anon_2"))
+        .projection("[1, anon_2, 2] AS ages")
         .rollUpApply("anon_2", "anon_0")
         .|.projection("b.age AS anon_0")
         .|.expandAll("(n)-[anon_1]->(b)")
@@ -1864,7 +1864,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection(project = Seq("[n] AS nodes"), discard = Set("n"))
+      .projection("[n] AS nodes")
       .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
       .allNodeScan("n")
       .build())
@@ -1911,7 +1911,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection(project = Seq("[r] AS rels"), discard = Set("r", "anon_1", "anon_2"))
+      .projection("[r] AS rels")
       .eager(ListSet(
         EagernessReason.ReadDeleteConflict("anon_1"),
         EagernessReason.ReadDeleteConflict("anon_2")
@@ -1962,7 +1962,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection(project = Seq("{rel: r} AS rels"), discard = Set("r", "anon_1", "anon_2"))
+      .projection("{rel: r} AS rels")
       .eager(ListSet(
         EagernessReason.ReadDeleteConflict("anon_1"),
         EagernessReason.ReadDeleteConflict("anon_2")
@@ -2157,7 +2157,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(
       planner.subPlanBuilder()
         .projection(
-          project = Map("age" -> containerIndex(
+          Map("age" -> containerIndex(
             NestedPlanCollectExpression(
               expectedNestedPlan,
               varFor("anon_0"),
@@ -2165,8 +2165,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
                 |RETURN b.age AS `anon_0` }""".stripMargin
             )(pos),
             literalInt(1)
-          )),
-          discard = Set("n")
+          ))
         )
         .allNodeScan("n")
         .build()
@@ -2197,7 +2196,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val expected =
       planner.subPlanBuilder()
         .projection(
-          project = Map("age" ->
+          Map("age" ->
             AllIterablePredicate(
               FilterScope(
                 varFor("node"),
@@ -2212,8 +2211,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
                 )(pos))
               )(pos),
               nodes(PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(pos))
-            )(pos)),
-          Set("n")
+            )(pos))
         )
         .allNodeScan("n")
         .build()
@@ -2238,16 +2236,13 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(
-          project = Map("foo" ->
-            Head(listOf(
-              NestedPlanExistsExpression(
-                expectedNestedPlan,
-                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE NOT `anon_2` = `anon_0` }"
-              )(pos)
-            ))(pos)),
-          discard = Set("n")
-        )
+        .projection(Map("foo" ->
+          Head(listOf(
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE NOT `anon_2` = `anon_0` }"
+            )(pos)
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -2270,16 +2265,13 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(
-          project = Map("foo" ->
-            Head(listOf(
-              NestedPlanExistsExpression(
-                expectedNestedPlan,
-                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B }"
-              )(pos)
-            ))(pos)),
-          discard = Set("n")
-        )
+        .projection(Map("foo" ->
+          Head(listOf(
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B }"
+            )(pos)
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -2304,16 +2296,13 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(
-          project = Map("foo" ->
-            Head(listOf(
-              NestedPlanExistsExpression(
-                expectedNestedPlan,
-                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B OR `anon_1`:C }"
-              )(pos)
-            ))(pos)),
-          discard = Set("n")
-        )
+        .projection(Map("foo" ->
+          Head(listOf(
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B OR `anon_1`:C }"
+            )(pos)
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -2335,18 +2324,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(
-          project = Map("foo" ->
-            Head(listOf(
-              NestedPlanExistsExpression(
-                expectedNestedPlan,
-                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
-              )(
-                pos
-              )
-            ))(pos)),
-          discard = Set("n")
-        )
+        .projection(Map("foo" ->
+          Head(listOf(
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
+            )(
+              pos
+            )
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -2390,12 +2376,9 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(
-        project = Map(
-          "size" -> GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
-        ),
-        discard = Set("a")
-      )
+      .projection(Map(
+        "size" -> GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
+      ))
       .allNodeScan("a")
       .build())
   }
@@ -2410,15 +2393,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(
-        project = Map("exists" -> HasDegreeGreaterThan(
-          varFor("a"),
-          Some(RelTypeName("FOO")(pos)),
-          SemanticDirection.OUTGOING,
-          literalInt(0)
-        )(pos)),
-        discard = Set("a")
-      )
+      .projection(Map("exists" -> HasDegreeGreaterThan(
+        varFor("a"),
+        Some(RelTypeName("FOO")(pos)),
+        SemanticDirection.OUTGOING,
+        literalInt(0)
+      )(pos)))
       .allNodeScan("a")
       .build())
   }
@@ -2433,14 +2413,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(
-        project = Map("foos" -> GetDegree(
-          varFor("a"),
-          Some(RelTypeName("FOO")(pos)),
-          SemanticDirection.OUTGOING
-        )(pos)),
-        discard = Set("a")
-      )
+      .projection(Map("foos" -> GetDegree(
+        varFor("a"),
+        Some(RelTypeName("FOO")(pos)),
+        SemanticDirection.OUTGOING
+      )(pos)))
       .allNodeScan("a")
       .build())
   }
@@ -2455,15 +2432,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(
-        project = Map("moreThan10Foos" -> HasDegreeGreaterThan(
-          varFor("a"),
-          Some(RelTypeName("FOO")(pos)),
-          SemanticDirection.OUTGOING,
-          literalInt(10)
-        )(pos)),
-        discard = Set("a")
-      )
+      .projection(Map("moreThan10Foos" -> HasDegreeGreaterThan(
+        varFor("a"),
+        Some(RelTypeName("FOO")(pos)),
+        SemanticDirection.OUTGOING,
+        literalInt(10)
+      )(pos)))
       .allNodeScan("a")
       .build())
   }
@@ -2735,7 +2709,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan.stripProduceResults should equal(
       planner.subPlanBuilder()
-        .projection(Map("list" -> expectedExpression), discard = Set("a", "anon_7"))
+        .projection(Map("list" -> expectedExpression))
         .rollUpApply("anon_7", "anon_1")
         .|.projection("b.prop4 = true AS anon_1")
         .|.expandAll("(a)<-[anon_3]-(b)")
@@ -2799,7 +2773,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       "MATCH (a:Foo) RETURN COUNT { MATCH (a)-[r]->(b), (a)<-[r2]-(b) } = 2 AS foo"
     ).stripProduceResults
     plan shouldBe planner.subPlanBuilder()
-      .projection(project = Seq("anon_0 = 2 AS foo"), discard = Set("a", "anon_0"))
+      .projection("anon_0 = 2 AS foo")
       .apply()
       .|.aggregation(Seq.empty, Seq("count(*) AS anon_0"))
       .|.filter("not r = r2")
@@ -2856,9 +2830,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     ).stripProduceResults
     plan should equal(planner.subPlanBuilder()
       .projection(
-        project =
-          Map("foo" -> GetDegree(varFor("a"), Some(RelTypeName("KNOWS")(pos)), SemanticDirection.OUTGOING)(pos)),
-        discard = Set("a")
+        Map("foo" -> GetDegree(varFor("a"), Some(RelTypeName("KNOWS")(pos)), SemanticDirection.OUTGOING)(pos))
       )
       .nodeByLabelScan("a", "Person", IndexOrderNone)
       .build())
@@ -2976,7 +2948,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("counts")
-        .projection(project = Seq("[anon_2] AS counts"), discard = Set("a", "anon_2"))
+        .projection("[anon_2] AS counts")
         .apply()
         .|.aggregation(Seq(), Seq("count(*) AS anon_2"))
         .|.filter("anon_1:Foo")
@@ -2992,15 +2964,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(
-          project = Map("exists" -> HasDegreeGreaterThan(
-            varFor("a"),
-            Some(RelTypeName("X")(pos)),
-            SemanticDirection.OUTGOING,
-            literalInt(0)
-          )(pos)),
-          discard = Set("a")
-        )
+        .projection(Map("exists" -> HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)))
         .allNodeScan("a")
         .build()
     )
@@ -3129,7 +3098,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(project = Seq("anon_2 AND a.prop = 10 AS exists"), discard = Set("a", "anon_2"))
+        .projection("anon_2 AND a.prop = 10 AS exists")
         .letSemiApply("anon_2")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3158,7 +3127,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(project = Seq("[anon_2] AS notExists"), discard = Set("a", "anon_2"))
+        .projection("[anon_2] AS notExists")
         .letAntiSemiApply("anon_2")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3173,7 +3142,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(project = Seq("anon_2 AND a.prop = 10 AS notExists"), discard = Set("a", "anon_2"))
+        .projection("anon_2 AND a.prop = 10 AS notExists")
         .letAntiSemiApply("anon_2")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3188,10 +3157,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(
-          project = Seq("anon_2 AS exists"),
-          discard = Set("a", "anon_2")
-        ) // We could remove this unneeded projection, but it doesn't do much harm
+        .projection("anon_2 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3206,7 +3172,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(project = Seq("[anon_2] AS exists"), discard = Set("a", "anon_2"))
+        .projection("[anon_2] AS exists")
         .letSelectOrSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3221,10 +3187,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(
-          project = Seq("anon_2 AS exists"),
-          discard = Set("a", "anon_2")
-        ) // We could remove this unneeded projection, but it doesn't do much harm
+        .projection("anon_2 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_2", "a.prop = 10 OR a.foo = 5")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3240,7 +3203,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(project = Seq("[anon_2] AS exists"), discard = Set("a", "anon_2"))
+        .projection("[anon_2] AS exists")
         .letSelectOrSemiApply("anon_2", "a.prop = 10 OR a.foo = 5")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3255,10 +3218,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(
-          project = Seq("anon_2 AS notExists"),
-          discard = Set("a", "anon_2")
-        ) // We could remove this unneeded projection, but it doesn't do much harm
+        .projection("anon_2 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrAntiSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3273,7 +3233,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(project = Seq("[anon_2] AS notExists"), discard = Set("a", "anon_2"))
+        .projection("[anon_2] AS notExists")
         .letSelectOrAntiSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -3289,10 +3249,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(
-          project = Seq("anon_5 AS exists"),
-          discard = Set("a", "anon_4", "anon_5")
-        ) // We could remove this unneeded projection, but it doesn't do much harm
+        .projection("anon_5 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3312,7 +3269,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(project = Seq("[anon_5] AS exists"), discard = Set("a", "anon_4", "anon_5"))
+        .projection("[anon_5] AS exists")
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3332,10 +3289,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(
-          project = Seq("anon_5 AS notExists"),
-          discard = Set("a", "anon_4", "anon_5")
-        ) // We could remove this unneeded projection, but it doesn't do much harm
+        .projection("anon_5 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3355,7 +3309,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(project = Seq("[anon_5] AS notExists"), discard = Set("a", "anon_4", "anon_5"))
+        .projection("[anon_5] AS notExists")
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3379,10 +3333,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(
-          project = Seq("anon_5 AS exists"),
-          discard = Set("a", "anon_4", "anon_5")
-        ) // We could remove this unneeded projection, but it doesn't do much harm
+        .projection("anon_5 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3406,7 +3357,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(project = Seq("[anon_5] AS exists"), discard = Set("a", "anon_4", "anon_5"))
+        .projection("[anon_5] AS exists")
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3437,7 +3388,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("`person.name`")
-        .projection(project = Seq("cacheN[person.name] AS `person.name`"), discard = Set("person"))
+        .projection("cacheN[person.name] AS `person.name`")
         .semiApply()
         .|.filterExpressionOrString("dog:Dog", andsReorderable("dog.name = 'Bosse'", "dog.lastname = 'Bosse'"))
         .|.expandAll("(person)-[anon_0:HAS_DOG]->(dog)")
@@ -3458,10 +3409,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(
-          project = Seq("anon_5 AS notExists"),
-          discard = Set("a", "anon_4", "anon_5")
-        ) // We could remove this unneeded projection, but it doesn't do much harm
+        .projection("anon_5 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3485,7 +3433,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection(project = Seq("[anon_5] AS notExists"), discard = Set("a", "anon_4", "anon_5"))
+        .projection("[anon_5] AS notExists")
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -3516,7 +3464,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(project = Map("exists" -> caseExp), discard = Set("a"))
+        .projection(Map("exists" -> caseExp))
         .allNodeScan("a")
         .build()
     )
@@ -3574,7 +3522,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val expected = planner.subPlanBuilder()
       .produceResults("name")
-      .projection(project = Seq("cacheN[person.name] AS name"), discard = Set("person", "anon_8", "anon_9"))
+      .projection("cacheN[person.name] AS name")
       .filter("single(x IN anon_9 WHERE true)")
       .rollUpApply("anon_9", "anon_1")
       .|.projection("1 AS anon_1")

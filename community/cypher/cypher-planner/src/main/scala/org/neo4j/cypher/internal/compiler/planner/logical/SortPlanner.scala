@@ -168,7 +168,7 @@ object SortPlanner {
       })
       if (projectionsToMarkSolved.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e))) {
         val keepAllColumns = if (updateSolved) Some(projectionsToMarkSolved) else None
-        projection(plan, projectionsToMarkSolved, keepAllColumns, keepAllColumns = true, context)
+        projection(plan, projectionsToMarkSolved, keepAllColumns, context)
       } else
         plan
     }

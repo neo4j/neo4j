@@ -267,7 +267,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
 
     plan shouldEqual planner.planBuilder()
       .produceResults("p")
-      .projection(project = Map("p" -> path), discard = Set("a", "r", "b"))
+      .projection(Map("p" -> path))
       .filterExpression(
         allInList(
           varFor("x"),
@@ -333,7 +333,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       planner.planBuilder()
         .produceResults("a", "b", "dummy", "r", "dummy2")
         .projection("2 AS dummy2")
-        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .projection("1 AS dummy")
         .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
         .limit(0)
         .argument()
@@ -353,7 +353,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       planner.planBuilder()
         .produceResults("count")
         .aggregation(Seq(), Seq("count(*) AS count"))
-        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .projection("1 AS dummy")
         .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
         .limit(0)
         .argument()
@@ -385,7 +385,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
         .|.projection("1 AS dummy")
         .|.allRelationshipsScan("(a)-[r]->(b)")
         .projection("a AS a", "r AS r", "b AS b", "dummy AS dummy")
-        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .projection("1 AS dummy")
         .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
         .limit(0)
         .argument()
@@ -603,9 +603,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("a", "b", "dummy", "r")
-        .projection(project = Seq("NULL AS anon_1", "NULL AS r"), discard = Set("a", "b", "dummy"))
+        .projection("NULL AS anon_1", "NULL AS r")
         .limit(0)
-        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .projection("1 AS dummy")
         .allRelationshipsScan("(a)-[anon_0]->(b)")
         .build()
     )
@@ -657,7 +657,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("a", "b", "p", "r")
-        .projection(project = Map("p" -> path), discard = Set("anon_0"))
+        .projection(Map("p" -> path))
         .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
         .limit(0)
         .argument()

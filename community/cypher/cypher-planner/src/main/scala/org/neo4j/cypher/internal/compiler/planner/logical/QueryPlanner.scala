@@ -216,7 +216,6 @@ case object plannerQueryPlanner {
         val rhsPlanWithProjection =
           context.staticComponents.logicalPlanProducer.planRegularProjection(
             rhsPlan,
-            Set.empty,
             projectionsForRhs,
             None,
             context

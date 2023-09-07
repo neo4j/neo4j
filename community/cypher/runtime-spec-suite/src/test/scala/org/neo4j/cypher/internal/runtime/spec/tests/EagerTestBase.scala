@@ -688,10 +688,10 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       .prober(probe2)
       .nonFuseable() // Needed because of limitation in prober
       // keep is discarded here but should not be removed since we don't put it in an eager buffer
-      .projection(project = Seq("keep + 'done' as hi"), discard = Set("keep"))
+      .projection("keep + 'done' as hi")
       .eager()
       .prober(probe1)
-      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("keep as keep")
       .projection("'bla' + a as keep", "'blö' + a as discard")
       .unwind(s"range(0, $sizeHint) AS a")
       .argument()
