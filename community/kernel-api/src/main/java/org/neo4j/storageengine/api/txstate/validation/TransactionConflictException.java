@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api.txstate.validation;
 
 import java.util.Arrays;
 import org.neo4j.io.layout.DatabaseFile;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -33,17 +34,23 @@ public class TransactionConflictException extends RuntimeException implements St
     private long[] nonVisibleTransactions;
     private final String message;
 
-    public TransactionConflictException(DatabaseFile databaseFile, VersionContext versionContext) {
+    public TransactionConflictException(DatabaseFile databaseFile, VersionContext versionContext, long pageId) {
         this.databaseFile = databaseFile;
         this.observedVersion = versionContext.chainHeadVersion();
         this.highestClosed = versionContext.highestClosed();
         this.nonVisibleTransactions = versionContext.notVisibleTransactionIds();
-        this.message = createMessage();
+        this.message =
+                createMessage(databaseFile.getName(), pageId, observedVersion, highestClosed, nonVisibleTransactions);
     }
 
     public TransactionConflictException(Exception e) {
         super(e);
         this.message = GENERIC_MESSAGE;
+    }
+
+    public TransactionConflictException(RecordDatabaseFile databaseFile, long pageId) {
+        this.databaseFile = databaseFile;
+        this.message = createPageIdPagedMessage(databaseFile.getName(), pageId);
     }
 
     @Override
@@ -72,9 +79,19 @@ public class TransactionConflictException extends RuntimeException implements St
         return Status.Transaction.Outdated;
     }
 
-    private String createMessage() {
-        return "Concurrent modification exception. Page in "
-                + databaseFile.getName() + " store is modified already by transaction "
+    private static String createPageIdPagedMessage(String databaseFileName, long pageId) {
+        return "Concurrent modification exception. Page " + pageId + " in '" + databaseFileName
+                + "' store is already locked by other transaction validator.";
+    }
+
+    private static String createMessage(
+            String databaseFileName,
+            long pageId,
+            long observedVersion,
+            long highestClosed,
+            long[] nonVisibleTransactions) {
+        return "Concurrent modification exception. Page " + pageId + " in '"
+                + databaseFileName + "' store is modified already by transaction "
                 + observedVersion + ", while ongoing transaction highest visible is: " + highestClosed
                 + ", with not yet visible transaction ids are: " + Arrays.toString(nonVisibleTransactions) + ".";
     }

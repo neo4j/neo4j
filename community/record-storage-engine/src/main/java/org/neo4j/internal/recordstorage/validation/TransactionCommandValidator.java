@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage.validation;
 import static java.lang.System.lineSeparator;
 import static java.util.Collections.emptyMap;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_dump_transaction_validation_page_locks;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_transaction_validation_fail_fast;
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
 import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
 import static org.neo4j.lock.ResourceType.PAGE;
@@ -76,6 +77,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     private LockTracer lockTracer;
     private CursorContext cursorContext;
     private boolean dumpLocks;
+    private boolean failFast;
     private Map<PageEntry, Long> observedPageVersions;
 
     public TransactionCommandValidator(
@@ -132,6 +134,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         this.cursorContext = cursorContext;
         this.lockTracer = lockTracer;
         this.dumpLocks = config.get(multi_version_dump_transaction_validation_page_locks);
+        this.failFast = config.get(multi_version_transaction_validation_fail_fast);
         this.observedPageVersions = dumpLocks ? new HashMap<>() : emptyMap();
         validationLockClient.initialize(leaseClient, txSequenceNumber, memoryTracker, config);
     }
@@ -266,11 +269,16 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
             return;
         }
 
-        validationLockClient.acquireExclusive(lockTracer, PAGE, pageId | ((long) storeType.ordinal() << PAGE_ID_BITS));
         var versionContext = cursorContext.getVersionContext();
+        long resourceId = pageId | ((long) storeType.ordinal() << PAGE_ID_BITS);
+        if (failFast && !validationLockClient.tryExclusiveLock(PAGE, resourceId)) {
+            throw new TransactionConflictException(storeType.getDatabaseFile(), pageId);
+        } else {
+            validationLockClient.acquireExclusive(lockTracer, PAGE, resourceId);
+        }
         if (pageCursor.next(pageId)) {
             if (versionContext.invisibleHeadObserved()) {
-                throw new TransactionConflictException(storeType.getDatabaseFile(), versionContext);
+                throw new TransactionConflictException(storeType.getDatabaseFile(), versionContext, pageId);
             }
         }
         checkedStorePages.add(pageId);

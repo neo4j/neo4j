@@ -1066,6 +1066,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Terminate transaction validation as soon as validation page lock acquisition fails.")
+    public static final Setting<Boolean> multi_version_transaction_validation_fail_fast = newBuilder(
+                    "internal.db.multiversion.transaction.validation.fail_fast", BOOL, true)
+            .dynamic()
+            .build();
+
+    @Internal
     @Description("Dump transaction validation page locks on multi versioned transaction failure.")
     public static final Setting<Boolean> multi_version_dump_transaction_validation_page_locks = newBuilder(
                     "internal.db.multiversion.transaction.validation.locks.dump", BOOL, false)
