@@ -33,7 +33,6 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.opencypher.tools.tck.api.ExecQuery
 import org.opencypher.tools.tck.api.Graph
-import org.opencypher.tools.tck.api.InitQuery
 import org.opencypher.tools.tck.api.QueryType
 import org.opencypher.tools.tck.api.RegisterProcedure
 import org.opencypher.tools.tck.api.Scenario
@@ -104,16 +103,6 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: 
       case Success(converted) =>
         converted
       case Failure(exception) =>
-        meta match {
-          /*
-           If failure comes from a setup step like "and having executed", then fail here (because tck-api will not tell you anything about that).
-           TODO: In openCypher version M21 this is hopefully fixed, and will provide better details than what we can provide here currently. Please
-            remove this case after verifying that M21 indeed fails tests with unsuccessful setup queries.
-           */
-          case InitQuery => throw exception
-          case _         => // if some other stage then let tck-api handle failure
-        }
-
         val tx = dbms.begin()
         val explainedResult = Try(tx.execute(explainPrefix + queryToExecute, neo4jParams).consume())
         val phase = explainedResult match {
