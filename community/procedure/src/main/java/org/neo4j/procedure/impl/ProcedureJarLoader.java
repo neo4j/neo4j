@@ -19,17 +19,16 @@
  */
 package org.neo4j.procedure.impl;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -38,7 +37,6 @@ import java.util.zip.ZipFile;
 import org.neo4j.collection.AbstractPrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -50,13 +48,10 @@ import org.neo4j.string.Globbing;
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
  * instances.
  */
-class ProcedureJarLoader implements AutoCloseable {
+class ProcedureJarLoader {
 
     private final ProcedureCompiler compiler;
     private final InternalLog log;
-
-    private final Set<Closeable> closeables =
-            Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     ProcedureJarLoader(ProcedureCompiler compiler, InternalLog log) {
         this.compiler = compiler;
@@ -89,16 +84,12 @@ class ProcedureJarLoader implements AutoCloseable {
                     String.join(", ", failedJarFiles)));
         }
 
-        if (jarFiles.isEmpty()) {
+        if (jarFiles.size() == 0) {
             return Callables.empty();
         }
 
-        // On Windows, it is not possible to modify files when they are used by a process.
-        // To support our test infrastructure, we want to ensure that we properly close
-        // all open file handles for procedures when we shutdown. To do this, we keep
-        // a weak reference to the classloader, and tidy up in a close-method.
-        var loader = ProcedureClassLoader.of(jarFiles);
-        closeables.add(loader);
+        URL[] jarFilesURLs = jarFiles.stream().map(this::toURL).toArray(URL[]::new);
+        URLClassLoader loader = new URLClassLoader(jarFilesURLs, this.getClass().getClassLoader());
 
         Callables out = new Callables();
         for (Path jarFile : jarFiles) {
@@ -140,6 +131,14 @@ class ProcedureJarLoader implements AutoCloseable {
                         "Failed to load procedures from class %s in %s/%s: %s",
                         next.getSimpleName(), jar.getParent().getFileName(), jar.getFileName(), exc.getMessage());
             }
+        }
+    }
+
+    private URL toURL(Path f) {
+        try {
+            return f.toUri().toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -186,15 +185,6 @@ class ProcedureJarLoader implements AutoCloseable {
                 }
             }
         };
-    }
-
-    @Override
-    public void close() throws Exception {
-        try {
-            IOUtils.closeAll(closeables);
-        } finally {
-            closeables.clear();
-        }
     }
 
     public static class Callables {
