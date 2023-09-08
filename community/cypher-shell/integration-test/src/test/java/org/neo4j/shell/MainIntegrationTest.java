@@ -1421,15 +1421,16 @@ class MainIntegrationTest {
     }
 
     private void withDefaultDatabaseStopped(ThrowingAction<Exception> test) {
+        final var useWait = serverVersion.compareTo(Versions.version("4.4.0")) >= 0;
+        final var stop = "STOP DATABASE " + DEFAULT_DEFAULT_DB_NAME + (useWait ? " WAIT;" : ";");
+        final var start = "START DATABASE " + DEFAULT_DEFAULT_DB_NAME + (useWait ? " WAIT;" : ";");
         try {
-            runInSystemDb(shell -> shell.execute(
-                    CypherStatement.complete("STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";")));
+            runInSystemDb(shell -> shell.execute(CypherStatement.complete(stop)));
             test.apply();
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            runInSystemDb(shell -> shell.execute(
-                    CypherStatement.complete("START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";")));
+            runInSystemDb(shell -> shell.execute(CypherStatement.complete(start)));
         }
     }
 
