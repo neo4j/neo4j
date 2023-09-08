@@ -322,8 +322,8 @@ case object PushdownPropertyReads {
         val mergedAcc = Acc(
           // Keep only optima for variables from the LHS
           lhsAcc.variableOptima,
-          // Keep any pushdowns identified in either side
-          lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+          // Keep any pushdowns identified in either side (lhsAcc.propertyReadOptima is already included in rhs)
+          rhsAcc.propertyReadOptima,
           // Keep only the available properties/entities from the LHS
           lhsAcc.availableProperties,
           lhsAcc.availableWholeEntities,
