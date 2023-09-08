@@ -23,10 +23,13 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.PushdownPropertyReads.Acc
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.LogicalPlans
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -414,6 +417,36 @@ class PushdownPropertyReadsTest
       .expandAll("(n)-->(x)")
       .allNodeScan("n")
       .build()
+  }
+
+  test("For SemiApply, propertyReadOptima from lhs should not be reused in the accumulator for foldTwoChildPlan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .semiApply().withEffectiveCardinality(10)
+      .|.argument("n").withEffectiveCardinality(10)
+      .semiApply().withEffectiveCardinality(10)
+      .|.argument("n").withEffectiveCardinality(10)
+      .semiApply().withEffectiveCardinality(10)
+      .|.filter("n.prop > 10").withEffectiveCardinality(99)
+      .|.optionalExpandAll("(n)-->(m)").withEffectiveCardinality(100)
+      .|.argument().withEffectiveCardinality(10)
+      .expandAll("(n)-->(x)").withEffectiveCardinality(20)
+      .allNodeScan("n").withEffectiveCardinality(100)
+
+    val effectiveCardinalities = planBuilder.effectiveCardinalities
+    val semanticTable = planBuilder.getSemanticTable
+
+    val plan = planBuilder.build()
+
+    val Acc(_, propertyReadOptima, _, _, _) =
+      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
+        plan,
+        PushdownPropertyReads.foldSingleChildPlan(effectiveCardinalities, semanticTable),
+        PushdownPropertyReads.foldTwoChildPlan(effectiveCardinalities, semanticTable),
+        PushdownPropertyReads.mapArguments
+      )
+
+    propertyReadOptima.size should equal(1)
   }
 
   test("should pushdown from RHS to LHS of SemiApply") {
