@@ -29,11 +29,9 @@ import org.neo4j.bolt.fsm.error.state.IllegalRequestParameterException;
 import org.neo4j.bolt.fsm.state.State;
 import org.neo4j.bolt.fsm.state.StateReference;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.fsm.error.TransactionStateTransitionException;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -116,20 +114,16 @@ final class StateMachineImpl implements StateMachine, Context {
     }
 
     @Override
-    public void validate() throws StateMachineException {
+    public boolean validate() {
         var tx = this.connection.transaction().orElse(null);
 
         if (tx == null) {
-            return;
+            return false;
         }
 
         // ensure that the transaction remains valid for this operation as it may have been
         // terminated through an administrative command or by timing out in the meantime
-        try {
-            tx.validate();
-        } catch (TransactionException ex) {
-            throw new TransactionStateTransitionException(ex);
-        }
+        return tx.validate();
     }
 
     @Override

@@ -121,7 +121,7 @@ public interface Transaction {
      *
      * @return a termination status code or an empty optional
      */
-    void validate() throws TransactionException;
+    boolean validate();
 
     void close() throws TransactionCloseException;
 

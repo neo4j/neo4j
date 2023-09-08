@@ -109,4 +109,53 @@ public class TransactionTerminationIT {
                         Status.Transaction.Terminated,
                         "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. Explicitly terminated by the user. ");
     }
+
+    @Timeout(20)
+    @ProtocolTest
+    void killedTxShouldNotDestroyConnection(BoltWire wire, @Authenticated TransportConnection connection)
+            throws Exception {
+        connection
+                .send(wire.begin())
+                .send(wire.run("UNWIND range(1, 200) AS i RETURN i"))
+                .send(wire.pull());
+
+        assertThat(connection).receivesSuccess(2);
+        assertThat(connection).receivesRecords();
+
+        awaitTransactionStart(); // Start but should go to sleep
+
+        // Find and cancel the transaction we started above.
+        try (var tx = server.graphDatabaseService().beginTx()) {
+            var result = tx.execute("SHOW TRANSACTIONS");
+            var unwindTransaction = result.stream().toList().stream()
+                    .filter(x -> !x.get("connectionId").equals("")
+                            && !x.get("clientAddress").equals(""));
+
+            var transactionId = (String) unwindTransaction.toList().get(0).get("transactionId");
+
+            var terminationResult = tx.execute(String.format("TERMINATE TRANSACTION \"%s\"", transactionId));
+
+            var termination = terminationResult.stream().toList().get(0); // should only ever be one.
+
+            assertEquals(termination.get("message"), "Transaction terminated.");
+        }
+        // Due to there being an explicit 10s timeout before validation the calling code should pause.
+        Thread.sleep(11000);
+
+        connection.send(wire.run("UNWIND range(1, 200) AS i RETURN i")); // send a run to a canceled transaction
+
+        assertThat(connection)
+                .receivesFailure(
+                        Status.Transaction.Terminated,
+                        "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. Explicitly terminated by the user. ");
+
+        connection
+                .send(wire.reset())
+                .send(wire.begin())
+                .send(wire.run("RETURN 1 as n"))
+                .send(wire.pull(1))
+                .send(wire.commit());
+
+        assertThat(connection).receivesSuccess(3).receivesRecord().receivesSuccess(2);
+    }
 }

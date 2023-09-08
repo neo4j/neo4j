@@ -278,6 +278,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                 while (it.hasNext() && this.isActive()) {
                     this.executeJob(fsm, it.next());
                 }
+
             } else {
                 // if there are no jobs, we'll terminate unless there are open transactions or statements remaining
                 // which require us to remain on this thread
@@ -313,14 +314,9 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                 if (job != null) {
                     this.executeJob(fsm, job);
                 } else {
-                    try {
-                        this.fsm.validate();
-                    } catch (StateMachineException ex) {
-                        // this case occurs specifically if something goes horribly wrong - if the transaction is deemed
-                        // invalid, it will simply be removed from the FSM state and the loop will progress as usual in
-                        // order to return FAILURE for the next transaction related command
-                        log.error("[" + this.id + "] Failed to validate transaction", ex);
-                        this.close();
+                    // If no job was found in timeout period, check the fsm is still valid,
+                    if (!fsm.validate()) {
+                        // if fsm is not valid then the executing worker thread can be released.
                         break;
                     }
                 }

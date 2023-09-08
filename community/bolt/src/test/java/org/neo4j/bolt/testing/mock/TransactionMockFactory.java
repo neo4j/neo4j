@@ -191,14 +191,8 @@ public class TransactionMockFactory extends AbstractMockFactory<Transaction, Tra
         });
     }
 
-    public TransactionMockFactory withValidationResult(TransactionException ex) {
-        return this.with(it -> {
-            try {
-                Mockito.doThrow(ex).when(it).validate();
-            } catch (TransactionException ignore) {
-                // stubbing call
-            }
-        });
+    public TransactionMockFactory withValidationResult(boolean validationResult) {
+        return this.with(it -> Mockito.doReturn(validationResult).when(it).validate());
     }
 
     public TransactionMockFactory withCloseCaptor(AtomicBoolean captor) {

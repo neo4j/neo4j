@@ -96,7 +96,7 @@ public interface StateMachine {
      * Validates whether the state machine remains within a state in which it is capable of
      * performing operations.
      */
-    void validate() throws StateMachineException;
+    boolean validate();
 
     /**
      * Processes a request within the scope of a state machine instance and advances its state
