@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator.prefix
-import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.nameGeneratorRegex
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
 
 class AnonymousVariableNameGenerator() {
   private var counter = 0
@@ -34,12 +34,5 @@ object AnonymousVariableNameGenerator {
   private val prefix = s"  $generatorName"
 
   def isNamed(x: String): Boolean = !notNamed(x)
-  def notNamed(x: String): Boolean = x.startsWith(prefix)
-
-  def unapply(v: Any): Option[String] = v match {
-    case str: String =>
-      val regex = nameGeneratorRegex(generatorName)
-      regex.findPrefixMatchOf(str).map(_ group 2)
-    case _ => None
-  }
+  def notNamed(x: String): Boolean = UNNAMED_PATTERN.matches(x)
 }
