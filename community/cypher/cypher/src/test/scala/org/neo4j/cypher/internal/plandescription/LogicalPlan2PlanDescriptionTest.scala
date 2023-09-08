@@ -388,6 +388,7 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInte
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.InputPosition
@@ -412,6 +413,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.Values.stringValue
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import scala.collection.immutable
 import scala.collection.immutable.ListSet
 import scala.language.implicitConversions
 
@@ -6717,6 +6719,37 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         SingleChild(lhsPD),
         Seq(details("1.0")),
         Set("a")
+      )
+    )
+  }
+
+  test("RuntimeConstant") {
+    val namespace = List("ns")
+    val name = "datetime"
+    val args = IndexedSeq(number("23391882379"))
+
+    val functionInvocation = FunctionInvocation(
+      namespace = Namespace(namespace)(pos),
+      functionName = FunctionName(name)(pos),
+      distinct = false,
+      args = args
+    )(pos)
+
+    assertGood(
+      attach(
+        Projection(
+          lhsLP,
+          Set.empty,
+          immutable.Map(varFor("function") -> RuntimeConstant(varFor("x"), functionInvocation))
+        ),
+        12345.0
+      ),
+      planDescription(
+        id,
+        "Projection",
+        SingleChild(lhsPD),
+        Seq(details("ns.datetime(23391882379) AS function")),
+        Set("a", "function")
       )
     )
   }
