@@ -100,11 +100,19 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
           success
       }
     )
+
+  /**
+   * Return a copy of this query where the mapping function f is applied
+   * to each single query, regardless if this a single query or a union query.
+   */
+  def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends Query
     with SemanticAnalysisTooling {
   assert(clauses.nonEmpty)
+
+  override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query = f(this)
 
   override def containsUpdates: Boolean =
     clauses.exists {
@@ -704,13 +712,30 @@ sealed trait ProjectingUnion extends Union {
   override def checkColumnNamesAgree: SemanticCheck = SemanticCheck.success
 }
 
-final case class UnionAll(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
-final case class UnionDistinct(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
+final case class UnionAll(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion {
+
+  override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query =
+    copy(lhs.mapEachSingleQuery(f), f(rhs))(position)
+}
+
+final case class UnionDistinct(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion {
+
+  override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query =
+    copy(lhs.mapEachSingleQuery(f), f(rhs))(position)
+}
 
 final case class ProjectingUnionAll(lhs: Query, rhs: SingleQuery, unionMappings: List[UnionMapping])(
   val position: InputPosition
-) extends ProjectingUnion
+) extends ProjectingUnion {
+
+  override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query =
+    copy(lhs.mapEachSingleQuery(f), f(rhs))(position)
+}
 
 final case class ProjectingUnionDistinct(lhs: Query, rhs: SingleQuery, unionMappings: List[UnionMapping])(
   val position: InputPosition
-) extends ProjectingUnion
+) extends ProjectingUnion {
+
+  override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query =
+    copy(lhs.mapEachSingleQuery(f), f(rhs))(position)
+}
