@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
@@ -43,6 +44,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.MergeNodePattern
+import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
@@ -56,6 +58,16 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.VariableGrouping
@@ -67,10 +79,11 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.immutable.ListSet
 
-class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
+class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport with TableDrivenPropertyChecks {
   implicit private val semanticTable: SemanticTable = SemanticTable()
 
   private val noLeafPlanProvider: LeafPlansPredicatesResolver = _ => LeafPlansPredicatesResolver.NoLeafPlansFound
@@ -318,6 +331,164 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(
       EagernessReason.ReadDeleteConflict("col")
     )
+  }
+
+  test("overlap when reading and setting node properties") {
+    val propName = "prop"
+    val pKey = PropertyKeyName(propName)(pos)
+
+    // noinspection NameBooleanParameters
+    // MATCH (a {prop: 42}) ...
+    val tests = Table[SetMutatingPattern, Any](
+      "Set pattern" -> "Expected",
+
+      // SET b_no_type.prop = 123
+      SetPropertyPattern(varFor("b_no_type"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+
+      // SET b_no_type.prop = 123, ...
+      SetPropertiesPattern(varFor("b_no_type"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
+
+      // SET r.prop = 123
+      SetRelationshipPropertyPattern("r", pKey, literalInt(123)) -> ListSet(),
+
+      // SET r.prop = 123, ...
+      SetRelationshipPropertiesPattern("r", Seq(pKey -> literalInt(123))) -> ListSet(),
+
+      // SET b = {prop: 123}
+      SetNodePropertiesFromMapPattern("b", mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
+
+      // SET r = {prop: 123}
+      SetRelationshipPropertiesFromMapPattern("r", mapOfInt(propName -> 123), true) -> ListSet(),
+
+      // SET b_no_type = {prop: 123}
+      SetPropertiesFromMapPattern(varFor("b_no_type"), mapOfInt(propName -> 123), true) -> ListSet(
+        EagernessReason.Unknown
+      ),
+
+      // SET b.prop = 123
+      SetNodePropertyPattern("b", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+
+      // SET b.prop = 123, ...
+      SetNodePropertiesPattern("b", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown)
+    )
+
+    val selections = Selections.from(Seq(
+      in(prop("a", propName), listOfInt(42))
+    ))
+    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+
+    forAll(tests) {
+      case (pattern, expected) =>
+        QueryGraph(mutatingPatterns = IndexedSeq(pattern))
+          .overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe expected
+    }
+
+    // Test with SET in MERGE ON CREATE
+    forAll(tests) {
+      case (pattern, expected) =>
+        val merge = MergeNodePattern(
+          CreateNode("b", Set.empty, None),
+          QueryGraph.empty,
+          Seq(pattern),
+          Seq.empty
+        )
+        QueryGraph(mutatingPatterns = IndexedSeq(merge))
+          .overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe expected
+    }
+
+    // Test with SET in MERGE ON MATCH
+    forAll(tests) {
+      case (pattern, expected) =>
+        val merge = MergeNodePattern(
+          CreateNode("b", Set.empty, None),
+          QueryGraph.empty,
+          Seq.empty,
+          Seq(pattern)
+        )
+        QueryGraph(mutatingPatterns = IndexedSeq(merge))
+          .overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe expected
+    }
+  }
+
+  test("overlap when reading and setting relationship properties") {
+    val propName = "prop"
+    val pKey = PropertyKeyName(propName)(pos)
+
+    // noinspection NameBooleanParameters
+    // MATCH ()-[q {prop: 42}]-() ...
+    val tests = Table[SetMutatingPattern, Any](
+      "Set pattern" -> "Expected",
+
+      // SET r_no_type.prop = 123
+      SetPropertyPattern(varFor("r_no_type"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+
+      // SET r_no_type.prop = 123, ...
+      SetPropertiesPattern(varFor("r_no_type"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
+
+      // SET r.prop = 123
+      SetRelationshipPropertyPattern("r", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+
+      // SET r.prop = 123, ...
+      SetRelationshipPropertiesPattern("r", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
+
+      // SET b = {prop: 123}
+      SetNodePropertiesFromMapPattern("b", mapOfInt(propName -> 123), true) -> ListSet(),
+
+      // SET r = {prop: 123}
+      SetRelationshipPropertiesFromMapPattern("r", mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
+
+      // SET r_no_type = {prop: 123}
+      SetPropertiesFromMapPattern(varFor("r_no_type"), mapOfInt(propName -> 123), true) -> ListSet(
+        EagernessReason.Unknown
+      ),
+
+      // SET b.prop = 123
+      SetNodePropertyPattern("b", pKey, literalInt(123)) -> ListSet(),
+
+      // SET b.prop = 123, ...
+      SetNodePropertiesPattern("b", Seq(pKey -> literalInt(123))) -> ListSet()
+    )
+
+    val selections = Selections.from(Seq(
+      in(prop("q", propName), listOfInt(42))
+    ))
+    val pr = PatternRelationship("q", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternNodes = Set("a", "b"), patternRelationships = Set(pr), selections = selections)
+
+    // Test with bare SET
+    forAll(tests) {
+      case (clause, expected) =>
+        QueryGraph(mutatingPatterns = IndexedSeq(clause))
+          .overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe expected
+    }
+
+    // Test with SET in MERGE ON CREATE
+    forAll(tests) {
+      case (pattern, expected) =>
+        val merge = MergeRelationshipPattern(
+          Seq.empty,
+          Seq(CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)),
+          QueryGraph.empty,
+          Seq(pattern),
+          Seq.empty
+        )
+        QueryGraph(mutatingPatterns = IndexedSeq(merge))
+          .overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe expected
+    }
+
+    // Test with SET in MERGE ON MATCH
+    forAll(tests) {
+      case (pattern, expected) =>
+        val merge = MergeRelationshipPattern(
+          Seq.empty,
+          Seq(CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)),
+          QueryGraph.empty,
+          Seq.empty,
+          Seq(pattern)
+        )
+        QueryGraph(mutatingPatterns = IndexedSeq(merge))
+          .overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe expected
+    }
   }
 
   test("overlap when reading and merging on the same label and property") {

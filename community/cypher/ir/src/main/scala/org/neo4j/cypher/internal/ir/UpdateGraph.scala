@@ -688,40 +688,49 @@ trait UpdateGraph {
     hasPropertyFunctionRead: => Boolean,
     isReturningNode: => Boolean
   ): Boolean = {
-
-    @tailrec
-    def toNodePropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
-
-      def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
-        case SetNodePropertyPattern(_, key, _)                 => CreatesKnownPropertyKeys(key)
-        case SetNodePropertiesPattern(_, items)                => CreatesKnownPropertyKeys(items.map(_._1).toSet)
-        case SetNodePropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-        case SetPropertiesPattern(_, items)                    => CreatesPropertyKeys(items.map(_._2): _*)
-        case SetPropertiesFromMapPattern(_, expression, _)     => CreatesPropertyKeys(expression)
-      }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
-
-      if (patterns.isEmpty) {
-        acc
-      } else {
-        patterns.head match {
-          case SetNodePropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-          case SetPropertiesFromMapPattern(_, expression, _)     => CreatesPropertyKeys(expression)
-          case SetNodePropertyPattern(_, key, _) =>
-            toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
-          case SetNodePropertiesPattern(_, items) =>
-            toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
-          case SetPropertiesPattern(_, items) =>
-            toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
-          case MergeNodePattern(_, _, onCreate, onMatch) =>
-            toNodePropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
-          case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
-            toNodePropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
-          case _ => toNodePropertyPattern(patterns.tail, acc)
-        }
-      }
+    def extractPropertyKey(pattern: SetMutatingPattern): CreatesPropertyKeys = pattern match {
+      case SetPropertyPattern(_, propertyKeyName, _) =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesKnownPropertyKeys(propertyKeyName)
+      case SetPropertiesPattern(_, items) =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesKnownPropertyKeys(items.map(_._1).toSet)
+      case _: SetRelationshipPropertyPattern =>
+        // Not dealing with relationships here
+        CreatesNoPropertyKeys
+      case _: SetRelationshipPropertiesPattern =>
+        // Not dealing with relationships here
+        CreatesNoPropertyKeys
+      case SetNodePropertiesFromMapPattern(_, expression, _) =>
+        CreatesPropertyKeys(expression)
+      case _: SetRelationshipPropertiesFromMapPattern =>
+        // Not dealing with relationships here
+        CreatesNoPropertyKeys
+      case SetPropertiesFromMapPattern(_, expression, _) =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesPropertyKeys(expression)
+      case SetNodePropertyPattern(_, propertyKey, _) =>
+        CreatesKnownPropertyKeys(propertyKey)
+      case SetNodePropertiesPattern(_, items) =>
+        CreatesKnownPropertyKeys(items.map(_._1).toSet)
+      case _: SetLabelPattern =>
+        // We're not dealing with labels here
+        CreatesNoPropertyKeys
+      case _: RemoveLabelPattern =>
+        // We're not dealing with labels here
+        CreatesNoPropertyKeys
     }
 
-    val propertiesToSet: CreatesPropertyKeys = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
+    val propertiesToSet: CreatesPropertyKeys = mutatingPatterns.collect {
+      case smp: SetMutatingPattern => Seq(smp)
+      case MergeNodePattern(_, _, onCreate, onMatch) =>
+        onCreate ++ onMatch
+      case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
+        onCreate ++ onMatch
+    }.flatten
+      .map(extractPropertyKey)
+      .reduceOption(_ + _)
+      .getOrElse(CreatesNoPropertyKeys)
 
     (propertiesToSet.overlapsWithDynamicPropertyRead && (isReturningNode || hasDynamicProperties)) ||
     (propertiesToSet.overlapsWithFunctionPropertyRead && hasPropertyFunctionRead) ||
@@ -737,39 +746,48 @@ trait UpdateGraph {
     hasDynamicProperties: => Boolean,
     isReturningRel: => Boolean
   ): Boolean = {
-    @tailrec
-    def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
-
-      def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
-        case SetRelationshipPropertyPattern(_, key, _)  => CreatesKnownPropertyKeys(key)
-        case SetRelationshipPropertiesPattern(_, items) => CreatesKnownPropertyKeys(items.map(_._1).toSet)
-        case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-        case SetPropertiesPattern(_, items)                            => CreatesPropertyKeys(items.map(_._2): _*)
-        case SetPropertiesFromMapPattern(_, expression, _)             => CreatesPropertyKeys(expression)
-      }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
-
-      if (patterns.isEmpty) {
-        acc
-      } else {
-        patterns.head match {
-          case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-          case SetPropertiesFromMapPattern(_, expression, _)             => CreatesPropertyKeys(expression)
-          case SetRelationshipPropertyPattern(_, key, _) =>
-            toRelPropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
-          case SetRelationshipPropertiesPattern(_, items) =>
-            toRelPropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
-          case SetPropertiesPattern(_, items) =>
-            toRelPropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2): _*))
-          case MergeNodePattern(_, _, onCreate, onMatch) =>
-            toRelPropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
-          case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
-            toRelPropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
-          case _ => toRelPropertyPattern(patterns.tail, acc)
-        }
-      }
+    def extractPropertyKey(pattern: SetMutatingPattern): CreatesPropertyKeys = pattern match {
+      case SetPropertyPattern(_, propertyKeyName, _) =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesKnownPropertyKeys(propertyKeyName)
+      case SetPropertiesPattern(_, items) =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesKnownPropertyKeys(items.map(_._1).toSet)
+      case SetRelationshipPropertyPattern(_, propertyKey, _) =>
+        CreatesKnownPropertyKeys(propertyKey)
+      case SetRelationshipPropertiesPattern(_, items) =>
+        CreatesKnownPropertyKeys(items.map(_._1).toSet)
+      case _: SetNodePropertiesFromMapPattern =>
+        // Not dealing with nodes here
+        CreatesNoPropertyKeys
+      case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+      case SetPropertiesFromMapPattern(_, expression, _)             =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesPropertyKeys(expression)
+      case _: SetNodePropertyPattern =>
+        // Not dealing with nodes here
+        CreatesNoPropertyKeys
+      case _: SetNodePropertiesPattern =>
+        // Not dealing with nodes here
+        CreatesNoPropertyKeys
+      case _: SetLabelPattern =>
+        // We're not dealing with labels here
+        CreatesNoPropertyKeys
+      case _: RemoveLabelPattern =>
+        // We're not dealing with labels here
+        CreatesNoPropertyKeys
     }
 
-    val propertiesToSet = toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
+    val propertiesToSet: CreatesPropertyKeys = mutatingPatterns.collect {
+      case smp: SetMutatingPattern => Seq(smp)
+      case MergeNodePattern(_, _, onCreate, onMatch) =>
+        onCreate ++ onMatch
+      case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
+        onCreate ++ onMatch
+    }.flatten
+      .map(extractPropertyKey)
+      .reduceOption(_ + _)
+      .getOrElse(CreatesNoPropertyKeys)
 
     (propertiesToSet.overlapsWithDynamicPropertyRead && (isReturningRel || hasDynamicProperties)) ||
     propertiesToRead.exists(propertiesToSet.overlaps)
