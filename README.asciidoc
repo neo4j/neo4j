@@ -32,6 +32,9 @@ Please note that we do not support building Debian packages on macOS.
 
   sudo apt install maven openjdk-17-jdk
 
+Be sure that the `JAVA_HOME` environment variable points to `/usr/lib/jvm/java-17-openjdk-amd64`
+(you may have various java versions installed).
+
 == Building Neo4j ==
 
 Before you start running the unit and integration tests in the Neo4j Maven project on a Linux-like system, you should ensure your limit on open files is set to a reasonable value. You can test it with `ulimit -n`. We recommend you have a limit of at least 40K.
@@ -39,18 +42,18 @@ Before you start running the unit and integration tests in the Neo4j Maven proje
 * A plain `mvn clean install -T1C` will only build the individual jar files.
 * Test execution is, of course, part of the build.
 * In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests -T1C`.
-* You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx2048m"`.
+* You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx2048m"` (try this first if you get build errors).
 * You may run into problems resolving `org.neo4j.build:build-resources` due to a bug in maven. To resolve this simply invoke `mvn clean install -pl build-resources`.
 
 == Running Neo4j ==
 
 After running a `mvn clean install`, `cd` into `packaging/standalone/target` and extract the version you want, then:
 
-  bin/neo4j-admin start
+  bin/neo4j-admin server start
 
 in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want to run:
 
-  bin\neo4j-admin start
+  bin\neo4j-admin server start
 
 instead.
 
