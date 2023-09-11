@@ -336,7 +336,8 @@ public class FabricExecutor {
             ctx.validateStatementType(fragment.statementType());
             Map<String, AnyValue> argumentValues = argumentValues(fragment, argument);
 
-            Catalog.Graph graph = evalUse(fragment.use().graphSelection(), argumentValues, ctx.getSessionDatabaseReference() );
+            Catalog.Graph graph =
+                    evalUse(fragment.use().graphSelection(), argumentValues, ctx.getSessionDatabaseReference());
 
             validateCanUseGraph(graph, ctx.getSessionDatabaseReference());
 
@@ -494,7 +495,8 @@ public class FabricExecutor {
             }
         }
 
-        private Catalog.Graph evalUse(GraphSelection selection, Map<String, AnyValue> record, DatabaseReference sessionDb) {
+        private Catalog.Graph evalUse(
+                GraphSelection selection, Map<String, AnyValue> record, DatabaseReference sessionDb) {
             return useEvaluator.evaluate(selection, queryParams, record, sessionDb);
         }
 

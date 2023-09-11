@@ -34,6 +34,7 @@ import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.storable.StringValue
 
 import java.util.UUID
+
 import scala.jdk.OptionConverters.RichOptional
 
 object Catalog {
@@ -121,7 +122,7 @@ object Catalog {
   def catalogName(graph: Graph): CatalogName =
     graph.namespace match {
       case Some(ns) => CatalogName(ns.name(), graph.name.name())
-      case None => CatalogName(graph.name.name())
+      case None     => CatalogName(graph.name.name())
     }
 
   private val graphByNameView: Catalog = {
@@ -147,7 +148,11 @@ object Catalog {
     override def eval(arg: StringValue, catalog: Catalog, sessionDb: DatabaseReference): Graph = {
       val elementIdText = arg.stringValue()
       val elementId = ElementIdMapper.decode(elementIdText)
-      val aliases = catalog.resolveNamespacedGraph(sessionDb.alias().name(), elementId.databaseId(), SecurityContext.AUTH_DISABLED) // TODO: fix!
+      val aliases = catalog.resolveNamespacedGraph(
+        sessionDb.alias().name(),
+        elementId.databaseId(),
+        SecurityContext.AUTH_DISABLED
+      ) // TODO: fix!
       if (aliases.isEmpty) {
         Errors.entityNotFound("Database corresponding to element id", elementIdText)
       }
@@ -202,23 +207,27 @@ case class Catalog(
   def resolveView(name: CatalogName, args: Seq[AnyValue], sessionDb: DatabaseReference): Catalog.Graph =
     resolveViewOption(name, args, sessionDb).getOrElse(Errors.entityNotFound("View", show(name)))
 
-  private def resolveViewOption(name: CatalogName, args: Seq[AnyValue], sessionDb: DatabaseReference): Option[Catalog.Graph] =
+  private def resolveViewOption(
+    name: CatalogName,
+    args: Seq[AnyValue],
+    sessionDb: DatabaseReference
+  ): Option[Catalog.Graph] =
     views.get(normalize(name)).map(v => v.eval(args, this, sessionDb))
 
   def graphNamesIn(namespace: String, securityContext: SecurityContext): Array[String] = {
     graphs.collect {
-      case (cn@CatalogName(List(`namespace`, _)), graph: Catalog.Graph)
+      case (cn @ CatalogName(List(`namespace`, _)), graph: Catalog.Graph)
         if canAccessDatabase(graph, securityContext) =>
         cn.qualifiedNameString
     }.toArray
   }
 
-    def resolveNamespacedGraph(namespace: String, database: UUID, securityContext: SecurityContext): Array[String] = {
-      graphs.collect {
-        case (cn@CatalogName(List(`namespace`, _)), graph: Catalog.Graph)
-          if canAccessDatabase(graph, securityContext) && graph.uuid.equals(database) =>
-          cn.qualifiedNameString
-      }.toArray
+  def resolveNamespacedGraph(namespace: String, database: UUID, securityContext: SecurityContext): Array[String] = {
+    graphs.collect {
+      case (cn @ CatalogName(List(`namespace`, _)), graph: Catalog.Graph)
+        if canAccessDatabase(graph, securityContext) && graph.uuid.equals(database) =>
+        cn.qualifiedNameString
+    }.toArray
   }
 
   def nameById(databaseId: UUID, securityContext: SecurityContext): Option[String] = {
