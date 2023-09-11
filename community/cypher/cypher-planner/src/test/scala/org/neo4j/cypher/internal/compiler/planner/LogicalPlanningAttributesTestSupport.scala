@@ -113,8 +113,8 @@ trait LogicalPlanningAttributesTestSupport {
 
     val planMismatch =
       if (actualPlan != expectedPlan) {
-        val actualPlanString = LogicalPlanToPlanBuilderString(actualPlan)
-        val expectedPlanString = LogicalPlanToPlanBuilderString(expectedPlan)
+        val actualPlanString = actualPlan.toString
+        val expectedPlanString = expectedPlan.toString
         Some(MatchResult(
           matches = false,
           rawFailureMessage =

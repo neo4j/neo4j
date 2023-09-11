@@ -356,6 +356,12 @@ sealed abstract class LogicalUnaryPlan(idGen: IdGen) extends LogicalPlan(idGen) 
 sealed abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   final def lhs: Option[LogicalPlan] = None
   final def rhs: Option[LogicalPlan] = None
+
+  /**
+   * Argument variables for this plan.
+   *
+   * Important! Liveness analysis depends on that these are correct, and can cause runtime failures if they are not.
+   */
   def argumentIds: Set[LogicalVariable]
 
   def usedVariables: Set[LogicalVariable]
