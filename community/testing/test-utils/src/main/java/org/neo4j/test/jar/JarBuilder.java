@@ -24,17 +24,30 @@ import static java.util.Objects.requireNonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.dynamic.DynamicType;
-import net.bytebuddy.implementation.SuperMethodCall;
-import net.bytebuddy.implementation.attribute.MethodAttributeAppender;
-import net.bytebuddy.matcher.ElementMatchers;
+import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
 
 /**
  * Utility to create jar files containing classes from the current classpath.
  */
 public final class JarBuilder {
+    private JarBuilder() {}
+
+    public static URL createJarFor(Path f, Class<?>... classesToInclude) throws IOException {
+        try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(f))) {
+            for (Class<?> target : classesToInclude) {
+                String fileName = target.getName().replace('.', '/') + ".class";
+                jarOut.putNextEntry(new ZipEntry(fileName));
+                jarOut.write(classCompiledBytes(fileName));
+                jarOut.closeEntry();
+            }
+        }
+        return f.toUri().toURL();
+    }
+
     public static byte[] classCompiledBytes(String fileName) throws IOException {
         try (InputStream in = JarBuilder.class.getClassLoader().getResourceAsStream(fileName)) {
             requireNonNull(in);
@@ -45,36 +58,5 @@ public final class JarBuilder {
 
             return out.toByteArray();
         }
-    }
-
-    public static void createJarFor(Path pth, Class<?>... classes) {
-        assert classes.length > 0;
-        var file = pth.toFile();
-        try {
-            try (var cls = subclass(classes[0])) {
-                cls.toJar(file);
-            }
-            for (int i = 1; i < classes.length; i++) {
-                try (var cls = subclass(classes[i])) {
-                    cls.inject(file);
-                }
-            }
-        } catch (IOException exc) {
-            throw new RuntimeException("Could not write %s to %s.".formatted(classes, pth), exc);
-        }
-    }
-
-    private static DynamicType.Unloaded<?> subclass(Class<?> cls) {
-        // To avoid that the classes we attempt to load are already class-loaded by the application classloader when
-        // we refer to them by name, we subclass them and provide a new unloaded class with the same methods, and
-        // annotations.
-        return new ByteBuddy()
-                .subclass(cls)
-                .method(ElementMatchers.isDeclaredBy(cls))
-                .intercept( // Proxy all method calls declared by the original class to the original class
-                        SuperMethodCall.INSTANCE)
-                .attribute( // Instrument the methods with the annotations of the original class
-                        MethodAttributeAppender.ForInstrumentedMethod.INCLUDING_RECEIVER)
-                .make();
     }
 }
