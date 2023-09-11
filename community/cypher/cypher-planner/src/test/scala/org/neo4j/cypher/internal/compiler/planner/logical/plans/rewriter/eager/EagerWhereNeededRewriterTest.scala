@@ -7225,7 +7225,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        nfa
+        nfa,
+        false
       )
       .nodeByLabelScan("u", "User")
 
@@ -7249,7 +7250,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          false
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7274,7 +7276,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(),
         singletonVariables = Set("a", "r", "b"),
         StatefulShortestPath.Selector.Shortest(1),
-        nfa
+        nfa,
+        false
       )
       .nodeByLabelScan("a", "A")
 
@@ -7295,7 +7298,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(),
           singletonVariables = Set("a", "r", "b"),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          false
         )
         .nodeByLabelScan("a", "A")
         .build()
@@ -7327,7 +7331,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        nfa
+        nfa,
+        false
       )
       .nodeByLabelScan("u", "User")
 
@@ -7356,7 +7361,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          false
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7388,7 +7394,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        nfa
+        nfa,
+        false
       )
       .nodeByLabelScan("u", "User")
 
@@ -7419,7 +7426,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          false
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7451,7 +7459,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        nfa
+        nfa,
+        false
       )
       .nodeByLabelScan("u", "User")
 
@@ -7473,7 +7482,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          false
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -7506,7 +7516,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         Set(("r", "r"), ("s", "s")),
         singletonVariables = Set("v", "w"),
         StatefulShortestPath.Selector.Shortest(1),
-        nfa
+        nfa,
+        false
       )
       .nodeByLabelScan("u", "User")
 
@@ -7527,7 +7538,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           Set(("r", "r"), ("s", "s")),
           singletonVariables = Set("v", "w"),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          false
         )
         .nodeByLabelScan("u", "User")
         .build()

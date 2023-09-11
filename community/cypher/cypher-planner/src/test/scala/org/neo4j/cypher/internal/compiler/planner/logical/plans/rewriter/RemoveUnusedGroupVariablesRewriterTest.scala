@@ -71,7 +71,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           groupRelationships = params.groupRelationships,
           singletonVariables = Set("b"),
           selector = StatefulShortestPath.Selector.Shortest(1),
-          `(a) ((n)-[r]-(m))+ (b)`.nfa
+          `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          false
         )
         .allNodeScan("a")
         .build()
@@ -112,7 +113,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           groupRelationships = params.groupRelationships,
           singletonVariables = Set("b"),
           selector = StatefulShortestPath.Selector.Shortest(1),
-          `(a) ((n)-[r]-(m))+ (b)`.nfa
+          `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          false
         )
         .allNodeScan("a")
         .build()
@@ -152,7 +154,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           groupRelationships = params.groupRelationships,
           singletonVariables = Set("b"),
           selector = StatefulShortestPath.Selector.Shortest(1),
-          `(a) ((n)-[r]-(m))+ (b)`.nfa
+          `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          false
         )
         .allNodeScan("a")
         .build()
@@ -355,7 +358,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           groupRelationships = params.groupRelationships,
           singletonVariables = Set("b"),
           selector = StatefulShortestPath.Selector.Shortest(1),
-          `(a) ((n)-[r]-(m))+ (b)`.nfa
+          `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          false
         )
         .allNodeScan("a")
         .build()

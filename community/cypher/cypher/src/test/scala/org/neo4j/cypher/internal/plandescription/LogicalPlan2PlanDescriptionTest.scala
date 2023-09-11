@@ -5170,7 +5170,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Set.empty,
           Set.empty,
           Selector.Shortest(5),
-          solvedExpressionStr
+          solvedExpressionStr,
+          false
         ),
         2345.0
       ),

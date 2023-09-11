@@ -546,7 +546,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     groupRelationships: Set[(String, String)],
     singletonVariables: Set[String],
     selector: StatefulShortestPath.Selector,
-    nfa: NFA
+    nfa: NFA,
+    reverseGroupVariableProjections: Boolean
   ): IMPL = {
     val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
     val relationshipVariableGroupings = groupRelationships.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
@@ -565,7 +566,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         relationshipVariableGroupings,
         singletonVariables.map(varFor),
         selector,
-        solvedExpressionString
+        solvedExpressionString,
+        reverseGroupVariableProjections
       )(_)
     ))
     self
@@ -580,7 +582,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     groupRelationships: Set[(String, String)],
     singletonVariables: Set[String],
     selector: StatefulShortestPath.Selector,
-    nfa: NFA
+    nfa: NFA,
+    reverseGroupVariableProjections: Boolean
   ): IMPL = {
     val predicates = nonInlinablePreFilters.map(parseExpression)
     statefulShortestPathExpr(
@@ -592,7 +595,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       groupRelationships,
       singletonVariables,
       selector,
-      nfa
+      nfa,
+      reverseGroupVariableProjections
     )
   }
 

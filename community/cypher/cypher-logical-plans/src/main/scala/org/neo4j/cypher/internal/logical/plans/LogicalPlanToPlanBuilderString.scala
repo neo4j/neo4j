@@ -361,7 +361,8 @@ object LogicalPlanToPlanBuilderString {
           relationshipVariableGroupings,
           singletonVariables,
           selector,
-          solvedExpressionString
+          solvedExpressionString,
+          reverseGroupVariableProjections
         ) =>
         Seq(
           wrapInQuotations(from),
@@ -372,7 +373,8 @@ object LogicalPlanToPlanBuilderString {
           s"Set(${groupEntitiesString(relationshipVariableGroupings)})",
           s"Set(${wrapVarsInQuotationsAndMkString(singletonVariables)})",
           objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
-          nfaString(nfa)
+          nfaString(nfa),
+          reverseGroupVariableProjections.toString
         ).mkString(s"\n${indent}", s",\n${indent}", "")
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)

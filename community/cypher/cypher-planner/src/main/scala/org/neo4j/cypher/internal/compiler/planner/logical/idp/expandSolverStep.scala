@@ -407,7 +407,8 @@ object expandSolverStep {
         spp,
         newUnsolvedPredicatesOnEndNode,
         Some(hiddenFilter),
-        context
+        context,
+        reverseGroupVariableProjections = !fromLeft
       )
     } else {
       convertToNFAAndPlan(
@@ -420,7 +421,8 @@ object expandSolverStep {
         spp,
         unsolvedPredicatesOnEndNode,
         None,
-        context
+        context,
+        reverseGroupVariableProjections = !fromLeft
       )
     }
   }
@@ -435,7 +437,8 @@ object expandSolverStep {
     solvedSpp: SelectivePathPattern,
     unsolvedPredicatesOnTargetNode: Seq[Expression],
     maybeHiddenFilter: Option[Expression],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    reverseGroupVariableProjections: Boolean
   ): LogicalPlan = {
 
     val (nfa, nonInlinedSelections, syntheticVarLengthSingletons) =
@@ -481,7 +484,8 @@ object expandSolverStep {
       solvedExpressionAsString,
       solvedSpp,
       unsolvedPredicatesOnTargetNode,
-      context
+      context,
+      reverseGroupVariableProjections
     )
   }
 

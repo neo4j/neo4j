@@ -632,7 +632,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         Set(),
         parameters.variables,
         StatefulShortestPath.Selector.Shortest(1),
-        parameters.nfa
+        parameters.nfa,
+        false
       )
 
   val `(start)-[r]->(end)` : ShortestPathParameters =
@@ -751,7 +752,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           new TestNFABuilder(0, "end")
             .addTransition(0, 1, "(end)<-[r]-(start WHERE start.prop = 1)")
             .addFinalState(1)
-            .build()
+            .build(),
+          true
         )
         .apply()
         .|.allNodeScan("end", "a")
@@ -850,7 +852,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
             .addTransition(3, 2, "(b) (a)")
             .addTransition(3, 4, "(b) (end)")
             .addFinalState(4)
-            .build()
+            .build(),
+          false
         )
         .allNodeScan("start")
         .build()
@@ -886,7 +889,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           new TestNFABuilder(0, "end")
             .addTransition(0, 1, "(end)<-[r:R]-(start WHERE start.prop = 1)")
             .addFinalState(1)
-            .build()
+            .build(),
+          true
         )
         .allNodeScan("end")
         .build()
@@ -1006,7 +1010,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
             .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
             .addFinalState(3)
-            .build()
+            .build(),
+          false
         )
         .filter("NOT start:Label")
         .allNodeScan("start")
@@ -1048,7 +1053,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
             .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
             .addFinalState(3)
-            .build()
+            .build(),
+          false
         )
         .filter("NOT start:Label")
         .apply()

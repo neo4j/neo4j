@@ -320,7 +320,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         groupRelationships = Set(("r_i", "r_i")),
         singletonVariables = Set("m"),
         StatefulShortestPath.Selector.Shortest(1),
-        nfa
+        nfa,
+        false
       ).withCardinality(2)
       .|.argument("n").withCardinality(1)
       .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
@@ -337,7 +338,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
           groupRelationships = Set(("r_i", "r_i")),
           singletonVariables = Set("m"),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          false
         ).withCardinality(200).withProvidedOrder(po_n)
         .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
     )

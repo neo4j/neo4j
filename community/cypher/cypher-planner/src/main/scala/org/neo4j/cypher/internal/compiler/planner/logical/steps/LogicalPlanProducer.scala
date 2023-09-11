@@ -2321,7 +2321,8 @@ case class LogicalPlanProducer(
     solvedExpressionAsString: String,
     solvedSpp: SelectivePathPattern,
     solvedPredicates: Seq[Expression],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    reverseGroupVariableProjections: Boolean
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
       _.addSelectivePathPattern(solvedSpp)
@@ -2346,7 +2347,8 @@ case class LogicalPlanProducer(
       relationshipVariableGroupings,
       singletonVariables,
       selector,
-      solvedExpressionAsString
+      solvedExpressionAsString,
+      reverseGroupVariableProjections
     )
     val providedOrder = providedOrders.get(inner.id).fromLeft
     val ssp = annotate(

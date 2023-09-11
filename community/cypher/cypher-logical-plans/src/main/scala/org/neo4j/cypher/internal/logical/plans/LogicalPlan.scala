@@ -1851,6 +1851,7 @@ object StatefulShortestPath {
  * @param singletonVariables            all singleton variables of the path pattern that should get projected into the outgoing row.
  * @param selector                      the selector for the shortest path algorithm
  * @param solvedExpressionAsString      the string for EXPLAIN
+ * @param reverseGroupVariableProjections   if `true` reverse the group variable lists
  */
 case class StatefulShortestPath(
   override val source: LogicalPlan,
@@ -1862,7 +1863,8 @@ case class StatefulShortestPath(
   override val relationshipVariableGroupings: Set[VariableGrouping],
   singletonVariables: Set[LogicalVariable],
   selector: StatefulShortestPath.Selector,
-  solvedExpressionAsString: String
+  solvedExpressionAsString: String,
+  reverseGroupVariableProjections: Boolean
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with PlanWithVariableGroupings {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)

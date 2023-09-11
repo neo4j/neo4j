@@ -98,7 +98,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r]->(b)")
           .addFinalState(1)
-          .build()
+          .build(),
+        false
       )
       .allNodeScan("a")
       .build()
@@ -127,7 +128,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           .addTransition(4, 5, "(c)-[r3]-(d)")
           .addFinalState(4)
           .addFinalState(5)
-          .build()
+          .build(),
+        false
       )
       .allNodeScan("a")
       .build()
@@ -162,7 +164,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           .addTransition(4, 5, "(c)-[r3]-(d)")
           .addFinalState(4)
           .addFinalState(5)
-          .build()
+          .build(),
+        false
       )
       .allNodeScan("a")
       .build()
