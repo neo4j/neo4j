@@ -552,7 +552,7 @@ object ClauseConverters {
 
     if (clause.optional) {
       accWithMaybeHorizon.amendQueryGraph { qg =>
-        qg.withAddedOptionalMatch(
+        qg.addOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
           QueryGraph(

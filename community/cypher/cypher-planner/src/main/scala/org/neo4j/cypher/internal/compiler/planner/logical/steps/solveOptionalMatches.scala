@@ -112,7 +112,7 @@ case object outerHashJoin extends OptionalSolver {
         val hintVariables = hint.variables.map(_.name).toSet
         hintVariables.subsetOf(joinNodes)
       }
-      val rhsQG = optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint]))
+      val rhsQG = optionalQg.removeArguments().removeHints(solvedHints.map(_.asInstanceOf[Hint]))
 
       val BestResults(side2Plan, side2SortedPlan) =
         context.staticComponents.queryGraphSolver.plan(rhsQG, interestingOrderConfig, context)

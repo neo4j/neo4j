@@ -880,7 +880,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         verify(monitor).endConnectingComponents(omQG, expandAtoB)
 
         // all relationship scan
-        val omQGWithoutArguments = omQG.withoutArguments()
+        val omQGWithoutArguments = omQG.removeArguments()
         verify(monitor).initTableFor(omQGWithoutArguments)
         verify(monitor).startIDPIterationFor(omQGWithoutArguments)
         verify(monitor).endIDPIterationFor(omQGWithoutArguments, allRelScan)

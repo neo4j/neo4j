@@ -295,7 +295,7 @@ object OrLeafPlanner {
       }.head
       val relWithInlinedTypePredicate = relWithoutInlinedTypePredicate.copy(types = types)
       qg
-        .withRemovedPatternRelationships(Set(relWithoutInlinedTypePredicate))
+        .removePatternRelationships(Set(relWithoutInlinedTypePredicate))
         .withAddedPatternRelationships(Set(relWithInlinedTypePredicate))
     }
 

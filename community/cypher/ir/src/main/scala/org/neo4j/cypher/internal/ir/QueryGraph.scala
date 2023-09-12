@@ -67,32 +67,54 @@ case class QueryGraph(
     selectivePathPatterns
 
   /**
-   * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
+   * @return all recursively included query graphs, with leaf information for Eagerness analysis.
+   *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
+   *         is not safe to use for planning pattern expressions and pattern comprehensions.
    */
-  def dependencies: Set[String] =
-    optionalMatches.flatMap(_.dependencies).toSet ++
-      selections.predicates.flatMap(_.dependencies) ++
-      mutatingPatterns.flatMap(_.dependencies) ++
-      quantifiedPathPatterns.flatMap(_.dependencies) ++
-      selectivePathPatterns.flatMap(_.dependencies) ++
-      argumentIds
+  lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
+    val iRExpressions: Seq[QgWithLeafInfo] = this.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
+      e.query.allQGsWithLeafInfo
+    )
+    QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(this) +:
+      (iRExpressions ++
+        optionalMatches.flatMap(_.allQGsWithLeafInfo))
+  }
+
+  // -----------------
+  // Override elements
+  // -----------------
+
+  def withPatternNodes(nodes: Set[String]): QueryGraph = copy(patternNodes = nodes)
+
+  def withArgumentIds(newArgumentIds: Set[String]): QueryGraph = copy(argumentIds = newArgumentIds)
+
+  def withOptionalMatches(optionalMatches: IndexedSeq[QueryGraph]): QueryGraph = copy(optionalMatches = optionalMatches)
+
+  def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
+
+  def withHints(hints: Set[Hint]): QueryGraph = copy(hints = hints)
 
   /**
-   * The size of a QG is defined as the number of node connections that are introduced
+   * Sets both patternNodes and patternRelationships from this pattern relationship. Compare with `addPatternRelationship`.
+   *
+   * @param pattern the relationship defining the pattern of this query graph
    */
-  def size: Int = nodeConnections.size
-
-  def isEmpty: Boolean = this == QueryGraph.empty
-
-  def nonEmpty: Boolean = !isEmpty
-
-  def mapSelections(f: Selections => Selections): QueryGraph =
+  def withPattern(pattern: PatternRelationship): QueryGraph =
     copy(
-      selections = f(selections),
-      optionalMatches = optionalMatches.map(_.mapSelections(f)),
-      quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(selections = f(qpp.selections))),
-      selectivePathPatterns = selectivePathPatterns.map(spp => spp.copy(selections = f(spp.selections)))
+      patternNodes = pattern.boundaryNodesSet,
+      patternRelationships = Set(pattern)
     )
+
+  // TODO fix
+  def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
+    copy(patternRelationships = patterns)
+
+  def withQuantifiedPathPatterns(patterns: Set[QuantifiedPathPattern]): QueryGraph =
+    copy(quantifiedPathPatterns = patterns)
+
+  // ------------
+  // Add elements
+  // ------------
 
   def addPathPatterns(pathPatterns: PathPatterns): QueryGraph =
     pathPatterns.pathPatterns.foldLeft(this) {
@@ -151,19 +173,120 @@ case class QueryGraph(
     )
   }
 
+  def addShortestRelationships(shortestRelationships: ShortestRelationshipPattern*): QueryGraph =
+    shortestRelationships.foldLeft(this)((qg, p) => qg.addShortestRelationship(p))
+
+  // FIXME remove
+  def withAddedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
+    copy(patternRelationships = patternRelationships ++ patterns)
+
   /**
-   * @return all recursively included query graphs, with leaf information for Eagerness analysis.
-   *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
-   *         is not safe to use for planning pattern expressions and pattern comprehensions.
+   * Returns a copy of the query graph, with an additional selective path pattern added.
    */
-  lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
-    val iRExpressions: Seq[QgWithLeafInfo] = this.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
-      e.query.allQGsWithLeafInfo
+  def addSelectivePathPattern(selectivePathPattern: SelectivePathPattern): QueryGraph =
+    copy(
+      patternNodes = patternNodes ++ selectivePathPattern.boundaryNodesSet,
+      selectivePathPatterns = selectivePathPatterns + selectivePathPattern
     )
-    QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(this) +:
-      (iRExpressions ++
-        optionalMatches.flatMap(_.allQGsWithLeafInfo))
+
+  def addArgumentId(newId: String): QueryGraph = copy(argumentIds = argumentIds + newId)
+
+  def addArgumentIds(newIds: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
+
+  def addSelections(selections: Selections): QueryGraph =
+    copy(selections = Selections(selections.predicates ++ this.selections.predicates))
+
+  def addPredicates(predicates: Expression*): QueryGraph = {
+    val newSelections = Selections(predicates.flatMap(_.asPredicates).toSet)
+    copy(selections = selections ++ newSelections)
   }
+
+  def addPredicates(predicates: Set[Predicate]): QueryGraph = {
+    val newSelections = Selections(selections.predicates ++ predicates)
+    copy(selections = newSelections)
+  }
+
+  def addPredicates(outerScope: Set[String], predicates: Expression*): QueryGraph = {
+    val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope)).toSet)
+    copy(selections = selections ++ newSelections)
+  }
+
+  def addHints(addedHints: IterableOnce[Hint]): QueryGraph = {
+    copy(hints = hints ++ addedHints)
+  }
+
+  def addOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
+    val argumentIds = allCoveredIds intersect optionalMatch.allCoveredIds
+    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentIds(argumentIds.toIndexedSeq))
+  }
+
+  def addMutatingPatterns(pattern: MutatingPattern): QueryGraph = {
+    val copyPatterns = new mutable.ArrayBuffer[MutatingPattern](mutatingPatterns.size + 1)
+    copyPatterns.appendAll(mutatingPatterns)
+    copyPatterns += pattern
+
+    copy(mutatingPatterns = copyPatterns.toIndexedSeq)
+  }
+
+  def addMutatingPatterns(patterns: Seq[MutatingPattern]): QueryGraph = {
+    val copyPatterns = new ArrayBuffer[MutatingPattern](patterns.size)
+    copyPatterns.appendAll(mutatingPatterns)
+    copyPatterns.appendAll(patterns)
+    copy(mutatingPatterns = copyPatterns.toIndexedSeq)
+  }
+
+  // ---------------
+  // Remove elements
+  // ---------------
+
+  def removeArgumentIds(idsToRemove: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds -- idsToRemove)
+
+  def removePredicates(predicates: Set[Predicate]): QueryGraph = {
+    val newSelections = Selections(selections.predicates -- predicates)
+    copy(selections = newSelections)
+  }
+
+  def removeHints(hintsToIgnore: Set[Hint]): QueryGraph = copy(
+    hints = hints.diff(hintsToIgnore),
+    optionalMatches = optionalMatches.map(_.removeHints(hintsToIgnore))
+  )
+
+  def removeArguments(): QueryGraph = withArgumentIds(Set.empty)
+
+  def removePatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
+    copy(patternRelationships = patternRelationships -- patterns)
+
+  // ----------
+  // Other defs
+  // ----------
+
+  /**
+   * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
+   */
+  def dependencies: Set[String] =
+    optionalMatches.flatMap(_.dependencies).toSet ++
+      selections.predicates.flatMap(_.dependencies) ++
+      mutatingPatterns.flatMap(_.dependencies) ++
+      quantifiedPathPatterns.flatMap(_.dependencies) ++
+      selectivePathPatterns.flatMap(_.dependencies) ++
+      argumentIds
+
+  /**
+   * The size of a QG is defined as the number of node connections that are introduced
+   */
+  def size: Int = nodeConnections.size
+
+  def isEmpty: Boolean = this == QueryGraph.empty
+
+  def nonEmpty: Boolean = !isEmpty
+
+  def mapSelections(f: Selections => Selections): QueryGraph =
+    copy(
+      selections = f(selections),
+      optionalMatches = optionalMatches.map(_.mapSelections(f)),
+      quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(selections = f(qpp.selections))),
+      selectivePathPatterns = selectivePathPatterns.map(spp => spp.copy(selections = f(spp.selections)))
+    )
 
   /**
    * All unconditional singleton nodes of this query graph.
@@ -201,110 +324,6 @@ case class QueryGraph(
       optionalMatches.flatMap(_.allPatternNodesRead) ++
       quantifiedPathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead) ++
       selectivePathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead)
-
-  def addShortestRelationships(shortestRelationships: ShortestRelationshipPattern*): QueryGraph =
-    shortestRelationships.foldLeft(this)((qg, p) => qg.addShortestRelationship(p))
-
-  /**
-   * Returns a copy of the query graph, with an additional selective path pattern added.
-   * Note that it does not add the end nodes or arguments or anything else to the query graph.
-   */
-  def addSelectivePathPattern(selectivePathPattern: SelectivePathPattern): QueryGraph =
-    copy(
-      patternNodes = patternNodes + selectivePathPattern.left + selectivePathPattern.right,
-      selectivePathPatterns = selectivePathPatterns.incl(selectivePathPattern)
-    )
-
-  def addArgumentId(newId: String): QueryGraph = copy(argumentIds = argumentIds + newId)
-
-  def addArgumentIds(newIds: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
-
-  def removeArgumentIds(idsToRemove: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds -- idsToRemove)
-
-  def addSelections(selections: Selections): QueryGraph =
-    copy(selections = Selections(selections.predicates ++ this.selections.predicates))
-
-  def addPredicates(predicates: Expression*): QueryGraph = {
-    val newSelections = Selections(predicates.flatMap(_.asPredicates).toSet)
-    copy(selections = selections ++ newSelections)
-  }
-
-  def addPredicates(predicates: Set[Predicate]): QueryGraph = {
-    val newSelections = Selections(selections.predicates ++ predicates)
-    copy(selections = newSelections)
-  }
-
-  def removePredicates(predicates: Set[Predicate]): QueryGraph = {
-    val newSelections = Selections(selections.predicates -- predicates)
-    copy(selections = newSelections)
-  }
-
-  def addPredicates(outerScope: Set[String], predicates: Expression*): QueryGraph = {
-    val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope)).toSet)
-    copy(selections = selections ++ newSelections)
-  }
-
-  def addHints(addedHints: IterableOnce[Hint]): QueryGraph = {
-    copy(hints = hints ++ addedHints)
-  }
-
-  def withoutHints(hintsToIgnore: Set[Hint]): QueryGraph = copy(
-    hints = hints.diff(hintsToIgnore),
-    optionalMatches = optionalMatches.map(_.withoutHints(hintsToIgnore))
-  )
-
-  def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
-
-  def withArgumentIds(newArgumentIds: Set[String]): QueryGraph =
-    copy(argumentIds = newArgumentIds)
-
-  def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
-    val argumentIds = allCoveredIds intersect optionalMatch.allCoveredIds
-    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentIds(argumentIds.toIndexedSeq))
-  }
-
-  def withOptionalMatches(optionalMatches: IndexedSeq[QueryGraph]): QueryGraph = {
-    copy(optionalMatches = optionalMatches)
-  }
-
-  def withMergeMatch(matchGraph: QueryGraph): QueryGraph = {
-    if (mergeQueryGraph.isEmpty) throw new IllegalArgumentException("Don't add a merge to this non-merge QG")
-
-    // NOTE: Merge can only contain one mutating pattern
-    assert(mutatingPatterns.length == 1)
-    val newMutatingPattern = mutatingPatterns.collectFirst {
-      case p: MergeNodePattern         => p.copy(matchGraph = matchGraph)
-      case p: MergeRelationshipPattern => p.copy(matchGraph = matchGraph)
-    }.get
-
-    copy(argumentIds = matchGraph.argumentIds, mutatingPatterns = IndexedSeq(newMutatingPattern))
-  }
-
-  def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
-
-  def withHints(hints: Set[Hint]): QueryGraph = copy(hints = hints)
-
-  /**
-   * Sets both patternNodes and patternRelationships from this pattern relationship. Compare with `addPatternRelationship`.
-   * @param pattern the relationship defining the pattern of this query graph
-   */
-  def withPattern(pattern: PatternRelationship): QueryGraph =
-    copy(
-      patternNodes = pattern.boundaryNodesSet,
-      patternRelationships = Set(pattern)
-    )
-
-  def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
-    copy(patternRelationships = patterns)
-
-  def withQuantifiedPathPatterns(patterns: Set[QuantifiedPathPattern]): QueryGraph =
-    copy(quantifiedPathPatterns = patterns)
-
-  def withAddedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
-    copy(patternRelationships = patternRelationships ++ patterns)
-
-  def withPatternNodes(nodes: Set[String]): QueryGraph =
-    copy(patternNodes = nodes)
 
   private def knownProperties(idName: String): Set[PropertyKeyName] =
     selections.allPropertyPredicatesInvolving.getOrElse(idName, Set.empty).map(_.propertyKey)
@@ -484,9 +503,6 @@ case class QueryGraph(
     }
   }
 
-  def withRemovedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
-    copy(patternRelationships = patternRelationships -- patterns)
-
   def joinHints: Set[UsingJoinHint] =
     hints.collect { case hint: UsingJoinHint => hint }
 
@@ -556,21 +572,6 @@ case class QueryGraph(
   private def predicatePullsInArguments(node: String) = selections.flatPredicates.exists { p =>
     val dependencies = p.dependencies.map(_.name)
     dependencies(node) && (dependencies intersect argumentIds).nonEmpty
-  }
-
-  def addMutatingPatterns(pattern: MutatingPattern): QueryGraph = {
-    val copyPatterns = new mutable.ArrayBuffer[MutatingPattern](mutatingPatterns.size + 1)
-    copyPatterns.appendAll(mutatingPatterns)
-    copyPatterns += pattern
-
-    copy(mutatingPatterns = copyPatterns.toIndexedSeq)
-  }
-
-  def addMutatingPatterns(patterns: Seq[MutatingPattern]): QueryGraph = {
-    val copyPatterns = new ArrayBuffer[MutatingPattern](patterns.size)
-    copyPatterns.appendAll(mutatingPatterns)
-    copyPatterns.appendAll(patterns)
-    copy(mutatingPatterns = copyPatterns.toIndexedSeq)
   }
 
   def standaloneArgumentPatternNodes: Set[String] = {

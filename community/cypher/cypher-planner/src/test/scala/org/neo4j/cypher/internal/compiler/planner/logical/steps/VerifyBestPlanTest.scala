@@ -567,7 +567,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   test("should throw when finding unfulfillable text index hint in OPTIONAL MATCH") {
     def plannerQueryWithOptionalMatch(hints: Set[Hint]): PlannerQuery = {
       RegularSinglePlannerQuery(
-        QueryGraph.empty.withAddedOptionalMatch(
+        QueryGraph.empty.addOptionalMatch(
           QueryGraph(
             patternNodes = Set("a"),
             hints = hints

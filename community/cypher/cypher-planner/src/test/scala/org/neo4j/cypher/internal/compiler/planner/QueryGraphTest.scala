@@ -63,7 +63,7 @@ class QueryGraphTest extends CypherFunSuite {
     val qg1 = QueryGraph(hints = Set(hint1, hint2))
     val qg2 = QueryGraph(hints = Set(hint1))
 
-    qg1.withoutHints(Set(hint2)) should equal(qg2)
+    qg1.removeHints(Set(hint2)) should equal(qg2)
   }
 
   test("should not get duplicate hints when combining query graphs") {

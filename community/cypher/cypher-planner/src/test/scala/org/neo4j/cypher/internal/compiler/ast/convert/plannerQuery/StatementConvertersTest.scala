@@ -1026,7 +1026,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph should equal(
       QueryGraph
         .empty
-        .withAddedOptionalMatch(
+        .addOptionalMatch(
           QueryGraph
             .empty
             .addPatternNodes("a")

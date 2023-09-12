@@ -175,7 +175,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
 
   override def withoutHints(hintsToIgnore: Set[Hint]): SinglePlannerQuery = {
     copy(
-      queryGraph = queryGraph.withoutHints(hintsToIgnore),
+      queryGraph = queryGraph.removeHints(hintsToIgnore),
       horizon = horizon.withoutHints(hintsToIgnore),
       tail = tail.map(x => x.withoutHints(hintsToIgnore))
     )

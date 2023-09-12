@@ -1531,7 +1531,7 @@ case class LogicalPlanProducer(
 
     val solved = RegularSinglePlannerQuery(queryGraph =
       QueryGraph.empty
-        .withAddedOptionalMatch(optionalMatchQG)
+        .addOptionalMatch(optionalMatchQG)
         .withArgumentIds(ids)
     )
 
@@ -1546,7 +1546,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(
-      _.withAddedOptionalMatch(solveds.get(right.id).asSinglePlannerQuery.queryGraph.addHints(hints))
+      _.addOptionalMatch(solveds.get(right.id).asSinglePlannerQuery.queryGraph.addHints(hints))
     )
     val inputOrder = providedOrders.get(right.id)
     val providedOrder =
@@ -1571,7 +1571,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(right.id).asSinglePlannerQuery.amendQueryGraph(
-      _.withAddedOptionalMatch(solveds.get(left.id).asSinglePlannerQuery.queryGraph.addHints(hints))
+      _.addOptionalMatch(solveds.get(left.id).asSinglePlannerQuery.queryGraph.addHints(hints))
     )
     annotate(
       RightOuterHashJoin(nodes.map(varFor), left, right),
@@ -2633,7 +2633,7 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved = {
       val leftSolved = solveds.get(left.id).asSinglePlannerQuery
-      val rightSolved = solveds.get(right.id).asSinglePlannerQuery.amendQueryGraph(_.withoutArguments())
+      val rightSolved = solveds.get(right.id).asSinglePlannerQuery.amendQueryGraph(_.removeArguments())
       (leftSolved ++ rightSolved).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
     }
     annotate(
