@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
@@ -2312,6 +2313,8 @@ class IndexPlanningIntegrationTest
 
   test("should stringify index seek with datetime function properly") {
     val planner = plannerConfigForRangeIndexOnLabelPropTests()
+
+    implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
     planner.plan(
       """MATCH (a:Label)
