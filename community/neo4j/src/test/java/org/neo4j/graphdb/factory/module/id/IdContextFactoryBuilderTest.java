@@ -95,10 +95,10 @@ class IdContextFactoryBuilderTest {
         IdGeneratorFactory idGeneratorFactory = mock(IdGeneratorFactory.class);
         Config config = defaults();
         IdContextFactory contextFactory = IdContextFactoryBuilder.of(fs, jobScheduler, config, PageCacheTracer.NULL)
-                .withIdGenerationFactoryProvider(any -> idGeneratorFactory)
+                .withIdGenerationFactoryProvider((i1, i2) -> idGeneratorFactory)
                 .build();
         DatabaseIdContext idContext = contextFactory.createIdContext(
-                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), config));
+                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), config), true);
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
         assertThat(idContext.getIdController()).isInstanceOf(BufferedIdController.class);
@@ -154,7 +154,7 @@ class IdContextFactoryBuilderTest {
                 .build();
 
         DatabaseIdContext idContext = contextFactory.createIdContext(
-                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), defaults()));
+                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), defaults()), true);
 
         assertSame(idGeneratorFactory, idContext.getIdGeneratorFactory());
     }
@@ -167,7 +167,7 @@ class IdContextFactoryBuilderTest {
         var idContextFactory = IdContextFactoryBuilder.of(fs, jobScheduler, config, cacheTracer)
                 .build();
         var idContext = idContextFactory.createIdContext(
-                from("test", UUID.randomUUID()), contextFactory, new DatabaseConfig(Map.of(), config));
+                from("test", UUID.randomUUID()), contextFactory, new DatabaseConfig(Map.of(), config), true);
         var idGeneratorFactory = idContext.getIdGeneratorFactory();
         var idController = idContext.getIdController();
         idController.initialize(

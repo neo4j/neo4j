@@ -20,10 +20,18 @@
 package org.neo4j.graphdb.factory.module.id;
 
 import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface IdContextFactory {
     DatabaseIdContext createIdContext(
-            NamedDatabaseId namedDatabaseId, CursorContextFactory contextFactory, DatabaseConfig databaseConfig);
+            NamedDatabaseId namedDatabaseId,
+            CursorContextFactory contextFactory,
+            DatabaseConfig databaseConfig,
+            boolean allocationInitiallyEnabled);
+
+    interface IdGeneratorFactoryCreator {
+        IdGeneratorFactory apply(NamedDatabaseId namedDatabaseId, boolean allocationInitiallyEnabled);
+    }
 }

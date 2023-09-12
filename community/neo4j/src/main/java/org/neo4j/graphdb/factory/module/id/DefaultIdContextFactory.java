@@ -33,13 +33,13 @@ import org.neo4j.scheduler.JobScheduler;
 
 public class DefaultIdContextFactory implements IdContextFactory {
     private final JobScheduler jobScheduler;
-    private final Function<NamedDatabaseId, IdGeneratorFactory> idFactoryProvider;
+    private final IdGeneratorFactoryCreator idFactoryProvider;
     private final Function<IdGeneratorFactory, IdGeneratorFactory> factoryWrapper;
     private final LogService logService;
 
     protected DefaultIdContextFactory(
             JobScheduler jobScheduler,
-            Function<NamedDatabaseId, IdGeneratorFactory> idFactoryProvider,
+            IdGeneratorFactoryCreator idFactoryProvider,
             Function<IdGeneratorFactory, IdGeneratorFactory> factoryWrapper,
             LogService logService) {
         this.jobScheduler = jobScheduler;
@@ -55,18 +55,27 @@ public class DefaultIdContextFactory implements IdContextFactory {
 
     @Override
     public DatabaseIdContext createIdContext(
-            NamedDatabaseId namedDatabaseId, CursorContextFactory contextFactory, DatabaseConfig databaseConfig) {
+            NamedDatabaseId namedDatabaseId,
+            CursorContextFactory contextFactory,
+            DatabaseConfig databaseConfig,
+            boolean allocationInitiallyEnabled) {
         return createBufferingIdContext(
-                idFactoryProvider, jobScheduler, contextFactory, namedDatabaseId, databaseConfig);
+                idFactoryProvider,
+                jobScheduler,
+                contextFactory,
+                namedDatabaseId,
+                databaseConfig,
+                allocationInitiallyEnabled);
     }
 
     private DatabaseIdContext createBufferingIdContext(
-            Function<NamedDatabaseId, ? extends IdGeneratorFactory> idGeneratorFactoryProvider,
+            IdGeneratorFactoryCreator idGeneratorFactoryProvider,
             JobScheduler jobScheduler,
             CursorContextFactory contextFactory,
             NamedDatabaseId namedDatabaseId,
-            DatabaseConfig databaseConfig) {
-        var idGeneratorFactory = idGeneratorFactoryProvider.apply(namedDatabaseId);
+            DatabaseConfig databaseConfig,
+            boolean allocationInitiallyEnabled) {
+        var idGeneratorFactory = idGeneratorFactoryProvider.apply(namedDatabaseId, allocationInitiallyEnabled);
         var bufferingIdGeneratorFactory = wrapWithBufferingFactory(idGeneratorFactory, databaseConfig);
         var bufferingController = createBufferedIdController(
                 bufferingIdGeneratorFactory, jobScheduler, contextFactory, namedDatabaseId.name(), logService);

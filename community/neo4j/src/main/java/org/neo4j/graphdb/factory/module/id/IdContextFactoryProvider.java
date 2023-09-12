@@ -26,7 +26,6 @@ import org.neo4j.service.Services;
 
 @Service
 public interface IdContextFactoryProvider extends PrioritizedService {
-
     IdContextFactory buildIdContextFactory(GlobalModule globalModule);
 
     static IdContextFactoryProvider getInstance() {
