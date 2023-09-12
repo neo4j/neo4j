@@ -1214,7 +1214,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index scans for arguments for: n.prop = <value>") {
     new given {
       qg = queryGraph(propEquals12, hasLabelAwesome)
-        .copy(argumentIds = Set(idName))
+        .withArgumentIds(Set(idName))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1230,7 +1230,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index contains scan for arguments") {
     new given {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
-        .copy(argumentIds = Set(idName))
+        .withArgumentIds(Set(idName))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1246,7 +1246,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index ends with scan for arguments") {
     new given {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome)
-        .copy(argumentIds = Set(idName))
+        .withArgumentIds(Set(idName))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1262,7 +1262,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index scan on argument for (n:Label) with existence constraint") {
     new given {
       qg = queryGraph(hasLabelAwesome)
-        .copy(argumentIds = Set(idName))
+        .withArgumentIds(Set(idName))
 
       indexOn("Awesome", "prop")
       nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
@@ -1279,7 +1279,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index scan on argument for (n:Label) with aggregation") {
     new given {
       qg = queryGraph(hasLabelAwesome)
-        .copy(argumentIds = Set(idName))
+        .withArgumentIds(Set(idName))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>

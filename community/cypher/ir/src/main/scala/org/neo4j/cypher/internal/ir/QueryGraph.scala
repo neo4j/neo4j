@@ -43,6 +43,8 @@ import scala.runtime.ScalaRunTime
  * represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
  *
  * A query graph has these contracts. All methods in this class that return a QueryGraph must uphold these contracts.
+ * copy is hidden from the outside to avoid the creation of QueryGraphs not adhering to these contracts.
+ * apply is overridden to avoid the creation of QueryGraphs not adhering to these contracts.
  * {{{
  *   qg.nodeConnections.flatMap(_.boundaryNodesSet).subsetOf(qg.patternNodes)
  *
@@ -54,7 +56,7 @@ import scala.runtime.ScalaRunTime
  * @param patternNodes                 unconditional singleton pattern nodes excluding strict interior pattern nodes of selective path patterns.
  *                                     These can be connected to each other via node connections, creating connected components, and can potentially be used for node leaf plans.
  */
-case class QueryGraph(
+final case class QueryGraph private (
   patternRelationships: Set[PatternRelationship] = Set.empty,
   quantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty,
   patternNodes: Set[String] = Set.empty,
@@ -67,6 +69,32 @@ case class QueryGraph(
   selectivePathPatterns: Set[SelectivePathPattern] = Set.empty
   // !!! If you change anything here, make sure to update the equals, ++ and hashCode methods at the bottom of this class !!!
 ) extends UpdateGraph {
+
+  // This is here to stop usage of copy from the outside
+  protected def copy(
+    patternRelationships: Set[PatternRelationship] = patternRelationships,
+    quantifiedPathPatterns: Set[QuantifiedPathPattern] = quantifiedPathPatterns,
+    patternNodes: Set[String] = patternNodes,
+    argumentIds: Set[String] = argumentIds,
+    selections: Selections = selections,
+    optionalMatches: IndexedSeq[QueryGraph] = optionalMatches,
+    hints: Set[Hint] = hints,
+    shortestRelationshipPatterns: Set[ShortestRelationshipPattern] = shortestRelationshipPatterns,
+    mutatingPatterns: IndexedSeq[MutatingPattern] = mutatingPatterns,
+    selectivePathPatterns: Set[SelectivePathPattern] = selectivePathPatterns
+  ): QueryGraph =
+    new QueryGraph(
+      patternRelationships,
+      quantifiedPathPatterns,
+      patternNodes,
+      argumentIds,
+      selections,
+      optionalMatches,
+      hints,
+      shortestRelationshipPatterns,
+      mutatingPatterns,
+      selectivePathPatterns
+    )
 
   val nodeConnections: Set[NodeConnection] = Set.empty[NodeConnection] ++
     patternRelationships ++
@@ -132,6 +160,9 @@ case class QueryGraph(
       patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet),
       quantifiedPathPatterns = patterns
     )
+
+  def withMutatingPattern(mutatingPatterns: IndexedSeq[MutatingPattern]): QueryGraph =
+    copy(mutatingPatterns = mutatingPatterns)
 
   // ------------
   // Add elements
@@ -694,7 +725,40 @@ case class QueryGraph(
 }
 
 object QueryGraph {
-  def empty: QueryGraph = QueryGraph()
+  def empty: QueryGraph = new QueryGraph()
+
+  // Overridden to avoid creating illegal QGs
+  def apply(
+    patternRelationships: Set[PatternRelationship] = Set.empty,
+    quantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty,
+    patternNodes: Set[String] = Set.empty,
+    argumentIds: Set[String] = Set.empty,
+    selections: Selections = Selections(),
+    optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
+    hints: Set[Hint] = Set.empty,
+    shortestRelationshipPatterns: Set[ShortestRelationshipPattern] = Set.empty,
+    mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty,
+    selectivePathPatterns: Set[SelectivePathPattern] = Set.empty
+  ): QueryGraph = {
+    val allPatternNodes = patternNodes ++
+      patternRelationships.flatMap(_.boundaryNodesSet) ++
+      quantifiedPathPatterns.flatMap(_.boundaryNodesSet) ++
+      selectivePathPatterns.flatMap(_.boundaryNodesSet) ++
+      shortestRelationshipPatterns.flatMap(_.rel.boundaryNodesSet)
+
+    new QueryGraph(
+      patternRelationships,
+      quantifiedPathPatterns,
+      allPatternNodes,
+      argumentIds,
+      selections,
+      optionalMatches,
+      hints,
+      shortestRelationshipPatterns,
+      mutatingPatterns,
+      selectivePathPatterns
+    )
+  }
 
   val stringifier: ExpressionStringifier = ExpressionStringifier(
     extension = new ExpressionStringifier.Extension {

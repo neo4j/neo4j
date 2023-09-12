@@ -42,9 +42,9 @@ import org.neo4j.cypher.internal.util.topDown
 import scala.collection.immutable.ListSet
 
 /**
- * This rewriter copies inlines relationship type predicates from the selection to the patternRelationships.
+ * This rewriter moves relationship type predicates from the selection to the patternRelationships.
  * This makes it possible to later rewrite some queries to varExpand instead of ExpandAll, filter and Trail for quantified path patterns.
- * But it also opens upp simpler planning for other queries.
+ * But it also opens up simpler planning for other queries.
  */
 case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
@@ -68,10 +68,8 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
               }
           }
 
-          qg.copy(
-            patternRelationships = result.newPatternRelationships,
-            selections = qg.selections.copy(predicates = qg.selections.predicates -- result.inlinedPredicates)
-          )
+          qg.withPatternRelationships(result.newPatternRelationships)
+            .withSelections(qg.selections.copy(predicates = qg.selections.predicates -- result.inlinedPredicates))
         }
         case qpp: QuantifiedPathPattern => {
           val typePredicates: Map[String, (Predicate, Seq[RelTypeName])] =

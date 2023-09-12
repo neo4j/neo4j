@@ -170,7 +170,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
   def withInput(queryInput: Seq[Variable]): SinglePlannerQuery =
     copy(
       input = Some(queryInput),
-      queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput.map(_.name))
+      queryGraph = queryGraph.withArgumentIds(queryGraph.argumentIds ++ queryInput.map(_.name))
     )
 
   override def withoutHints(hintsToIgnore: Set[Hint]): SinglePlannerQuery = {
@@ -357,7 +357,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
     }.flatten
 
     val other = copy(
-      queryGraph = queryGraph.copy(mutatingPatterns = flatUpdates),
+      queryGraph = queryGraph.withMutatingPattern(mutatingPatterns = flatUpdates),
       tail = tail.map(_.flattenForeach)
     ).updateHorizon {
       case csh: CallSubqueryHorizon => csh.copy(callSubquery = csh.callSubquery.flattenForeach)

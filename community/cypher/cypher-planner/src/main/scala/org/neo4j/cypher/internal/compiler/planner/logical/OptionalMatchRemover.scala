@@ -102,7 +102,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         // OPTIONAL MATCH (n)  -> QueryGraph {Nodes: ['n'], Arguments: ['n']}
         case RegularSinglePlannerQuery(qg: QueryGraph, io, h, t, qi)
           if qg.optionalMatches.exists(om => qg.connectedComponents.contains(om)) =>
-          val newQg = qg.copy(optionalMatches = qg.optionalMatches.filterNot(om => qg.connectedComponents.contains(om)))
+          val newQg = qg.withOptionalMatches(qg.optionalMatches.filterNot(om => qg.connectedComponents.contains(om)))
           RegularSinglePlannerQuery(queryGraph = newQg, io, h, t, qi)
       },
       cancellation = context.cancellationChecker
@@ -170,9 +170,10 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             anonymousVariableNameGenerator
           ))
 
-          val newOptionalGraph = original.withPatternRelationships(patternsToKeep).withPatternNodes(
-            patternNodes
-          ).withSelections(Selections.from(predicatesToKeep) ++ patternPredicates)
+          val newOptionalGraph = original
+            .withPatternRelationships(patternsToKeep)
+            .withPatternNodes(patternNodes)
+            .withSelections(Selections.from(predicatesToKeep) ++ patternPredicates)
 
           Some(newOptionalGraph)
         }

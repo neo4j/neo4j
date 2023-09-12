@@ -50,7 +50,7 @@ case object VarLengthQuantifierMerger extends PlannerQueryRewriter with StepSequ
         }
 
         RegularSinglePlannerQuery(
-          queryGraph.copy(patternRelationships = simpleRels ++ mergedRels),
+          queryGraph.withPatternRelationships(simpleRels ++ mergedRels),
           interestingOrder,
           horizon,
           tail,
