@@ -358,7 +358,7 @@ object expandSolverStep {
     val endNode = if (fromLeft) spp.right else spp.left
 
     // Check unsupported cases
-    val strictInteriorVariables = spp.pathVariables.init.tail
+    val strictInteriorVariables = spp.pathVariables.init.tail.map(_.variable)
     val overlap = (availableSymbols + endNode).intersect(strictInteriorVariables.toSet)
     if (overlap.nonEmpty) {
       throw new InternalException(

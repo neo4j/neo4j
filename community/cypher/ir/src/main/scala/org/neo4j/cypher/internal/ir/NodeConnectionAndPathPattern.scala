@@ -28,6 +28,13 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Rewritable
 
+sealed trait PathVariable {
+  val variable: String
+}
+
+case class NodePathVariable(variable: String) extends PathVariable
+case class RelationshipPathVariable(variable: String) extends PathVariable
+
 /**
  * Part of a pattern that is connecting nodes (as in "connected components").
  * This is a generalisation of relationships.
@@ -57,12 +64,12 @@ sealed trait NodeConnection {
   /**
    * All node/relationship/group variables along the path of this node connection, from left to right.
    */
-  def pathVariables: Seq[String]
+  def pathVariables: Seq[PathVariable]
 
   /**
-   * Same as [[pathVariables]], as a Set.
+   * Same as [[pathVariables]], but as a Set and without PathVariable wrapper class
    */
-  final lazy val coveredIds: Set[String] = pathVariables.toSet
+  final lazy val coveredIds: Set[String] = pathVariables.map(_.variable).toSet
 
   def otherSide(node: String): String =
     if (node == left) {
@@ -115,7 +122,7 @@ final case class PatternRelationship(
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
-  override def pathVariables: Seq[String] = Seq(left, name, right)
+  override def pathVariables: Seq[PathVariable] = Seq(NodePathVariable(left), RelationshipPathVariable(name), NodePathVariable(right))
 
   override val left: String = boundaryNodes._1
   override val right: String = boundaryNodes._2
@@ -261,13 +268,14 @@ final case class QuantifiedPathPattern(
 
   override def withRight(right: String): QuantifiedPathPattern = copy(rightBinding = rightBinding.copy(outer = right))
 
-  override def pathVariables: Seq[String] = {
-    val rightTail = singletonToGroup(nodeVariableGroupings, patternRelationships.last.right) ++: Seq(right)
+  override def pathVariables: Seq[PathVariable] = {
+    val rightTail: Seq[PathVariable] = singletonToGroup(nodeVariableGroupings, patternRelationships.last.right).map(NodePathVariable) ++:
+      Seq(NodePathVariable(right))
 
-    left +: patternRelationships.foldRight(rightTail) {
+    NodePathVariable(left) +: patternRelationships.foldRight(rightTail) {
       case (rel, acc) =>
-        singletonToGroup(nodeVariableGroupings, rel.left) ++:
-          singletonToGroup(relationshipVariableGroupings, rel.name) ++:
+        singletonToGroup(nodeVariableGroupings, rel.left).map(NodePathVariable) ++:
+          singletonToGroup(relationshipVariableGroupings, rel.name).map(RelationshipPathVariable) ++:
           acc
     }
   }
@@ -408,7 +416,7 @@ final case class SelectivePathPattern(
     )
   )
 
-  override def pathVariables: Seq[String] = pathPattern.connections.foldLeft(Seq(left)) {
+  override def pathVariables: Seq[PathVariable] = pathPattern.connections.foldLeft(Seq[PathVariable](NodePathVariable(left))) {
     case (acc, nc) => acc ++ nc.pathVariables.tail
   }
 

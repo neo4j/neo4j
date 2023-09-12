@@ -63,11 +63,23 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
   )
 
   test("pathVariables of a relationship") {
-    `(foo)-[x]->(start)`.pathVariables should equal(Seq("foo", "x", "start"))
+    `(foo)-[x]->(start)`.pathVariables should equal(Seq(
+      NodePathVariable("foo"),
+      RelationshipPathVariable("x"),
+      NodePathVariable("start"))
+    )
   }
 
   test("pathVariables of a QPP") {
-    `(start) ((a)-[r]->(b)-[s]->(c))+ (end)`.pathVariables should equal(Seq("start", "a", "r", "b", "s", "c", "end"))
+    `(start) ((a)-[r]->(b)-[s]->(c))+ (end)`.pathVariables should equal(Seq(
+      NodePathVariable("start"),
+      NodePathVariable("a"),
+      RelationshipPathVariable("r"),
+      NodePathVariable("b"),
+      RelationshipPathVariable("s"),
+      NodePathVariable("c"),
+      NodePathVariable("end"))
+    )
   }
 
   test("pathVariables of a QPP with gaps in group variables") {
@@ -76,7 +88,12 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
         nodeVariableGroupings = Set("a", "c").map(name => VariableGrouping(name, name)),
         relationshipVariableGroupings = Set("s").map(name => VariableGrouping(name, name))
       )
-      .pathVariables should equal(Seq("start", "a", "s", "c", "end"))
+      .pathVariables should equal(Seq(
+      NodePathVariable("start"),
+      NodePathVariable("a"),               // why not r?
+      RelationshipPathVariable("s"),
+      NodePathVariable("c"),
+      NodePathVariable("end")))
   }
 
   test("pathVariables of a QPP with no group variables") {
@@ -85,7 +102,7 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
         nodeVariableGroupings = Set.empty,
         relationshipVariableGroupings = Set.empty
       )
-      .pathVariables should equal(Seq("start", "end"))
+      .pathVariables should equal(Seq(NodePathVariable("start"), NodePathVariable("end")))
   }
 
   test("pathVariables of an SPP") {
@@ -99,7 +116,17 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
         selector = SelectivePathPattern.Selector.ShortestGroups(1)
       )
 
-    spp.pathVariables should equal(Seq("foo", "x", "start", "a", "r", "b", "s", "c", "end"))
+    spp.pathVariables should equal(Seq(
+      NodePathVariable("foo"),
+      RelationshipPathVariable("x"),
+      NodePathVariable("start"),
+      NodePathVariable("a"),
+      RelationshipPathVariable("r"),
+      NodePathVariable("b"),
+      RelationshipPathVariable("s"),
+      NodePathVariable("c"),
+      NodePathVariable("end"))
+    )
   }
 
   test("asQueryGraph of an SPP") {
