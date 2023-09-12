@@ -95,7 +95,8 @@ public class BuiltInProcedures {
 
     @SystemProcedure
     @NotThreadSafe
-    @Description("List all available labels in the database.")
+    @Description("List all labels attached to nodes within a database according to the user's access rights. "
+            + "The procedure returns empty results if the user is not authorized to view those labels.")
     @Procedure(name = "db.labels", mode = READ)
     public Stream<LabelResult> listLabels() {
         if (callContext.isSystemDatabase()) {
@@ -137,7 +138,8 @@ public class BuiltInProcedures {
 
     @SystemProcedure
     @NotThreadSafe
-    @Description("List all available relationship types in the database.")
+    @Description("List all types attached to relationships within a database according to the user's access rights. "
+            + "The procedure returns empty results if the user is not authorized to view those relationship types.")
     @Procedure(name = "db.relationshipTypes", mode = READ)
     public Stream<RelationshipTypeResult> listRelationshipTypes() {
         if (callContext.isSystemDatabase()) {

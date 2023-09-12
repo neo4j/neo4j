@@ -586,7 +586,7 @@
   },
   {
     "name": "db.labels",
-    "description": "List all available labels in the database.",
+    "description": "List all labels attached to nodes within a database according to the user's access rights. The procedure returns empty results if the user is not authorized to view those labels.",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.labels() :: (label :: STRING?)",
@@ -748,7 +748,7 @@
   },
   {
     "name": "db.relationshipTypes",
-    "description": "List all available relationship types in the database.",
+    "description": "List all types attached to relationships within a database according to the user's access rights. The procedure returns empty results if the user is not authorized to view those relationship types.",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.relationshipTypes() :: (relationshipType :: STRING?)",
