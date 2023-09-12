@@ -36,7 +36,9 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +50,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
@@ -72,6 +75,7 @@ import org.neo4j.index.internal.gbptree.DynamicSizeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -82,12 +86,16 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsExc
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -2371,6 +2379,71 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                 .withName(name)
                 .create();
         dropIndexBackedConstraintAndCreateSlightlyDifferentInSameTxMustSucceed(db, initial, similar);
+    }
+
+    @Test
+    void terminatingConstraintTransactionShouldNotLeaveIndexBehind() throws InterruptedException, ExecutionException {
+        AtomicReference<Path> indexDir = new AtomicReference<>();
+        // Monitor that will stop in population so the transaction can be terminated while not holding the index lock.
+        Barrier.Control midPopulation = new Barrier.Control();
+        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter() {
+            @Override
+            public void indexPopulationScanStarting(IndexDescriptor[] indexDescriptors) {
+                for (IndexDescriptor indexDescriptor : indexDescriptors) {
+                    if (indexDescriptor.getName().equals("hej")) {
+                        // Also figure out the index's directory while we have all the necessary information
+                        IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider(
+                                        ((GraphDatabaseAPI) db).databaseLayout().databaseDirectory())
+                                .forProvider(indexDescriptor.getIndexProvider());
+                        IndexFiles indexFiles = new IndexFiles(fs, indexDirectoryStructure, indexDescriptor.getId());
+                        indexDir.set(indexFiles.getBase());
+
+                        midPopulation.reached();
+                    }
+                }
+            }
+        };
+        Monitors monitors = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(Monitors.class);
+        monitors.addMonitorListener(trappingMonitor);
+
+        final Label x = Label.label("X");
+        try (Transaction tx = db.beginTx()) {
+            for (int i = 0; i < 10; i++) {
+                tx.createNode(x).setProperty("x", "" + i);
+            }
+            tx.commit();
+        }
+
+        Future<Object> constraintCreation = otherThread.execute(() -> {
+            assertThrows(TransactionTerminatedException.class, () -> {
+                try (Transaction tx = db.beginTx()) {
+                    ((TransactionImpl) tx).setMetaData(Map.of("terminateMe", true));
+                    tx.schema()
+                            .constraintFor(x)
+                            .assertPropertyIsUnique("x")
+                            .withName("hej")
+                            .create();
+                    tx.commit();
+                }
+            });
+            return null;
+        });
+
+        midPopulation.await();
+        try (Transaction tx = db.beginTx()) {
+            Result terminated = tx.execute("SHOW TRANSACTIONS YIELD metaData, transactionId AS txId WHERE "
+                    + "metaData.terminateMe=true TERMINATE TRANSACTIONS txId YIELD message RETURN message");
+            assertThat((String) terminated.columnAs("message").next()).contains("terminated");
+        }
+        midPopulation.release();
+
+        constraintCreation.get();
+
+        try (Transaction tx = db.beginTx()) {
+            assertThat(Iterables.count(tx.schema().getConstraints())).isEqualTo(0);
+            assertThat(Iterables.count(tx.schema().getIndexes())).isEqualTo(0);
+        }
+        assertFalse(fs.fileExists(indexDir.get()));
     }
 
     /**
