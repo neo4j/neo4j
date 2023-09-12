@@ -66,8 +66,8 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
     `(foo)-[x]->(start)`.pathVariables should equal(Seq(
       NodePathVariable("foo"),
       RelationshipPathVariable("x"),
-      NodePathVariable("start"))
-    )
+      NodePathVariable("start")
+    ))
   }
 
   test("pathVariables of a QPP") {
@@ -78,8 +78,8 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
       NodePathVariable("b"),
       RelationshipPathVariable("s"),
       NodePathVariable("c"),
-      NodePathVariable("end"))
-    )
+      NodePathVariable("end")
+    ))
   }
 
   test("pathVariables of a QPP with gaps in group variables") {
@@ -90,10 +90,11 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
       )
       .pathVariables should equal(Seq(
       NodePathVariable("start"),
-      NodePathVariable("a"),               // why not r?
+      NodePathVariable("a"),
       RelationshipPathVariable("s"),
       NodePathVariable("c"),
-      NodePathVariable("end")))
+      NodePathVariable("end")
+    ))
   }
 
   test("pathVariables of a QPP with no group variables") {
@@ -125,8 +126,8 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
       NodePathVariable("b"),
       RelationshipPathVariable("s"),
       NodePathVariable("c"),
-      NodePathVariable("end"))
-    )
+      NodePathVariable("end")
+    ))
   }
 
   test("asQueryGraph of an SPP") {

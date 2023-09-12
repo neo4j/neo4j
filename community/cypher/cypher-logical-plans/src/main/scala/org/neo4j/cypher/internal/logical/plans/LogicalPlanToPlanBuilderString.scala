@@ -352,7 +352,8 @@ object LogicalPlanToPlanBuilderString {
           nonInlinablePreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
-          singletonVariables,
+          singletonNodeVariables,
+          singletonRelationshipVariables,
           selector,
           solvedExpressionString,
           reverseGroupVariableProjections
@@ -364,7 +365,8 @@ object LogicalPlanToPlanBuilderString {
           nonInlinablePreFilters.map(e => wrapInQuotations(expressionStringifier(e))),
           s"Set(${groupEntitiesString(nodeVariableGroupings)})",
           s"Set(${groupEntitiesString(relationshipVariableGroupings)})",
-          s"Set(${wrapVarsInQuotationsAndMkString(singletonVariables)})",
+          s"Set(${wrapVarsInQuotationsAndMkString(singletonNodeVariables)})",
+          s"Set(${wrapVarsInQuotationsAndMkString(singletonRelationshipVariables)})",
           objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
           nfaString(nfa),
           reverseGroupVariableProjections.toString

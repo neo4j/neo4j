@@ -7193,7 +7193,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         None,
         Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
         Set(("r", "r"), ("s", "s")),
-        singletonVariables = Set("v", "w"),
+        singletonNodeVariables = Set("v", "w"),
+        singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
         false
@@ -7218,7 +7219,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           None,
           Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           Set(("r", "r"), ("s", "s")),
-          singletonVariables = Set("v", "w"),
+          singletonNodeVariables = Set("v", "w"),
+          singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
           false
@@ -7244,7 +7246,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         None,
         Set(),
         Set(),
-        singletonVariables = Set("a", "r", "b"),
+        singletonNodeVariables = Set("a", "b"),
+        singletonRelationshipVariables = Set("r"),
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
         false
@@ -7266,7 +7269,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           None,
           Set(),
           Set(),
-          singletonVariables = Set("a", "r", "b"),
+          singletonNodeVariables = Set("a", "b"),
+          singletonRelationshipVariables = Set("r"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
           false
@@ -7299,7 +7303,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         None,
         Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
         Set(("r", "r"), ("s", "s")),
-        singletonVariables = Set("v", "w"),
+        singletonNodeVariables = Set("v", "w"),
+        singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
         false
@@ -7329,7 +7334,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           None,
           Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           Set(("r", "r"), ("s", "s")),
-          singletonVariables = Set("v", "w"),
+          singletonNodeVariables = Set("v", "w"),
+          singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
           false
@@ -7362,7 +7368,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         None,
         Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
         Set(("r", "r"), ("s", "s")),
-        singletonVariables = Set("v", "w"),
+        singletonNodeVariables = Set("v", "w"),
+        singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
         false
@@ -7394,7 +7401,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           None,
           Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           Set(("r", "r"), ("s", "s")),
-          singletonVariables = Set("v", "w"),
+          singletonNodeVariables = Set("v", "w"),
+          singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
           false
@@ -7427,7 +7435,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         None,
         Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
         Set(("r", "r"), ("s", "s")),
-        singletonVariables = Set("v", "w"),
+        singletonNodeVariables = Set("v", "w"),
+        singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
         false
@@ -7450,7 +7459,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           None,
           Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           Set(("r", "r"), ("s", "s")),
-          singletonVariables = Set("v", "w"),
+          singletonNodeVariables = Set("v", "w"),
+          singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
           false
@@ -7484,7 +7494,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         None,
         Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
         Set(("r", "r"), ("s", "s")),
-        singletonVariables = Set("v", "w"),
+        singletonNodeVariables = Set("v", "w"),
+        singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
         false
@@ -7506,7 +7517,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           None,
           Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           Set(("r", "r"), ("s", "s")),
-          singletonVariables = Set("v", "w"),
+          singletonNodeVariables = Set("v", "w"),
+          singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
           false

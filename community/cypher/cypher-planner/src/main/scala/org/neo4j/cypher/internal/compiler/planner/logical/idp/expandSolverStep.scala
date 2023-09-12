@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NodeConnection
+import org.neo4j.cypher.internal.ir.NodePathVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -463,12 +464,17 @@ object expandSolverStep {
     val nonInlinablePreFilters =
       Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
 
-    val singletonVariableNames =
-      spp.coveredIds --
-        spp.allQuantifiedPathPatterns.flatMap(_.variableGroupNames) --
-        spp.varLengthRelationshipNames -
-        startNode
-    val singletonVariables = singletonVariableNames.map[LogicalVariable](varFor)
+    val singletonVariableNames = spp.pathVariables.filterNot(pathVariable =>
+      (spp.allQuantifiedPathPatterns.flatMap(_.variableGroupNames) ++ spp.varLengthRelationshipNames + startNode)
+        .contains(pathVariable.variable)
+    )
+
+    val (singletonNodeVariableNames, singletonRelationshipVariableNames) =
+      singletonVariableNames.partition(_.isInstanceOf[NodePathVariable])
+
+    val singletonNodeVariables = singletonNodeVariableNames.map[LogicalVariable](x => varFor(x.variable)).toSet
+    val singletonRelationshipVariables =
+      singletonRelationshipVariableNames.map[LogicalVariable](x => varFor(x.variable)).toSet
 
     context.staticComponents.logicalPlanProducer.planStatefulShortest(
       sourcePlan,
@@ -478,7 +484,8 @@ object expandSolverStep {
       nonInlinablePreFilters,
       nodeVariableGroupings,
       relationshipVariableGroupings,
-      singletonVariables,
+      singletonNodeVariables,
+      singletonRelationshipVariables,
       selector,
       maybeHiddenFilter,
       solvedExpressionAsString,

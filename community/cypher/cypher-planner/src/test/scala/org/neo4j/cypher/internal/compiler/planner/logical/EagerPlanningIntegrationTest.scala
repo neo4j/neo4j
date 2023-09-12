@@ -616,7 +616,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     start: String,
     end: String,
     query: String,
-    variables: Set[String],
+    singletonNodeVariables: Set[String],
+    singletonRelationshipVariables: Set[String],
     selector: StatefulShortestPath.Selector,
     nfa: NFA
   )
@@ -628,9 +629,10 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         parameters.end,
         parameters.query,
         None,
-        Set(),
-        Set(),
-        parameters.variables,
+        Set.empty,
+        Set.empty,
+        parameters.singletonNodeVariables,
+        parameters.singletonRelationshipVariables,
         StatefulShortestPath.Selector.Shortest(1),
         parameters.nfa,
         false
@@ -641,7 +643,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       "start",
       "end",
       "SHORTEST 1 ((start)-[r]->(end))",
-      Set("r", "end"),
+      Set("end"),
+      Set("r"),
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
         .addTransition(0, 1, "(start)-[r]->(end)")
@@ -655,6 +658,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       "end",
       "SHORTEST 1 ((start) ((a)-[r:R]->(b)){1, } (end) WHERE unique(`r`))",
       Set("end"),
+      Set.empty,
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
         .addTransition(0, 1, "(start) (a)")
@@ -670,7 +674,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       "start",
       "end",
       "SHORTEST 1 ((start)-[r:R]->(end))",
-      Set("r", "end"),
+      Set("end"),
+      Set("r"),
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
         .addTransition(0, 1, "(start)-[r:R]->(end)")
@@ -745,9 +750,10 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           "start",
           "SHORTEST 1 ((start)-[r]->(end) WHERE start.prop IN [1])",
           None,
-          Set(),
-          Set(),
-          Set("start", "r"),
+          Set.empty,
+          Set.empty,
+          Set("start"),
+          Set("r"),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "end")
             .addTransition(0, 1, "(end)<-[r]-(start WHERE start.prop = 1)")
@@ -841,9 +847,10 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           "end",
           "SHORTEST 1 ((start)-[s]-(x) ((a)-[r:R]->(b)){1, } (end) WHERE NOT s IN `r` AND unique(`r`))",
           None,
-          Set(),
-          Set(),
-          Set("s", "end", "x"),
+          Set.empty,
+          Set.empty,
+          Set("end", "x"),
+          Set("s"),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start)-[s]-(x)")
@@ -882,9 +889,10 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           "start",
           "SHORTEST 1 ((start)-[r:R]->(end) WHERE start.prop IN [1])",
           None,
-          Set(),
-          Set(),
-          Set("r", "start"),
+          Set.empty,
+          Set.empty,
+          Set("start"),
+          Set("r"),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "end")
             .addTransition(0, 1, "(end)<-[r:R]-(start WHERE start.prop = 1)")
@@ -1000,9 +1008,10 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           "end",
           "SHORTEST 1 ((start) ((a)-[r]->(b) WHERE NOT `a`:Label AND NOT `r`:R AND NOT `b`:Label){1, } (end) WHERE NOT end:Label AND unique(`r`))",
           None,
-          Set(),
-          Set(),
+          Set.empty,
+          Set.empty,
           Set("end"),
+          Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start) (a WHERE NOT a:Label)")
@@ -1043,9 +1052,10 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           "end",
           "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE NOT end:Label AND unique(`r`))",
           None,
-          Set(),
-          Set(),
+          Set.empty,
+          Set.empty,
           Set("end"),
+          Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start) (a WHERE NOT a:Label)")

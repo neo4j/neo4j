@@ -94,6 +94,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         Set.empty,
         Set.empty,
         Set.empty,
+        Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r]->(b)")
@@ -117,6 +118,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         Set(("b_in", "b_in"), ("c_in", "c_in")),
         Set(("r2", "r2")),
         Set("a", "b", "c", "d"),
+        Set.empty,
         StatefulShortestPath.Selector.ShortestGroups(5),
         new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r WHERE r.prop > 5]->(b:A&B WHERE b.prop = 10)")
@@ -153,6 +155,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         Set(("b_in", "b_in"), ("c_in", "c_in")),
         Set(("r2", "r2")),
         Set("a", "b", "c", "d"),
+        Set.empty,
         StatefulShortestPath.Selector.ShortestGroups(5),
         new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r WHERE r.prop > 5]->(b:A&B WHERE b.prop = 10)")

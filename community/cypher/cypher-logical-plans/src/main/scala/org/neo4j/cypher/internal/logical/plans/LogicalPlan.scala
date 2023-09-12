@@ -1910,7 +1910,8 @@ case class StatefulShortestPath(
   nonInlinedPreFilters: Option[Expression],
   override val nodeVariableGroupings: Set[VariableGrouping],
   override val relationshipVariableGroupings: Set[VariableGrouping],
-  singletonVariables: Set[LogicalVariable],
+  singletonNodeVariables: Set[LogicalVariable],
+  singletonRelationshipVariables: Set[LogicalVariable],
   selector: StatefulShortestPath.Selector,
   solvedExpressionAsString: String,
   reverseGroupVariableProjections: Boolean
@@ -1927,7 +1928,8 @@ case class StatefulShortestPath(
   )(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++
-    singletonVariables ++
+    singletonNodeVariables ++
+    singletonRelationshipVariables ++
     nodeVariableGroupings.map(_.groupName) ++
     relationshipVariableGroupings.map(_.groupName)
 

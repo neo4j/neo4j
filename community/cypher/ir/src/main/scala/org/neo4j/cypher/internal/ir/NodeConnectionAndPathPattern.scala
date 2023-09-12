@@ -122,7 +122,8 @@ final case class PatternRelationship(
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
-  override def pathVariables: Seq[PathVariable] = Seq(NodePathVariable(left), RelationshipPathVariable(name), NodePathVariable(right))
+  override def pathVariables: Seq[PathVariable] =
+    Seq(NodePathVariable(left), RelationshipPathVariable(name), NodePathVariable(right))
 
   override val left: String = boundaryNodes._1
   override val right: String = boundaryNodes._2
@@ -269,8 +270,9 @@ final case class QuantifiedPathPattern(
   override def withRight(right: String): QuantifiedPathPattern = copy(rightBinding = rightBinding.copy(outer = right))
 
   override def pathVariables: Seq[PathVariable] = {
-    val rightTail: Seq[PathVariable] = singletonToGroup(nodeVariableGroupings, patternRelationships.last.right).map(NodePathVariable) ++:
-      Seq(NodePathVariable(right))
+    val rightTail: Seq[PathVariable] =
+      singletonToGroup(nodeVariableGroupings, patternRelationships.last.right).map(NodePathVariable) ++:
+        Seq(NodePathVariable(right))
 
     NodePathVariable(left) +: patternRelationships.foldRight(rightTail) {
       case (rel, acc) =>
@@ -416,9 +418,10 @@ final case class SelectivePathPattern(
     )
   )
 
-  override def pathVariables: Seq[PathVariable] = pathPattern.connections.foldLeft(Seq[PathVariable](NodePathVariable(left))) {
-    case (acc, nc) => acc ++ nc.pathVariables.tail
-  }
+  override def pathVariables: Seq[PathVariable] =
+    pathPattern.connections.foldLeft(Seq[PathVariable](NodePathVariable(left))) {
+      case (acc, nc) => acc ++ nc.pathVariables.tail
+    }
 
   val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies)
 

@@ -544,7 +544,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nonInlinablePreFilters: Option[Expression],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
-    singletonVariables: Set[String],
+    singletonNodeVariables: Set[String],
+    singletonRelationshipVariables: Set[String],
     selector: StatefulShortestPath.Selector,
     nfa: NFA,
     reverseGroupVariableProjections: Boolean
@@ -564,7 +565,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         nonInlinablePreFilters,
         nodeVariableGroupings,
         relationshipVariableGroupings,
-        singletonVariables.map(varFor),
+        singletonNodeVariables.map(varFor),
+        singletonRelationshipVariables.map(varFor),
         selector,
         solvedExpressionString,
         reverseGroupVariableProjections
@@ -580,7 +582,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nonInlinablePreFilters: Option[String],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
-    singletonVariables: Set[String],
+    singletonNodeVariables: Set[String],
+    singletonRelationshipVariables: Set[String],
     selector: StatefulShortestPath.Selector,
     nfa: NFA,
     reverseGroupVariableProjections: Boolean
@@ -593,7 +596,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       predicates,
       groupNodes,
       groupRelationships,
-      singletonVariables,
+      singletonNodeVariables,
+      singletonRelationshipVariables,
       selector,
       nfa,
       reverseGroupVariableProjections

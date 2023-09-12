@@ -651,7 +651,8 @@ object ReadFinder {
           _,
           nodeVariableGroupings,
           relationshipVariableGroupings,
-          singletonVariables,
+          singletonNodeVariables,
+          singletonRelationshipVariables,
           _,
           _,
           _
@@ -662,8 +663,8 @@ object ReadFinder {
           nfa,
           nodeVariableGroupings,
           relationshipVariableGroupings,
-          singletonVariables,
-          semanticTable
+          singletonNodeVariables,
+          singletonRelationshipVariables
         )
 
       case ProduceResult(_, columns) =>
@@ -1019,8 +1020,8 @@ object ReadFinder {
     nfa: NFA,
     nodeVariableGroupings: Set[Trail.VariableGrouping],
     relationshipVariableGroupings: Set[Trail.VariableGrouping],
-    singletonVariables: Set[LogicalVariable],
-    semanticTable: SemanticTable
+    singletonNodeVariables: Set[LogicalVariable],
+    singletonRelationshipVariables: Set[LogicalVariable]
   ): PlanReads = {
 
     val (nodeExpr, relExpr) =
@@ -1044,15 +1045,11 @@ object ReadFinder {
       nodeVariableGroupings.foldLeft(_) { (acc, pathNode) =>
         acc.withIntroducedNodeVariable(pathNode.singletonName)
       },
-      singletonVariables.foldLeft(_) { (acc, singletonVariable) =>
-        var res = acc
-        if (semanticTable.typeFor(singletonVariable).couldBe(CTNode)) {
-          res = res.withIntroducedNodeVariable(singletonVariable)
-        }
-        if (semanticTable.typeFor(singletonVariable).couldBe(CTRelationship)) {
-          res = res.withIntroducedRelationshipVariable(singletonVariable)
-        }
-        res
+      singletonNodeVariables.foldLeft(_) { (acc, singletonVariable) =>
+        acc.withIntroducedNodeVariable(singletonVariable)
+      },
+      singletonRelationshipVariables.foldLeft(_) { (acc, singletonVariable) =>
+        acc.withIntroducedRelationshipVariable(singletonVariable)
       },
       relationshipVariableGroupings.foldLeft(_) { (acc, pathRel) =>
         acc.withIntroducedRelationshipVariable(pathRel.singletonName)

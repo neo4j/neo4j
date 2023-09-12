@@ -69,7 +69,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           nonInlinablePreFilters = None,
           groupNodes = params.groupNodes,
           groupRelationships = params.groupRelationships,
-          singletonVariables = Set("b"),
+          singletonNodeVariables = Set("b"),
+          singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
           false
@@ -111,7 +112,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           nonInlinablePreFilters = None,
           groupNodes = params.groupNodes,
           groupRelationships = params.groupRelationships,
-          singletonVariables = Set("b"),
+          singletonNodeVariables = Set("b"),
+          singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
           false
@@ -152,7 +154,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           nonInlinablePreFilters = None,
           groupNodes = params.groupNodes,
           groupRelationships = params.groupRelationships,
-          singletonVariables = Set("b"),
+          singletonNodeVariables = Set("b"),
+          singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
           false
@@ -356,7 +359,8 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           nonInlinablePreFilters = None,
           groupNodes = params.groupNodes,
           groupRelationships = params.groupRelationships,
-          singletonVariables = Set("b"),
+          singletonNodeVariables = Set("b"),
+          singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
           false
