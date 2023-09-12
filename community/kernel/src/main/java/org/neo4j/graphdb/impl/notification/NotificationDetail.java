@@ -132,7 +132,7 @@ public class NotificationDetail {
     }
 
     public static String missingParameters(final Set<String> parameters) {
-        return createNotificationDetail(parameters, "the missing parameter", "the missing parameters");
+        return "Missing parameters: " + commaSeparated(parameters);
     }
 
     public static String procedureWarning(final String procedure, final String warning) {

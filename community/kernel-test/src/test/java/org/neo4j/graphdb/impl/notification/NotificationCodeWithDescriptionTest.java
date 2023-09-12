@@ -570,7 +570,7 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.ParameterNotProvided",
                 "Did not supply query with enough parameters. "
-                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (the missing parameter is: (param1))",
+                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: param1)",
                 NotificationCategory.GENERIC,
                 "The query plan cannot be cached and is not executable without EXPLAIN due to the undefined "
                         + "parameter(s) `$param1`. Provide the parameter(s).");
