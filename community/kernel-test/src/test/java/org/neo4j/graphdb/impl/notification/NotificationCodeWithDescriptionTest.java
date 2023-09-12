@@ -558,11 +558,11 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
-    void shouldConstructNotificationsFor_MISSING_PARAMETERS_FOR_EXPLAIN() {
+    void shouldConstructNotificationsFor_MISSING_PARAMETER_FOR_EXPLAIN() {
         NotificationImplementation notification = missingParameterForExplain(
                 InputPosition.empty,
-                NotificationDetail.missingParameters(Set.of("param1")),
-                NotificationDetail.parameters(Set.of("param1")));
+                NotificationDetail.missingParameters(List.of("param1")),
+                NotificationDetail.parameters(List.of("param1")));
 
         verifyNotification(
                 notification,
@@ -574,6 +574,25 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 "The query plan cannot be cached and is not executable without EXPLAIN due to the undefined "
                         + "parameter(s) `$param1`. Provide the parameter(s).");
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_MISSING_PARAMETERS_FOR_EXPLAIN() {
+        NotificationImplementation notification = missingParameterForExplain(
+                InputPosition.empty,
+                NotificationDetail.missingParameters(List.of("param1", "param2")),
+                NotificationDetail.parameters(List.of("param1", "param2")));
+
+        verifyNotification(
+                notification,
+                "The statement refers to a parameter that was not provided in the request.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.ParameterNotProvided",
+                "Did not supply query with enough parameters. "
+                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: param1, param2)",
+                NotificationCategory.GENERIC,
+                "The query plan cannot be cached and is not executable without EXPLAIN due to the undefined "
+                        + "parameter(s) `$param1, $param2`. Provide the parameter(s).");
     }
 
     @Test

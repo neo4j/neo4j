@@ -231,7 +231,7 @@ object NotificationWrapping {
         msg
       )
     case MissingParametersNotification(parameters) =>
-      val javaParameters = parameters.toSet.asJava
+      val javaParameters = parameters.asJava
       NotificationCodeWithDescription.missingParameterForExplain(
         graphdb.InputPosition.empty,
         NotificationDetail.missingParameters(javaParameters),

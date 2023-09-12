@@ -119,7 +119,7 @@ public class NotificationDetail {
         return createNotificationDetail("index", indexFormatString, true);
     }
 
-    public static String parameters(final Set<String> parameters) {
+    public static String parameters(final List<String> parameters) {
         return parameters.stream().map(parameter -> "$" + parameter).collect(Collectors.joining(", "));
     }
 
@@ -131,7 +131,7 @@ public class NotificationDetail {
         return createNotificationDetail("the missing relationship type", relType, true);
     }
 
-    public static String missingParameters(final Set<String> parameters) {
+    public static String missingParameters(final List<String> parameters) {
         return "Missing parameters: " + commaSeparated(parameters);
     }
 
