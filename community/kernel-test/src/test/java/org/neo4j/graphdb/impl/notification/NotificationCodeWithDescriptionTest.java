@@ -489,8 +489,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_MISSING_PROPERTY_NAME() {
-        NotificationImplementation notification = missingPropertyName(
-                InputPosition.empty, NotificationDetail.propertyName("prop"), NotificationDetail.property("n", "prop"));
+        NotificationImplementation notification =
+                missingPropertyName(InputPosition.empty, NotificationDetail.propertyName("prop"), "prop");
 
         verifyNotification(
                 notification,
@@ -501,7 +501,7 @@ class NotificationCodeWithDescriptionTest {
                         + "misspell it or that the label is available when you run this statement in your application "
                         + "(the missing property name is: prop)",
                 NotificationCategory.UNRECOGNIZED,
-                "The property `n.prop` does not exist. Verify that the spelling is correct.");
+                "The property `prop` does not exist. Verify that the spelling is correct.");
     }
 
     @Test

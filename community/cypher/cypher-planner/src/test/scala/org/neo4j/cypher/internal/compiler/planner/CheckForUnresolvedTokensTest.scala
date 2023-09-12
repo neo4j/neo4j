@@ -130,7 +130,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
     // then
     checkForTokens(ast, semanticTable) should equal(Set(
-      MissingPropertyNameNotification(InputPosition(18, 1, 19), "a", "prop")
+      MissingPropertyNameNotification(InputPosition(18, 1, 19), "prop")
     ))
   }
 
@@ -155,7 +155,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
     // then
     checkForTokens(ast, semanticTable) should equal(Set(
-      MissingPropertyNameNotification(InputPosition(25, 1, 26), "r", "prop")
+      MissingPropertyNameNotification(InputPosition(25, 1, 26), "prop")
     ))
   }
 

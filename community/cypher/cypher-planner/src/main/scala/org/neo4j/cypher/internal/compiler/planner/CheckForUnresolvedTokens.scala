@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
@@ -52,8 +50,6 @@ case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Cond
 case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
-  private val prettifier = Prettifier(ExpressionStringifier())
-
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
     if (value.query.readOnly) {
       val table = value.semanticTable()
@@ -72,10 +68,10 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
           acc =>
             TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
 
-        case Property(variable, prop @ PropertyKeyName(propName))
-          if isNodeOrRelationship(variable) && isEmptyPropertyName(propName) =>
+        case Property(variable, prop @ PropertyKeyName(name))
+          if isNodeOrRelationship(variable) && isEmptyPropertyName(name) =>
           acc =>
-            val notification = MissingPropertyNameNotification(prop.position, prettifier.expr(variable), propName)
+            val notification = MissingPropertyNameNotification(prop.position, name)
             TraverseChildren(acc :+ notification)
       }
 
