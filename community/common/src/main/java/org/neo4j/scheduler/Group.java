@@ -112,6 +112,7 @@ public enum Group {
     LEADER_TRANSFER_SERVICE("LeaderTransferService"),
     CORE_STATE_APPLIER("CoreStateApplier"),
     AKKA_HELPER("AkkaActorSystemRestarter"),
+    LIGHTHOUSE("Lighthouse"),
     DOWNLOAD_SNAPSHOT("DownloadSnapshot"),
     CATCHUP_CHANNEL_POOL("CatchupChannelPool"),
     CATCHUP_CLIENT("CatchupClient"),
