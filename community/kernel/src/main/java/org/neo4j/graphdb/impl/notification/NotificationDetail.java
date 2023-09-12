@@ -123,16 +123,6 @@ public class NotificationDetail {
         return createNotificationDetail("index", indexFormatString, true);
     }
 
-    public static String labelOrRelationshipType(final String labelName) {
-        return ":" + labelName;
-    }
-
-    public static String labelsOrRelationshipTypes(final Set<String> labelNames) {
-        return labelNames.stream()
-                .map(NotificationDetail::labelOrRelationshipType)
-                .collect(Collectors.joining(", "));
-    }
-
     public static String parameters(final Set<String> parameters) {
         return parameters.stream().map(parameter -> "$" + parameter).collect(Collectors.joining(", "));
     }
@@ -217,6 +207,10 @@ public class NotificationDetail {
 
     private static String createNotificationDetail(final String name, final String value, final boolean singular) {
         return String.format("%s %s %s", name, singular ? "is:" : "are:", value);
+    }
+
+    private static String labelOrRelationshipType(final String labelName) {
+        return ":" + labelName;
     }
 
     public static String deprecationNotificationDetail(final String replacement) {

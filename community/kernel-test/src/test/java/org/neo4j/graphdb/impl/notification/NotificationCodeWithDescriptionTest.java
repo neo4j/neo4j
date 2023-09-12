@@ -254,7 +254,7 @@ class NotificationCodeWithDescriptionTest {
         NotificationImplementation notification = indexLookupForDynamicProperty(
                 InputPosition.empty,
                 NotificationDetail.nodeIndexSeekOrScan(Set.of("A")),
-                NotificationDetail.labelsOrRelationshipTypes(Set.of("A")));
+                NotificationDetail.commaSeparated(Set.of("A")));
 
         verifyNotification(
                 notification,
@@ -263,7 +263,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.DynamicProperty",
                 "Using a dynamic property makes it impossible to use an index lookup for this query (indexed label is: (:A))",
                 NotificationCategory.PERFORMANCE,
-                "An index exists on label/type(s) `:A`. It is not possible to use these indexes for dynamic "
+                "An index exists on label/type(s) `A`. It is not possible to use these indexes for dynamic "
                         + "properties. Consider using static properties. See Status Codes documentation for suggestions.");
     }
 
@@ -441,8 +441,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_LARGE_LABEL_LOAD_CSV() {
-        NotificationImplementation notification =
-                largeLabelLoadCsv(InputPosition.empty, NotificationDetail.labelOrRelationshipType("Label"));
+        NotificationImplementation notification = largeLabelLoadCsv(InputPosition.empty, "Label");
 
         verifyNotification(
                 notification,
@@ -453,15 +452,13 @@ class NotificationCodeWithDescriptionTest {
                         + "not perform well on large data sets. Please consider using a schema index.",
                 NotificationCategory.PERFORMANCE,
                 "`LOAD CSV` in combination with `MATCH` or `MERGE` on a property that does not have an index may "
-                        + "result in long execution times. Consider adding an index for label `:Label`.");
+                        + "result in long execution times. Consider adding an index for label `Label`.");
     }
 
     @Test
     void shouldConstructNotificationsFor_MISSING_LABEL() {
-        NotificationImplementation notification = missingLabel(
-                InputPosition.empty,
-                NotificationDetail.missingLabel("Label"),
-                NotificationDetail.labelOrRelationshipType("Label"));
+        NotificationImplementation notification =
+                missingLabel(InputPosition.empty, NotificationDetail.missingLabel("Label"), "Label");
 
         verifyNotification(
                 notification,
@@ -471,15 +468,13 @@ class NotificationCodeWithDescriptionTest {
                 "One of the labels in your query is not available in the database, make sure you didn't "
                         + "misspell it or that the label is available when you run this statement in your application (the missing label name is: Label)",
                 NotificationCategory.UNRECOGNIZED,
-                "The label `:Label` does not exist. Verify that the spelling is correct.");
+                "The label `Label` does not exist. Verify that the spelling is correct.");
     }
 
     @Test
     void shouldConstructNotificationsFor_MISSING_REL_TYPE() {
-        NotificationImplementation notification = missingRelType(
-                InputPosition.empty,
-                NotificationDetail.missingRelationshipType("Rel"),
-                NotificationDetail.labelOrRelationshipType("Rel"));
+        NotificationImplementation notification =
+                missingRelType(InputPosition.empty, NotificationDetail.missingRelationshipType("Rel"), "Rel");
 
         verifyNotification(
                 notification,
@@ -489,7 +484,7 @@ class NotificationCodeWithDescriptionTest {
                 "One of the relationship types in your query is not available in the database, make sure you didn't "
                         + "misspell it or that the label is available when you run this statement in your application (the missing relationship type is: Rel)",
                 NotificationCategory.UNRECOGNIZED,
-                "The relationship type `:Rel` does not exist. Verify that the spelling is correct.");
+                "The relationship type `Rel` does not exist. Verify that the spelling is correct.");
     }
 
     @Test

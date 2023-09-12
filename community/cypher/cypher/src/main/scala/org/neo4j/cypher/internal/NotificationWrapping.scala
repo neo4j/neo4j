@@ -124,33 +124,33 @@ object NotificationWrapping {
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
         NotificationDetail.nodeIndexSeekOrScan(javaLabels),
-        NotificationDetail.labelsOrRelationshipTypes(javaLabels)
+        NotificationDetail.commaSeparated(javaLabels)
       )
     case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
       val javaRelTypes = relTypes.asJava
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
         NotificationDetail.relationshipIndexSeekOrScan(javaRelTypes),
-        NotificationDetail.labelsOrRelationshipTypes(javaRelTypes)
+        NotificationDetail.commaSeparated(javaRelTypes)
       )
     case EagerLoadCsvNotification =>
       NotificationCodeWithDescription.eagerLoadCsv(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification(labelName) =>
       NotificationCodeWithDescription.largeLabelLoadCsv(
         graphdb.InputPosition.empty,
-        NotificationDetail.labelOrRelationshipType(labelName)
+        labelName
       )
     case MissingLabelNotification(pos, label) =>
       NotificationCodeWithDescription.missingLabel(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.missingLabel(label),
-        NotificationDetail.labelOrRelationshipType(label)
+        label
       )
     case MissingRelTypeNotification(pos, relType) =>
       NotificationCodeWithDescription.missingRelType(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.missingRelationshipType(relType),
-        NotificationDetail.labelOrRelationshipType(relType)
+        relType
       )
     case MissingPropertyNameNotification(pos, entity, property) =>
       NotificationCodeWithDescription.missingPropertyName(
