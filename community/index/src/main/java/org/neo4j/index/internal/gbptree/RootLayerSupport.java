@@ -60,6 +60,7 @@ class RootLayerSupport {
     private final String treeName;
     private final boolean readOnly;
     private final BooleanSupplier writersMustEagerlyFlushSupplier;
+    private final StructureWriteLog structureWriteLog;
 
     RootLayerSupport(
             PagedFile pagedFile,
@@ -74,7 +75,8 @@ class RootLayerSupport {
             AtomicBoolean changesSinceLastCheckpoint,
             String treeName,
             boolean readOnly,
-            BooleanSupplier writersMustEagerlyFlushSupplier) {
+            BooleanSupplier writersMustEagerlyFlushSupplier,
+            StructureWriteLog structureWriteLog) {
         this.pagedFile = pagedFile;
         this.generationSupplier = generationSupplier;
         this.exceptionDecorator = exceptionDecorator;
@@ -89,6 +91,7 @@ class RootLayerSupport {
         this.treeName = treeName;
         this.readOnly = readOnly;
         this.writersMustEagerlyFlushSupplier = writersMustEagerlyFlushSupplier;
+        this.structureWriteLog = structureWriteLog;
     }
 
     <K, V> SeekCursor<K, V> internalAllocateSeeker(
@@ -255,7 +258,8 @@ class RootLayerSupport {
                 monitor,
                 exceptionDecorator,
                 generationSupplier,
-                writersMustEagerlyFlushSupplier);
+                writersMustEagerlyFlushSupplier,
+                structureWriteLog.newSession());
     }
 
     <K, V> GBPTreeWriter<K, V> initializeWriter(

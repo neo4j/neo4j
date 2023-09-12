@@ -63,6 +63,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -100,10 +101,11 @@ class MultiRootGBPTreeTest {
     @BeforeEach
     void start() {
         PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
+        var path = directory.file("tree");
         tree = new MultiRootGBPTree<>(
                 pageCache,
                 fileSystem,
-                directory.file("tree"),
+                path,
                 layout,
                 NO_MONITOR,
                 NO_HEADER_READER,
@@ -114,7 +116,10 @@ class MultiRootGBPTreeTest {
                 "test multi-root tree",
                 new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
-                pageCacheTracer);
+                pageCacheTracer,
+                EmptyDependencyResolver.EMPTY_RESOLVER,
+                TreeNodeLayoutFactory.getInstance(),
+                LoggingStructureWriteLog.forGBPTree(fileSystem, path));
         highestUsableSeed = layout.highestUsableSeed();
     }
 
@@ -138,10 +143,11 @@ class MultiRootGBPTreeTest {
 
         PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         var layoutWithBadHashes = new MinimalHashCodeEntriesLayout();
+        var path = directory.file("tree");
         try (var badHashesTree = new MultiRootGBPTree<>(
                 pageCache,
                 fileSystem,
-                directory.file("tree"),
+                path,
                 layoutWithBadHashes,
                 NO_MONITOR,
                 NO_HEADER_READER,
@@ -152,7 +158,10 @@ class MultiRootGBPTreeTest {
                 "test multi-root tree",
                 new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER),
                 multipleRoots(layoutWithBadHashes, (int) kibiBytes(1)),
-                pageCacheTracer)) {
+                pageCacheTracer,
+                EmptyDependencyResolver.EMPTY_RESOLVER,
+                TreeNodeLayoutFactory.getInstance(),
+                LoggingStructureWriteLog.forGBPTree(fileSystem, path))) {
 
             var externalId1 = 101;
             badHashesTree.create(layoutWithBadHashes.key(externalId1), NULL_CONTEXT);
@@ -486,7 +495,10 @@ class MultiRootGBPTreeTest {
                         "test multi-root tree",
                         new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         multipleRoots(wrongRootLayout, (int) kibiBytes(1)),
-                        cacheTracer))
+                        cacheTracer,
+                        EmptyDependencyResolver.EMPTY_RESOLVER,
+                        TreeNodeLayoutFactory.getInstance(),
+                        StructureWriteLog.EMPTY))
                 .isInstanceOf(MetadataMismatchException.class);
     }
 
@@ -513,7 +525,10 @@ class MultiRootGBPTreeTest {
                         "test multi-root tree",
                         new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                         multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
-                        cacheTracer))
+                        cacheTracer,
+                        EmptyDependencyResolver.EMPTY_RESOLVER,
+                        TreeNodeLayoutFactory.getInstance(),
+                        StructureWriteLog.EMPTY))
                 .isInstanceOf(MetadataMismatchException.class);
     }
 
@@ -540,7 +555,10 @@ class MultiRootGBPTreeTest {
                             "test multi-root tree",
                             new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
                             multipleRoots(rootKeyLayout, (int) kibiBytes(1)),
-                            cacheTracer)
+                            cacheTracer,
+                            EmptyDependencyResolver.EMPTY_RESOLVER,
+                            TreeNodeLayoutFactory.getInstance(),
+                            StructureWriteLog.EMPTY)
                     .close();
         }
     }

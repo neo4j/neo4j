@@ -102,10 +102,11 @@ class InternalTreeLogic<KEY, VALUE> {
     private final Monitor monitor;
     private final TreeWriterCoordination coordination;
     final byte layerType;
+    private StructureWriteLog.Session structureWriteLog;
 
     /**
      * Current path down the tree
-     * - level:-1 is uninitialized (so that a call to {@link #initialize(PageCursor,double)} is required)
+     * - level:-1 is uninitialized (so that a call to {@link #initialize(PageCursor, double, StructureWriteLog.Session)} is required)
      * - level: 0 is at root
      * - level: 1 is at first level below root
      * ... a.s.o
@@ -191,13 +192,15 @@ class InternalTreeLogic<KEY, VALUE> {
      * @param cursorAtRoot {@link PageCursor} pointing at root of tree.
      * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
      */
-    protected void initialize(PageCursor cursorAtRoot, double ratioToKeepInLeftOnSplit) {
+    protected void initialize(
+            PageCursor cursorAtRoot, double ratioToKeepInLeftOnSplit, StructureWriteLog.Session structureWriteLog) {
         currentLevel = 0;
         Level<KEY> level = levels[currentLevel];
         level.treeNodeId = cursorAtRoot.getCurrentPageId();
         level.lowerIsOpenEnded = true;
         level.upperIsOpenEnded = true;
         this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
+        this.structureWriteLog = structureWriteLog;
     }
 
     void reset() {
@@ -394,7 +397,7 @@ class InternalTreeLogic<KEY, VALUE> {
      * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
      * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since
-     * {@link #initialize(PageCursor,double)}) or at where last insert/remove left it.
+     * {@link #initialize(PageCursor, double, StructureWriteLog.Session)}) or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be inserted
      * @param value value to be associated with key
@@ -566,6 +569,12 @@ class InternalTreeLogic<KEY, VALUE> {
         structurePropagation.hasRightKeyInsert = true;
         structurePropagation.midChild = current;
         structurePropagation.rightChild = newRight;
+
+        structureWriteLog.split(
+                unstableGeneration,
+                currentLevel > 0 ? levels[currentLevel - 1].treeNodeId : -1,
+                cursor.getCurrentPageId(),
+                newRight);
 
         try (PageCursor rightCursor = cursor.openLinkedCursor(newRight)) {
             // Initialize new right
@@ -946,6 +955,12 @@ class InternalTreeLogic<KEY, VALUE> {
         structurePropagation.midChild = current;
         structurePropagation.rightChild = newRight;
 
+        structureWriteLog.split(
+                unstableGeneration,
+                currentLevel > 0 ? levels[currentLevel - 1].treeNodeId : -1,
+                cursor.getCurrentPageId(),
+                newRight);
+
         try (PageCursor rightCursor = cursor.openLinkedCursor(newRight)) {
             // Initialize new right
             TreeNodeUtil.goTo(rightCursor, "new right sibling in split", newRight);
@@ -996,7 +1011,7 @@ class InternalTreeLogic<KEY, VALUE> {
      * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
      * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since
-     * {@link #initialize(PageCursor,double)}) or at where last insert/remove left it.
+     * {@link #initialize(PageCursor, double, StructureWriteLog.Session)}) or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be removed
      * @param into {@code VALUE} instance to write removed value to
@@ -1184,6 +1199,8 @@ class InternalTreeLogic<KEY, VALUE> {
             structurePropagation.hasMidChildUpdate = true;
             structurePropagation.midChild = onlyChildOfRoot;
 
+            structureWriteLog.shrinkTree(unstableGeneration, oldRoot);
+            structureWriteLog.addToFreelist(unstableGeneration, oldRoot);
             idProvider.releaseId(stableGeneration, unstableGeneration, oldRoot, bind(cursor));
             TreeNodeUtil.goTo(cursor, "child", onlyChildOfRoot);
 
@@ -1286,6 +1303,7 @@ class InternalTreeLogic<KEY, VALUE> {
                 // This subtree does not contain anything any more
                 // Repoint sibling and add to freelist and return false
                 connectLeftAndRightSibling(cursor, stableGeneration, unstableGeneration);
+                structureWriteLog.addToFreelist(unstableGeneration, currentPageId);
                 idProvider.releaseId(stableGeneration, unstableGeneration, currentPageId, bind(cursor));
                 return false;
             }
@@ -1531,6 +1549,13 @@ class InternalTreeLogic<KEY, VALUE> {
         // a common parent covers the keys in right sibling too
         assert rightSiblingKeyCount > 0 : "trying to read the last key from the empty leaf";
         leafNode.keyAt(rightSiblingCursor, structurePropagation.rightKey, rightSiblingKeyCount - 1, cursorContext);
+
+        structureWriteLog.merge(
+                unstableGeneration,
+                levels[currentLevel - 1].treeNodeId,
+                rightSiblingCursor.getCurrentPageId(),
+                cursor.getCurrentPageId());
+
         merge(
                 cursor,
                 keyCount,
@@ -1564,6 +1589,13 @@ class InternalTreeLogic<KEY, VALUE> {
         // a common parent covers the keys in left sibling too
         assert leftSiblingKeyCount > 0 : "trying to read the first key from the empty leaf";
         leafNode.keyAt(leftSiblingCursor, structurePropagation.leftKey, 0, cursorContext);
+
+        structureWriteLog.merge(
+                unstableGeneration,
+                levels[currentLevel - 1].treeNodeId,
+                cursor.getCurrentPageId(),
+                leftSiblingCursor.getCurrentPageId());
+
         merge(
                 leftSiblingCursor,
                 leftSiblingKeyCount,
@@ -1600,6 +1632,7 @@ class InternalTreeLogic<KEY, VALUE> {
 
         // Add left sibling to free list
         connectLeftAndRightSibling(leftSiblingCursor, stableGeneration, unstableGeneration);
+        structureWriteLog.addToFreelist(unstableGeneration, leftSiblingCursor.getCurrentPageId());
         idProvider.releaseId(
                 stableGeneration, unstableGeneration, leftSiblingCursor.getCurrentPageId(), linkedCursorCreator);
     }
@@ -1683,6 +1716,11 @@ class InternalTreeLogic<KEY, VALUE> {
 
         // Do copy
         long successorId = idProvider.acquireNewId(stableGeneration, unstableGeneration, bind(cursor));
+        structureWriteLog.createSuccessor(
+                unstableGeneration,
+                currentLevel > 0 ? levels[currentLevel - 1].treeNodeId : -1,
+                cursor.getCurrentPageId(),
+                successorId);
         try (PageCursor successorCursor = cursor.openLinkedCursor(successorId)) {
             TreeNodeUtil.goTo(successorCursor, "successor", successorId);
             cursor.copyTo(0, successorCursor, 0, cursor.getPagedFile().payloadSize());
@@ -1725,6 +1763,7 @@ class InternalTreeLogic<KEY, VALUE> {
         // Propagate structure change
         structureUpdate.update(structurePropagation, successorId);
 
+        structureWriteLog.addToFreelist(unstableGeneration, oldId);
         idProvider.releaseId(stableGeneration, unstableGeneration, oldId, bind(cursor));
     }
 

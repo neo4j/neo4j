@@ -33,6 +33,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper.Layouts;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -105,7 +106,10 @@ public class GBPTreeBootstrapper implements Closeable {
                     file.getFileName().toString(),
                     contextFactory,
                     layouts.rootLayerConfiguration(),
-                    pageCacheTracer);
+                    pageCacheTracer,
+                    EmptyDependencyResolver.EMPTY_RESOLVER,
+                    TreeNodeLayoutFactory.getInstance(),
+                    StructureWriteLog.EMPTY);
             return new SuccessfulBootstrap(tree, layouts, state, meta);
         } catch (Exception e) {
             return new FailedBootstrap(e);

@@ -885,6 +885,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.idgenerator.log.enabled", BOOL, false).build();
 
     @Internal
+    @Description("Enable/disable internal GBPTree log for structural changes for forensics purposes")
+    public static final Setting<Boolean> gbptree_structure_log_enabled = newBuilder(
+                    "internal.dbms.debug.gbptree_structure_log_enabled", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Log file rotation threshold for id generator logging")
     public static final Setting<Long> id_generator_log_rotation_threshold = newBuilder(
                     "internal.dbms.idgenerator.log.rotation_threshold", BYTES, mebiBytes(200))

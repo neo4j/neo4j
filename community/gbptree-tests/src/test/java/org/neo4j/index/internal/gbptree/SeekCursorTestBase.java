@@ -121,7 +121,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
     private void updateRoot() {
         rootId = cursor.getCurrentPageId();
         rootGeneration = unstableGeneration;
-        treeLogic.initialize(cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO);
+        treeLogic.initialize(cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO, StructureWriteLog.EMPTY);
     }
 
     /* NO CONCURRENT INSERT */

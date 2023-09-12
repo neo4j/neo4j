@@ -159,7 +159,8 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 cursorContextFactory,
                 pageCacheTracer,
                 dependencyResolver,
-                treeNodeLayoutFactory);
+                treeNodeLayoutFactory,
+                LoggingStructureWriteLog.forGBPTree(fileSystem, path));
     }
 
     public MultiRootGBPTree<ROOT_KEY, KEY, VALUE> buildMultiRoot() {
@@ -180,6 +181,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 RootLayerConfiguration.multipleRoots(rootLayout, (int) kibiBytes(10)),
                 pageCacheTracer,
                 dependencyResolver,
-                treeNodeLayoutFactory);
+                treeNodeLayoutFactory,
+                LoggingStructureWriteLog.forGBPTree(fileSystem, path));
     }
 }

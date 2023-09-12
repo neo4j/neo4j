@@ -57,7 +57,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.index.internal.gbptree.Header.Reader;
@@ -504,6 +503,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      */
     private volatile boolean writersMustEagerlyFlush;
 
+    private final StructureWriteLog structureWriteLog;
+
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist. If the index doesn't exist it will be
      * created and the {@link Layout} and {@code pageSize} will be written in index header. If the index exists it will be opened and the {@link Layout} will be
@@ -583,7 +584,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             RootLayerConfiguration<ROOT_KEY> rootLayerConfiguration,
             PageCacheTracer pageCacheTracer,
             DependencyResolver dependencyResolver,
-            TreeNodeLayoutFactory treeNodeLayoutFactory)
+            TreeNodeLayoutFactory treeNodeLayoutFactory,
+            StructureWriteLog structureWriteLog)
             throws MetadataMismatchException {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -593,6 +595,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         this.pageCacheTracer = pageCacheTracer;
         this.generation = Generation.generation(FIRST_STABLE_GENERATION, FIRST_UNSTABLE_GENERATION);
         this.layout = layout;
+        this.structureWriteLog = structureWriteLog;
 
         try (var cursorContext = contextFactory.create(INDEX_INTERNAL_TAG)) {
             var openResult = openOrCreate(fileSystem, pageCache, indexFile, databaseName, openOptions);
@@ -624,7 +627,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                     changesSinceLastCheckpoint,
                     name,
                     readOnly,
-                    () -> writersMustEagerlyFlush);
+                    () -> writersMustEagerlyFlush,
+                    structureWriteLog);
             this.rootLayer = rootLayerConfiguration.buildRootLayer(
                     rootLayerSupport, layout, contextFactory, treeNodeSelector, dependencyResolver);
 
@@ -653,41 +657,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         } catch (Throwable e) {
             throw exitConstructor(e);
         }
-    }
-
-    public MultiRootGBPTree(
-            PageCache pageCache,
-            FileSystemAbstraction fileSystem,
-            Path indexFile,
-            Layout<KEY, VALUE> layout,
-            Monitor monitor,
-            Header.Reader headerReader,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean readOnly,
-            ImmutableSet<OpenOption> engineOpenOptions,
-            String databaseName,
-            String name,
-            CursorContextFactory contextFactory,
-            RootLayerConfiguration<ROOT_KEY> rootLayerConfiguration,
-            PageCacheTracer pageCacheTracer)
-            throws MetadataMismatchException {
-        this(
-                pageCache,
-                fileSystem,
-                indexFile,
-                layout,
-                monitor,
-                headerReader,
-                recoveryCleanupWorkCollector,
-                readOnly,
-                engineOpenOptions,
-                databaseName,
-                name,
-                contextFactory,
-                rootLayerConfiguration,
-                pageCacheTracer,
-                EmptyDependencyResolver.EMPTY_RESOLVER,
-                TreeNodeLayoutFactory.getInstance());
     }
 
     private RuntimeException exitConstructor(Throwable throwable) {
@@ -1198,6 +1167,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 // so that there's no chance that the state page change below can make it to disk before
                 // the state page. Only force is needed, but there's no method only doing force, although
                 // the flush part is really fast if there are no dirty pages.
+                structureWriteLog.checkpoint(stableGeneration, unstableGeneration, unstableGeneration + 1);
                 pagedFile.flushAndForce(flushEvent);
 
                 // Increment generation, i.e. stable becomes current unstable and unstable increments by one
@@ -1298,10 +1268,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     }
 
     private void doClose() {
-        if (pagedFile != null) {
-            // Will be null if exception while mapping file
-            pagedFile.close();
-        }
+        try (pagedFile;
+                structureWriteLog) {}
         closed = true;
     }
 

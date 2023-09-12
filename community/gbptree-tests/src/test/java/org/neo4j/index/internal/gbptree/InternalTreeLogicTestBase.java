@@ -1584,7 +1584,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         generationManager.recovery();
         // start up on stable root
         goTo(cursor, originalNodeId);
-        treeLogic.initialize(cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO);
+        treeLogic.initialize(cursor, InternalTreeLogic.DEFAULT_SPLIT_RATIO, StructureWriteLog.EMPTY);
         // replay transaction TX1 will create a new successor
         insert(key(1L), value(10L));
         assertEquals(2, numberOfRootSuccessors);
@@ -2189,7 +2189,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
 
     private void updateRoot() {
         root = new Root(cursor.getCurrentPageId(), unstableGeneration);
-        treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit);
+        treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit, StructureWriteLog.EMPTY);
     }
 
     private void assertSuccessorPointerNotCrashOrBroken() throws IOException {

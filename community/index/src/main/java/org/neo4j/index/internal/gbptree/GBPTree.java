@@ -73,7 +73,8 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 contextFactory,
                 pageCacheTracer,
                 EmptyDependencyResolver.EMPTY_RESOLVER,
-                TreeNodeLayoutFactory.getInstance());
+                TreeNodeLayoutFactory.getInstance(),
+                StructureWriteLog.EMPTY);
     }
 
     public GBPTree(
@@ -107,7 +108,8 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 contextFactory,
                 pageCacheTracer,
                 dependencyResolver,
-                TreeNodeLayoutFactory.getInstance());
+                TreeNodeLayoutFactory.getInstance(),
+                StructureWriteLog.EMPTY);
     }
 
     public GBPTree(
@@ -125,7 +127,8 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             DependencyResolver dependencyResolver,
-            TreeNodeLayoutFactory treeNodeLayoutFactory)
+            TreeNodeLayoutFactory treeNodeLayoutFactory,
+            StructureWriteLog structureWriteLog)
             throws MetadataMismatchException {
         super(
                 pageCache,
@@ -143,7 +146,8 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 singleRoot(),
                 pageCacheTracer,
                 dependencyResolver,
-                treeNodeLayoutFactory);
+                treeNodeLayoutFactory,
+                structureWriteLog);
         access = rootLayer.access(SingleRoot.SINGLE_ROOT);
     }
 

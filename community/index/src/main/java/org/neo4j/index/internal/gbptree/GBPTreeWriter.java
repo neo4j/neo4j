@@ -51,6 +51,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     private final Consumer<Throwable> exceptionMessageAppender;
     private final LongSupplier generationSupplier;
     private final BooleanSupplier mustEagerlyFlushSupplier;
+    private final StructureWriteLog.Session structureWriteLog;
     private final StructurePropagation<K> structurePropagation;
     private final PagedFile pagedFile;
     private final TreeWriterCoordination coordination;
@@ -85,7 +86,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             Monitor monitor,
             Consumer<Throwable> exceptionMessageAppender,
             LongSupplier generationSupplier,
-            BooleanSupplier mustEagerlyFlushSupplier) {
+            BooleanSupplier mustEagerlyFlushSupplier,
+            StructureWriteLog.Session structureWriteLog) {
         this.layout = layout;
         this.pagedFile = pagedFile;
         this.coordination = coordination;
@@ -102,6 +104,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         this.exceptionMessageAppender = exceptionMessageAppender;
         this.generationSupplier = generationSupplier;
         this.mustEagerlyFlushSupplier = mustEagerlyFlushSupplier;
+        this.structureWriteLog = structureWriteLog;
     }
 
     /**
@@ -271,7 +274,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         }
 
         assert assertNoSuccessor(cursor, stableGeneration, unstableGeneration);
-        treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit);
+        treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit, structureWriteLog);
         int keyCount = keyCount(cursor);
         var isInternal = isInternal(cursor);
         return coordination.arrivedAtChild(
@@ -449,6 +452,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             // New root
             long newRootId = freeList.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
             PageCursorUtil.goTo(cursor, "new root", newRootId);
+
+            structureWriteLog.growTree(unstableGeneration, newRootId);
 
             internalNode.initialize(cursor, treeLogic.layerType, stableGeneration, unstableGeneration);
             internalNode.setChildAt(cursor, structurePropagation.midChild, 0, stableGeneration, unstableGeneration);

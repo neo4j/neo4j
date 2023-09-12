@@ -25,6 +25,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.index.internal.gbptree.StructureWriteLog.structureWriteLog;
 import static org.neo4j.internal.id.IdValidator.assertIdWithinMaxCapacity;
 import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -49,6 +50,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -57,6 +59,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.index.internal.gbptree.TreeNodeLayoutFactory;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
@@ -357,7 +360,8 @@ public class IndexedIdGenerator implements IdGenerator {
                 readOnly,
                 databaseName,
                 contextFactory,
-                openOptions);
+                openOptions,
+                config);
 
         // Why do we need to check STARTING_GENERATION here, we never write that value to header?
         // Good question! Because we need to be backwards compatible.
@@ -410,7 +414,8 @@ public class IndexedIdGenerator implements IdGenerator {
             boolean readOnly,
             String databaseName,
             CursorContextFactory contextFactory,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            Config config) {
         try {
             return new GBPTree<>(
                     pageCache,
@@ -425,7 +430,10 @@ public class IndexedIdGenerator implements IdGenerator {
                     databaseName,
                     "Indexed ID generator",
                     contextFactory,
-                    pageCacheTracer);
+                    pageCacheTracer,
+                    EmptyDependencyResolver.EMPTY_RESOLVER,
+                    TreeNodeLayoutFactory.getInstance(),
+                    structureWriteLog(fileSystem, path, config));
         } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
                     "Id generator file could not be found, most likely this database needs to be recovered, file:"
