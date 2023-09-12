@@ -28,6 +28,13 @@ import org.json4s.JString
 import org.json4s.JValue
 import org.json4s.StringInput
 import org.json4s.native.JsonMethods
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NumberLiteral
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
@@ -35,6 +42,9 @@ import org.neo4j.internal.schema.IndexType.RANGE
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
 import java.io.File
+import java.nio.file.Files
+
+import scala.util.Try
 
 object GraphCountsJson {
 
@@ -71,18 +81,91 @@ object GraphCountsJson {
     JsonMethods.parse(StringInput(str)).extract[DbStatsRetrieveGraphCountsJSON]
   }
 
-  def parseAsGraphCountDataFromCypherMap(file: File): GraphCountData = {
-    val source = scala.io.Source.fromFile(file.getAbsolutePath)
-    val lines =
-      try source.mkString
-      finally source.close()
-    parseAsGraphCountDataFromCypherMapString(lines)
+  def parseAsGraphCountDataFromCypherMap(file: File): GraphCountData =
+    parseAsGraphCountDataFromCypherMapString(readFile(file))
+
+  def mapLiteralToJson(cypherLiteral: Expression): String = cypherLiteral match {
+    case MapExpression(items) => items.map {
+        case (PropertyKeyName(prop), value) => s""""$prop":${mapLiteralToJson(value)}"""
+      }.mkString("{", ",", "}")
+    case ListLiteral(expressions)   => expressions.map(mapLiteralToJson).mkString("[", ",", "]")
+    case number: NumberLiteral      => number.asCanonicalStringVal
+    case StringLiteral(stringValue) => s""""$stringValue""""
+    case _                          => throw new IllegalArgumentException(s"Cannot convert $cypherLiteral to json.")
   }
 
-  def parseAsGraphCountDataFromCypherMapString(string: String): GraphCountData = {
-    implicit val formats: Formats = allFormats
-    val str = string.replaceAll("(\\w+\\s*):", "\"$1\":")
-    JsonMethods.parse(str).extract[GraphCountData]
+  def parseAsGraphCountDataFromCypherMapString(mapString: String): GraphCountData = {
+    val mapExpression = JavaccRule.MapLiteral.apply(mapString)
+    val json = mapLiteralToJson(mapExpression)
+    GraphCountsJson.parseAsGraphCountDataFromString(json)
+  }
+
+  def parseAsGraphCountsCsv(file: File): GraphCountData =
+    parseAsGraphCountsCsvString(readFile(file))
+
+  private def readFile(file: File) = {
+    val fileContent = Files.readString(file.toPath)
+
+    fileContent.replace("\uFEFF", "")
+  }
+
+  private val CsvContent =
+    raw"""\s*section,data
+         |\"\"\"GRAPH COUNTS\"\"\","(.*)"""".stripMargin.r
+
+  def parseAsGraphCountsCsvString(csvContent: String): GraphCountData = {
+    val content = csvContent match {
+      case CsvContent(content) => content
+      case _ =>
+        throw new IllegalArgumentException(s"Unexpected format for csv file:\n${csvContent.substring(0, 30)}...")
+    }
+
+    val unescaped = content.replaceAll("\"\"", "\"")
+    parseAsGraphCountDataFromCypherMapString(unescaped)
+  }
+
+  /**
+   * If you don't quite know the format of the graph count data that you were given (e.g. by Support),
+   * you can use this method to try multiple formats in one go.
+   */
+  def getGraphCounts(file: File): GraphCountData = {
+    val content = readFile(file)
+    Try {
+      /* If your json has the correct format including boiler plate.
+       * Expected format:
+       *
+       * {
+       *   "results":
+       *   [{
+       *     "columns":["section","data"],
+       *     "data":
+       *     [{
+       *       "row":
+       *       ["GRAPH COUNTS",
+       *         {
+       *           "relationships":[{"count":x},{"relationshipType":"TYPE1","count":xx, ...}, ...],
+       *           "nodes":[{"count":y},{"count":yy,"label":"Label1"}, ...],
+       *           "indexes":[{"updatesSinceEstimation":0,"totalSize":z,"properties":["prop"],"labels":["label"],"estimatedUniqueSize":zz}, ...],
+       *           "constraints":[{"label":"Label","type":"Uniqueness constraint","properties":["prop"]}, ...]
+       *         }
+       *       ],
+       *       "meta":[...]
+       *     }]
+       *   }],
+       *   "errors":[]
+       * }
+       */
+      val graphCounts = parseAsGraphCountsJsonFromString(content)
+      graphCounts.results.head.data.head.row.data
+    } orElse {
+      // If your json is missing the boiler plate
+      Try(parseAsGraphCountDataFromString(content))
+    } orElse {
+      // If all you have is a Cypher map output (from e.g. Cypher Shell)
+      Try(parseAsGraphCountDataFromCypherMapString(content))
+    } getOrElse {
+      parseAsGraphCountsCsvString(content)
+    }
   }
 }
 
