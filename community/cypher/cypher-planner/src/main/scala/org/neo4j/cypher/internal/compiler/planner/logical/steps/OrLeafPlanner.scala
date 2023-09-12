@@ -295,8 +295,8 @@ object OrLeafPlanner {
       }.head
       val relWithInlinedTypePredicate = relWithoutInlinedTypePredicate.copy(types = types)
       qg
-        .removePatternRelationships(Set(relWithoutInlinedTypePredicate))
-        .withAddedPatternRelationships(Set(relWithInlinedTypePredicate))
+        .removePatternRelationship(relWithoutInlinedTypePredicate)
+        .addPatternRelationship(relWithInlinedTypePredicate)
     }
 
     override def addSolvedToQueryGraph(

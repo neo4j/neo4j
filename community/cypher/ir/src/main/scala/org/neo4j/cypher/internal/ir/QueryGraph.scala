@@ -42,6 +42,13 @@ import scala.runtime.ScalaRunTime
  * to consume by the planner. If you want to trace this back to the original query - one QueryGraph
  * represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
  *
+ * A query graph has these contracts. All methods in this class that return a QueryGraph must uphold these contracts.
+ * {{{
+ *   qg.nodeConnections.flatMap(_.boundaryNodesSet).subsetOf(qg.patternNodes)
+ *
+ *   qg.shortestRelationshipPatterns.flatMap(_.rel.boundaryNodesSet).subsetOf(qg.patternNodes)
+ * }}}
+ *
  * @param shortestRelationshipPatterns shortest path patterns coming from shortestPath() or allShortestPaths(), made of a single var-length relationship and its endpoints.
  * @param selectivePathPatterns        path selector such as ANY k, SHORTEST k, or SHORTEST k GROUPS, applied to a path pattern introduced as part of Graph Pattern Matching.
  * @param patternNodes                 unconditional singleton pattern nodes excluding strict interior pattern nodes of selective path patterns.
@@ -96,6 +103,7 @@ case class QueryGraph(
 
   /**
    * Sets both patternNodes and patternRelationships from this pattern relationship. Compare with `addPatternRelationship`.
+   * Note that other patternNodes and patternRelationships get removed.
    *
    * @param pattern the relationship defining the pattern of this query graph
    */
@@ -105,12 +113,25 @@ case class QueryGraph(
       patternRelationships = Set(pattern)
     )
 
-  // TODO fix
+  /**
+   * Note that pattern nodes of these patterns are added, too.
+   * Other pattern nodes are not removed.
+   */
   def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
-    copy(patternRelationships = patterns)
+    copy(
+      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet),
+      patternRelationships = patterns
+    )
 
+  /**
+   * Note that pattern nodes of these patterns are added, too.
+   * Other pattern nodes are not removed.
+   */
   def withQuantifiedPathPatterns(patterns: Set[QuantifiedPathPattern]): QueryGraph =
-    copy(quantifiedPathPatterns = patterns)
+    copy(
+      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet),
+      quantifiedPathPatterns = patterns
+    )
 
   // ------------
   // Add elements
@@ -175,10 +196,6 @@ case class QueryGraph(
 
   def addShortestRelationships(shortestRelationships: ShortestRelationshipPattern*): QueryGraph =
     shortestRelationships.foldLeft(this)((qg, p) => qg.addShortestRelationship(p))
-
-  // FIXME remove
-  def withAddedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
-    copy(patternRelationships = patternRelationships ++ patterns)
 
   /**
    * Returns a copy of the query graph, with an additional selective path pattern added.
@@ -253,8 +270,12 @@ case class QueryGraph(
 
   def removeArguments(): QueryGraph = withArgumentIds(Set.empty)
 
-  def removePatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
-    copy(patternRelationships = patternRelationships -- patterns)
+  /**
+   * Removes a pattern relationship.
+   * Note that this method does not remove the boundary nodes from pattern nodes.
+   */
+  def removePatternRelationship(pattern: PatternRelationship): QueryGraph =
+    copy(patternRelationships = patternRelationships - pattern)
 
   // ----------
   // Other defs
