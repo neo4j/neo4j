@@ -37,6 +37,10 @@ object NonEmptyList {
   def apply[T](first: T, tail: T*): NonEmptyList[T] =
     loop(Last(first), tail.iterator).reverse
 
+  def singleton[T](value: T): NonEmptyList[T] = Last(value)
+
+  def cons[T](head: T, tail: NonEmptyList[T]): NonEmptyList[T] = Fby(head, tail)
+
   def newBuilder[T]: mutable.Builder[T, Option[NonEmptyList[T]]] =
     new mutable.Builder[T, Option[NonEmptyList[T]]] {
       private val vecBuilder = Vector.newBuilder[T]
@@ -370,6 +374,23 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
     optNel.map { nel =>
       Fby(elem, nel)
     } orElse Some(Last(elem))
+
+  /**
+   * Like zip, except that it allows to map the values two by two instead of simply pairing them.
+   */
+  def zipWith[A, B](other: NonEmptyList[A])(f: (T, A) => B): NonEmptyList[B] = {
+    val ts = iterator
+    val as = other.iterator
+    val bs = mutable.Stack.empty[B]
+    while (ts.hasNext && as.hasNext) {
+      bs.push(f(ts.next(), as.next()))
+    }
+    var nel: NonEmptyList[B] = Last(bs.pop())
+    while (bs.nonEmpty) {
+      nel = Fby(bs.pop(), nel)
+    }
+    nel
+  }
 }
 
 final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T] {

@@ -39,13 +39,17 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
+import org.neo4j.cypher.internal.ir.SelectivePathPattern.Selector
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -88,7 +92,8 @@ object NodeConnectionMultiplierCalculator {
  * It returns Multipliers instead of Selectivities, since a relationship pattern / QPP can increase the Cardinality of the cross product of the start and end nodes.
  * This is the case if there are on average more than 1 relationship between nodes, and can also be the case for var length relationships ands QPPs.
  */
-case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
+case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: SelectivityCombiner)
+    extends NodeConnectionManipulation {
 
   implicit private val numericCardinality: NumericCardinality.type = NumericCardinality
 
@@ -150,7 +155,16 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             relationshipsWithUniquePredicate(qpp.relationshipVariableGroupings.map(_.groupName)),
             uniquenessPredicatesWithin(qpp)
           )
-        case spp: SelectivePathPattern => Multiplier.ONE // TODO
+        case selectivePathPattern: SelectivePathPattern =>
+          selectivePathPatternPathPatternMultiplier(
+            cardinalityModel = cardinalityModel,
+            labelInfo = labels,
+            semanticTable = semanticTable,
+            indexPredicateProviderContext = indexPredicateProviderContext,
+            lhsCardinality = lhsCardinality,
+            rhsCardinality = rhsCardinality,
+            selectivePathPattern = selectivePathPattern
+          )
       }
     }
   }
@@ -473,6 +487,154 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
     val pos = InputPosition.NONE
     HasLabels(Variable(binding.inner)(pos), labelInfo.getOrElse(binding.outer, Set.empty).toVector)(pos)
   }
+
+  private def selectivePathPatternPathPatternMultiplier(
+    cardinalityModel: CardinalityModel,
+    labelInfo: LabelInfo,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    lhsCardinality: Cardinality,
+    rhsCardinality: Cardinality,
+    selectivePathPattern: SelectivePathPattern
+  ): Multiplier = {
+    val labelPredicatesOnLhs =
+      labelInfo.getOrElse(selectivePathPattern.left, Set.empty).map(hasLabelsPredicate(selectivePathPattern.left, _))
+    val labelPredicatesOnRhs =
+      labelInfo.getOrElse(selectivePathPattern.right, Set.empty).map(hasLabelsPredicate(selectivePathPattern.right, _))
+    val selections =
+      selectivePathPattern.selections ++ Selections.from(labelPredicatesOnLhs.union(labelPredicatesOnRhs))
+    selectivePathPattern.selector match {
+      case Selector.Any(k) =>
+        anyPathPatternMultiplier(
+          cardinalityModel = cardinalityModel,
+          labelInfo = labelInfo,
+          semanticTable = semanticTable,
+          indexPredicateProviderContext = indexPredicateProviderContext,
+          lhsCardinality = lhsCardinality,
+          rhsCardinality = rhsCardinality,
+          pathPattern = selectivePathPattern.pathPattern,
+          selections = selections,
+          k = k
+        )
+      case Selector.Shortest(k) =>
+        // whether we want any paths or the shortest paths doesn't change the cardinality, it only dictates which paths are going to be returned
+        anyPathPatternMultiplier(
+          cardinalityModel = cardinalityModel,
+          labelInfo = labelInfo,
+          semanticTable = semanticTable,
+          indexPredicateProviderContext = indexPredicateProviderContext,
+          lhsCardinality = lhsCardinality,
+          rhsCardinality = rhsCardinality,
+          pathPattern = selectivePathPattern.pathPattern,
+          selections = selections,
+          k = k
+        )
+      case Selector.ShortestGroups(k) =>
+        shortestGroupsPathPatternMultiplier(
+          cardinalityModel = cardinalityModel,
+          labelInfo = labelInfo,
+          semanticTable = semanticTable,
+          indexPredicateProviderContext = indexPredicateProviderContext,
+          lhsCardinality = lhsCardinality,
+          rhsCardinality = rhsCardinality,
+          pathPattern = selectivePathPattern.pathPattern,
+          selections = selections,
+          k = k
+        )
+    }
+  }
+
+  private def anyPathPatternMultiplier(
+    cardinalityModel: CardinalityModel,
+    labelInfo: LabelInfo,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    lhsCardinality: Cardinality,
+    rhsCardinality: Cardinality,
+    pathPattern: NodeConnections[ExhaustiveNodeConnection],
+    selections: Selections,
+    k: Long
+  ): Multiplier = {
+    val patternCardinality = pathPatternCardinality(
+      cardinalityModel,
+      labelInfo,
+      semanticTable,
+      indexPredicateProviderContext,
+      pathPattern,
+      selections
+    )
+    Multiplier.ofDivision(patternCardinality, lhsCardinality * rhsCardinality) match {
+      case Some(multiplier) =>
+        Multiplier.min(multiplier, Multiplier(k)) // any/shortest k will return at most k paths per partition
+      case None => Multiplier.ZERO
+    }
+  }
+
+  private def shortestGroupsPathPatternMultiplier(
+    cardinalityModel: CardinalityModel,
+    labelInfo: LabelInfo,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    lhsCardinality: Cardinality,
+    rhsCardinality: Cardinality,
+    pathPattern: NodeConnections[ExhaustiveNodeConnection],
+    selections: Selections,
+    k: Long
+  ): Multiplier = {
+    val patternCardinality = {
+      // We take the path pattern, change the upper bounds of the contained quantified path patterns to their minimum, and increase them step by step.
+      // We increment all the upper bounds at once, think of it as the wavefront, so this doesn't assume any direction in the BFS algorithm.
+      increasinglyLargerPatterns(pathPattern)
+        .map { resizedPattern =>
+          // We calculate the cardinality for each variation.
+          pathPatternCardinality(
+            cardinalityModel = cardinalityModel,
+            labelInfo = labelInfo,
+            semanticTable = semanticTable,
+            indexPredicateProviderContext = indexPredicateProviderContext,
+            pathPattern = resizedPattern,
+            selections = selections
+          )
+        }.find { cardinality =>
+          // This is a very rough approximation, we want to find the smallest pattern so that we have at least `k` paths per partition on average.
+          // The average number of paths connecting two arbitrary endpoints in the graph is given by: `cardinality / lhsCardinality / rhsCardinality`.
+          cardinality >= lhsCardinality * rhsCardinality * Multiplier(k)
+        }.getOrElse {
+          // If we haven't found a smaller pattern with `k` paths per partition, then we assume that we'll have to expand the whole pattern.
+          pathPatternCardinality(
+            cardinalityModel = cardinalityModel,
+            labelInfo = labelInfo,
+            semanticTable = semanticTable,
+            indexPredicateProviderContext = indexPredicateProviderContext,
+            pathPattern = pathPattern,
+            selections = selections
+          )
+        }
+    }
+    Multiplier.ofDivision(patternCardinality, lhsCardinality * rhsCardinality).getOrElse(Multiplier.ZERO)
+  }
+
+  private def pathPatternCardinality(
+    cardinalityModel: CardinalityModel,
+    labelInfo: LabelInfo,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    pathPattern: NodeConnections[ExhaustiveNodeConnection],
+    selections: Selections
+  ): Cardinality = {
+    val queryGraph = QueryGraph.empty.addPathPattern(pathPattern).addSelections(selections)
+    cardinalityModel.apply(
+      query = RegularSinglePlannerQuery(queryGraph = queryGraph),
+      labelInfo = labelInfo,
+      relTypeInfo = Map.empty,
+      semanticTable = semanticTable,
+      indexPredicateProviderContext = indexPredicateProviderContext,
+      cardinalityModel = cardinalityModel
+    )
+  }
+
+  private def hasLabelsPredicate(node: String, labelName: LabelName): HasLabels =
+    HasLabels(Variable(node)(InputPosition.NONE), List(labelName))(InputPosition.NONE)
 }
 
 /**

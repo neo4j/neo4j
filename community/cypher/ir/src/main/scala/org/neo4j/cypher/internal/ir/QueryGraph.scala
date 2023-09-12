@@ -415,7 +415,16 @@ case class QueryGraph(
   def patternNodeLabels: Map[String, Set[LabelName]] = {
     // Node label predicates are extracted from the pattern nodes to predicates in LabelPredicateNormalizer.
     // Therefore, we only need to look in selections.
-    patternNodes.collect { case node: String => node -> selections.labelsOnNode(node) }.toMap
+    val labelsOnPatternNodes = patternNodes.toVector.map(node => node -> selections.labelsOnNode(node))
+
+    val labelsOnSelectivePathPatternNodes =
+      for {
+        selectivePathPattern <- selectivePathPatterns.toVector
+        connection <- selectivePathPattern.pathPattern.connections.toIterable
+        node <- connection.boundaryNodesSet
+      } yield node -> (selections ++ selectivePathPattern.selections).labelsOnNode(node)
+
+    (labelsOnPatternNodes ++ labelsOnSelectivePathPatternNodes).groupMapReduce(_._1)(_._2)(_.union(_))
   }
 
   def patternRelationshipTypes: Map[String, RelTypeName] = {

@@ -704,6 +704,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
@@ -725,6 +726,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   test("Shortest match should produce an eager when there is an write/read conflict with set property") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[]->()", 10)
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
@@ -763,6 +765,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   test("Shortest match should produce an eager when there is an write/read conflict with create relationship") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[]->()", 10)
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
@@ -816,6 +819,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[]->()", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)

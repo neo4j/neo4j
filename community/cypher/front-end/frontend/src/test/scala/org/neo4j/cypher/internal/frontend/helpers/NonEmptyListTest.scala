@@ -256,4 +256,11 @@ class NonEmptyListTest extends CypherFunSuite {
     NonEmptyList(1, 2).initOption should equal(Some(NonEmptyList(1)))
     NonEmptyList(1, 2, 3).initOption should equal(Some(NonEmptyList(1, 2)))
   }
+
+  test("zipping two non-empty lists together") {
+    NonEmptyList(1, 2, 3, 4, 5)
+      .zipWith(NonEmptyList('a', 'b', 'c')) {
+        case (i, c) => s"$i $c"
+      } shouldEqual NonEmptyList("1 a", "2 b", "3 c")
+  }
 }
