@@ -20,8 +20,6 @@ Feature "WithOrderBy4 - Order by in combination with projection and aliasing": S
 // Scenarios disabled because of assumed bugs in TCK, https://trello.com/c/h2TRlh5D
 Feature "Delete1 - Deleting nodes": Scenario "Failing when deleting connected nodes"
 Feature "Call1 - Basic procedure calling": Scenario "Standalone call to procedure should fail if implicit argument is missing"
-Feature "Call1 - Basic procedure calling": Scenario "Standalone call to unknown procedure should fail"
-Feature "Call1 - Basic procedure calling": Scenario "In-query call to unknown procedure should fail"
 Feature "Graph6 - Static property access": Scenario "Fail when performing property access on a non-graph element"
 Feature "List1 - Dynamic Element Access": Scenario "Fail when indexing a non-list"
 Feature "List1 - Dynamic Element Access": Scenario "Fail when indexing with a non-integer"

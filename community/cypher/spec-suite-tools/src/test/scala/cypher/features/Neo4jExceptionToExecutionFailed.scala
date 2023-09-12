@@ -81,7 +81,9 @@ object Neo4jExceptionToExecutionFailed {
       case _                    => throw t
     }
     val errorType = Status.statusCodeOf(neo4jException)
-    val errorTypeStr = if (errorType != null) errorType.toString else ""
+    val errorTypeStr =
+      if (errorType != null) errorTypeMapping(errorType)
+      else ""
     val msg = neo4jException.getMessage
     val detail = phase match {
       case Phase.compile => compileTimeDetail(msg)
@@ -90,6 +92,15 @@ object Neo4jExceptionToExecutionFailed {
     }
     val neo4jexception = Neo4jExecutionFailed(errorTypeStr, phase, detail, t)
     ExecutionFailed(errorTypeStr, phase, detail, Some(neo4jexception))
+  }
+
+  private def errorTypeMapping(errorType: Status): String = {
+    if (errorType == Status.Procedure.ProcedureNotFound) {
+      // TCK uses a different name
+      "ProcedureError"
+    } else {
+      errorType.toString
+    }
   }
 
   private def runtimeDetail(msg: String): String = {
