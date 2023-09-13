@@ -341,17 +341,15 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH (a), (b) WITH shortestPath((a IS A)-[:REL*]->(b:B)) AS p RETURN length(p) AS result") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "The IS keyword in shortestPath is not allowed in an expression"
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH p = shortestPath((a:A|B)-[:REL*]->(b:B|C)) RETURN length(p) AS result") {
-    runSemanticAnalysis().errorMessages shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH p = shortestPath((a IS A)-[:REL*]->(b:B)) RETURN length(p) AS result") {
-    runSemanticAnalysis().errorMessages shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH (a), (b) WITH shortestPath((a:A)-[:A*]->(b:B)) AS p RETURN length(p) AS result") {
@@ -379,9 +377,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH (n), (m) WITH shortestPath((n)-[IS A*]->(m)) AS p RETURN length(p) AS result") {
-    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      "The IS keyword in shortestPath is not allowed in an expression"
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH (n), (m) WITH (n)-[:!A&!B*]->(m) AS p RETURN p AS result") {
