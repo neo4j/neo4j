@@ -41,10 +41,18 @@ public class NotificationDetail {
         return String.format(". ('%s' has been replaced by '%s')", oldName, newName);
     }
 
-    public static String indexes(final String label, final List<String> propertyKeys) {
+    public static String indexes(
+            final IndexHintIndexType indexType, final String label, final List<String> propertyKeys) {
         final var prettyProperties = commaSeparated(propertyKeys);
         final var prettyLabel = labelOrRelationshipType(label);
-        return prettyLabel + "(" + prettyProperties + ")";
+        final var prettyIndexHint =
+                switch (indexType) {
+                    case TEXT -> "TEXT INDEX";
+                    case RANGE -> "RANGE INDEX";
+                    case POINT -> "POINT INDEX";
+                    default -> "INDEX";
+                };
+        return prettyIndexHint + " " + prettyLabel + "(" + prettyProperties + ")";
     }
 
     public static String indexHint(

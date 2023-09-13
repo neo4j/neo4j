@@ -46,7 +46,7 @@ public enum NotificationCodeWithDescription {
     INDEX_HINT_UNFULFILLABLE(
             Status.Schema.HintedIndexNotFound,
             "The hinted index does not exist, please check the schema (%s)",
-            "Unable to create a plan with `INDEX` for `%s` because the index(es) do not exist. See Status "
+            "Unable to create a plan with `%s` because the index(es) do not exist. See Status "
                     + "Codes documentation for suggestions."),
     JOIN_HINT_UNFULFILLABLE(
             Status.Statement.JoinHintUnfulfillableWarning,

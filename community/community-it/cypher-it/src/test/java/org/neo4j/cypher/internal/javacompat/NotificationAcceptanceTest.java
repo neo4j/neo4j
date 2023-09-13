@@ -70,7 +70,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n",
                 InputPosition.empty,
                 NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
-                NotificationDetail.indexes("Person", List.of("name")),
+                NotificationDetail.indexes(IndexHintIndexType.ANY, "Person", List.of("name")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
     }
 
@@ -88,25 +88,25 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 query,
                 InputPosition.empty,
                 NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
-                NotificationDetail.indexes("Person", List.of("name")),
+                NotificationDetail.indexes(IndexHintIndexType.ANY, "Person", List.of("name")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
         shouldNotifyInStreamWithDetailAndMessage(
                 query,
                 InputPosition.empty,
                 NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "m", "Party", "city"),
-                NotificationDetail.indexes("Party", List.of("city")),
+                NotificationDetail.indexes(IndexHintIndexType.ANY, "Party", List.of("city")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
         shouldNotifyInStreamWithDetailAndMessage(
                 query,
                 InputPosition.empty,
                 NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "k", "Animal", "species"),
-                NotificationDetail.indexes("Animal", List.of("species")),
+                NotificationDetail.indexes(IndexHintIndexType.ANY, "Animal", List.of("species")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
         shouldNotifyInStreamWithDetailAndMessage(
                 query,
                 InputPosition.empty,
                 NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.TEXT, "o", "Other", "text"),
-                NotificationDetail.indexes("Other", List.of("text")),
+                NotificationDetail.indexes(IndexHintIndexType.TEXT, "Other", List.of("text")),
                 NotificationCodeWithDescription::indexHintUnfulfillable);
     }
 
