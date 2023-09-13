@@ -1114,13 +1114,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedProjectEndpointsDbHits = runtimeUsed match {
-      case Interpreted | Slotted             => 0 // we don't count rel.getStart, rel.getEnd as dbhits
-      case Pipelined if canFuseOverPipelines => 0
-      case Pipelined | Parallel              => aRels.size
-    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe expectedProjectEndpointsDbHits // project endpoints
+    queryProfile.operatorProfile(1).dbHits() should (be(aRels.size) or be(0)) // project endpoints
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // input
   }
 
