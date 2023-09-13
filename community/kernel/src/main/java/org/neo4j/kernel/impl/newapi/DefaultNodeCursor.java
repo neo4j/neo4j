@@ -28,7 +28,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -52,6 +51,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     boolean checkHasChanges;
     boolean hasChanges;
     private LongIterator addedNodes;
+    private boolean singleIsAddedInTx;
     final StorageNodeCursor storeCursor;
     private final StorageNodeCursor securityStoreNodeCursor;
     private final StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
@@ -111,6 +111,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         this.checkHasChanges = true;
         this.accessMode = read.getAccessMode();
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
+        this.singleIsAddedInTx = false;
     }
 
     protected boolean currentNodeIsAddedInTx() {
@@ -332,15 +333,25 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         boolean hasChanges = hasChanges();
 
         if (hasChanges) {
-            if (addedNodes.hasNext()) {
-                currentAddedInTx = addedNodes.next();
-                if (tracer != null) {
-                    tracer.onNode(nodeReference());
+            if (isSingle) {
+                if (singleIsAddedInTx) {
+                    currentAddedInTx = single;
+                    singleIsAddedInTx = false;
+                    if (tracer != null) {
+                        tracer.onNode(nodeReference());
+                    }
+                    return true;
                 }
-                return true;
             } else {
-                currentAddedInTx = NO_ID;
+                if (addedNodes.hasNext()) {
+                    currentAddedInTx = addedNodes.next();
+                    if (tracer != null) {
+                        tracer.onNode(nodeReference());
+                    }
+                    return true;
+                }
             }
+            currentAddedInTx = NO_ID;
         }
 
         while (storeCursor.next()) {
@@ -403,9 +414,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         checkHasChanges = false;
         if (hasChanges = read.hasTxStateWithChanges()) {
             if (this.isSingle) {
-                addedNodes = read.txState().nodeIsAddedInThisBatch(single)
-                        ? PrimitiveLongCollections.single(single)
-                        : ImmutableEmptyLongIterator.INSTANCE;
+                singleIsAddedInTx = read.txState().nodeIsAddedInThisBatch(single);
             } else {
                 addedNodes = read.txState()
                         .addedAndRemovedNodes()
