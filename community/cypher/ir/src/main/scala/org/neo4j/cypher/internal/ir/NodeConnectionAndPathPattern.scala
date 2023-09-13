@@ -253,8 +253,9 @@ final case class QuantifiedPathPattern(
   override val right: String = rightBinding.outer
   override val nodes: Set[String] = Set(left, right) ++ nodeVariableGroupings.map(_.groupName)
   override val relationships: Set[String] = relationshipVariableGroupings.map(_.groupName)
-
   override val boundaryNodes: (String, String) = (left, right)
+  val variableGroupings: Set[VariableGrouping] = nodeVariableGroupings ++ relationshipVariableGroupings
+  val variableGroupNames: Set[String] = variableGroupings.map(_.groupName)
 
   override def withLeft(left: String): QuantifiedPathPattern = copy(leftBinding = leftBinding.copy(outer = left))
 
@@ -285,8 +286,6 @@ final case class QuantifiedPathPattern(
     s"(${leftBinding.outer})$solvedStringSuffix"
 
   val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies) ++ argumentIds
-
-  val groupings: Set[String] = nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(_.groupName)
 
   /**
    * Creates a QueryGraph representation of the Quantified Path Pattern and collects all dependent selections eg.

@@ -831,6 +831,131 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )
   }
 
+  test("Should plan quantified path pattern with extracted predicate with local dependencies") {
+    val query = "MATCH (a) ((n)-[r]->(m))+ (b) WHERE all(i IN r WHERE i.p = 0) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]-(m))+ (b)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpressionOrString("r.p = 0", isRepeatTrailUnique("r"))
+      .|.expandAll("(n)-[r]->(m)")
+      .|.argument("n")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("Should plan quantified path pattern with extracted predicate with bound non-local dependency") {
+    val query = "MATCH (z)-[rr]->(a) ((n)-[r]->(m))+ (b) WHERE all(i IN r WHERE i.p = z.p) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]-(m))+ (b)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set("rr"),
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpressionOrString("r.p = z.p", isRepeatTrailUnique("r"))
+      .|.expandAll("(n)-[r]->(m)")
+      .|.argument("n", "z")
+      .allRelationshipsScan("(z)-[rr]->(a)")
+      .build()
+  }
+
+  test(
+    "Should plan quantified path pattern with extracted predicate with bound non-local dependency from previous horizon"
+  ) {
+    val query = """
+                  |WITH 1 AS x, 1 AS y
+                  |SKIP 0
+                  |MATCH (a) ((n)-[r]->(m))+ (b)
+                  |WHERE all(i IN r WHERE i.p = x)
+                  |RETURN *""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]-(m))+ (b)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .apply()
+      .|.trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.|.filterExpressionOrString("r.p = x", isRepeatTrailUnique("r"))
+      .|.|.expandAll("(n)-[r]->(m)")
+      .|.|.argument("n", "x", "y")
+      .|.allNodeScan("a", "x", "y")
+      .projection("1 AS x", "1 AS y")
+      .skip(0)
+      .argument()
+      .build()
+  }
+
+  test("Should plan quantified path pattern without extracted predicate with unbound non-local dependency") {
+    val query = "MATCH (a) ((n)-[r]->(m))+ (b: N) WHERE all(i IN r WHERE i.p = a.p) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]-(m))+ (b)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "b",
+      end = "a",
+      innerStart = "m",
+      innerEnd = "n",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
+    )
+    val predicate = allInList(
+      varFor("i"),
+      varFor("r"),
+      equals(prop(varFor("i"), "p"), prop(varFor("a"), "p"))
+    )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .filterExpression(predicate)
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expandAll("(m)<-[r]-(n)")
+      .|.argument("m")
+      .nodeByLabelScan("b", "N")
+      .build()
+  }
+
   test("Should plan quantified path pattern if both start and end are already bound") {
     val query =
       s"""
@@ -845,7 +970,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 1,
       max = Unlimited,
       start = "n",
-      end = "anon_8",
+      end = "anon_7",
       innerStart = "n_inner",
       innerEnd = "m_inner",
       groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
@@ -858,7 +983,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan should equal(
       planner.subPlanBuilder()
-        .filter("anon_8 = m")
+        .filter("anon_7 = m")
         .trail(`(n)((n_inner)-[r_inner]->(m_inner))+ (m)`)
         .|.filterExpression(isRepeatTrailUnique("r_inner"))
         .|.expandAll("(n_inner)-[r_inner]->(m_inner)")
@@ -1740,14 +1865,12 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test("Should plan VarExpand instead of Trail on quantified path pattern with post-filter relationship predicate") {
-    val query = "MATCH (a) ((n)-[r]->(m))+ (b) WHERE all(x IN r WHERE x.p = 0 AND x:R) RETURN r"
+    val query = "MATCH (a) ((n)-[r]->(m))+ (b) WHERE all(x IN r WHERE x.p = 0 AND x IS NOT NULL) RETURN r"
     val plan = planner.plan(query).stripProduceResults
+    val predicates = Seq(Predicate("r", "r.p = 0"), Predicate("r", "r IS NOT NULL"))
+
     plan shouldEqual planner.subPlanBuilder()
-      .filterExpressionOrString(
-        allInList(varFor("x"), varFor("r"), hasTypes("x", "R")),
-        allInList(varFor("x"), varFor("r"), equals(prop("x", "p"), literalInt(0)))
-      )
-      .expand("(a)-[r*1..]->(b)")
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = predicates)
       .allNodeScan("a")
       .build()
   }

@@ -1097,13 +1097,13 @@ case class LogicalPlanProducer(
 
   def fixupTrailRhsPlan(
     originalPlan: LogicalPlan,
-    argumentToRemove: String,
+    argumentsToRemove: Set[String],
     predicatesToRemove: Set[Expression]
   ): LogicalPlan = {
     val fixedSolved = solveds.get(originalPlan.id).asSinglePlannerQuery.amendQueryGraph {
       qg =>
-        // We added these in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
-        qg.removeArgumentId(argumentToRemove)
+        // We added these in QPPInnerPlanner, so for solved we have to remove them again.
+        qg.removeArgumentIds(argumentsToRemove)
           .withSelections(qg.selections.filter(p => !predicatesToRemove.contains(p.expr)))
     }
 

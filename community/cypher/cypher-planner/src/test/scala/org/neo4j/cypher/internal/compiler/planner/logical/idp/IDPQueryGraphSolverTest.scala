@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
@@ -70,7 +69,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   self =>
 
   case class EmptySolverConfig() extends SingleComponentIDPSolverConfig() {
-    override def solvers(qppInnerPlans: QPPInnerPlans): Seq[Nothing] = Seq.empty
+    override def solvers(qppInnerPlanner: QPPInnerPlanner): Seq[Nothing] = Seq.empty
   }
 
   test("should plan for a single node pattern") {

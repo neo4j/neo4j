@@ -125,6 +125,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-cache</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- neo4j testing -->
 
         <dependency>

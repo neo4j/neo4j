@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.PrecomputedQPPInnerPlans
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -63,12 +61,12 @@ case class SingleComponentPlanner(
     val bestLeafPlansPerAvailableSymbol =
       leafPlanFinder(context.plannerState.config, qg, componentInterestingOrderConfig, context)
 
-    val qppInnerPlans = new PrecomputedQPPInnerPlans(qg, context)
+    val qppInnerPlanner = new CacheBackedQPPInnerPlanner(IDPQPPInnerPlanner(context))
 
     val bestPlans =
       if (qg.nodeConnections.nonEmpty) {
         val orderRequirement = extraRequirementForInterestingOrder(context, componentInterestingOrderConfig)
-        val generators = solverConfig.solvers(qppInnerPlans).map(_(qg))
+        val generators = solverConfig.solvers(qppInnerPlanner).map(_(qg))
         val generator =
           IDPQueryGraphSolver.composeSolverSteps(qg, componentInterestingOrderConfig, kit, context, generators)
 
@@ -84,7 +82,14 @@ case class SingleComponentPlanner(
 
         monitor.initTableFor(qg)
         val seed =
-          initTable(qg, kit, bestLeafPlansPerAvailableSymbol, qppInnerPlans, context, componentInterestingOrderConfig)
+          initTable(
+            qg,
+            kit,
+            bestLeafPlansPerAvailableSymbol,
+            qppInnerPlanner,
+            context,
+            componentInterestingOrderConfig
+          )
         monitor.startIDPIterationFor(qg)
         val result = solver(seed, qg.nodeConnections.toSeq, context)
         monitor.endIDPIterationFor(qg, result.bestResult)
@@ -131,13 +136,13 @@ case class SingleComponentPlanner(
     qg: QueryGraph,
     kit: QueryPlannerKit,
     bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
-    qppInnerPlans: QPPInnerPlans,
+    qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext,
     interestingOrderConfig: InterestingOrderConfig
   ): Seed[NodeConnection, LogicalPlan] = {
     for (pattern <- qg.nodeConnections)
       yield {
-        val plans = planSinglePattern(qg, pattern, bestLeafPlansPerAvailableSymbol, qppInnerPlans, context)
+        val plans = planSinglePattern(qg, pattern, bestLeafPlansPerAvailableSymbol, qppInnerPlanner, context)
           .map(plan => kit.select(plan, qg))
         // From _all_ plans (even if they are sorted), put the best into the seed
         // with `false`. We don't want to compare just the ones that are unsorted
@@ -202,7 +207,7 @@ object SingleComponentPlanner {
     qg: QueryGraph,
     patternToSolve: NodeConnection,
     bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
-    qppInnerPlans: QPPInnerPlans,
+    qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
   ): Iterable[LogicalPlan] = {
     val solveds = context.staticComponents.planningAttributes.solveds
@@ -225,8 +230,8 @@ object SingleComponentPlanner {
           NonExpandSolutions(Some(planSingleProjectEndpoints(pattern, leaf, context)))
         case pattern =>
           val (start, end) = pattern.boundaryNodes
-          val leftExpand = planSinglePatternSide(qg, pattern, leaf, start, qppInnerPlans, context)
-          val rightExpand = planSinglePatternSide(qg, pattern, leaf, end, qppInnerPlans, context)
+          val leftExpand = planSinglePatternSide(qg, pattern, leaf, start, qppInnerPlanner, context)
+          val rightExpand = planSinglePatternSide(qg, pattern, leaf, end, qppInnerPlanner, context)
           ExpandSolutions(leftExpand, rightExpand)
       }
       leaf -> solutions
@@ -253,7 +258,7 @@ object SingleComponentPlanner {
           start,
           maybeStartBestPlans,
           maybeEndBestPlans,
-          qppInnerPlans,
+          qppInnerPlanner,
           context
         )
 
@@ -285,7 +290,7 @@ object SingleComponentPlanner {
     start: String,
     maybeStartBestPlans: Option[BestPlans],
     maybeEndBestPlans: Option[BestPlans],
-    qppInnerPlans: QPPInnerPlans,
+    qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
   ): Iterable[LogicalPlan] = (maybeStartBestPlans, maybeEndBestPlans) match {
     case (Some(startBestPlan), Some(endBestPlan)) =>
@@ -309,7 +314,7 @@ object SingleComponentPlanner {
             pattern,
             context.staticComponents.logicalPlanProducer.planCartesianProduct(lhsPlan, rhsPlan, context),
             start,
-            qppInnerPlans,
+            qppInnerPlanner,
             context
           )
       }

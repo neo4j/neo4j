@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -35,7 +34,7 @@ trait IDPSolverConfig {
 
 trait SingleComponentIDPSolverConfig extends IDPSolverConfig {
 
-  def solvers(qppInnerPlans: QPPInnerPlans)
+  def solvers(qppInnerPlanner: QPPInnerPlanner)
     : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]]
 }
 
@@ -43,9 +42,9 @@ trait SingleComponentIDPSolverConfig extends IDPSolverConfig {
    to improve planning performance with minimal impact of plan quality */
 case object DefaultIDPSolverConfig extends SingleComponentIDPSolverConfig {
 
-  override def solvers(qppInnerPlans: QPPInnerPlans)
+  override def solvers(qppInnerPlanner: QPPInnerPlanner)
     : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]] =
-    Seq(joinSolverStep(_), expandSolverStep(_, qppInnerPlans))
+    Seq(joinSolverStep(_), expandSolverStep(_, qppInnerPlanner))
 }
 
 /* The Dynamic Programming (DP) approach is IDP with no optimizations */
@@ -53,9 +52,9 @@ case object DPSolverConfig extends SingleComponentIDPSolverConfig {
   override def maxTableSize: Int = Integer.MAX_VALUE
   override def iterationDurationLimit: Long = Long.MaxValue
 
-  override def solvers(qppInnerPlans: QPPInnerPlans)
+  override def solvers(qppInnerPlanner: QPPInnerPlanner)
     : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]] =
-    Seq(joinSolverStep(_), expandSolverStep(_, qppInnerPlans))
+    Seq(joinSolverStep(_), expandSolverStep(_, qppInnerPlanner))
 }
 
 /* The default settings for IDP uses a maxTableSize and a inner loop duration threshold
@@ -63,9 +62,9 @@ case object DPSolverConfig extends SingleComponentIDPSolverConfig {
 class ConfigurableIDPSolverConfig(override val maxTableSize: Int, override val iterationDurationLimit: Long)
     extends SingleComponentIDPSolverConfig {
 
-  override def solvers(qppInnerPlans: QPPInnerPlans)
+  override def solvers(qppInnerPlanner: QPPInnerPlanner)
     : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]] =
-    Seq(joinSolverStep(_), expandSolverStep(_, qppInnerPlans))
+    Seq(joinSolverStep(_), expandSolverStep(_, qppInnerPlanner))
 
   override def toString: String =
     s"${this.getClass.getSimpleName}(maxTableSize = $maxTableSize, iterationDurationLimit = $iterationDurationLimit})"
@@ -74,14 +73,14 @@ class ConfigurableIDPSolverConfig(override val maxTableSize: Int, override val i
 /* For testing IDP we sometimes limit the solver to expands only */
 case object ExpandOnlyIDPSolverConfig extends ConfigurableIDPSolverConfig(256, Long.MaxValue) {
 
-  override def solvers(qppInnerPlans: QPPInnerPlans)
+  override def solvers(qppInnerPlanner: QPPInnerPlanner)
     : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]] =
-    Seq(expandSolverStep(_, qppInnerPlans))
+    Seq(expandSolverStep(_, qppInnerPlanner))
 }
 
 /* For testing IDP we sometimes limit the solver to joins only */
 case object JoinOnlyIDPSolverConfig extends ConfigurableIDPSolverConfig(256, Long.MaxValue) {
 
-  override def solvers(qppInnerPlans: QPPInnerPlans)
+  override def solvers(qppInnerPlanner: QPPInnerPlanner)
     : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]] = Seq(joinSolverStep(_))
 }

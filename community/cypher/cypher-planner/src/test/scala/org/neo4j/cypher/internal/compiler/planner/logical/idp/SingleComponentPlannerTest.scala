@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -38,9 +37,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val noQPPInnerPlans = new QPPInnerPlans {
-    override def getPlan(trailOption: expandSolverStep.TrailOption): LogicalPlan = ???
-  }
+  private val noQPPInnerPlans = new CacheBackedQPPInnerPlanner(???)
 
   def planBuilder() = new LogicalPlanBuilder(wholePlan = false)
 

@@ -33,11 +33,13 @@ import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 
 import scala.collection.immutable.ListSet
@@ -424,5 +426,93 @@ object extractShortestPathPredicates {
         case _ => None
       }
   }
+
+}
+
+/**
+ * During normalizeQPPPredicates we move inner QPP predicates from their pre-filter position to their post-filter
+ * position. [[extractQPPPredicates]] works for QPPs as [[extractPredicates]] works for var-length relationships.
+ * For any of these post-filter predicates that could not be solved up to this point, the goal is to move as many of
+ * these post-filter predicates back to their pre-filter positions and solve them during the planning of the inner QPP.
+ * Planning these post-filter predicates in the inner QPP plan is much faster as it can potentially short-circuit the
+ * expansion of the QPP.
+ */
+object extractQPPPredicates {
+
+  def apply(
+    predicates: Seq[Expression],
+    availableLocalSymbols: Set[VariableGrouping],
+    availableNonLocalSymbols: Set[LogicalVariable]
+  ): ExtractedPredicates = {
+    val solvables = filterSolvablePredicates(predicates, availableLocalSymbols, availableNonLocalSymbols)
+    val extracted = getExtractablePredicates(solvables, availableLocalSymbols)
+    val requiredSymbols = getRequiredNonLocalSymbols(extracted, availableLocalSymbols)
+    ExtractedPredicates(requiredSymbols, extracted)
+  }
+
+  /**
+   * Unsolvable predicates are predicates that cannot be solved due to missing dependencies.
+   *
+   * @param predicates                Potentially solvable predicates
+   * @param availableNonLocalSymbols  Non-local symbols previously bound that can be used by the predicates
+   * @param availableLocalSymbols     Local symbols bound during the inner QPP that can also be used by the predicates
+   * @return                          List of predicates that can be solved
+   */
+  private def filterSolvablePredicates(
+    predicates: Seq[Expression],
+    availableLocalSymbols: Set[VariableGrouping],
+    availableNonLocalSymbols: Set[LogicalVariable]
+  ): Seq[Expression] = {
+    val availableLocalGroupNames = availableLocalSymbols.map(g => varFor(g.groupName))
+    val availableSymbols = availableLocalGroupNames ++ availableNonLocalSymbols
+    predicates.filter(_.dependencies.subsetOf(availableSymbols))
+  }
+
+  /**
+   * Extracted predicates are predicates that were previously normalized by normalizeQPPPredicates to their post-filter
+   * form and that we now want to convert back to their pre-filter form.
+   *
+   * @param predicates            Potentially extractable predicates
+   * @param availableLocalSymbols Local symbol mappings used for swapping variable references in extracted predicates
+   * @return                      Extracted predicates
+   */
+  private def getExtractablePredicates(
+    predicates: Seq[Expression],
+    availableLocalSymbols: Set[VariableGrouping]
+  ): Seq[ExtractedPredicate] = {
+    val availableLocalSymbolsMapping = availableLocalSymbols
+      .map(g => varFor(g.groupName) -> varFor(g.singletonName))
+      .toMap
+
+    predicates.collect {
+      case original @ AllIterablePredicate(FilterScope(iterator, Some(predicate)), groupVariable: LogicalVariable)
+        if availableLocalSymbolsMapping.contains(groupVariable) &&
+          availableLocalSymbolsMapping.keySet.intersect(predicate.dependencies).isEmpty =>
+        val singletonVariable = availableLocalSymbolsMapping(groupVariable)
+        val extracted = predicate.replaceAllOccurrencesBy(iterator, singletonVariable)
+        ExtractedPredicate(original, extracted)
+    }
+  }
+
+  /**
+   * Required non-local symbols represent the subset of previously bound non-local symbols which our extracted
+   * predicates have dependencies on.
+   *
+   * @param predicates            Extracted predicates which may dependencies on previously bound symbols
+   * @param availableLocalSymbols Symbols during inner QPP which are therefor always available to the predicates
+   * @return                      Subset of the previously bound non-local symbols which are required
+   */
+  private def getRequiredNonLocalSymbols(
+    predicates: Seq[ExtractedPredicate],
+    availableLocalSymbols: Set[VariableGrouping]
+  ): Set[LogicalVariable] = {
+    val availableLocalSingletons = availableLocalSymbols.map(g => varFor(g.singletonName))
+    val predicateDependencies = predicates.flatMap(_.extracted.dependencies).toSet
+    val requiredDependencies = predicateDependencies -- availableLocalSingletons
+    requiredDependencies
+  }
+
+  case class ExtractedPredicate(original: Expression, extracted: Expression)
+  case class ExtractedPredicates(requiredSymbols: Set[LogicalVariable], predicates: Seq[ExtractedPredicate])
 
 }

@@ -217,9 +217,9 @@ case class QueryGraph(
 
   def addArgumentId(newId: String): QueryGraph = copy(argumentIds = argumentIds + newId)
 
-  def removeArgumentId(idToRemove: String): QueryGraph = copy(argumentIds = argumentIds - idToRemove)
+  def addArgumentIds(newIds: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
 
-  def addArgumentIds(newIds: Seq[String]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
+  def removeArgumentIds(idsToRemove: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds -- idsToRemove)
 
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -49,9 +48,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private val table = IDPTable.empty[LogicalPlan]
   private val qg = mock[QueryGraph]
 
-  private val noQPPInnerPlans = new QPPInnerPlans {
-    override def getPlan(trailOption: expandSolverStep.TrailOption): LogicalPlan = ???
-  }
+  private val noQPPInnerPlans = new CacheBackedQPPInnerPlanner(???)
 
   test("does not expand based on empty table") {
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]

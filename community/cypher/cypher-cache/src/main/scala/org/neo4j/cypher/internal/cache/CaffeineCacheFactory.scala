@@ -48,6 +48,26 @@ import scala.reflect.classTag
 
 object ExecutorBasedCaffeineCacheFactory {
 
+  /**
+   * Please note that this constructor creates a cache with a synchronous executor. Caffeine would normally perform
+   * a number of background operations such as expiring entries and compacting the cache which it would ideally perform
+   * on a pool of background threads. It is recommended that you use [[org.neo4j.scheduler.MonitoredJobExecutor]] for
+   * this as it would give users observability into the thread pool and your cache, as well as improve cache
+   * performance. Instead, use this constructor when all you need is a Map with a size limit and evictions.
+   */
+  def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize): Cache[K, V] = {
+    val currentThreadExecutor = new Executor {
+      def execute(command: Runnable): Unit = command.run()
+    }
+    size.withSize[K, V, Cache[K, V]](size =>
+      Caffeine
+        .newBuilder()
+        .executor(currentThreadExecutor)
+        .maximumSize(size)
+        .build[K, V]()
+    )
+  }
+
   def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: CacheSize): Cache[K, V] =
     size.withSize[K, V, Cache[K, V]](size =>
       Caffeine
