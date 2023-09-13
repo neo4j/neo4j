@@ -47,75 +47,14 @@ public class NotificationDetail {
         return prettyLabel + "(" + prettyProperties + ")";
     }
 
-    public static String nodeAnyIndex(
-            final String variableName, final String labelName, final String... propertyKeyNames) {
+    public static String indexHint(
+            final EntityType entityType,
+            final IndexHintIndexType indexType,
+            final String variableName,
+            final String labelName,
+            final String... propertyKeyNames) {
         String indexFormatString = IndexHintException.indexFormatString(
-                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.ANY);
-        return createNotificationDetail("index", indexFormatString, true);
-    }
-
-    public static String nodeTextIndex(
-            final String variableName, final String labelName, final String... propertyKeyNames) {
-        String indexFormatString = IndexHintException.indexFormatString(
-                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.TEXT);
-        return createNotificationDetail("index", indexFormatString, true);
-    }
-
-    public static String nodeRangeIndex(
-            final String variableName, final String labelName, final String... propertyKeyNames) {
-        String indexFormatString = IndexHintException.indexFormatString(
-                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.RANGE);
-        return createNotificationDetail("index", indexFormatString, true);
-    }
-
-    public static String nodePointIndex(
-            final String variableName, final String labelName, final String... propertyKeyNames) {
-        String indexFormatString = IndexHintException.indexFormatString(
-                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.POINT);
-        return createNotificationDetail("index", indexFormatString, true);
-    }
-
-    public static String relationshipAnyIndex(
-            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-        String indexFormatString = IndexHintException.indexFormatString(
-                variableName,
-                relationshipTypeName,
-                Arrays.asList(propertyKeyNames),
-                EntityType.RELATIONSHIP,
-                IndexHintIndexType.ANY);
-        return createNotificationDetail("index", indexFormatString, true);
-    }
-
-    public static String relationshipTextIndex(
-            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-        String indexFormatString = IndexHintException.indexFormatString(
-                variableName,
-                relationshipTypeName,
-                Arrays.asList(propertyKeyNames),
-                EntityType.RELATIONSHIP,
-                IndexHintIndexType.TEXT);
-        return createNotificationDetail("index", indexFormatString, true);
-    }
-
-    public static String relationshipRangeIndex(
-            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-        String indexFormatString = IndexHintException.indexFormatString(
-                variableName,
-                relationshipTypeName,
-                Arrays.asList(propertyKeyNames),
-                EntityType.RELATIONSHIP,
-                IndexHintIndexType.RANGE);
-        return createNotificationDetail("index", indexFormatString, true);
-    }
-
-    public static String relationshipPointIndex(
-            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-        String indexFormatString = IndexHintException.indexFormatString(
-                variableName,
-                relationshipTypeName,
-                Arrays.asList(propertyKeyNames),
-                EntityType.RELATIONSHIP,
-                IndexHintIndexType.POINT);
+                variableName, labelName, Arrays.asList(propertyKeyNames), entityType, indexType);
         return createNotificationDetail("index", indexFormatString, true);
     }
 

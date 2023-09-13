@@ -27,17 +27,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
 class NotificationDetailTest {
     @Test
     void shouldConstructNodeIndexDetails() {
-        String detail = NotificationDetail.nodeAnyIndex("person", "Person", "name");
+        String detail =
+                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "person", "Person", "name");
         assertThat(detail).isEqualTo("index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`)");
     }
 
     @Test
     void shouldConstructRelationshipIndexDetails() {
-        String detail = NotificationDetail.relationshipAnyIndex("person", "Person", "name");
+        String detail = NotificationDetail.indexHint(
+                EntityType.RELATIONSHIP, IndexHintIndexType.ANY, "person", "Person", "name");
         assertThat(detail).isEqualTo("index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)");
     }
 

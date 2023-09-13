@@ -67,6 +67,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
@@ -77,7 +79,7 @@ class NotificationCodeWithDescriptionTest {
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index() {
         NotificationImplementation notification = indexHintUnfulfillable(
                 InputPosition.empty,
-                NotificationDetail.nodeAnyIndex("person", "Person", "name"),
+                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "person", "Person", "name"),
                 NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
@@ -94,7 +96,7 @@ class NotificationCodeWithDescriptionTest {
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_text_index() {
         NotificationImplementation notification = indexHintUnfulfillable(
                 InputPosition.empty,
-                NotificationDetail.nodeTextIndex("person", "Person", "name"),
+                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.TEXT, "person", "Person", "name"),
                 NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
@@ -111,7 +113,8 @@ class NotificationCodeWithDescriptionTest {
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_index() {
         NotificationImplementation notification = indexHintUnfulfillable(
                 InputPosition.empty,
-                NotificationDetail.relationshipAnyIndex("person", "Person", "name"),
+                NotificationDetail.indexHint(
+                        EntityType.RELATIONSHIP, IndexHintIndexType.ANY, "person", "Person", "name"),
                 NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
@@ -128,7 +131,8 @@ class NotificationCodeWithDescriptionTest {
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_text_index() {
         NotificationImplementation notification = indexHintUnfulfillable(
                 InputPosition.empty,
-                NotificationDetail.relationshipTextIndex("person", "Person", "name"),
+                NotificationDetail.indexHint(
+                        EntityType.RELATIONSHIP, IndexHintIndexType.TEXT, "person", "Person", "name"),
                 NotificationDetail.indexes("Person", List.of("name")));
 
         verifyNotification(
@@ -145,7 +149,8 @@ class NotificationCodeWithDescriptionTest {
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_multiple_properties() {
         NotificationImplementation notification = indexHintUnfulfillable(
                 InputPosition.empty,
-                NotificationDetail.relationshipTextIndex("person", "Person", "name", "age"),
+                NotificationDetail.indexHint(
+                        EntityType.RELATIONSHIP, IndexHintIndexType.TEXT, "person", "Person", "name", "age"),
                 NotificationDetail.indexes("Person", List.of("name", "age")));
 
         verifyNotification(

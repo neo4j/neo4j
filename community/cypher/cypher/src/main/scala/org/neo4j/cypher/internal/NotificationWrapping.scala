@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingRangeIndexType
@@ -65,6 +64,7 @@ import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
 import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
+import org.neo4j.exceptions.IndexHintException.IndexHintIndexType
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription
 import org.neo4j.graphdb.impl.notification.NotificationDetail
@@ -89,27 +89,15 @@ object NotificationWrapping {
         msg
       )
     case IndexHintUnfulfillableNotification(variableName, label, propertyKeys, entityType, indexType) =>
-      val detail = entityType match {
-        case EntityType.NODE => indexType match {
-            case UsingAnyIndexType   => NotificationDetail.nodeAnyIndex(variableName, label, propertyKeys: _*)
-            case UsingTextIndexType  => NotificationDetail.nodeTextIndex(variableName, label, propertyKeys: _*)
-            case UsingRangeIndexType => NotificationDetail.nodeRangeIndex(variableName, label, propertyKeys: _*)
-            case UsingPointIndexType => NotificationDetail.nodePointIndex(variableName, label, propertyKeys: _*)
-          }
-        case EntityType.RELATIONSHIP => indexType match {
-            case UsingAnyIndexType =>
-              NotificationDetail.relationshipAnyIndex(variableName, label, propertyKeys: _*)
-            case UsingTextIndexType =>
-              NotificationDetail.relationshipTextIndex(variableName, label, propertyKeys: _*)
-            case UsingRangeIndexType =>
-              NotificationDetail.relationshipRangeIndex(variableName, label, propertyKeys: _*)
-            case UsingPointIndexType =>
-              NotificationDetail.relationshipPointIndex(variableName, label, propertyKeys: _*)
-          }
+      val indexHintType = indexType match {
+        case UsingAnyIndexType   => IndexHintIndexType.ANY
+        case UsingTextIndexType  => IndexHintIndexType.TEXT
+        case UsingRangeIndexType => IndexHintIndexType.RANGE
+        case UsingPointIndexType => IndexHintIndexType.POINT
       }
       NotificationCodeWithDescription.indexHintUnfulfillable(
         graphdb.InputPosition.empty,
-        detail,
+        NotificationDetail.indexHint(entityType, indexHintType, variableName, label, propertyKeys: _*),
         NotificationDetail.indexes(label, propertyKeys.asJava)
       )
     case JoinHintUnfulfillableNotification(variables) =>
