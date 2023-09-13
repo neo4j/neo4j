@@ -69,7 +69,6 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.util.Preconditions
 
 import java.lang.reflect.Method
-
 import scala.annotation.tailrec
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
@@ -4097,7 +4096,7 @@ case class UnwindCollection(override val source: LogicalPlan, variable: LogicalV
  * have different, non-empty variable-dependency sets.
  */
 case class ValueHashJoin(override val left: LogicalPlan, override val right: LogicalPlan, join: Equals)(implicit
-idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.values.storable.Values.stringValue
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -542,5 +543,35 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
     }
 
     runtimeResult should beColumns(produce: _*).withRows(expected)
+  }
+
+  test("should discard columns") {
+    assume(runtime.name != "interpreted")
+
+    val probe = recordingProbe("lhsKeep", "lhsDiscard", "rhsKeep", "rhsDiscard")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("lhsKeep", "rhsKeep")
+      .prober(probe)
+      // We discard here but should not remove since we don't put it in an eager buffer
+      .projection("0 as hi")
+      .valueHashJoin("i = j")
+      // Note, discarding from rhs is not implemented
+      .|.projection("toString(j + 2) AS rhsKeep", "toString(j + 3) AS rhsDiscard")
+      .|.unwind(s"range(0, $sizeHint) AS j")
+      .|.argument()
+      .projection("lhsKeep AS lhsKeep")
+      .projection("toString(i) AS lhsKeep", "toString(i + 1) AS lhsDiscard")
+      .unwind(s"range(0,$sizeHint) AS i")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    result should beColumns("lhsKeep", "rhsKeep")
+      .withRows(inAnyOrder(Range.inclusive(0, sizeHint).map(i => Array(s"$i", s"${i + 2}"))))
+
+    probe.seenRows.map(_.toSeq).toSeq should contain theSameElementsAs
+      Range.inclusive(0, sizeHint)
+        .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
   }
 }

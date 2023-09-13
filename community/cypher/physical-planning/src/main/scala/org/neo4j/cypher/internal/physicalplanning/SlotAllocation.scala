@@ -907,6 +907,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         case _: LeftOuterHashJoin  => lhs
         case _: NodeHashJoin       => lhs
         case _: RightOuterHashJoin => lhs
+        case _: ValueHashJoin      => lhs
         case _: Sort               => lhs
         case _: Top                => lhs
         case _: TransactionApply =>
