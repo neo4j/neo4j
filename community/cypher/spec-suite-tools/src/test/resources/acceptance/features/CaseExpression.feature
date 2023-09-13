@@ -411,3 +411,15 @@ Feature: CaseExpression
       | res   |
       | null  |
     And no side effects
+
+
+  Scenario: Auto aliasing of null outside of CASE should work as expected
+    When executing query:
+      """
+      RETURN null
+      ORDER BY properties(CASE WHEN null THEN null END)
+      """
+    Then the result should be, in any order:
+      | null  |
+      | null  |
+    And no side effects
