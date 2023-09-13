@@ -39,4 +39,7 @@ case class UndirectedRelationshipTypeScan(idName: String, leftNode: String, relT
   override def usedVariables: Set[String] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipTypeScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }

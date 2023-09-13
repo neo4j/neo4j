@@ -39,6 +39,9 @@ case class DirectedRelationshipTypeScan(idName: String, startNode: String, relTy
 
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipTypeScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
   override def leftNode: String = startNode
 
   override def rightNode: String = endNode

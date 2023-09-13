@@ -30,4 +30,7 @@ case class FakeLeafPlan(argumentIds: Set[String] = Set.empty)(implicit idGen: Id
 
   override def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = (argumentIds ++ argsToAdd))(SameId(this.id))
 }

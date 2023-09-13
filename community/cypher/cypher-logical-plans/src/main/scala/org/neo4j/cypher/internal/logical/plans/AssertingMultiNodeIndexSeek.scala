@@ -49,6 +49,11 @@ case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeInd
   override def withoutArgumentIds(argsToExclude: Set[String]): MultiNodeIndexLeafPlan =
     copy(nodeIndexSeeks = nodeIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[NodeIndexSeekLeafPlan]))(SameId(this.id))
 
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(nodeIndexSeeks = nodeIndexSeeks.map(_.addArgumentIds(argsToAdd).asInstanceOf[NodeIndexSeekLeafPlan]))(
+      SameId(this.id)
+    )
+
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): MultiNodeIndexLeafPlan =
     AssertingMultiNodeIndexSeek(node, nodeIndexSeeks.map(_.withMappedProperties(f)))(SameId(this.id))
 

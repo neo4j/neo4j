@@ -278,6 +278,7 @@ abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen)  {
   def usedVariables: Set[String]
 
   def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan
+  def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan
 }
 
 abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {

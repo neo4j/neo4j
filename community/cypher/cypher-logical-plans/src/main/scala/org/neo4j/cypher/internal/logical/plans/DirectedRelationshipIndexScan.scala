@@ -47,6 +47,9 @@ case class DirectedRelationshipIndexScan(idName: String,
 
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
   override def copyWithoutGettingValues: DirectedRelationshipIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 

@@ -41,4 +41,7 @@ case class UndirectedRelationshipByIdSeek(idName: String,
   override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
 
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipByIdSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }

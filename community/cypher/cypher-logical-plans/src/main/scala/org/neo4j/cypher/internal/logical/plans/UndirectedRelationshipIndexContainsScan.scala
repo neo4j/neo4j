@@ -53,6 +53,9 @@ case class UndirectedRelationshipIndexContainsScan(idName: String,
 
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexContainsScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
   override def copyWithoutGettingValues: UndirectedRelationshipIndexContainsScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
 

@@ -33,4 +33,7 @@ case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[
   override def usedVariables: Set[String] = nodeIds.expr.dependencies.map(_.name)
 
   override def withoutArgumentIds(argsToExclude: Set[String]): NodeByIdSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }

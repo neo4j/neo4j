@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 trait OptionalSolver {
   /**
@@ -66,7 +69,15 @@ case object applyOptional extends OptionalSolver {
     val innerContext: LogicalPlanningContext = context.withFusedLabelInfo(enclosingQg.selections.labelInfo)
     val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
     (lhs: LogicalPlan) => inner.allResults.iterator.map { inner =>
-      val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext, optionalQg)
+      val lhsSymbols = lhs.availableSymbols
+      val innerWithFixedArguments = inner.endoRewrite(topDown(
+        Rewriter.lift {
+          case llp: LogicalLeafPlan => llp.addArgumentIds(lhsSymbols)
+        },
+        stopper = !_.isInstanceOf[LogicalPlan]
+      ))
+
+      val rhs = context.logicalPlanProducer.planOptional(innerWithFixedArguments, lhsSymbols, innerContext, optionalQg)
       val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 
       // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that

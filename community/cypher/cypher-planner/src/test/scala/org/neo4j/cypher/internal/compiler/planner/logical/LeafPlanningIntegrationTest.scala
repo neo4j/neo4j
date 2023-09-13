@@ -458,7 +458,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 Selection(_,
                   Expand(
                     Expand(
-                        Argument(SetExtractor("n")),
+                        Argument(SetExtractor("n", "m", "anon_0")),
                     _, _, _, _, _, _)
                   , _, _, _, _, _, _)
                 ),

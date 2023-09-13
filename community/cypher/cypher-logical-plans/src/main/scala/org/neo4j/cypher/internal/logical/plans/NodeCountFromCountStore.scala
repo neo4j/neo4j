@@ -36,4 +36,7 @@ case class NodeCountFromCountStore(idName: String, labelNames: List[Option[Label
   override def usedVariables: Set[String] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[String]): NodeCountFromCountStore = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }

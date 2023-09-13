@@ -43,6 +43,9 @@ case class DirectedRelationshipByIdSeek(idName: String,
 
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipByIdSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
   override def leftNode: String = startNode
 
   override def rightNode: String = endNode

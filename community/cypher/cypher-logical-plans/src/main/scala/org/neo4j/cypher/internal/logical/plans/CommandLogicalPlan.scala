@@ -30,6 +30,8 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
 
   override def withoutArgumentIds(argsToExclude: Set[String]): CommandLogicalPlan = this
 
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan = this
+
   // Always the first leaf plan, so arguments is always empty
   override def argumentIds: Set[String] = Set.empty
 

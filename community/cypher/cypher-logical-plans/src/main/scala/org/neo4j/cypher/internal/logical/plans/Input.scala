@@ -32,6 +32,7 @@ case class Input(nodes: Seq[String], relationships: Seq[String], variables: Seq[
   override def argumentIds: Set[String] = Set.empty
   override def usedVariables: Set[String] = Set.empty
   override def withoutArgumentIds(argsToExclude: Set[String]): Input = this
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan = this
 }
 
 object Input {

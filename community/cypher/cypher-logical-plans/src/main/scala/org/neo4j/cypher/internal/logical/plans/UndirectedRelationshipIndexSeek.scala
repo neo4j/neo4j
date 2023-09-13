@@ -50,6 +50,9 @@ case class UndirectedRelationshipIndexSeek(idName: String,
 
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def addArgumentIds(argsToAdd: Set[String]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
   override def copyWithoutGettingValues: UndirectedRelationshipIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 

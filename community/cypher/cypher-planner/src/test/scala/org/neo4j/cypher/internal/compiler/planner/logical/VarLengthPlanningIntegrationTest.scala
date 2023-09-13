@@ -231,7 +231,7 @@ class VarLengthPlanningIntegrationTest
       .|.optional("anon_0", "e", "anon_1")
       .|.projectEndpoints("(a)-[e*2..3]->(anon_2)", startInScope = false, endInScope = false)
       .|.filter( "size(e) >= 2", "size(e) <= 3")
-      .|.argument("e")
+      .|.argument("e", "anon_0", "anon_1")
       .expand("(anon_0)-[e*1..2]->(anon_1)")
       .allNodeScan("anon_0")
       .build()
