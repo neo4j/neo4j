@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 trait OptionalSolver {
 
@@ -74,10 +77,18 @@ case object applyOptional extends OptionalSolver {
       context.withModifiedPlannerState(_.withFusedLabelInfo(enclosingQg.selections.labelInfo))
     val inner = context.staticComponents.queryGraphSolver.plan(optionalQg, interestingOrderConfig, innerContext)
     (lhs: LogicalPlan) =>
+      val lhsSymbols = lhs.availableSymbols
       inner.allResults.iterator.map { inner =>
+        val innerWithFixedArguments = inner.endoRewrite(topDown(
+          Rewriter.lift {
+            case llp: LogicalLeafPlan => llp.addArgumentIds(lhsSymbols)
+          },
+          stopper = !_.isInstanceOf[LogicalPlan]
+        ))
+
         val rhs = context.staticComponents.logicalPlanProducer.planOptional(
-          inner,
-          lhs.availableSymbols.map(_.name),
+          innerWithFixedArguments,
+          lhsSymbols.map(_.name),
           innerContext,
           optionalQg
         )

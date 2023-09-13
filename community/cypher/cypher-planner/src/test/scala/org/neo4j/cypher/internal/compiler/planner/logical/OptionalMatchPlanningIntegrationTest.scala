@@ -538,7 +538,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         .|.expandAll("(anon_3)-[anon_4:R2]->(anon_5)")
         .|.filter("anon_3:D")
         .|.expandAll("(a)-[anon_2:R1]->(anon_3)")
-        .|.argument("a").withCardinality(1)
+        .|.argument("a", "anon_1", "anon_0").withCardinality(1)
         .filter("anon_0:D")
         .expandAll("(a)-[anon_1:R1]->(anon_0)")
         .limit(994)

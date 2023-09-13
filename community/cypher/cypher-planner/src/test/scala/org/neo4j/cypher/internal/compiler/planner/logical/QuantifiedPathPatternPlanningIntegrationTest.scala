@@ -1542,8 +1542,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.|.filterExpressionOrString("b:B", isRepeatTrailUnique("r"))
       .|.|.expandAll("(a)-[r]->(b)")
       .|.|.filter("a:A")
-      .|.|.argument("a")
-      .|.nodeByLabelScan("start", "A")
+      .|.|.argument("a", "x")
+      .|.nodeByLabelScan("start", "A", "x")
       .nodeByLabelScan("x", "C")
       .build()
   }

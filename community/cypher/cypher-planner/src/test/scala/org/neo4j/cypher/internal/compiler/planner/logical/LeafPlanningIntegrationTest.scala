@@ -493,7 +493,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.filter("role:Role", "not anon_2 = anon_1")
         .|.expandAll("(middle)-[anon_2]->(role)")
         .|.expandAll("(n)-[anon_1]->(middle)")
-        .|.argument("n")
+        .|.argument("n", "m", "anon_0")
         .expandAll("(m)<-[anon_0:REL]-(n)")
         .nodeByIdSeek("m", Set(), 1)
         .build()
