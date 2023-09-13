@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
+
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.tools.nsc.Settings
