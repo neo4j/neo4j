@@ -71,10 +71,15 @@ class PageList implements PageReferenceTranslator {
     private static final int OFFSET_LOCK_WORD = 0; // 8 bytes.
     private static final int OFFSET_ADDRESS = 8; // 8 bytes.
     private static final int OFFSET_LAST_TX_ID = 16; // 8 bytes.
+    // we use the same bytes to store previous chain version as
+    // single version OFFSET_LAST_TX_ID, since those should never work together
+    private static final int OFFSET_PREVIOUS_CHAIN_TX_ID = OFFSET_LAST_TX_ID;
     // The high 5 bytes of the page binding are the file page id.
     // The 21 following lower bits are the swapper id.
     // And the last 3 low bits are the usage counter.
     private static final int OFFSET_PAGE_BINDING = 24; // 8 bytes.
+    // UNKNOWN value of previous chain modifier. Page with this modifier is always flushable.
+    private static final int UNKNOWN_CHAIN_MODIFIER = 0;
 
     private final int pageCount;
     private final int cachePageSize;
@@ -192,6 +197,10 @@ class PageList implements PageReferenceTranslator {
 
     private static long offLastModifiedTransactionId(long pageRef) {
         return pageRef + OFFSET_LAST_TX_ID;
+    }
+
+    private static long offPreviousChainTransactionId(long pageRef) {
+        return pageRef + OFFSET_PREVIOUS_CHAIN_TX_ID;
     }
 
     private static long offLock(long pageRef) {
@@ -348,6 +357,14 @@ class PageList implements PageReferenceTranslator {
 
     static void setLastModifiedTxId(long pageRef, long modifierTxId) {
         UnsafeUtil.compareAndSetMaxLong(null, offLastModifiedTransactionId(pageRef), modifierTxId);
+    }
+
+    static long getAndResetPreviousChainModifiedTxId(long pageRef) {
+        return UnsafeUtil.getAndSetLong(null, offPreviousChainTransactionId(pageRef), UNKNOWN_CHAIN_MODIFIER);
+    }
+
+    static void setPreviousChainModifiedTxId(long pageRef, long modifierTxId) {
+        UnsafeUtil.compareAndSetMaxLong(null, offPreviousChainTransactionId(pageRef), modifierTxId);
     }
 
     static int getSwapperId(long pageRef) {

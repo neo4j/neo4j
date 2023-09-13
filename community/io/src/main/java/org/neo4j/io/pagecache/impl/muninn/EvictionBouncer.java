@@ -19,9 +19,18 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-@FunctionalInterface
 public interface EvictionBouncer {
-    EvictionBouncer ALWAYS_ALLOW = pageRef -> true;
+    EvictionBouncer ALWAYS_ALLOW = new EvictionBouncer() {
+        @Override
+        public void init() {}
+
+        @Override
+        public boolean allowPageFlush(long pageRef) {
+            return true;
+        }
+    };
+
+    void init();
 
     boolean allowPageFlush(long pageRef);
 }
