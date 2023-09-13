@@ -484,7 +484,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     }
     def checkLabelExpressions(ctx: SemanticContext, labelExpression: Option[LabelExpression]): SemanticCheck =
       labelExpression.foldSemanticCheck { labelExpression =>
-        when(ctx != SemanticContext.Match && labelExpression.containsGpmSpecificRelTypeExpression) {
+        when(
+          (ctx == SemanticContext.Merge || ctx == SemanticContext.Create) && labelExpression.containsGpmSpecificRelTypeExpression
+        ) {
           error(
             s"Relationship type expressions in patterns are not allowed in ${ctx.description}, but only in a MATCH clause",
             labelExpression.position

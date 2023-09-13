@@ -370,9 +370,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   test("MATCH (n), (m) WITH shortestPath((n)-[:!A&!B*]->(m)) AS p RETURN length(p) AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      "Variable length relationships must not use relationship type expressions.",
-      "Relationship type expressions in patterns are not allowed in an expression, but only in a MATCH clause",
-      "Relationship type expressions in shortestPath are not allowed in an expression"
+      "Variable length relationships must not use relationship type expressions."
     )
   }
 
@@ -382,8 +380,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   test("MATCH (n), (m) WITH (n)-[:!A&!B*]->(m) AS p RETURN p AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      "Variable length relationships must not use relationship type expressions.",
-      "Relationship type expressions in patterns are not allowed in an expression, but only in a MATCH clause"
+      "Variable length relationships must not use relationship type expressions."
     )
   }
 
@@ -393,9 +390,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   test("MATCH (n), (m) WHERE length(shortestPath((n)-[:!A&!B*]->(m))) > 0 RETURN n, m AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      "Variable length relationships must not use relationship type expressions.",
-      "Relationship type expressions in patterns are not allowed in an expression, but only in a MATCH clause",
-      "Relationship type expressions in shortestPath are not allowed in an expression"
+      "Variable length relationships must not use relationship type expressions."
     )
   }
 

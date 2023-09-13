@@ -109,7 +109,6 @@ import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression.AccumulatorExpressionTypeMismatchMessageGenerator
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
@@ -489,12 +488,6 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
             case node: NodePattern => node.labelExpression.exists(_.containsGpmSpecificLabelExpression)
           }) {
             error("Label expressions in shortestPath are not allowed in an expression", x.position)
-          } chain
-          when(x.pattern.element.folder.treeExists {
-            case relationship: RelationshipPattern =>
-              relationship.labelExpression.exists(_.containsGpmSpecificRelTypeExpression)
-          }) {
-            error("Relationship type expressions in shortestPath are not allowed in an expression", x.position)
           } chain
           specifyType(if (x.pattern.single) CTPath else CTList(CTPath), x)
 
