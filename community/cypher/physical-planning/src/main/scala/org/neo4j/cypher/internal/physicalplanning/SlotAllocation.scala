@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
@@ -693,7 +692,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     recordArgument: LogicalPlan => Unit,
     semanticTable: SemanticTable
   ): Unit = {
-    val result = lp match {
+    lp match {
 
       case Aggregation(_, groupingExpressions, aggregationExpressions) =>
         recordArgument(lp)
