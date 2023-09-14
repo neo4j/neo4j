@@ -612,11 +612,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return writeState == TransactionWriteState.SCHEMA;
     }
 
+    /**
+     * Access method that should be used when cursor context is accessed from the <b>SAME</b> thread that is executing transaction or transaction itself
+     */
     @Override
     public CursorContext cursorContext() {
         return cursorContext;
     }
 
+    /**
+     * Access method that should be used when cursor context is accessed from the thread that is not executing transaction (for example, monitoring)
+     * For most of the cases this is not the proper method to use, see {@link #cursorContext()}
+     */
     public CursorContext concurrentCursorContextLookup() {
         return (CursorContext) CURSOR_CONTEXT_HANDLE.getAcquire(this);
     }

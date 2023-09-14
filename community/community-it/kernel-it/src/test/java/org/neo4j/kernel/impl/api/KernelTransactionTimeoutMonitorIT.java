@@ -27,7 +27,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_monitor_
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -38,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -50,6 +54,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.BinaryLatch;
+import org.neo4j.util.concurrent.Futures;
 
 @DbmsExtension(configurationCallback = "configure")
 public class KernelTransactionTimeoutMonitorIT {
@@ -136,6 +141,44 @@ public class KernelTransactionTimeoutMonitorIT {
         assertThat(exception.getMessage()).contains("The transaction has been terminated.");
     }
 
+    @Test
+    void concurrentTransactionAndSnapshotCreation() throws ExecutionException, InterruptedException {
+        int numberOfExecutors = 40;
+        var txExecutors = Executors.newFixedThreadPool(numberOfExecutors);
+        var monitorThread = Executors.newSingleThreadExecutor();
+        CountDownLatch startLatch = new CountDownLatch(1);
+
+        var transactionFutures = new ArrayList<Future<?>>(numberOfExecutors);
+
+        try {
+            TestTransactionMonitor transactionMonitor = new TestTransactionMonitor(
+                    database.getDependencyResolver().resolveDependency(KernelTransactions.class));
+            var monitorFuture = monitorThread.submit(transactionMonitor);
+            transactionFutures.add(txExecutors.submit(() -> {
+                try {
+                    startLatch.await();
+                    for (int i = 0; i < 1_000; i++) {
+                        try (Transaction transaction = database.beginTx()) {
+                            var start = transaction.createNode();
+                            var end = transaction.createNode();
+                            start.createRelationshipTo(end, RelationshipType.withName("any"));
+                            transaction.commit();
+                        }
+                    }
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+            }));
+            startLatch.countDown();
+            Futures.getAll(transactionFutures);
+            transactionMonitor.terminate();
+
+            monitorFuture.get();
+        } finally {
+            txExecutors.shutdown();
+        }
+    }
+
     private void terminateOngoingTransaction() {
         Set<KernelTransactionHandle> kernelTransactionHandles = kernelTransactions.activeTransactions();
         assertThat(kernelTransactionHandles).hasSize(1);
@@ -156,5 +199,29 @@ public class KernelTransactionTimeoutMonitorIT {
                 node.setProperty("c", "d");
             }
         };
+    }
+
+    private static class TestTransactionMonitor implements Runnable {
+        private final KernelTransactions transactions;
+        private volatile boolean terminated;
+
+        public TestTransactionMonitor(KernelTransactions transactions) {
+            this.transactions = transactions;
+        }
+
+        @Override
+        public void run() {
+            while (!terminated) {
+                Set<KernelTransactionHandle> activeTransactions = transactions.activeTransactions();
+                for (KernelTransactionHandle activeTransaction : activeTransactions) {
+                    assertThat(activeTransaction.getTransactionHorizon()).isGreaterThan(1);
+                    assertThat(activeTransaction.getLastClosedTxId()).isGreaterThan(1);
+                }
+            }
+        }
+
+        public void terminate() {
+            terminated = true;
+        }
     }
 }

@@ -453,7 +453,7 @@ public class KernelTransactions extends LifecycleAdapter
      * @return transaction handle.
      */
     KernelTransactionHandle createHandle(KernelTransactionImplementation tx) {
-        return new KernelTransactionImplementationHandle(tx, clock, tx.cursorContext());
+        return new KernelTransactionImplementationHandle(tx, clock, tx.concurrentCursorContextLookup());
     }
 
     private void assertRunning() {
