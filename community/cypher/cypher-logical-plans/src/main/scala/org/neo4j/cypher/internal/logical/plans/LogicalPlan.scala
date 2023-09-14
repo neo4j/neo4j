@@ -69,6 +69,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.util.Preconditions
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
@@ -1613,7 +1614,7 @@ case class Distinct(
 case class Eager(
   override val source: LogicalPlan,
   reasons: ListSet[EagernessReason] = ListSet(EagernessReason.Unknown)
-)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -2045,7 +2046,7 @@ case class LeftOuterHashJoin(
   override val right: LogicalPlan
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
+) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
@@ -2346,7 +2347,7 @@ case class NodeCountFromCountStore(
  */
 case class NodeHashJoin(nodes: Set[LogicalVariable], override val left: LogicalPlan, override val right: LogicalPlan)(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
+) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
@@ -2983,7 +2984,7 @@ case class RightOuterHashJoin(
   override val right: LogicalPlan
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
+) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
@@ -3319,7 +3320,7 @@ case class Skip(override val source: LogicalPlan, count: Expression)(implicit id
  * Buffer all source rows and sort them according to 'sortItems'. Produce the rows in sorted order.
  */
 case class Sort(override val source: LogicalPlan, sortItems: Seq[ColumnOrder])(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
+    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -3357,7 +3358,7 @@ case class SubqueryForeach(override val left: LogicalPlan, override val right: L
  * produced once source if fully consumed.
  */
 case class Top(override val source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
+    extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
   override val distinctness: Distinctness = Distinctness.distinctColumnsOfLimit(limit, source)
@@ -3500,7 +3501,7 @@ case class TransactionApply(
   maybeReportAs: Option[LogicalVariable]
 )(
   implicit idGen: IdGen
-) extends LogicalBinaryPlan(idGen) with ApplyPlan with DiscardingPlan {
+) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(right = newRHS)(idGen)
@@ -4096,7 +4097,7 @@ case class UnwindCollection(override val source: LogicalPlan, variable: LogicalV
  * have different, non-empty variable-dependency sets.
  */
 case class ValueHashJoin(override val left: LogicalPlan, override val right: LogicalPlan, join: Equals)(implicit
-idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with DiscardingPlan {
+idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
@@ -4104,14 +4105,6 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan with Discar
 
   override val distinctness: Distinctness = Distinctness.distinctColumnsOfBinaryPlan(left, right)
 }
-
-/**
- * Marker trait for plans that might discard variables during slot allocation.
- *
- * This trait is currently only used for a specific mechanism in slot allocation. Other plans can be considered
- * discarding too, like Aggregation, but are not currently inheriting this trait.
- */
-sealed trait DiscardingPlan
 
 /**
  * Marker trait of light-weight simulations of a basic plans that can be used to test or benchmark runtime frameworks

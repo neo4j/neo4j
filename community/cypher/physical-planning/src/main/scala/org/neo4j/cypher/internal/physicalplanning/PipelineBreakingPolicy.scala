@@ -20,8 +20,20 @@
 package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.PreserveOrder
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
@@ -35,6 +47,24 @@ trait PipelineBreakingPolicy {
    * True if the an operator should be the start of a new pipeline.
    */
   def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean
+
+  /**
+   * Returns true if it's ok to discard unused slots at this plan.
+   */
+  def isDiscardingPlan(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = {
+    canBeDiscardingPlan(lp) && breakOn(lp, outerApplyPlanId)
+  }
+
+  def canBeDiscardingPlan(lp: LogicalPlan): Boolean = {
+    lp match {
+      case eager: EagerLogicalPlan => eager match {
+          case _: Eager | _: LeftOuterHashJoin | _: NodeHashJoin | _: RightOuterHashJoin | _: Sort | _: Top | _: ValueHashJoin =>
+            true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 
   def invoke(
     lp: LogicalPlan,

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.logical.plans.DiscardingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
@@ -46,7 +45,7 @@ object LivenessAnalysis {
    */
   private case class Acc(currentlyLive: Set[String], liveFromLhs: Map[Id, Set[String]], result: Seq[(Id, Set[String])])
 
-  def computeLiveVariables(root: LogicalPlan): LiveVariables = {
+  def computeLiveVariables(root: LogicalPlan, breakingPolicy: PipelineBreakingPolicy): LiveVariables = {
     // Use reverseTreeFold so that we go into RHS before LHS
     val Acc(_, _, result) = root.folder.reverseTreeFold(Acc(Set.empty, Map.empty, Seq.empty)) {
       case p: LogicalPlan => acc =>
@@ -58,7 +57,7 @@ object LivenessAnalysis {
 
           val newLive = (acc.currentlyLive ++ liveFromParent).intersect(p.availableSymbols.map(_.name)) ++ varsInPlan
           val newMap =
-            if (p.isInstanceOf[DiscardingPlan]) acc.result.appended(p.id -> newLive)
+            if (breakingPolicy.canBeDiscardingPlan(p)) acc.result.appended(p.id -> newLive)
             else acc.result
           p match {
             case binaryPlan: LogicalBinaryPlan =>

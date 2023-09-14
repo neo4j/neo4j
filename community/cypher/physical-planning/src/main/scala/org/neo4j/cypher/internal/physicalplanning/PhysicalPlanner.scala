@@ -56,7 +56,8 @@ object PhysicalPlanner {
       expressionVariableAllocation.allocate(beforeRewrite)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
     val liveVariables =
-      if (config.freeMemoryOfUnusedColumns) LivenessAnalysis.computeLiveVariables(logicalPlan) else new LiveVariables
+      if (config.freeMemoryOfUnusedColumns) LivenessAnalysis.computeLiveVariables(logicalPlan, breakingPolicy)
+      else new LiveVariables
     val slotMetaData = SlotAllocation.allocateSlots(
       withSlottedParameters,
       semanticTable,
