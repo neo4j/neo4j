@@ -2662,6 +2662,11 @@ case class LogicalPlanProducer(
     nodesToLock: Set[String],
     context: LogicalPlanningContext
   ): Merge = {
+    // MERGE has row-by-row visibility.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    // This only applies to the "write part" of the MERGE.
+    // The read, which is the `inner` plan is free to use RollUpApply, etc.
+    val rewriter = irExpressionRewriter(inner, context)
 
     val patterns =
       if (createRelationshipPatterns.isEmpty) {
@@ -2680,14 +2685,8 @@ case class LogicalPlanProducer(
           onMatchPatterns
         )
       }
-    val rewrittenNodePatterns =
-      createNodePatterns.map(p =>
-        SubqueryExpressionSolver.ForMappable().solve(inner, p, context)._1.asInstanceOf[CreateNode]
-      )
-    val rewrittenRelPatterns =
-      createRelationshipPatterns.map(p =>
-        SubqueryExpressionSolver.ForMappable().solve(inner, p, context)._1.asInstanceOf[CreateRelationship]
-      )
+    val rewrittenNodePatterns = createNodePatterns.endoRewrite(rewriter)
+    val rewrittenRelPatterns = createRelationshipPatterns.endoRewrite(rewriter)
 
     val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
     val merge =

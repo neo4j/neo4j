@@ -135,3 +135,18 @@ Feature: MergeLegacyAcceptance
       MERGE (a:Foo)-[r:KNOWS]->(a:Bar)
       """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
+
+  Scenario: Evaluate pattern comprehension in MERGE on an empty database correctly
+    Given an empty graph
+    When executing query:
+      """
+      MERGE (n { k: ([ ()<-[r0]-() | 1 ] <= [1]) } )
+      RETURN n.k AS prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | true |
+    And the side effects should be:
+      | +nodes      | 1 |
+      | +properties | 1 |
+

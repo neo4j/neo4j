@@ -54,7 +54,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.ands
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipExpression
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -1778,15 +1778,39 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for MERGE node") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val q =
       """
         |MERGE (n {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}) RETURN n
       """.stripMargin
 
+    val nestedPlan = planner.subPlanBuilder()
+      .projection("b.age AS anon_0")
+      .allRelationshipsScan("(a)-[anon_1]->(b)")
+      .build()
+    val nestedCollection =
+      NestedPlanCollectExpression(
+        nestedPlan,
+        varFor("anon_0"),
+        """COLLECT { MATCH (a)-[`anon_1`]->(b)
+          |RETURN b.age AS `anon_0` }""".stripMargin
+      )(pos)
+    val reduceExprWithNestedPlan = reduce(
+      varFor("sum", pos),
+      literalInt(0, pos),
+      varFor("x", pos),
+      nestedCollection,
+      add(varFor("sum", pos), varFor("x", pos))
+    )
+    val mapExpr = mapOf("foo" -> reduceExprWithNestedPlan)
+
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .merge(Seq(createNodeWithProperties("n", Seq(), "{foo: reduce(sum = 0, x IN anon_2 | sum + x)}")))
+      .merge(Seq(createNodeWithProperties("n", Seq(), mapExpr)))
       .filter("n.foo = reduce(sum = 0, x IN anon_2 | sum + x)")
       .rollUpApply("anon_2", "anon_0")
       .|.projection("b.age AS anon_0")
@@ -1796,23 +1820,47 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for MERGE relationship") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val q =
       """
         |MERGE ()-[r:R {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}]->() RETURN r
       """.stripMargin
+
+    val nestedPlan = planner.subPlanBuilder()
+      .projection("b.age AS anon_0")
+      .allRelationshipsScan("(a)-[anon_2]->(b)")
+      .build()
+    val nestedCollection =
+      NestedPlanCollectExpression(
+        nestedPlan,
+        varFor("anon_0"),
+        """COLLECT { MATCH (a)-[`anon_2`]->(b)
+          |RETURN b.age AS `anon_0` }""".stripMargin
+      )(pos)
+    val reduceExprWithNestedPlan = reduce(
+      varFor("sum", pos),
+      literalInt(0, pos),
+      varFor("x", pos),
+      nestedCollection,
+      add(varFor("sum", pos), varFor("x", pos))
+    )
+    val mapExpr = mapOf("foo" -> reduceExprWithNestedPlan)
 
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
       .merge(
         Seq(createNode("anon_1"), createNode("anon_3")),
-        Seq(createRelationship(
+        Seq(createRelationshipExpression(
           "r",
           "anon_1",
           "R",
           "anon_3",
           OUTGOING,
-          Some("{foo: reduce(sum = 0, x IN anon_4 | sum + x)}")
+          Some(mapExpr)
         ))
       )
       .filter("r.foo = reduce(sum = 0, x IN anon_4 | sum + x)")

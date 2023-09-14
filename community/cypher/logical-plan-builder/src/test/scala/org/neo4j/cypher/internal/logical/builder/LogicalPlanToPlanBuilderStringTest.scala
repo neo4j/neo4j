@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipExpression
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
@@ -772,7 +773,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       .create(
         createNode("a", "A"),
         createNodeWithProperties("b", Seq("B"), "{node: true}"),
-        createRelationship("r", "a", "R", "b", INCOMING, Some("{rel: true}"))
+        createRelationship("r", "a", "R", "b", INCOMING, Some("{rel: true}")),
+        createRelationshipExpression("r2", "a", "R", "b", INCOMING, Some(mapOfInt("baz" -> 42)))
       )
       .argument()
       .build()
@@ -784,7 +786,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       .produceResults("x", "y")
       .create(
         createNodeWithProperties("a", Seq("A"), "{foo: 42}"),
-        createNodeWithProperties("b", Seq.empty, "{bar: 'hello'}")
+        createNodeWithProperties("b", Seq.empty, "{bar: 'hello'}"),
+        createNodeWithProperties("c", Seq.empty, mapOfInt("baz" -> 42))
       )
       .argument()
       .build()
@@ -2491,9 +2494,10 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>
         val modifiers = m.getModifiers
-        m.getGenericReturnType.getTypeName == "IMPL" && Modifier.isPublic(modifiers) && !Modifier.isStatic(
-          modifiers
-        ) && !Modifier.isAbstract(modifiers)
+        m.getGenericReturnType.getTypeName == "IMPL" &&
+        Modifier.isPublic(modifiers) &&
+        !Modifier.isStatic(modifiers) &&
+        !Modifier.isAbstract(modifiers)
       }
       methods should not be empty
       val m = methods.map { m =>

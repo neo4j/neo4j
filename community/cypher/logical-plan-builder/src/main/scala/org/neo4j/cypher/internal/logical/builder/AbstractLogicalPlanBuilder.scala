@@ -2595,6 +2595,9 @@ object AbstractLogicalPlanBuilder {
   def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
     CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, Some(Parser.parseExpression(properties)))
 
+  def createNodeWithProperties(node: String, labels: Seq[String], properties: MapExpression): CreateNode =
+    CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, Some(properties))
+
   def createRelationship(
     relationship: String,
     left: String,
@@ -2612,7 +2615,25 @@ object AbstractLogicalPlanBuilder {
       RelTypeName(typ)(pos),
       varFor(right),
       direction,
-      properties.map(Parser.parseExpression)
+      props
+    )
+  }
+
+  def createRelationshipExpression(
+    relationship: String,
+    left: String,
+    typ: String,
+    right: String,
+    direction: SemanticDirection = OUTGOING,
+    properties: Option[MapExpression] = None
+  ): CreateRelationship = {
+    CreateRelationship(
+      varFor(relationship),
+      varFor(left),
+      RelTypeName(typ)(pos),
+      varFor(right),
+      direction,
+      properties
     )
   }
 
