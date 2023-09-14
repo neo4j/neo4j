@@ -88,16 +88,17 @@ public class VectorIndexProcedures {
             @Name("indexName") String name,
             @Name("label") String label,
             @Name("propertyKey") String propertyKey,
-            @Name("vectorDimension") long vectorDimension,
+            @Name("vectorDimension") Long vectorDimension,
             @Name("vectorSimilarityFunction") String vectorSimilarityFunction) {
         Objects.requireNonNull(name, "'indexName' must not be null");
         Objects.requireNonNull(label, "'label' must not be null");
         Objects.requireNonNull(propertyKey, "'propertyKey' must not be null");
+        Objects.requireNonNull(vectorDimension, "'vectorDimension' must not be null");
         Preconditions.checkArgument(
                 1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS,
                 "'vectorDimension' must be between %d and %d inclusively".formatted(1, VectorUtils.MAX_DIMENSIONS));
         VectorSimilarityFunction.fromName(
-                Objects.requireNonNull(vectorSimilarityFunction, "vectorSimilarityFunction must not be null"));
+                Objects.requireNonNull(vectorSimilarityFunction, "'vectorSimilarityFunction' must not be null"));
 
         final var indexCreator = tx.schema()
                 .indexFor(Label.label(label))
@@ -120,11 +121,12 @@ public class VectorIndexProcedures {
     @Procedure(name = "db.index.vector.queryNodes", mode = READ)
     public Stream<Neighbor> queryVectorIndex(
             @Name("indexName") String name,
-            @Name("numberOfNearestNeighbours") long numberOfNearestNeighbours,
+            @Name("numberOfNearestNeighbours") Long numberOfNearestNeighbours,
             @Name("query") List<Double> query)
             throws KernelException {
         Objects.requireNonNull(name, "'indexName' must not be null");
-        Preconditions.checkArgument(numberOfNearestNeighbours > 1, "'numberOfNearestNeighbours' must be positive");
+        Objects.requireNonNull(numberOfNearestNeighbours, "'numberOfNearestNeighbours' must not be null");
+        Preconditions.checkArgument(numberOfNearestNeighbours > 0, "'numberOfNearestNeighbours' must be positive");
         Objects.requireNonNull(query, "'query' must not be null");
 
         if (callContext.isSystemDatabase()) {

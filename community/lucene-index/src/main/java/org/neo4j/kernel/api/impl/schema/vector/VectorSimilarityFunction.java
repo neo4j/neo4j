@@ -129,8 +129,10 @@ public enum VectorSimilarityFunction {
         try {
             return valueOf(name.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    "'%s' is an unsupported vector similarity function. Supported: %s".formatted(name, SUPPORTED), e);
+            final var exception = new IllegalArgumentException(
+                    "'%s' is an unsupported vector similarity function. Supported: %s".formatted(name, SUPPORTED));
+            exception.addSuppressed(e);
+            throw exception;
         }
     }
 

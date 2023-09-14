@@ -26,10 +26,14 @@ import static org.neo4j.internal.helpers.MathUtil.ceil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.impl.factory.Maps;
@@ -277,34 +281,125 @@ class VectorIndexProceduresIT {
             assertThat(nearest).hasSize(k).isSorted();
         }
 
-        protected void createIndex() {
+        record ParameterVariation(String parameter, Object value, Optional<String> expectedError) {
+            void assertValidation(Map<String, Object> defaults, Consumer<Map<String, Object>> action) {
+                final var parameters = new HashMap<>(defaults);
+                parameters.put(parameter, value);
+
+                final var assertion = assertThatCode(() -> action.accept(parameters));
+                if (expectedError.isPresent()) {
+                    assertion.hasMessageContaining(expectedError.get());
+                } else {
+                    assertion.doesNotThrowAnyException();
+                }
+            }
+        }
+
+        protected static Stream<ParameterVariation> shouldValidateCreationParameters() {
+            return Stream.of(
+                    new ParameterVariation("name", null, Optional.of("'indexName' must not be null")),
+                    new ParameterVariation("label", null, Optional.of("'label' must not be null")),
+                    new ParameterVariation("propertyKey", null, Optional.of("'propertyKey' must not be null")),
+                    new ParameterVariation("vectorDimension", null, Optional.of("'vectorDimension' must not be null")),
+                    new ParameterVariation(
+                            "vectorDimension",
+                            0,
+                            Optional.of("'vectorDimension' must be between %d and %d inclusively"
+                                    .formatted(1, VectorUtils.MAX_DIMENSIONS))),
+                    new ParameterVariation("vectorDimension", 1, Optional.empty()), // OK
+                    new ParameterVariation("vectorDimension", VectorUtils.MAX_DIMENSIONS, Optional.empty()), // OK
+                    new ParameterVariation(
+                            "vectorDimension",
+                            VectorUtils.MAX_DIMENSIONS + 1,
+                            Optional.of("'vectorDimension' must be between %d and %d inclusively"
+                                    .formatted(1, VectorUtils.MAX_DIMENSIONS))),
+                    new ParameterVariation(
+                            "vectorSimilarityFunction",
+                            null,
+                            Optional.of("'vectorSimilarityFunction' must not be null")),
+                    new ParameterVariation(
+                            "vectorSimilarityFunction",
+                            "nonsense",
+                            Optional.of("'nonsense' is an unsupported vector similarity function")));
+        }
+
+        @ParameterizedTest
+        @MethodSource
+        protected void shouldValidateCreationParameters(ParameterVariation variation) {
+            variation.assertValidation(defaultCreationParameters(), this::createIndex);
+        }
+
+        protected static Stream<ParameterVariation> shouldValidateQueryParameters() {
+            return Stream.of(
+                    new ParameterVariation("name", null, Optional.of("'indexName' must not be null")),
+                    new ParameterVariation(
+                            "numberOfNearestNeighbours",
+                            null,
+                            Optional.of("'numberOfNearestNeighbours' must not be null")),
+                    new ParameterVariation(
+                            "numberOfNearestNeighbours",
+                            0,
+                            Optional.of("'numberOfNearestNeighbours' must be positive")),
+                    new ParameterVariation("numberOfNearestNeighbours", 1, Optional.empty()), // OK
+                    new ParameterVariation("query", null, Optional.of("'query' must not be null")));
+        }
+
+        @ParameterizedTest
+        @MethodSource
+        protected void shouldValidateQueryParameters(ParameterVariation variation) {
+            createIndex(defaultCreationParameters());
+            variation.assertValidation(
+                    defaultQueryParameters(10, randomVector(VECTOR_DIMENSIONALITY)), this::queryNodesAndCollect);
+        }
+
+        private void createIndex(Map<String, Object> parameters) {
             db.executeTransactionally(
-                    "CALL db.index.vector.createNodeIndex($name, $label, $propertyKey, $dimensions, $similarity)",
-                    Map.of(
-                            "name", INDEX_NAME,
-                            "label", LABEL.name(),
-                            "propertyKey", PROPERTY_KEY,
-                            "dimensions", VECTOR_DIMENSIONALITY,
-                            "similarity", similarityFunction.name().toLowerCase(Locale.ROOT)));
+                    "CALL db.index.vector.createNodeIndex($name, $label, $propertyKey, $vectorDimension, $vectorSimilarityFunction)",
+                    parameters);
+        }
+
+        protected void createIndex() {
+            createIndex(defaultCreationParameters());
+        }
+
+        private Map<String, Object> defaultCreationParameters() {
+            return Map.of(
+                    "name", INDEX_NAME,
+                    "label", LABEL.name(),
+                    "propertyKey", PROPERTY_KEY,
+                    "vectorDimension", VECTOR_DIMENSIONALITY,
+                    "vectorSimilarityFunction", similarityFunction.name().toLowerCase(Locale.ROOT));
         }
 
         private List<Neighbor> queryNodesAndCollect(int k, float[] query) {
+            return queryNodesAndCollect(defaultQueryParameters(k, query));
+        }
+
+        private List<Neighbor> queryNodesAndCollect(Map<String, Object> parameters) {
             try (final var tx = db.beginTx();
-                    final var results = queryNodes(tx, k, query)) {
+                    final var results = queryNodes(tx, parameters)) {
                 return collectNeighbors(results);
             }
         }
 
         protected static Result queryNodes(Transaction tx, int k, float[] query) {
+            return queryNodes(tx, defaultQueryParameters(k, query));
+        }
+
+        private static Result queryNodes(Transaction tx, Map<String, Object> parameters) {
             return tx.execute(
                     """
-                    CALL db.index.vector.queryNodes($name, $k, $query) YIELD node, score
+                    CALL db.index.vector.queryNodes($name, $numberOfNearestNeighbours, $query) YIELD node, score
                     RETURN score, node ORDER BY score DESC
                     """,
-                    Map.of(
-                            "name", INDEX_NAME,
-                            "k", k,
-                            "query", query));
+                    parameters);
+        }
+
+        private static Map<String, Object> defaultQueryParameters(Integer k, float[] query) {
+            return Map.of(
+                    "name", INDEX_NAME,
+                    "numberOfNearestNeighbours", k,
+                    "query", query);
         }
 
         private static Result setVectorProperty(Transaction tx, Node node, List<Double> vector) {
