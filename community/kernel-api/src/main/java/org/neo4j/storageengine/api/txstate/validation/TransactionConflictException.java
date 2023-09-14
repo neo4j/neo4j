@@ -54,6 +54,11 @@ public class TransactionConflictException extends RuntimeException implements St
     }
 
     @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
+    }
+
+    @Override
     public String getMessage() {
         return message;
     }
