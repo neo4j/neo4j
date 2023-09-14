@@ -2913,16 +2913,6 @@ case class Projection(
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ projectExpressions.keySet
 
   override val distinctness: Distinctness = source.distinctness.renameColumns(projectExpressions)
-
-  /**
-   * Custom copy method to make rewriting work.
-   */
-  def copy(
-    source: LogicalPlan = this.source,
-    projectExpressions: Map[LogicalVariable, Expression] = this.projectExpressions
-  )(implicit idGen: IdGen = this.idGen): Projection = {
-    Projection(source, projectExpressions)(idGen)
-  }
 }
 
 /**
