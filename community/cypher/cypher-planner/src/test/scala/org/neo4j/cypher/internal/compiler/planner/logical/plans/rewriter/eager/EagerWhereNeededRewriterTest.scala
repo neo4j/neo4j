@@ -7100,33 +7100,6 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  test("Should be eager in Delete/Read conflict with node read in Projection (discardSymbols)") {
-    val planBuilder = new LogicalPlanBuilder()
-      .produceResults("count")
-      .aggregation(Seq.empty, Seq("count(*) AS count"))
-      .detachDeleteNode("n")
-      .projection("1 AS one")
-      .cartesianProduct()
-      .|.nodeByLabelScan("m", "B")
-      .nodeByLabelScan("n", "A")
-    val plan = planBuilder.build()
-
-    val result = eagerizePlan(planBuilder, plan)
-    result should equal(
-      new LogicalPlanBuilder()
-        .produceResults("count")
-        .aggregation(Seq.empty, Seq("count(*) AS count"))
-        .detachDeleteNode("n")
-        // Important that this is ID 3 (Projection)
-        .eager(ListSet(EagernessReason.ReadDeleteConflict("m").withConflict(EagernessReason.Conflict(Id(2), Id(5)))))
-        .projection("1 AS one")
-        .cartesianProduct()
-        .|.nodeByLabelScan("m", "B")
-        .nodeByLabelScan("n", "A")
-        .build()
-    )
-  }
-
   test("Should be eager in Delete/Read conflict with node read in TriadicSelection") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("count")
