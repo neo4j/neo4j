@@ -175,6 +175,12 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
                         assert query.length == 1;
                         suffixOrContainsQuery(descriptor, nextQuery);
                     }
+
+                    case NEAREST_NEIGHBORS -> {
+                        // Vector indexes currently ignore transaction state.
+                        // TODO VECTOR: handle transaction state!
+                    }
+
                     default -> throw new UnsupportedOperationException(
                             "Query not supported: " + Arrays.toString(query));
                 }
