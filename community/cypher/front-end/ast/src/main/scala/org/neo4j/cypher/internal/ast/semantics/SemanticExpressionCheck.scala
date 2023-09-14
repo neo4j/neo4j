@@ -779,13 +779,6 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     }
   }
 
-  def getExpressionEntityType(s: SemanticState, entity: Expression): Option[EntityType] =
-    s.expressionType(entity).actual match {
-      case CTNode.invariant         => Some(NODE_TYPE)
-      case CTRelationship.invariant => Some(RELATIONSHIP_TYPE)
-      case _                        => None
-    }
-
   private val stringifier = ExpressionStringifier()
 
   def checkLabelExpressionForLegacyRelationshipTypeDisjunction(
