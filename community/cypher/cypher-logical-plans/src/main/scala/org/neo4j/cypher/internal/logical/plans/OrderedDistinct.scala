@@ -39,6 +39,9 @@ case class OrderedDistinct(override val source: LogicalPlan,
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
+  override def addGroupingExpressions(newGroupingExpressions: Map[String, Expression]): AggregatingPlan =
+    copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
+
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
    s"""orderToLeverage expressions can only be grouping expression values, i.e. the expressions _before_ the distinct.
        |Grouping expressions: $groupingExpressions

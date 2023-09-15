@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -32,6 +33,9 @@ case class Distinct(override val source: LogicalPlan,
                    (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan with AggregatingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override def addGroupingExpressions(newGroupingExpressions: Map[String, Expression]): AggregatingPlan =
+    copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
 
   override val projectExpressions: Map[String, Expression] = groupingExpressions
   override val availableSymbols: Set[String] = groupingExpressions.keySet

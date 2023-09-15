@@ -25,10 +25,15 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.topDown
 
 trait OptionalSolver {
@@ -70,9 +75,25 @@ case object applyOptional extends OptionalSolver {
     val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
     (lhs: LogicalPlan) => inner.allResults.iterator.map { inner =>
       val lhsSymbols = lhs.availableSymbols
-      val innerWithFixedArguments = inner.endoRewrite(topDown(
+      val innerWithFixedArguments = inner.endoRewrite(bottomUp(
         Rewriter.lift {
           case llp: LogicalLeafPlan => llp.addArgumentIds(lhsSymbols)
+            case ap: AggregatingPlan  => ap.addGroupingExpressions(lhsSymbols.map(s => s -> Variable(s)(InputPosition.NONE)).toMap)
+            case p: LogicalPlan =>
+              AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+                lhsSymbols.subsetOf(p.availableSymbols),
+                s"""RHS of optional must maintain LHS available symbols.
+                   |
+                   |LHS: (available symbols: ${lhsSymbols.mkString("`", "`, `", "`")})
+                   |$lhs
+                   |
+                   |RHS: (available symbols: ${p.availableSymbols.mkString("`", "`, `", "`")})
+                   |$inner
+                   |
+                   |fails at: $p
+                   |""".stripMargin
+              )
+              p
         },
         stopper = !_.isInstanceOf[LogicalPlan]
       ))

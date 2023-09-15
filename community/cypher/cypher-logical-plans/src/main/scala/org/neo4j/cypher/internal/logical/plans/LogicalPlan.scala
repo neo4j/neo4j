@@ -38,6 +38,7 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -229,6 +230,12 @@ abstract class LogicalPlan(idGen: IdGen)
 trait AggregatingPlan extends LogicalPlan {
   def groupingExpressions: Map[String, Expression]
   def aggregationExpressions: Map[String, Expression]
+
+  /**
+   * Adds grouping expressions to this plan.
+   * If the plan already has grouping expressions with the same keys, they are overridden.
+   */
+  def addGroupingExpressions(newGroupingExpressions: Map[String, Expression]): AggregatingPlan
 }
 
 // Marker interface for all plans that performs updates

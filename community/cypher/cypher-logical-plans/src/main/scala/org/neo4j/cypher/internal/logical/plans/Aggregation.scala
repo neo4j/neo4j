@@ -38,6 +38,9 @@ case class Aggregation(override val source: LogicalPlan,
 
  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
+  override def addGroupingExpressions(newGroupingExpressions: Map[String, Expression]): AggregatingPlan =
+    copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
+
  override val projectExpressions: Map[String, Expression] = groupingExpressions
 
  val groupingKeys: Set[String] = groupingExpressions.keySet
