@@ -21,10 +21,11 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -262,12 +263,13 @@ class TransactionRangeDiagnosticsTest {
                 }
                 when(transactionLogs.extractHeader(version))
                         .thenReturn(new LogHeader(
-                                LatestVersions.LATEST_KERNEL_VERSION.version(),
-                                new LogPosition(version, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                                LATEST_LOG_FORMAT,
+                                version,
                                 headerTxId,
                                 new StoreId(12345, 56789, "engine-1", "format-1", 1, 1),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
-                                BASE_TX_CHECKSUM));
+                                BASE_TX_CHECKSUM,
+                                LATEST_KERNEL_VERSION));
             }
 
             when(transactionLogs.getMatchedFiles()).thenReturn(helper.getMatchedFiles());

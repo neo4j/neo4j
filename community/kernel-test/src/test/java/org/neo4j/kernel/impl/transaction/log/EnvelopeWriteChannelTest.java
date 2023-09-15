@@ -28,6 +28,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEAD
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,7 +45,6 @@ import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
-import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -824,7 +824,7 @@ class EnvelopeWriteChannelTest {
         return new PhysicalLogVersionedStoreChannel(
                 fileSystem.write(logPath),
                 version,
-                LogFormat.CURRENT_LOG_FORMAT_VERSION,
+                LATEST_LOG_FORMAT,
                 logPath,
                 mock(LogFileChannelNativeAccessor.class),
                 DatabaseTracer.NULL);
@@ -1011,7 +1011,7 @@ class EnvelopeWriteChannelTest {
         }
 
         int payloadChecksum = buffer.getInt();
-        System.out.printf("%d : 0x%08X%n", payloadChecksum, payloadChecksum);
+        // System.out.printf("%d : 0x%08X%n", payloadChecksum, payloadChecksum);
 
         assertThat(payloadChecksum).as("checksum").isEqualTo(checksum);
         assertThat(buffer.get()).as("type").isEqualTo(type.typeValue);

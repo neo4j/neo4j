@@ -32,6 +32,7 @@ import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -156,6 +157,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         var internalChannels = LongObjectMaps.mutable.<StoreChannel>ofInitialCapacity(exposedChannels);
         for (long version = minimalVersion; version <= highestLogVersion; version++) {
             var startPositionTxId = logFileTransactionId(startingTxId, minimalVersion, version);
+            var kernelVersion = getKernelVersion(startPositionTxId);
             var readOnlyStoreChannel = new ReadOnlyStoreChannel(logFile, version);
             if (version == minimalVersion) {
                 readOnlyStoreChannel.position(minimalLogPosition.getByteOffset());
@@ -164,7 +166,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
             var endOffset =
                     version < highestLogVersion ? readOnlyStoreChannel.size() : highestLogPosition.getByteOffset();
             var lastTxId = version < highestLogVersion ? getHeaderLastCommittedTx(version + 1) : highestTxId;
-            channels.add(new LogChannel(startPositionTxId, readOnlyStoreChannel, endOffset, lastTxId));
+            channels.add(new LogChannel(startPositionTxId, kernelVersion, readOnlyStoreChannel, endOffset, lastTxId));
         }
         logFile.registerExternalReaders(internalChannels);
         return channels;
@@ -183,6 +185,20 @@ public class TransactionLogServiceImpl implements TransactionLogService {
             return commandBatchCursor.position();
         } catch (NoSuchTransactionException e) {
             throw new IllegalArgumentException("Transaction id " + startingTxId + " not found in transaction logs.", e);
+        }
+    }
+
+    private KernelVersion getKernelVersion(long txId) throws IOException {
+        try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(txId)) {
+            if (!commandBatchCursor.next()) {
+                throw new NoSuchTransactionException(txId);
+            }
+            return commandBatchCursor.get().commandBatch().kernelVersion();
+        } catch (NoSuchTransactionException e) {
+            throw new IllegalArgumentException(
+                    "Couldn't get kernel version for transaction id " + txId
+                            + " as it can't be found in transaction logs.",
+                    e);
         }
     }
 

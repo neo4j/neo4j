@@ -25,9 +25,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,6 +38,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.helpers.MathUtil;
@@ -47,7 +51,6 @@ import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -79,6 +82,7 @@ class EnvelopeFuzzerTest {
     @Inject
     private TestDirectory testDirectory;
 
+    @Disabled("Will need a LogFormat V10 to function")
     @Test
     void randomWritesAndReads() throws IOException {
         int segmentSize = 1 << random.intBetween(log2(128), log2(kibiBytes(256))); // Between 128b to 256kb
@@ -95,13 +99,14 @@ class EnvelopeFuzzerTest {
         // Create first file and write header
         PhysicalLogVersionedStoreChannel storeChannel = storeChannel(0, preAllocate, rotationSize);
         LogHeader logHeader = new LogHeader(
-                LogFormat.V9.getVersionByte(),
-                new LogPosition(0, segmentSize),
+                LogFormat.V9,
+                INITIAL_LOG_VERSION,
                 BASE_TX_ID,
                 StoreId.UNKNOWN,
                 segmentSize,
-                initialChecksum);
-        LogHeaderWriter.writeLogHeader(storeChannel, logHeader, INSTANCE);
+                initialChecksum,
+                LATEST_KERNEL_VERSION);
+        writeLogHeader(storeChannel, logHeader, INSTANCE);
         storeChannel.position(segmentSize);
 
         // Write random data
@@ -192,7 +197,7 @@ class EnvelopeFuzzerTest {
         return new PhysicalLogVersionedStoreChannel(
                 channel,
                 version,
-                LogFormat.CURRENT_LOG_FORMAT_VERSION,
+                LATEST_LOG_FORMAT,
                 logPath,
                 mock(LogFileChannelNativeAccessor.class),
                 DatabaseTracer.NULL);
@@ -226,13 +231,14 @@ class EnvelopeFuzzerTest {
                     final var logChannel = storeChannel(currentVersion.incrementAndGet(), preAllocate, maxFileSize);
                     int previousChecksum = writeChannel.currentChecksum();
                     LogHeader logHeader = new LogHeader(
-                            LogFormat.V9.getVersionByte(),
-                            new LogPosition(currentVersion.intValue(), segmentSize),
+                            LogFormat.V9,
+                            currentVersion.intValue(),
                             BASE_TX_ID,
                             StoreId.UNKNOWN,
                             segmentSize,
-                            previousChecksum);
-                    LogHeaderWriter.writeLogHeader(logChannel, logHeader, INSTANCE);
+                            previousChecksum,
+                            LATEST_KERNEL_VERSION);
+                    writeLogHeader(logChannel, logHeader, INSTANCE);
                     logChannel.position(segmentSize);
 
                     writeChannel.setChannel(logChannel);

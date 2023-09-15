@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_BITS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.LOG_VERSION_BITS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.LOG_VERSION_MASK;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -69,10 +68,9 @@ public final class LogHeaderReader {
             ReadableByteChannel channel, boolean strict, Path additionalErrorInformation, MemoryTracker memoryTracker)
             throws IOException {
         // log header has big-endian byte order
-        try (var scopedBuffer =
-                new NativeScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, memoryTracker)) {
-            var order = scopedBuffer.getBuffer();
-            return readLogHeader(order, channel, strict, additionalErrorInformation);
+        try (var scopedBuffer = new NativeScopedBuffer(LogFormat.BIGGEST_HEADER, ByteOrder.BIG_ENDIAN, memoryTracker)) {
+            var buffer = scopedBuffer.getBuffer();
+            return readLogHeader(buffer, channel, strict, additionalErrorInformation);
         }
     }
 

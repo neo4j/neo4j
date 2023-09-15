@@ -26,7 +26,6 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor.UNKNOWN;
 
 import java.io.IOException;
@@ -180,16 +179,14 @@ public class DetachedLogTailScanner {
     }
 
     private StartCommitEntries getFirstTransactionId(LogFile logFile, long lowestLogVersion) throws IOException {
-        var logPosition = logFile.versionExists(lowestLogVersion)
-                ? logFile.extractHeader(lowestLogVersion).getStartPosition()
-                : getLowestLogPosition(lowestLogVersion);
+        LogPosition logPosition = LogPosition.UNSPECIFIED;
+        if (logFile.versionExists(lowestLogVersion)) {
+            LogHeader logHeader = logFile.extractHeader(lowestLogVersion);
+            if (logHeader != null) {
+                logPosition = logHeader.getStartPosition();
+            }
+        }
         return getFirstTransactionIdAfterCheckpoint(logFile, logPosition);
-    }
-
-    private static LogPosition getLowestLogPosition(long lowestLogVersion) {
-        return lowestLogVersion >= 0
-                ? new LogPosition(lowestLogVersion, CURRENT_FORMAT_LOG_HEADER_SIZE)
-                : LogPosition.UNSPECIFIED;
     }
 
     /**

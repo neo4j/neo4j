@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -92,7 +92,7 @@ public class CheckpointLogFileRotationIT {
         LogPosition logPosition = new LogPosition(1000, 12345);
         var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoint for rotation test";
-        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE + 2 * RECORD_LENGTH_BYTES;
+        for (int i = LATEST_LOG_FORMAT.getHeaderSize() + 2 * RECORD_LENGTH_BYTES;
                 i < ROTATION_THRESHOLD;
                 i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(
@@ -109,7 +109,7 @@ public class CheckpointLogFileRotationIT {
         var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoint for rotation test";
         // there is one post init checkpoint
-        for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES;
+        for (int i = LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES;
                 i < ROTATION_THRESHOLD;
                 i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(
@@ -128,7 +128,7 @@ public class CheckpointLogFileRotationIT {
     }
 
     protected long expectedNewFileSize() {
-        return CURRENT_FORMAT_LOG_HEADER_SIZE;
+        return LATEST_LOG_FORMAT.getHeaderSize();
     }
 
     protected boolean preallocateLogs() {

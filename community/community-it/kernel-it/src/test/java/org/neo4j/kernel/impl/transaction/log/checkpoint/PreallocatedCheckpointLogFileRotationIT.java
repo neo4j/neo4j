@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -74,7 +74,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         checkpointFile.rotate();
 
         for (int fileCount = 2; fileCount < 6; fileCount++) {
-            for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE; i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
+            for (int i = LATEST_LOG_FORMAT.getHeaderSize(); i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
                 assertThat(checkpointFile.getDetachedCheckpointFiles())
                         .hasSize(fileCount)
                         .allMatch(this::sizeEqualsToPreallocatedFile);

@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -89,7 +89,7 @@ class DetachedCheckpointLogFileTest {
     @Test
     void findLogTailShouldWorkForDetachedCheckpoints() throws IOException {
         LogPosition logPosition =
-                new LogPosition(logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE);
+                new LogPosition(logVersionRepository.getCurrentLogVersion(), LATEST_LOG_FORMAT.getHeaderSize());
         TransactionId transactionId = new TransactionId(1, 2, 3, 4);
         checkpointFile
                 .getCheckpointAppender()
@@ -108,7 +108,7 @@ class DetachedCheckpointLogFileTest {
     void findLatestCheckpointShouldWorkForDetachedCheckpoints() throws IOException {
         // Should find the detached checkpoint first
         LogPosition logPosition2 =
-                new LogPosition(logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE);
+                new LogPosition(logVersionRepository.getCurrentLogVersion(), LATEST_LOG_FORMAT.getHeaderSize());
         TransactionId transactionId = new TransactionId(5, 6, 7, 8);
         checkpointFile
                 .getCheckpointAppender()

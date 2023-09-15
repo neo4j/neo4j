@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
+
 public interface VersionableLog {
     long getLogVersion();
 
-    byte getLogFormatVersion();
+    LogFormat getLogFormatVersion();
 }

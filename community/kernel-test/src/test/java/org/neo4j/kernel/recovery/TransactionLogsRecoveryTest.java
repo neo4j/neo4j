@@ -40,9 +40,7 @@ import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
@@ -54,6 +52,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -424,7 +423,7 @@ class TransactionLogsRecoveryTest {
 
         assertEquals(marker.getByteOffset(), Files.size(file));
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
+                LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES /* one checkpoint */,
                 ((DetachedCheckpointAppender) logFiles.getCheckpointFile().getCheckpointAppender())
                         .getCurrentPosition());
 
@@ -434,7 +433,7 @@ class TransactionLogsRecoveryTest {
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
-                    CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
+                    LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES /* one checkpoint */,
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         }
     }
@@ -476,7 +475,7 @@ class TransactionLogsRecoveryTest {
 
         assertEquals(marker.getByteOffset(), Files.size(file));
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
+                LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES /* one checkpoint */,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
@@ -675,7 +674,7 @@ class TransactionLogsRecoveryTest {
         try (var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                         fileSystem.write(file),
                         logVersion,
-                        CURRENT_LOG_FORMAT_VERSION,
+                        LATEST_LOG_FORMAT,
                         file,
                         EMPTY_ACCESSOR,
                         DatabaseTracer.NULL);
@@ -685,12 +684,13 @@ class TransactionLogsRecoveryTest {
             writeLogHeader(
                     versionedStoreChannel,
                     new LogHeader(
-                            CURRENT_LOG_FORMAT_VERSION,
-                            new LogPosition(logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                            LATEST_LOG_FORMAT,
+                            logVersion,
                             2L,
                             storeId,
                             UNKNOWN_LOG_SEGMENT_SIZE,
-                            BASE_TX_CHECKSUM),
+                            BASE_TX_CHECKSUM,
+                            LATEST_KERNEL_VERSION),
                     INSTANCE);
             writableLogChannel.beginChecksumForWriting();
             LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, LatestVersions.BINARY_VERSIONS);

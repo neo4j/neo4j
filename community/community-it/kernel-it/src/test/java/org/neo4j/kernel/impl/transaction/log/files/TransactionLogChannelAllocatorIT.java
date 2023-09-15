@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -99,12 +99,7 @@ class TransactionLogChannelAllocatorIT {
             writeLogHeader(
                     storeChannel,
                     new LogHeader(
-                            CURRENT_LOG_FORMAT_VERSION,
-                            new LogPosition(1, CURRENT_FORMAT_LOG_HEADER_SIZE),
-                            1,
-                            STORE_ID,
-                            UNKNOWN_LOG_SEGMENT_SIZE,
-                            1),
+                            LATEST_LOG_FORMAT, 1, 1, STORE_ID, UNKNOWN_LOG_SEGMENT_SIZE, 1, LATEST_KERNEL_VERSION),
                     INSTANCE);
         }
 
@@ -125,12 +120,7 @@ class TransactionLogChannelAllocatorIT {
             writeLogHeader(
                     storeChannel,
                     new LogHeader(
-                            CURRENT_LOG_FORMAT_VERSION,
-                            new LogPosition(1, CURRENT_FORMAT_LOG_HEADER_SIZE),
-                            1,
-                            STORE_ID,
-                            UNKNOWN_LOG_SEGMENT_SIZE,
-                            1),
+                            LATEST_LOG_FORMAT, 1, 1, STORE_ID, UNKNOWN_LOG_SEGMENT_SIZE, 1, LATEST_KERNEL_VERSION),
                     INSTANCE);
         }
 
@@ -176,7 +166,7 @@ class TransactionLogChannelAllocatorIT {
         var unreasonableAllocator = new TransactionLogChannelAllocator(
                 logFileContext, fileHelper, new LogHeaderCache(10), nativeChannelAccessor);
         try (PhysicalLogVersionedStoreChannel channel = unreasonableAllocator.createLogChannel(10, () -> 1L)) {
-            assertEquals(CURRENT_FORMAT_LOG_HEADER_SIZE, channel.size());
+            assertEquals(LATEST_LOG_FORMAT.getHeaderSize(), channel.size());
             assertThat(logProvider.serialize())
                     .containsSequence(
                             "Warning! System is running out of disk space. Failed to preallocate log file since disk does "
@@ -190,7 +180,7 @@ class TransactionLogChannelAllocatorIT {
     @DisabledOnOs(OS.LINUX)
     void allocateNewTransactionLogFileOnSystemThatDoesNotSupportPreallocations() throws IOException {
         try (PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel(10, () -> 1L)) {
-            assertEquals(CURRENT_FORMAT_LOG_HEADER_SIZE, logChannel.size());
+            assertEquals(LATEST_LOG_FORMAT.getHeaderSize(), logChannel.size());
         }
     }
 
@@ -201,7 +191,7 @@ class TransactionLogChannelAllocatorIT {
 
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
         try (PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel(11, () -> 1L)) {
-            assertEquals(CURRENT_FORMAT_LOG_HEADER_SIZE, channel.size());
+            assertEquals(LATEST_LOG_FORMAT.getHeaderSize(), channel.size());
         }
     }
 
@@ -252,7 +242,8 @@ class TransactionLogChannelAllocatorIT {
                 DEFAULT_DATABASE_NAME,
                 config,
                 null,
-                LatestVersions.BINARY_VERSIONS);
+                LatestVersions.BINARY_VERSIONS,
+                false);
     }
 
     private static class AdviseCountingChannelNativeAccessor extends ChannelNativeAccessor.EmptyChannelNativeAccessor {

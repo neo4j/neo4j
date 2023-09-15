@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.io.ByteUnit.kibiBytes;
+
 public final class LogSegments {
     private LogSegments() {}
 
     public static final int UNKNOWN_LOG_SEGMENT_SIZE = -1;
+
+    public static final int DEFAULT_LOG_SEGMENT_SIZE = (int) kibiBytes(128);
 }

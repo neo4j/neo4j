@@ -28,11 +28,11 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileCommandBatchCursor.fromLogFile;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -200,7 +200,7 @@ class ReversedMultiFileCommandBatchCursorTest {
     }
 
     private CommittedCommandBatch[] readTransactions(boolean presketch) throws IOException {
-        return readTransactions(new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE), presketch);
+        return readTransactions(new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()), presketch);
     }
 
     private void assertRecovery(

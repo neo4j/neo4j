@@ -21,13 +21,14 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.LOG_VERSION_MASK;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -42,7 +43,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.test.RandomSupport;
@@ -127,20 +127,18 @@ class LogHeaderReaderTest {
     }
 
     @Test
-    void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException {
+    void shouldTreatEmptyFileAsMissing() throws IOException {
         var file = testDirectory.file("ReadLogHeader");
 
         ((StoreChannel) fileSystem.write(file)).close();
 
-        assertThatThrownBy(() -> readLogHeader(fileSystem, file, INSTANCE))
-                .isInstanceOf(IncompleteLogHeaderException.class)
-                .hasMessageContaining(file.getFileName().toString());
+        assertThat(readLogHeader(fileSystem, file, INSTANCE)).isNull();
     }
 
     @Test
     void readEmptyPreallocatedFileHeaderAsNoHeader() throws IOException {
         try (var channel = new InMemoryClosableChannel(
-                new byte[CURRENT_LOG_FORMAT_VERSION], true, true, ByteOrder.LITTLE_ENDIAN)) {
+                new byte[LATEST_LOG_FORMAT.getHeaderSize()], true, true, ByteOrder.LITTLE_ENDIAN)) {
             assertThat(readLogHeader(channel, true, null, INSTANCE)).isNull();
         }
     }
@@ -164,12 +162,13 @@ class LogHeaderReaderTest {
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
                         return new LogHeader(
-                                (byte) 6,
-                                new LogPosition(logVersion, 16),
+                                LogFormat.V6,
+                                logVersion,
                                 previousCommittedTx,
                                 null,
                                 UNKNOWN_LOG_SEGMENT_SIZE,
-                                BASE_TX_CHECKSUM);
+                                BASE_TX_CHECKSUM,
+                                null);
                     }
                 },
                 new TestCase(LogFormat.V7) {
@@ -195,12 +194,13 @@ class LogHeaderReaderTest {
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
                         return new LogHeader(
-                                (byte) 7,
-                                new LogPosition(logVersion, 64),
+                                LogFormat.V7,
+                                logVersion,
                                 previousCommittedTx,
                                 null,
                                 UNKNOWN_LOG_SEGMENT_SIZE,
-                                BASE_TX_CHECKSUM);
+                                BASE_TX_CHECKSUM,
+                                null);
                     }
                 },
                 new TestCase(LogFormat.V8) {
@@ -228,12 +228,13 @@ class LogHeaderReaderTest {
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
                         return new LogHeader(
-                                (byte) 8,
-                                new LogPosition(logVersion, 128),
+                                LogFormat.V8,
+                                logVersion,
                                 previousCommittedTx,
                                 storeId,
                                 UNKNOWN_LOG_SEGMENT_SIZE,
-                                BASE_TX_CHECKSUM);
+                                BASE_TX_CHECKSUM,
+                                null);
                     }
                 },
                 new TestCase(LogFormat.V9) {
@@ -251,23 +252,21 @@ class LogHeaderReaderTest {
                         StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
                         buffer.putInt(segmentSize);
                         buffer.putInt(checksum);
-                        buffer.putLong(0); // reserved
-                        buffer.putLong(0); // reserved
-                        buffer.putLong(0); // reserved
-                        buffer.putLong(0); // reserved
-                        buffer.putLong(0); // reserved
+                        buffer.put(LATEST_KERNEL_VERSION.version());
+                        buffer.position(LogFormat.V9.getHeaderSize()); // Rest is reserved
                     }
 
                     @Override
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
                         return new LogHeader(
-                                (byte) 9,
-                                new LogPosition(logVersion, segmentSize),
+                                LogFormat.V9,
+                                logVersion,
                                 previousCommittedTx,
                                 storeId,
                                 segmentSize,
-                                checksum);
+                                checksum,
+                                LATEST_KERNEL_VERSION);
                     }
                 });
     }

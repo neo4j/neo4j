@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,7 +56,7 @@ class VersionAwareLogEntryReaderIT {
     // this offset includes log header and transaction that create node on test setup
     // Magic number represents number of bytes that log file is actually using (in form of header size + payload)
     // to be able to check that its like that or to update manually you can disable pre-allocation + some manual checks.
-    private static final long AT_LEAST_END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 1_000;
+    private static final long AT_LEAST_END_OF_DATA_OFFSET = LATEST_LOG_FORMAT.getHeaderSize() + 1_000;
     private static final long AT_MOST_END_OF_DATA_OFFSET = kibiBytes(128);
     private static final StoreId STORE_ID = new StoreId(4, 5, "engine-1", "format-1", 1, 2);
 
@@ -92,7 +92,7 @@ class VersionAwareLogEntryReaderIT {
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {
             getLastReadablePosition(logFiles);
-            assertEquals(kibiBytes(128), Files.size(logFiles.getLogFile().getHighestLogFile()));
+            assertEquals(kibiBytes(256), Files.size(logFiles.getLogFile().getHighestLogFile()));
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals(0L, logPosition.getLogVersion());
             // this position in a log file before 0's are actually starting

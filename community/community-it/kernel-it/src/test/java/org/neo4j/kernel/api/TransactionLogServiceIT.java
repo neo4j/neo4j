@@ -36,6 +36,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy.PER
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -66,7 +67,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -703,7 +703,7 @@ class TransactionLogServiceIT {
             logVersion--;
         }
 
-        var eofPosition = new LogPosition(logFile.getHighestLogVersion(), LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE);
+        var eofPosition = new LogPosition(logFile.getHighestLogVersion(), LATEST_LOG_FORMAT.getHeaderSize());
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
         String testReason = "Checkpoint on empty log files should work since its full story copy.";
@@ -740,7 +740,7 @@ class TransactionLogServiceIT {
             logVersion--;
         }
 
-        var eofPosition = new LogPosition(logFile.getHighestLogVersion(), LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE);
+        var eofPosition = new LogPosition(logFile.getHighestLogVersion(), LATEST_LOG_FORMAT.getHeaderSize());
 
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 

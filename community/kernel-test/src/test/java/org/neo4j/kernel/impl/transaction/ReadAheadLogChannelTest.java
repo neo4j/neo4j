@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -86,7 +87,7 @@ class ReadAheadLogChannelTest {
 
         StoreChannel storeChannel = fileSystem.read(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, -1 /* ignored */, (byte) -1, file, nativeChannelAccessor, databaseTracer);
+                storeChannel, -1 /* ignored */, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         try (ReadAheadLogChannel channel = new ReadAheadLogChannel(versionedStoreChannel, INSTANCE)) {
             // THEN
             assertEquals(byteValue, channel.get());
@@ -108,7 +109,7 @@ class ReadAheadLogChannelTest {
         directory.createFile(path.getFileName().toString());
         var storeChannel = fileSystem.read(path);
         var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, -1, (byte) -1, path, nativeChannelAccessor, databaseTracer);
+                storeChannel, -1, LATEST_LOG_FORMAT, path, nativeChannelAccessor, databaseTracer);
         var capturingLogVersionBridge = new RawCapturingLogVersionBridge();
         assertThrows(ReadPastEndException.class, () -> {
             try (ReadAheadLogChannel channel =
@@ -137,7 +138,7 @@ class ReadAheadLogChannelTest {
 
         StoreChannel storeChannel = fileSystem.read(file(0));
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, -1 /* ignored */, (byte) -1, file(0), nativeChannelAccessor, databaseTracer);
+                storeChannel, -1 /* ignored */, LATEST_LOG_FORMAT, file(0), nativeChannelAccessor, databaseTracer);
         try (ReadAheadLogChannel channel =
                 new ReadAheadLogChannel(versionedStoreChannel, new RollingLogVersionBridge(-1), INSTANCE)) {
             // THEN
@@ -167,7 +168,7 @@ class ReadAheadLogChannelTest {
 
         final var storeChannel = fileSystem.read(file(0));
         final var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 0, (byte) -1, file(0), nativeChannelAccessor, databaseTracer);
+                storeChannel, 0, LATEST_LOG_FORMAT, file(0), nativeChannelAccessor, databaseTracer);
         try (var channel = new ReadAheadLogChannel(versionedStoreChannel, new RollingLogVersionBridge(1), INSTANCE)) {
             // THEN
             for (var i = 0; i < 10; i++) {
@@ -235,7 +236,12 @@ class ReadAheadLogChannelTest {
                 returned = true;
                 channel.close();
                 return new PhysicalLogVersionedStoreChannel(
-                        fileSystem.read(file(1)), version, (byte) -1, file(1), nativeChannelAccessor, databaseTracer);
+                        fileSystem.read(file(1)),
+                        version,
+                        LATEST_LOG_FORMAT,
+                        file(1),
+                        nativeChannelAccessor,
+                        databaseTracer);
             }
             return channel;
         }

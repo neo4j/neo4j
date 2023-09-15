@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import java.io.IOException;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 
 public class UnclosableChannel extends DelegatingStoreChannel<LogVersionedStoreChannel>
         implements LogVersionedStoreChannel {
@@ -35,7 +36,7 @@ public class UnclosableChannel extends DelegatingStoreChannel<LogVersionedStoreC
     }
 
     @Override
-    public byte getLogFormatVersion() {
+    public LogFormat getLogFormatVersion() {
         return delegate.getLogFormatVersion();
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -51,6 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -65,7 +67,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
@@ -135,8 +136,10 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     @Override
     public void start() throws IOException {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
-        channel = createLogChannelForVersion(currentLogVersion, () -> context.getLastCommittedTransactionIdProvider()
-                .getLastCommittedTransactionId(logFiles));
+        channel = createLogChannelForVersion(
+                currentLogVersion,
+                () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles),
+                context.getKernelVersionProvider());
         context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), currentLogVersion);
 
         // try to set position
@@ -146,8 +149,10 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 channel,
                 new NativeScopedBuffer(
                         context.getConfig().get(transaction_log_buffer_size), ByteOrder.LITTLE_ENDIAN, memoryTracker));
-        transactionLogWriter = new TransactionLogWriter(
-                writer, context.getKernelVersionProvider(), context.getBinarySupportedKernelVersions());
+        if (!context.isReadOnly()) {
+            transactionLogWriter = new TransactionLogWriter(
+                    writer, context.getKernelVersionProvider(), context.getBinarySupportedKernelVersions());
+        }
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
@@ -176,12 +181,14 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      *
      * @param version log version for the file/channel to create.
      * @param lastTransactionIdSupplier supplier of last transaction id that was written into previous log file
+     * @param kernelVersionProvider kernel version that should be written down to the log header
      * @return {@link PhysicalLogVersionedStoreChannel} for newly created/opened log file.
      * @throws IOException if there's any I/O related error.
      */
     @Override
     public PhysicalLogVersionedStoreChannel createLogChannelForVersion(
-            long version, LongSupplier lastTransactionIdSupplier) throws IOException {
+            long version, LongSupplier lastTransactionIdSupplier, KernelVersionProvider kernelVersionProvider)
+            throws IOException {
         return channelAllocator.createLogChannel(version, lastTransactionIdSupplier);
     }
 
@@ -220,7 +227,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         writer.prepareForFlush().flush();
         if (currentVersion != targetVersion) {
             var oldChannel = channel;
-            channel = createLogChannelForVersion(targetVersion, context::committingTransactionId);
+            channel = createLogChannelForVersion(
+                    targetVersion, context::committingTransactionId, context.getKernelVersionProvider());
             writer.setChannel(channel);
             oldChannel.close();
 
@@ -273,6 +281,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
     @Override
     public TransactionLogWriter getTransactionLogWriter() {
+        if (context.isReadOnly()) {
+            throw new UnsupportedOperationException("Trying to create writer in read only mode.");
+        }
         return transactionLogWriter;
     }
 
@@ -435,7 +446,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             try (StoreChannel channel = fileSystem.write(newFileName)) {
                 LogHeader logHeader = readLogHeader(fileSystem, newFileName, memoryTracker);
                 LogHeader writeHeader = new LogHeader(logHeader, newFileVersion);
-                LogHeaderWriter.writeLogHeader(channel, writeHeader, memoryTracker);
+                writeLogHeader(channel, writeHeader, memoryTracker);
             }
         }
     }
@@ -617,7 +628,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
          * we can have transactions that are not yet published as committed but were already stored
          * into transaction log that was just rotated.
          */
-        PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(newLogVersion, lastTransactionIdSupplier);
+        PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
+                newLogVersion, lastTransactionIdSupplier, context.getKernelVersionProvider());
         currentLog.close();
 
         try {
@@ -694,7 +706,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         LogHeader logHeader = logHeaderCache.getLogHeader(version);
         if (logHeader == null) {
             logHeader = readLogHeader(fileSystem, getLogFileForVersion(version), strict, context.getMemoryTracker());
-            if (!strict && logHeader == null) {
+            if (logHeader == null) {
                 return null;
             }
             logHeaderCache.putHeader(version, logHeader);

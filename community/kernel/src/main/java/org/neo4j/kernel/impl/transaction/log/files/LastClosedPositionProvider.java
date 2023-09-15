@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 @FunctionalInterface
 public interface LastClosedPositionProvider {
-    LogPosition lastClosedPosition(LogFiles logFiles);
+    LogPosition lastClosedPosition(LogFiles logFiles) throws IOException;
 }

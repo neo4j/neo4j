@@ -24,10 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.recovery.CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +70,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class CorruptedLogsTruncatorTest {
-    private static final long SINGLE_LOG_FILE_SIZE = CURRENT_FORMAT_LOG_HEADER_SIZE + 9L;
+    private static final long SINGLE_LOG_FILE_SIZE = LATEST_LOG_FORMAT.getHeaderSize() + 9L;
     private static final int TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES = 12;
     // There is one file for the separate checkpoints as well
     private static final int TOTAL_NUMBER_OF_LOG_FILES = 13;
@@ -97,6 +98,7 @@ class CorruptedLogsTruncatorTest {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseDirectory, fs)
                 .withRotationThreshold(SINGLE_LOG_FILE_SIZE)
+                .withKernelVersionProvider(LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
@@ -118,7 +120,7 @@ class CorruptedLogsTruncatorTest {
 
     @Test
     void doNotPruneEmptyLogs() throws IOException {
-        logPruner.truncate(new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE));
+        logPruner.truncate(new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()));
         assertTrue(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, databaseDirectory));
     }
 
@@ -287,7 +289,7 @@ class CorruptedLogsTruncatorTest {
         assertEquals(byteOffset, Files.size(highestCorrectLogFile));
         assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(1);
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */,
+                LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES /* one checkpoint */,
                 Files.size(checkpointFile.getDetachedCheckpointFiles()[0]));
 
         Path corruptedLogsDirectory = databaseDirectory.resolve(CORRUPTED_TX_LOGS_BASE_NAME);
@@ -323,7 +325,7 @@ class CorruptedLogsTruncatorTest {
                 checkEntryNameAndSize(
                         zipFile,
                         TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1",
-                        CURRENT_FORMAT_LOG_HEADER_SIZE + RECORD_LENGTH_BYTES /* one checkpoint */);
+                        LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES /* one checkpoint */);
             }
         }
     }

@@ -20,10 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
@@ -32,11 +30,12 @@ import java.nio.file.Path;
 import java.util.function.LongSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogFileCreateEvent;
 
@@ -71,21 +70,26 @@ public class TransactionLogChannelAllocator {
             try (LogFileCreateEvent ignored = databaseTracer.createLogFile()) {
                 // we always write file header from the beginning of the file
                 storeChannel.position(0);
+                KernelVersion kernelVersion =
+                        logFilesContext.getKernelVersionProvider().kernelVersion();
+                LogFormat currentLogFormat = LogFormat.fromKernelVersion(kernelVersion);
                 long lastTxId = lastCommittedTransactionId.getAsLong();
-                LogHeader logHeader = new LogHeader(
-                        CURRENT_LOG_FORMAT_VERSION,
-                        new LogPosition(version, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                header = new LogHeader(
+                        currentLogFormat,
+                        version,
                         lastTxId,
                         logFilesContext.getStoreId(),
-                        UNKNOWN_LOG_SEGMENT_SIZE,
-                        BASE_TX_CHECKSUM);
-                LogHeaderWriter.writeLogHeader(storeChannel, logHeader, logFilesContext.getMemoryTracker());
-                logHeaderCache.putHeader(version, logHeader);
+                        currentLogFormat.getDefaultSegmentBlockSize(),
+                        BASE_TX_CHECKSUM,
+                        kernelVersion);
+                writeLogHeader(storeChannel, header, logFilesContext.getMemoryTracker());
+                logHeaderCache.putHeader(version, header);
             }
         }
-        byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.getLogFormatVersion();
+        storeChannel.position(header.getStartPosition().getByteOffset());
+
         return new PhysicalLogVersionedStoreChannel(
-                storeChannel, version, formatVersion, logFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, version, header.getLogFormatVersion(), logFile, nativeChannelAccessor, databaseTracer);
     }
 
     public PhysicalLogVersionedStoreChannel openLogChannel(long version) throws IOException {
@@ -104,10 +108,12 @@ public class TransactionLogChannelAllocator {
         try {
             rawChannel = fileSystem.read(fileToOpen);
             LogHeader header = readLogHeader(rawChannel, true, fileToOpen, logFilesContext.getMemoryTracker());
-            if ((header == null) || (header.getLogVersion() != version)) {
+            if (header == null) {
+                throw new IncompleteLogHeaderException(fileToOpen, 0, Long.BYTES);
+            }
+            if (header.getLogVersion() != version) {
                 throw new IllegalStateException(format(
-                        "Unexpected log file header. Expected header version: %d, actual header: %s",
-                        version, header != null ? header.toString() : "null header."));
+                        "Unexpected log file header. Expected header version: %d, actual header: %s", version, header));
             }
             var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                     rawChannel,

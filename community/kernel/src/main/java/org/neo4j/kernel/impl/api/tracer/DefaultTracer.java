@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.tracer;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -54,7 +53,7 @@ public class DefaultTracer implements DatabaseTracer {
     private final AtomicLong appliedBatchSize = new AtomicLong();
 
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
-    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.add(CURRENT_FORMAT_LOG_HEADER_SIZE);
+    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.add(LogFormat.BIGGEST_HEADER);
     private final LogFileFlushEvent logFileFlushEvent = numberOfFlushes::increment;
     private final LogAppendEvent logAppendEvent = new DefaultLogAppendEvent();
     private final TransactionWriteEvent transactionWriteEvent = new DefaultTransactionWriteEvent();

@@ -25,6 +25,7 @@ import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -83,7 +84,7 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     }
 
     @Override
-    public byte getLogFormatVersion() {
+    public LogFormat getLogFormatVersion() {
         return channel.getLogFormatVersion();
     }
 

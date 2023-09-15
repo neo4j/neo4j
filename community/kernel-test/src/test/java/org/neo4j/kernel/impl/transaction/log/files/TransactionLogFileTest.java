@@ -26,19 +26,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -62,6 +62,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.stubbing.Answer;
 import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
@@ -80,7 +81,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -324,9 +324,13 @@ class TransactionLogFileTest {
         int logVersion = 0;
         Path logFile = logFiles.getLogFile().getLogFileForVersion(logVersion);
         StoreChannel channel = mock(StoreChannel.class);
-        when(channel.read(any(ByteBuffer.class))).thenReturn(CURRENT_FORMAT_LOG_HEADER_SIZE / 2);
+        when(channel.read(any(ByteBuffer.class))).thenAnswer((Answer<Integer>) invocation -> {
+            Object[] args = invocation.getArguments();
+            ((ByteBuffer) args[0]).put(new byte[] {1, 2, 3, 4});
+            return 4;
+        });
         when(fs.fileExists(logFile)).thenReturn(true);
-        when(fs.read(eq(logFile))).thenReturn(channel);
+        when(fs.read(logFile)).thenReturn(channel);
 
         // WHEN
         assertThrows(
@@ -346,9 +350,13 @@ class TransactionLogFileTest {
         int logVersion = 0;
         Path logFile = logFiles.getLogFile().getLogFileForVersion(logVersion);
         StoreChannel channel = mock(StoreChannel.class);
-        when(channel.read(any(ByteBuffer.class))).thenReturn(CURRENT_FORMAT_LOG_HEADER_SIZE / 2);
+        when(channel.read(any(ByteBuffer.class))).thenAnswer((Answer<Integer>) invocation -> {
+            Object[] args = invocation.getArguments();
+            ((ByteBuffer) args[0]).put(new byte[] {1, 2, 3, 4});
+            return 4;
+        });
         when(fs.fileExists(logFile)).thenReturn(true);
-        when(fs.read(eq(logFile))).thenReturn(channel);
+        when(fs.read(logFile)).thenReturn(channel);
         doThrow(IOException.class).when(channel).close();
 
         // WHEN
@@ -814,15 +822,16 @@ class TransactionLogFileTest {
     private void createFile(Path filePath, long version, long lastCommittedTxId) throws IOException {
         var filesHelper = new TransactionLogFilesHelper(fileSystem, filePath);
         try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
-            LogHeaderWriter.writeLogHeader(
+            writeLogHeader(
                     storeChannel,
                     new LogHeader(
-                            CURRENT_LOG_FORMAT_VERSION,
-                            new LogPosition(version, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                            LATEST_LOG_FORMAT,
+                            version,
                             lastCommittedTxId,
                             STORE_ID,
                             UNKNOWN_LOG_SEGMENT_SIZE,
-                            BASE_TX_CHECKSUM),
+                            BASE_TX_CHECKSUM,
+                            LATEST_KERNEL_VERSION),
                     INSTANCE);
         }
     }

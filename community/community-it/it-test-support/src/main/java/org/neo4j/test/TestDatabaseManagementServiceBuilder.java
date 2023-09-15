@@ -139,7 +139,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         var builder = Config.newBuilder()
                 .fromConfig(config)
                 .setDefault(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8))
-                .setDefault(GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes(128))
+                .setDefault(GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes(256))
                 .setDefault(BoltConnector.enabled, FALSE)
                 .setDefault(GraphDatabaseInternalSettings.dump_diagnostics, false)
                 .setDefault(GraphDatabaseInternalSettings.track_tx_statement_close, true)

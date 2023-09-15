@@ -19,27 +19,29 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -60,12 +62,7 @@ class RecoveryStartInformationProviderTest {
     @BeforeEach
     void setUp() throws IOException {
         var logHeader = new LogHeader(
-                CURRENT_LOG_FORMAT_VERSION,
-                new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
-                1,
-                null,
-                UNKNOWN_LOG_SEGMENT_SIZE,
-                BASE_TX_CHECKSUM);
+                LATEST_LOG_FORMAT, 0, 1, null, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
         when(logFiles.getLogFile()).thenReturn(logFile);
     }
@@ -137,14 +134,10 @@ class RecoveryStartInformationProviderTest {
     @Test
     void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() {
         // given
+        KernelVersion kernelVersion = LatestVersions.LATEST_KERNEL_VERSION;
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
-                        true,
-                        10L,
-                        false,
-                        currentLogVersion,
-                        LatestVersions.LATEST_KERNEL_VERSION.version(),
-                        kernelProv));
+                        true, 10L, false, currentLogVersion, kernelVersion.version(), kernelProv));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -153,10 +146,9 @@ class RecoveryStartInformationProviderTest {
         // then
         verify(monitor).noCheckPointFound();
         assertEquals(
-                new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                new LogPosition(0, LogFormat.fromKernelVersion(kernelVersion).getHeaderSize()),
                 recoveryStartInformation.getTransactionLogPosition());
-        assertEquals(
-                new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE), recoveryStartInformation.getCheckpointPosition());
+        assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.getCheckpointPosition());
         assertEquals(10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint());
         assertTrue(recoveryStartInformation.isRecoveryRequired());
     }
@@ -188,10 +180,11 @@ class RecoveryStartInformationProviderTest {
                         kernelProv));
 
         // when
-        UnderlyingStorageException storageException = assertThrows(
-                UnderlyingStorageException.class, () -> new RecoveryStartInformationProvider(logFiles, monitor).get());
         final String expectedMessage = "No check point found in any log file and transaction log "
                 + "files do not exist from expected version 0. Lowest found log file is 1.";
-        assertEquals(expectedMessage, storageException.getMessage());
+        RecoveryStartInformationProvider provider = new RecoveryStartInformationProvider(logFiles, monitor);
+        assertThatThrownBy(provider::get)
+                .isInstanceOf(UnderlyingStorageException.class)
+                .hasMessage(expectedMessage);
     }
 }

@@ -29,12 +29,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -136,7 +136,7 @@ class RecoveryCorruptedTransactionLogIT {
     @Inject
     private RandomSupport random;
 
-    private static final int HEADER_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE;
+    private static final int HEADER_OFFSET = LATEST_LOG_FORMAT.getHeaderSize();
     private final AssertableLogProvider logProvider = new AssertableLogProvider(true);
     private final RecoveryMonitor recoveryMonitor = new RecoveryMonitor();
     private final CorruptedCheckpointMonitor corruptedFilesMonitor = new CorruptedCheckpointMonitor();
@@ -403,7 +403,7 @@ class RecoveryCorruptedTransactionLogIT {
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
-                    CURRENT_FORMAT_LOG_HEADER_SIZE
+                    LATEST_LOG_FORMAT.getHeaderSize()
                             + CHECKPOINT_RECORD_SIZE * 4 /* checkpoint for setup, start and stop */,
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         }
@@ -738,7 +738,7 @@ class RecoveryCorruptedTransactionLogIT {
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test, plus checkpoints on creation
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * CHECKPOINT_RECORD_SIZE,
+                LATEST_LOG_FORMAT.getHeaderSize() + 4 * CHECKPOINT_RECORD_SIZE,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
@@ -786,7 +786,7 @@ class RecoveryCorruptedTransactionLogIT {
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * CHECKPOINT_RECORD_SIZE,
+                LATEST_LOG_FORMAT.getHeaderSize() + 4 * CHECKPOINT_RECORD_SIZE,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
@@ -830,7 +830,7 @@ class RecoveryCorruptedTransactionLogIT {
         assertEquals(transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));
         assertEquals(
-                CURRENT_FORMAT_LOG_HEADER_SIZE + 7 * CHECKPOINT_RECORD_SIZE,
+                LATEST_LOG_FORMAT.getHeaderSize() + 7 * CHECKPOINT_RECORD_SIZE,
                 Files.size(logFiles.getCheckpointFile().getCurrentFile()));
     }
 
@@ -872,7 +872,7 @@ class RecoveryCorruptedTransactionLogIT {
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         } else {
             assertEquals(
-                    CURRENT_FORMAT_LOG_HEADER_SIZE + 5 * CHECKPOINT_RECORD_SIZE,
+                    LATEST_LOG_FORMAT.getHeaderSize() + 5 * CHECKPOINT_RECORD_SIZE,
                     Files.size(logFiles.getCheckpointFile().getCurrentFile()));
         }
     }

@@ -32,6 +32,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -86,7 +87,12 @@ class DetachedCheckpointLogEntrySerializerTest {
                     StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
-                            fs.read(path), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
+                            fs.read(path),
+                            -1 /* ignored */,
+                            LATEST_LOG_FORMAT,
+                            path,
+                            EMPTY_ACCESSOR,
+                            DatabaseTracer.NULL),
                     NO_MORE_CHANNELS,
                     INSTANCE)) {
                 var checkpointV50 = readCheckpoint(entryReader, readChannel);
@@ -126,7 +132,7 @@ class DetachedCheckpointLogEntrySerializerTest {
                     StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
-                            fs.read(path), 1, (byte) 2, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
+                            fs.read(path), 1, LogFormat.V7, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
                     NO_MORE_CHANNELS,
                     INSTANCE)) {
                 assertThrows(IOException.class, () -> readCheckpoint(entryReader, readChannel));

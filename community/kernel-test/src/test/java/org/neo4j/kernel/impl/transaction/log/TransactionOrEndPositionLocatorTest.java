@@ -28,6 +28,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCom
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -36,12 +37,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 
 class TransactionOrEndPositionLocatorTest {
 
     private static final long TX_ID = 42;
-    private static final LogPosition BEFORE_START = new LogPosition(1L, LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE);
+    private static final LogPosition BEFORE_START = new LogPosition(1L, LATEST_LOG_FORMAT.getHeaderSize());
     private static final LogPosition AFTER_COMMIT = new LogPosition(1L, 666L);
 
     private static final LogEntryStart START = newStartEntry(LATEST_KERNEL_VERSION, 0, 0, 0, null, BEFORE_START);

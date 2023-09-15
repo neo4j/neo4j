@@ -24,13 +24,14 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 
 public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<StoreChannel>
         implements LogVersionedStoreChannel {
     private final long version;
-    private final byte formatVersion;
+    private final LogFormat formatVersion;
     private long position;
     private final Path path;
     private final ChannelNativeAccessor nativeChannelAccessor;
@@ -40,7 +41,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
     public PhysicalLogVersionedStoreChannel(
             StoreChannel delegateChannel,
             long version,
-            byte formatVersion,
+            LogFormat formatVersion,
             Path path,
             ChannelNativeAccessor nativeChannelAccessor,
             DatabaseTracer databaseTracer)
@@ -51,7 +52,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
     public PhysicalLogVersionedStoreChannel(
             StoreChannel delegateChannel,
             long version,
-            byte formatVersion,
+            LogFormat formatVersion,
             Path path,
             ChannelNativeAccessor nativeChannelAccessor,
             DatabaseTracer databaseTracer,
@@ -150,7 +151,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
     }
 
     @Override
-    public byte getLogFormatVersion() {
+    public LogFormat getLogFormatVersion() {
         return formatVersion;
     }
 

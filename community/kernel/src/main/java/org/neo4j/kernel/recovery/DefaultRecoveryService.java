@@ -20,7 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import static org.neo4j.io.fs.PhysicalFlushableChannel.DEFAULT_BUFFER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.fromKernelVersion;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -122,8 +122,8 @@ public class DefaultRecoveryService implements RecoveryService {
         }
         KernelVersion kernelVersion = versionProvider.kernelVersion();
         LogFile logFile = logFiles.getLogFile();
-        PhysicalLogVersionedStoreChannel channel =
-                logFile.createLogChannelForVersion(writePosition.getLogVersion(), lastCommittedBatch::txId);
+        PhysicalLogVersionedStoreChannel channel = logFile.createLogChannelForVersion(
+                writePosition.getLogVersion(), lastCommittedBatch::txId, versionProvider);
         channel.position(writePosition.getByteOffset());
         try (var tempRollbackBuffer = new HeapScopedBuffer(
                         DEFAULT_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
@@ -175,7 +175,7 @@ public class DefaultRecoveryService implements RecoveryService {
             transactionIdStore.resetLastClosedTransaction(
                     lastClosedTransactionData.transactionId(),
                     logVersion,
-                    CURRENT_FORMAT_LOG_HEADER_SIZE,
+                    fromKernelVersion(versionProvider.kernelVersion()).getHeaderSize(),
                     lastClosedTransactionData.checksum(),
                     lastClosedTransactionData.commitTimestamp(),
                     lastClosedTransactionData.consensusIndex());
@@ -218,7 +218,10 @@ public class DefaultRecoveryService implements RecoveryService {
         }
 
         logVersionRepository.setCurrentLogVersion(positionAfterLastRecoveredTransaction.getLogVersion());
-        logVersionRepository.setCheckpointLogVersion(checkpointPosition.getLogVersion());
+        logVersionRepository.setCheckpointLogVersion(
+                checkpointPosition == LogPosition.UNSPECIFIED
+                        ? INITIAL_LOG_VERSION
+                        : checkpointPosition.getLogVersion());
     }
 
     private void tryRemoveLegacyCheckpointFiles() {

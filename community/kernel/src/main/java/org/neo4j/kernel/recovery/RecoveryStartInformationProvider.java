@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -80,12 +79,6 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         this.monitor = monitor;
     }
 
-    /**
-     * Find the log position to start recovery from
-     *
-     * @return {@link LogPosition#UNSPECIFIED} if there is no need to recover otherwise the {@link LogPosition} to
-     * start recovery from
-     */
     @Override
     public RecoveryStartInformation get() {
         var logTailInformation = (LogTailInformation) logFiles.getTailMetadata();
@@ -110,11 +103,8 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                             + lowestLogVersion + ".");
                 }
                 monitor.noCheckPointFound();
-                LogPosition position = tryExtractHeaderSize();
-                return createRecoveryInformation(
-                        position,
-                        new LogPosition(INITIAL_LOG_VERSION, CURRENT_FORMAT_LOG_HEADER_SIZE),
-                        txIdAfterLastCheckPoint);
+                LogPosition position = tryExtractHeaderAndGetStartPosition();
+                return createRecoveryInformation(position, LogPosition.UNSPECIFIED, txIdAfterLastCheckPoint);
             }
             LogPosition transactionLogPosition = lastCheckPoint.transactionLogPosition();
             monitor.logsAfterLastCheckPoint(transactionLogPosition, txIdAfterLastCheckPoint);
@@ -126,13 +116,13 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         }
     }
 
-    private LogPosition tryExtractHeaderSize() {
+    private LogPosition tryExtractHeaderAndGetStartPosition() {
         try {
-            return logFiles.getLogFile().extractHeader(0).getStartPosition();
+            return logFiles.getLogFile().extractHeader(INITIAL_LOG_VERSION).getStartPosition();
         } catch (IOException e) {
             monitor.failToExtractInitialFileHeader(e);
-            // we can't even read header, lets assume we need to recover from the latest format and from the beginning
-            return new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);
+            throw new UnderlyingStorageException(
+                    "Unable to read header from log file with version " + INITIAL_LOG_VERSION, e);
         }
     }
 

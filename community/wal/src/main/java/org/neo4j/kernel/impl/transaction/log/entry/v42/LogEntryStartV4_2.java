@@ -51,7 +51,7 @@ public class LogEntryStartV4_2 extends LogEntryStart {
                 + lastCommittedTxWhenTransactionStarted + ",additionalHeaderLength="
                 + (additionalHeader == null ? -1 : additionalHeader.length) + ","
                 + (additionalHeader == null ? "" : Arrays.toString(additionalHeader))
-                + "," + "position="
+                + ",previousChecksum=" + previousChecksum + "," + "position="
                 + startPosition + "]";
     }
 

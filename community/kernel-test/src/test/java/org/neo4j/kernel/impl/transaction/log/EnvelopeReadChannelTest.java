@@ -33,6 +33,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.IGNO
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.MAX_ZERO_PADDING_SIZE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEnvelopeReadExcepti
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -920,15 +920,18 @@ class EnvelopeReadChannelTest {
 
     private static void writeZeroSegment(ByteBuffer buffer, int segmentSize, int previousLogFileChecksum) {
         try {
-            LogHeaderWriter.putHeader(
-                    buffer,
-                    new LogHeader(
-                            LogFormat.V9.getVersionByte(),
-                            new LogPosition(42, segmentSize),
-                            1,
-                            StoreId.UNKNOWN,
-                            segmentSize,
-                            previousLogFileChecksum));
+            LogFormat.V9
+                    .getHeaderWriter()
+                    .write(
+                            buffer,
+                            new LogHeader(
+                                    LogFormat.V9,
+                                    42,
+                                    1,
+                                    StoreId.UNKNOWN,
+                                    segmentSize,
+                                    previousLogFileChecksum,
+                                    LATEST_KERNEL_VERSION));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -978,7 +981,7 @@ class EnvelopeReadChannelTest {
         return new PhysicalLogVersionedStoreChannel(
                 fileSystem.write(file),
                 0,
-                LogFormat.CURRENT_LOG_FORMAT_VERSION,
+                LATEST_LOG_FORMAT,
                 file,
                 mock(LogFileChannelNativeAccessor.class),
                 DatabaseTracer.NULL);

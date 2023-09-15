@@ -25,10 +25,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,12 +41,10 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -79,7 +77,7 @@ class ReaderLogVersionBridgeTest {
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge(logFiles.getLogFile());
 
         when(channel.getLogVersion()).thenReturn(version);
-        when(channel.getLogFormatVersion()).thenReturn(CURRENT_LOG_FORMAT_VERSION);
+        when(channel.getLogFormatVersion()).thenReturn(LATEST_LOG_FORMAT);
         when(fs.fileExists(any(Path.class))).thenReturn(true);
         when(fs.read(any(Path.class))).thenReturn(newStoreChannel);
 
@@ -95,14 +93,15 @@ class ReaderLogVersionBridgeTest {
                 ByteBuffer buffer = invocation.getArgument(0);
 
                 LogHeader logHeader = new LogHeader(
-                        CURRENT_LOG_FORMAT_VERSION,
-                        new LogPosition(version + 1, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                        LATEST_LOG_FORMAT,
+                        version + 1,
                         -1L,
                         storeId,
                         UNKNOWN_LOG_SEGMENT_SIZE,
-                        BASE_TX_CHECKSUM);
-                LogHeaderWriter.putHeader(buffer, logHeader);
-                return CURRENT_FORMAT_LOG_HEADER_SIZE;
+                        BASE_TX_CHECKSUM,
+                        LATEST_KERNEL_VERSION);
+                LATEST_LOG_FORMAT.getHeaderWriter().write(buffer, logHeader);
+                return LATEST_LOG_FORMAT.getHeaderSize();
             }
         });
 
@@ -113,7 +112,7 @@ class ReaderLogVersionBridgeTest {
         PhysicalLogVersionedStoreChannel expected = new PhysicalLogVersionedStoreChannel(
                 newStoreChannel,
                 version + 1,
-                CURRENT_LOG_FORMAT_VERSION,
+                LATEST_LOG_FORMAT,
                 Path.of("log.file"),
                 ChannelNativeAccessor.EMPTY_ACCESSOR,
                 DatabaseTracer.NULL);
@@ -143,7 +142,7 @@ class ReaderLogVersionBridgeTest {
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge(logFiles.getLogFile());
         final StoreChannel nextVersionWithIncompleteHeader = mock(StoreChannel.class);
         when(nextVersionWithIncompleteHeader.read(any(ByteBuffer.class)))
-                .thenReturn(CURRENT_FORMAT_LOG_HEADER_SIZE / 2);
+                .thenReturn(LATEST_LOG_FORMAT.getHeaderSize() / 2);
 
         when(channel.getLogVersion()).thenReturn(version);
         when(fs.fileExists(any(Path.class))).thenReturn(true);

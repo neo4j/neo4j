@@ -62,6 +62,7 @@ public class TransactionLogFilesContext {
     private final Config config;
     private final LogTailMetadata externalTailInfo;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
+    private final boolean readOnly;
 
     public TransactionLogFilesContext(
             AtomicLong rotationThreshold,
@@ -86,7 +87,8 @@ public class TransactionLogFilesContext {
             String databaseName,
             Config config,
             LogTailMetadata externalTailInfo,
-            BinarySupportedKernelVersions binarySupportedKernelVersions) {
+            BinarySupportedKernelVersions binarySupportedKernelVersions,
+            boolean readOnly) {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
@@ -110,6 +112,7 @@ public class TransactionLogFilesContext {
         this.config = config;
         this.externalTailInfo = externalTailInfo;
         this.binarySupportedKernelVersions = binarySupportedKernelVersions;
+        this.readOnly = readOnly;
     }
 
     AtomicLong getRotationThreshold() {
@@ -202,5 +205,9 @@ public class TransactionLogFilesContext {
 
     public BinarySupportedKernelVersions getBinarySupportedKernelVersions() {
         return binarySupportedKernelVersions;
+    }
+
+    public boolean isReadOnly() {
+        return readOnly;
     }
 }

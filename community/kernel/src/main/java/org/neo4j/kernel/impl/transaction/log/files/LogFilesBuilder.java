@@ -34,6 +34,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -72,7 +73,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  * be used in precedence of value that can be specified in provided config.
  */
 public class LogFilesBuilder {
-    private boolean readOnly;
+    private boolean readOnlyStores;
     private PageCache pageCache;
     private StorageEngineFactory storageEngineFactory;
     private CommandReaderFactory commandReaderFactory;
@@ -87,7 +88,7 @@ public class LogFilesBuilder {
     private LogFileVersionTracker logFileVersionTracker;
     private TransactionIdStore transactionIdStore;
     private LongSupplier lastCommittedTransactionIdSupplier;
-    private Supplier<LogPosition> lastClosedPositionSupplier;
+    private ThrowingSupplier<LogPosition, IOException> lastClosedPositionSupplier;
     private boolean fileBasedOperationsOnly;
     private DatabaseTracers databaseTracers = DatabaseTracers.EMPTY;
     private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
@@ -96,8 +97,9 @@ public class LogFilesBuilder {
     private Monitors monitors;
     private StoreId storeId;
     private NativeAccess nativeAccess;
-    private KernelVersionProvider kernelVersionProvider;
+    private KernelVersionProvider kernelVersionProvider = KernelVersionProvider.THROWING_PROVIDER;
     private LogTailMetadata externalLogTail;
+    private boolean readOnlyLogs;
 
     private LogFilesBuilder() {}
 
@@ -121,6 +123,13 @@ public class LogFilesBuilder {
         return filesBuilder;
     }
 
+    public static LogFilesBuilder builder(DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem) {
+        LogFilesBuilder filesBuilder = new LogFilesBuilder();
+        filesBuilder.databaseLayout = databaseLayout;
+        filesBuilder.fileSystem = fileSystem;
+        return filesBuilder;
+    }
+
     /**
      * Build log files that can access and operate only on active set of log files without ability to
      * rotate and create any new one. Appending to current log file still possible.
@@ -140,7 +149,16 @@ public class LogFilesBuilder {
             KernelVersionProvider kernelVersionProvider) {
         LogFilesBuilder builder = builder(databaseLayout, fileSystem, kernelVersionProvider);
         builder.pageCache = pageCache;
-        builder.readOnly = true;
+        builder.readOnlyStores = true;
+        return builder;
+    }
+
+    public static LogFilesBuilder readOnlyBuilder(DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem) {
+        LogFilesBuilder builder = new LogFilesBuilder();
+        builder.databaseLayout = databaseLayout;
+        builder.fileSystem = fileSystem;
+        builder.readOnlyStores = true;
+        builder.readOnlyLogs = true;
         return builder;
     }
 
@@ -157,11 +175,11 @@ public class LogFilesBuilder {
         builder.databaseLayout = DatabaseLayout.ofFlat(logsDirectory);
         builder.fileSystem = fileSystem;
         builder.fileBasedOperationsOnly = true;
-        builder.kernelVersionProvider = KernelVersionProvider.THROWING_PROVIDER;
         return builder;
     }
 
-    public LogFilesBuilder withLastClosedTransactionPositionSupplier(Supplier<LogPosition> lastClosedPositionSupplier) {
+    public LogFilesBuilder withLastClosedTransactionPositionSupplier(
+            ThrowingSupplier<LogPosition, IOException> lastClosedPositionSupplier) {
         this.lastClosedPositionSupplier = lastClosedPositionSupplier;
         return this;
     }
@@ -261,6 +279,11 @@ public class LogFilesBuilder {
         return this;
     }
 
+    public LogFilesBuilder withKernelVersionProvider(KernelVersionProvider kernelVersionProvider) {
+        this.kernelVersionProvider = kernelVersionProvider;
+        return this;
+    }
+
     public LogFiles build() throws IOException {
         TransactionLogFilesContext filesContext = buildContext();
         Path logsDirectory = getLogsDirectory();
@@ -315,7 +338,8 @@ public class LogFilesBuilder {
                 databaseLayout.getDatabaseName(),
                 config,
                 externalLogTail,
-                new BinarySupportedKernelVersions(config));
+                new BinarySupportedKernelVersions(config),
+                readOnlyLogs);
     }
 
     private CommandReaderFactory commandReaderFactory() {
@@ -374,7 +398,7 @@ public class LogFilesBuilder {
         if (rotationThreshold != null) {
             return new AtomicLong(rotationThreshold);
         }
-        if (readOnly) {
+        if (readOnlyStores) {
             return new AtomicLong(Long.MAX_VALUE);
         }
         AtomicLong configThreshold = new AtomicLong(config.get(logical_log_rotation_threshold));
@@ -383,7 +407,7 @@ public class LogFilesBuilder {
     }
 
     private AtomicBoolean getTryToPreallocateTransactionLogs() {
-        if (readOnly) {
+        if (readOnlyStores) {
             return new AtomicBoolean(false);
         }
         AtomicBoolean tryToPreallocate = new AtomicBoolean(config.get(preallocate_logical_logs));
@@ -406,7 +430,7 @@ public class LogFilesBuilder {
                                 + "operation that require availability of log version repository. Please build full version of log files to be able to use them.");
             };
         }
-        if (readOnly) {
+        if (readOnlyStores) {
             requireNonNull(pageCache, "Read only log files require page cache to be able to read current log version.");
             requireNonNull(databaseLayout, "Store directory is required.");
             return new ReadOnlyLogVersionRepositoryProvider();
@@ -446,7 +470,7 @@ public class LogFilesBuilder {
                         + "to be able to use them.");
             };
         }
-        if (readOnly) {
+        if (readOnlyStores) {
             requireNonNull(
                     pageCache,
                     "Read only log files require page cache to be able to read committed "
@@ -477,7 +501,7 @@ public class LogFilesBuilder {
                         + "to be able to use them.");
             };
         }
-        if (readOnly) {
+        if (readOnlyStores) {
             requireNonNull(
                     pageCache,
                     "Read only log files require page cache to be able to read committed "
@@ -506,7 +530,7 @@ public class LogFilesBuilder {
                         + "to be able to use them.");
             };
         }
-        if (readOnly) {
+        if (readOnlyStores) {
             requireNonNull(
                     pageCache,
                     "Read only log files require page cache to be able to read committed "

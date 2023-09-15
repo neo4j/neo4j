@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.LOG_VERSION_MASK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V8;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.encodeLogVersion;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogFormatVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -36,7 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.test.RandomSupport;
@@ -87,12 +88,13 @@ class LogHeaderWriterTest {
         final var file = testDirectory.file("WriteLogHeader");
         final var channel = fileSystem.write(file);
         LogHeader logHeader = new LogHeader(
-                logFormat.getVersionByte(),
-                new LogPosition(expectedLogVersion, logFormat.getHeaderSize()),
+                logFormat,
+                expectedLogVersion,
                 expectedTxId,
                 expectedStoreId,
-                expectedBlockSize,
-                expectedChecksum);
+                logFormat == V8 ? UNKNOWN_LOG_SEGMENT_SIZE : expectedBlockSize,
+                expectedChecksum,
+                KernelVersion.GLORIOUS_FUTURE);
 
         // when
         writeLogHeader(channel, logHeader, INSTANCE);

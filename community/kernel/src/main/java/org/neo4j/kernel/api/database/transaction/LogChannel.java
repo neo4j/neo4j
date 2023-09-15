@@ -20,14 +20,18 @@
 package org.neo4j.kernel.api.database.transaction;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.KernelVersion;
 
 /**
  * @param startTxId first transaction ID in this channel.
+ * @param kernelVersion kernel version associated with the first transaction ID in this channel.
  * @param channel channel containing the transaction data.
  * @param endOffset a known transaction-ending aligned offset for this channel.
  * @param lastTxId last transaction ID in this channel.
  */
-public record LogChannel(long startTxId, StoreChannel channel, long endOffset, long lastTxId) implements AutoCloseable {
+public record LogChannel(
+        long startTxId, KernelVersion kernelVersion, StoreChannel channel, long endOffset, long lastTxId)
+        implements AutoCloseable {
     @Override
     public void close() throws Exception {
         channel.close();

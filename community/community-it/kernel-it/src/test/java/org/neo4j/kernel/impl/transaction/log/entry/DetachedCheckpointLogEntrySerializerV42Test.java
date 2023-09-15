@@ -28,6 +28,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETA
 import static org.neo4j.kernel.impl.transaction.log.entry.v42.DetachedCheckpointLogEntrySerializerV4_2.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -122,7 +123,7 @@ class DetachedCheckpointLogEntrySerializerV42Test {
                 StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
         try (var readChannel = new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel(
-                        fs.read(path), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
+                        fs.read(path), -1 /* ignored */, LATEST_LOG_FORMAT, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
                 NO_MORE_CHANNELS,
                 INSTANCE)) {
             assertEquals(

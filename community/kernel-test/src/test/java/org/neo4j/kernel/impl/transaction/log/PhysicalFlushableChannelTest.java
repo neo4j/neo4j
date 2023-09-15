@@ -32,6 +32,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,7 +82,7 @@ class PhysicalFlushableChannelTest {
         var storeChannel = fileSystem.write(path);
         DefaultTracer databaseTracer = new DefaultTracer(PageCacheTracer.NULL);
         try (var channel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, path, nativeChannelAccessor, databaseTracer, true)) {
+                storeChannel, 1, LATEST_LOG_FORMAT, path, nativeChannelAccessor, databaseTracer, true)) {
             channel.flush();
             channel.flush();
             channel.flush();
@@ -94,7 +95,7 @@ class PhysicalFlushableChannelTest {
         var rawPath = directory.homePath().resolve("fileRaw");
         var storeChannel = fileSystem.write(rawPath);
         try (var channel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, rawPath, nativeChannelAccessor, databaseTracer, true)) {
+                storeChannel, 1, LATEST_LOG_FORMAT, rawPath, nativeChannelAccessor, databaseTracer, true)) {
             // empty
         }
         verifyNoInteractions(nativeChannelAccessor);
@@ -105,7 +106,7 @@ class PhysicalFlushableChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
         int length = 26_145;
         byte[] bytes;
         try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(
@@ -123,7 +124,7 @@ class PhysicalFlushableChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
         int length = 262_145;
         byte[] bytes;
         try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE)) {
@@ -141,7 +142,7 @@ class PhysicalFlushableChannelTest {
         final Path firstFile = directory.homePath().resolve("file2");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
 
         assertThat(memoryTracker.estimatedHeapMemory()).isZero();
         assertThat(memoryTracker.usedNativeMemory()).isZero();
@@ -161,7 +162,7 @@ class PhysicalFlushableChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
         int length = 1_000_000;
         byte[] bytes;
         try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE)) {
@@ -178,7 +179,7 @@ class PhysicalFlushableChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
 
         ByteBuffer smallBuffer = ByteBuffer.wrap(generateBytes(100));
         try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE)) {
@@ -193,7 +194,7 @@ class PhysicalFlushableChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
 
         int bufferSize = 512;
         ByteBuffer largeBuffer = ByteBuffer.wrap(generateBytes(bufferSize * 2));
@@ -210,7 +211,7 @@ class PhysicalFlushableChannelTest {
         final Path firstFile = directory.homePath().resolve("file1");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
 
         int bufferSize = 512;
         int small = 64;
@@ -232,7 +233,7 @@ class PhysicalFlushableChannelTest {
         var file = directory.homePath().resolve("fileWithBytes");
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         byte[] bytes = generateBytes(length);
         try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, buffer)) {
             channel.put(bytes, length);
@@ -249,7 +250,7 @@ class PhysicalFlushableChannelTest {
         final Path secondFile = directory.homePath().resolve("file2");
         StoreChannel storeChannel = fileSystem.write(firstFile);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, firstFile, nativeChannelAccessor, databaseTracer);
         PhysicalFlushableLogChannel channel = new PhysicalFlushableLogChannel(
                 versionedStoreChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE));
 
@@ -272,7 +273,7 @@ class PhysicalFlushableChannelTest {
         // "Rotate" and continue
         storeChannel = fileSystem.write(secondFile);
         channel.setChannel(new PhysicalLogVersionedStoreChannel(
-                storeChannel, 2, (byte) -1, secondFile, nativeChannelAccessor, databaseTracer));
+                storeChannel, 2, LATEST_LOG_FORMAT, secondFile, nativeChannelAccessor, databaseTracer));
         channel.putFloat(floatValue);
         channel.putDouble(doubleValue);
         channel.put(byteArrayValue, byteArrayValue.length);
@@ -299,7 +300,7 @@ class PhysicalFlushableChannelTest {
         final Path file = directory.homePath().resolve("file");
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         try (var channel = new PhysicalFlushableLogPositionAwareChannel(
                 versionedStoreChannel, new NativeScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             LogPosition initialPosition = channel.getCurrentLogPosition();
@@ -320,7 +321,7 @@ class PhysicalFlushableChannelTest {
         final Path file = directory.homePath().resolve("file");
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE);
 
         // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
@@ -339,7 +340,7 @@ class PhysicalFlushableChannelTest {
         final Path file = directory.homePath().resolve("file");
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE);
 
         // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
@@ -357,7 +358,7 @@ class PhysicalFlushableChannelTest {
         final Path file = directory.homePath().resolve("file");
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
+                storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE);
 
         // just close the underlying channel

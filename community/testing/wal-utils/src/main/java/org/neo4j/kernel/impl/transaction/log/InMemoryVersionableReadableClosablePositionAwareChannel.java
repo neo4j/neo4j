@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V8;
+
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 
 public class InMemoryVersionableReadableClosablePositionAwareChannel extends InMemoryClosableChannel
         implements ReadableLogChannel {
@@ -33,7 +35,7 @@ public class InMemoryVersionableReadableClosablePositionAwareChannel extends InM
     }
 
     @Override
-    public byte getLogFormatVersion() {
-        return CURRENT_LOG_FORMAT_VERSION;
+    public LogFormat getLogFormatVersion() {
+        return V8;
     }
 }

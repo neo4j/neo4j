@@ -148,7 +148,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     }
 
     @Override
-    public byte getLogFormatVersion() {
+    public LogFormat getLogFormatVersion() {
         return channel.getLogFormatVersion();
     }
 
@@ -543,7 +543,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
 
         checkState(segmentBlockSize == logHeader.getSegmentBlockSize(), "Changing segmentBlockSize not supported");
         checkState(
-                LogFormat.V9.getVersionByte() >= logHeader.getLogFormatVersion(),
+                LogFormat.V9.getVersionByte() >= logHeader.getLogFormatVersion().getVersionByte(),
                 "Envelopes are not supported in old versions");
         checkState(previousChecksum == logHeader.getPreviousLogFileChecksum(), "Checksum chain broken");
         enforceTerminalZeros();
