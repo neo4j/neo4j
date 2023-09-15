@@ -149,6 +149,9 @@ import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.Liv
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.NestedPlanArgumentConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
+import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DiscardFromLhs
+import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DiscardFromRhs
+import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.DoNotDiscard
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.LOAD_CSV_METADATA_KEY
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.NO_ARGUMENT
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.SlotMetaData
@@ -891,36 +894,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
-    discardUnusedSlots(lp, source, slots)
-  }
-
-  private def discardUnusedSlots(
-    lp: LogicalPlan,
-    source: SlotConfiguration,
-    slots: SlotConfiguration
-  ): Unit = {
-    if (breakingPolicy.isDiscardingPlan(lp, applyPlans(lp.id))) {
-      // Operators for these plans will 'compact' the morsel, setting discarded ref slots to null,
-      // before putting it in the eager buffer. This frees memory of those slots for the remainder
-      // of the query execution.
-      liveVariables.getOption(lp.id) match {
-        case Some(live) if slots ne source =>
-          val unusedVars = lp.availableSymbols.map(_.name).diff(live)
-          unusedVars.foreach(source.markDiscarded)
-        case _ =>
-        /*
-         * We could discard even when this plan is not breaking slot config,
-         * by only variables that was discarded before the last break.
-         *
-         * An example in slotted,
-         * AllNodeScan (n:A) -> Projection n.p * 2 AS unusedVar -> Expand (n)-->(m) -> Sort (m.p) -> Produce Result (m.p)
-         * Breaks slots                                            Breaks slots
-         *
-         * Sort do not break slots in slotted runtime, but would still be safe to discard `unusedVar`, because it has
-         * no usage after the previous slot break (Expand).
-         */
-      }
-    }
+    discardUnusedSlots(lp, slots, source, None)
   }
 
   /**
@@ -940,17 +914,17 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     recordArgument: LogicalPlan => Unit,
     argument: SlotsAndArgument
   ): SlotConfiguration = {
-    val (slots: SlotConfiguration, source: SlotConfiguration) = lp match {
+    val result = lp match {
       case _: Apply =>
-        noBreak(rhs)
+        rhs
 
       case _: TriadicSelection =>
         // TriadicSelection is essentially a special Apply which performs filtering.
         // All the slots are allocated by it's left and right children
-        noBreak(rhs)
+        rhs
 
       case _: AbstractSemiApply =>
-        noBreak(lhs)
+        lhs
 
       case _: AntiConditionalApply |
         _: ConditionalApply |
@@ -958,153 +932,154 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
-        invokeBreakingPolicy(lp, rhs, argument.slotConfiguration) { result =>
-          rhs.foreachSlotAndAliases {
-            case SlotWithKeyAndAliases(VariableSlotKey(key), slot, _) if slot.offset >= lhs.numberOfLongs =>
-              result.add(key, slot.asNullable)
-            case _ => // do nothing
-          }
+        rhs.foreachSlotAndAliases {
+          case SlotWithKeyAndAliases(VariableSlotKey(key), slot, _) if slot.offset >= lhs.numberOfLongs =>
+            result.add(key, slot.asNullable)
+          case _ => // do nothing
         }
+        result
 
       case LetSemiApply(_, _, name) =>
         lhs.newReference(name, false, CTBoolean)
-        noBreak(lhs)
+        lhs
 
       case LetAntiSemiApply(_, _, name) =>
         lhs.newReference(name, false, CTBoolean)
-        noBreak(lhs)
+        lhs
 
       case LetSelectOrSemiApply(_, _, name, _) =>
         lhs.newReference(name, true, CTBoolean)
-        noBreak(lhs)
+        lhs
 
       case LetSelectOrAntiSemiApply(_, _, name, _) =>
         lhs.newReference(name, true, CTBoolean)
-        noBreak(lhs)
+        lhs
 
       case _: CartesianProduct =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-
-        invokeBreakingPolicy(lp, lhs, argument.slotConfiguration) { result =>
-          // For the implementation of the slotted pipe to use array copy
-          // it is very important that we add the slots in the same order
-          // Note, we can potentially carry discaded slots from rhs here to save memory
-          rhs.addAllSlotsInOrderTo(result, argument.argumentSize)
-        }
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        // For the implementation of the slotted pipe to use array copy
+        // it is very important that we add the slots in the same order
+        // Note, we can potentially carry discaded slots from rhs here to save memory
+        rhs.addAllSlotsInOrderTo(result, argument.argumentSize)
+        result
 
       case RightOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        invokeBreakingPolicy(lp, rhs, argument.slotConfiguration) { result =>
-          // Note, we can potentially carry discaded slots from lhs here to save memory
-          lhs.foreachSlotAndAliasesOrdered {
-            case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
-              // If the column is one of the join columns there is no need to add it again
-              if (!nodes.contains(varFor(key))) {
-                result.add(key, slot.asNullable)
-              }
-              aliases.foreach(alias => result.addAlias(alias, key))
+        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
 
-            case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
-              result.newCachedProperty(key)
+        // Note, we can potentially carry discaded slots from lhs here to save memory
+        lhs.foreachSlotAndAliasesOrdered {
+          case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
+            // If the column is one of the join columns there is no need to add it again
+            if (!nodes.contains(varFor(key))) {
+              result.add(key, slot.asNullable)
+            }
+            aliases.foreach(alias => result.addAlias(alias, key))
 
-            case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
-              result.newMetaData(key, planId)
+          case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
+            result.newCachedProperty(key)
 
-            case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
-            // apply plan slots are already in the argument, and don't have to be added here
+          case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+            result.newMetaData(key, planId)
 
-            case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
-            // apply plan slots are already in the argument, and don't have to be added here
-          }
+          case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
+          // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
+          // apply plan slots are already in the argument, and don't have to be added here
         }
+        result
 
       case LeftOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        invokeBreakingPolicy(lp, lhs, argument.slotConfiguration) { result =>
-          // Note, we can potentially carry discaded slots from rhs here to save memory
-          rhs.foreachSlotAndAliasesOrdered {
-            case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
-              // If the column is one of the join columns there is no need to add it again
-              if (!nodes(varFor(key))) {
-                result.add(key, slot.asNullable)
-              }
-              aliases.foreach(alias => result.addAlias(alias, key))
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
 
-            case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
-              result.newCachedProperty(key)
+        // Note, we can potentially carry discaded slots from rhs here to save memory
+        rhs.foreachSlotAndAliasesOrdered {
+          case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
+            // If the column is one of the join columns there is no need to add it again
+            if (!nodes(varFor(key))) {
+              result.add(key, slot.asNullable)
+            }
+            aliases.foreach(alias => result.addAlias(alias, key))
 
-            case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
-              result.newMetaData(key, planId)
+          case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
+            result.newCachedProperty(key)
 
-            case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
-            // apply plan slots are already in the argument, and don't have to be added here
+          case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+            result.newMetaData(key, planId)
 
-            case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
-            // apply plan slots are already in the argument, and don't have to be added here
-          }
+          case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
+          // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
+          // apply plan slots are already in the argument, and don't have to be added here
         }
+        result
 
       case NodeHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        invokeBreakingPolicy(lp, lhs, argument.slotConfiguration) { result =>
-          // Note, we can potentially carry discaded slots from rhs here to save memory
-          rhs.foreachSlotAndAliasesOrdered {
-            case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
-              // If the column is one of the join columns there is no need to add it again
-              if (!nodes(varFor(key))) {
-                result.add(key, slot)
-              }
-              aliases.foreach(alias => result.addAlias(alias, key))
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
 
-            case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
-              result.newCachedProperty(key)
+        // Note, we can potentially carry discaded slots from rhs here to save memory
+        rhs.foreachSlotAndAliasesOrdered {
+          case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
+            // If the column is one of the join columns there is no need to add it again
+            if (!nodes(varFor(key))) {
+              result.add(key, slot)
+            }
+            aliases.foreach(alias => result.addAlias(alias, key))
 
-            case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
-              result.newMetaData(key, planId)
+          case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
+            result.newCachedProperty(key)
 
-            case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
-            // apply plan slots are already in the argument, and don't have to be added here
+          case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+            result.newMetaData(key, planId)
 
-            case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
-            // nested apply plan slots are already in the argument, and don't have to be added here
-          }
+          case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
+          // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
+          // nested apply plan slots are already in the argument, and don't have to be added here
         }
+        result
 
       case _: ValueHashJoin =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        invokeBreakingPolicy(lp, lhs, argument.slotConfiguration) { result =>
-          // For the implementation of the slotted pipe to use array copy
-          // it is very important that we add the slots in the same order
-          // Note, we can potentially carry discaded slots from rhs here to save memory
-          rhs.foreachSlotAndAliasesOrdered(
-            {
-              case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
-                result.add(key, slot)
-                aliases.foreach(alias => result.addAlias(alias, key))
-              case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
-                result.newCachedProperty(key, shouldDuplicate = true)
-              case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
-                result.newMetaData(key, planId)
-              case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
-              // apply plan slots are already in the argument, and don't have to be added here
-              case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
-              // apply plan slots are already in the argument, and don't have to be added here
-            },
-            skipFirst = argument.argumentSize
-          )
-        }
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        // For the implementation of the slotted pipe to use array copy
+        // it is very important that we add the slots in the same order
+        // Note, we can potentially carry discaded slots from rhs here to save memory
+        rhs.foreachSlotAndAliasesOrdered(
+          {
+            case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
+              result.add(key, slot)
+              aliases.foreach(alias => result.addAlias(alias, key))
+            case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
+              result.newCachedProperty(key, shouldDuplicate = true)
+            case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+              result.newMetaData(key, planId)
+            case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
+            // apply plan slots are already in the argument, and don't have to be added here
+            case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
+            // apply plan slots are already in the argument, and don't have to be added here
+          },
+          skipFirst = argument.argumentSize
+        )
+        result
 
       case RollUpApply(_, _, collectionName, _) =>
         lhs.newReference(collectionName, nullable, CTList(CTAny))
-        noBreak(lhs)
+        lhs
 
       case _: ForeachApply =>
-        noBreak(lhs)
+        lhs
 
       case _: Union |
         _: OrderedUnion =>
@@ -1176,20 +1151,20 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             }
           case _ =>
         })
-        (result, lhs)
+        result
 
       case _: AssertSameNode | _: AssertSameRelationship =>
-        noBreak(lhs)
+        lhs
 
       case _: SubqueryForeach =>
-        invokeBreakingPolicy(lp, lhs, argument.slotConfiguration)(_ => ())
+        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
 
       case t: TransactionForeach =>
         t.maybeReportAs.foreach { statusVar =>
           lhs.newReference(statusVar, nullable, CTMap)
         }
 
-        invokeBreakingPolicy(lp, lhs, argument.slotConfiguration)(_ => ())
+        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
 
       case t: TransactionApply =>
         // We need to declare the slot for the status variable
@@ -1209,17 +1184,17 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           }
         }
 
-        invokeBreakingPolicy(lp, rhs, argument.slotConfiguration)(_ => ())
+        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
 
       case _: Trail =>
         recordArgument(lp)
-        invokeBreakingPolicy(lp, rhs, argument.slotConfiguration)(_ => ())
+        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
 
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
-    discardUnusedSlots(lp, source, slots)
-    slots
+    discardUnusedSlots(lp, result, lhs, Some(rhs))
+    result
   }
 
   private def allocateLhsOfApply(
@@ -1299,16 +1274,40 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     }
   }
 
-  private def noBreak(source: SlotConfiguration): (SlotConfiguration, SlotConfiguration) = (source, source)
-
-  private def invokeBreakingPolicy(
+  private def discardUnusedSlots(
     lp: LogicalPlan,
-    source: SlotConfiguration,
-    argument: SlotConfiguration
-  )(f: SlotConfiguration => Unit): (SlotConfiguration, SlotConfiguration) = {
-    val result = breakingPolicy.invoke(lp, source, argument, applyPlans(lp.id))
-    f(result)
-    (result, source)
+    slots: SlotConfiguration,
+    lhs: SlotConfiguration,
+    rhs: Option[SlotConfiguration]
+  ): Unit = {
+    def doDiscard(source: SlotConfiguration): Unit = {
+      // Operators for these plans will 'compact' the morsel, setting discarded ref slots to null,
+      // before putting it in the eager buffer. This frees memory of those slots for the remainder
+      // of the query execution.
+      liveVariables.getOption(lp.id) match {
+        case Some(live) if slots ne source =>
+          val unusedVars = lp.availableSymbols.map(_.name).diff(live)
+          unusedVars.foreach(source.markDiscarded)
+        case _ =>
+        /*
+         * We could discard even when this plan is not breaking slot config,
+         * by only variables that was discarded before the last break.
+         *
+         * An example in slotted,
+         * AllNodeScan (n:A) -> Projection n.p * 2 AS unusedVar -> Expand (n)-->(m) -> Sort (m.p) -> Produce Result (m.p)
+         * Breaks slots                                            Breaks slots
+         *
+         * Sort do not break slots in slotted runtime, but would still be safe to discard `unusedVar`, because it has
+         * no usage after the previous slot break (Expand).
+         */
+      }
+    }
+
+    breakingPolicy.discardPolicy(lp, applyPlans(lp.id)) match {
+      case DoNotDiscard   => // Do nothing
+      case DiscardFromLhs => doDiscard(lhs)
+      case DiscardFromRhs => doDiscard(rhs.getOrElse(throw new IllegalStateException(s"Expected plan to ha $lp")))
+    }
   }
 }
 
