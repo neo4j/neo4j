@@ -30,6 +30,7 @@ import org.mockito.Mockito;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.SilentFileWatcher;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 class DefaultFileSystemWatcherServiceTest {
@@ -51,7 +52,8 @@ class DefaultFileSystemWatcherServiceTest {
     void startMonitoringWhenLifecycleStarting() throws Throwable {
         CountDownLatch latch = new CountDownLatch(1);
         FileWatcher watcher = new TestFileWatcher(latch);
-        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService(jobScheduler, watcher);
+        DefaultFileSystemWatcherService service =
+                new DefaultFileSystemWatcherService(jobScheduler, watcher, NullLogProvider.getInstance());
         service.init();
         service.start();
 
@@ -60,7 +62,8 @@ class DefaultFileSystemWatcherServiceTest {
 
     @Test
     void stopMonitoringWhenLifecycleStops() throws Throwable {
-        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService(jobScheduler, fileWatcher);
+        DefaultFileSystemWatcherService service =
+                new DefaultFileSystemWatcherService(jobScheduler, fileWatcher, NullLogProvider.getInstance());
         service.init();
         service.start();
         service.stop();
@@ -70,7 +73,8 @@ class DefaultFileSystemWatcherServiceTest {
 
     @Test
     void closeFileWatcherOnShutdown() throws Throwable {
-        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService(jobScheduler, fileWatcher);
+        DefaultFileSystemWatcherService service =
+                new DefaultFileSystemWatcherService(jobScheduler, fileWatcher, NullLogProvider.getInstance());
         service.init();
         service.start();
         service.stop();

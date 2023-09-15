@@ -152,7 +152,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .setDefault(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true)
                 .setDefault(GraphDatabaseInternalSettings.vm_pause_monitor_enabled, false)
                 .setDefault(GraphDatabaseSettings.check_point_iops_limit, -1)
-                .setDefault(GraphDatabaseInternalSettings.gbptree_structure_log_enabled, true);
+                .setDefault(GraphDatabaseInternalSettings.gbptree_structure_log_enabled, true)
+                .setDefault(GraphDatabaseSettings.filewatcher_enabled, false);
         return builder.build();
     }
 

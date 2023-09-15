@@ -82,6 +82,7 @@ class FileWatchIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.filewatcher_enabled, true);
         builder.setInternalLogProvider(logProvider);
     }
 
@@ -122,6 +123,7 @@ class FileWatchIT {
         try {
             service = new TestDatabaseManagementServiceBuilder(testDirectory.homePath("failed-start-db"))
                     .setInternalLogProvider(logProvider)
+                    .setConfig(GraphDatabaseSettings.filewatcher_enabled, true)
                     .setFileSystem(new NonWatchableFileSystemAbstraction())
                     .build();
             assertNotNull(managementService.database(DEFAULT_DATABASE_NAME));
@@ -234,6 +236,24 @@ class FileWatchIT {
         } finally {
             shutdownDatabaseSilently(service);
         }
+    }
+
+    @Test
+    void shouldLogWhenWatcherFails() throws Exception {
+        FileWatcher fileWatcher = getFileWatcher(database);
+        fileWatcher.addFileWatchEventListener(new FileWatchEventListener() {
+            @Override
+            public void fileDeleted(WatchKey key, String fileName) {
+                throw new RuntimeException("Event listener failed");
+            }
+        });
+
+        FileUtils.deleteFile(databaseLayout.metadataStore());
+        assertThat(logProvider)
+                .containsMessagesEventually(
+                        TimeUnit.MINUTES.toMillis(1),
+                        "File system event watching encountered an error and will stop monitoring file events",
+                        "Event listener failed");
     }
 
     private static void shutdownDatabaseSilently(DatabaseManagementService managementService) {

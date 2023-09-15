@@ -312,7 +312,8 @@ public class GlobalModule {
         }
 
         try {
-            return new DefaultFileSystemWatcherService(jobScheduler, fileSystem.fileWatcher());
+            return new DefaultFileSystemWatcherService(
+                    jobScheduler, fileSystem.fileWatcher(), logging.getInternalLogProvider());
         } catch (Exception e) {
             InternalLog log = logging.getInternalLog(getClass());
             log.warn(

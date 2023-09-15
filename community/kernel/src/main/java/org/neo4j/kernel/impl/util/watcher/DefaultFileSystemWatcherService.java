@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.util.watcher;
 
 import java.util.concurrent.ThreadFactory;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -36,10 +38,11 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     private ThreadFactory fileWatchers;
     private Thread watcher;
 
-    public DefaultFileSystemWatcherService(JobScheduler jobScheduler, FileWatcher fileWatcher) {
+    public DefaultFileSystemWatcherService(
+            JobScheduler jobScheduler, FileWatcher fileWatcher, LogProvider logProvider) {
         this.jobScheduler = jobScheduler;
         this.fileWatcher = fileWatcher;
-        this.eventWatcher = new FileSystemEventWatcher();
+        this.eventWatcher = new FileSystemEventWatcher(logProvider);
     }
 
     @Override
@@ -75,11 +78,19 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     }
 
     private class FileSystemEventWatcher implements Runnable {
+        private final Log log;
+
+        FileSystemEventWatcher(LogProvider logProvider) {
+            log = logProvider.getLog(FileSystemEventWatcher.class);
+        }
+
         @Override
         public void run() {
             try {
                 fileWatcher.startWatching();
             } catch (InterruptedException ignored) {
+            } catch (RuntimeException e) {
+                log.warn("File system event watching encountered an error and will stop monitoring file events", e);
             }
         }
 
