@@ -24,12 +24,16 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMetho
 import static org.junit.platform.testkit.engine.EventConditions.event;
 import static org.junit.platform.testkit.engine.EventConditions.finishedWithFailure;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
+import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
 import java.util.Arrays;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.testkit.engine.EngineTestKit;
 import org.junit.platform.testkit.engine.Events;
+import org.neo4j.test.extension.timeout.DumpThreadDumpOnTimeout.After;
+import org.neo4j.test.extension.timeout.DumpThreadDumpOnTimeout.Before;
+import org.neo4j.test.extension.timeout.DumpThreadDumpOnTimeout.IncludeThreadsCleanedOnAfter;
 
 class VerboseTimeoutExceptionExtensionTest {
     @Test
@@ -46,6 +50,21 @@ class VerboseTimeoutExceptionExtensionTest {
     }
 
     @Test
+    void shouldDumpOnSetupOrTeardown() {
+        assertTestGetsThreadDump("testWithoutTimeout", After.class);
+        assertTestGetsThreadDump("testWithoutTimeout", Before.class);
+    }
+
+    @Test
+    void shouldContainDumpOnThreadsCleanedOnAfter() {
+        assertTestGetsThreadDumpWithMessage(
+                "shouldContainHangingThread",
+                IncludeThreadsCleanedOnAfter.class,
+                "HangingThread",
+                "IncludeThreadsCleanedOnAfter.hangingMethod");
+    }
+
+    @Test
     void shouldNotDumpThreadsOnNormalFailure() {
         assertTestGetsNoThreadDump("doNotDumpOnAssume");
         assertTestGetsNoThreadDump("doNotDumpOnAssert");
@@ -54,16 +73,24 @@ class VerboseTimeoutExceptionExtensionTest {
     }
 
     static void assertTestGetsThreadDump(String test) {
-        assertThreadDumpEvent(executeTest(test), true);
+        assertTestGetsThreadDump(test, DumpThreadDumpOnTimeout.class);
     }
 
     static void assertTestGetsNoThreadDump(String test) {
-        assertThreadDumpEvent(executeTest(test), false);
+        assertThreadDumpEvent(executeTest(test, DumpThreadDumpOnTimeout.class), false);
     }
 
-    private static Events executeTest(String method) {
+    static void assertTestGetsThreadDump(String test, Class<?> cls) {
+        assertThreadDumpEvent(executeTest(test, cls), true);
+    }
+
+    static void assertTestGetsThreadDumpWithMessage(String test, Class<?> cls, String... messages) {
+        assertThreadDumpWithMessage(executeTest(test, cls), messages);
+    }
+
+    private static Events executeTest(String method, Class<?> cls) {
         Events events = EngineTestKit.engine(ENGINE_ID)
-                .selectors(selectMethod(DumpThreadDumpOnTimeout.class, method))
+                .selectors(selectMethod(cls, method))
                 .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
@@ -77,6 +104,16 @@ class VerboseTimeoutExceptionExtensionTest {
                         shouldHave ? 1 : 0,
                         event(finishedWithFailure(
                                 suppressed(instanceOf(VerboseTimeoutExceptionExtension.ThreadDump.class)))));
+    }
+
+    private static void assertThreadDumpWithMessage(Events events, String... expected) {
+        events.assertThatEvents()
+                .haveExactly(
+                        1,
+                        event(finishedWithFailure(
+                                suppressed(instanceOf(VerboseTimeoutExceptionExtension.ThreadDump.class)),
+                                suppressed(
+                                        message(trace -> Arrays.stream(expected).allMatch(trace::contains))))));
     }
 
     private static Condition<Throwable> suppressed(Condition<Throwable> condition) {

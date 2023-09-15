@@ -29,18 +29,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
-import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 
-public class VerboseTimeoutExceptionExtension implements TestWatcher, LifecycleMethodExecutionExceptionHandler {
+public class VerboseTimeoutExceptionExtension
+        implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
+
     @Override
-    public void testFailed(ExtensionContext context, Throwable cause) {
+    public void handleTestExecutionException(ExtensionContext context, Throwable cause) throws Throwable {
         handleFailure(context.getDisplayName(), context.getRequiredTestMethod().getName(), cause);
-    }
-
-    private void handleFailure(String displayName, String testMethod, Throwable cause) {
-        if (isTimeout(cause)) {
-            cause.addSuppressed(new ThreadDump(format("Test %s-%s timed out. ", displayName, testMethod)));
-        }
+        throw cause;
     }
 
     @Override
@@ -57,6 +54,19 @@ public class VerboseTimeoutExceptionExtension implements TestWatcher, LifecycleM
         throw throwable;
     }
 
+    @Override
+    public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable)
+            throws Throwable {
+        handleFailure(context.getDisplayName(), "AfterEach", throwable);
+        throw throwable;
+    }
+
+    @Override
+    public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        handleFailure(context.getDisplayName(), "AfterAll", throwable);
+        throw throwable;
+    }
+
     private static boolean isTimeout(Throwable throwable) {
         return throwable != null
                 && (throwable instanceof TimeoutException
@@ -65,6 +75,12 @@ public class VerboseTimeoutExceptionExtension implements TestWatcher, LifecycleM
                         || (!Objects.equals(throwable, throwable.getCause()) && isTimeout(throwable.getCause()))
                         || Arrays.stream(throwable.getSuppressed())
                                 .anyMatch(VerboseTimeoutExceptionExtension::isTimeout));
+    }
+
+    private static void handleFailure(String displayName, String testMethod, Throwable cause) {
+        if (isTimeout(cause)) {
+            cause.addSuppressed(new ThreadDump(format("Test %s-%s timed out. ", displayName, testMethod)));
+        }
     }
 
     static class ThreadDump extends RuntimeException {

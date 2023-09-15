@@ -25,10 +25,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.TRUE;
 import static org.neo4j.test.conditions.Conditions.equalityCondition;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.opentest4j.AssertionFailedError;
@@ -116,5 +121,59 @@ class DumpThreadDumpOnTimeout {
             exception = new RuntimeException(exception);
         }
         throw exception;
+    }
+
+    @Nested
+    class Before {
+        @BeforeEach
+        void setup() throws TimeoutException {
+            throw new TimeoutException();
+        }
+
+        @Test
+        void testWithoutTimeout() {}
+    }
+
+    @Nested
+    class After {
+        @AfterEach
+        void tearDown() throws TimeoutException {
+            throw new TimeoutException();
+        }
+
+        @Test
+        void testWithoutTimeout() {}
+    }
+
+    @Nested
+    class IncludeThreadsCleanedOnAfter {
+        private final AtomicBoolean stop = new AtomicBoolean();
+        private final AtomicBoolean started = new AtomicBoolean();
+        private Thread thread;
+
+        @AfterEach
+        void cleanup() throws InterruptedException {
+            stop.set(true);
+            thread.join();
+        }
+
+        @Test
+        void shouldContainHangingThread() throws TimeoutException {
+            thread = new Thread(this::hangingMethod);
+            thread.setName("HangingThread");
+            thread.start();
+            assertEventually(started::get, TRUE, 1, TimeUnit.MINUTES);
+            throw new TimeoutException();
+        }
+
+        private void hangingMethod() {
+            while (!stop.get()) {
+                started.set(true);
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
     }
 }
