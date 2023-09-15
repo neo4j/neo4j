@@ -351,6 +351,40 @@ class PushdownPropertyReadsTest
         .build()
   }
 
+  test("should not pushdown past an apply into RHS if not available on RHS") {
+    val planner = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("m.prop > 10", "m2.prop > 10").withEffectiveCardinality(50)
+      .apply().withEffectiveCardinality(20)
+      .|.expandAll("(n)-->(q)").withEffectiveCardinality(20)
+      .|.filter("n.prop > 10").withEffectiveCardinality(2)
+      .|.allNodeScan("n", "m").withEffectiveCardinality(100) // m is an argument, m2 is not
+      .cartesianProduct().withEffectiveCardinality(10)
+      .|.allNodeScan("m2").withEffectiveCardinality(10)
+      .allNodeScan("m").withEffectiveCardinality(2)
+    val plan = planner.build()
+
+    val rewritten = PushdownPropertyReads.pushdown(
+      plan,
+      planner.effectiveCardinalities,
+      Attributes(planner.idGen, planner.effectiveCardinalities),
+      planner.getSemanticTable
+    )
+    rewritten shouldBe new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("m.prop > 10", "m2.prop > 10")
+      .apply()
+      .|.expandAll("(n)-[UNNAMED1]->(q)")
+      .|.cacheProperties("m.prop") // pushed down to RHS
+      .|.filter("n.prop > 10")
+      .|.allNodeScan("n", "m")
+      .cartesianProduct()
+      .|.cacheProperties("m2.prop") // pushed down to LHS because RHS would not work
+      .|.allNodeScan("m2")
+      .allNodeScan("m")
+      .build()
+  }
+
   test("should pushdown from top to top of Apply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
