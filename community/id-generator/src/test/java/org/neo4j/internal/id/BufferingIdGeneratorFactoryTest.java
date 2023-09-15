@@ -279,6 +279,7 @@ class BufferingIdGeneratorFactoryTest {
             markers.put(idType, marker);
             when(idGenerator.contextualMarker(any())).thenReturn(marker);
             when(idGenerator.transactionalMarker(any())).thenReturn(marker);
+            when(idGenerator.allocationEnabled()).thenReturn(true);
             return idGenerator;
         }
 

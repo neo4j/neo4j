@@ -597,7 +597,10 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public ContextualMarker contextualMarker(CursorContext cursorContext) {
-        Preconditions.checkState(allocationEnabled.get(), "Shouldn't be doing this");
+        if (!allocationEnabled()) {
+            throw new IllegalStateException(
+                    "This ID generator has allocation disabled, which means it should not need to do contextual updates");
+        }
         if (!started && needsRebuild) {
             // If we're in recovery and know that we're building the id generator from scratch after recovery has
             // completed then don't make any updates
@@ -744,6 +747,11 @@ public class IndexedIdGenerator implements IdGenerator {
             scanner.clearCache(allocationEnabled, cursorContext);
             monitor.clearedCache();
         }
+    }
+
+    @Override
+    public boolean allocationEnabled() {
+        return allocationEnabled.get();
     }
 
     @Override

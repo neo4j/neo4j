@@ -120,8 +120,18 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     /**
      * Clears internal ID caches. This should only be used in specific scenarios where ID states have changed w/o the cache knowing about it.
+     * This method can also enable/disable allocation, which ties into the role this member has.
+     * @see #allocationEnabled()
      */
     void clearCache(boolean allocationEnabled, CursorContext cursorContext);
+
+    /**
+     * @return whether allocation can be performed on this ID generator. If {@code true} then calls like
+     * {@link #nextId(CursorContext)} works and caches are active. This state is related to the role this
+     * member has, e.g. leader or single instance (effectively the same) has allocation enabled, whereas followers
+     * and others don't. This state can be changed in calls to {@link #clearCache(boolean, CursorContext)}.
+     */
+    boolean allocationEnabled();
 
     /**
      *
@@ -377,6 +387,11 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         @Override
         public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
             delegate.clearCache(allocationEnabled, cursorContext);
+        }
+
+        @Override
+        public boolean allocationEnabled() {
+            return delegate.allocationEnabled();
         }
 
         @Override

@@ -46,7 +46,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean allowLargeIdCaches;
     private final String databaseName;
-    private final boolean initiallyActiveCaches;
+    private final boolean allocationInitiallyEnabled;
     private final PageCacheTracer pageCacheTracer;
 
     /**
@@ -70,9 +70,9 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
      * that generally see very low activity so that the id generators won't benefit from having large ID caches and instead use small ID caches.
      * Functionally this makes no difference, it only affects performance (and memory usage which is the main driver for forcing low activity).
      * @param databaseName name of the database this id generator belongs to
-     * @param initiallyActiveCaches whether to let ID generators start off with active caches. E.g. in a clustered setup
-     * followers should not have activated caches whereas the leader should. In a single-instance setup the caches
-     * should be activated. This state can be changed at runtime using {@link IdGenerator#clearCache(boolean, CursorContext)}.
+     * @param allocationInitiallyEnabled whether to let ID generators start off with allocation enabled. E.g. in a clustered setup
+     * followers should not have activated caches whereas the leader should. In a single-instance setup allocation
+     * should be initially enabled. This state can be changed at runtime using {@link IdGenerator#clearCache(boolean, CursorContext)}.
      */
     public DefaultIdGeneratorFactory(
             FileSystemAbstraction fs,
@@ -80,13 +80,13 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             boolean allowLargeIdCaches,
             PageCacheTracer pageCacheTracer,
             String databaseName,
-            boolean initiallyActiveCaches) {
+            boolean allocationInitiallyEnabled) {
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.allowLargeIdCaches = allowLargeIdCaches;
         this.pageCacheTracer = pageCacheTracer;
         this.databaseName = databaseName;
-        this.initiallyActiveCaches = initiallyActiveCaches;
+        this.allocationInitiallyEnabled = allocationInitiallyEnabled;
     }
 
     @Override
@@ -152,7 +152,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,
-                initiallyActiveCaches);
+                allocationInitiallyEnabled);
     }
 
     @Override
@@ -197,7 +197,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,
-                initiallyActiveCaches);
+                allocationInitiallyEnabled);
         generators.put(idType, generator);
         return generator;
     }
