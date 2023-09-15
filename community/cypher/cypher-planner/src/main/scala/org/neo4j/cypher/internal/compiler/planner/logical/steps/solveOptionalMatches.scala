@@ -26,10 +26,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.cypher.internal.util.bottomUp
 
 trait OptionalSolver {
 
@@ -79,9 +81,25 @@ case object applyOptional extends OptionalSolver {
     (lhs: LogicalPlan) =>
       val lhsSymbols = lhs.availableSymbols
       inner.allResults.iterator.map { inner =>
-        val innerWithFixedArguments = inner.endoRewrite(topDown(
+        val innerWithFixedArguments = inner.endoRewrite(bottomUp(
           Rewriter.lift {
             case llp: LogicalLeafPlan => llp.addArgumentIds(lhsSymbols)
+            case ap: AggregatingPlan  => ap.addGroupingExpressions(lhsSymbols.map(s => s -> s).toMap)
+            case p: LogicalPlan =>
+              AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+                lhsSymbols.subsetOf(p.availableSymbols),
+                s"""RHS of optional must maintain LHS available symbols.
+                   |
+                   |LHS: (available symbols: ${lhsSymbols.map(_.name).mkString("`", "`, `", "`")})
+                   |$lhs
+                   |
+                   |RHS: (available symbols: ${p.availableSymbols.map(_.name).mkString("`", "`, `", "`")})
+                   |$inner
+                   | 
+                   |fails at: $p
+                   |""".stripMargin
+              )
+              p
           },
           stopper = !_.isInstanceOf[LogicalPlan]
         ))

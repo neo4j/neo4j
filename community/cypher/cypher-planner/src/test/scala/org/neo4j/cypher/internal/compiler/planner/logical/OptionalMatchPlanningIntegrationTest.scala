@@ -1074,6 +1074,52 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .build()
   }
 
+  test("should plan optional match with or-leaf-plan correctly") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("kg_Concept", 100)
+      .setLabelCardinality("kg_Dimension", 100)
+      .addNodeIndex("kg_Dimension", Seq("source"), 1.0, 0.1)
+      .addNodeIndex("kg_Dimension", Seq("isPrivate"), 1.0, 0.1)
+      .build()
+
+    val q =
+      """
+        |OPTIONAL MATCH (c:kg_Concept)
+        |WITH "clientOnboardingApp" as key, collect(c)[0] as resolvedConcept
+        |OPTIONAL MATCH (cRelatedDimension:kg_Dimension)
+        |WHERE (cRelatedDimension.source IN ["bla"] OR cRelatedDimension.isPrivate = 4)
+        |WITH key, collect([1]) as cRelated2
+        |RETURN key
+        |""".stripMargin
+
+    planner.plan(q) should equal(
+      planner.planBuilder()
+        .produceResults("key")
+        .aggregation(Seq("key AS key"), Seq("collect([1]) AS cRelated2"))
+        .apply()
+        .|.optional("key", "resolvedConcept")
+        .|.distinct("cRelatedDimension AS cRelatedDimension", "key AS key", "resolvedConcept AS resolvedConcept")
+        .|.union()
+        .|.|.nodeIndexOperator(
+          "cRelatedDimension:kg_Dimension(isPrivate = 4)",
+          indexOrder = IndexOrderNone,
+          argumentIds = Set("key", "resolvedConcept")
+        )
+        .|.nodeIndexOperator(
+          "cRelatedDimension:kg_Dimension(source = 'bla')",
+          indexOrder = IndexOrderNone,
+          argumentIds = Set("key", "resolvedConcept")
+        )
+        .projection("anon_0[0] AS resolvedConcept")
+        .aggregation(Seq("'clientOnboardingApp' AS key"), Seq("collect(c) AS anon_0"))
+        .optional()
+        .nodeByLabelScan("c", "kg_Concept")
+        .build()
+    )
+  }
+
   def containsOuterHashJoin(plan: LogicalPlan): Boolean = {
     plan.folder.treeExists {
       case _: RightOuterHashJoin => true

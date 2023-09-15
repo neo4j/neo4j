@@ -308,6 +308,12 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 sealed trait AggregatingPlan extends LogicalPlan {
   def groupingExpressions: Map[LogicalVariable, Expression]
   def aggregationExpressions: Map[LogicalVariable, Expression]
+
+  /**
+   * Adds grouping expressions to this plan.
+   * If the plan already has grouping expressions with the same keys, they are overridden.
+   */
+  def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan
 }
 
 // Marker interface for all plans that performs updates
@@ -634,6 +640,9 @@ case class Aggregation(
     extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan =
+    copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
 
   override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
 
@@ -1599,6 +1608,9 @@ case class Distinct(
 ) extends LogicalUnaryPlan(idGen) with ProjectingPlan with AggregatingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan =
+    copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
 
   override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
   override val availableSymbols: Set[LogicalVariable] = groupingExpressions.keySet
@@ -2609,6 +2621,9 @@ case class OrderedAggregation(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
+  override def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan =
+    copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
+
   override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
 
   val groupingKeys: Set[LogicalVariable] = groupingExpressions.keySet
@@ -2645,6 +2660,9 @@ case class OrderedDistinct(
   override def aggregationExpressions: Map[LogicalVariable, Expression] = Map.empty
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan =
+    copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
     orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
