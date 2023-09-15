@@ -36,6 +36,8 @@ class VariableTest extends CypherFunSuite {
       override def productArity: Int = ???
 
       override def canEqual(that: Any): Boolean = ???
+
+      override def withPosition(position: InputPosition): LogicalVariable = ???
     }
 
     variable.asCanonicalStringVal should equal(_name)

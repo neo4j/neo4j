@@ -25,6 +25,8 @@ abstract class LogicalVariable extends Expression {
 
   def renameId(newName: String): LogicalVariable
 
+  def withPosition(position: InputPosition): LogicalVariable
+
   def position: InputPosition
 
   override def asCanonicalStringVal: String = name
