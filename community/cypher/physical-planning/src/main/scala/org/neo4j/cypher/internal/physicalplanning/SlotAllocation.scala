@@ -710,7 +710,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         }
         recordArgument(lp)
 
-      case Expand(_, from, _, _, to, relName, ExpandAll) =>
+      case Expand(_, _, _, _, to, relName, ExpandAll) =>
         slots.newLong(relName, nullable, CTRelationship)
         slots.newLong(to, nullable, CTNode)
 
@@ -832,7 +832,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: SetPropertiesFromMap |
         _: RemoveLabels =>
 
-      case ProjectEndpoints(_, _, start, startInScope, end, endInScope, _, _, _) =>
+      case ProjectEndpoints(_, _, _, _, _, _, _, _, _) =>
       // Because of the way the interpreted pipe works, we already have to do the necessary allocations in allocateExpressions(), before the pipeline breaking.
       // Legacy interpreted pipes write directly to the incoming context, so to support pipeline breaking, the slots have to be allocated
       // on the source slot configuration.
