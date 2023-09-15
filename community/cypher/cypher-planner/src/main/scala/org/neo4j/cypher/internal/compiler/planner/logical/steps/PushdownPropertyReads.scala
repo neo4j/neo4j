@@ -259,9 +259,7 @@ case object PushdownPropertyReads {
 
       // Do _not_ pushdown from on top of these plans to the LHS or the RHS
       case _: Union |
-        _: OrderedUnion |
-        // TransactionForeach will clear caches, so it's useless to push down reads
-        _: TransactionForeach =>
+        _: OrderedUnion =>
         val newVariables = plan.availableSymbols
         val outgoingCardinality = effectiveCardinalities(plan.id)
         val outgoingVariableOptima =
@@ -271,6 +269,23 @@ case object PushdownPropertyReads {
           outgoingVariableOptima,
           // Keep any pushdowns identified in either side
           lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+          // Keep no available properties/entities, which allows pushing down on top of these plans
+          Set.empty,
+          Set.empty,
+          outgoingCardinality
+        )
+
+      // TransactionForeach will clear caches, so it's useless to push down reads
+      case _: TransactionForeach =>
+        val newVariables = plan.availableSymbols
+        val outgoingCardinality = effectiveCardinalities(plan.id)
+        val outgoingVariableOptima =
+          newVariables.map(v => (v.name, CardinalityOptimum(outgoingCardinality, plan.id, v.name))).toMap
+        Acc(
+          // Keep only optima of variables introduced in these plans
+          outgoingVariableOptima,
+          // Keep any pushdowns identified in either side (lhsAcc.propertyReadOptima is already included in rhs)
+          rhsAcc.propertyReadOptima,
           // Keep no available properties/entities, which allows pushing down on top of these plans
           Set.empty,
           Set.empty,
