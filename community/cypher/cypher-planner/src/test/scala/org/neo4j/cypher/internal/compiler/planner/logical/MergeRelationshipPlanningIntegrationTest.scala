@@ -199,7 +199,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
 
   test("should plan merge multiple names relationships and reused variable") {
-    val cfg = plannerBuilder().setAllNodesCardinality(100)
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
       .setRelationshipCardinality("()-[:REL]->()", 100)
       .build()
     val plan = cfg.plan("WITH [b IN [1]] AS ignored MERGE (a)-[b:REL]->(c)<-[d:REL]-(e)").stripProduceResults
@@ -219,6 +220,60 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.allNodeScan("e")
       .projection("[b IN [1]] AS ignored")
       .argument()
+      .build()
+  }
+
+  test("should not cache inaccessible variable on the RHS of a MERGE apply plan") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("Role", 100)
+      .setLabelCardinality("Privilege", 100)
+      .setRelationshipCardinality("()-[:GRANTED]->()", 100)
+      .setRelationshipCardinality("(:Role)-[:GRANTED]->(:Privilege)", 100)
+      .setRelationshipCardinality("(:Role)-[:GRANTED]->()", 100)
+      .setRelationshipCardinality("()-[:GRANTED]->(:Privilege)", 100)
+      .build()
+
+    val query =
+      """
+        |MATCH (to:Role {name: $`__internal_toRole`})
+        |MATCH (from:Role {name: $`__internal_fromRole`})-[gFrom:GRANTED]->(p:Privilege)
+        |MERGE (to)-[gTo:GRANTED {immutable: coalesce(gFrom.immutable, false)}]->(p)
+        |RETURN from.name, to.name, count(gTo)
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(
+        Seq("cacheN[from.name] AS `from.name`", "cacheN[to.name] AS `to.name`"),
+        Seq("count(gTo) AS `count(gTo)`")
+      )
+      .apply()
+      .|.merge(
+        relationships = Seq(createRelationship(
+          "gTo",
+          "to",
+          "GRANTED",
+          "p",
+          OUTGOING,
+          Some("{immutable: coalesce(cacheRFromStore[gFrom.immutable], false)}")
+        )),
+        lockNodes = Set("to", "p")
+      )
+      .|.cacheProperties("cacheN[to.name]")
+      .|.filter("gTo.immutable = coalesce(cacheRFromStore[gFrom.immutable], false)")
+      .|.expandInto("(to)-[gTo:GRANTED]->(p)")
+      .|.argument("to", "p", "gFrom")
+      .eager()
+      .cartesianProduct()
+      .|.filter("p:Privilege")
+      .|.expandAll("(from)-[gFrom:GRANTED]->(p)")
+      .|.filter("cacheNFromStore[from.name] = $__internal_fromRole")
+      .|.nodeByLabelScan("from", "Role")
+      .filter("cacheNFromStore[to.name] = $__internal_toRole")
+      .nodeByLabelScan("to", "Role")
       .build()
   }
 }

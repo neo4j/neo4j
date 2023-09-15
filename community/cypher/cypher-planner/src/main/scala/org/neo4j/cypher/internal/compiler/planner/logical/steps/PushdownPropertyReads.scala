@@ -311,8 +311,18 @@ case object PushdownPropertyReads {
         )
         foldSingleChildPlan(effectiveCardinalities, semanticTable)(mergedAcc, plan)
 
-      case _: ApplyPlan =>
-        foldSingleChildPlan(effectiveCardinalities, semanticTable)(rhsAcc, plan)
+      case ap: ApplyPlan =>
+        // Let's only keep a cardinality optimum from the RHS if the variable is actually available
+        // on the RHS. Otherwise let's check the LHS, or discard the variable optimum.
+        val correctedOptima = rhsAcc.variableOptima.foldLeft(Map.empty[String, CardinalityOptimum]) {
+          case (acc, (varName, rhsOptimum)) =>
+            if (ap.right.availableSymbols.map(_.name).contains(varName)) acc + (varName -> rhsOptimum)
+            else if (lhsAcc.variableOptima.contains(varName)) acc + (varName -> lhsAcc.variableOptima(varName))
+            else acc
+        }
+
+        val mergedAcc = rhsAcc.copy(variableOptima = correctedOptima)
+        foldSingleChildPlan(effectiveCardinalities, semanticTable)(mergedAcc, plan)
 
       case _ =>
         val mergedVariableOptima =
