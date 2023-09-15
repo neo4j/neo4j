@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -142,7 +141,6 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
-import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ApplyPlans
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
@@ -1247,30 +1245,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         }
       case (key, _) =>
         outgoing.newReference(key, nullable = true, CTAny)
-    }
-  }
-
-  private def allocateShortestRelationshipPattern(
-    shortestRelationshipPattern: ShortestRelationshipPattern,
-    slots: SlotConfiguration,
-    nullable: Boolean,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ) = {
-    val maybePathName = shortestRelationshipPattern.name
-    val part = shortestRelationshipPattern.expr
-    val pathName = maybePathName.getOrElse(varFor(anonymousVariableNameGenerator.nextName))
-    val rel = part.element match {
-      case RelationshipChain(_, relationshipPattern, _) =>
-        relationshipPattern
-      case _ =>
-        throw new IllegalStateException("This should be caught during semantic checking")
-    }
-    val relIteratorName = rel.variable.map(_.name)
-
-    // Allocate slots
-    slots.newReference(pathName, nullable, CTPath)
-    if (relIteratorName.isDefined) {
-      slots.newReference(relIteratorName.get, nullable, CTList(CTRelationship))
     }
   }
 
