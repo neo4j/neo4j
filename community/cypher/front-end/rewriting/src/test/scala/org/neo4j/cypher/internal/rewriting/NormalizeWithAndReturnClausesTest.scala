@@ -372,11 +372,44 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     )
   }
 
+  test("should rewrite even if contains aliased variable if it not a redefinition") {
+    assertRewrite(
+      """MATCH (n)
+        |RETURN n AS n, n.prop AS `n.prop`
+        |ORDER BY n.foo, n.prop * 2 DESC
+      """.stripMargin,
+      """MATCH (n)
+        |RETURN n AS n, n.prop AS `n.prop`
+        |ORDER BY n.foo, `n.prop` * 2 DESC
+      """.stripMargin
+    )
+  }
+
   test("does not introduce aliases for ORDER BY with existing alias") {
     assertIsNotRewritten(
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY prop
         |RETURN prop AS prop
+      """.stripMargin
+    )
+  }
+
+  test("does not rewrite aliases which may be redefined in same WITH") {
+    assertIsNotRewritten(
+      """WITH -0.5 as pa0
+        |WITH 1 AS pa0, pa0 as pa1
+        |WHERE -1 = pa0
+        |RETURN pa0 AS pa3
+      """.stripMargin
+    )
+  }
+
+  test("does not rewrite aliases which may be redefined even when wrapped with a negation") {
+    assertIsNotRewritten(
+      """WITH -0.5 as pa0
+        |WITH 1 AS pa0, -pa0 as pa1
+        |WHERE -1 = -pa0
+        |RETURN pa0 AS pa3
       """.stripMargin
     )
   }

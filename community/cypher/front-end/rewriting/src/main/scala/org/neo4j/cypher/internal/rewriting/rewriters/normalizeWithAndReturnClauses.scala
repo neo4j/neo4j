@@ -250,7 +250,7 @@ case class normalizeWithAndReturnClauses(
           Rewriter.lift {
             case subExpression: Expression =>
               existingAliases.get(subExpression) match {
-                case Some(subAlias) if !existingAliases.valuesIterator.contains(subExpression) =>
+                case Some(subAlias) if !potentiallyRedefined(subExpression, existingAliases) =>
                   subAlias.copyId.withPosition(subExpression.position)
                 case _ => subExpression
               }
@@ -259,6 +259,27 @@ case class normalizeWithAndReturnClauses(
         ))
         newExpression
     }
+  }
+
+  /**
+   * Check that the alias is also not referenced a second time in the existing aliases which
+   * would cause a potential error in re-referencing it.
+   * e.g. WITH 2 AS a, WITH 4 as a, a AS b WHERE 4 = a ...
+   * The `4 = a` should evaluate to true, but without this check, it would be rewritten to:
+   * WITH 2 AS a, WITH 4 as a, a AS b WHERE 4 = b ... which is now false.
+   * If the alias is not actually a redefinition, ignore it: e.g. n AS n is not a redefinition.
+  */
+  private def potentiallyRedefined(
+    expression: Expression,
+    existingAliases: Map[Expression, LogicalVariable]
+  ): Boolean = {
+    existingAliases.valuesIterator.contains(expression) ||
+    existingAliases.filter {
+      case (expression: Variable, variable: Variable) => expression.name != variable.name
+      case _                                          => true
+    }.valuesIterator.exists(alias =>
+      expression.folder.findAllByClass[LogicalVariable].contains(alias)
+    )
   }
 }
 
