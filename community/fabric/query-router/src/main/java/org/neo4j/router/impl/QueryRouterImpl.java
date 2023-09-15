@@ -144,7 +144,7 @@ public class QueryRouterImpl implements QueryRouter {
         statementLifecycle.startProcessing();
         try {
             var preparsedInfo = queryPreParsedInfoParser.parseQuery(query);
-            var target = context.preParsedInfo().preParsedInfo(preparsedInfo);
+            var target = context.preParsedInfo().target(preparsedInfo);
             var location = context.locationService().locationOf(target);
             var databaseTransaction = context.transactionFor(location);
             statementLifecycle.doneRouterProcessing(

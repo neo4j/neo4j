@@ -58,6 +58,13 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
     }
 
     @Override
+    public NormalizedDatabaseName fullName() {
+        var namespace = namespace().map(ns -> ns.name() + ".").orElse("");
+        var name = alias().name();
+        return new NormalizedDatabaseName(namespace + name);
+    }
+
+    @Override
     public boolean isComposite() {
         return false;
     }

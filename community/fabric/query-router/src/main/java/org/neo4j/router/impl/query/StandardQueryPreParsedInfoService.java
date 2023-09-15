@@ -20,6 +20,7 @@
 package org.neo4j.router.impl.query;
 
 import org.neo4j.cypher.internal.ast.CatalogName;
+import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.query.DatabaseReferenceResolver;
 import org.neo4j.router.query.QueryPreParsedInfoParser;
@@ -35,11 +36,19 @@ public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInf
     }
 
     @Override
-    public DatabaseReference preParsedInfo(QueryPreParsedInfoParser.PreParsedInfo preParsedInfo) {
+    public DatabaseReference target(QueryPreParsedInfoParser.PreParsedInfo preParsedInfo) {
         var parsedTarget = preParsedInfo
                 .catalogName()
                 .map(CatalogName::qualifiedNameString)
                 .map(databaseReferenceResolver::resolve);
+        if (parsedTarget
+                .filter(target -> target.isComposite() || !target.isPrimary())
+                .isPresent()) {
+            var message = "Accessing a composite database and its constituents is only allowed when connected to it. "
+                    + "Attempted to access '%s' while connected to '%s'";
+            throw new InvalidSemanticsException(
+                    String.format(message, parsedTarget.get().toPrettyString(), sessionDatabase.toPrettyString()));
+        }
         return parsedTarget.orElse(sessionDatabase);
     }
 }

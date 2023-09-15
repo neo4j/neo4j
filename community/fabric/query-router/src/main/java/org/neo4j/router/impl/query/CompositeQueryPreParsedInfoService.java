@@ -29,7 +29,7 @@ public class CompositeQueryPreParsedInfoService extends AbstractQueryPreParsedIn
     }
 
     @Override
-    public DatabaseReference preParsedInfo(QueryPreParsedInfoParser.PreParsedInfo preparsedInfo) {
+    public DatabaseReference target(QueryPreParsedInfoParser.PreParsedInfo preparsedInfo) {
         return sessionDatabase;
     }
 }

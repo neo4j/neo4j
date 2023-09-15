@@ -19,6 +19,7 @@
  */
 package org.neo4j.router.impl.query;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -40,7 +41,17 @@ public class DefaultDatabaseReferenceResolver implements DatabaseReferenceResolv
 
     @Override
     public DatabaseReference resolve(NormalizedDatabaseName name) {
-        return repository.getByAlias(name).orElseThrow(databaseNotFound(name));
+        return repository
+                .getByAlias(name)
+                .or(() -> getCompositeConstituentAlias(name))
+                .orElseThrow(databaseNotFound(name));
+    }
+
+    private Optional<DatabaseReference> getCompositeConstituentAlias(NormalizedDatabaseName name) {
+        return repository.getCompositeDatabaseReferences().stream()
+                .flatMap(comp -> comp.constituents().stream())
+                .filter(constituent -> constituent.fullName().equals(name))
+                .findFirst();
     }
 
     private static Supplier<DatabaseNotFoundException> databaseNotFound(NormalizedDatabaseName databaseNameRaw) {

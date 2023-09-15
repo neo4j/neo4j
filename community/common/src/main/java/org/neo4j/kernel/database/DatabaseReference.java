@@ -51,6 +51,11 @@ public interface DatabaseReference extends Comparable<DatabaseReference> {
     String toPrettyString();
 
     /**
+     * @return the full normalized name of the dataspace, including the namespace.
+     */
+    NormalizedDatabaseName fullName();
+
+    /**
      * @return true if this reference points to a Composite database, otherwise false
      */
     boolean isComposite();
