@@ -208,6 +208,10 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
                     if (tracer != null) {
                         tracer.dbHit();
                     }
+                    if (group.getType() > selection.highestType()) {
+                        // The groups are ordered, no need to keep looking if we are past the end of selection
+                        return;
+                    }
                     if (!selection.test(group.getType())) {
                         // This type isn't part of this selection, so skip the whole group
                         continue;

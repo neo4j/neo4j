@@ -40,6 +40,7 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -70,6 +71,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -84,6 +86,9 @@ public class RecordRelationshipTraversalCursorTest {
     protected static final int TYPE1 = 0;
     protected static final int TYPE2 = 1;
     protected static final int TYPE3 = 2;
+    protected static final int TYPE4 = 3;
+    protected static final int TYPE5 = 4;
+    protected static final int TYPE6 = 5;
 
     @Inject
     protected PageCache pageCache;
@@ -285,6 +290,57 @@ public class RecordRelationshipTraversalCursorTest {
     }
 
     @Test
+    void shouldStopLookingForGroupsWhenPastEndOfSelection() {
+        // given
+        long reference = createRelationshipStructure(
+                true,
+                concatArrays(
+                        homogenousRelationships(4, TYPE1, OUTGOING),
+                        homogenousRelationships(1, TYPE1, LOOP),
+                        homogenousRelationships(2, TYPE3, OUTGOING),
+                        homogenousRelationships(3, TYPE3, INCOMING),
+                        homogenousRelationships(3, TYPE4, INCOMING),
+                        homogenousRelationships(1, TYPE4, OUTGOING),
+                        homogenousRelationships(1, TYPE5, LOOP),
+                        homogenousRelationships(2, TYPE6, OUTGOING)));
+
+        try (RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor()) {
+            AtomicInteger dbHits = new AtomicInteger();
+            ReadTracer readTracer = createDbHitReadTracer(dbHits);
+            cursor.setTracer(readTracer);
+            // === TYPE1+TYPE3 ===
+            {
+                int[] types = {TYPE1, TYPE3};
+                cursor.init(FIRST_OWNING_NODE, reference, selection(types, Direction.OUTGOING));
+                assertRelationships(cursor, 7, Direction.OUTGOING, types);
+                // Should have visited all groups up to 3 and the one after - 1, 3 and 4 = 3
+                assertNbrGroupsVisited(dbHits, 3);
+                cursor.init(FIRST_OWNING_NODE, reference, selection(types, Direction.INCOMING));
+                assertRelationships(cursor, 4, Direction.INCOMING, types);
+                assertNbrGroupsVisited(dbHits, 3);
+                cursor.init(FIRST_OWNING_NODE, reference, selection(types, Direction.BOTH));
+                assertRelationships(cursor, 10, Direction.BOTH, types);
+                assertNbrGroupsVisited(dbHits, 3);
+            }
+
+            // === TYPE1+TYPE4 ===
+            {
+                int[] types = {TYPE1, TYPE4};
+                cursor.init(FIRST_OWNING_NODE, reference, selection(types, Direction.OUTGOING));
+                assertRelationships(cursor, 6, Direction.OUTGOING, types);
+                // Should have visited all groups up to 4 and the one after - 1, 3, 4 and 5 = 4
+                assertNbrGroupsVisited(dbHits, 4);
+                cursor.init(FIRST_OWNING_NODE, reference, selection(types, Direction.INCOMING));
+                assertRelationships(cursor, 4, Direction.INCOMING, types);
+                assertNbrGroupsVisited(dbHits, 4);
+                cursor.init(FIRST_OWNING_NODE, reference, selection(types, Direction.BOTH));
+                assertRelationships(cursor, 9, Direction.BOTH, types);
+                assertNbrGroupsVisited(dbHits, 4);
+            }
+        }
+    }
+
+    @Test
     void shouldHaveCorrectEntityReferenceAfterLastDeleted() {
         // given
         var count = 4;
@@ -329,6 +385,11 @@ public class RecordRelationshipTraversalCursorTest {
         }
         assertThat(found).isEqualTo(count);
         assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+    }
+
+    private static void assertNbrGroupsVisited(AtomicInteger dbHits, int nbrExpectedGroupsVisited) {
+        assertThat(dbHits.get()).isEqualTo(nbrExpectedGroupsVisited);
+        dbHits.set(0);
     }
 
     protected void unUseRecord(long recordId) {
@@ -447,6 +508,34 @@ public class RecordRelationshipTraversalCursorTest {
         RelationshipSpec[] specs = new RelationshipSpec[count];
         Arrays.fill(specs, new RelationshipSpec(type, direction));
         return specs;
+    }
+
+    private static ReadTracer createDbHitReadTracer(AtomicInteger dbHits) {
+        return new ReadTracer() {
+
+            @Override
+            public void onNode(long nodeReference) {}
+
+            @Override
+            public void onAllNodesScan() {}
+
+            @Override
+            public void onRelationship(long relationshipReference) {}
+
+            @Override
+            public void onProperty(int propertyKey) {}
+
+            @Override
+            public void onHasLabel(int label) {}
+
+            @Override
+            public void onHasLabel() {}
+
+            @Override
+            public void dbHit() {
+                dbHits.incrementAndGet();
+            }
+        };
     }
 
     protected static class RelationshipSpec implements Comparable<RelationshipSpec> {
