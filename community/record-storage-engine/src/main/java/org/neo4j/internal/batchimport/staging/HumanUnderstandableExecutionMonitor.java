@@ -169,6 +169,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
     public void start(StageExecution execution) {
         // Divide into 4 progress stages:
         if (execution.getStageName().equals(DataImporter.NODE_IMPORT_NAME)) {
+            // Initialize lastReportTime since we are on the first stage
+            lastReportTime = currentTimeMillis();
             // Import nodes:
             // - import nodes
             // - prepare id mapper
@@ -210,7 +212,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
             progress = 0;
             newInternalStage = true;
         }
-        lastReportTime = currentTimeMillis();
     }
 
     private void endPrevious() {
