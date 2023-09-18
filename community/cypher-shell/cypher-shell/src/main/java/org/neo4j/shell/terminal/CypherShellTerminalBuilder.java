@@ -24,8 +24,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.function.Supplier;
+import org.jline.keymap.KeyMap;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.Macro;
+import org.jline.reader.Reference;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
@@ -146,10 +149,39 @@ public class CypherShellTerminalBuilder {
                 .appName("Cypher Shell")
                 .build();
 
+        bindKeyPadKeys(reader);
+
         return new JlineTerminal(reader, isInteractive, printer, simplePromptSupplier);
     }
 
     public static CypherShellTerminalBuilder terminalBuilder() {
         return new CypherShellTerminalBuilder();
+    }
+
+    // Extra key bindings required to make putty work
+    // (https://github.com/jline/jline3/issues/160#issuecomment-328866357).
+    private static void bindKeyPadKeys(final LineReader lineReader) {
+        final var keyMap = lineReader.getKeyMaps().get(LineReader.MAIN); // 0 . Enter
+        keyMap.bind(new Macro(KeyMap.translate(".")), KeyMap.translate("^[On")); // .
+        keyMap.bind(new Macro(KeyMap.translate("^M")), KeyMap.translate("^[OM")); // Enter
+
+        keyMap.bind(new Macro(KeyMap.translate("0")), KeyMap.translate("^[Op")); // 0
+        keyMap.bind(new Macro(KeyMap.translate("1")), KeyMap.translate("^[Oq")); // 1
+        keyMap.bind(new Macro(KeyMap.translate("2")), KeyMap.translate("^[Or")); // 2
+        keyMap.bind(new Macro(KeyMap.translate("3")), KeyMap.translate("^[Os")); // 3
+        keyMap.bind(new Macro(KeyMap.translate("4")), KeyMap.translate("^[Ot")); // 4
+        keyMap.bind(new Macro(KeyMap.translate("5")), KeyMap.translate("^[Ou")); // 5
+        keyMap.bind(new Macro(KeyMap.translate("6")), KeyMap.translate("^[Ov")); // 6
+        keyMap.bind(new Macro(KeyMap.translate("7")), KeyMap.translate("^[Ow")); // 7
+        keyMap.bind(new Macro(KeyMap.translate("8")), KeyMap.translate("^[Ox")); // 8
+        keyMap.bind(new Macro(KeyMap.translate("9")), KeyMap.translate("^[Oy")); // 9
+
+        keyMap.bind(new Macro(KeyMap.translate("+")), KeyMap.translate("^[Ol")); // +
+        keyMap.bind(new Macro(KeyMap.translate("-")), KeyMap.translate("^[OS")); // -
+        keyMap.bind(new Macro(KeyMap.translate("*")), KeyMap.translate("^[OR")); // *
+        keyMap.bind(new Macro(KeyMap.translate("/")), KeyMap.translate("^[OQ")); // /
+
+        keyMap.bind(new Reference(LineReader.BEGINNING_OF_LINE), KeyMap.translate("\033[1~")); // Home
+        keyMap.bind(new Reference(LineReader.END_OF_LINE), KeyMap.translate("\033[4~")); // End
     }
 }
