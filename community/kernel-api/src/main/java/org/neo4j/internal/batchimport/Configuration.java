@@ -143,6 +143,14 @@ public interface Configuration {
         return IndexConfig.DEFAULT;
     }
 
+    /**
+     * @return whether to defragment internal stores as part of the import. This type of defragmentation does not affect
+     * entity IDs.
+     */
+    default boolean defragmentInternalStores() {
+        return true;
+    }
+
     Configuration DEFAULT = new Configuration() {};
 
     /**
@@ -217,6 +225,11 @@ public interface Configuration {
         @Override
         public long maxOffHeapMemory() {
             return defaults.maxOffHeapMemory();
+        }
+
+        @Override
+        public boolean defragmentInternalStores() {
+            return defaults.defragmentInternalStores();
         }
     }
 
