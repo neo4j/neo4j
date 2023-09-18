@@ -1329,4 +1329,26 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
     // then
     runtimeResult should beColumns("x").withRows(rowCount(size))
   }
+
+  test("should only evaluate rand() once") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("number")
+      .nonFuseable()
+      .unwind("[1,2,3,4,5,6] AS i2")
+      .projection("rand() AS number")
+      .unwind("[1] AS i1")
+      .argument()
+      .build()
+
+    val result = consume(execute(logicalQuery, runtime))
+
+    // then
+    // should use one and only one random number
+    result should have size 6
+    result.map(_(0)).toSet should have size 1
+
+  }
+
 }
