@@ -22,20 +22,20 @@ package org.neo4j.internal.helpers;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class DefaultTimeoutStrategy implements TimeoutStrategy {
-    public static DefaultTimeoutStrategy exponential(long initialTime, long upperBoundTime, TimeUnit timeUnit) {
-        return new DefaultTimeoutStrategy(initialTime, upperBoundTime, timeUnit, i -> i * 2);
+public class DefaultIntervalStrategy implements IntervalStrategy {
+    public static IntervalStrategy exponential(long initialTime, long upperBoundTime, TimeUnit timeUnit) {
+        return new DefaultIntervalStrategy(initialTime, upperBoundTime, timeUnit, i -> i * 2);
     }
 
-    public static DefaultTimeoutStrategy constant(long initialTime, TimeUnit timeUnit) {
-        return new DefaultTimeoutStrategy(initialTime, initialTime, timeUnit, i -> i);
+    public static IntervalStrategy constant(long initialTime, TimeUnit timeUnit) {
+        return new DefaultIntervalStrategy(initialTime, initialTime, timeUnit, i -> i);
     }
 
     private final Function<Long, Long> increasingFunction;
     private final long startTimeMillis;
     private final long upperBoundTime;
 
-    public DefaultTimeoutStrategy(
+    public DefaultIntervalStrategy(
             long initialTime, long upperBoundTime, TimeUnit timeUnit, Function<Long, Long> increasingFunction) {
         if (initialTime > increasingFunction.apply(initialTime)) {
             throw new IllegalArgumentException("passed function can't decrease");
@@ -49,8 +49,8 @@ public class DefaultTimeoutStrategy implements TimeoutStrategy {
     }
 
     @Override
-    public Timeout newTimeout() {
-        return new Timeout() {
+    public IntervalProvider newIntervalProvider() {
+        return new IntervalProvider() {
             private long currentTimeMillis = startTimeMillis;
 
             @Override

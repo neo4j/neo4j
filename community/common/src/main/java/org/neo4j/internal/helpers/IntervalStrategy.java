@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.helpers;
 
-public interface TimeoutStrategy {
-    Timeout newTimeout();
+/**
+ * Factory for getting an interval that might vary over various invocations.
+ */
+public interface IntervalStrategy {
+    IntervalProvider newIntervalProvider();
 
-    interface Timeout {
+    interface IntervalProvider {
         long getMillis();
 
         void increment();

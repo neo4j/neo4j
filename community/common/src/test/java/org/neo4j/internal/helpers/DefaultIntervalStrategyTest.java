@@ -25,23 +25,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
-class DefaultTimeoutStrategyTest {
+class DefaultIntervalStrategyTest {
     @Test
     void shouldFailIfPassedFunctionIsNotIncreasing() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new DefaultTimeoutStrategy(0, 100, TimeUnit.MILLISECONDS, i -> i - 1));
+                () -> new DefaultIntervalStrategy(0, 100, TimeUnit.MILLISECONDS, i -> i - 1));
     }
 
     @Test
     void shouldGetAndIncrementCorrectly() {
-        final var strategy = new DefaultTimeoutStrategy(0, 100, TimeUnit.MILLISECONDS, i -> i + 1);
-        final var timeout = strategy.newTimeout();
-        assertEquals(0, timeout.getAndIncrement());
-        assertEquals(1, timeout.getAndIncrement());
-        assertEquals(2, timeout.getMillis());
+        final var strategy = new DefaultIntervalStrategy(0, 100, TimeUnit.MILLISECONDS, i -> i + 1);
+        final var backoff = strategy.newIntervalProvider();
+        assertEquals(0, backoff.getAndIncrement());
+        assertEquals(1, backoff.getAndIncrement());
+        assertEquals(2, backoff.getMillis());
 
-        final var timeout1 = strategy.newTimeout();
-        assertEquals(0, timeout1.getMillis());
+        final var backoff1 = strategy.newIntervalProvider();
+        assertEquals(0, backoff1.getMillis());
     }
 }

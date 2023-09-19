@@ -21,41 +21,42 @@ package org.neo4j.internal.helpers;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.DefaultTimeoutStrategy.exponential;
+import static org.neo4j.internal.helpers.DefaultIntervalStrategy.exponential;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.IntervalStrategy.IntervalProvider;
 
-class ExponentialBackoffStrategyTest {
+class ExponentialIntervalStrategyTest {
     private static final int NUMBER_OF_ACCESSES = 5;
 
     @Test
     void shouldDoubleEachTime() {
         // given
-        TimeoutStrategy strategy = exponential(1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS);
-        TimeoutStrategy.Timeout timeout = strategy.newTimeout();
+        IntervalStrategy strategy = exponential(1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS);
+        IntervalProvider backoff = strategy.newIntervalProvider();
 
         // when
         for (int i = 0; i < NUMBER_OF_ACCESSES; i++) {
-            timeout.increment();
+            backoff.increment();
         }
 
         // then
-        assertEquals(1 << NUMBER_OF_ACCESSES, timeout.getMillis());
+        assertEquals(1 << NUMBER_OF_ACCESSES, backoff.getMillis());
     }
 
     @Test
     void shouldProvidePreviousTimeout() {
         // given
-        TimeoutStrategy strategy = exponential(1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS);
-        TimeoutStrategy.Timeout timeout = strategy.newTimeout();
+        IntervalStrategy strategy = exponential(1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS);
+        IntervalProvider backoff = strategy.newIntervalProvider();
 
         // when
         for (int i = 0; i < NUMBER_OF_ACCESSES; i++) {
-            timeout.increment();
+            backoff.increment();
         }
 
         // then
-        assertEquals(1 << NUMBER_OF_ACCESSES, timeout.getMillis());
+        assertEquals(1 << NUMBER_OF_ACCESSES, backoff.getMillis());
     }
 
     @Test
@@ -63,22 +64,22 @@ class ExponentialBackoffStrategyTest {
         // given
         long upperBound = (1 << NUMBER_OF_ACCESSES) - 5;
 
-        TimeoutStrategy strategy = exponential(1, upperBound, MILLISECONDS);
-        TimeoutStrategy.Timeout timeout = strategy.newTimeout();
+        IntervalStrategy strategy = exponential(1, upperBound, MILLISECONDS);
+        IntervalProvider backoff = strategy.newIntervalProvider();
 
         // when
         for (int i = 0; i < NUMBER_OF_ACCESSES; i++) {
-            timeout.increment();
+            backoff.increment();
         }
 
-        assertEquals(upperBound, timeout.getMillis());
+        assertEquals(upperBound, backoff.getMillis());
 
         // additional increments
-        timeout.increment();
-        timeout.increment();
-        timeout.increment();
+        backoff.increment();
+        backoff.increment();
+        backoff.increment();
 
         // then
-        assertEquals(upperBound, timeout.getMillis());
+        assertEquals(upperBound, backoff.getMillis());
     }
 }
