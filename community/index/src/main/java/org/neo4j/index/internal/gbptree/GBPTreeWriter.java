@@ -144,7 +144,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             stableGeneration = stableGeneration(generation);
             unstableGeneration = unstableGeneration(generation);
             this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
-            root = rootExchange.getRoot();
+            root = rootExchange.getRoot(cursorContext);
             success = true;
         } catch (Throwable e) {
             exceptionMessageAppender.accept(e);
@@ -262,7 +262,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         while (true) {
             coordination.beforeTraversingToChild(root.id(), 0);
             // check again, after locked
-            Root rootAfterLock = rootExchange.getRoot();
+            Root rootAfterLock = rootExchange.getRoot(cursorContext);
             if (!rootAfterLock.equals(root)) {
                 // There was a root change in between getting the root id and locking it
                 coordination.reset();
@@ -286,7 +286,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
 
     private void setRoot(long rootPointer) throws IOException {
         long rootId = GenerationSafePointerPair.pointer(rootPointer);
-        rootExchange.setRoot(new Root(rootId, unstableGeneration));
+        rootExchange.setRoot(new Root(rootId, unstableGeneration), cursorContext);
     }
 
     @Override

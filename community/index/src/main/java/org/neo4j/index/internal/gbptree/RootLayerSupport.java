@@ -116,7 +116,7 @@ class RootLayerSupport {
             throws IOException {
         return ((SeekCursor<K, V>) seeker)
                 .initialize(
-                        c -> rootSupplier.getRoot().goTo(c),
+                        (cursor, context) -> rootSupplier.getRoot(context).goTo(cursor),
                         new TripCountingRootCatchup(rootSupplier),
                         fromInclusive,
                         toExclusive,

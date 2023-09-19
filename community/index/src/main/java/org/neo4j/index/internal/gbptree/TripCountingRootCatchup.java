@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.util.FeatureToggles;
 
 /**
@@ -55,10 +56,10 @@ public class TripCountingRootCatchup implements RootCatchup {
     }
 
     @Override
-    public Root catchupFrom(long fromId) {
+    public Root catchupFrom(long fromId, CursorContext context) {
         updateTripCount(fromId);
         assertTripCount();
-        return rootSupplier.getRoot();
+        return rootSupplier.getRoot(context);
     }
 
     private void updateTripCount(long fromId) {

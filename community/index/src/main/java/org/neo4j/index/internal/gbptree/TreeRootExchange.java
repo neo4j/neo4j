@@ -20,10 +20,11 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Gets notified when a root changes, be it due to split/merge or on new successor.
  */
 public interface TreeRootExchange extends RootSupplier {
-    void setRoot(Root root) throws IOException;
+    void setRoot(Root root, CursorContext context) throws IOException;
 }

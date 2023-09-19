@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.io.pagecache.context.CursorContext;
+
 interface RootSupplier {
-    Root getRoot();
+    Root getRoot(CursorContext context);
 }

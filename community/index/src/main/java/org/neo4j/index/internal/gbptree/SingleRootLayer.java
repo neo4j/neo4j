@@ -59,14 +59,14 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
 
     @Override
     public void initializeAfterCreation(Root firstRoot, CursorContext cursorContext) throws IOException {
-        setRoot(firstRoot);
+        setRoot(firstRoot, cursorContext);
         support.writeMeta(null, layout, cursorContext, treeNodeSelector);
         support.initializeNewRoot(root, leafNode, DATA_LAYER_FLAG, cursorContext);
     }
 
     @Override
     void initialize(Root root, CursorContext cursorContext) throws IOException {
-        setRoot(root);
+        setRoot(root, cursorContext);
         support.readMeta(cursorContext).verify(layout, null, treeNodeSelector);
     }
 

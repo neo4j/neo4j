@@ -59,7 +59,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
     private static long unstableGeneration = stableGeneration + 1;
     private static final LongSupplier generationSupplier =
             () -> Generation.generation(stableGeneration, unstableGeneration);
-    private static final RootCatchup failingRootCatchup = id -> {
+    private static final RootCatchup failingRootCatchup = (id, context) -> {
         throw new AssertionError("Should not happen");
     };
     private static final Consumer<Throwable> exceptionDecorator = t -> {};
@@ -933,7 +933,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         utilCursor.putByte(TreeNodeUtil.BYTE_POS_NODE_TYPE, TreeNodeUtil.NODE_TYPE_FREE_LIST_NODE);
 
         // when
-        RootCatchup tripCountingRootCatchup = new TripCountingRootCatchup(() -> new Root(rootId, rootGeneration));
+        RootCatchup tripCountingRootCatchup = new TripCountingRootCatchup(context -> new Root(rootId, rootGeneration));
         assertThrows(TreeInconsistencyException.class, () -> {
             try (SeekCursor<KEY, VALUE> seek =
                     seekCursor(0, 0, cursor, stableGeneration, unstableGeneration, tripCountingRootCatchup)) {
@@ -1740,7 +1740,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         long id = cursor.getCurrentPageId();
         long generation = TreeNodeUtil.generation(cursor);
         MutableBoolean triggered = new MutableBoolean(false);
-        RootCatchup rootCatchup = fromId -> {
+        RootCatchup rootCatchup = (fromId, context) -> {
             triggered.setTrue();
             return new Root(id, generation);
         };
@@ -1789,7 +1789,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         internal.setChildAt(cursor, leftChild, 0, stableGeneration, unstableGeneration);
 
         // a root catchup that records usage
-        RootCatchup rootCatchup = fromId -> {
+        RootCatchup rootCatchup = (fromId, context) -> {
             triggered.setTrue();
 
             // and set child generation to match pointer
@@ -1833,7 +1833,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         leaf.initialize(cursor, DATA_LAYER_FLAG, stableGeneration, unstableGeneration);
         cursor.next();
 
-        RootCatchup rootCatchup = fromId -> {
+        RootCatchup rootCatchup = (fromId, context) -> {
             // Use right child as new start over root to terminate test
             cursor.next(rightChild);
             triggered.setTrue();
@@ -2422,6 +2422,6 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
     }
 
     private RootInitializer rootInitializer(long generation) {
-        return c -> generation;
+        return (cursor, context) -> generation;
     }
 }

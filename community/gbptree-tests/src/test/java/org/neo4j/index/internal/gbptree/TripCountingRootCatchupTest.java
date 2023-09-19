@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 class TripCountingRootCatchupTest {
     @Test
@@ -32,7 +33,7 @@ class TripCountingRootCatchupTest {
 
         assertThrows(TreeInconsistencyException.class, () -> {
             for (int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT; i++) {
-                tripCountingRootCatchup.catchupFrom(10);
+                tripCountingRootCatchup.catchupFrom(10, CursorContext.NULL_CONTEXT);
             }
         });
     }
@@ -44,7 +45,7 @@ class TripCountingRootCatchupTest {
 
         // When
         for (int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT * 4; i++) {
-            tripCountingRootCatchup.catchupFrom(i % 2);
+            tripCountingRootCatchup.catchupFrom(i % 2, CursorContext.NULL_CONTEXT);
         }
 
         // then this should be fine
@@ -54,11 +55,11 @@ class TripCountingRootCatchupTest {
     void mustReturnRootUsingProvidedSupplier() {
         // given
         Root expectedRoot = new Root(1, 2);
-        RootSupplier rootSupplier = () -> expectedRoot;
+        RootSupplier rootSupplier = context -> expectedRoot;
         TripCountingRootCatchup tripCountingRootCatchup = new TripCountingRootCatchup(rootSupplier);
 
         // when
-        Root actualRoot = tripCountingRootCatchup.catchupFrom(10);
+        Root actualRoot = tripCountingRootCatchup.catchupFrom(10, CursorContext.NULL_CONTEXT);
 
         // then
         assertSame(expectedRoot, actualRoot);
@@ -66,6 +67,6 @@ class TripCountingRootCatchupTest {
 
     private static TripCountingRootCatchup getTripCounter() {
         Root root = new Root(1, 2);
-        return new TripCountingRootCatchup(() -> root);
+        return new TripCountingRootCatchup(c -> root);
     }
 }

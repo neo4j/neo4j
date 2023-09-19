@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Internal means of placing a cursor at the root of the tree.
@@ -33,5 +34,5 @@ interface RootInitializer {
      * @return the generation of the root that the cursor was placed on.
      * @throws IOException on I/O error moving the cursor to that page.
      */
-    long goToRoot(PageCursor cursor) throws IOException;
+    long goToRoot(PageCursor cursor, CursorContext context) throws IOException;
 }

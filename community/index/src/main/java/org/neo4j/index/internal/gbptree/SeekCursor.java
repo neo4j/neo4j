@@ -474,7 +474,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             throws IOException {
         Preconditions.checkState(!closed, "Seeker already closed");
         this.rootCatchup = rootCatchup;
-        this.lastFollowedPointerGeneration = rootInitializer.goToRoot(cursor);
+        this.lastFollowedPointerGeneration = rootInitializer.goToRoot(cursor, cursorContext);
         long generation = generationSupplier.getAsLong();
         this.stableGeneration = Generation.stableGeneration(generation);
         this.unstableGeneration = Generation.unstableGeneration(generation);
@@ -1129,7 +1129,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
      */
     private void prepareToStartFromRoot() throws IOException {
         generationCatchup();
-        Root root = rootCatchup.catchupFrom(cursor.getCurrentPageId());
+        Root root = rootCatchup.catchupFrom(cursor.getCurrentPageId(), cursorContext);
         lastFollowedPointerGeneration = root.goTo(cursor);
         if (!first) {
             layout.copyKey(prevKey, fromInclusive);

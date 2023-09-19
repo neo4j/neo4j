@@ -115,12 +115,12 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
      * directly, which moves the page cursor to the id and returns the generation.
      */
     @Override
-    public Root getRoot() {
+    public Root getRoot(CursorContext context) {
         return root;
     }
 
     @Override
-    public void setRoot(Root root) {
+    public void setRoot(Root root, CursorContext context) {
         if (rootLatch != null) {
             rootLatch.deref();
             rootLatch = null;

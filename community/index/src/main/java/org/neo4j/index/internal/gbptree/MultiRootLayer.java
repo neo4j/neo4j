@@ -65,7 +65,6 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     private static final int BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT =
             16 /*obj.overhead*/ + 16 /*obj.fields*/ + 16 /*inner root instance*/;
 
-    private final CursorContextFactory contextFactory;
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
     private final LeafNodeBehaviour<ROOT_KEY, RootMappingValue> rootLeafNode;
     private final InternalNodeBehaviour<ROOT_KEY> rootInternalNode;
@@ -85,7 +84,6 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             Layout<ROOT_KEY, RootMappingValue> rootLayout,
             Layout<DATA_KEY, DATA_VALUE> dataLayout,
             int rootCacheSizeInBytes,
-            CursorContextFactory contextFactory,
             TreeNodeSelector treeNodeSelector,
             DependencyResolver dependencyResolver) {
         super(support, treeNodeSelector);
@@ -94,7 +92,6 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         this.rootLayout = rootLayout;
         this.dataLayout = dataLayout;
-        this.contextFactory = contextFactory;
         int numCachedRoots = rootCacheSizeInBytes / BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT;
         this.rootMappingCache = new AtomicReferenceArray<>(max(numCachedRoots, 10));
 
@@ -122,14 +119,14 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     void initializeAfterCreation(Root firstRoot, CursorContext cursorContext) throws IOException {
-        setRoot(firstRoot);
+        setRoot(firstRoot, cursorContext);
         support.writeMeta(rootLayout, dataLayout, cursorContext, treeNodeSelector);
         support.initializeNewRoot(root, rootLeafNode, ROOT_LAYER_FLAG, cursorContext);
     }
 
     @Override
     void initialize(Root root, CursorContext cursorContext) throws IOException {
-        setRoot(root);
+        setRoot(root, cursorContext);
         support.readMeta(cursorContext).verify(dataLayout, rootLayout, treeNodeSelector);
     }
 
@@ -330,7 +327,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                                 unstableGeneration,
                                 reportDirty,
                                 pagedFile,
-                                visitor));
+                                visitor,
+                                contextFactory));
                         if (++numBatchesAdded % 100 == 0) {
                             // Check now and then to keep the number of futures down a bit in the list
                             while (!futures.isEmpty() && futures.peekFirst().isDone()) {
@@ -352,7 +350,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                             unstableGeneration,
                             reportDirty,
                             pagedFile,
-                            visitor));
+                            visitor,
+                            contextFactory));
                 }
             }
             Futures.getAll(futures);
@@ -368,7 +367,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             long unstableGeneration,
             boolean reportDirty,
             PagedFile pagedFile,
-            GBPTreeConsistencyCheckVisitor visitor) {
+            GBPTreeConsistencyCheckVisitor visitor,
+            CursorContextFactory contextFactory) {
         var batch = dataTreeRootBatch.toArray(new Root[0]);
         dataTreeRootBatch.clear();
         return state.executor.submit(() -> {
@@ -408,7 +408,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             throws IOException {
         try {
             var depthMonitor = new SeekDepthMonitor();
-            support.initializeSeeker(seeker, () -> root, low, high, 1, LEAF_LEVEL, depthMonitor);
+            support.initializeSeeker(seeker, c -> root, low, high, 1, LEAF_LEVEL, depthMonitor);
             return depthMonitor.treeDepth;
         } catch (TreeInconsistencyException e) {
             return -1;
@@ -519,7 +519,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         }
 
         @Override
-        public Root getRoot() {
+        public Root getRoot(CursorContext context) {
             DataTreeRoot<ROOT_KEY> dataRoot = rootMappingCache.get(cacheIndex);
             if (dataRoot != null && rootLayout.compare(dataRoot.key, dataRootKey) == 0) {
                 return dataRoot.root;
@@ -533,15 +533,14 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             // - Reader (we) put the old R1 into cache
             var rootMappingLatch = rootMappingCacheLatches.latch(cacheIndexAsTreeNodeId(cacheIndex));
             rootMappingLatch.acquireRead();
-            try (CursorContext cursorContext = contextFactory.create("Update root mapping");
-                    Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
-                            support.internalAllocateSeeker(rootLayout, cursorContext, rootLeafNode, rootInternalNode),
-                            () -> root,
-                            dataRootKey,
-                            dataRootKey,
-                            DEFAULT_MAX_READ_AHEAD,
-                            LEAF_LEVEL,
-                            SeekCursor.NO_MONITOR)) {
+            try (Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
+                    support.internalAllocateSeeker(rootLayout, context, rootLeafNode, rootInternalNode),
+                    c -> root,
+                    dataRootKey,
+                    dataRootKey,
+                    DEFAULT_MAX_READ_AHEAD,
+                    LEAF_LEVEL,
+                    SeekCursor.NO_MONITOR)) {
                 if (seek.next()) {
                     Root root = seek.value().asRoot();
                     cacheReadRoot(root);
@@ -573,18 +572,17 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         }
 
         @Override
-        public void setRoot(Root newRoot) throws IOException {
+        public void setRoot(Root newRoot, CursorContext context) throws IOException {
             var rootMappingLatch = rootMappingCacheLatches.latch(cacheIndexAsTreeNodeId(cacheIndex));
             rootMappingLatch.acquireWrite();
-            try (CursorContext cursorContext = contextFactory.create("Update root mapping");
-                    Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                            rootLayout,
-                            rootLeafNode,
-                            rootInternalNode,
-                            DEFAULT_SPLIT_RATIO,
-                            cursorContext,
-                            MultiRootLayer.this,
-                            DATA_LAYER_FLAG)) {
+            try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
+                    rootLayout,
+                    rootLeafNode,
+                    rootInternalNode,
+                    DEFAULT_SPLIT_RATIO,
+                    context,
+                    MultiRootLayer.this,
+                    DATA_LAYER_FLAG)) {
                 cache(new DataTreeRoot<>(dataRootKey, newRoot));
                 TrackingValueMerger<ROOT_KEY, RootMappingValue> merger = new TrackingValueMerger<>(overwrite());
                 rootMappingWriter.mergeIfExists(dataRootKey, new RootMappingValue().initialize(newRoot), merger);

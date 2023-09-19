@@ -630,7 +630,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                     () -> writersMustEagerlyFlush,
                     structureWriteLog);
             this.rootLayer = rootLayerConfiguration.buildRootLayer(
-                    rootLayerSupport, layout, contextFactory, treeNodeSelector, dependencyResolver);
+                    rootLayerSupport, layout, treeNodeSelector, dependencyResolver);
 
             // Create or load state
             if (created) {
@@ -932,7 +932,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         Pair<TreeState, TreeState> states = readStatePages(pagedFile, cursorContext);
         TreeState oldestState = TreeStatePair.selectOldestOrInvalid(states);
         long pageToOverwrite = oldestState.pageId();
-        Root root = rootLayer.getRoot();
+        Root root = rootLayer.getRoot(cursorContext);
         try (PageCursor cursor = pagedFile.io(pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
             PageCursorUtil.goTo(cursor, "state page", pageToOverwrite);
             FreeListIdProvider.FreelistMetaData freelistMetaData = freeList.metaData();

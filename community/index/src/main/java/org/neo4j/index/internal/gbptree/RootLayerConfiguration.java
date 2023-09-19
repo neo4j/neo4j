@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import java.io.IOException;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 public abstract sealed class RootLayerConfiguration<ROOT_KEY>
         permits RootLayerConfiguration.SingleRootLayerConfiguration,
@@ -39,7 +38,6 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
     abstract <VALUE, KEY> RootLayer<ROOT_KEY, KEY, VALUE> buildRootLayer(
             RootLayerSupport rootLayerSupport,
             Layout<KEY, VALUE> dataLayout,
-            CursorContextFactory contextFactory,
             TreeNodeSelector treeNodeSelector,
             DependencyResolver dependencyResolver)
             throws IOException;
@@ -52,7 +50,6 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
         <VALUE, KEY> RootLayer<SingleRoot, KEY, VALUE> buildRootLayer(
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
-                CursorContextFactory contextFactory,
                 TreeNodeSelector treeNodeSelector,
                 DependencyResolver dependencyResolver) {
             return new SingleRootLayer<>(rootLayerSupport, dataLayout, treeNodeSelector, dependencyResolver);
@@ -77,7 +74,6 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
         <VALUE, KEY> RootLayer<ROOT_KEY, KEY, VALUE> buildRootLayer(
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
-                CursorContextFactory contextFactory,
                 TreeNodeSelector treeNodeSelector,
                 DependencyResolver dependencyResolver) {
             return new MultiRootLayer<>(
@@ -85,7 +81,6 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                     rootKeyLayout,
                     dataLayout,
                     rootMappingCacheSize,
-                    contextFactory,
                     treeNodeSelector,
                     dependencyResolver);
         }

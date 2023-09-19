@@ -19,7 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.io.pagecache.context.CursorContext;
+
 @FunctionalInterface
 public interface RootCatchup {
-    Root catchupFrom(long pageId);
+    Root catchupFrom(long pageId, CursorContext context);
 }
