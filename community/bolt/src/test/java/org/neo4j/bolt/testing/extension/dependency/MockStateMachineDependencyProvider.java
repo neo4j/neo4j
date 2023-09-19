@@ -23,7 +23,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.testing.mock.TransactionManagerMockFactory;
 import org.neo4j.bolt.tx.TransactionManager;
@@ -34,7 +34,7 @@ public class MockStateMachineDependencyProvider implements StateMachineDependenc
     ;
     private final FakeClock clock = new FakeClock();
     private TransactionManager transactionManager = TransactionManagerMockFactory.newInstance();
-    private Connection connection = ConnectionMockFactory.newFactory()
+    private ConnectionHandle connection = ConnectionMockFactory.newFactory()
             .withTransactionManager(transactionManager)
             .build();
 
@@ -49,7 +49,7 @@ public class MockStateMachineDependencyProvider implements StateMachineDependenc
     }
 
     @Override
-    public Connection connection(ExtensionContext context) {
+    public ConnectionHandle connection(ExtensionContext context) {
         return this.connection;
     }
 

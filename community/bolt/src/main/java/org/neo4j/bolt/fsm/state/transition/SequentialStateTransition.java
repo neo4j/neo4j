@@ -40,36 +40,45 @@ import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
  * @param <R> a transition type.
  */
 final class SequentialStateTransition<R extends RequestMessage> extends AbstractStateTransition<R> {
+    private final boolean passLastResult;
     private final List<StateTransition<? super R>> transitions;
 
     // TODO: Find common ancestor via reflection for simplified API?
-    public SequentialStateTransition(Class<R> requestType, List<StateTransition<? super R>> transitions) {
+    public SequentialStateTransition(
+            Class<R> requestType, boolean passLastResult, List<StateTransition<? super R>> transitions) {
         super(requestType);
 
         if (transitions.size() < 2) {
             throw new IllegalArgumentException("Must provide at least two transitions");
         }
 
+        this.passLastResult = passLastResult;
         this.transitions = new ArrayList<>(transitions);
     }
 
-    public SequentialStateTransition(Class<R> requestType, StateTransition<? super R>... transitions) {
+    public SequentialStateTransition(
+            Class<R> requestType, boolean passLastResult, StateTransition<? super R>... transitions) {
         super(requestType);
 
         if (transitions.length < 2) {
             throw new IllegalArgumentException("Must provide at least two transitions");
         }
 
+        this.passLastResult = passLastResult;
         this.transitions = Arrays.asList(transitions);
     }
 
     @Override
     public StateReference process(Context ctx, R message, ResponseHandler handler) throws StateMachineException {
-        StateReference result;
+        StateReference result = null;
         var it = this.transitions.iterator();
         do {
             var transition = it.next();
-            result = transition.process(ctx, message, handler);
+            var newResult = transition.process(ctx, message, handler);
+
+            if (result == null || this.passLastResult) {
+                result = newResult;
+            }
         } while (it.hasNext());
 
         return result;

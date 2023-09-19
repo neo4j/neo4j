@@ -30,7 +30,7 @@ import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.fsm.error.state.IllegalRequestParameterException;
 import org.neo4j.bolt.fsm.state.State;
 import org.neo4j.bolt.fsm.state.StateReference;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.fsm.error.AuthenticationStateTransitionException;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
@@ -58,7 +58,7 @@ class StateMachineImplTest {
 
     private StateMachineImpl fsm;
 
-    private Connection connection;
+    private ConnectionHandle connection;
     private StateMachineConfiguration configuration;
     private State initialState;
 

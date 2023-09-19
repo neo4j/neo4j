@@ -45,6 +45,7 @@ import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
@@ -55,17 +56,16 @@ import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.bolt.tx.Transaction;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.bolt.tx.error.TransactionException;
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 
-public class ConnectionMockFactory extends AbstractMockFactory<Connection, ConnectionMockFactory> {
+public class ConnectionMockFactory extends AbstractMockFactory<ConnectionHandle, ConnectionMockFactory> {
     private static final String DEFAULT_ID = "bolt-test-connection";
 
     private ConnectionMockFactory(String id) {
-        super(Connection.class);
+        super(ConnectionHandle.class);
 
         this.withId(id);
         this.withSelectedDefaultDatabase("neo4j");
@@ -79,25 +79,25 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         return newFactory(DEFAULT_ID);
     }
 
-    public static Connection newInstance() {
+    public static ConnectionHandle newInstance() {
         return newFactory().build();
     }
 
-    public static Connection newInstance(String id, Consumer<ConnectionMockFactory> configurer) {
+    public static ConnectionHandle newInstance(String id, Consumer<ConnectionMockFactory> configurer) {
         var factory = newFactory(id);
         configurer.accept(factory);
         return factory.build();
     }
 
-    public static Connection newInstance(String id) {
+    public static ConnectionHandle newInstance(String id) {
         return newFactory(id).build();
     }
 
-    public static Connection newInstance(Consumer<ConnectionMockFactory> configurer) {
+    public static ConnectionHandle newInstance(Consumer<ConnectionMockFactory> configurer) {
         return newInstance(DEFAULT_ID, configurer);
     }
 
-    public Connection attachTo(Channel channel, ChannelHandler... handlers) {
+    public ConnectionHandle attachTo(Channel channel, ChannelHandler... handlers) {
         var connection = this.build();
         Connection.setAttribute(channel, connection);
 
@@ -106,7 +106,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         return connection;
     }
 
-    public Connection attachToMock(Channel channel) {
+    public ConnectionHandle attachToMock(Channel channel) {
         var attr = Mockito.mock(Attribute.class);
 
         var connection = this.build();
@@ -186,10 +186,6 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         return (ArgumentCaptor) this.withArgumentCaptor(Consumer.class, Connection::notifyListeners);
     }
 
-    public ConnectionMockFactory withInfo(ClientConnectionInfo clientConnectionInfo) {
-        return this.withStaticValue(Connection::info, clientConnectionInfo);
-    }
-
     public ConnectionMockFactory withProtocol(BoltProtocol protocol) {
         return this.withStaticValue(Connection::protocol, protocol);
     }
@@ -210,10 +206,6 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
 
     public ConnectionMockFactory withFSM(StateMachine fsm) {
         return this.withStaticValue(Connection::fsm, fsm);
-    }
-
-    public ConnectionMockFactory withLoginContext(LoginContext ctx) {
-        return this.withStaticValue(Connection::loginContext, ctx);
     }
 
     public ConnectionMockFactory withAuthentication(Authentication authentication) {
@@ -321,7 +313,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                     newValue = oldValue - 1;
 
                     if (newValue == 0) {
-                        var connection = ((Connection) invocation.getMock());
+                        var connection = ((ConnectionHandle) invocation.getMock());
                         connection.closeTransaction();
                         connection.fsm().reset();
                     }
@@ -333,7 +325,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
     }
 
     public ConnectionMockFactory withTransaction(Transaction transaction) {
-        return this.withStaticValue(Connection::transaction, transaction);
+        return this.withStaticValue(ConnectionHandle::transaction, transaction);
     }
 
     public ConnectionMockFactory withTransactionManager(TransactionManager transactionManager) {
@@ -374,7 +366,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                     return newTransaction;
                 });
         this.withAnswer(Connection::routingContext, invocation -> new RoutingContext(false, Map.of()));
-        this.withAnswer(Connection::transaction, invocation -> Optional.ofNullable(transaction.get()));
+        this.withAnswer(ConnectionHandle::transaction, invocation -> Optional.ofNullable(transaction.get()));
         this.withAnswer(
                 connection -> {
                     try {

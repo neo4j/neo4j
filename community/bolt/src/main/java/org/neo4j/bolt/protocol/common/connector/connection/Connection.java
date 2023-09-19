@@ -24,11 +24,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import java.time.Clock;
-import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import org.neo4j.bolt.fsm.StateMachine;
@@ -38,15 +35,9 @@ import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
-import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.security.error.AuthenticationException;
-import org.neo4j.bolt.tx.Transaction;
-import org.neo4j.bolt.tx.TransactionType;
-import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -218,22 +209,6 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
     PipelineContext writerContext(PackstreamBuf buf);
 
     /**
-     * Enables a designated feature for use with this connection.
-     *
-     * @param features list of features.
-     * @param userAgent the user agent string
-     * @param routingContext a routing context providing information about routing support and
-     *                       selected routing policies.
-     * @return a list of enabled features
-     */
-    List<Feature> negotiate(
-            List<Feature> features,
-            String userAgent,
-            RoutingContext routingContext,
-            NotificationsConfig notificationsConfig,
-            Map<String, String> boltAgent);
-
-    /**
      * Retrieves the finite state machine for this connection.
      *
      * @return a state machine.
@@ -345,20 +320,6 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      * @return true if interrupted, false otherwise.
      */
     boolean isInterrupted();
-
-    Transaction beginTransaction(
-            TransactionType type,
-            String databaseName,
-            AccessMode mode,
-            List<String> bookmarks,
-            Duration timeout,
-            Map<String, Object> metadata,
-            NotificationsConfig transactionNotificationsConfig)
-            throws TransactionException;
-
-    Optional<Transaction> transaction();
-
-    void closeTransaction() throws TransactionException;
 
     /**
      * Interrupts this connection and aborts any currently active jobs if possible.

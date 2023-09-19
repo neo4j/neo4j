@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.fsm.error.StateMachineException;
-import org.neo4j.bolt.testing.assertions.ConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.ConnectionHandleAssertions;
 import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
 import org.neo4j.bolt.testing.fsm.StateMachineProvider;
@@ -45,6 +45,6 @@ public class InTransactionStateMachineInitializer implements StateMachineInitial
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
-        ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasTransaction();
     }
 }

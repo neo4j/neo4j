@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.protocol.common;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -27,6 +26,7 @@ import org.neo4j.bolt.fsm.StateMachineConfiguration;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
@@ -89,7 +89,7 @@ public interface BoltProtocol {
      * @return a set of features.
      */
     default Set<Feature> features() {
-        return Collections.emptySet();
+        return Set.of(Feature.UTC_DATETIME);
     }
 
     /**
@@ -161,4 +161,6 @@ public interface BoltProtocol {
     default MetadataHandler metadataHandler() {
         return DefaultMetadataHandler.getInstance();
     }
+
+    default void onConnectionNegotiated(ConnectionHandle connection) {}
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.bolt.protocol.v44;
 
+import java.util.Collections;
+import java.util.Set;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultRouteMessageDecoder;
@@ -46,6 +49,11 @@ public final class BoltProtocolV44 extends BoltProtocolV43 {
     @Override
     public ProtocolVersion version() {
         return VERSION;
+    }
+
+    @Override
+    public Set<Feature> features() {
+        return Collections.emptySet();
     }
 
     @Override

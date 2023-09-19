@@ -28,7 +28,7 @@ import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.fsm.error.state.IllegalRequestParameterException;
 import org.neo4j.bolt.fsm.state.State;
 import org.neo4j.bolt.fsm.state.StateReference;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -37,7 +37,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 
 final class StateMachineImpl implements StateMachine, Context {
-    private final Connection connection;
+    private final ConnectionHandle connection;
     private final StateMachineConfiguration configuration;
 
     private final Log userLog;
@@ -50,7 +50,10 @@ final class StateMachineImpl implements StateMachine, Context {
     private volatile boolean interrupted;
 
     StateMachineImpl(
-            Connection connection, StateMachineConfiguration configuration, LogService logging, State initialState) {
+            ConnectionHandle connection,
+            StateMachineConfiguration configuration,
+            LogService logging,
+            State initialState) {
         this.connection = connection;
         this.configuration = configuration;
 
@@ -61,7 +64,7 @@ final class StateMachineImpl implements StateMachine, Context {
     }
 
     @Override
-    public Connection connection() {
+    public ConnectionHandle connection() {
         return this.connection;
     }
 

@@ -39,7 +39,7 @@ import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Authenticated;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Autocommit;
-import org.neo4j.bolt.testing.assertions.ConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.ConnectionHandleAssertions;
 import org.neo4j.bolt.testing.assertions.MapValueAssertions;
 import org.neo4j.bolt.testing.messages.BoltMessages;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
@@ -158,7 +158,7 @@ public class AutocommitIT {
         runAndPull(fsm, messages);
         fsm.process(messages.commit(), NoopResponseHandler.getInstance());
 
-        ConnectionAssertions.assertThat(fsm.connection()).hasNoTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasNoTransaction();
     }
 
     @StateMachineTest
@@ -167,7 +167,7 @@ public class AutocommitIT {
         runAndPull(fsm, messages);
         fsm.process(messages.rollback(), NoopResponseHandler.getInstance());
 
-        ConnectionAssertions.assertThat(fsm.connection()).hasNoTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasNoTransaction();
     }
 
     private void shouldTerminateConnectionOnMessage(StateMachine fsm, RequestMessage message) {

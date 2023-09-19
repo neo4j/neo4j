@@ -19,12 +19,10 @@
  */
 package org.neo4j.bolt.protocol.v50;
 
-import java.util.Set;
 import org.neo4j.bolt.fsm.StateMachineConfiguration.Factory;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTransition;
@@ -49,11 +47,6 @@ public final class BoltProtocolV50 extends AbstractBoltProtocol {
     @Override
     public ProtocolVersion version() {
         return VERSION;
-    }
-
-    @Override
-    public Set<Feature> features() {
-        return Set.of(Feature.UTC_DATETIME);
     }
 
     @Override

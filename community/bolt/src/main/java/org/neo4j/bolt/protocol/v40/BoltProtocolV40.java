@@ -19,11 +19,14 @@
  */
 package org.neo4j.bolt.protocol.v40;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.neo4j.bolt.fsm.StateMachineConfiguration.Factory;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.LegacyMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
@@ -71,6 +74,11 @@ public class BoltProtocolV40 extends AbstractBoltProtocol {
     @Override
     public ProtocolVersion version() {
         return VERSION;
+    }
+
+    @Override
+    public Set<Feature> features() {
+        return Collections.emptySet();
     }
 
     @Override

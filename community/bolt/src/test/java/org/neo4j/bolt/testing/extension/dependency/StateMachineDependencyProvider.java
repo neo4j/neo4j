@@ -23,7 +23,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.time.SystemNanoClock;
 
@@ -62,7 +62,7 @@ public interface StateMachineDependencyProvider {
      * @param ctx a test extension context.
      * @return a dummy connection.
      */
-    Connection connection(ExtensionContext ctx);
+    ConnectionHandle connection(ExtensionContext ctx);
 
     /**
      * Retrieves the latest transaction to be committed within the database instance.

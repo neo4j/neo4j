@@ -19,9 +19,12 @@
  */
 package org.neo4j.bolt.protocol.v41;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.protocol.v41.message.decoder.authentication.HelloMessageDecoderV41;
@@ -39,6 +42,11 @@ public class BoltProtocolV41 extends BoltProtocolV40 {
 
     public static BoltProtocolV41 getInstance() {
         return INSTANCE;
+    }
+
+    @Override
+    public Set<Feature> features() {
+        return Collections.emptySet();
     }
 
     @Override

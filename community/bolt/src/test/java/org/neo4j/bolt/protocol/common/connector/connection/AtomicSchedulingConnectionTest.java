@@ -51,7 +51,7 @@ import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.AuthenticationResult;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.bolt.testing.assertions.ClientConnectionInfoAssertions;
-import org.neo4j.bolt.testing.assertions.ConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.ConnectionHandleAssertions;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -239,7 +239,7 @@ class AtomicSchedulingConnectionTest {
 
         // newly created connections should consider themselves to be idle as there are no queued jobs nor have they
         // scheduled a task with their executor service
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isIdling()
                 .hasNoPendingJobs()
                 .notInWorkerThread()
@@ -256,7 +256,7 @@ class AtomicSchedulingConnectionTest {
                 barrier.await();
 
                 try {
-                    ConnectionAssertions.assertThat(connection).inWorkerThread();
+                    ConnectionHandleAssertions.assertThat(connection).inWorkerThread();
                 } catch (AssertionError ex) {
                     failure.set(ex);
                 }
@@ -267,7 +267,7 @@ class AtomicSchedulingConnectionTest {
             }
         });
 
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isNotIdling()
                 .hasPendingJobs()
                 .notInWorkerThread()
@@ -289,7 +289,7 @@ class AtomicSchedulingConnectionTest {
 
         barrier.await(); // ensure that the job is actually running before we carry on
 
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isNotIdling()
                 .hasNoPendingJobs()
                 .notInWorkerThread();
@@ -298,7 +298,7 @@ class AtomicSchedulingConnectionTest {
         latch.countDown();
         thread.join(); // ensure that the job has terminated cleanly
 
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isIdling()
                 .hasNoPendingJobs()
                 .notInWorkerThread();
@@ -314,37 +314,37 @@ class AtomicSchedulingConnectionTest {
         this.selectProtocol();
 
         // newly created connections should never be interrupted
-        ConnectionAssertions.assertThat(this.connection).isNotInterrupted();
+        ConnectionHandleAssertions.assertThat(this.connection).isNotInterrupted();
 
         // once interrupted the connection should identify itself as interrupted
         this.connection.interrupt();
 
-        ConnectionAssertions.assertThat(this.connection).isInterrupted();
+        ConnectionHandleAssertions.assertThat(this.connection).isInterrupted();
 
         // interrupts can stack, if interrupted twice the connection should still identify itself as interrupted
         this.connection.interrupt();
 
-        ConnectionAssertions.assertThat(this.connection).isInterrupted();
+        ConnectionHandleAssertions.assertThat(this.connection).isInterrupted();
 
         // since interrupts stack, the connection should remain interrupted when reset once
         Assertions.assertThat(this.connection.reset()).isFalse();
 
-        ConnectionAssertions.assertThat(this.connection).isInterrupted();
+        ConnectionHandleAssertions.assertThat(this.connection).isInterrupted();
 
         // if reset another time, the second interrupt should clear and the connection should return to its normal state
         Assertions.assertThat(this.connection.reset()).isTrue();
 
-        ConnectionAssertions.assertThat(this.connection).isNotInterrupted();
+        ConnectionHandleAssertions.assertThat(this.connection).isNotInterrupted();
 
         // if we interrupt it again, it should return to its interrupted state and identify itself as such
         this.connection.interrupt();
 
-        ConnectionAssertions.assertThat(this.connection).isInterrupted();
+        ConnectionHandleAssertions.assertThat(this.connection).isInterrupted();
 
         // since there is only a single active interrupt, it should return to its normal state immediately when reset
         Assertions.assertThat(this.connection.reset()).isTrue();
 
-        ConnectionAssertions.assertThat(this.connection).isNotInterrupted();
+        ConnectionHandleAssertions.assertThat(this.connection).isNotInterrupted();
     }
 
     @Test
@@ -354,7 +354,7 @@ class AtomicSchedulingConnectionTest {
         // submit an empty job to ensure that the connection doesn't inline close due to being in idle
         this.connection.submit((fsm, responseHandler) -> {});
 
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isActive()
                 .isNotClosing()
                 .isNotClosed();
@@ -363,7 +363,7 @@ class AtomicSchedulingConnectionTest {
 
         // when the connection is still busy (e.g. is currently executing or has pending jobs), the connection should
         // simply be marked for closure but never actually close unless its jobs are executed
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isNotActive()
                 .isClosing()
                 .isNotClosed();
@@ -378,7 +378,7 @@ class AtomicSchedulingConnectionTest {
 
         this.selectProtocol();
 
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isActive()
                 .isNotClosing()
                 .isNotClosed();
@@ -391,7 +391,7 @@ class AtomicSchedulingConnectionTest {
 
         // when closing in idle, the connection should immediately transition to closed as to not clog up the worker
         // pool without good reason
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isNotActive()
                 .isNotClosing()
                 .isClosed();
@@ -437,19 +437,19 @@ class AtomicSchedulingConnectionTest {
 
         this.selectProtocol();
 
-        ConnectionAssertions.assertThat(connection).isActive();
+        ConnectionHandleAssertions.assertThat(connection).isActive();
 
         // submit a job and capture the actual job on the executor service in order to delay the closure
         var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
         this.connection.submit(job1);
         Mockito.verify(this.executorService).submit(runnableCaptor.capture());
 
-        ConnectionAssertions.assertThat(connection).isActive();
+        ConnectionHandleAssertions.assertThat(connection).isActive();
 
         this.connection.submit(job2);
         Mockito.verifyNoMoreInteractions(this.executorService);
 
-        ConnectionAssertions.assertThat(connection).isActive();
+        ConnectionHandleAssertions.assertThat(connection).isActive();
 
         this.connection.registerListener(listener);
         Mockito.verify(listener).onListenerAdded();
@@ -462,7 +462,7 @@ class AtomicSchedulingConnectionTest {
         // pending jobs
         this.connection.close();
 
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isNotActive()
                 .isClosing()
                 .isNotClosed();
@@ -485,7 +485,7 @@ class AtomicSchedulingConnectionTest {
         inOrder.verify(listener).onConnectionClosed(true);
         inOrder.verifyNoMoreInteractions();
 
-        ConnectionAssertions.assertThat(this.connection)
+        ConnectionHandleAssertions.assertThat(this.connection)
                 .isNotActive()
                 .isNotClosing()
                 .isClosed();
@@ -614,6 +614,7 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
         Mockito.verify(this.protocol).metadataHandler();
+        Mockito.verify(this.protocol).onConnectionNegotiated(this.connection);
         Mockito.verifyNoMoreInteractions(this.fsm);
         Mockito.verifyNoMoreInteractions(this.protocol);
 
@@ -630,6 +631,7 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
+        Mockito.verify(this.protocol).onConnectionNegotiated(this.connection);
         Mockito.verify(this.protocol).metadataHandler();
         Mockito.verifyNoMoreInteractions(this.protocol);
 
@@ -681,13 +683,13 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(listener).onListenerAdded();
         Mockito.verifyNoMoreInteractions(listener);
 
-        ConnectionAssertions.assertThat(this.connection).isActive();
+        ConnectionHandleAssertions.assertThat(this.connection).isActive();
 
         Assertions.assertThat(this.connection.loginContext()).isNull();
 
         var flags = this.connection.logon(token);
 
-        ConnectionAssertions.assertThat(this.connection).isActive();
+        ConnectionHandleAssertions.assertThat(this.connection).isActive();
 
         // there should be no authentication flags set as the credentials were deemed valid at the time of
         // authentication

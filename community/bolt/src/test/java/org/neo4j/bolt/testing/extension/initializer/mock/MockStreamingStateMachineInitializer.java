@@ -26,7 +26,7 @@ import org.mockito.internal.util.MockUtil;
 import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.mock.MockStreaming;
-import org.neo4j.bolt.testing.assertions.ConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.ConnectionHandleAssertions;
 import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
 import org.neo4j.bolt.testing.extension.initializer.StateMachineInitializer;
@@ -77,6 +77,6 @@ public class MockStreamingStateMachineInitializer implements StateMachineInitial
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse(2);
 
-        ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasTransaction();
     }
 }

@@ -26,7 +26,7 @@ import static org.neo4j.values.storable.BooleanValue.TRUE;
 import static org.neo4j.values.storable.Values.longValue;
 
 import org.neo4j.bolt.fsm.error.StateMachineException;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.response.NoopResponseHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -36,7 +36,7 @@ import org.neo4j.bolt.testing.annotation.fsm.initializer.Authenticated;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.InTransaction;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Streaming;
 import org.neo4j.bolt.testing.assertions.AnyValueAssertions;
-import org.neo4j.bolt.testing.assertions.ConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.ConnectionHandleAssertions;
 import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;
 import org.neo4j.bolt.testing.messages.BoltMessages;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
@@ -199,7 +199,7 @@ public class InTransactionStateIT {
                 .hasIgnoredResponse();
 
         // The tx shall still be open.
-        ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasTransaction();
 
         recorder.reset();
         fsm.process(messages.commit(), recorder);
@@ -218,7 +218,7 @@ public class InTransactionStateIT {
         assertThat(recorder).hasFailureResponse(Status.Statement.SyntaxError).hasIgnoredResponse();
 
         // The tx shall still be open.
-        ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasTransaction();
 
         recorder.reset();
         fsm.process(messages.rollback(), recorder);
@@ -241,7 +241,7 @@ public class InTransactionStateIT {
         assertThat(fsm).hasFailed();
 
         // ensure that the transaction remains associated until the client explicitly resets
-        ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasTransaction();
     }
 
     @StateMachineTest
@@ -259,7 +259,7 @@ public class InTransactionStateIT {
         assertThat(fsm).hasFailed();
 
         // ensure that the transaction remains associated until the client explicitly resets
-        ConnectionAssertions.assertThat(fsm.connection()).hasTransaction();
+        ConnectionHandleAssertions.assertThat(fsm.connection()).hasTransaction();
     }
 
     @StateMachineTest
@@ -312,7 +312,10 @@ public class InTransactionStateIT {
 
     @StateMachineTest
     void shouldAllowUserControlledRollbackOnExplicitTxFailure(
-            @Authenticated StateMachine fsm, ResponseRecorder recorder, BoltMessages messages, Connection connection)
+            @Authenticated StateMachine fsm,
+            ResponseRecorder recorder,
+            BoltMessages messages,
+            ConnectionHandle connection)
             throws StateMachineException {
         // Given whenever en explicit transaction has a failure,
         // it is more natural for drivers to see the failure, acknowledge it
@@ -331,7 +334,7 @@ public class InTransactionStateIT {
         assertThat(recorder).hasFailureResponse(Status.Statement.SyntaxError);
 
         // This result in an illegal state change, and closes all open statement by default.
-        ConnectionAssertions.assertThat(connection).hasTransaction();
+        ConnectionHandleAssertions.assertThat(connection).hasTransaction();
         assertThat(fsm).hasFailed();
     }
 }

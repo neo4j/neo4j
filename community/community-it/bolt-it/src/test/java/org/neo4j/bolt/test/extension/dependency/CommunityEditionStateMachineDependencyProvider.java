@@ -27,7 +27,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.test.extension.db.ServerInstanceContext;
@@ -82,7 +82,7 @@ public class CommunityEditionStateMachineDependencyProvider implements StateMach
     }
 
     @Override
-    public Connection connection(ExtensionContext ctx) {
+    public ConnectionHandle connection(ExtensionContext ctx) {
         return ConnectionMockFactory.newFactory("bolt-test")
                 .withSelectedDefaultDatabase(defaultDatabase)
                 .withAuthentication(authentication)

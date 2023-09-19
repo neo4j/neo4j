@@ -59,7 +59,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Provides a generic base implementation for connections.
  */
-public abstract class AbstractConnection implements Connection {
+public abstract class AbstractConnection implements ConnectionHandle {
     private final Connector connector;
 
     protected final String id;
@@ -239,6 +239,9 @@ public abstract class AbstractConnection implements Connection {
         // allocate a new state machine for the desired protocol version to prepare the connection for handling requests
         var fsm = protocol.stateMachine().createInstance(this, this.logService);
         this.fsm = fsm;
+
+        // notify the protocol in order to register legacy compliance listeners
+        protocol.onConnectionNegotiated(this);
 
         // last notify any registered listeners to let them prepare the state machine if necessary
         this.notifyListeners(listener -> listener.onStateMachineInitialized(fsm));

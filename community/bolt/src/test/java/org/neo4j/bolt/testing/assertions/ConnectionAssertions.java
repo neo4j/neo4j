@@ -19,14 +19,13 @@
  */
 package org.neo4j.bolt.testing.assertions;
 
-import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.InstanceOfAssertFactory;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 
-public final class ConnectionAssertions extends AbstractAssert<ConnectionAssertions, Connection> {
+public final class ConnectionAssertions extends AbstractConnectionAssertions<ConnectionAssertions, Connection> {
 
     private ConnectionAssertions(Connection actual) {
-        super(actual, ConnectionAssertions.class);
+        super(actual, ConnectionHandleAssertions.class);
     }
 
     public static ConnectionAssertions assertThat(Connection actual) {
@@ -35,165 +34,5 @@ public final class ConnectionAssertions extends AbstractAssert<ConnectionAsserti
 
     public static InstanceOfAssertFactory<Connection, ConnectionAssertions> connection() {
         return new InstanceOfAssertFactory<>(Connection.class, ConnectionAssertions::new);
-    }
-
-    public ConnectionAssertions isIdling() {
-        isNotNull();
-
-        if (!this.actual.isIdling()) {
-            failWithMessage("Expected connection to be idling");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isNotIdling() {
-        isNotNull();
-
-        if (this.actual.isIdling()) {
-            failWithMessage("Expected connection to be busy");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions hasPendingJobs() {
-        isNotNull();
-
-        if (!this.actual.hasPendingJobs()) {
-            failWithMessage("Expected connection to have pending jobs");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions hasNoPendingJobs() {
-        isNotNull();
-
-        if (this.actual.hasPendingJobs()) {
-            failWithMessage("Expected connection to not have pending jobs");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions inWorkerThread() {
-        isNotNull();
-
-        if (!this.actual.inWorkerThread()) {
-            failWithMessage("Expected calling thread to be current worker thread");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions notInWorkerThread() {
-        isNotNull();
-
-        if (this.actual.inWorkerThread()) {
-            failWithMessage("Expected calling thread to not be current worker thread");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isInterrupted() {
-        isNotNull();
-
-        if (!this.actual.isInterrupted()) {
-            failWithMessage("Expected connection to be interrupted");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isNotInterrupted() {
-        isNotNull();
-
-        if (this.actual.isInterrupted()) {
-            failWithMessage("Expected connection to not be interrupted");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions hasTransaction() {
-        isNotNull();
-
-        if (!this.actual.transaction().isPresent()) {
-            failWithMessage("Expected connection to have a transaction");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions hasNoTransaction() {
-        isNotNull();
-
-        if (this.actual.transaction().isPresent()) {
-            failWithMessage("Expected connection to have no transaction");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isActive() {
-        isNotNull();
-
-        if (!this.actual.isActive()) {
-            failWithMessage("Expected connection to be active");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isNotActive() {
-        isNotNull();
-
-        if (this.actual.isActive()) {
-            failWithMessage("Expected connection to not be active");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isClosing() {
-        isNotNull();
-
-        if (!this.actual.isClosing()) {
-            failWithMessage("Expected connection to be closing");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isNotClosing() {
-        isNotNull();
-
-        if (this.actual.isClosing()) {
-            failWithMessage("Expected connection to not be closing");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isClosed() {
-        isNotNull();
-
-        if (!this.actual.isClosed()) {
-            failWithMessage("Expected connection to be closed");
-        }
-
-        return this;
-    }
-
-    public ConnectionAssertions isNotClosed() {
-        isNotNull();
-
-        if (this.actual.isClosed()) {
-            failWithMessage("Expected connection to not be closed");
-        }
-
-        return this;
     }
 }

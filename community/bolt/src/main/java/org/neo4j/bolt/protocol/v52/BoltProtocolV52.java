@@ -19,11 +19,9 @@
  */
 package org.neo4j.bolt.protocol.v52;
 
-import java.util.Set;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v52.message.decoder.authentication.HelloMessageDecoderV52;
 import org.neo4j.packstream.struct.StructRegistry;
@@ -42,11 +40,6 @@ public final class BoltProtocolV52 extends AbstractBoltProtocol {
     @Override
     public ProtocolVersion version() {
         return VERSION;
-    }
-
-    @Override
-    public Set<Feature> features() {
-        return Set.of(Feature.UTC_DATETIME);
     }
 
     @Override

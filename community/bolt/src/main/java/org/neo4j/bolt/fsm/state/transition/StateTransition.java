@@ -64,7 +64,7 @@ public interface StateTransition<R extends RequestMessage> {
             return this;
         }
         if (transitions.length == 1) {
-            return new SequentialStateTransition<R>(this.requestType(), this, transitions[0]);
+            return new SequentialStateTransition<R>(this.requestType(), true, this, transitions[0]);
         }
 
         @SuppressWarnings("unchecked")
@@ -72,6 +72,30 @@ public interface StateTransition<R extends RequestMessage> {
         chain[0] = this;
         System.arraycopy(transitions, 0, chain, 1, transitions.length);
 
-        return new SequentialStateTransition<R>(this.requestType(), chain);
+        return new SequentialStateTransition<R>(this.requestType(), true, chain);
+    }
+
+    /**
+     * Chains another transition at the end of this transition.
+     *
+     * @param transitions one or more transitions to chain.
+     * @return a composed transition.
+     * @see SequentialStateTransition
+     */
+    @SuppressWarnings("unchecked")
+    default StateTransition<R> also(StateTransition<? super R>... transitions) {
+        if (transitions.length == 0) {
+            return this;
+        }
+        if (transitions.length == 1) {
+            return new SequentialStateTransition<R>(this.requestType(), false, this, transitions[0]);
+        }
+
+        @SuppressWarnings("unchecked")
+        StateTransition<? super R>[] chain = new StateTransition[transitions.length + 1];
+        chain[0] = this;
+        System.arraycopy(transitions, 0, chain, 1, transitions.length);
+
+        return new SequentialStateTransition<R>(this.requestType(), false, chain);
     }
 }

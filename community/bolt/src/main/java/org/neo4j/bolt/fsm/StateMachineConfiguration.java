@@ -24,7 +24,7 @@ import org.neo4j.bolt.fsm.error.NoSuchStateException;
 import org.neo4j.bolt.fsm.state.State;
 import org.neo4j.bolt.fsm.state.StateReference;
 import org.neo4j.bolt.fsm.state.transition.StateTransition;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.logging.internal.LogService;
 
 /**
@@ -83,7 +83,7 @@ public interface StateMachineConfiguration {
      * @param connection a connection.
      * @return a state machine context.
      */
-    StateMachine createInstance(Connection connection, LogService logService);
+    StateMachine createInstance(ConnectionHandle connection, LogService logService);
 
     interface Factory {
 

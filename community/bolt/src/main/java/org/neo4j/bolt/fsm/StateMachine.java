@@ -24,6 +24,7 @@ import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.fsm.state.State;
 import org.neo4j.bolt.fsm.state.StateReference;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 
@@ -40,7 +41,7 @@ public interface StateMachine {
      *
      * @return a connection.
      */
-    Connection connection();
+    ConnectionHandle connection();
 
     /**
      * Retrieves the current configured default state.
