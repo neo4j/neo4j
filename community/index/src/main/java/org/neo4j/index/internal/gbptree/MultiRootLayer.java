@@ -59,14 +59,14 @@ import org.neo4j.util.concurrent.Futures;
  * @param <DATA_KEY> keys used in the data entries in the data roots.
  * @param <DATA_VALUE> values used in the data entries in the data roots.
  */
-class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> {
+public class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> {
     private static final int BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT =
-            16 /*obj.overhead*/ + 16 /*obj.fields*/ + 16 /*inner root instance*/;
-
+            16 /*obj.overhead*/ + 16 /*obj.fields*/ + 16 /*inner root instance*/ + 8 /* cache references*/;
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
     private final LeafNodeBehaviour<ROOT_KEY, RootMappingValue> rootLeafNode;
     private final InternalNodeBehaviour<ROOT_KEY> rootInternalNode;
     private final LfuCache<ROOT_KEY, DataTreeRoot<ROOT_KEY>> rootMappingCache;
+    private static final Root ROOT_UNDER_CREATION = new Root(-1, -1);
     private final ValueMerger<ROOT_KEY, RootMappingValue> DONT_ALLOW_CREATE_EXISTING_ROOT =
             (existingKey, newKey, existingValue, newValue) -> {
                 throw new DataTreeAlreadyExistsException(existingKey);
@@ -89,7 +89,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         this.rootLayout = rootLayout;
         this.dataLayout = dataLayout;
-        this.rootMappingCache = new LfuCache<>("Root mapping cache", 5);
+        this.rootMappingCache = new LfuCache<>(
+                "Root mapping cache", Math.max(100, rootCacheSizeInBytes / BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT));
         var rootMappingFormat = treeNodeSelector.selectByLayout(this.rootLayout);
         var format = treeNodeSelector.selectByLayout(dataLayout);
         OffloadStoreImpl<ROOT_KEY, RootMappingValue> rootOffloadStore = support.buildOffload(this.rootLayout);
@@ -127,33 +128,44 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     void create(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
-        Root dataRoot;
-        var cursorCreator = bind(support, PF_SHARED_WRITE_LOCK, cursorContext);
-        try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                rootLayout,
-                rootLeafNode,
-                rootInternalNode,
-                DEFAULT_SPLIT_RATIO,
-                cursorContext,
-                this,
-                ROOT_LAYER_FLAG)) {
-            dataRootKey = rootLayout.copyKey(dataRootKey);
-            long generation = support.generation();
-            long stableGeneration = stableGeneration(generation);
-            long unstableGeneration = unstableGeneration(generation);
-            long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorCreator);
-            try {
-                dataRoot = new Root(rootId, unstableGeneration);
-                support.initializeNewRoot(dataRoot, dataLeafNode, DATA_LAYER_FLAG, cursorContext);
-                // Write it to the root mapping tree
-                rootMappingWriter.merge(
-                        dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
-            } catch (DataTreeAlreadyExistsException e) {
-                support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorCreator);
-                throw e;
+        DataTreeRoot rootUnderCreation = new DataTreeRoot<>(null, ROOT_UNDER_CREATION);
+        rootMappingCache.putIfAbsent(dataRootKey, rootUnderCreation);
+        try {
+            var cursorCreator = bind(support, PF_SHARED_WRITE_LOCK, cursorContext);
+            Root dataRoot;
+            try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
+                    rootLayout,
+                    rootLeafNode,
+                    rootInternalNode,
+                    DEFAULT_SPLIT_RATIO,
+                    cursorContext,
+                    this,
+                    ROOT_LAYER_FLAG)) {
+                dataRootKey = rootLayout.copyKey(dataRootKey);
+                long generation = support.generation();
+                long stableGeneration = stableGeneration(generation);
+                long unstableGeneration = unstableGeneration(generation);
+                long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorCreator);
+                try {
+                    dataRoot = new Root(rootId, unstableGeneration);
+                    support.initializeNewRoot(dataRoot, dataLeafNode, DATA_LAYER_FLAG, cursorContext);
+                    // Write it to the root mapping tree
+                    rootMappingWriter.merge(
+                            dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
+                } catch (DataTreeAlreadyExistsException e) {
+                    support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorCreator);
+                    throw e;
+                }
             }
+            // Success! Let's cache it after we close the writer, as long as no one has touched this cache key
+            // concurrently!
+            rootMappingCache.compute(
+                    dataRootKey, (key, curr) -> curr == rootUnderCreation ? new DataTreeRoot<>(key, dataRoot) : curr);
+        } catch (RuntimeException | IOException e) {
+            // Something went wrong, lets clean up the cache if its not cleaned already!
+            rootMappingCache.compute(dataRootKey, (key, curr) -> curr == rootUnderCreation ? null : curr);
+            throw e;
         }
-        rootMappingCache.putIfAbsent(dataRootKey, new DataTreeRoot<>(dataRootKey, dataRoot));
     }
 
     @Override
@@ -492,26 +504,32 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         }
 
         @Override
-        public Root getRoot(CursorContext context) {
-            return rootMappingCache
-                    .computeIfAbsent(dataRootKey, key -> {
-                        try (Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
-                                support.internalAllocateSeeker(rootLayout, context, rootLeafNode, rootInternalNode),
-                                c -> root,
-                                key,
-                                key,
-                                DEFAULT_MAX_READ_AHEAD,
-                                LEAF_LEVEL,
-                                SeekCursor.NO_MONITOR)) {
-                            if (!seek.next()) {
-                                throw new DataTreeNotFoundException(key);
-                            }
-                            return new DataTreeRoot<>(key, seek.value().asRoot());
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    })
-                    .root();
+        public Root getRoot() {
+            var dataRoot = rootMappingCache.computeIfAbsent(dataRootKey, this::getFromTree);
+            if (dataRoot.root() == ROOT_UNDER_CREATION) {
+                // Lets read from the tree to see if there is something here and not just a stale cache value!
+                return getFromTree(dataRootKey).root();
+            }
+            return dataRoot.root();
+        }
+
+        private DataTreeRoot<ROOT_KEY> getFromTree(ROOT_KEY key) {
+            try (CursorContext cursorContext = contextFactory.create("Get root mapping");
+                    Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
+                            support.internalAllocateSeeker(rootLayout, cursorContext, rootLeafNode, rootInternalNode),
+                            () -> root,
+                            key,
+                            key,
+                            DEFAULT_MAX_READ_AHEAD,
+                            LEAF_LEVEL,
+                            SeekCursor.NO_MONITOR)) {
+                if (!seek.next()) {
+                    throw new DataTreeNotFoundException(key);
+                }
+                return new DataTreeRoot<>(key, seek.value().asRoot());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
         @Override
