@@ -1625,6 +1625,13 @@ public final class CypherFunctions {
         return Values.booleanValue(result);
     }
 
+    private static final CypherTypeNameValueMapper CYPHER_TYPE_NAME_VALUE_MAPPER = new CypherTypeNameValueMapper();
+
+    public static Value valueType(AnyValue in) {
+        return Values.stringValue(CypherTypeName.normalizeTypes(in.map(CYPHER_TYPE_NAME_VALUE_MAPPER))
+                .description());
+    }
+
     private static boolean hasPropertyValueRepresentation(ValueRepresentation valueRepresentation) {
         return !valueRepresentation.equals(ValueRepresentation.ANYTHING)
                 && !valueRepresentation.equals(ValueRepresentation.UNKNOWN)

@@ -23,6 +23,12 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.values.storable.ValueRepresentation
 
+/**
+ * Please note when introducing new types here to make sure the accompanying valueType() function is considered.
+ * If a more specific type is added, the valueType() function should *not* return it until the next major release as
+ * this is considered a breaking change. Completely new types are okay.
+ * E.g currently will return "FLOAT", if FLOAT32 is introduced it should continue to return "FLOAT" until next major release.
+ */
 sealed trait CypherTypeName extends SemanticCheckable with SemanticAnalysisTooling with ASTNode {
   protected def typeName: String
   // e.g BOOLEAN set(true, false, null) is nullable, BOOLEAN NOT NULL set(true, false) is not

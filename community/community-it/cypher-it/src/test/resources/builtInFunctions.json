@@ -4284,5 +4284,32 @@
     ],
     "rolesBoostedExecution": [],
     "isDeprecated": false
+  },
+  {
+    "name": "valueType",
+    "category": "Scalar",
+    "description": "Returns a `STRING` representation of the most precise value type that the given expression evaluates to.",
+    "signature": "valueType(input :: ANY?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   }
 ]

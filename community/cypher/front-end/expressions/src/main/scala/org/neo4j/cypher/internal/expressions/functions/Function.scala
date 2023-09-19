@@ -126,6 +126,7 @@ object Function {
     Properties,
     Trim,
     Type,
+    ValueType,
     WithinBBox
   )
 

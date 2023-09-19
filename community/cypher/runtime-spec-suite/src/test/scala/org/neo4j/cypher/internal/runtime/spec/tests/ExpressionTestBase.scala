@@ -1027,6 +1027,31 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // then
     runtimeResult should beColumns("runtime").withSingleRow(runtime.name.toLowerCase(Locale.ROOT))
   }
+
+  test("should handle valueType function") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("type")
+      .projection("valueType(someThingWithType) AS type")
+      .unwind("[true, \"abc\", 1, 2.0] AS someThingWithType")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("type").withRows(
+      singleColumn(
+        Seq(
+          "BOOLEAN NOT NULL",
+          "STRING NOT NULL",
+          "INTEGER NOT NULL",
+          "FLOAT NOT NULL"
+        )
+      )
+    )
+  }
 }
 
 // Supported by all runtimes that can deal with changes in the tx-state

@@ -113,6 +113,7 @@ import org.neo4j.cypher.internal.expressions.functions.ToStringOrNull
 import org.neo4j.cypher.internal.expressions.functions.ToUpper
 import org.neo4j.cypher.internal.expressions.functions.Trim
 import org.neo4j.cypher.internal.expressions.functions.Type
+import org.neo4j.cypher.internal.expressions.functions.ValueType
 import org.neo4j.cypher.internal.expressions.functions.WithinBBox
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
@@ -696,6 +697,7 @@ case class CommunityExpressionConverter(
       case Trim => commands.expressions.TrimFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Type =>
         commands.expressions.RelationshipTypeFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ValueType => commands.expressions.ValueTypeFunction(self.toCommandExpression(id, invocation.arguments.head))
     }
 
   private def toCommandProperty(
