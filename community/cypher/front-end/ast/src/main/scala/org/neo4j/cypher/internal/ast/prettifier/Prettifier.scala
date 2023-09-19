@@ -108,7 +108,11 @@ import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelResource
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
+import org.neo4j.cypher.internal.ast.LoadAllQualifier
 import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.LoadCidrQualifier
+import org.neo4j.cypher.internal.ast.LoadPrivilege
+import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
@@ -675,6 +679,17 @@ case class Prettifier(
       case x @ RevokePrivilege(GraphPrivilege(action, graphScope), _, resource, qualifier, roleNames, _) =>
         val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier)
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "FROM", roleNames)
+
+      // load privileges
+
+      case x @ GrantPrivilege(_: LoadPrivilege, _, _, qualifiers, roleNames) =>
+        s"${x.name} ON ${Prettifier.prettifyLoadPrivilegeQualifier(expr)(qualifiers)} TO ${Prettifier.escapeNames(roleNames)}"
+
+      case x @ DenyPrivilege(_: LoadPrivilege, _, _, qualifiers, roleNames) =>
+        s"${x.name} ON ${Prettifier.prettifyLoadPrivilegeQualifier(expr)(qualifiers)} TO ${Prettifier.escapeNames(roleNames)}"
+
+      case x @ RevokePrivilege(_: LoadPrivilege, _, _, qualifiers, roleNames, _) =>
+        s"${x.name} ON ${Prettifier.prettifyLoadPrivilegeQualifier(expr)(qualifiers)} FROM ${Prettifier.escapeNames(roleNames)}"
 
       // show privileges
 
@@ -1371,6 +1386,16 @@ object Prettifier {
     }
     val scope = s"${extractGraphScope(graphScope)}"
     s"$privilegeName$resourceName ON $scope$qualifierString $preposition ${Prettifier.escapeNames(roleNames)}"
+  }
+
+  def prettifyLoadPrivilegeQualifier(
+    expr: ExpressionStringifier
+  ): PartialFunction[List[PrivilegeQualifier], String] = {
+    case LoadAllQualifier() :: Nil                  => s"ALL DATA"
+    case LoadUrlQualifier(Left(urlString)) :: Nil   => s"URL ${expr.quote(urlString)}"
+    case LoadUrlQualifier(Right(urlParam)) :: Nil   => s"URL ${expr(urlParam)}"
+    case LoadCidrQualifier(Left(cidrString)) :: Nil => s"CIDR ${expr.quote(cidrString)}"
+    case LoadCidrQualifier(Right(cidrParam)) :: Nil => s"CIDR ${expr(cidrParam)}"
   }
 
   def prettifyGraphQualifier(action: GraphAction, qualifier: List[PrivilegeQualifier]): String = {

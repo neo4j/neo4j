@@ -136,6 +136,7 @@ import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.FileResource
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.FunctionQualifier
@@ -160,7 +161,13 @@ import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.ListTypeName
+import org.neo4j.cypher.internal.ast.LoadAction
+import org.neo4j.cypher.internal.ast.LoadAllQualifier
 import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.LoadCidrQualifier
+import org.neo4j.cypher.internal.ast.LoadPrivilege
+import org.neo4j.cypher.internal.ast.LoadPrivilegeQualifier
+import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.MatchAction
@@ -2315,6 +2322,15 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       } yield (qualifier, Some(resource))
     }
 
+  def _loadQualifier: Gen[List[LoadPrivilegeQualifier]] = for {
+    // not a name as such but it's a string or parameter so :shrug:
+    urlCidr <- _nameAsEither
+    loadAll = LoadAllQualifier()(pos)
+    loadCidr = LoadCidrQualifier(urlCidr)(pos)
+    loadUrl = LoadUrlQualifier(urlCidr)(pos)
+    qualifier <- oneOf(loadAll, loadCidr, loadUrl)
+  } yield List(qualifier)
+
   def _showSupportedPrivileges: Gen[ShowSupportedPrivilegeCommand] = for {
     yields <- _eitherYieldOrWhere
   } yield ShowSupportedPrivilegeCommand(yields)(pos)
@@ -2400,12 +2416,26 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     graph <- oneOf(graphGrant, graphDeny, graphRevoke)
   } yield graph
 
+  def _loadPrivilege: Gen[PrivilegeCommand] = for {
+    qualifier <- _loadQualifier
+    roleNames <- _listOfNameOfEither
+    revokeType <- _revokeType
+    immutable <- boolean
+    resource <- some(FileResource()(pos))
+    loadPriv = LoadPrivilege(LoadAction)(pos)
+    loadGrant = GrantPrivilege(loadPriv, immutable, resource, qualifier, roleNames)(pos)
+    loadDeny = DenyPrivilege(loadPriv, immutable, resource, qualifier, roleNames)(pos)
+    loadRevoke = RevokePrivilege(loadPriv, immutable, resource, qualifier, roleNames, revokeType)(pos)
+    load <- oneOf(loadGrant, loadDeny, loadRevoke)
+  } yield load
+
   def _privilegeCommand: Gen[AdministrationCommand] = oneOf(
     _showPrivileges,
     _showPrivilegeCommands,
     _dbmsPrivilege,
     _databasePrivilege,
     _graphPrivilege,
+    _loadPrivilege,
     _showSupportedPrivileges
   )
 

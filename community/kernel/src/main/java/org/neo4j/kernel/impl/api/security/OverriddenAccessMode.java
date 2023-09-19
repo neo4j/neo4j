@@ -241,6 +241,11 @@ public class OverriddenAccessMode extends WrappedAccessMode {
     }
 
     @Override
+    public PermissionState allowsLoadAllData() {
+        return wrapping.allowsLoadAllData();
+    }
+
+    @Override
     public String name() {
         return MessageUtil.overriddenMode(original.name(), wrapping.name());
     }

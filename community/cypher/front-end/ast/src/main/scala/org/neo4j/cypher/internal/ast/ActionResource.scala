@@ -41,3 +41,5 @@ final case class AllLabelResource()(val position: InputPosition) extends ActionR
 final case class NoResource()(val position: InputPosition) extends ActionResource
 
 final case class DatabaseResource()(val position: InputPosition) extends ActionResource
+
+final case class FileResource()(val position: InputPosition) extends ActionResource

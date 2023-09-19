@@ -530,6 +530,9 @@ public interface ASTFactory<
     PRIVILEGE_TYPE dbmsPrivilege(
             POS p, ADMINISTRATION_ACTION action, List<PRIVILEGE_QUALIFIER> qualifier, boolean immutable);
 
+    PRIVILEGE_TYPE loadPrivilege(
+            POS p, SimpleEither<String, PARAMETER> url, SimpleEither<String, PARAMETER> cidr, boolean immutable);
+
     PRIVILEGE_TYPE graphPrivilege(
             POS p,
             ADMINISTRATION_ACTION action,

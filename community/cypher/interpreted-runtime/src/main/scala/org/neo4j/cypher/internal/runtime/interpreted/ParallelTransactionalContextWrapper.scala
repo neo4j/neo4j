@@ -154,7 +154,7 @@ class ParallelTransactionalContextWrapper(
 
   override def cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 
-  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(url)
+  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(securityContext, url)
 
   override def userTransactionId: String = unsupported()
 

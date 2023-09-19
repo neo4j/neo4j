@@ -804,6 +804,12 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL loadPrivilege(
+            NULL p, SimpleEither<String, Object> url, SimpleEither<String, Object> cidr, boolean immutable) {
+        throw new UnsupportedOperationException("loadPrivilege is not a literal");
+    }
+
+    @Override
     public NULL privilegeAction(ActionType action) {
         throw new UnsupportedOperationException("privilegeAction is not a literal");
     }

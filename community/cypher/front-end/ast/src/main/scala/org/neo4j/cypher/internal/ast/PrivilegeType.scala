@@ -27,3 +27,6 @@ final case class DatabasePrivilege(action: DatabaseAction, scope: DatabaseScope)
     extends PrivilegeType(action.name)
 
 final case class DbmsPrivilege(action: DbmsAction)(val position: InputPosition) extends PrivilegeType(action.name)
+
+final case class LoadPrivilege(action: DataExchangeAction)(val position: InputPosition)
+    extends PrivilegeType(action.name)

@@ -160,3 +160,29 @@ final case class SettingQualifier(glob: String)(val position: InputPosition)
 final case class SettingAllQualifier()(val position: InputPosition) extends SettingPrivilegeQualifier {
   override def dup(children: Seq[AnyRef]): SettingAllQualifier.this.type = this
 }
+
+sealed trait LoadPrivilegeQualifier extends PrivilegeQualifier
+
+final case class LoadAllQualifier()(val position: InputPosition) extends LoadPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): LoadAllQualifier.this.type = this
+}
+
+final case class LoadCidrQualifier(cidr: Either[String, Parameter])(val position: InputPosition)
+    extends LoadPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): LoadCidrQualifier.this.type = {
+    LoadCidrQualifier(
+      children.head.asInstanceOf[Either[String, Parameter]]
+    )(position).asInstanceOf[this.type]
+  }
+}
+
+final case class LoadUrlQualifier(url: Either[String, Parameter])(val position: InputPosition)
+    extends LoadPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): LoadUrlQualifier.this.type = {
+    LoadUrlQualifier(
+      children.head.asInstanceOf[Either[String, Parameter]]
+    )(position).asInstanceOf[this.type]
+  }
+}

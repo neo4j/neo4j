@@ -71,7 +71,7 @@ class AdministrationAndSchemaCommandParserTestBase
   implicit val stringConvertor: String => Either[String, Parameter] = s => Left(s)
   implicit val namespacedNameConvertor: String => DatabaseName = s => NamespacedName(s)(pos)
 
-  val propSeq = Seq("prop")
+  val propSeq: Seq[String] = Seq("prop")
   val accessString = "access"
   val actionString = "action"
   val grantedString: StringLiteral = literalString("GRANTED")
@@ -155,6 +155,13 @@ class AdministrationAndSchemaCommandParserTestBase
     (
       ast.DatabaseAction,
       ast.DatabaseScope,
+      Seq[Either[String, Parameter]],
+      Immutable
+    ) => InputPosition => ast.Statement
+
+  type loadPrivilegeFunc =
+    (
+      ast.LoadPrivilegeQualifier,
       Seq[Either[String, Parameter]],
       Immutable
     ) => InputPosition => ast.Statement

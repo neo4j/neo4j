@@ -178,17 +178,17 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
               // LABELS instead of LABEL
 
               test(s"$verb$immutableString $setOrRemove LABELS label ON GRAPH * $preposition role") {
-                assertFailsWithMessageStart(testName, s"""Invalid input 'LABELS': expected""")
+                assertFailsWithMessageStart(testName, """Invalid input 'LABELS': expected""")
               }
 
               // Database instead of graph keyword
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASES * $preposition role") {
-                assertFailsWithMessageStart(testName, s"""Invalid input 'DATABASES': expected""")
+                assertFailsWithMessageStart(testName, """Invalid input 'DATABASES': expected""")
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASE foo $preposition role") {
-                assertFailsWithMessageStart(testName, s"""Invalid input 'DATABASE': expected""")
+                assertFailsWithMessageStart(testName, """Invalid input 'DATABASE': expected""")
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON HOME DATABASE $preposition role") {

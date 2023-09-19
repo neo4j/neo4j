@@ -148,6 +148,7 @@ import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.FileResource
 import org.neo4j.cypher.internal.ast.FloatTypeName
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FulltextIndexes
@@ -175,7 +176,12 @@ import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.ListTypeName
+import org.neo4j.cypher.internal.ast.LoadAction
+import org.neo4j.cypher.internal.ast.LoadAllQualifier
 import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.LoadCidrQualifier
+import org.neo4j.cypher.internal.ast.LoadPrivilege
+import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.LocalDateTimeTypeName
 import org.neo4j.cypher.internal.ast.LocalTimeTypeName
 import org.neo4j.cypher.internal.ast.LookupIndexes
@@ -2360,6 +2366,31 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
     immutable: Boolean
   ): Privilege =
     Privilege(GraphPrivilege(action.asInstanceOf[GraphAction], scope)(p), resource, qualifier, immutable)
+
+  override def loadPrivilege(
+    p: InputPosition,
+    url: SimpleEither[String, Parameter],
+    cidr: SimpleEither[String, Parameter],
+    immutable: Boolean
+  ): Privilege = {
+    if (url != null) {
+      Privilege(
+        LoadPrivilege(LoadAction)(p),
+        FileResource()(p),
+        util.List.of(LoadUrlQualifier(url.asScala)(p)),
+        immutable
+      )
+    } else if (cidr != null) {
+      Privilege(
+        LoadPrivilege(LoadAction)(p),
+        FileResource()(p),
+        util.List.of(LoadCidrQualifier(cidr.asScala)(p)),
+        immutable
+      )
+    } else {
+      Privilege(LoadPrivilege(LoadAction)(p), FileResource()(p), util.List.of(LoadAllQualifier()(p)), immutable)
+    }
+  }
 
   override def privilegeAction(action: ActionType): AdministrationAction = action match {
     case ActionType.DATABASE_ALL          => AllDatabaseAction

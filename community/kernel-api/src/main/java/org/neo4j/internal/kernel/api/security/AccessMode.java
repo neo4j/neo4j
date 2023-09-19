@@ -314,6 +314,11 @@ public interface AccessMode {
         public boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey) {
             return write;
         }
+
+        @Override
+        public PermissionState allowsLoadAllData() {
+            return PermissionState.fromAllowList(read);
+        }
     }
 
     boolean allowsWrites();
@@ -566,6 +571,8 @@ public interface AccessMode {
     boolean allowsSetProperty(Supplier<TokenSet> labels, int propertyKey);
 
     boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey);
+
+    PermissionState allowsLoadAllData();
 
     String name();
 

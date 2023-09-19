@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationAction
+import org.neo4j.cypher.internal.ast.DataExchangeAction
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
@@ -336,6 +337,46 @@ case class AssertGraphPrivilegeCanBeMutated(
   action: GraphAction,
   resource: ActionResource,
   graph: PrivilegeCommandScope,
+  qualifier: PrivilegeQualifier,
+  roleName: Either[String, Parameter],
+  revokeType: String
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class GrantLoadAction(
+  source: PrivilegePlan,
+  action: DataExchangeAction,
+  resource: ActionResource,
+  qualifier: PrivilegeQualifier,
+  roleName: Either[String, Parameter],
+  immutable: Boolean,
+  command: String
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class DenyLoadAction(
+  source: PrivilegePlan,
+  action: DataExchangeAction,
+  resource: ActionResource,
+  qualifier: PrivilegeQualifier,
+  roleName: Either[String, Parameter],
+  immutable: Boolean,
+  command: String
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class RevokeLoadAction(
+  source: PrivilegePlan,
+  action: DataExchangeAction,
+  resource: ActionResource,
+  qualifier: PrivilegeQualifier,
+  roleName: Either[String, Parameter],
+  revokeType: String,
+  immutableOnly: Boolean,
+  command: String
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class AssertLoadPrivilegeCanBeMutated(
+  source: PrivilegePlan,
+  action: DataExchangeAction,
+  resource: ActionResource,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String

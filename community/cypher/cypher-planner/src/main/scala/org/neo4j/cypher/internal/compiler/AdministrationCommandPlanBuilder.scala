@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.LoadPrivilege
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
@@ -152,6 +153,8 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Alias
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.CompositeDatabase
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.DatabaseOrLocalAlias
+import org.neo4j.cypher.internal.logical.plans.DenyLoadAction
+import org.neo4j.cypher.internal.logical.plans.GrantLoadAction
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -742,6 +745,95 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // LOAD privileges
+      case g @ GrantPrivilege(
+          LoadPrivilege(action),
+          immutable,
+          optionalResource,
+          qualifiers,
+          roleNames
+        ) =>
+        val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
+        val plan = (for (
+          roleName <- roleNames; qualifier <- qualifiers;
+          simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
+        ) yield {
+          (roleName, simpleQualifiers, resource)
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
+        ) { case (source, (roleName, qualifier, resource)) =>
+          GrantLoadAction(source, action, resource, qualifier, roleName, immutable, prettifier.asString(g))
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(g)))
+
+      case d @ DenyPrivilege(
+          LoadPrivilege(action),
+          immutable,
+          optionalResource,
+          qualifiers,
+          roleNames
+        ) =>
+        val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
+        val plan = (for (
+          roleName <- roleNames; qualifier <- qualifiers;
+          simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
+        ) yield {
+          (roleName, simpleQualifiers, resource)
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
+        ) { case (source, (roleName, qualifier, resource)) =>
+          DenyLoadAction(source, action, resource, qualifier, roleName, immutable, prettifier.asString(d))
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(d)))
+
+      case rp @ RevokePrivilege(
+          LoadPrivilege(action),
+          immutableOnly,
+          optionalResource,
+          qualifiers,
+          roleNames,
+          revokeType
+        ) =>
+        val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
+        val plan = (for (
+          roleName <- roleNames; qualifier <- qualifiers;
+          simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
+        ) yield {
+          (roleName, simpleQualifiers, resource)
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]
+        ) { case (source, (roleName, qualifier, resource)) =>
+          planRevokes(
+            source,
+            revokeType,
+            (s, r) => {
+              plans.RevokeLoadAction(
+                planRevokes(
+                  s,
+                  revokeType,
+                  (s, r) =>
+                    plans.AssertLoadPrivilegeCanBeMutated(
+                      s,
+                      action,
+                      resource,
+                      qualifier,
+                      roleName,
+                      r.relType
+                    )
+                ),
+                action,
+                resource,
+                qualifier,
+                roleName,
+                r.relType,
+                immutableOnly,
+                prettifier.asString(rp)
+              )
+            }
+          )
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(rp)))
 
       // SHOW [ALL | ROLE role | ROLES role1, role2 | USER [user] | USERS user1, user2] PRIVILEGES
       case sp: ShowPrivileges =>

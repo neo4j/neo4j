@@ -32,11 +32,15 @@ public class TestAccessMode implements AccessMode {
     private final boolean allowWrite;
     private final boolean allowSchema;
 
-    public TestAccessMode(boolean allowRead, boolean allowReadAll, boolean allowWrite, boolean allowSchema) {
+    private final boolean allowLoad;
+
+    public TestAccessMode(
+            boolean allowRead, boolean allowReadAll, boolean allowWrite, boolean allowSchema, boolean allowLoad) {
         this.allowRead = allowRead;
         this.allowReadAll = allowReadAll;
         this.allowWrite = allowWrite;
         this.allowSchema = allowSchema;
+        this.allowLoad = allowLoad;
     }
 
     @Override
@@ -269,6 +273,11 @@ public class TestAccessMode implements AccessMode {
     @Override
     public boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey) {
         return allowWrite;
+    }
+
+    @Override
+    public PermissionState allowsLoadAllData() {
+        return PermissionState.fromAllowList(allowLoad);
     }
 
     @Override

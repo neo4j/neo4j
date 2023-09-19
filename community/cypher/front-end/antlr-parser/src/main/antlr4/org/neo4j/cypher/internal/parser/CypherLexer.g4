@@ -173,6 +173,9 @@ CASE:
 CHANGE:
    C H A N G E;
 
+CIDR:
+   C I D R;
+
 COLLECT:
    C O L L E C T;
 
@@ -841,6 +844,9 @@ UNIQUENESS:
 
 UNWIND:
    U N W I N D;
+
+URL:
+   U R L;
 
 USE:
    U S E;

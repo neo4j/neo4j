@@ -1149,6 +1149,12 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL loadPrivilege(
+            NULL p, SimpleEither<String, NULL> url, SimpleEither<String, NULL> cidr, boolean immutable) {
+        return null;
+    }
+
+    @Override
     public NULL privilegeAction(ActionType action) {
         return null;
     }

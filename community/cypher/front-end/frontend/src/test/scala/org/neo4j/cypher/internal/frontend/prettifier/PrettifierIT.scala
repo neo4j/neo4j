@@ -2333,7 +2333,10 @@ class PrettifierIT extends CypherFunSuite {
           s"$action show settings * on dbms $preposition role" ->
             s"$action SHOW SETTING * ON DBMS $preposition role",
           s"$action show setting math.sin, ma*.`*/a?`,math.`c%s` on dbms $preposition role" ->
-            s"$action SHOW SETTING math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role"
+            s"$action SHOW SETTING math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role",
+          s"$action load on all data $preposition role" -> s"$action LOAD ON ALL DATA $preposition role",
+          s"$action load on cidr '192.168.1.6/20' $preposition role" -> s"""$action LOAD ON CIDR "192.168.1.6/20" $preposition role""",
+          s"$action load on url 'ftp://www.data.com/mydata/*' $preposition role" -> s"""$action LOAD ON URL "ftp://www.data.com/mydata/*" $preposition role"""
         )
     }
   }

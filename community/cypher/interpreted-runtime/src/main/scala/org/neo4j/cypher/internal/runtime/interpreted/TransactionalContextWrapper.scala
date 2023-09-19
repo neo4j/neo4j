@@ -177,7 +177,7 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override val cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 
-  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(url)
+  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(securityContext, url)
 
   override def userTransactionId: String = {
     TransactionId(tc.databaseId().name(), tc.kernelTransaction().getTransactionSequenceNumber).toString

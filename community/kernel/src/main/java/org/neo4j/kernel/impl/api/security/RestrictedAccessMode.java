@@ -265,6 +265,11 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     }
 
     @Override
+    public PermissionState allowsLoadAllData() {
+        return original.allowsLoadAllData().restrict(wrapping.allowsLoadAllData());
+    }
+
+    @Override
     public String name() {
         return MessageUtil.restrictedMode(original.name(), wrapping.name());
     }

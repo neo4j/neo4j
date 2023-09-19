@@ -45,6 +45,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CALL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CASE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CHANGE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CIDR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COLLECT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMAND;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMANDS;
@@ -239,6 +240,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNIQUE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNIQUENESS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNWIND;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.URL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USERS;
@@ -293,6 +295,7 @@ public class IdentifierTokens {
             BY,
             CALL,
             CASE,
+            CIDR,
             CHANGE,
             COLLECT,
             COMMAND,
@@ -487,6 +490,7 @@ public class IdentifierTokens {
             UNIQUE,
             UNIQUENESS,
             UNWIND,
+            URL,
             USE,
             USER,
             USERS,

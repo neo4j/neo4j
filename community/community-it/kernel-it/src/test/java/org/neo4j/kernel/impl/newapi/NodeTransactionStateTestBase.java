@@ -751,7 +751,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node2 = createNode();
 
         SecurityContext loginContext = new SecurityContext(
-                AuthSubject.AUTH_DISABLED, new TestAccessMode(true, false, true, false), EMBEDDED_CONNECTION, null);
+                AuthSubject.AUTH_DISABLED,
+                new TestAccessMode(true, false, true, false, false),
+                EMBEDDED_CONNECTION,
+                null);
         try (KernelTransaction tx = beginTransaction(loginContext)) {
             // when
             tx.dataWrite().nodeAddLabel(node2.node, node1.labels[0]);
@@ -771,7 +774,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         createNode();
 
         SecurityContext loginContext = new SecurityContext(
-                AuthSubject.AUTH_DISABLED, new TestAccessMode(true, false, true, false), EMBEDDED_CONNECTION, null);
+                AuthSubject.AUTH_DISABLED,
+                new TestAccessMode(true, false, true, false, false),
+                EMBEDDED_CONNECTION,
+                null);
         try (KernelTransaction tx = beginTransaction(loginContext)) {
             // when
             tx.dataWrite().nodeCreate();
@@ -791,7 +797,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node2 = createNode("label");
 
         SecurityContext loginContext = new SecurityContext(
-                AuthSubject.AUTH_DISABLED, new TestAccessMode(true, false, true, false), EMBEDDED_CONNECTION, null);
+                AuthSubject.AUTH_DISABLED,
+                new TestAccessMode(true, false, true, false, false),
+                EMBEDDED_CONNECTION,
+                null);
         try (KernelTransaction tx = beginTransaction(loginContext)) {
             // when
             tx.dataWrite().nodeRemoveLabel(node2.node, node2.labels[0]);
@@ -811,7 +820,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node2 = createNode("label");
 
         SecurityContext loginContext = new SecurityContext(
-                AuthSubject.AUTH_DISABLED, new TestAccessMode(true, false, true, false), EMBEDDED_CONNECTION, null);
+                AuthSubject.AUTH_DISABLED,
+                new TestAccessMode(true, false, true, false, false),
+                EMBEDDED_CONNECTION,
+                null);
         try (KernelTransaction tx = beginTransaction(loginContext)) {
             // when
             tx.dataWrite().nodeDelete(node2.node);

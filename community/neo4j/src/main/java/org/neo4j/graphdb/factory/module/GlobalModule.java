@@ -33,6 +33,7 @@ import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.neo4j.capabilities.CapabilitiesService;
 import org.neo4j.capabilities.DBMSCapabilities;
@@ -45,6 +46,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -69,7 +71,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
-import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CapacityLimitingBlockAllocatorDecorator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -138,6 +139,8 @@ public class GlobalModule {
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final CapabilitiesService capabilitiesService;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
+
+    private final Map<String, URLAccessRule> urlAccessRules;
 
     /**
      * @param globalConfig         configuration affecting global aspects of the system.
@@ -245,7 +248,7 @@ public class GlobalModule {
                 globalDependencies,
                 ExtensionFailureStrategies.fail()));
 
-        globalDependencies.satisfyDependency(URLAccessRules.combined(externalDependencies.urlAccessRules()));
+        urlAccessRules = externalDependencies.urlAccessRules();
 
         databaseEventListeners = new DatabaseEventListeners(logService.getInternalLog(DatabaseEventListeners.class));
         Iterable<? extends DatabaseEventListener> externalListeners = externalDependencies.databaseEventListeners();
@@ -532,5 +535,9 @@ public class GlobalModule {
 
     public CapabilitiesService getCapabilitiesService() {
         return capabilitiesService;
+    }
+
+    public Map<String, URLAccessRule> getUrlAccessRules() {
+        return urlAccessRules;
     }
 }

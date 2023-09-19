@@ -185,7 +185,7 @@ trait ParserTestBase[S <: ParserRuleContext, T, J] extends CypherFunSuite {
       }
       ResultCheck(Seq(converted), input)
 
-    case Failure(exception) => fail(generateErrorMessage(input, exception))
+    case Failure(exception) => fail(generateErrorMessage(input, exception), exception)
   }
 
   private def generateErrorMessage(input: String, exception: Throwable): String = {

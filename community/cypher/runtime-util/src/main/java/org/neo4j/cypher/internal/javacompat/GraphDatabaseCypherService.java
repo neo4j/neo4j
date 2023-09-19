@@ -26,24 +26,25 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class GraphDatabaseCypherService implements GraphDatabaseQueryService {
     private final GraphDatabaseAPI graph;
-    private final URLAccessRule urlAccessRule;
+    private final URLAccessRules urlAccessRule;
     private final Config config;
 
     public GraphDatabaseCypherService(GraphDatabaseService graph) {
         this.graph = (GraphDatabaseAPI) graph;
         DependencyResolver dependencyResolver = getDependencyResolver();
-        this.urlAccessRule = dependencyResolver.resolveDependency(URLAccessRule.class);
+        this.urlAccessRule = dependencyResolver.resolveDependency(URLAccessRules.class);
         this.config = dependencyResolver.resolveDependency(Config.class);
     }
 
@@ -74,8 +75,8 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService {
     }
 
     @Override
-    public URL validateURLAccess(URL url) throws URLAccessValidationError {
-        return urlAccessRule.validate(config, url);
+    public URL validateURLAccess(SecurityContext sec, URL url) throws URLAccessValidationError {
+        return urlAccessRule.validate(config, sec, url);
     }
 
     public Transaction beginTx() {

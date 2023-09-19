@@ -421,6 +421,7 @@ TOKEN [IGNORE_CASE] :
     | < CALL: "CALL" >
     | < CASE: "CASE" >
     | < CHANGE: "CHANGE">
+    | < CIDR: "CIDR">
     | < COLLECT: "COLLECT">
     | < COLON: ":" >
     | < COLONCOLON: "::" >
@@ -644,6 +645,7 @@ TOKEN [IGNORE_CASE] :
     | < UNIQUE: "UNIQUE" >
     | < UNIQUENESS: "UNIQUENESS" >
     | < UNWIND: "UNWIND" >
+    | < URL: "URL" >
     | < USE: "USE" >
     | < USER: "USER">
     | < USERS: "USERS">
@@ -5786,6 +5788,7 @@ PRIVILEGE_TYPE privilege(Token start, boolean immutable) throws Exception:
         | privilege=createPrivilege(start, immutable)
         | privilege=dropPrivilege(start, immutable)
         | privilege=showPrivilege(start, immutable)
+        | privilege=loadPrivilege(start, immutable)
         | privilege=setPrivilege(start, immutable)
         | privilege=removePrivilege(start, immutable)
         | privilege=databasePrivilege(start, immutable)
@@ -5902,6 +5905,22 @@ PRIVILEGE_TYPE dropPrivilege(Token start, boolean immutable):
            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier(), immutable ); }
        )
     ) { return privilege; }
+}
+
+PRIVILEGE_TYPE loadPrivilege(Token start, boolean immutable):
+{
+    SimpleEither<String,PARAMETER> cidr = null;
+    SimpleEither<String,PARAMETER> url = null;
+}
+{
+    <LOAD><ON>
+    (
+    <URL> url=StringOrParameter() 
+    | <CIDR> cidr=StringOrParameter()
+    | <ALL> <DATA>
+    ){
+      return astFactory.loadPrivilege(pos(start), url, cidr, immutable);
+    }
 }
 
 PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
@@ -6879,6 +6898,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<CALL>
         | t=<CASE>
         | t=<CHANGE>
+        | t=<CIDR>
         | t=<COLLECT>
         | t=<COMMAND>
         | t=<COMMANDS>
@@ -7067,6 +7087,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<UNIQUE>
         | t=<UNIQUENESS>
         | t=<UNWIND>
+        | t=<URL>
         | t=<USE>
         | t=<USER>
         | t=<USERS>

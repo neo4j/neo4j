@@ -911,7 +911,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
 
         SecurityContext loginContext = new SecurityContext(
-                AuthSubject.AUTH_DISABLED, new TestAccessMode(true, false, true, false), EMBEDDED_CONNECTION, null);
+                AuthSubject.AUTH_DISABLED,
+                new TestAccessMode(true, false, true, false, false),
+                EMBEDDED_CONNECTION,
+                null);
         try (KernelTransaction tx = beginTransaction(loginContext)) {
             Write write = tx.dataWrite();
             write.relationshipCreate(write.nodeCreate(), relationship, write.nodeCreate());
@@ -936,7 +939,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
 
         SecurityContext loginContext = new SecurityContext(
-                AuthSubject.AUTH_DISABLED, new TestAccessMode(true, false, true, false), EMBEDDED_CONNECTION, null);
+                AuthSubject.AUTH_DISABLED,
+                new TestAccessMode(true, false, true, false, false),
+                EMBEDDED_CONNECTION,
+                null);
         try (KernelTransaction tx = beginTransaction(loginContext)) {
             Write write = tx.dataWrite();
             write.relationshipDelete(relationship);
@@ -969,7 +975,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
 
         SecurityContext loginContext = new SecurityContext(
-                AuthSubject.AUTH_DISABLED, new TestAccessMode(true, false, true, false), EMBEDDED_CONNECTION, null);
+                AuthSubject.AUTH_DISABLED,
+                new TestAccessMode(true, false, true, false, false),
+                EMBEDDED_CONNECTION,
+                null);
         try (KernelTransaction tx = beginTransaction(loginContext);
                 NodeCursor node = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 RelationshipTraversalCursor traversal =

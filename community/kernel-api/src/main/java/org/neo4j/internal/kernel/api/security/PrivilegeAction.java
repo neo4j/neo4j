@@ -122,6 +122,11 @@ public enum PrivilegeAction {
 
     SHOW_SETTING,
 
+    /**
+     * Load data using LOAD CSV
+     */
+    LOAD,
+
     // Some grouping actions that represent super-sets of other actions
 
     ADMIN {
