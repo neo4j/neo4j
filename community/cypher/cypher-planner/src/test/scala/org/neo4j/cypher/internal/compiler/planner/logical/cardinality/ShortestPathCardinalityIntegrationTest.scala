@@ -93,6 +93,14 @@ class ShortestPathCardinalityIntegrationTest extends CypherFunSuite with Cardina
     )
   }
 
+  test("ANY 1 with a post-filter on a relationship") {
+    queryShouldHaveCardinality(
+      configuration,
+      """MATCH ANY 1 (from:Stop)((a:Stop)-[n:NEXT]->(b:Stop)){1,5}(via:Stop)-[o:NEXT]->(to:Stop) WHERE o.serviceId = 1""",
+      stopNodes * stopNodes * nextServiceIdSelectivity
+    )
+  }
+
   // However the same pattern would produce, on average, fewer than two rows per pair, and so we are going to return all the rows.
   // It's almost as if this pattern and statistics were not completely random…
   test("ANY 2 is slightly lower than 2 paths per partition") {

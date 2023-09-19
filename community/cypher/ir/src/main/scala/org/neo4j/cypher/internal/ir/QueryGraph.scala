@@ -501,7 +501,21 @@ final case class QueryGraph private (
   def patternRelationshipTypes: Map[String, RelTypeName] = {
     // Pattern relationship type predicates are inlined in PlannerQueryBuilder::inlineRelationshipTypePredicates().
     // Therefore, we don't need to look at predicates in selections.
-    patternRelationships.collect { case PatternRelationship(name, _, _, Seq(relType), _) => name -> relType }.toMap
+    val selectivePathPatternsRelationships =
+      for {
+        selectivePathPattern <- selectivePathPatterns.toVector
+        connection <- selectivePathPattern.pathPattern.connections.toIterable
+        relationship <- connection match {
+          case patternRelationship: PatternRelationship => Some(patternRelationship)
+          case _: QuantifiedPathPattern                 => None
+        }
+      } yield relationship
+
+    val allRelationships = patternRelationships ++ selectivePathPatternsRelationships
+
+    allRelationships.collect {
+      case PatternRelationship(name, _, _, Seq(relType), _) => name -> relType
+    }.toMap
   }
 
   /**
