@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -73,7 +74,7 @@ public interface InternalErrorTracer {
 
         @Override
         public void traceReadError(Throwable throwable) {
-            if (!isTransient(throwable)) {
+            if (isUnexpected(throwable)) {
                 log.info("Internal read error observed", throwable);
                 internalReadErrors.increment();
             }
@@ -81,10 +82,18 @@ public interface InternalErrorTracer {
 
         @Override
         public void traceWriteError(Throwable throwable) {
-            if (!isTransient(throwable)) {
+            if (isUnexpected(throwable)) {
                 log.info("Internal write error observed", throwable);
                 internalWriteErrors.increment();
             }
+        }
+
+        private static boolean isUnexpected(Throwable throwable) {
+            return !isTransient(throwable) && !isConstraintViolation(throwable);
+        }
+
+        private static boolean isConstraintViolation(Throwable throwable) {
+            return throwable instanceof ConstraintViolationTransactionFailureException;
         }
 
         private static boolean isTransient(Throwable throwable) {
