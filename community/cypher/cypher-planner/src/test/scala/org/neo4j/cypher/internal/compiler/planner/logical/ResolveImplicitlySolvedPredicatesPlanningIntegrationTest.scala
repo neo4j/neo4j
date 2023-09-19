@@ -96,7 +96,7 @@ class ResolveImplicitlySolvedPredicatesPlanningIntegrationTest
       .build()
   }
 
-  test("nodeByLabelScan should implicitly solve .prop isTyped when type constraint exists 1") {
+  test("nodeByLabelScan should implicitly solve .prop isTyped when type constraint exists") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
@@ -110,7 +110,7 @@ class ResolveImplicitlySolvedPredicatesPlanningIntegrationTest
       .build()
   }
 
-  test("relationshipByTypeScan should implicitly solve .prop isTyped when type constraint exists 1") {
+  test("relationshipByTypeScan should implicitly solve .prop isTyped when type constraint exists") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setAllRelationshipsCardinality(100)
@@ -121,6 +121,37 @@ class ResolveImplicitlySolvedPredicatesPlanningIntegrationTest
     val plan = cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop :: Date RETURN r")
     plan shouldEqual cfg.planBuilder()
       .produceResults("r")
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+  }
+
+  test("nodeByLabelScan should NOT implicitly solve .prop isTyped NOT NULL when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodePropertyTypeConstraint("A", "prop", SchemaValueType.STRING)
+      .build()
+
+    val plan = cfg.plan("MATCH (a:A) WHERE a.prop :: String NOT NULL RETURN a")
+    plan shouldEqual cfg.planBuilder()
+      .produceResults("a")
+      .filter("a.prop IS :: STRING NOT NULL")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
+
+  test("relationshipByTypeScan should NOT implicitly solve .prop isTyped NOT NULL when type constraint exists") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]->()", 50)
+      .addRelationshipPropertyTypeConstraint("REL", "prop", SchemaValueType.DATE)
+      .build()
+
+    val plan = cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop :: Date NOT NULL RETURN r")
+    plan shouldEqual cfg.planBuilder()
+      .produceResults("r")
+      .filter("r.prop IS :: DATE NOT NULL")
       .relationshipTypeScan("(a)-[r:REL]->(b)")
       .build()
   }

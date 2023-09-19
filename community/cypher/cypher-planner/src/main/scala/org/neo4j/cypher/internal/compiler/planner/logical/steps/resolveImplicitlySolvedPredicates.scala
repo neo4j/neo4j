@@ -85,6 +85,7 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
       context.staticComponents.planningAttributes.solveds(plan.id).asSinglePlannerQuery.queryGraph.selections.labelInfo
     for {
       predicateCandidate <- unsolvedIsTypedPredicates
+      if predicateCandidate.predicate.typeName.isNullable
       label <- solvedLabelPredicates.getOrElse(predicateCandidate.variable.name, Set.empty)
       propertyType <- PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
       if context.staticComponents.planContext.hasNodePropertyTypeConstraint(
@@ -122,6 +123,7 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
 
     for {
       predicateCandidate <- unsolvedIsTypedPredicates
+      if predicateCandidate.predicate.typeName.isNullable
       relType <- solvedRelTypePredicates.getOrElse(predicateCandidate.variable.name, Set.empty)
       propertyType <- PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
       if context.staticComponents.planContext.hasRelationshipPropertyTypeConstraint(
