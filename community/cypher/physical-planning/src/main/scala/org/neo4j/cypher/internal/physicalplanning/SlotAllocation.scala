@@ -1222,8 +1222,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         lhs.newLong(innerStart, nullable, CTNode)
         lhs.newLong(end, nullable, CTNode)
-        groupNodes.foreach(n => lhs.newReference(n.groupName, false, CTList(CTNode)))
-        groupRelationships.foreach(r => lhs.newReference(r.groupName, false, CTList(CTRelationship)))
+        groupNodes.foreach(n => lhs.newReference(n.groupName, nullable, CTList(CTNode)))
+        groupRelationships.foreach(r => lhs.newReference(r.groupName, nullable, CTList(CTRelationship)))
         lhs.newMetaData(TRAIL_STATE_METADATA_KEY, plan.id)
 
       case _ =>
