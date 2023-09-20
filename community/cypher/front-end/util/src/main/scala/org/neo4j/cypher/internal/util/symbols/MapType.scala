@@ -16,13 +16,16 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object MapType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new MapType() {
-    val parentType = CTAny
-    override val toString = "Map"
-    override val toNeoTypeString = "MAP?"
-  }
+case class MapType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTAny
+  override val toString = "Map"
+  override val toCypherTypeString = "MAP"
+
+  override def sortOrder: Int = CypherTypeOrder.MAP.id
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed abstract class MapType extends CypherType

@@ -23,7 +23,29 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.DateType
+import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.FloatType
+import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.cypher.internal.util.symbols.ListType
+import org.neo4j.cypher.internal.util.symbols.LocalDateTimeType
+import org.neo4j.cypher.internal.util.symbols.LocalTimeType
+import org.neo4j.cypher.internal.util.symbols.MapType
+import org.neo4j.cypher.internal.util.symbols.NodeType
+import org.neo4j.cypher.internal.util.symbols.NothingType
+import org.neo4j.cypher.internal.util.symbols.NullType
+import org.neo4j.cypher.internal.util.symbols.PathType
+import org.neo4j.cypher.internal.util.symbols.PointType
+import org.neo4j.cypher.internal.util.symbols.PropertyValueType
+import org.neo4j.cypher.internal.util.symbols.RelationshipType
+import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
+import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
 
 /* Tests for creating and dropping constraints */
 class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -798,7 +820,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -814,7 +836,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -830,7 +852,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -846,7 +868,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -862,7 +884,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -878,7 +900,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -892,7 +914,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -908,7 +930,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -924,7 +946,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -940,7 +962,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -956,7 +978,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -972,7 +994,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -988,7 +1010,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.BooleanTypeName(isNullable = true)(pos),
+                BooleanType(isNullable = true)(pos),
                 None,
                 ast.IfExistsThrowError,
                 ast.OptionsMap(Map.empty),
@@ -1709,7 +1731,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("my_constraint"),
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -1725,7 +1747,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("my_constraint"),
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -1741,7 +1763,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("my_constraint"),
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -1757,7 +1779,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("my_constraint"),
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -1773,7 +1795,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("node"),
                 labelName("Label"),
                 prop("node", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("my_constraint"),
                 ast.IfExistsThrowError,
                 ast.OptionsMap(Map.empty),
@@ -1802,7 +1824,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("$my_constraint"),
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -1818,7 +1840,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("my_constraint"),
                 ast.IfExistsThrowError,
                 ast.NoOptions,
@@ -1834,7 +1856,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("$my_constraint"),
                 ast.IfExistsReplace,
                 ast.NoOptions,
@@ -1850,7 +1872,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("$my_constraint"),
                 ast.IfExistsInvalidSyntax,
                 ast.NoOptions,
@@ -1866,7 +1888,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 varFor("r"),
                 relTypeName("R"),
                 prop("r", "prop"),
-                ast.StringTypeName(isNullable = true)(pos),
+                StringType(isNullable = true)(pos),
                 Some("$my_constraint"),
                 ast.IfExistsDoNothing,
                 ast.NoOptions,
@@ -2013,234 +2035,234 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
   // allowed single types
   private val allowedNonListSingleTypes = Seq(
-    ("BOOL", ast.BooleanTypeName(isNullable = true)(pos)),
-    ("BOOLEAN", ast.BooleanTypeName(isNullable = true)(pos)),
-    ("VARCHAR", ast.StringTypeName(isNullable = true)(pos)),
-    ("STRING", ast.StringTypeName(isNullable = true)(pos)),
-    ("INTEGER", ast.IntegerTypeName(isNullable = true)(pos)),
-    ("INT", ast.IntegerTypeName(isNullable = true)(pos)),
-    ("SIGNED INTEGER", ast.IntegerTypeName(isNullable = true)(pos)),
-    ("FLOAT", ast.FloatTypeName(isNullable = true)(pos)),
-    ("DATE", ast.DateTypeName(isNullable = true)(pos)),
-    ("LOCAL TIME", ast.LocalTimeTypeName(isNullable = true)(pos)),
-    ("TIME WITHOUT TIMEZONE", ast.LocalTimeTypeName(isNullable = true)(pos)),
-    ("ZONED TIME", ast.ZonedTimeTypeName(isNullable = true)(pos)),
-    ("TIME WITH TIMEZONE", ast.ZonedTimeTypeName(isNullable = true)(pos)),
-    ("LOCAL DATETIME", ast.LocalDateTimeTypeName(isNullable = true)(pos)),
-    ("TIMESTAMP WITHOUT TIMEZONE", ast.LocalDateTimeTypeName(isNullable = true)(pos)),
-    ("ZONED DATETIME", ast.ZonedDateTimeTypeName(isNullable = true)(pos)),
-    ("TIMESTAMP WITH TIMEZONE", ast.ZonedDateTimeTypeName(isNullable = true)(pos)),
-    ("DURATION", ast.DurationTypeName(isNullable = true)(pos)),
-    ("POINT", ast.PointTypeName(isNullable = true)(pos))
+    ("BOOL", BooleanType(isNullable = true)(pos)),
+    ("BOOLEAN", BooleanType(isNullable = true)(pos)),
+    ("VARCHAR", StringType(isNullable = true)(pos)),
+    ("STRING", StringType(isNullable = true)(pos)),
+    ("INTEGER", IntegerType(isNullable = true)(pos)),
+    ("INT", IntegerType(isNullable = true)(pos)),
+    ("SIGNED INTEGER", IntegerType(isNullable = true)(pos)),
+    ("FLOAT", FloatType(isNullable = true)(pos)),
+    ("DATE", DateType(isNullable = true)(pos)),
+    ("LOCAL TIME", LocalTimeType(isNullable = true)(pos)),
+    ("TIME WITHOUT TIMEZONE", LocalTimeType(isNullable = true)(pos)),
+    ("ZONED TIME", ZonedTimeType(isNullable = true)(pos)),
+    ("TIME WITH TIMEZONE", ZonedTimeType(isNullable = true)(pos)),
+    ("LOCAL DATETIME", LocalDateTimeType(isNullable = true)(pos)),
+    ("TIMESTAMP WITHOUT TIMEZONE", LocalDateTimeType(isNullable = true)(pos)),
+    ("ZONED DATETIME", ZonedDateTimeType(isNullable = true)(pos)),
+    ("TIMESTAMP WITH TIMEZONE", ZonedDateTimeType(isNullable = true)(pos)),
+    ("DURATION", DurationType(isNullable = true)(pos)),
+    ("POINT", PointType(isNullable = true)(pos))
   )
 
   // disallowed single types (throws in semantic checking)
   private val disallowedNonListSingleTypes = Seq(
-    ("NOTHING", ast.NothingTypeName()(pos)),
-    ("NOTHING NOT NULL", ast.NothingTypeName()(pos)),
-    ("NULL", ast.NullTypeName()(pos)),
-    ("NULL NOT NULL", ast.NothingTypeName()(pos)),
-    ("BOOL NOT NULL", ast.BooleanTypeName(isNullable = false)(pos)),
-    ("BOOLEAN NOT NULL", ast.BooleanTypeName(isNullable = false)(pos)),
-    ("VARCHAR NOT NULL", ast.StringTypeName(isNullable = false)(pos)),
-    ("STRING NOT NULL", ast.StringTypeName(isNullable = false)(pos)),
-    ("INTEGER NOT NULL", ast.IntegerTypeName(isNullable = false)(pos)),
-    ("INT NOT NULL", ast.IntegerTypeName(isNullable = false)(pos)),
-    ("SIGNED INTEGER NOT NULL", ast.IntegerTypeName(isNullable = false)(pos)),
-    ("FLOAT NOT NULL", ast.FloatTypeName(isNullable = false)(pos)),
-    ("DATE NOT NULL", ast.DateTypeName(isNullable = false)(pos)),
-    ("LOCAL TIME NOT NULL", ast.LocalTimeTypeName(isNullable = false)(pos)),
-    ("TIME WITHOUT TIMEZONE NOT NULL", ast.LocalTimeTypeName(isNullable = false)(pos)),
-    ("ZONED TIME NOT NULL", ast.ZonedTimeTypeName(isNullable = false)(pos)),
-    ("TIME WITH TIMEZONE NOT NULL", ast.ZonedTimeTypeName(isNullable = false)(pos)),
-    ("LOCAL DATETIME NOT NULL", ast.LocalDateTimeTypeName(isNullable = false)(pos)),
-    ("TIMESTAMP WITHOUT TIMEZONE NOT NULL", ast.LocalDateTimeTypeName(isNullable = false)(pos)),
-    ("ZONED DATETIME NOT NULL", ast.ZonedDateTimeTypeName(isNullable = false)(pos)),
-    ("TIMESTAMP WITH TIMEZONE NOT NULL", ast.ZonedDateTimeTypeName(isNullable = false)(pos)),
-    ("DURATION NOT NULL", ast.DurationTypeName(isNullable = false)(pos)),
-    ("POINT NOT NULL", ast.PointTypeName(isNullable = false)(pos)),
-    ("NODE", ast.NodeTypeName(isNullable = true)(pos)),
-    ("NODE NOT NULL", ast.NodeTypeName(isNullable = false)(pos)),
-    ("ANY NODE", ast.NodeTypeName(isNullable = true)(pos)),
-    ("ANY NODE NOT NULL", ast.NodeTypeName(isNullable = false)(pos)),
-    ("VERTEX", ast.NodeTypeName(isNullable = true)(pos)),
-    ("VERTEX NOT NULL", ast.NodeTypeName(isNullable = false)(pos)),
-    ("ANY VERTEX", ast.NodeTypeName(isNullable = true)(pos)),
-    ("ANY VERTEX NOT NULL", ast.NodeTypeName(isNullable = false)(pos)),
-    ("RELATIONSHIP", ast.RelationshipTypeName(isNullable = true)(pos)),
-    ("RELATIONSHIP NOT NULL", ast.RelationshipTypeName(isNullable = false)(pos)),
-    ("ANY RELATIONSHIP", ast.RelationshipTypeName(isNullable = true)(pos)),
-    ("ANY RELATIONSHIP NOT NULL", ast.RelationshipTypeName(isNullable = false)(pos)),
-    ("EDGE", ast.RelationshipTypeName(isNullable = true)(pos)),
-    ("EDGE NOT NULL", ast.RelationshipTypeName(isNullable = false)(pos)),
-    ("ANY EDGE", ast.RelationshipTypeName(isNullable = true)(pos)),
-    ("ANY EDGE NOT NULL", ast.RelationshipTypeName(isNullable = false)(pos)),
-    ("MAP", ast.MapTypeName(isNullable = true)(pos)),
-    ("MAP NOT NULL", ast.MapTypeName(isNullable = false)(pos)),
-    ("ANY MAP", ast.MapTypeName(isNullable = true)(pos)),
-    ("ANY MAP NOT NULL", ast.MapTypeName(isNullable = false)(pos)),
-    ("PATH", ast.PathTypeName(isNullable = true)(pos)),
-    ("PATH NOT NULL", ast.PathTypeName(isNullable = false)(pos)),
-    ("ANY PROPERTY VALUE", ast.PropertyValueTypeName(isNullable = true)(pos)),
-    ("ANY PROPERTY VALUE NOT NULL", ast.PropertyValueTypeName(isNullable = false)(pos)),
-    ("PROPERTY VALUE", ast.PropertyValueTypeName(isNullable = true)(pos)),
-    ("PROPERTY VALUE NOT NULL", ast.PropertyValueTypeName(isNullable = false)(pos)),
-    ("ANY VALUE", ast.AnyTypeName(isNullable = true)(pos)),
-    ("ANY VALUE NOT NULL", ast.AnyTypeName(isNullable = false)(pos)),
-    ("ANY", ast.AnyTypeName(isNullable = true)(pos)),
-    ("ANY NOT NULL", ast.AnyTypeName(isNullable = false)(pos))
+    ("NOTHING", NothingType()(pos)),
+    ("NOTHING NOT NULL", NothingType()(pos)),
+    ("NULL", NullType()(pos)),
+    ("NULL NOT NULL", NothingType()(pos)),
+    ("BOOL NOT NULL", BooleanType(isNullable = false)(pos)),
+    ("BOOLEAN NOT NULL", BooleanType(isNullable = false)(pos)),
+    ("VARCHAR NOT NULL", StringType(isNullable = false)(pos)),
+    ("STRING NOT NULL", StringType(isNullable = false)(pos)),
+    ("INTEGER NOT NULL", IntegerType(isNullable = false)(pos)),
+    ("INT NOT NULL", IntegerType(isNullable = false)(pos)),
+    ("SIGNED INTEGER NOT NULL", IntegerType(isNullable = false)(pos)),
+    ("FLOAT NOT NULL", FloatType(isNullable = false)(pos)),
+    ("DATE NOT NULL", DateType(isNullable = false)(pos)),
+    ("LOCAL TIME NOT NULL", LocalTimeType(isNullable = false)(pos)),
+    ("TIME WITHOUT TIMEZONE NOT NULL", LocalTimeType(isNullable = false)(pos)),
+    ("ZONED TIME NOT NULL", ZonedTimeType(isNullable = false)(pos)),
+    ("TIME WITH TIMEZONE NOT NULL", ZonedTimeType(isNullable = false)(pos)),
+    ("LOCAL DATETIME NOT NULL", LocalDateTimeType(isNullable = false)(pos)),
+    ("TIMESTAMP WITHOUT TIMEZONE NOT NULL", LocalDateTimeType(isNullable = false)(pos)),
+    ("ZONED DATETIME NOT NULL", ZonedDateTimeType(isNullable = false)(pos)),
+    ("TIMESTAMP WITH TIMEZONE NOT NULL", ZonedDateTimeType(isNullable = false)(pos)),
+    ("DURATION NOT NULL", DurationType(isNullable = false)(pos)),
+    ("POINT NOT NULL", PointType(isNullable = false)(pos)),
+    ("NODE", NodeType(isNullable = true)(pos)),
+    ("NODE NOT NULL", NodeType(isNullable = false)(pos)),
+    ("ANY NODE", NodeType(isNullable = true)(pos)),
+    ("ANY NODE NOT NULL", NodeType(isNullable = false)(pos)),
+    ("VERTEX", NodeType(isNullable = true)(pos)),
+    ("VERTEX NOT NULL", NodeType(isNullable = false)(pos)),
+    ("ANY VERTEX", NodeType(isNullable = true)(pos)),
+    ("ANY VERTEX NOT NULL", NodeType(isNullable = false)(pos)),
+    ("RELATIONSHIP", RelationshipType(isNullable = true)(pos)),
+    ("RELATIONSHIP NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("ANY RELATIONSHIP", RelationshipType(isNullable = true)(pos)),
+    ("ANY RELATIONSHIP NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("EDGE", RelationshipType(isNullable = true)(pos)),
+    ("EDGE NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("ANY EDGE", RelationshipType(isNullable = true)(pos)),
+    ("ANY EDGE NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("MAP", MapType(isNullable = true)(pos)),
+    ("MAP NOT NULL", MapType(isNullable = false)(pos)),
+    ("ANY MAP", MapType(isNullable = true)(pos)),
+    ("ANY MAP NOT NULL", MapType(isNullable = false)(pos)),
+    ("PATH", PathType(isNullable = true)(pos)),
+    ("PATH NOT NULL", PathType(isNullable = false)(pos)),
+    ("ANY PROPERTY VALUE", PropertyValueType(isNullable = true)(pos)),
+    ("ANY PROPERTY VALUE NOT NULL", PropertyValueType(isNullable = false)(pos)),
+    ("PROPERTY VALUE", PropertyValueType(isNullable = true)(pos)),
+    ("PROPERTY VALUE NOT NULL", PropertyValueType(isNullable = false)(pos)),
+    ("ANY VALUE", AnyType(isNullable = true)(pos)),
+    ("ANY VALUE NOT NULL", AnyType(isNullable = false)(pos)),
+    ("ANY", AnyType(isNullable = true)(pos)),
+    ("ANY NOT NULL", AnyType(isNullable = false)(pos))
   )
 
   // List of single types (mix of allowed and disallowed types)
   private val listSingleTypes = (allowedNonListSingleTypes ++ disallowedNonListSingleTypes)
-    .flatMap { case (innerTypeString, innerTypeExpr: ast.CypherTypeName) =>
+    .flatMap { case (innerTypeString, innerTypeExpr: CypherType) =>
       Seq(
         // LIST<type>
-        (s"LIST<$innerTypeString>", ast.ListTypeName(innerTypeExpr, isNullable = true)(pos)),
-        (s"LIST<$innerTypeString> NOT NULL", ast.ListTypeName(innerTypeExpr, isNullable = false)(pos)),
-        (s"ARRAY<$innerTypeString>", ast.ListTypeName(innerTypeExpr, isNullable = true)(pos)),
-        (s"ARRAY<$innerTypeString> NOT NULL", ast.ListTypeName(innerTypeExpr, isNullable = false)(pos)),
-        (s"$innerTypeString LIST", ast.ListTypeName(innerTypeExpr, isNullable = true)(pos)),
-        (s"$innerTypeString LIST NOT NULL", ast.ListTypeName(innerTypeExpr, isNullable = false)(pos)),
-        (s"$innerTypeString ARRAY", ast.ListTypeName(innerTypeExpr, isNullable = true)(pos)),
-        (s"$innerTypeString ARRAY NOT NULL", ast.ListTypeName(innerTypeExpr, isNullable = false)(pos)),
+        (s"LIST<$innerTypeString>", ListType(innerTypeExpr, isNullable = true)(pos)),
+        (s"LIST<$innerTypeString> NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
+        (s"ARRAY<$innerTypeString>", ListType(innerTypeExpr, isNullable = true)(pos)),
+        (s"ARRAY<$innerTypeString> NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
+        (s"$innerTypeString LIST", ListType(innerTypeExpr, isNullable = true)(pos)),
+        (s"$innerTypeString LIST NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
+        (s"$innerTypeString ARRAY", ListType(innerTypeExpr, isNullable = true)(pos)),
+        (s"$innerTypeString ARRAY NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
         // LIST<LIST<type>>
         (
           s"LIST<LIST<$innerTypeString>>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<LIST<$innerTypeString>> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<LIST<$innerTypeString> NOT NULL>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<LIST<$innerTypeString> NOT NULL> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<ARRAY<$innerTypeString>>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<ARRAY<$innerTypeString>> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<ARRAY<$innerTypeString> NOT NULL>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<ARRAY<$innerTypeString> NOT NULL> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<$innerTypeString LIST>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<$innerTypeString LIST> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<$innerTypeString LIST NOT NULL>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<$innerTypeString LIST NOT NULL> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<$innerTypeString ARRAY>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<$innerTypeString ARRAY> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<$innerTypeString ARRAY NOT NULL>",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<$innerTypeString ARRAY NOT NULL> NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<$innerTypeString> LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<$innerTypeString> LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"LIST<$innerTypeString> NOT NULL LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"LIST<$innerTypeString> NOT NULL LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
           s"ARRAY<$innerTypeString> LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"ARRAY<$innerTypeString> LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"ARRAY<$innerTypeString> NOT NULL LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"ARRAY<$innerTypeString> NOT NULL LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
           s"$innerTypeString LIST LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"$innerTypeString LIST LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"$innerTypeString LIST NOT NULL LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"$innerTypeString LIST NOT NULL LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
           s"$innerTypeString ARRAY LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = true)(pos)
         ),
         (
           s"$innerTypeString ARRAY LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
           s"$innerTypeString ARRAY NOT NULL LIST",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
           s"$innerTypeString ARRAY NOT NULL LIST NOT NULL",
-          ast.ListTypeName(ast.ListTypeName(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         // even more nesting lists
         (
           s"LIST<LIST<LIST<LIST<$innerTypeString>> NOT NULL> NOT NULL LIST NOT NULL>",
-          ast.ListTypeName(
-            ast.ListTypeName(
-              ast.ListTypeName(
-                ast.ListTypeName(
-                  ast.ListTypeName(
+          ListType(
+            ListType(
+              ListType(
+                ListType(
+                  ListType(
                     innerTypeExpr,
                     isNullable = true
                   )(pos),
@@ -2255,10 +2277,10 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         ),
         (
           s"$innerTypeString LIST NOT NULL LIST LIST NOT NULL LIST",
-          ast.ListTypeName(
-            ast.ListTypeName(
-              ast.ListTypeName(
-                ast.ListTypeName(
+          ListType(
+            ListType(
+              ListType(
+                ListType(
                   innerTypeExpr,
                   isNullable = false
                 )(pos),
@@ -2277,39 +2299,39 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // unions of single types and lists of unions
     (
       "ANY<DURATION>",
-      ast.DurationTypeName(isNullable = true)(pos)
+      DurationType(isNullable = true)(pos)
     ),
     (
       "ANY VALUE < VARCHAR NOT NULL >",
-      ast.StringTypeName(isNullable = false)(pos)
+      StringType(isNullable = false)(pos)
     ),
     (
       "BOOL | BOOLEAN",
-      ast.BooleanTypeName(isNullable = true)(pos)
+      BooleanType(isNullable = true)(pos)
     ),
     (
       "ANY<FLOAT | FLOAT>",
-      ast.FloatTypeName(isNullable = true)(pos)
+      FloatType(isNullable = true)(pos)
     ),
     (
       "LIST<DURATION | DATE | PATH>",
-      ast.ListTypeName(
-        ast.ClosedDynamicUnionTypeName(Set(
-          ast.DateTypeName(isNullable = true)(pos),
-          ast.DurationTypeName(isNullable = true)(pos),
-          ast.PathTypeName(isNullable = true)(pos)
+      ListType(
+        ClosedDynamicUnionType(Set(
+          DateType(isNullable = true)(pos),
+          DurationType(isNullable = true)(pos),
+          PathType(isNullable = true)(pos)
         ))(pos),
         isNullable = true
       )(pos)
     ),
     (
       "ARRAY < ANY < VARCHAR NOT NULL | INT NOT NULL> | ANY VALUE < INT | BOOL > > NOT NULL",
-      ast.ListTypeName(
-        ast.ClosedDynamicUnionTypeName(Set(
-          ast.BooleanTypeName(isNullable = true)(pos),
-          ast.StringTypeName(isNullable = false)(pos),
-          ast.IntegerTypeName(isNullable = false)(pos),
-          ast.IntegerTypeName(isNullable = true)(pos)
+      ListType(
+        ClosedDynamicUnionType(Set(
+          BooleanType(isNullable = true)(pos),
+          StringType(isNullable = false)(pos),
+          IntegerType(isNullable = false)(pos),
+          IntegerType(isNullable = true)(pos)
         ))(pos),
         isNullable = false
       )(pos)
@@ -2318,124 +2340,124 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // unions of multiple types
     (
       "STRING",
-      ast.StringTypeName(isNullable = true)(pos),
+      StringType(isNullable = true)(pos),
       "INT NOT NULL",
-      ast.IntegerTypeName(isNullable = false)(pos)
+      IntegerType(isNullable = false)(pos)
     ),
     (
       "FLOAT",
-      ast.FloatTypeName(isNullable = true)(pos),
+      FloatType(isNullable = true)(pos),
       "DATE",
-      ast.DateTypeName(isNullable = true)(pos)
+      DateType(isNullable = true)(pos)
     ),
     (
       "LOCAL DATETIME NOT NULL",
-      ast.LocalDateTimeTypeName(isNullable = false)(pos),
+      LocalDateTimeType(isNullable = false)(pos),
       "DURATION",
-      ast.DurationTypeName(isNullable = true)(pos)
+      DurationType(isNullable = true)(pos)
     ),
     (
       "NULL",
-      ast.NullTypeName()(pos),
+      NullType()(pos),
       "NODE",
-      ast.NodeTypeName(isNullable = true)(pos)
+      NodeType(isNullable = true)(pos)
     ),
     (
       "ANY EDGE NOT NULL",
-      ast.RelationshipTypeName(isNullable = false)(pos),
+      RelationshipType(isNullable = false)(pos),
       "MAP NOT NULL",
-      ast.MapTypeName(isNullable = false)(pos)
+      MapType(isNullable = false)(pos)
     ),
     (
       "ANY VALUE",
-      ast.AnyTypeName(isNullable = true)(pos),
+      AnyType(isNullable = true)(pos),
       "PROPERTY VALUE",
-      ast.PropertyValueTypeName(isNullable = true)(pos)
+      PropertyValueType(isNullable = true)(pos)
     ),
     (
       "LIST<BOOL>",
-      ast.ListTypeName(ast.BooleanTypeName(isNullable = true)(pos), isNullable = true)(pos),
+      ListType(BooleanType(isNullable = true)(pos), isNullable = true)(pos),
       "FLOAT ARRAY",
-      ast.ListTypeName(ast.FloatTypeName(isNullable = true)(pos), isNullable = true)(pos)
+      ListType(FloatType(isNullable = true)(pos), isNullable = true)(pos)
     ),
     (
       "LIST<NOTHING>",
-      ast.ListTypeName(ast.NothingTypeName()(pos), isNullable = true)(pos),
+      ListType(NothingType()(pos), isNullable = true)(pos),
       "VARCHAR",
-      ast.StringTypeName(isNullable = true)(pos)
+      StringType(isNullable = true)(pos)
     ),
     (
       "TIME WITH TIMEZONE",
-      ast.ZonedTimeTypeName(isNullable = true)(pos),
+      ZonedTimeType(isNullable = true)(pos),
       "LIST<SIGNED INTEGER NOT NULL>",
-      ast.ListTypeName(ast.IntegerTypeName(isNullable = false)(pos), isNullable = true)(pos)
+      ListType(IntegerType(isNullable = false)(pos), isNullable = true)(pos)
     ),
     (
       "LIST<PATH | BOOL> NOT NULL",
-      ast.ListTypeName(
-        ast.ClosedDynamicUnionTypeName(Set(
-          ast.BooleanTypeName(isNullable = true)(pos),
-          ast.PathTypeName(isNullable = true)(pos)
+      ListType(
+        ClosedDynamicUnionType(Set(
+          BooleanType(isNullable = true)(pos),
+          PathType(isNullable = true)(pos)
         ))(pos),
         isNullable = false
       )(pos),
       "FLOAT NOT NULL ARRAY NOT NULL",
-      ast.ListTypeName(ast.FloatTypeName(isNullable = false)(pos), isNullable = false)(pos)
+      ListType(FloatType(isNullable = false)(pos), isNullable = false)(pos)
     ),
     (
       "LIST<ANY<NOTHING | STRING | BOOLEAN | NULL>>",
-      ast.ListTypeName(
-        ast.ClosedDynamicUnionTypeName(Set(
-          ast.NothingTypeName()(pos),
-          ast.NullTypeName()(pos),
-          ast.BooleanTypeName(isNullable = true)(pos),
-          ast.StringTypeName(isNullable = true)(pos)
+      ListType(
+        ClosedDynamicUnionType(Set(
+          NothingType()(pos),
+          NullType()(pos),
+          BooleanType(isNullable = true)(pos),
+          StringType(isNullable = true)(pos)
         ))(pos),
         isNullable = true
       )(pos),
       "VARCHAR",
-      ast.StringTypeName(isNullable = true)(pos)
+      StringType(isNullable = true)(pos)
     ),
     (
       "TIME WITH TIMEZONE",
-      ast.ZonedTimeTypeName(isNullable = true)(pos),
+      ZonedTimeType(isNullable = true)(pos),
       "LIST < ANY VALUE < SIGNED INTEGER NOT NULL | INT > | DURATION NOT NULL >",
-      ast.ListTypeName(
-        ast.ClosedDynamicUnionTypeName(Set(
-          ast.IntegerTypeName(isNullable = false)(pos),
-          ast.IntegerTypeName(isNullable = true)(pos),
-          ast.DurationTypeName(isNullable = false)(pos)
+      ListType(
+        ClosedDynamicUnionType(Set(
+          IntegerType(isNullable = false)(pos),
+          IntegerType(isNullable = true)(pos),
+          DurationType(isNullable = false)(pos)
         ))(pos),
         isNullable = true
       )(pos)
     )
   ).flatMap { case (typeString1, typeExpr1, typeString2, typeExpr2) =>
     Seq(
-      (s"ANY<$typeString1 | $typeString2>", ast.ClosedDynamicUnionTypeName(Set(typeExpr1, typeExpr2))(pos)),
-      (s"ANY VALUE<$typeString1 | $typeString2>", ast.ClosedDynamicUnionTypeName(Set(typeExpr1, typeExpr2))(pos)),
-      (s"$typeString1 | $typeString2", ast.ClosedDynamicUnionTypeName(Set(typeExpr1, typeExpr2))(pos)),
+      (s"ANY<$typeString1 | $typeString2>", ClosedDynamicUnionType(Set(typeExpr1, typeExpr2))(pos)),
+      (s"ANY VALUE<$typeString1 | $typeString2>", ClosedDynamicUnionType(Set(typeExpr1, typeExpr2))(pos)),
+      (s"$typeString1 | $typeString2", ClosedDynamicUnionType(Set(typeExpr1, typeExpr2))(pos)),
       (
         s"ANY<$typeString1 | $typeString2 | MAP>",
-        ast.ClosedDynamicUnionTypeName(Set(typeExpr1, typeExpr2, ast.MapTypeName(isNullable = true)(pos)))(pos)
+        ClosedDynamicUnionType(Set(typeExpr1, typeExpr2, MapType(isNullable = true)(pos)))(pos)
       ),
       (
         s"ANY VALUE < LIST < NULL NOT NULL > NOT NULL | $typeString1 | POINT NOT NULL | $typeString2 >",
-        ast.ClosedDynamicUnionTypeName(Set(
-          ast.ListTypeName(ast.NothingTypeName()(pos), isNullable = false)(pos),
+        ClosedDynamicUnionType(Set(
+          ListType(NothingType()(pos), isNullable = false)(pos),
           typeExpr1,
-          ast.PointTypeName(isNullable = false)(pos),
+          PointType(isNullable = false)(pos),
           typeExpr2
         ))(pos)
       ),
       (
         s"$typeString1|ANY<INT>|$typeString2|ANY<VARCHAR|BOOL>|NODE NOT NULL",
-        ast.ClosedDynamicUnionTypeName(Set(
+        ClosedDynamicUnionType(Set(
           typeExpr1,
-          ast.IntegerTypeName(isNullable = true)(pos),
+          IntegerType(isNullable = true)(pos),
           typeExpr2,
-          ast.StringTypeName(isNullable = true)(pos),
-          ast.BooleanTypeName(isNullable = true)(pos),
-          ast.NodeTypeName(isNullable = false)(pos)
+          StringType(isNullable = true)(pos),
+          BooleanType(isNullable = true)(pos),
+          NodeType(isNullable = false)(pos)
         ))(pos)
       )
     )
@@ -2443,15 +2465,15 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // a big union of all allowed (non-list) single types
     (
       allowedNonListSingleTypes.map(_._1).mkString("|"),
-      ast.ClosedDynamicUnionTypeName(allowedNonListSingleTypes.map(_._2).toSet)(pos)
+      ClosedDynamicUnionType(allowedNonListSingleTypes.map(_._2).toSet)(pos)
     ),
     (
       allowedNonListSingleTypes.map(_._1).mkString("ANY<", " | ", ">"),
-      ast.ClosedDynamicUnionTypeName(allowedNonListSingleTypes.map(_._2).toSet)(pos)
+      ClosedDynamicUnionType(allowedNonListSingleTypes.map(_._2).toSet)(pos)
     )
   )
 
-  allowedNonListSingleTypes.foreach { case (typeString, typeExpr: ast.CypherTypeName) =>
+  allowedNonListSingleTypes.foreach { case (typeString, typeExpr: CypherType) =>
     test(s"CREATE CONSTRAINT FOR (n:Label) REQUIRE r.prop IS TYPED $typeString") {
       yields(ast.CreateNodePropertyTypeConstraint(
         varFor("n"),
@@ -2513,7 +2535,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     }
   }
 
-  disallowedNonListSingleTypes.foreach { case (typeString, typeExpr: ast.CypherTypeName) =>
+  disallowedNonListSingleTypes.foreach { case (typeString, typeExpr: CypherType) =>
     test(
       s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${typeString.toLowerCase}"
     ) {
@@ -2547,7 +2569,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     }
   }
 
-  listSingleTypes.foreach { case (listTypeString, listTypeExpr: ast.CypherTypeName) =>
+  listSingleTypes.foreach { case (listTypeString, listTypeExpr: CypherType) =>
     test(
       s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${listTypeString.toLowerCase}"
     ) {
@@ -2581,7 +2603,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     }
   }
 
-  unionTypes.foreach { case (unionTypeString, unionTypeExpr: ast.CypherTypeName) =>
+  unionTypes.foreach { case (unionTypeString, unionTypeExpr: CypherType) =>
     test(
       s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${unionTypeString.toLowerCase}"
     ) {

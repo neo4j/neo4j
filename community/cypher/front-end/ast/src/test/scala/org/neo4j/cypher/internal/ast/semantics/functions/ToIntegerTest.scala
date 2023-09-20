@@ -40,17 +40,17 @@ class ToIntegerTest extends FunctionTestBase("toInteger") {
   // Currently we coerce CTList to boolean. This is going away and when it does we should reinstate this test
   ignore("shouldFailTypeCheckForIncompatibleListArgument") {
     testInvalidApplication(CTList(CTAny).covariant)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was List<T>"
+      "Type mismatch: expected Boolean, Float, Integer or String but was List<T>"
     )
   }
 
   test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTNode)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was Node"
+      "Type mismatch: expected Boolean, Float, Integer or String but was Node"
     )
 
     testInvalidApplication(CTDate)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was Date"
+      "Type mismatch: expected Boolean, Float, Integer or String but was Date"
     )
   }
 

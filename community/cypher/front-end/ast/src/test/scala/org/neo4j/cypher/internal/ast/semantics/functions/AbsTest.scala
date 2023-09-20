@@ -28,8 +28,8 @@ class AbsTest extends FunctionTestBase("abs") {
   }
 
   test("shouldHandleAllSpecializations") {
-    testValidTypes(CTInteger)(CTInteger)
-    testValidTypes(CTFloat)(CTFloat)
+    testValidTypes(CTInteger)(CTFloat | CTInteger)
+    testValidTypes(CTFloat)(CTFloat | CTInteger)
   }
 
   test("shouldHandleCombinedSpecializations") {

@@ -46,7 +46,7 @@ case class ProcedureSignature(
 
   override def toString: String = {
     val sig = inputSignature.mkString(", ")
-    outputSignature.map(out => s"$name($sig) :: ${out.mkString(", ")}").getOrElse(s"$name($sig) :: VOID")
+    outputSignature.map(out => s"$name($sig) :: ${out.mkString(", ")}").getOrElse(s"$name($sig)")
   }
 }
 
@@ -61,7 +61,9 @@ case class UserFunctionSignature(
   builtIn: Boolean,
   threadSafe: Boolean = false
 ) {
-  override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
+
+  override def toString =
+    s"$name(${inputSignature.mkString(", ")}) :: ${outputType.normalizedCypherTypeString()}"
 }
 
 object QualifiedName {
@@ -87,7 +89,7 @@ case class FieldSignature(
 
   override def toString: String = {
     val nameValue = default.map(d => s"$name  =  ${stringOf(d)}").getOrElse(name)
-    s"$nameValue :: ${typ.toNeoTypeString}"
+    s"$nameValue :: ${typ.normalizedCypherTypeString()}"
   }
 
   private def stringOf(any: AnyValue) = any match {

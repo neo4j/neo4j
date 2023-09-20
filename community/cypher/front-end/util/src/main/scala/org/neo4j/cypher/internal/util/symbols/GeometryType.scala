@@ -16,14 +16,25 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object GeometryType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new GeometryType() {
-    val parentType = CTAny
-    override val toString = "Geometry"
+case class GeometryType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTAny
+  override val toString = "Geometry"
+  override val toCypherTypeString = "GEOMETRY"
 
-    override def toNeoTypeString = "GEOMETRY?"
+  override def sortOrder: Int = CypherTypeOrder.POINT.id
+  override def hasCypherParserSupport: Boolean = false
+
+  override def hasValueRepresentation: Boolean = true
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
+
+  override def normalizedCypherTypeString(): String = {
+    val normalizedType = CypherType.normalizeTypes(this)
+    if (normalizedType.isNullable) normalizedType.toCypherTypeString
+    else s"${normalizedType.toCypherTypeString} NOT NULL"
   }
 }
-
-sealed abstract class GeometryType extends CypherType

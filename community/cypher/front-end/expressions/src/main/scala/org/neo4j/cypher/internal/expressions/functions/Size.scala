@@ -17,16 +17,23 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Size extends Function {
   def name = "size"
 
   override val signatures = Vector(
-    TypeSignature(this, CTList(CTAny), CTInteger, "Returns the number of items in a `LIST<ANY>`.", Category.SCALAR),
-    TypeSignature(this, CTString, CTInteger, "Returns the number of Unicode characters in a `STRING`.", Category.SCALAR)
+    TypeSignature(
+      this,
+      ClosedDynamicUnionType(Set(CTString, CTList(CTAny)))(InputPosition.NONE),
+      CTInteger,
+      "Returns the number of items in a `LIST<ANY>` or the number of Unicode characters in a `STRING`.",
+      Category.SCALAR
+    )
   )
 }

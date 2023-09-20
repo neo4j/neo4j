@@ -16,13 +16,15 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object NodeType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new NodeType() {
-    val parentType = CTMap
-    override val toString = "Node"
-    override val toNeoTypeString = "NODE?"
-  }
+case class NodeType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTMap
+  override val toString = "Node"
+  override val toCypherTypeString = "NODE"
+
+  override def sortOrder: Int = CypherTypeOrder.NODE.id
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed abstract class NodeType extends CypherType

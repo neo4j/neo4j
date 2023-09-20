@@ -107,14 +107,14 @@ object IndexDescriptor {
       case _: symbols.DateType          => ValueCategory.TEMPORAL_ARRAY
       case _: symbols.NodeType          => ValueCategory.UNKNOWN
       case _: symbols.PathType          => ValueCategory.UNKNOWN
-      case _: symbols.TimeType          => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.ZonedTimeType     => ValueCategory.TEMPORAL_ARRAY
       case _: symbols.FloatType         => ValueCategory.NUMBER_ARRAY
       case _: symbols.PointType         => ValueCategory.GEOMETRY_ARRAY
       case _: symbols.NumberType        => ValueCategory.NUMBER_ARRAY
       case _: symbols.StringType        => ValueCategory.TEXT_ARRAY
       case _: symbols.BooleanType       => ValueCategory.BOOLEAN_ARRAY
       case _: symbols.IntegerType       => ValueCategory.NUMBER_ARRAY
-      case _: symbols.DateTimeType      => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.ZonedDateTimeType => ValueCategory.TEMPORAL_ARRAY
       case _: symbols.DurationType      => ValueCategory.TEMPORAL_ARRAY
       case _: symbols.GeometryType      => ValueCategory.GEOMETRY_ARRAY
       case _: symbols.GraphRefType      => ValueCategory.UNKNOWN
@@ -127,27 +127,27 @@ object IndexDescriptor {
 
   def toValueCategory(cypherType: CypherType): ValueCategory = {
     cypherType match {
-      case _: symbols.AnyType           => ValueCategory.ANYTHING
-      case _: symbols.DateType          => ValueCategory.TEMPORAL
-      case _: symbols.NodeType          => ValueCategory.UNKNOWN
-      case _: symbols.PathType          => ValueCategory.UNKNOWN
-      case _: symbols.TimeType          => ValueCategory.TEMPORAL
-      case _: symbols.FloatType         => ValueCategory.NUMBER
-      case _: symbols.PointType         => ValueCategory.GEOMETRY
-      case _: symbols.NumberType        => ValueCategory.NUMBER
-      case _: symbols.StringType        => ValueCategory.TEXT
-      case _: symbols.BooleanType       => ValueCategory.BOOLEAN
-      case _: symbols.IntegerType       => ValueCategory.NUMBER
-      case _: symbols.DateTimeType      => ValueCategory.TEMPORAL
-      case _: symbols.DurationType      => ValueCategory.TEMPORAL
-      case _: symbols.GeometryType      => ValueCategory.GEOMETRY
-      case _: symbols.GraphRefType      => ValueCategory.UNKNOWN
-      case _: symbols.LocalTimeType     => ValueCategory.TEMPORAL
-      case _: symbols.RelationshipType  => ValueCategory.UNKNOWN
-      case _: symbols.LocalDateTimeType => ValueCategory.TEMPORAL
-      case _: symbols.MapType           => ValueCategory.UNKNOWN
-      case symbols.ListType(cypherType) => toArrayValueCategory(cypherType)
-      case _                            => ValueCategory.UNKNOWN
+      case _: symbols.AnyType              => ValueCategory.ANYTHING
+      case _: symbols.DateType             => ValueCategory.TEMPORAL
+      case _: symbols.NodeType             => ValueCategory.UNKNOWN
+      case _: symbols.PathType             => ValueCategory.UNKNOWN
+      case _: symbols.ZonedTimeType        => ValueCategory.TEMPORAL
+      case _: symbols.FloatType            => ValueCategory.NUMBER
+      case _: symbols.PointType            => ValueCategory.GEOMETRY
+      case _: symbols.NumberType           => ValueCategory.NUMBER
+      case _: symbols.StringType           => ValueCategory.TEXT
+      case _: symbols.BooleanType          => ValueCategory.BOOLEAN
+      case _: symbols.IntegerType          => ValueCategory.NUMBER
+      case _: symbols.ZonedDateTimeType    => ValueCategory.TEMPORAL
+      case _: symbols.DurationType         => ValueCategory.TEMPORAL
+      case _: symbols.GeometryType         => ValueCategory.GEOMETRY
+      case _: symbols.GraphRefType         => ValueCategory.UNKNOWN
+      case _: symbols.LocalTimeType        => ValueCategory.TEMPORAL
+      case _: symbols.RelationshipType     => ValueCategory.UNKNOWN
+      case _: symbols.LocalDateTimeType    => ValueCategory.TEMPORAL
+      case _: symbols.MapType              => ValueCategory.UNKNOWN
+      case symbols.ListType(cypherType, _) => toArrayValueCategory(cypherType)
+      case _                               => ValueCategory.UNKNOWN
     }
   }
 }

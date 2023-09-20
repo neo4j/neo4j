@@ -45,7 +45,7 @@ object ParameterTypeInfo {
   final val STRING = ParameterTypeInfo(CTString, UnknownSize)
 
   def info(typ: CypherType, size: Int): ParameterTypeInfo = typ match {
-    case CTString | ListType(_) => ParameterTypeInfo(typ, SizeBucket.computeBucket(size))
-    case _                      => throw new IllegalArgumentException(s"size is only supported for List and String")
+    case CTString | ListType(_, _) => ParameterTypeInfo(typ, SizeBucket.computeBucket(size))
+    case _                         => throw new IllegalArgumentException(s"size is only supported for List and String")
   }
 }

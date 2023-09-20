@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.ast.BooleanTypeName
-import org.neo4j.cypher.internal.ast.CypherTypeName
-import org.neo4j.cypher.internal.ast.DateTypeName
-import org.neo4j.cypher.internal.ast.DurationTypeName
-import org.neo4j.cypher.internal.ast.FloatTypeName
-import org.neo4j.cypher.internal.ast.IntegerTypeName
-import org.neo4j.cypher.internal.ast.LocalDateTimeTypeName
-import org.neo4j.cypher.internal.ast.LocalTimeTypeName
-import org.neo4j.cypher.internal.ast.PointTypeName
-import org.neo4j.cypher.internal.ast.StringTypeName
-import org.neo4j.cypher.internal.ast.ZonedDateTimeTypeName
-import org.neo4j.cypher.internal.ast.ZonedTimeTypeName
+import org.neo4j.cypher.internal.util.symbols.BooleanType
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.DateType
+import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.FloatType
+import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.cypher.internal.util.symbols.LocalDateTimeType
+import org.neo4j.cypher.internal.util.symbols.LocalTimeType
+import org.neo4j.cypher.internal.util.symbols.PointType
+import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
+import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.internal.schema.constraints.SchemaValueType.BOOLEAN
 import org.neo4j.internal.schema.constraints.SchemaValueType.DATE
@@ -46,20 +46,20 @@ import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_TIME
 
 object PropertyTypeMapper {
 
-  def asSchemaValueType(propertyType: CypherTypeName): Option[SchemaValueType] = {
+  def asSchemaValueType(propertyType: CypherType): Option[SchemaValueType] = {
     propertyType match {
-      case _: BooleanTypeName       => Some(BOOLEAN)
-      case _: StringTypeName        => Some(STRING)
-      case _: IntegerTypeName       => Some(INTEGER)
-      case _: FloatTypeName         => Some(FLOAT)
-      case _: DateTypeName          => Some(DATE)
-      case _: LocalTimeTypeName     => Some(LOCAL_TIME)
-      case _: ZonedTimeTypeName     => Some(ZONED_TIME)
-      case _: LocalDateTimeTypeName => Some(LOCAL_DATETIME)
-      case _: ZonedDateTimeTypeName => Some(ZONED_DATETIME)
-      case _: DurationTypeName      => Some(DURATION)
-      case _: PointTypeName         => Some(POINT)
-      case _                        => None
+      case _: BooleanType       => Some(BOOLEAN)
+      case _: StringType        => Some(STRING)
+      case _: IntegerType       => Some(INTEGER)
+      case _: FloatType         => Some(FLOAT)
+      case _: DateType          => Some(DATE)
+      case _: LocalTimeType     => Some(LOCAL_TIME)
+      case _: ZonedTimeType     => Some(ZONED_TIME)
+      case _: LocalDateTimeType => Some(LOCAL_DATETIME)
+      case _: ZonedDateTimeType => Some(ZONED_DATETIME)
+      case _: DurationType      => Some(DURATION)
+      case _: PointType         => Some(POINT)
+      case _                    => None
     }
   }
 }

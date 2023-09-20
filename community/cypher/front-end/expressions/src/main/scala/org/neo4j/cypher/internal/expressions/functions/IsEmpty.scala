@@ -17,18 +17,24 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object IsEmpty extends Function {
   val name = "isEmpty"
 
   override val signatures = Vector(
-    TypeSignature(this, CTList(CTAny), CTBoolean, "Checks whether a `LIST<ANY>` is empty.", Category.PREDICATE),
-    TypeSignature(this, CTMap, CTBoolean, "Checks whether a `MAP` is empty.", Category.PREDICATE),
-    TypeSignature(this, CTString, CTBoolean, "Checks whether a `STRING` is empty.", Category.PREDICATE)
+    TypeSignature(
+      this,
+      ClosedDynamicUnionType(Set(CTString, CTList(CTAny), CTMap))(InputPosition.NONE),
+      CTBoolean,
+      "Checks whether a `STRING`, `MAP` or `LIST<ANY>` is empty.",
+      Category.PREDICATE
+    )
   )
 }

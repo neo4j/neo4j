@@ -399,11 +399,11 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
 
   override def isDeprecated: lang.Boolean = f.deprecated
 
-  override def returnType: String = f.outputType.toNeoTypeString
+  override def returnType: String = f.outputType.normalizedCypherTypeString()
 
   override def inputSignature: java.util.List[InputInformation] =
     f.names.zip(f.argumentTypes ++ f.optionalTypes).map { case (name, cType) =>
-      val typeString = cType.toNeoTypeString
+      val typeString = cType.normalizedCypherTypeString()
       new InputInformation(
         name,
         typeString,

@@ -139,7 +139,7 @@ public class ProcedureWithArgumentsTest {
                 .isEqualTo(
                         String.format(
                                 "Argument `a` at position 0 in `defaultValues` with%n"
-                                        + "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a INTEGER?"));
+                                        + "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a INTEGER"));
     }
 
     private Context prepareContext() {

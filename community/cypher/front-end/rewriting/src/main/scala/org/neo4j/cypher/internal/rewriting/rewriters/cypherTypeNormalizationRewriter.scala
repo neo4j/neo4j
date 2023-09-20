@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -25,6 +24,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
@@ -46,10 +46,10 @@ case object cypherTypeNormalizationRewriter extends StepSequencer.Step with ASTR
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set()
 
   val instance: Rewriter = topDown(Rewriter.lift {
-    case isTyped @ IsTyped(_, cypherTypeName: CypherTypeName) =>
-      isTyped.copy(typeName = CypherTypeName.normalizeTypes(cypherTypeName))(isTyped.position)
-    case isNotTyped @ IsNotTyped(_, cypherTypeName: CypherTypeName) =>
-      isNotTyped.copy(typeName = CypherTypeName.normalizeTypes(cypherTypeName))(isNotTyped.position)
+    case isTyped @ IsTyped(_, cypherType: CypherType) =>
+      isTyped.copy(typeName = CypherType.normalizeTypes(cypherType))(isTyped.position)
+    case isNotTyped @ IsNotTyped(_, cypherType: CypherType) =>
+      isNotTyped.copy(typeName = CypherType.normalizeTypes(cypherType))(isNotTyped.position)
   })
 
 }

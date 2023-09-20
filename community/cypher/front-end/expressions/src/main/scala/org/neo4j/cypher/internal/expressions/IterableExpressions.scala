@@ -105,7 +105,7 @@ sealed trait IterableExpressionWithInfo extends FunctionWithName with TypeSignat
       argumentTypes = Vector(CTAny, CTList(CTAny)),
       category = Category.PREDICATE,
       overrideDefaultAsString =
-        Some(s"$name(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)")
+        Some(s"$name(variable :: VARIABLE IN list :: LIST<ANY> WHERE predicate :: ANY) :: BOOLEAN")
     ))
 }
 

@@ -16,10 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
-import org.neo4j.cypher.internal.ast.BooleanTypeName
-import org.neo4j.cypher.internal.ast.IntegerTypeName
 import org.neo4j.cypher.internal.ast.IsTyped
-import org.neo4j.cypher.internal.ast.StringTypeName
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -43,8 +40,11 @@ import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
@@ -100,7 +100,7 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     // isNotTyped(P) <=> not(isTyped(P, INTEGER))
     assertRewrittenMatches(
       "'P' IS NOT :: INTEGER",
-      { case Not(IsTyped(StringLiteral("P"), IntegerTypeName(true))) => () }
+      { case Not(IsTyped(StringLiteral("P"), IntegerType(true))) => () }
     )
   }
 
@@ -108,14 +108,14 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     // not(isNotTyped(P), STRING) <=> isTyped(P, STRING)
     assertRewrittenMatches(
       "NOT( 'P' IS NOT :: STRING )",
-      { case IsTyped(StringLiteral("P"), StringTypeName(true)) => () }
+      { case IsTyped(StringLiteral("P"), StringType(true)) => () }
     )
   }
 
   test("NOT IS :: is not rewritten") {
     assertRewrittenMatches(
       "NOT( 'P' IS :: BOOL )",
-      { case Not(IsTyped(StringLiteral("P"), BooleanTypeName(true))) => () }
+      { case Not(IsTyped(StringLiteral("P"), BooleanType(true))) => () }
     )
   }
 

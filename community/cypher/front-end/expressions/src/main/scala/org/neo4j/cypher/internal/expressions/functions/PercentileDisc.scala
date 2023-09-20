@@ -17,8 +17,10 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object PercentileDisc extends AggregatingFunction {
   def name = "percentileDisc"
@@ -27,18 +29,10 @@ case object PercentileDisc extends AggregatingFunction {
     FunctionTypeSignature(
       function = this,
       names = Vector("input", "percentile"),
-      argumentTypes = Vector(CTInteger, CTFloat),
-      outputType = CTInteger,
-      description = "Returns the nearest `INTEGER` value to the given percentile over a group using a rounding method.",
-      category = Category.AGGREGATING
-    ),
-    FunctionTypeSignature(
-      function = this,
-      names = Vector("input", "percentile"),
-      argumentTypes = Vector(CTFloat, CTFloat),
-      outputType = CTFloat,
+      argumentTypes = Vector(ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE), CTFloat),
+      outputType = ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE),
       description =
-        "Returns the nearest `FLOAT` value to the given percentile over a group using a rounding method.",
+        "Returns the nearest `INTEGER` or `FLOAT` value to the given percentile over a group using a rounding method.",
       category = Category.AGGREGATING
     )
   )

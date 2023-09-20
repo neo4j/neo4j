@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
-import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -57,6 +56,7 @@ import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.graphdb.schema.IndexType.POINT
 import org.neo4j.graphdb.schema.IndexType.RANGE
@@ -486,7 +486,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   // Checks if the pre-existing constraints property type (preExistingTypes)
   // is the same as the property type of the constraint to be created (askedForType)
-  private def checkTypes(askedForType: CypherTypeName, preExistingTypes: PropertyTypeSet): Boolean =
+  private def checkTypes(askedForType: CypherType, preExistingTypes: PropertyTypeSet): Boolean =
     preExistingTypes.equals(PropertyTypeMapper.asPropertyTypeSet(askedForType))
 
   implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =

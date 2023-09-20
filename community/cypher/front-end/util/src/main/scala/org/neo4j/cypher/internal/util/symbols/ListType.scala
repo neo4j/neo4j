@@ -16,53 +16,89 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object ListType {
-  private val anyCollectionTypeInstance = ListTypeImpl(CTAny)
+import org.neo4j.cypher.internal.util.InputPosition
 
-  def apply(iteratedType: CypherType) =
-    if (iteratedType == CTAny) anyCollectionTypeInstance else ListTypeImpl(iteratedType)
+case class ListType(innerType: CypherType, isNullable: Boolean)(val position: InputPosition) extends CypherType {
 
-  final case class ListTypeImpl(innerType: CypherType) extends ListType {
-    val parentType = CTAny
-    override val legacyIteratedType = innerType
+  val parentType: CypherType = CTAny
+  override val legacyIteratedType: CypherType = innerType
 
-    override lazy val coercibleTo: Set[CypherType] = Set(CTBoolean) ++ parentType.coercibleTo
+  override lazy val coercibleTo: Set[CypherType] = Set(CTBoolean) ++ parentType.coercibleTo
 
-    override def parents = innerType.parents.map(copy) ++ super.parents
+  override def parents: Seq[CypherType] =
+    innerType.parents.map(innerTypeParent => this.copy(innerTypeParent, isNullable)(position)) ++ super.parents
 
-    override val toString = s"List<$innerType>"
-    override val toNeoTypeString = s"LIST? OF ${innerType.toNeoTypeString}"
+  override val toString = s"List<$innerType>"
+  override val toCypherTypeString = s"LIST<${innerType.description}>"
 
-    override def isAssignableFrom(other: CypherType): Boolean = other match {
-      case otherCollection: ListType =>
-        innerType isAssignableFrom otherCollection.innerType
-      case _ =>
-        super.isAssignableFrom(other)
-    }
+  override def normalizedCypherTypeString(): String = {
+    val normalizedType = CypherType.normalizeTypes(this)
+    if (normalizedType.isNullable) normalizedType.toCypherTypeString
+    else s"${normalizedType.toCypherTypeString} NOT NULL"
+  }
+  override def sortOrder: Int = CypherTypeOrder.LIST.id
+  override def hasValueRepresentation: Boolean = innerType.hasValueRepresentation
 
-    override def leastUpperBound(other: CypherType) = other match {
-      case otherCollection: ListType =>
-        copy(innerType leastUpperBound otherCollection.innerType)
-      case _ =>
-        super.leastUpperBound(other)
-    }
-
-    override def greatestLowerBound(other: CypherType) = other match {
-      case otherCollection: ListType =>
-        (innerType greatestLowerBound otherCollection.innerType).map(copy)
-      case _ =>
-        super.greatestLowerBound(other)
-    }
-
-    override def rewrite(f: CypherType => CypherType) = f(copy(innerType.rewrite(f)))
+  override def simplify: CypherType = innerType match {
+    case unionInnerType: ClosedDynamicUnionType =>
+      this.copy(unionInnerType.simplify)(position)
+    case listInnerType: ListType =>
+      this.copy(listInnerType.simplify)(position)
+    case _ => this
   }
 
-  def unapply(x: CypherType): Option[CypherType] = x match {
-    case x: ListType => Some(x.innerType)
-    case _           => None
+  // If this list is fully encapsulated by the given list
+  override def isSubtypeOf(otherCypherType: CypherType): Boolean = {
+    otherCypherType match {
+      case otherList: ListType =>
+        innerType match {
+          case innerDynamicUnion: ClosedDynamicUnionType => otherList.innerType match {
+              case otherInnerDynamicUnion: ClosedDynamicUnionType =>
+                innerDynamicUnion.innerTypes.forall(innerType =>
+                  otherInnerDynamicUnion.innerTypes.exists(otherInnerType => innerType.isSubtypeOf(otherInnerType))
+                )
+              case _ => false
+            }
+          case innerList: ListType => otherList match {
+              case otherInnerList: ListType => innerList.isSubtypeOf(otherInnerList)
+              case _                        => false
+            }
+          case NothingType()                                => true
+          case NullType() if otherList.innerType.isNullable => true
+          case _: CypherType => innerType.isSubtypeOf(
+              otherList.innerType
+            ) && isNullableSubtypeOf(this, otherCypherType)
+        }
+      case _: AnyType                            => isNullableSubtypeOf(this, otherCypherType)
+      case _ @ClosedDynamicUnionType(innerTypes) => innerTypes.exists(isSubtypeOf)
+      case _                                     => false
+    }
   }
-}
 
-sealed abstract class ListType extends CypherType {
-  def innerType: CypherType
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
+
+  override def isAssignableFrom(other: CypherType): Boolean = other match {
+    case otherCollection: ListType =>
+      innerType isAssignableFrom otherCollection.innerType
+    case _ =>
+      super.isAssignableFrom(other)
+  }
+
+  override def leastUpperBound(other: CypherType): CypherType = other match {
+    case otherCollection: ListType =>
+      copy(innerType leastUpperBound otherCollection.innerType)(position)
+    case _ =>
+      super.leastUpperBound(other)
+  }
+
+  override def greatestLowerBound(other: CypherType): Option[CypherType] = other match {
+    case otherCollection: ListType =>
+      (innerType greatestLowerBound otherCollection.innerType).map(f => copy(f)(position))
+    case _ =>
+      super.greatestLowerBound(other)
+  }
+
+  override def rewrite(f: CypherType => CypherType): CypherType = f(copy(innerType.rewrite(f))(position))
 }

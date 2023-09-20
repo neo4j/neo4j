@@ -17,11 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Keys extends Function {
   def name = "keys"
@@ -29,23 +31,9 @@ case object Keys extends Function {
   override val signatures = Vector(
     TypeSignature(
       this,
-      CTNode,
+      ClosedDynamicUnionType(Set(CTNode, CTRelationship, CTMap))(InputPosition.NONE),
       CTList(CTString),
-      "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `NODE`.",
-      Category.LIST
-    ),
-    TypeSignature(
-      this,
-      CTRelationship,
-      CTList(CTString),
-      "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `RELATIONSHIP`.",
-      Category.LIST
-    ),
-    TypeSignature(
-      this,
-      CTMap,
-      CTList(CTString),
-      "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `MAP`.",
+      "Returns a `LIST<STRING>` containing the `STRING` representations for all the property names of a `NODE`, `RELATIONSHIP` or `MAP`.",
       Category.LIST
     )
   )

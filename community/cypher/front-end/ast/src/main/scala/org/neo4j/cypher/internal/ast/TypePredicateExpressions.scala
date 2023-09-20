@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.expressions.TypeSignature
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
-case class IsTyped(lhs: Expression, typeName: CypherTypeName)(val position: InputPosition)
+case class IsTyped(lhs: Expression, typeName: CypherType)(val position: InputPosition)
     extends BooleanExpression
     with RightUnaryOperatorExpression {
 
@@ -35,7 +36,7 @@ case class IsTyped(lhs: Expression, typeName: CypherTypeName)(val position: Inpu
   override def canonicalOperatorSymbol = "IS ::"
 }
 
-case class IsNotTyped(lhs: Expression, typeName: CypherTypeName)(val position: InputPosition)
+case class IsNotTyped(lhs: Expression, typeName: CypherType)(val position: InputPosition)
     extends BooleanExpression
     with RightUnaryOperatorExpression {
 

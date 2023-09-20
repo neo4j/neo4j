@@ -55,7 +55,6 @@ import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
@@ -98,7 +97,6 @@ import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.CurrentUser
-import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
@@ -160,7 +158,6 @@ import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
-import org.neo4j.cypher.internal.ast.ListTypeName
 import org.neo4j.cypher.internal.ast.LoadAction
 import org.neo4j.cypher.internal.ast.LoadAllQualifier
 import org.neo4j.cypher.internal.ast.LoadCSV
@@ -467,6 +464,9 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.ListType
 import org.reflections.Reflections
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
@@ -658,7 +658,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     Arbitrary.arbDouble.arbitrary.map(_.toString).map(DecimalDoubleLiteral(_)(pos))
 
   def _parameter: Gen[Parameter] =
-    _identifier.map(ExplicitParameter(_, AnyType.instance)(pos))
+    _identifier.map(ExplicitParameter(_, AnyType(isNullable = true)(pos))(pos))
 
   def _stringParameter: Gen[Parameter] = _identifier.map(ExplicitParameter(_, CTString)(pos))
 
@@ -1697,14 +1697,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
-  def _cypherTypeName: Gen[CypherTypeName] = for {
+  def _cypherTypeName: Gen[CypherType] = for {
     _type <- oneOf(allCypherTypeNamesFromReflection)
   } yield _type
 
-  private val allCypherTypeNamesFromReflection: Set[CypherTypeName] = {
-    val reflections = new Reflections("org.neo4j.cypher.internal.ast")
-    val innerTypes = reflections.getSubTypesOf[CypherTypeName](classOf[CypherTypeName]).asScala.toSet
-      .flatMap((cls: Class[_ <: CypherTypeName]) => {
+  private val allCypherTypeNamesFromReflection: Set[CypherType] = {
+    val reflections = new Reflections("org.neo4j.cypher.internal.util.symbols")
+    val innerTypes = reflections.getSubTypesOf[CypherType](classOf[CypherType]).asScala.toSet
+      .flatMap((cls: Class[_ <: CypherType]) => {
         try {
           // NOTHING, NULL
           val constructor = cls.getDeclaredConstructor(classOf[InputPosition])
@@ -1714,7 +1714,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
             try {
               // List<...>
               // Gets handled separately afterwords
-              cls.getDeclaredConstructor(classOf[CypherTypeName], classOf[Boolean], classOf[InputPosition])
+              cls.getDeclaredConstructor(classOf[CypherType], classOf[Boolean], classOf[InputPosition])
               Set()
             } catch {
               case _: NoSuchMethodException =>
@@ -1729,31 +1729,34 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
             }
         }
       })
-    val listTypes = innerTypes.flatMap(inner => {
+
+    val supportedInnerTypes = innerTypes.filter(_.hasCypherParserSupport)
+
+    val listTypes = supportedInnerTypes.flatMap(inner => {
       Set(
-        ListTypeName(inner, isNullable = true)(pos),
-        ListTypeName(inner, isNullable = false)(pos)
+        ListType(inner, isNullable = true)(pos),
+        ListType(inner, isNullable = false)(pos)
       )
     })
     val nestedListTypes = listTypes.flatMap(inner => {
       Set(
-        ListTypeName(inner, isNullable = true)(pos),
-        ListTypeName(inner, isNullable = false)(pos)
+        ListType(inner, isNullable = true)(pos),
+        ListType(inner, isNullable = false)(pos)
       )
     })
 
     // Don't use all list types as it adds too many types to test
-    val unionTypesWith2Types = innerTypes.flatMap(inner1 => {
-      (innerTypes ++ listTypes.take(5)).flatMap(inner2 => {
+    val unionTypesWith2Types = supportedInnerTypes.flatMap(inner1 => {
+      (supportedInnerTypes ++ listTypes.take(5)).flatMap(inner2 => {
         Set(
-          ClosedDynamicUnionTypeName(Set(inner1, inner2))(pos).simplify
+          ClosedDynamicUnionType(Set(inner1, inner2))(pos).simplify
         )
       })
     })
 
-    val allTypes = innerTypes ++ listTypes ++ nestedListTypes ++ unionTypesWith2Types
+    val allTypes = supportedInnerTypes ++ listTypes ++ nestedListTypes ++ unionTypesWith2Types
     // Normalize to avoid duplicate types
-    allTypes.map(CypherTypeName.normalizeTypes)
+    allTypes.map(CypherType.normalizeTypes)
   }
 
   def _createIndex: Gen[CreateIndex] = for {

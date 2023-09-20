@@ -17,15 +17,22 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Id extends Function {
   def name = "id"
 
   override val signatures = Vector(
-    TypeSignature(this, CTNode, CTInteger, "Returns the id of a `NODE`.", Category.SCALAR),
-    TypeSignature(this, CTRelationship, CTInteger, "Returns the id of a `RELATIONSHIP`.", Category.SCALAR)
+    TypeSignature(
+      this,
+      ClosedDynamicUnionType(Set(CTNode, CTRelationship))(InputPosition.NONE),
+      CTInteger,
+      "Returns the id of a `NODE` or `RELATIONSHIP`.",
+      Category.SCALAR
+    )
   )
 }

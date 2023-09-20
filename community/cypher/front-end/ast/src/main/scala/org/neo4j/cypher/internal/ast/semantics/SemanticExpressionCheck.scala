@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
@@ -284,13 +285,13 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x: IsTyped =>
         check(ctx, x.arguments) chain
-          x.typeName.semanticCheck chain
+          CypherTypeName(x.typeName).semanticCheck chain
           checkTypes(x, x.signatures) chain
           SemanticCheck.success
 
       case x: IsNotTyped =>
         check(ctx, x.arguments) chain
-          x.typeName.semanticCheck chain
+          CypherTypeName(x.typeName).semanticCheck chain
           checkTypes(x, x.signatures) chain
           SemanticCheck.success
 

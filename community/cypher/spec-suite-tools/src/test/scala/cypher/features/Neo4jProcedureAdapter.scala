@@ -126,16 +126,16 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
   }
 
   private def asKernelType(tpe: CypherType): Neo4jTypes.AnyType = tpe match {
-    case CTMap              => Neo4jTypes.NTMap
-    case CTNode             => Neo4jTypes.NTNode
-    case CTRelationship     => Neo4jTypes.NTRelationship
-    case CTPath             => Neo4jTypes.NTPath
-    case ListType(innerTpe) => Neo4jTypes.NTList(asKernelType(innerTpe))
-    case CTString           => Neo4jTypes.NTString
-    case CTBoolean          => Neo4jTypes.NTBoolean
-    case CTNumber           => Neo4jTypes.NTNumber
-    case CTInteger          => Neo4jTypes.NTInteger
-    case CTFloat            => Neo4jTypes.NTFloat
-    case x                  => throw new InternalError(s"Unexpected CypherType ${x.getClass}")
+    case CTMap                 => Neo4jTypes.NTMap
+    case CTNode                => Neo4jTypes.NTNode
+    case CTRelationship        => Neo4jTypes.NTRelationship
+    case CTPath                => Neo4jTypes.NTPath
+    case ListType(innerTpe, _) => Neo4jTypes.NTList(asKernelType(innerTpe))
+    case CTString              => Neo4jTypes.NTString
+    case CTBoolean             => Neo4jTypes.NTBoolean
+    case CTNumber              => Neo4jTypes.NTNumber
+    case CTInteger             => Neo4jTypes.NTInteger
+    case CTFloat               => Neo4jTypes.NTFloat
+    case x                     => throw new InternalError(s"Unexpected CypherType ${x.getClass}")
   }
 }

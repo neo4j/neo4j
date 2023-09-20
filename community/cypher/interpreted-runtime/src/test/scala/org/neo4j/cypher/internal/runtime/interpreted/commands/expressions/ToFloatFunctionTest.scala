@@ -79,7 +79,7 @@ class ToFloatFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenProp
   test("should throw an exception if the argument is an object which cannot be converted to a float") {
     val caughtException = the[CypherTypeException] thrownBy toFloat(true)
     caughtException.getMessage should startWith(
-      "Invalid input for function 'toFloat()': Expected a String or Number, got: "
+      "Invalid input for function 'toFloat()': Expected a String, Float or Integer, got: "
     )
   }
 

@@ -19,26 +19,26 @@ package org.neo4j.cypher.internal.util
 import scala.language.implicitConversions
 
 package object symbols {
-  val CTAny: AnyType = AnyType.instance
-  val CTBoolean: BooleanType = BooleanType.instance
-  val CTString: StringType = StringType.instance
-  val CTNumber: NumberType = NumberType.instance
-  val CTFloat: FloatType = FloatType.instance
-  val CTInteger: IntegerType = IntegerType.instance
-  val CTMap: MapType = MapType.instance
-  val CTNode: NodeType = NodeType.instance
-  val CTRelationship: RelationshipType = RelationshipType.instance
-  val CTPoint: PointType = PointType.instance
-  val CTDateTime: DateTimeType = TemporalTypes.datetime
-  val CTLocalDateTime: LocalDateTimeType = TemporalTypes.localdatetime
-  val CTDate: DateType = TemporalTypes.date
-  val CTTime: TimeType = TemporalTypes.time
-  val CTLocalTime: LocalTimeType = TemporalTypes.localtime
-  val CTDuration: DurationType = TemporalTypes.duration
-  val CTGeometry: GeometryType = GeometryType.instance
-  val CTPath: PathType = PathType.instance
-  val CTGraphRef: GraphRefType = GraphRefType.instance
-  def CTList(inner: CypherType): ListType = ListType(inner)
+  val CTAny: AnyType = AnyType(isNullable = true)(InputPosition.NONE)
+  val CTBoolean: BooleanType = BooleanType(isNullable = true)(InputPosition.NONE)
+  val CTString: StringType = StringType(isNullable = true)(InputPosition.NONE)
+  val CTNumber: NumberType = NumberType(isNullable = true)(InputPosition.NONE)
+  val CTFloat: FloatType = FloatType(isNullable = true)(InputPosition.NONE)
+  val CTInteger: IntegerType = IntegerType(isNullable = true)(InputPosition.NONE)
+  val CTMap: MapType = MapType(isNullable = true)(InputPosition.NONE)
+  val CTNode: NodeType = NodeType(isNullable = true)(InputPosition.NONE)
+  val CTRelationship: RelationshipType = RelationshipType(isNullable = true)(InputPosition.NONE)
+  val CTPoint: PointType = PointType(isNullable = true)(InputPosition.NONE)
+  val CTDateTime: ZonedDateTimeType = ZonedDateTimeType(isNullable = true)(InputPosition.NONE)
+  val CTLocalDateTime: LocalDateTimeType = LocalDateTimeType(isNullable = true)(InputPosition.NONE)
+  val CTDate: DateType = DateType(isNullable = true)(InputPosition.NONE)
+  val CTTime: ZonedTimeType = ZonedTimeType(isNullable = true)(InputPosition.NONE)
+  val CTLocalTime: LocalTimeType = LocalTimeType(isNullable = true)(InputPosition.NONE)
+  val CTDuration: DurationType = DurationType(isNullable = true)(InputPosition.NONE)
+  val CTGeometry: GeometryType = GeometryType(isNullable = true)(InputPosition.NONE)
+  val CTPath: PathType = PathType(isNullable = true)(InputPosition.NONE)
+  val CTGraphRef: GraphRefType = GraphRefType(isNullable = true)(InputPosition.NONE)
+  def CTList(inner: CypherType): ListType = ListType(inner, isNullable = true)(InputPosition.NONE)
 
   implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
 }

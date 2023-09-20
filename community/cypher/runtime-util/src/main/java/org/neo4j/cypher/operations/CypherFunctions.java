@@ -39,25 +39,39 @@ import static scala.jdk.javaapi.CollectionConverters.asJava;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
-import org.neo4j.cypher.internal.ast.AnyTypeName;
-import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName;
-import org.neo4j.cypher.internal.ast.CypherTypeName;
-import org.neo4j.cypher.internal.ast.ListTypeName;
-import org.neo4j.cypher.internal.ast.MapTypeName;
-import org.neo4j.cypher.internal.ast.NodeTypeName;
-import org.neo4j.cypher.internal.ast.NothingTypeName;
-import org.neo4j.cypher.internal.ast.NullTypeName;
-import org.neo4j.cypher.internal.ast.PathTypeName;
-import org.neo4j.cypher.internal.ast.PropertyValueTypeName;
-import org.neo4j.cypher.internal.ast.RelationshipTypeName;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
+import org.neo4j.cypher.internal.util.symbols.AnyType;
+import org.neo4j.cypher.internal.util.symbols.BooleanType;
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType;
+import org.neo4j.cypher.internal.util.symbols.CypherType;
+import org.neo4j.cypher.internal.util.symbols.DateType;
+import org.neo4j.cypher.internal.util.symbols.DurationType;
+import org.neo4j.cypher.internal.util.symbols.FloatType;
+import org.neo4j.cypher.internal.util.symbols.GeometryType;
+import org.neo4j.cypher.internal.util.symbols.IntegerType;
+import org.neo4j.cypher.internal.util.symbols.ListType;
+import org.neo4j.cypher.internal.util.symbols.LocalDateTimeType;
+import org.neo4j.cypher.internal.util.symbols.LocalTimeType;
+import org.neo4j.cypher.internal.util.symbols.MapType;
+import org.neo4j.cypher.internal.util.symbols.NodeType;
+import org.neo4j.cypher.internal.util.symbols.NothingType;
+import org.neo4j.cypher.internal.util.symbols.NullType;
+import org.neo4j.cypher.internal.util.symbols.NumberType;
+import org.neo4j.cypher.internal.util.symbols.PathType;
+import org.neo4j.cypher.internal.util.symbols.PointType;
+import org.neo4j.cypher.internal.util.symbols.PropertyValueType;
+import org.neo4j.cypher.internal.util.symbols.RelationshipType;
+import org.neo4j.cypher.internal.util.symbols.StringType;
+import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType;
+import org.neo4j.cypher.internal.util.symbols.ZonedTimeType;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -1210,7 +1224,7 @@ public final class CypherFunctions {
             }
         } else {
             throw new CypherTypeException(
-                    "Invalid input for function 'toFloat()': Expected a String or Number, got: " + in);
+                    "Invalid input for function 'toFloat()': Expected a String, Float or Integer, got: " + in);
         }
     }
 
@@ -1252,7 +1266,8 @@ public final class CypherFunctions {
             }
         } else {
             throw new CypherTypeException(
-                    "Invalid input for function 'toInteger()': Expected a String, Number or Boolean, got: " + in);
+                    "Invalid input for function 'toInteger()': Expected a String, Float, Integer or Boolean, got: "
+                            + in);
         }
     }
 
@@ -1298,7 +1313,7 @@ public final class CypherFunctions {
             return stringValue(in.toString());
         } else {
             throw new CypherTypeException(
-                    "Invalid input for function 'toString()': Expected a String, Number, Boolean, Temporal or Duration, got: "
+                    "Invalid input for function 'toString()': Expected a String, Float, Integer, Boolean, Temporal or Duration, got: "
                             + in);
         }
     }
@@ -1583,53 +1598,53 @@ public final class CypherFunctions {
         }
     }
 
-    public static BooleanValue isTyped(AnyValue item, CypherTypeName typeName) {
+    public static BooleanValue isTyped(AnyValue item, CypherType typeName) {
         boolean result;
-        if (typeName instanceof NothingTypeName) {
+        if (typeName instanceof NothingType) {
             result = false;
         } else if (item instanceof NoValue) {
-            result = typeName instanceof NullTypeName || typeName.isNullable();
-        } else if (typeName instanceof NullTypeName) {
+            result = typeName instanceof NullType || typeName.isNullable();
+        } else if (typeName instanceof NullType) {
             result = false;
-        } else if (typeName instanceof AnyTypeName) {
+        } else if (typeName instanceof AnyType) {
             result = true;
-        } else if (typeName instanceof ListTypeName listTypeName) {
-            result = (item instanceof SequenceValue list) && checkInnerListIsTyped(list, listTypeName);
+        } else if (typeName instanceof ListType listType) {
+            result = (item instanceof SequenceValue list) && checkInnerListIsTyped(list, listType);
         } else if (typeName.hasValueRepresentation()) {
-            result = typeName.possibleValueRepresentations().contains(item.valueRepresentation());
-        } else if (typeName instanceof NodeTypeName) {
+            result = possibleValueRepresentations(typeName).contains(item.valueRepresentation());
+        } else if (typeName instanceof NodeType) {
             result = item instanceof NodeIdReference;
-        } else if (typeName instanceof RelationshipTypeName) {
+        } else if (typeName instanceof RelationshipType) {
             result = item instanceof RelationshipReference;
-        } else if (typeName instanceof MapTypeName) {
+        } else if (typeName instanceof MapType) {
             result = item instanceof MapValue;
-        } else if (typeName instanceof PathTypeName) {
+        } else if (typeName instanceof PathType) {
             result = item instanceof PathReference;
-        } else if (typeName instanceof PropertyValueTypeName) {
+        } else if (typeName instanceof PropertyValueType) {
             result = hasPropertyValueRepresentation(item.valueRepresentation())
                     || (item instanceof ListValue listValue
                             && (listValue.isEmpty()
                                     || hasPropertyValueRepresentation(listValue.itemValueRepresentation())));
-        } else if (typeName instanceof ClosedDynamicUnionTypeName unionTypeName) {
+        } else if (typeName instanceof ClosedDynamicUnionType unionType) {
             result = false;
-            for (CypherTypeName innerType : asJava(unionTypeName.innerTypes())) {
+            for (CypherType innerType : asJava(unionType.innerTypes())) {
                 if (isTyped(item, innerType) == TRUE) {
                     result = true;
                     break;
                 }
             }
         } else {
-            throw new IllegalArgumentException(String.format("Unexpected type: %s", typeName.typeName()));
+            throw new IllegalArgumentException(String.format("Unexpected type: %s", typeName.toCypherTypeString()));
         }
 
         return Values.booleanValue(result);
     }
 
-    private static final CypherTypeNameValueMapper CYPHER_TYPE_NAME_VALUE_MAPPER = new CypherTypeNameValueMapper();
+    private static final CypherTypeValueMapper CYPHER_TYPE_NAME_VALUE_MAPPER = new CypherTypeValueMapper();
 
     public static Value valueType(AnyValue in) {
-        return Values.stringValue(CypherTypeName.normalizeTypes(in.map(CYPHER_TYPE_NAME_VALUE_MAPPER))
-                .description());
+        return Values.stringValue(
+                CypherType.normalizeTypes(in.map(CYPHER_TYPE_NAME_VALUE_MAPPER)).description());
     }
 
     private static boolean hasPropertyValueRepresentation(ValueRepresentation valueRepresentation) {
@@ -1638,35 +1653,116 @@ public final class CypherFunctions {
                 && !valueRepresentation.equals(ValueRepresentation.NO_VALUE);
     }
 
-    private static boolean checkInnerListIsTyped(SequenceValue values, ListTypeName typeName) {
-        final var itemTypeName = typeName.innerType();
+    private static List<ValueRepresentation> possibleValueRepresentations(CypherType cypherType)
+            throws UnsupportedOperationException {
+        if (cypherType instanceof BooleanType) {
+            return List.of(ValueRepresentation.BOOLEAN);
+        } else if (cypherType instanceof StringType) {
+            return List.of(ValueRepresentation.UTF8_TEXT, ValueRepresentation.UTF16_TEXT);
+        } else if (cypherType instanceof IntegerType) {
+            return List.of(
+                    ValueRepresentation.INT8,
+                    ValueRepresentation.INT16,
+                    ValueRepresentation.INT32,
+                    ValueRepresentation.INT64);
+        } else if (cypherType instanceof FloatType) {
+            return List.of(ValueRepresentation.FLOAT32, ValueRepresentation.FLOAT64);
+        } else if (cypherType instanceof NumberType) {
+            return List.of(
+                    ValueRepresentation.INT8,
+                    ValueRepresentation.INT16,
+                    ValueRepresentation.INT32,
+                    ValueRepresentation.INT64,
+                    ValueRepresentation.FLOAT32,
+                    ValueRepresentation.FLOAT64);
+        } else if (cypherType instanceof DateType) {
+            return List.of(ValueRepresentation.DATE);
+        } else if (cypherType instanceof LocalTimeType) {
+            return List.of(ValueRepresentation.LOCAL_TIME);
+        } else if (cypherType instanceof ZonedTimeType) {
+            return List.of(ValueRepresentation.ZONED_TIME);
+        } else if (cypherType instanceof LocalDateTimeType) {
+            return List.of(ValueRepresentation.LOCAL_DATE_TIME);
+        } else if (cypherType instanceof ZonedDateTimeType) {
+            return List.of(ValueRepresentation.ZONED_DATE_TIME);
+        } else if (cypherType instanceof DurationType) {
+            return List.of(ValueRepresentation.DURATION);
+        } else if (cypherType instanceof GeometryType || cypherType instanceof PointType) {
+            return List.of(ValueRepresentation.GEOMETRY);
+        } else if (cypherType instanceof ListType listType) {
+            if (listType.innerType() instanceof BooleanType) {
+                return List.of(ValueRepresentation.BOOLEAN_ARRAY);
+            } else if (listType.innerType() instanceof StringType) {
+                return List.of(ValueRepresentation.TEXT_ARRAY);
+            } else if (listType.innerType() instanceof IntegerType) {
+                return List.of(
+                        ValueRepresentation.INT8_ARRAY,
+                        ValueRepresentation.INT16_ARRAY,
+                        ValueRepresentation.INT32_ARRAY,
+                        ValueRepresentation.INT64_ARRAY);
+            } else if (listType.innerType() instanceof FloatType) {
+                return List.of(ValueRepresentation.FLOAT32_ARRAY, ValueRepresentation.FLOAT64_ARRAY);
+            } else if (listType.innerType() instanceof NumberType) {
+                return List.of(
+                        ValueRepresentation.INT8_ARRAY,
+                        ValueRepresentation.INT16_ARRAY,
+                        ValueRepresentation.INT32_ARRAY,
+                        ValueRepresentation.INT64_ARRAY,
+                        ValueRepresentation.FLOAT32_ARRAY,
+                        ValueRepresentation.FLOAT64_ARRAY);
+            } else if (listType.innerType() instanceof DateType) {
+                return List.of(ValueRepresentation.DATE_ARRAY);
+            } else if (listType.innerType() instanceof LocalTimeType) {
+                return List.of(ValueRepresentation.LOCAL_TIME_ARRAY);
+            } else if (listType.innerType() instanceof ZonedTimeType) {
+                return List.of(ValueRepresentation.ZONED_TIME_ARRAY);
+            } else if (listType.innerType() instanceof LocalDateTimeType) {
+                return List.of(ValueRepresentation.LOCAL_DATE_TIME_ARRAY);
+            } else if (listType.innerType() instanceof ZonedDateTimeType) {
+                return List.of(ValueRepresentation.ZONED_DATE_TIME_ARRAY);
+            } else if (listType.innerType() instanceof DurationType) {
+                return List.of(ValueRepresentation.DURATION_ARRAY);
+            } else if (listType.innerType() instanceof PointType || listType.innerType() instanceof GeometryType) {
+                return List.of(ValueRepresentation.GEOMETRY_ARRAY);
+            } else {
+                return List.of();
+            }
+        } else {
+            throw new UnsupportedOperationException(String.format(
+                    "possibleValueRepresentations not supported on %s",
+                    cypherType.getClass().getName()));
+        }
+    }
+
+    private static boolean checkInnerListIsTyped(SequenceValue values, ListType typeName) {
+        final var itemType = typeName.innerType();
         // An empty list can be a list of anything, even NOTHING, so don't check further
         // A list of LIST<ANY> can also be anything, so no need to check further
-        if (values.isEmpty() || (!itemTypeName.isNullable() && itemTypeName instanceof AnyTypeName)) return true;
+        if (values.isEmpty() || (!itemType.isNullable() && itemType instanceof AnyType)) return true;
         // A non-empty list of NOTHING is always false
-        if (itemTypeName instanceof NothingTypeName) return false;
+        if (itemType instanceof NothingType) return false;
         if (values instanceof ArrayValue array) {
             // An ArrayValue can only hold storable types (not null)
             // So a LIST<ANY [NOT NULL]>, LIST<PROPERTY VALUE [NOT NULL]> are true
             // else check that the specific array type matches
-            return itemTypeName instanceof AnyTypeName
-                    || itemTypeName instanceof PropertyValueTypeName
+            return itemType instanceof AnyType
+                    || itemType instanceof PropertyValueType
                     || (typeName.hasValueRepresentation()
-                            && typeName.possibleValueRepresentations().contains(array.valueRepresentation()));
+                            && possibleValueRepresentations(typeName).contains(array.valueRepresentation()));
         } else if (values instanceof ListValue list) {
             // For a simple LIST<TYPE NOT NULL> we can quickly check the list type
             // without needing to iterate over the list
             // Lists that are mixed ints and floats will return as a list of float here, so don't allow the shortcut for
             // that
-            if (itemTypeName.hasValueRepresentation()
-                    && !itemTypeName.isNullable()
+            if (itemType.hasValueRepresentation()
+                    && !itemType.isNullable()
                     && list.itemValueRepresentation().valueGroup() != ValueGroup.NUMBER
-                    && itemTypeName.possibleValueRepresentations().contains(list.itemValueRepresentation())) {
+                    && possibleValueRepresentations(itemType).contains(list.itemValueRepresentation())) {
                 return true;
             } else {
                 // The list is either mixed, or may contain nulls, must check all values
                 for (AnyValue value : values) {
-                    if (isTyped(value, itemTypeName) == FALSE) {
+                    if (isTyped(value, itemType) == FALSE) {
                         return false;
                     }
                 }

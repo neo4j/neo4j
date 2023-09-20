@@ -48,7 +48,7 @@ public final class AnyValues {
      *     <li> RELATIONSHIP
      *   </ul>
      *
-     *  <li> LIST OF ANY?
+     *  <li> LIST<ANY>
      *
      *  <li> PATH
      *

@@ -17,8 +17,10 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Split extends Function {
   def name = "split"
@@ -26,20 +28,11 @@ case object Split extends Function {
   override val signatures = Vector(
     FunctionTypeSignature(
       function = this,
-      names = Vector("original", "splitDelimiter"),
-      argumentTypes = Vector(CTString, CTString),
-      outputType = CTList(CTString),
-      description =
-        "Returns a `LIST<STRING>` resulting from the splitting of the given `STRING` around matches of the given delimiter.",
-      category = Category.STRING
-    ),
-    FunctionTypeSignature(
-      function = this,
       names = Vector("original", "splitDelimiters"),
-      argumentTypes = Vector(CTString, CTList(CTString)),
+      argumentTypes = Vector(CTString, ClosedDynamicUnionType(Set(CTString, CTList(CTString)))(InputPosition.NONE)),
       outputType = CTList(CTString),
       description =
-        "Returns a `LIST<STRING>` resulting from the splitting of the given `STRING` around matches of any of the given delimiters.",
+        "Returns a `LIST<STRING>` resulting from the splitting of the given `STRING` around matches of the given delimiter(s).",
       category = Category.STRING
     )
   )

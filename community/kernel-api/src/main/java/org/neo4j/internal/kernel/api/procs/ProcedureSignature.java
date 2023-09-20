@@ -201,7 +201,7 @@ public class ProcedureSignature {
     public String toString() {
         String strInSig = inputSignature == null ? "..." : Iterables.toString(inputSignature, ", ");
         if (isVoid()) {
-            return String.format("%s(%s) :: VOID", name, strInSig);
+            return String.format("%s(%s)", name, strInSig);
         } else {
             String strOutSig = outputSignature == null ? "..." : Iterables.toString(outputSignature, ", ");
             return String.format("%s(%s) :: (%s)", name, strInSig, strOutSig);

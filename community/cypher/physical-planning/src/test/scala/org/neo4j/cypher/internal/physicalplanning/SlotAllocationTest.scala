@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -1449,7 +1450,10 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val foreach = ForeachApply(lhs, rhs, varFor("i"), list)
 
     val semanticTableWithList =
-      SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(ListType(CTInteger), Some(ListType(CTAny)))))
+      SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(
+        ListType(CTInteger, isNullable = true)(InputPosition.NONE),
+        Some(ListType(CTAny, isNullable = true)(InputPosition.NONE))
+      )))
 
     // when
     val allocations = allocateSlots(
@@ -1491,7 +1495,10 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val foreach = ForeachApply(lhs, rhs, varFor("i"), list)
 
     val semanticTableWithList =
-      SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(ListType(CTNode), Some(ListType(CTNode)))))
+      SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(
+        ListType(CTNode, isNullable = true)(InputPosition.NONE),
+        Some(ListType(CTNode, isNullable = true)(InputPosition.NONE))
+      )))
 
     // when
     val allocations = allocateSlots(

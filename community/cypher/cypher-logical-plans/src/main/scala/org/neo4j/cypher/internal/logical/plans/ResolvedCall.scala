@@ -178,9 +178,9 @@ case class ResolvedCall(
       } else {
         val argTypes = minNumArgs match {
           case 0 => "no arguments"
-          case 1 => s"at least 1 argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
+          case 1 => s"at least 1 argument of type ${signature.inputSignature.head.typ.normalizedCypherTypeString()}"
           case _ =>
-            s"at least $minNumArgs arguments of types ${signature.inputSignature.take(minNumArgs).map(_.typ.toNeoTypeString).mkString(", ")}"
+            s"at least $minNumArgs arguments of types ${signature.inputSignature.take(minNumArgs).map(_.typ.normalizedCypherTypeString()).mkString(", ")}"
         }
         val sigDesc =
           s"""Procedure ${signature.name} has signature: $signature

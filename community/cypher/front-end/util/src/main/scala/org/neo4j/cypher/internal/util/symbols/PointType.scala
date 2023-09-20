@@ -16,13 +16,18 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object PointType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new PointType() {
-    val parentType = CTAny
-    override val toString = "Point"
-    override val toNeoTypeString = "POINT?"
-  }
+case class PointType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTAny
+  override val toString = "Point"
+  override val toCypherTypeString = "POINT"
+
+  override def sortOrder: Int = CypherTypeOrder.POINT.id
+
+  override def hasValueRepresentation: Boolean = true
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed abstract class PointType extends CypherType

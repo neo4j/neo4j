@@ -17,22 +17,22 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object ToInteger extends Function {
   override def name = "toInteger"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTInteger, "Converts a `STRING` value to an `INTEGER` value.", Category.SCALAR),
-    TypeSignature(this, CTNumber, CTInteger, "Converts a `FLOAT` value to an `INTEGER` value.", Category.SCALAR),
     TypeSignature(
       this,
-      CTBoolean,
+      ClosedDynamicUnionType(Set(CTString, CTInteger, CTFloat, CTBoolean))(InputPosition.NONE),
       CTInteger,
-      "Converts a `BOOLEAN` to an `INTEGER` value. True is defined to be 1 and false is defined to be 0.",
+      "Converts a `BOOLEAN`, `STRING`, `INTEGER` or `FLOAT` value to an `INTEGER` value. For `BOOLEAN` values, true is defined to be 1 and false is defined to be 0.",
       Category.SCALAR
     )
   )

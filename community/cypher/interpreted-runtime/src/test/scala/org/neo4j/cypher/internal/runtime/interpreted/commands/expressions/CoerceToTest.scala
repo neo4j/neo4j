@@ -67,14 +67,14 @@ class CoerceToTest extends CypherFunSuite {
   implicit val qtx: QueryContext = mock[QueryContext]
   implicit val state: QueryState = QueryStateHelper.emptyWith(query = qtx)
 
-  val basicTypes = Set(CTAny, CTBoolean, CTString, CTNumber, CTInteger, CTFloat, CTPoint)
-  val graphTypes = Set(CTNode, CTRelationship, CTPath)
+  val basicTypes: Set[CypherType] = Set(CTAny, CTBoolean, CTString, CTNumber, CTInteger, CTFloat, CTPoint)
+  val graphTypes: Set[CypherType] = Set(CTNode, CTRelationship, CTPath)
 
-  val level0Types = basicTypes ++ graphTypes
-  val level1Types = level0Types.map(CTList).toSet + CTMap
-  val level2Types = (level1Types ++ level0Types).map(CTList)
+  val level0Types: Set[CypherType] = basicTypes ++ graphTypes
+  val level1Types: Set[CypherType] = level0Types.map(CTList).toSet + CTMap
+  val level2Types: Set[CypherType] = (level1Types ++ level0Types).map(t => CTList(t))
 
-  val testedTypes = level2Types ++ level1Types ++ level0Types
+  val testedTypes: Set[CypherType] = level2Types ++ level1Types ++ level0Types
 
   test("null") {
     testedTypes

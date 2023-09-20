@@ -17,8 +17,10 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Sign extends Function {
   def name = "sign"
@@ -26,16 +28,9 @@ case object Sign extends Function {
   override val signatures = Vector(
     TypeSignature(
       this,
+      ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE),
       CTInteger,
-      CTInteger,
-      "Returns the signum of an `INTEGER`: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
-      Category.NUMERIC
-    ),
-    TypeSignature(
-      this,
-      CTFloat,
-      CTInteger,
-      "Returns the signum of a `FLOAT`: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
+      "Returns the signum of an `INTEGER` or `FLOAT`: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
       Category.NUMERIC
     )
   )

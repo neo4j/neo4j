@@ -139,7 +139,7 @@ class ProceduresTest {
                         procedureSignature("asd").in("a", NTAny).in("a", NTAny).build())));
         assertThat(exception.getMessage())
                 .isEqualTo(
-                        "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be registered, because it contains a duplicated input field, 'a'. "
+                        "Procedure `asd(a :: ANY, a :: ANY) :: ()` cannot be registered, because it contains a duplicated input field, 'a'. "
                                 + "You need to rename or remove one of the duplicate fields.");
     }
 
@@ -153,7 +153,7 @@ class ProceduresTest {
                         .build())));
         assertThat(exception.getMessage())
                 .isEqualTo(
-                        "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, because it contains a duplicated output field, 'a'. "
+                        "Procedure `asd() :: (a :: ANY, a :: ANY)` cannot be registered, because it contains a duplicated output field, 'a'. "
                                 + "You need to rename or remove one of the duplicate fields.");
     }
 

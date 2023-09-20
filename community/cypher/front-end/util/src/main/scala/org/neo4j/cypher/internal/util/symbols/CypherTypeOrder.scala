@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast
+package org.neo4j.cypher.internal.util.symbols
 
-object CypherTypeNameOrder extends Enumeration {
-  type CypherTypeNameOrder = Value
+object CypherTypeOrder extends Enumeration {
+  type CypherTypeOrder = Value
 
   val NOTHING, NULL, BOOLEAN, STRING, INTEGER, FLOAT, DATE, LOCAL_TIME, ZONED_TIME, LOCAL_DATETIME, ZONED_DATETIME,
     DURATION, POINT, NODE, RELATIONSHIP, MAP, LIST, PATH, CLOSED_DYNAMIC_UNION, ANY = Value

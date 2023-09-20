@@ -36,7 +36,7 @@ case object Reduce extends Function {
         "Runs an expression against individual elements of a `LIST<ANY>`, storing the result of the expression in an accumulator.",
       category = Category.LIST,
       overrideDefaultAsString = Some(
-        name + "(accumulator :: VARIABLE = initial :: ANY?, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)"
+        name + "(accumulator :: VARIABLE = initial :: ANY, variable :: VARIABLE IN list :: LIST<ANY> | expression :: ANY) :: ANY"
       )
     )
   )

@@ -17,27 +17,21 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Properties extends Function {
   override def name = "properties"
 
   override val signatures = Vector(
-    TypeSignature(this, CTNode, CTMap, "Returns a `MAP` containing all the properties of a `NODE`.", Category.SCALAR),
     TypeSignature(
       this,
-      CTRelationship,
+      ClosedDynamicUnionType(Set(CTNode, CTRelationship, CTMap))(InputPosition.NONE),
       CTMap,
-      description = "Returns a `MAP` containing all the properties of a `RELATIONSHIP`.",
-      Category.SCALAR
-    ),
-    TypeSignature(
-      this,
-      CTMap,
-      CTMap,
-      description = "Returns a `MAP` containing all the properties of a `MAP`.",
+      description = "Returns a `MAP` containing all the properties of a `NODE`, `RELATIONSHIP` or `MAP`.",
       Category.SCALAR
     )
   )

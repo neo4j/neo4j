@@ -129,7 +129,7 @@ public final class UserFunctionSignature {
     public String toString() {
         String strInSig = inputSignature == null ? "..." : Iterables.toString(inputSignature, ", ");
         String strOutSig = type == null ? "..." : type.toString();
-        return String.format("%s(%s) :: (%s)", name, strInSig, strOutSig);
+        return String.format("%s(%s) :: %s", name, strInSig, strOutSig);
     }
 
     public static class Builder {

@@ -17,15 +17,22 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTFloat
-import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object ToFloat extends Function {
   override def name = "toFloat"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTFloat, "Converts a `STRING` value to a `FLOAT` value.", Category.SCALAR),
-    TypeSignature(this, CTNumber, CTFloat, "Converts an `INTEGER` value to a `FLOAT` value.", Category.SCALAR)
+    TypeSignature(
+      this,
+      ClosedDynamicUnionType(Set(CTString, CTInteger, CTFloat))(InputPosition.NONE),
+      CTFloat,
+      "Converts a `STRING`, `INTEGER` or `FLOAT` value to a `FLOAT` value.",
+      Category.SCALAR
+    )
   )
 }

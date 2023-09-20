@@ -17,9 +17,11 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Reverse extends Function {
   def name = "reverse"
@@ -27,17 +29,10 @@ case object Reverse extends Function {
   override val signatures = Vector(
     TypeSignature(
       this,
-      CTString,
-      CTString,
-      "Returns a `STRING` in which the order of all characters in the given `STRING` have been reversed.",
+      ClosedDynamicUnionType(Set(CTString, CTList(CTAny)))(InputPosition.NONE),
+      ClosedDynamicUnionType(Set(CTString, CTList(CTAny)))(InputPosition.NONE),
+      "Returns a `STRING` or `LIST<ANY>` in which the order of all characters or elements in the given `STRING` or `LIST<ANY>` have been reversed.",
       Category.STRING
-    ),
-    TypeSignature(
-      this,
-      CTList(CTAny),
-      CTList(CTAny),
-      "Returns a `LIST<ANY>` in which the order of all elements in the given `LIST<ANY>` have been reversed.",
-      Category.LIST
     )
   )
 }

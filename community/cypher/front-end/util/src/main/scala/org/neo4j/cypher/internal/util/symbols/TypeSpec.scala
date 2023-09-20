@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
+import org.neo4j.cypher.internal.util.InputPosition
+
 import scala.annotation.tailrec
 import scala.language.postfixOps
 
@@ -194,7 +196,7 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
       Stream()
     else
       TypeSpec.simpleTypes.filter(contains(_, rs)).toStream append toStream(innerTypeRanges(rs))
-        .map(t => ListType(t))
+        .map(t => ListType(t, isNullable = true)(InputPosition.NONE))
 
   def iterator: Iterator[CypherType] = toStream.iterator
 

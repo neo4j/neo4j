@@ -128,7 +128,7 @@ class ToIntegerFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenPr
       Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0)
     )
     caughtException.getMessage should startWith(
-      "Invalid input for function 'toInteger()': Expected a String, Number or Boolean, got: point({x: 1.0, y: 0.0, crs: 'cartesian'})"
+      "Invalid input for function 'toInteger()': Expected a String, Float, Integer or Boolean, got: point({x: 1.0, y: 0.0, crs: 'cartesian'})"
     )
   }
 

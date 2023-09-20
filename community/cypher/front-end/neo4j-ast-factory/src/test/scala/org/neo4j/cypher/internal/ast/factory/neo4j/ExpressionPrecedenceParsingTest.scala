@@ -16,11 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.BooleanTypeName
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.ast.StringTypeName
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -29,7 +27,9 @@ import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.StringType
 
 class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
 
@@ -123,11 +123,11 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
         ),
         eq(
           in(literalString("string"), varFor("list")),
-          isTyped(varFor("y"), BooleanTypeName(isNullable = true)(pos))
+          isTyped(varFor("y"), BooleanType(isNullable = true)(pos))
         ),
         eq(
-          isTyped(varFor("y"), BooleanTypeName(isNullable = true)(pos)),
-          isNotTyped(literalInt(1), BooleanTypeName(isNullable = true)(pos))
+          isTyped(varFor("y"), BooleanType(isNullable = true)(pos)),
+          isNotTyped(literalInt(1), BooleanType(isNullable = true)(pos))
         )
       )
   }
@@ -179,11 +179,11 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
 
     //  ([true] + n.p) :: STRING
     parsing(" [true] + n.p :: STRING") shouldGive
-      isTyped(add(listOf(trueLiteral), prop("n", "p")), StringTypeName(isNullable = true)(pos))
+      isTyped(add(listOf(trueLiteral), prop("n", "p")), StringType(isNullable = true)(pos))
 
     // (3 - 4) IS NOT TYPED BOOLEAN
     parsing("3 - 4 IS NOT :: BOOLEAN") shouldGive
-      isNotTyped(subtract(literalInt(3), literalInt(4)), BooleanTypeName(isNullable = true)(pos))
+      isNotTyped(subtract(literalInt(3), literalInt(4)), BooleanType(isNullable = true)(pos))
   }
 
   test("precedence 6 - left-associativity") {

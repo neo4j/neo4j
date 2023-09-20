@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
-import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlanExtension(idGen) {
@@ -140,5 +140,5 @@ case object NodeUniqueness extends ConstraintType
 case object RelationshipUniqueness extends ConstraintType
 case object NodePropertyExistence extends ConstraintType
 case object RelationshipPropertyExistence extends ConstraintType
-case class NodePropertyType(propType: CypherTypeName) extends ConstraintType
-case class RelationshipPropertyType(propType: CypherTypeName) extends ConstraintType
+case class NodePropertyType(propType: CypherType) extends ConstraintType
+case class RelationshipPropertyType(propType: CypherType) extends ConstraintType

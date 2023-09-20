@@ -478,10 +478,10 @@ trait AstConstructionTestSupport {
 
   def isNotNull(expression: Expression): IsNotNull = IsNotNull(expression)(pos)
 
-  def isTyped(expression: Expression, typeName: CypherTypeName): IsTyped =
+  def isTyped(expression: Expression, typeName: CypherType): IsTyped =
     IsTyped(expression, typeName)(pos)
 
-  def isNotTyped(expression: Expression, typeName: CypherTypeName): IsNotTyped =
+  def isNotTyped(expression: Expression, typeName: CypherType): IsNotTyped =
     IsNotTyped(expression, typeName)(pos)
 
   def sliceFrom(list: Expression, from: Expression): ListSlice = ListSlice(list, Some(from), None)(pos)

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
@@ -36,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -199,7 +199,7 @@ case class IsNull(expression: Expression) extends Predicate {
   override def children: Seq[AstNode[_]] = Seq(expression)
 }
 
-case class IsTyped(expression: Expression, typeName: CypherTypeName) extends Predicate {
+case class IsTyped(expression: Expression, typeName: CypherType) extends Predicate {
 
   override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     IsMatchResult(CypherFunctions.isTyped(expression(ctx, state), typeName))

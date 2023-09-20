@@ -79,7 +79,7 @@ class ToStringFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenPro
   test("should throw an exception if the argument is an object which cannot be converted to a string") {
     val caughtException = the[CypherTypeException] thrownBy toString(List(1, 24))
     caughtException.getMessage should startWith(
-      "Invalid input for function 'toString()': Expected a String, Number, Boolean, Temporal or Duration, got: "
+      "Invalid input for function 'toString()': Expected a String, Float, Integer, Boolean, Temporal or Duration, got: "
     )
   }
 

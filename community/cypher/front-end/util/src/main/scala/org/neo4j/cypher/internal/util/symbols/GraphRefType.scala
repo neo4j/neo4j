@@ -16,13 +16,21 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object GraphRefType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new GraphRefType() {
-    override val parentType = CTAny
-    override val toString = "GraphRef"
-    override val toNeoTypeString = "GRAPHREF?"
-  }
+case class GraphRefType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTAny
+  override val toString = "GraphRef"
+  override val toCypherTypeString = "GRAPHREF"
+
+  override def sortOrder: Int =
+    throw new UnsupportedOperationException("GraphRef is not a supported CypherType and therefore, cannot be ordered")
+
+  override def hasCypherParserSupport: Boolean = false
+
+  override def hasValueRepresentation: Boolean = false
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed trait GraphRefType extends CypherType

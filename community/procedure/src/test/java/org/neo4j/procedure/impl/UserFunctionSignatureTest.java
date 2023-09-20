@@ -51,6 +51,6 @@ class UserFunctionSignatureTest {
                 .toString();
 
         // Then
-        assertEquals("org.myProcedure(in :: LIST? OF STRING?) :: (NUMBER?)", toStr);
+        assertEquals("org.myProcedure(in :: LIST<STRING>) :: INTEGER | FLOAT", toStr);
     }
 }

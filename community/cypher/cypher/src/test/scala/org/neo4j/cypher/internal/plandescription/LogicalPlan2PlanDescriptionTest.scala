@@ -27,31 +27,23 @@ import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.BooleanTypeName
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
-import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CurrentUser
-import org.neo4j.cypher.internal.ast.DateTypeName
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
-import org.neo4j.cypher.internal.ast.DurationTypeName
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
-import org.neo4j.cypher.internal.ast.FloatTypeName
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IndefiniteWait
-import org.neo4j.cypher.internal.ast.IntegerTypeName
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelQualifier
-import org.neo4j.cypher.internal.ast.ListTypeName
-import org.neo4j.cypher.internal.ast.LocalTimeTypeName
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
@@ -82,7 +74,6 @@ import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
-import org.neo4j.cypher.internal.ast.StringTypeName
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -95,7 +86,6 @@ import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.WriteAction
-import org.neo4j.cypher.internal.ast.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
@@ -408,6 +398,15 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
+import org.neo4j.cypher.internal.util.symbols.DateType
+import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.FloatType
+import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.cypher.internal.util.symbols.ListType
+import org.neo4j.cypher.internal.util.symbols.LocalTimeType
+import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.Values.stringValue
@@ -1770,7 +1769,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "ProcedureCall",
         SingleChild(lhsPD),
-        Seq(details("my.proc.foo(a1) :: (x :: INTEGER?, y :: LIST? OF NODE?)")),
+        Seq(details("my.proc.foo(a1) :: (x :: INTEGER, y :: LIST<NODE>)")),
         Set("a", "x", "y")
       )
     )
@@ -3329,7 +3328,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodePropertyType(IntegerTypeName(isNullable = true)(pos)),
+          NodePropertyType(IntegerType(isNullable = true)(pos)),
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3351,9 +3350,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         CreateConstraint(
           None,
           NodePropertyType(
-            ClosedDynamicUnionTypeName(Set(
-              ListTypeName(BooleanTypeName(isNullable = true)(pos), isNullable = true)(pos),
-              StringTypeName(isNullable = true)(pos)
+            ClosedDynamicUnionType(Set(
+              ListType(BooleanType(isNullable = true)(pos), isNullable = true)(pos),
+              StringType(isNullable = true)(pos)
             ))(pos)
           ),
           label("Label"),
@@ -3378,11 +3377,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             label("Label"),
             Seq(prop(" x", "prop")),
-            NodePropertyType(ZonedDateTimeTypeName(isNullable = true)(pos)),
+            NodePropertyType(ZonedDateTimeType(isNullable = true)(pos)),
             None,
             NoOptions
           )),
-          NodePropertyType(ZonedDateTimeTypeName(isNullable = true)(pos)),
+          NodePropertyType(ZonedDateTimeType(isNullable = true)(pos)),
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3413,7 +3412,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipPropertyType(FloatTypeName(isNullable = true)(pos)),
+          RelationshipPropertyType(FloatType(isNullable = true)(pos)),
           relType("R"),
           Seq(prop(" x", "prop")),
           None,
@@ -3434,7 +3433,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipPropertyType(LocalTimeTypeName(isNullable = true)(pos)),
+          RelationshipPropertyType(LocalTimeType(isNullable = true)(pos)),
           relType("R"),
           Seq(prop(" x", "prop")),
           Some("constraintName"),
@@ -3458,18 +3457,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             relType("R"),
             Seq(prop(" x", "prop")),
             RelationshipPropertyType(
-              ClosedDynamicUnionTypeName(Set(
-                DurationTypeName(isNullable = true)(pos),
-                DateTypeName(isNullable = true)(pos)
+              ClosedDynamicUnionType(Set(
+                DurationType(isNullable = true)(pos),
+                DateType(isNullable = true)(pos)
               ))(pos)
             ),
             None,
             NoOptions
           )),
           RelationshipPropertyType(
-            ClosedDynamicUnionTypeName(Set(
-              DurationTypeName(isNullable = true)(pos),
-              DateTypeName(isNullable = true)(pos)
+            ClosedDynamicUnionType(Set(
+              DurationType(isNullable = true)(pos),
+              DateType(isNullable = true)(pos)
             ))(pos)
           ),
           relType("R"),
@@ -4082,7 +4081,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val functionSignature = UserFunctionSignature(
       QualifiedName(Seq.empty, "datetime"),
       IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-      BooleanType.instance,
+      BooleanType(isNullable = true)(InputPosition.NONE),
       None,
       None,
       isAggregate = false,

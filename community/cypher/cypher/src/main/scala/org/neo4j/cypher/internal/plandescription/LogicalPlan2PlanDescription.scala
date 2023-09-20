@@ -2467,7 +2467,9 @@ case class LogicalPlan2PlanDescription(
   private def signatureInfo(call: ResolvedCall): PrettyString = {
     val argString = call.callArguments.map(asPrettyString(_)).mkPrettyString(SEPARATOR)
     val resultString = call.callResultTypes
-      .map { case (name, typ) => pretty"${asPrettyString(name)} :: ${asPrettyString.raw(typ.toNeoTypeString)}" }
+      .map { case (name, typ) =>
+        pretty"${asPrettyString(name)} :: ${asPrettyString.raw(typ.normalizedCypherTypeString())}"
+      }
       .mkPrettyString(SEPARATOR)
     pretty"${asPrettyString.raw(call.qualifiedName.toString)}($argString) :: ($resultString)"
   }

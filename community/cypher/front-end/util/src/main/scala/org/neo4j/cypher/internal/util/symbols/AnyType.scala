@@ -16,17 +16,25 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object AnyType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance: AnyType = new AnyType() {
-    val parentType: AnyType = this
-    override val isAbstract = true
+case class AnyType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = this
+  override val isAbstract = true
 
-    override def isAssignableFrom(other: CypherType): Boolean = true
+  override def isAssignableFrom(other: CypherType): Boolean = true
 
-    override val toString = "Any"
-    override val toNeoTypeString = "ANY?"
+  override val toString = "Any"
+  override val toCypherTypeString = "ANY"
+
+  override def sortOrder: Int = CypherTypeOrder.ANY.id
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  override def isSubtypeOf(otherCypherType: CypherType): Boolean = otherCypherType match {
+    case _: AnyType => isNullableSubtypeOf(this, otherCypherType)
+    case _          => false
   }
-}
 
-sealed abstract class AnyType extends CypherType
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
+}

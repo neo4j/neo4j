@@ -16,13 +16,16 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object PathType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new PathType() {
-    val parentType = CTAny
-    override val toString = "Path"
-    override val toNeoTypeString = "PATH?"
-  }
+case class PathType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTAny
+  override val toString = "Path"
+  override val toCypherTypeString = "PATH"
+
+  override def sortOrder: Int = CypherTypeOrder.PATH.id
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed abstract class PathType extends CypherType

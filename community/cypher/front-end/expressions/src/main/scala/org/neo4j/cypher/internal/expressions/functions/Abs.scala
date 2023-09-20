@@ -17,14 +17,21 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Abs extends Function {
   def name = "abs"
 
   override val signatures: IndexedSeq[TypeSignature] = Vector(
-    TypeSignature(this, CTInteger, CTInteger, "Returns the absolute value of an `INTEGER`.", Category.NUMERIC),
-    TypeSignature(this, CTFloat, CTFloat, "Returns the absolute value of a `FLOAT`.", Category.NUMERIC)
+    TypeSignature(
+      this,
+      ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE),
+      ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE),
+      "Returns the absolute value of an `INTEGER` or `FLOAT`.",
+      Category.NUMERIC
+    )
   )
 }

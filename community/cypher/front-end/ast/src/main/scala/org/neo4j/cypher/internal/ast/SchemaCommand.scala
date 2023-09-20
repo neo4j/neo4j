@@ -33,11 +33,25 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.DateType
+import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.FloatType
+import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.cypher.internal.util.symbols.ListType
+import org.neo4j.cypher.internal.util.symbols.LocalDateTimeType
+import org.neo4j.cypher.internal.util.symbols.LocalTimeType
 import org.neo4j.cypher.internal.util.symbols.NodeType
+import org.neo4j.cypher.internal.util.symbols.PointType
+import org.neo4j.cypher.internal.util.symbols.PropertyValueType
 import org.neo4j.cypher.internal.util.symbols.RelationshipType
+import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
+import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
 
 sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooling {
   def useGraph: Option[GraphSelection]
@@ -464,64 +478,64 @@ sealed trait CreateConstraint extends SchemaCommand {
   }
 
   private val allowedPropertyTypes = List(
-    BooleanTypeName(isNullable = true)(InputPosition.NONE),
-    StringTypeName(isNullable = true)(InputPosition.NONE),
-    IntegerTypeName(isNullable = true)(InputPosition.NONE),
-    FloatTypeName(isNullable = true)(InputPosition.NONE),
-    DateTypeName(isNullable = true)(InputPosition.NONE),
-    LocalTimeTypeName(isNullable = true)(InputPosition.NONE),
-    ZonedTimeTypeName(isNullable = true)(InputPosition.NONE),
-    LocalDateTimeTypeName(isNullable = true)(InputPosition.NONE),
-    ZonedDateTimeTypeName(isNullable = true)(InputPosition.NONE),
-    DurationTypeName(isNullable = true)(InputPosition.NONE),
-    PointTypeName(isNullable = true)(InputPosition.NONE),
-    ListTypeName(BooleanTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(StringTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(IntegerTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(FloatTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(DateTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(LocalTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(ZonedTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(LocalDateTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(ZonedDateTimeTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(DurationTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
-    ListTypeName(PointTypeName(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
+    BooleanType(isNullable = true)(InputPosition.NONE),
+    StringType(isNullable = true)(InputPosition.NONE),
+    IntegerType(isNullable = true)(InputPosition.NONE),
+    FloatType(isNullable = true)(InputPosition.NONE),
+    DateType(isNullable = true)(InputPosition.NONE),
+    LocalTimeType(isNullable = true)(InputPosition.NONE),
+    ZonedTimeType(isNullable = true)(InputPosition.NONE),
+    LocalDateTimeType(isNullable = true)(InputPosition.NONE),
+    ZonedDateTimeType(isNullable = true)(InputPosition.NONE),
+    DurationType(isNullable = true)(InputPosition.NONE),
+    PointType(isNullable = true)(InputPosition.NONE),
+    ListType(BooleanType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(StringType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(IntegerType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(FloatType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(DateType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(LocalTimeType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(ZonedTimeType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(LocalDateTimeType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(ZonedDateTimeType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(DurationType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE),
+    ListType(PointType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
   )
 
   protected def checkPropertyTypes(
     entityTypeString: String,
-    originalPropertyType: CypherTypeName,
-    normalizedPropertyType: CypherTypeName
+    originalPropertyType: CypherType,
+    normalizedPropertyType: CypherType
   ): SemanticCheck = {
 
     def allowedTypesCheck = {
-      def anyPropertyValueType(pt: CypherTypeName): Boolean = pt match {
-        case _: PropertyValueTypeName      => true
-        case l: ListTypeName               => anyPropertyValueType(l.innerType)
-        case c: ClosedDynamicUnionTypeName => c.sortedInnerTypes.map(anyPropertyValueType).exists(b => b)
-        case _                             => false
+      def anyPropertyValueType(pt: CypherType): Boolean = pt match {
+        case _: PropertyValueType      => true
+        case l: ListType               => anyPropertyValueType(l.innerType)
+        case c: ClosedDynamicUnionType => c.sortedInnerTypes.map(anyPropertyValueType).exists(b => b)
+        case _                         => false
       }
       val containsPropertyValueType = anyPropertyValueType(originalPropertyType)
 
       val onlyAllowedTypes = normalizedPropertyType match {
-        case c: ClosedDynamicUnionTypeName =>
+        case c: ClosedDynamicUnionType =>
           c.sortedInnerTypes.forall(p => allowedPropertyTypes.contains(p.withPosition(InputPosition.NONE)))
         case _ =>
           allowedPropertyTypes.contains(normalizedPropertyType.withPosition(InputPosition.NONE))
       }
 
       if (containsPropertyValueType || !onlyAllowedTypes) {
-        def additionalErrorInfo(pt: CypherTypeName): String = pt match {
-          case ListTypeName(_: ListTypeName, _) =>
+        def additionalErrorInfo(pt: CypherType): String = pt match {
+          case ListType(_: ListType, _) =>
             " Lists cannot have lists as an inner type."
-          case ListTypeName(_: ClosedDynamicUnionTypeName, _) =>
+          case ListType(_: ClosedDynamicUnionType, _) =>
             " Lists cannot have a union of types as an inner type."
-          case ListTypeName(inner, _) if inner.isNullable =>
+          case ListType(inner, _) if inner.isNullable =>
             " Lists cannot have nullable inner types."
-          case c: ClosedDynamicUnionTypeName if c.sortedInnerTypes.exists(_.isInstanceOf[ListTypeName]) =>
+          case c: ClosedDynamicUnionType if c.sortedInnerTypes.exists(_.isInstanceOf[ListType]) =>
             // If we have lists we want to check them for the above cases as well
             // Unions within unions should have been flattened in parsing so won't be handled here
-            c.sortedInnerTypes.filter(_.isInstanceOf[ListTypeName])
+            c.sortedInnerTypes.filter(_.isInstanceOf[ListType])
               .map(additionalErrorInfo)
               .find(_.nonEmpty)
               .getOrElse("")
@@ -545,7 +559,7 @@ sealed trait CreateConstraint extends SchemaCommand {
 
     // We want run the semantic checks for the types themselves, but the error messages might not make sense in this context
     // There isn't much point telling users to make all their union types NOT NULL if that is not accepted here.
-    originalPropertyType.semanticCheck.map {
+    CypherTypeName(originalPropertyType).semanticCheck.map {
       case r @ SemanticCheckResult(_, Nil) => r
       case SemanticCheckResult(state, _) => SemanticCheckResult(
           state,
@@ -751,7 +765,7 @@ case class CreateNodePropertyTypeConstraint(
   variable: Variable,
   label: LabelName,
   property: Property,
-  private val propertyType: CypherTypeName,
+  private val propertyType: CypherType,
   override val name: Option[String],
   ifExistsDo: IfExistsDo,
   options: Options,
@@ -762,7 +776,7 @@ case class CreateNodePropertyTypeConstraint(
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def withName(name: Option[String]): CreateNodePropertyTypeConstraint = copy(name = name)(position)
 
-  val normalizedPropertyType: CypherTypeName = CypherTypeName.normalizeTypes(propertyType)
+  val normalizedPropertyType: CypherType = CypherType.normalizeTypes(propertyType)
 
   override def semanticCheck: SemanticCheck =
     checkSemantics("node property type", ifExistsDo, options, containsOn, constraintVersion) chain
@@ -774,7 +788,7 @@ case class CreateRelationshipPropertyTypeConstraint(
   variable: Variable,
   relType: RelTypeName,
   property: Property,
-  private val propertyType: CypherTypeName,
+  private val propertyType: CypherType,
   override val name: Option[String],
   ifExistsDo: IfExistsDo,
   options: Options,
@@ -787,7 +801,7 @@ case class CreateRelationshipPropertyTypeConstraint(
   override def withName(name: Option[String]): CreateRelationshipPropertyTypeConstraint =
     copy(name = name)(position)
 
-  val normalizedPropertyType: CypherTypeName = CypherTypeName.normalizeTypes(propertyType)
+  val normalizedPropertyType: CypherType = CypherType.normalizeTypes(propertyType)
 
   override def semanticCheck: SemanticCheck =
     checkSemantics("relationship property type", ifExistsDo, options, containsOn, constraintVersion) chain

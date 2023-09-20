@@ -57,7 +57,7 @@ public final class Neo4jTypes {
         private final String name;
 
         public AnyType() {
-            this("ANY?");
+            this("ANY");
         }
 
         protected AnyType(String name) {
@@ -72,13 +72,13 @@ public final class Neo4jTypes {
 
     public static class TextType extends AnyType {
         public TextType() {
-            super("STRING?");
+            super("STRING");
         }
     }
 
     public static class NumberType extends AnyType {
         public NumberType() {
-            super("NUMBER?");
+            super("INTEGER | FLOAT");
         }
 
         protected NumberType(String name) {
@@ -88,19 +88,19 @@ public final class Neo4jTypes {
 
     public static class IntegerType extends NumberType {
         public IntegerType() {
-            super("INTEGER?");
+            super("INTEGER");
         }
     }
 
     public static class FloatType extends NumberType {
         public FloatType() {
-            super("FLOAT?");
+            super("FLOAT");
         }
     }
 
     public static class BooleanType extends AnyType {
         public BooleanType() {
-            super("BOOLEAN?");
+            super("BOOLEAN");
         }
     }
 
@@ -109,7 +109,7 @@ public final class Neo4jTypes {
         private final AnyType innerType;
 
         public ListType(AnyType innerType) {
-            super("LIST? OF " + innerType);
+            super("LIST<" + innerType + ">");
             this.innerType = innerType;
         }
 
@@ -137,7 +137,7 @@ public final class Neo4jTypes {
 
     public static class MapType extends AnyType {
         public MapType() {
-            super("MAP?");
+            super("MAP");
         }
 
         protected MapType(String name) {
@@ -147,7 +147,7 @@ public final class Neo4jTypes {
 
     public static class ByteArrayType extends AnyType {
         public ByteArrayType() {
-            super("BYTEARRAY?");
+            super("BYTEARRAY");
         }
 
         protected ByteArrayType(String name) {
@@ -157,67 +157,67 @@ public final class Neo4jTypes {
 
     public static class NodeType extends MapType {
         public NodeType() {
-            super("NODE?");
+            super("NODE");
         }
     }
 
     public static class RelationshipType extends MapType {
         public RelationshipType() {
-            super("RELATIONSHIP?");
+            super("RELATIONSHIP");
         }
     }
 
     public static class PathType extends AnyType {
         public PathType() {
-            super("PATH?");
+            super("PATH");
         }
     }
 
     public static class GeometryType extends AnyType {
         public GeometryType() {
-            super("GEOMETRY?");
+            super("GEOMETRY");
         }
     }
 
     public static class PointType extends AnyType {
         public PointType() {
-            super("POINT?");
+            super("POINT");
         }
     }
 
     public static class DateTimeType extends AnyType {
         public DateTimeType() {
-            super("DATETIME?");
+            super("ZONED DATETIME");
         }
     }
 
     public static class LocalDateTimeType extends AnyType {
         public LocalDateTimeType() {
-            super("LOCALDATETIME?");
+            super("LOCAL DATETIME");
         }
     }
 
     public static class DateType extends AnyType {
         public DateType() {
-            super("DATE?");
+            super("DATE");
         }
     }
 
     public static class TimeType extends AnyType {
         public TimeType() {
-            super("TIME?");
+            super("ZONED TIME");
         }
     }
 
     public static class LocalTimeType extends AnyType {
         public LocalTimeType() {
-            super("LOCALTIME?");
+            super("LOCAL TIME");
         }
     }
 
     public static class DurationType extends AnyType {
         public DurationType() {
-            super("DURATION?");
+            super("DURATION");
         }
     }
 }

@@ -16,13 +16,17 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object StringType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new StringType() {
-    val parentType = CTAny
-    override val toString = "String"
-    override val toNeoTypeString = "STRING?"
-  }
+case class StringType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTAny
+  override val toString = "String"
+  override val toCypherTypeString = "STRING"
+  override def sortOrder: Int = CypherTypeOrder.STRING.id
+
+  override def hasValueRepresentation: Boolean = true
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed trait StringType extends CypherType

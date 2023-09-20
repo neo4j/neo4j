@@ -108,8 +108,9 @@ case class ResolvedFunctionInvocation(
         val msg =
           (if (signature.inputSignature.isEmpty) "arguments"
            else if (signature.inputSignature.size == 1)
-             s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
-           else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
+             s"argument of type ${signature.inputSignature.head.typ.normalizedCypherTypeString()}"
+           else
+             s"arguments of type ${signature.inputSignature.map(_.typ.normalizedCypherTypeString()).mkString(", ")}") +
             signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
         error(
           _: SemanticState,

@@ -16,14 +16,25 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object NumberType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new NumberType() {
-    val parentType = CTAny
-    override val isAbstract = true
-    override val toString = "Number"
-    override val toNeoTypeString = "NUMBER?"
+case class NumberType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: AnyType = CTAny
+  override val toString = "Number"
+  override val toCypherTypeString = "NUMBER"
+
+  override def normalizedCypherTypeString(): String = {
+    val normalizedType = CypherType.normalizeTypes(this)
+    if (normalizedType.isNullable) normalizedType.toCypherTypeString
+    else s"${normalizedType.toCypherTypeString} NOT NULL"
   }
-}
+  override def sortOrder: Int = CypherTypeOrder.CLOSED_DYNAMIC_UNION.id
 
-sealed abstract class NumberType extends CypherType
+  override def hasCypherParserSupport: Boolean = false
+
+  override def hasValueRepresentation: Boolean = true
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
+}

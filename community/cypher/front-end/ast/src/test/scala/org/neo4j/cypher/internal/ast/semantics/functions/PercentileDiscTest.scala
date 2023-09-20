@@ -26,10 +26,10 @@ class PercentileDiscTest extends FunctionTestBase("percentileDisc") {
   override val context = SemanticContext.Results
 
   test("shouldHandleAllSpecializations") {
-    testValidTypes(CTInteger, CTInteger)(CTInteger)
-    testValidTypes(CTInteger, CTFloat)(CTInteger)
-    testValidTypes(CTFloat, CTInteger)(CTFloat)
-    testValidTypes(CTFloat, CTFloat)(CTFloat)
+    testValidTypes(CTInteger, CTInteger)(CTFloat | CTInteger)
+    testValidTypes(CTInteger, CTFloat)(CTFloat | CTInteger)
+    testValidTypes(CTFloat, CTInteger)(CTFloat | CTInteger)
+    testValidTypes(CTFloat, CTFloat)(CTFloat | CTInteger)
   }
 
   test("shouldHandleCombinedSpecializations") {

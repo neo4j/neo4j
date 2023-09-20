@@ -75,7 +75,7 @@ public class ProcedureSignatureTest {
                 .toString();
 
         // Then
-        assertEquals("org.myProcedure(inputArg :: LIST? OF STRING?) :: (outputArg :: NUMBER?)", toStr);
+        assertEquals("org.myProcedure(inputArg :: LIST<STRING>) :: (outputArg :: INTEGER | FLOAT)", toStr);
     }
 
     @Test
@@ -90,6 +90,6 @@ public class ProcedureSignatureTest {
         String toStr = proc.toString();
 
         // Then
-        assertEquals("org.myProcedure(inputArg :: LIST? OF STRING?) :: VOID", toStr);
+        assertEquals("org.myProcedure(inputArg :: LIST<STRING>)", toStr);
     }
 }

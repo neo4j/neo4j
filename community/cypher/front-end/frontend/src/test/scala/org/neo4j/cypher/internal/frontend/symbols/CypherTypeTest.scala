@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.symbols
 
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
@@ -25,6 +26,7 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -35,6 +37,10 @@ class CypherTypeTest extends CypherFunSuite {
     CTNumber.parents should equal(Seq(CTAny))
     CTAny.parents should equal(Seq())
     CTList(CTString).parents should equal(Seq(CTList(CTAny), CTAny))
+
+    ClosedDynamicUnionType(Set(CTString, CTInteger))(
+      InputPosition.NONE
+    ).parents.toSet should equal(Set(CTNumber, CTAny))
   }
 
   test("foo") {
@@ -49,6 +55,9 @@ class CypherTypeTest extends CypherFunSuite {
     CTList(CTNumber).isAssignableFrom(CTList(CTInteger)) should equal(true)
     CTInteger.isAssignableFrom(CTNumber) should equal(false)
     CTList(CTInteger).isAssignableFrom(CTList(CTString)) should equal(false)
+    ClosedDynamicUnionType(Set(CTString, CTInteger))(
+      InputPosition.NONE
+    ).isAssignableFrom(CTInteger) should equal(true)
   }
 
   test("should find leastUpperBound") {
@@ -58,6 +67,13 @@ class CypherTypeTest extends CypherFunSuite {
     assertLeastUpperBound(CTNumber, CTList(CTAny), CTAny)
     assertLeastUpperBound(CTInteger, CTFloat, CTNumber)
     assertLeastUpperBound(CTMap, CTFloat, CTAny)
+    assertLeastUpperBound(
+      ClosedDynamicUnionType(Set(CTFloat, CTInteger))(
+        InputPosition.NONE
+      ),
+      CTFloat,
+      CTNumber
+    )
   }
 
   private def assertLeastUpperBound(a: CypherType, b: CypherType, result: CypherType): Unit = {
@@ -76,6 +92,13 @@ class CypherTypeTest extends CypherFunSuite {
     assertGreatestLowerBound(CTInteger, CTFloat, None)
     assertGreatestLowerBound(CTMap, CTFloat, None)
     assertGreatestLowerBound(CTBoolean, CTList(CTAny), None)
+    assertGreatestLowerBound(
+      ClosedDynamicUnionType(Set(CTFloat, CTInteger))(
+        InputPosition.NONE
+      ),
+      CTFloat,
+      Some(CTFloat)
+    )
   }
 
   private def assertGreatestLowerBound(a: CypherType, b: CypherType, result: Option[CypherType]): Unit = {

@@ -16,13 +16,17 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object BooleanType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new BooleanType() {
-    val parentType = CTAny
-    override val toString = "Boolean"
-    override val toNeoTypeString = "BOOLEAN?"
-  }
+case class BooleanType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTAny
+  override val toString = "Boolean"
+  override val toCypherTypeString = "BOOLEAN"
+
+  override def sortOrder: Int = CypherTypeOrder.BOOLEAN.id
+  override def hasValueRepresentation: Boolean = true
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed abstract class BooleanType extends CypherType

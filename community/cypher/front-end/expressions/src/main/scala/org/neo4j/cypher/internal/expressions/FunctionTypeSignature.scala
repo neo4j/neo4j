@@ -46,10 +46,10 @@ case class FunctionTypeSignature(
   override def getSignatureAsString: String = {
     overrideDefaultAsString.getOrElse {
       function.name + "(" + names.zip(
-        argumentTypes.map(_.toNeoTypeString) ++ optionalTypes.map(_.toNeoTypeString)
+        argumentTypes.map(_.normalizedCypherTypeString()) ++ optionalTypes.map(_.normalizedCypherTypeString())
       ).map { f =>
         f._1 + " :: " + f._2
-      }.mkString(", ") + ") :: (" + outputType.toNeoTypeString + ")"
+      }.mkString(", ") + ") :: " + outputType.normalizedCypherTypeString()
     }
   }
 
@@ -101,5 +101,7 @@ case class ExpressionTypeSignature(argumentTypes: IndexedSeq[CypherType], output
   override def removeFirstArgumentType: TypeSignature = this.copy(argumentTypes = this.argumentTypes.tail)
 
   def getSignatureAsString: String =
-    argumentTypes.map(_.toNeoTypeString).mkString(", ") ++ ") :: (" + outputType.toNeoTypeString + ")"
+    argumentTypes.map(_.normalizedCypherTypeString()).mkString(
+      ", "
+    ) ++ ") :: " + outputType.normalizedCypherTypeString()
 }

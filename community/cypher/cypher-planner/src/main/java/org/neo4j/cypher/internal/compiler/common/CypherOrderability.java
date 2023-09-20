@@ -64,7 +64,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
  *      <li> RELATIONSHIP
  *    <ul>
  *
- *  <li> LIST OF ANY?
+ *  <li> LIST<ANY>
  *
  *  <li> PATH
  *

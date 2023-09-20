@@ -17,9 +17,11 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Sum extends AggregatingFunction {
   def name = "sum"
@@ -28,25 +30,9 @@ case object Sum extends AggregatingFunction {
     FunctionTypeSignature(
       function = this,
       names = Vector("input"),
-      argumentTypes = Vector(CTInteger),
-      outputType = CTInteger,
-      description = "Returns the sum of a set of `INTEGER` values",
-      category = Category.AGGREGATING
-    ),
-    FunctionTypeSignature(
-      function = this,
-      names = Vector("input"),
-      argumentTypes = Vector(CTFloat),
-      outputType = CTFloat,
-      description = "Returns the sum of a set of `FLOAT` values",
-      category = Category.AGGREGATING
-    ),
-    FunctionTypeSignature(
-      function = this,
-      names = Vector("input"),
-      argumentTypes = Vector(CTDuration),
-      outputType = CTDuration,
-      description = "Returns the sum of a set of `DURATION` values",
+      argumentTypes = Vector(ClosedDynamicUnionType(Set(CTInteger, CTFloat, CTDuration))(InputPosition.NONE)),
+      outputType = ClosedDynamicUnionType(Set(CTInteger, CTFloat, CTDuration))(InputPosition.NONE),
+      description = "Returns the sum of a set of `INTEGER`, `FLOAT` or `DURATION` values",
       category = Category.AGGREGATING
     )
   )

@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.ast.BooleanTypeName
-import org.neo4j.cypher.internal.ast.ClosedDynamicUnionTypeName
-import org.neo4j.cypher.internal.ast.CypherTypeName
-import org.neo4j.cypher.internal.ast.DateTypeName
-import org.neo4j.cypher.internal.ast.DurationTypeName
-import org.neo4j.cypher.internal.ast.FloatTypeName
-import org.neo4j.cypher.internal.ast.IntegerTypeName
-import org.neo4j.cypher.internal.ast.ListTypeName
-import org.neo4j.cypher.internal.ast.LocalDateTimeTypeName
-import org.neo4j.cypher.internal.ast.LocalTimeTypeName
-import org.neo4j.cypher.internal.ast.PointTypeName
-import org.neo4j.cypher.internal.ast.StringTypeName
-import org.neo4j.cypher.internal.ast.ZonedDateTimeTypeName
-import org.neo4j.cypher.internal.ast.ZonedTimeTypeName
+import org.neo4j.cypher.internal.util.symbols.BooleanType
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.DateType
+import org.neo4j.cypher.internal.util.symbols.DurationType
+import org.neo4j.cypher.internal.util.symbols.FloatType
+import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.cypher.internal.util.symbols.ListType
+import org.neo4j.cypher.internal.util.symbols.LocalDateTimeType
+import org.neo4j.cypher.internal.util.symbols.LocalTimeType
+import org.neo4j.cypher.internal.util.symbols.PointType
+import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
+import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.internal.schema.constraints.SchemaValueType.BOOLEAN
@@ -60,9 +60,9 @@ import org.neo4j.internal.schema.constraints.SchemaValueType.ZONED_TIME
 
 object PropertyTypeMapper {
 
-  def asPropertyTypeSet(propertyType: CypherTypeName): PropertyTypeSet = {
+  def asPropertyTypeSet(propertyType: CypherType): PropertyTypeSet = {
     val schemaValueTypes = propertyType match {
-      case c: ClosedDynamicUnionTypeName =>
+      case c: ClosedDynamicUnionType =>
         // It's normalized so there isn't any inner unions to consider
         c.sortedInnerTypes.map(asSingleSchemaValueType)
       case _ =>
@@ -71,29 +71,29 @@ object PropertyTypeMapper {
     PropertyTypeSet.of(schemaValueTypes: _*)
   }
 
-  private def asSingleSchemaValueType(propertyType: CypherTypeName): SchemaValueType = propertyType match {
-    case _: BooleanTypeName                        => BOOLEAN
-    case _: StringTypeName                         => STRING
-    case _: IntegerTypeName                        => INTEGER
-    case _: FloatTypeName                          => FLOAT
-    case _: DateTypeName                           => DATE
-    case _: LocalTimeTypeName                      => LOCAL_TIME
-    case _: ZonedTimeTypeName                      => ZONED_TIME
-    case _: LocalDateTimeTypeName                  => LOCAL_DATETIME
-    case _: ZonedDateTimeTypeName                  => ZONED_DATETIME
-    case _: DurationTypeName                       => DURATION
-    case _: PointTypeName                          => POINT
-    case ListTypeName(_: BooleanTypeName, _)       => LIST_BOOLEAN
-    case ListTypeName(_: StringTypeName, _)        => LIST_STRING
-    case ListTypeName(_: IntegerTypeName, _)       => LIST_INTEGER
-    case ListTypeName(_: FloatTypeName, _)         => LIST_FLOAT
-    case ListTypeName(_: DateTypeName, _)          => LIST_DATE
-    case ListTypeName(_: LocalTimeTypeName, _)     => LIST_LOCAL_TIME
-    case ListTypeName(_: ZonedTimeTypeName, _)     => LIST_ZONED_TIME
-    case ListTypeName(_: LocalDateTimeTypeName, _) => LIST_LOCAL_DATETIME
-    case ListTypeName(_: ZonedDateTimeTypeName, _) => LIST_ZONED_DATETIME
-    case ListTypeName(_: DurationTypeName, _)      => LIST_DURATION
-    case ListTypeName(_: PointTypeName, _)         => LIST_POINT
+  private def asSingleSchemaValueType(propertyType: CypherType): SchemaValueType = propertyType match {
+    case _: BooleanType                    => BOOLEAN
+    case _: StringType                     => STRING
+    case _: IntegerType                    => INTEGER
+    case _: FloatType                      => FLOAT
+    case _: DateType                       => DATE
+    case _: LocalTimeType                  => LOCAL_TIME
+    case _: ZonedTimeType                  => ZONED_TIME
+    case _: LocalDateTimeType              => LOCAL_DATETIME
+    case _: ZonedDateTimeType              => ZONED_DATETIME
+    case _: DurationType                   => DURATION
+    case _: PointType                      => POINT
+    case ListType(_: BooleanType, _)       => LIST_BOOLEAN
+    case ListType(_: StringType, _)        => LIST_STRING
+    case ListType(_: IntegerType, _)       => LIST_INTEGER
+    case ListType(_: FloatType, _)         => LIST_FLOAT
+    case ListType(_: DateType, _)          => LIST_DATE
+    case ListType(_: LocalTimeType, _)     => LIST_LOCAL_TIME
+    case ListType(_: ZonedTimeType, _)     => LIST_ZONED_TIME
+    case ListType(_: LocalDateTimeType, _) => LIST_LOCAL_DATETIME
+    case ListType(_: ZonedDateTimeType, _) => LIST_ZONED_DATETIME
+    case ListType(_: DurationType, _)      => LIST_DURATION
+    case ListType(_: PointType, _)         => LIST_POINT
     case pt =>
       throw new IllegalStateException(s"Invalid property type: ${pt.description}")
   }

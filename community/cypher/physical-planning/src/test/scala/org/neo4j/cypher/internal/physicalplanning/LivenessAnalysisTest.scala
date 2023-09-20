@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.physicalplanning.LivenessAnalysisTest.PlanWithL
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -223,8 +224,8 @@ class LivenessAnalysisTest extends CypherFunSuite {
     val resolver = new LogicalPlanResolver(procedures =
       Set(ProcedureSignature(
         QualifiedName(Seq("test"), "proc"),
-        IndexedSeq(FieldSignature("input", AnyType.instance)),
-        Some(IndexedSeq(FieldSignature("output", AnyType.instance))),
+        IndexedSeq(FieldSignature("input", AnyType(isNullable = true)(InputPosition.NONE))),
+        Some(IndexedSeq(FieldSignature("output", AnyType(isNullable = true)(InputPosition.NONE)))),
         None,
         ProcedureReadOnlyAccess,
         id = 0

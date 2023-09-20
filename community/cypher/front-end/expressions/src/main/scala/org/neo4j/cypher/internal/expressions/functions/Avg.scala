@@ -17,9 +17,11 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 case object Avg extends AggregatingFunction {
   def name = "avg"
@@ -27,23 +29,9 @@ case object Avg extends AggregatingFunction {
   override val signatures = Vector(
     TypeSignature(
       this,
-      CTInteger,
-      CTInteger,
-      "Returns the average of a set of `INTEGER` values.",
-      Category.AGGREGATING
-    ),
-    TypeSignature(
-      this,
-      CTFloat,
-      CTFloat,
-      "Returns the average of a set of `FLOAT` values.",
-      Category.AGGREGATING
-    ),
-    TypeSignature(
-      this,
-      CTDuration,
-      CTDuration,
-      "Returns the average of a set of `DURATION` values.",
+      ClosedDynamicUnionType(Set(CTInteger, CTFloat, CTDuration))(InputPosition.NONE),
+      ClosedDynamicUnionType(Set(CTInteger, CTFloat, CTDuration))(InputPosition.NONE),
+      "Returns the average of a set of `INTEGER`, `FLOAT` or `DURATION` values.",
       Category.AGGREGATING
     )
   )

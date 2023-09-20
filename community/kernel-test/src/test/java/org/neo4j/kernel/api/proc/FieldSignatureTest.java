@@ -75,7 +75,7 @@ class FieldSignatureTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class, () -> inputField("name", Neo4jTypes.NTInteger, ntString("bad")));
         assertEquals(
-                "Default value does not have a valid type, field type was INTEGER?, but value type was STRING?.",
+                "Default value does not have a valid type, field type was INTEGER, but value type was STRING.",
                 exception.getMessage());
     }
 

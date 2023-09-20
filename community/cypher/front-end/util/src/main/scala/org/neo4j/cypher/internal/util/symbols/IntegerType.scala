@@ -16,14 +16,19 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
-object IntegerType {
+import org.neo4j.cypher.internal.util.InputPosition
 
-  val instance = new IntegerType() {
-    val parentType = CTNumber
-    override lazy val coercibleTo: Set[CypherType] = Set(CTFloat) ++ parentType.coercibleTo
-    override val toString = "Integer"
-    override val toNeoTypeString = "INTEGER?"
-  }
+case class IntegerType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
+  val parentType: CypherType = CTNumber
+  override lazy val coercibleTo: Set[CypherType] = Set(CTFloat) ++ parentType.coercibleTo
+  override val toString = "Integer"
+  override val toCypherTypeString = "INTEGER"
+
+  override def sortOrder: Int = CypherTypeOrder.INTEGER.id
+
+  override def hasValueRepresentation: Boolean = true
+
+  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+
+  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
-
-sealed abstract class IntegerType extends CypherType
