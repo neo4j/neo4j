@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
 import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.compiler.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
@@ -212,11 +211,6 @@ object NotificationWrapping {
         NotificationDetail.procedureWarning(name, warning),
         warning,
         name
-      )
-    case ExperimentalFeatureNotification(msg) =>
-      NotificationCodeWithDescription.runtimeExperimental(
-        graphdb.InputPosition.empty,
-        msg
       )
     case MissingParametersNotification(parameters) =>
       val javaParameters = parameters.asJava

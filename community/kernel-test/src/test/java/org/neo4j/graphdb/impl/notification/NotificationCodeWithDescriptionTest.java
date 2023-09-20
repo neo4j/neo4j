@@ -52,7 +52,6 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.procedureWarning;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedRelationshipReference;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.runtimeExperimental;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.runtimeUnsupported;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.subqueryVariableShadowing;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unboundedShortestPath;
@@ -546,20 +545,6 @@ class NotificationCodeWithDescriptionTest {
                 "The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. Use "
                         + "`WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
                         + "for suggestions.");
-    }
-
-    @Test
-    void shouldConstructNotificationsFor_RUNTIME_EXPERIMENTAL() {
-        NotificationImplementation notification = runtimeExperimental(InputPosition.empty, "PARALLEL");
-
-        verifyNotification(
-                notification,
-                "This feature is experimental and should not be used in production systems.",
-                SeverityLevel.WARNING,
-                "Neo.ClientNotification.Statement.RuntimeExperimental",
-                "You are using an experimental feature (PARALLEL)",
-                NotificationCategory.UNSUPPORTED,
-                null);
     }
 
     @Test

@@ -385,10 +385,6 @@ public enum NotificationCodeWithDescription {
                 position, new String[] {}, new String[] {pathPredicates});
     }
 
-    public static NotificationImplementation runtimeExperimental(InputPosition position, String param) {
-        return RUNTIME_EXPERIMENTAL.notification(position, param);
-    }
-
     public static NotificationImplementation missingParameterForExplain(
             InputPosition position, String oldDetails, String parameters) {
         return MISSING_PARAMETERS_FOR_EXPLAIN.notificationWithMessage(
