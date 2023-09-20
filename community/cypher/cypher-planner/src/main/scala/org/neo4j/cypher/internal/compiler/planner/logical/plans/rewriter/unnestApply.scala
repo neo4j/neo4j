@@ -70,7 +70,7 @@ case class unnestApply(override val solveds: Solveds,
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case RemovableApply(arg: Argument, rhs, _) =>
+    case RemovableApply(arg: Argument, rhs, _) if arg.argumentIds.subsetOf(rhs.availableSymbols) =>
       assertArgumentHasCardinality1(arg)
       rhs
 

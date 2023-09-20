@@ -21,15 +21,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
-import org.neo4j.cypher.internal.logical.builder.Parser
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -151,6 +150,74 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .eager()
       .create(CreateNode("b", Seq.empty, None))
       .allNodeScan("a")
+      .build()
+  }
+
+  test("should use correct arguments on RHS of ForeachApply so that Create has access to that variable") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(40)
+      .setLabelCardinality("BenchmarkTool", 100)
+      .setLabelCardinality("BenchmarkToolVersion", 100)
+      .setLabelCardinality("Project", 100)
+      .setRelationshipCardinality("()-[:VERSION_OF]->()", 40)
+      .setRelationshipCardinality("(:BenchmarkToolVersion)-[:VERSION_OF]->()", 40)
+      .build()
+
+    val query =
+      """
+        |MERGE (benchmark_tool:BenchmarkTool {name: $tool_name})
+        |  ON CREATE SET benchmark_tool.repository_name=$tool_repository_name
+        |MERGE (benchmark_tool_version:BenchmarkToolVersion)-[:VERSION_OF]->(benchmark_tool)
+        |CREATE
+        |    (test_run:TestRun $test_run),
+        |    (benchmark_config:BenchmarkConfig $benchmark_config),
+        |    (neo4j_config:Neo4jConfig $neo4j_config),
+        |    (test_run)-[:HAS_BENCHMARK_CONFIG]->(benchmark_config),
+        |    (test_run)-[:HAS_CONFIG]->(neo4j_config),
+        |    (test_run)-[:WITH_TOOL]->(benchmark_tool_version)
+        |FOREACH (project IN $projects |
+        |    MERGE (p:Project)
+        |    CREATE (p)<-[:WITH_PROJECT]-(test_run)
+        |)
+        |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .foreachApply("project", "$projects")
+      .|.create(Seq(), Seq(createRelationship("anon_4", "p", "WITH_PROJECT", "test_run", INCOMING)))
+      .|.apply()
+      .|.|.merge(Seq(createNode("p", "Project")), Seq(), Seq(), Seq(), Set())
+      .|.|.nodeByLabelScan("p", "Project")
+      .|.argument(
+        "anon_1",
+        "benchmark_tool_version",
+        "benchmark_config",
+        "anon_2",
+        "test_run",
+        "neo4j_config",
+        "anon_0",
+        "benchmark_tool",
+        "project",
+        "anon_3"
+      )
+      .create(Seq(createNodeWithProperties("test_run", Seq("TestRun"), "$test_run"), createNodeWithProperties("benchmark_config", Seq("BenchmarkConfig"), "$benchmark_config"), createNodeWithProperties("neo4j_config", Seq("Neo4jConfig"), "$neo4j_config")), Seq(createRelationship("anon_1", "test_run", "HAS_BENCHMARK_CONFIG", "benchmark_config", OUTGOING), createRelationship("anon_2", "test_run", "HAS_CONFIG", "neo4j_config", OUTGOING), createRelationship("anon_3", "test_run", "WITH_TOOL", "benchmark_tool_version", OUTGOING)))
+      .apply()
+      .|.merge(
+        Seq(createNode("benchmark_tool_version", "BenchmarkToolVersion")),
+        Seq(createRelationship("anon_0", "benchmark_tool_version", "VERSION_OF", "benchmark_tool", OUTGOING)),
+        lockNodes = Set("benchmark_tool")
+      )
+      .|.filter("benchmark_tool_version:BenchmarkToolVersion")
+      .|.expandAll("(benchmark_tool)<-[anon_0:VERSION_OF]-(benchmark_tool_version)")
+      .|.argument("benchmark_tool")
+      .merge(
+        Seq(createNodeWithProperties("benchmark_tool", Seq("BenchmarkTool"), "{name: $tool_name}")),
+        onCreate = Seq(setNodeProperty("benchmark_tool", "repository_name", "$tool_repository_name"))
+      )
+      .filter("benchmark_tool.name = $tool_name")
+      .nodeByLabelScan("benchmark_tool", "BenchmarkTool")
       .build()
   }
 }
