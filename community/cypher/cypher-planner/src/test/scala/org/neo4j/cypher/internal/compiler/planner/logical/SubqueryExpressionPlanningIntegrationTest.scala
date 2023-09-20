@@ -3678,6 +3678,64 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
   }
 
+  test("should plan nested count correctly") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("Person", 100)
+      .setRelationshipCardinality("()-[:FOLLOWS]->()", 100)
+      .setRelationshipCardinality("(:Person)-[:FOLLOWS]->()", 100)
+      .setRelationshipCardinality("(:Person)-[:FOLLOWS]->(:Person)", 100)
+      .setRelationshipCardinality("()-[:FOLLOWS]->(:Person)", 100)
+      .setRelationshipCardinality("()-[:LIKES]->()", 100)
+      .setRelationshipCardinality("()-[:LIKES]->(:Person)", 100)
+      .setRelationshipCardinality("(:Person)-[:LIKES]->()", 100)
+      .build()
+
+    val q =
+      """
+        |MATCH (person:Person)
+        |WHERE COUNT {
+        |  MATCH (person)-[:FOLLOWS]->(p:Person)
+        |  WHERE COUNT {
+        |    WITH "Ada" as x
+        |    MATCH (person)-[:FOLLOWS]->(person2:Person)
+        |    WHERE person2.name = x
+        |    WITH "Cat" as x
+        |    MATCH (person2)-[:LIKES]-(person3:Person)
+        |    WHERE person3.name = x
+        |  } = 1
+        |} = 1
+        |RETURN person.name AS name
+        |""".stripMargin
+
+    planner.plan(q) should equal(
+      planner.planBuilder()
+        .produceResults("name")
+        .projection("person.name AS name")
+        .filter("anon_7 = 1")
+        .apply()
+        .|.aggregation(Seq(), Seq("count(*) AS anon_7"))
+        .|.filter("p:Person")
+        .|.expandAll("(person)-[anon_0:FOLLOWS]->(p)")
+        .|.filter("anon_8 = 1")
+        .|.apply()
+        .|.|.aggregation(Seq(), Seq("count(*) AS anon_8"))
+        .|.|.expandAll("(person3)-[anon_2:LIKES]-(person2)")
+        .|.|.filter("person3.name = x")
+        .|.|.apply()
+        .|.|.|.nodeByLabelScan("person3", "Person", "x", "person")
+        .|.|.projection("'Cat' AS x")
+        .|.|.filter("person2:Person", "person2.name = x")
+        .|.|.expandAll("(person)-[anon_1:FOLLOWS]->(person2)")
+        .|.|.projection("'Ada' AS x")
+        .|.|.argument("person")
+        .|.argument("person")
+        .nodeByLabelScan("person", "Person")
+        .build()
+    )
+  }
+
   object VariableSet {
 
     def unapplySeq(s: Set[LogicalVariable]): Option[Seq[String]] = {

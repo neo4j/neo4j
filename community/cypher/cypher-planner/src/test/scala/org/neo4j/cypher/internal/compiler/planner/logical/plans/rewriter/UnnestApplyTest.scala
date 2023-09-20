@@ -42,13 +42,9 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
   private val po_n: ProvidedOrder = ProvidedOrder.asc(varFor("n"))
 
   test("should unnest apply with a single Argument on the lhs") {
-    // If we tracked distinctness, we would get input plans where the RHS provided order
-    // would be already propagated to the top of the Apply.
-    // But with that missing, the top of the Apply will currently not have any ProvidedOrder
-
     val inputBuilder = new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(20)
-      .apply().withCardinality(20)
+      .apply().withCardinality(20).withProvidedOrder(po_n)
       .|.nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
       .argument().withCardinality(1)
 
@@ -648,6 +644,38 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.allNodeScan("n", "x")
       .projection("5 AS x")
       .argument()
+      .build()
+
+    rewrite(input) should equal(input)
+  }
+
+  test("should not unnest Apply with lhs Argument if RHS has aggregation") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("p", "c")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS c2"))
+      .|.filter("p.prop > 5")
+      .|.apply() // Must not be removed - otherwise `p` will be unavailable for the filter above
+      .|.|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.|.allNodeScan("n", "p")
+      .|.argument("p")
+      .allNodeScan("p")
+      .build()
+
+    rewrite(input) should equal(input)
+  }
+
+  test("should not unnest Apply with lhs Argument if RHS has distinct") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("p", "c")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS c2"))
+      .|.filter("p.prop > 5")
+      .|.apply() // Must not be removed - otherwise `p` will be unavailable for the filter above
+      .|.|.distinct("n AS n")
+      .|.|.allNodeScan("n", "p")
+      .|.argument("p")
+      .allNodeScan("p")
       .build()
 
     rewrite(input) should equal(input)
