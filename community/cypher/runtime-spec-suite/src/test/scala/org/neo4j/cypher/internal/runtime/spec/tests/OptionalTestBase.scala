@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.InputValues
@@ -337,9 +338,9 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
         (Math.max(10, morselSize + 1), 1)
       case "parallel" =>
         val morselSize = getConfig.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big)
-        val numberOfWorkers = getConfig.get(GraphDatabaseInternalSettings.cypher_worker_count).toInt match {
-          case 0 => Runtime.getRuntime.availableProcessors
-          case n => n
+        val numberOfWorkers = getConfig.get(GraphDatabaseSettings.cypher_worker_limit).toInt match {
+          case n if n <= 0 => math.max(Runtime.getRuntime.availableProcessors + n, 0)
+          case n           => n
         }
         (Math.max(10, morselSize + 1), numberOfWorkers)
       case _ =>

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
@@ -46,7 +47,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](
       edition.copyWith(
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(MORSEL_SIZE),
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(MORSEL_SIZE),
-        GraphDatabaseInternalSettings.cypher_worker_count -> Integer.valueOf(WORKERS)
+        GraphDatabaseSettings.cypher_worker_limit -> Integer.valueOf(WORKERS)
       ),
       runtime
     ) with Eventually {

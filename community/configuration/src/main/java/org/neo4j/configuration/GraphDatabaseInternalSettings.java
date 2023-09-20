@@ -282,13 +282,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
-            "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to 0, two workers will be started"
-                    + " for every physical core in the system. If set to -1, no workers will be started and the parallel runtime cannot be used.")
-    public static final Setting<Integer> cypher_worker_count =
-            newBuilder("internal.cypher.number_of_workers", INT, 0).build();
-
-    @Internal
-    @Description(
             "Maximum number of queries that the Cypher worker threads for the parallel runtime will start working on concurrently. "
                     + "If set to 0, a default value of `internal.cypher.number_of_workers` will be chosen.")
     public static final Setting<Integer> cypher_max_active_queries_count = newBuilder(

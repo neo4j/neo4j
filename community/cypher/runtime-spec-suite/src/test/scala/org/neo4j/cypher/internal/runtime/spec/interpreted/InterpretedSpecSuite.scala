@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.interpreted
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CommunityRuntimeContext
 import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.runtime.spec.COMMUNITY

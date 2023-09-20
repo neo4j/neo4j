@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherParallelRuntimeSupport.DISABLED
+import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_parallel_runtime_support
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -170,7 +172,7 @@ class OptionReaderTest extends CypherFunSuite {
 
   test("Fails on parallel runtime config disabled") {
     val exception = intercept[InvalidCypherOption](CypherQueryOptions.fromValues(
-      config = CypherConfiguration.fromConfig(Config.defaults()),
+      config = CypherConfiguration.fromConfig(Config.defaults(cypher_parallel_runtime_support, DISABLED)),
       keyValues = Set("runtime" -> "parallel")
     ))
 

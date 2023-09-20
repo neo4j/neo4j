@@ -63,13 +63,13 @@ class CacheKeyTest extends CypherFunSuite {
       replan = CypherReplanOption.force,
       connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
       debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
-      parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.all,
+      parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.disabled,
       eagerAnalyzer = CypherEagerAnalyzerOption.lp
     )
 
     options.cacheKey
       .shouldEqual(
-        "PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=all eagerAnalyzer=lp"
+        "PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=lp"
       )
   }
 }

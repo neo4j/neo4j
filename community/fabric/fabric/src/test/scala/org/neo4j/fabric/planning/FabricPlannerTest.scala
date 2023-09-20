@@ -1001,7 +1001,7 @@ class FabricPlannerTest
 
       cypherConfig.config.set(
         GraphDatabaseInternalSettings.cypher_parallel_runtime_support,
-        CypherParallelRuntimeSupport.DISABLED
+        CypherParallelRuntimeSupport.ALL
       )
       val inst = instance(
         """CYPHER
