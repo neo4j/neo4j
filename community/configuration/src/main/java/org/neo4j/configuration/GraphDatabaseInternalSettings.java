@@ -331,7 +331,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<CypherParallelRuntimeSupport> cypher_parallel_runtime_support = newBuilder(
                     "internal.cypher.parallel_runtime_support",
                     ofEnum(CypherParallelRuntimeSupport.class),
-                    CypherParallelRuntimeSupport.DISABLED)
+                    CypherParallelRuntimeSupport.ALL)
             .dynamic()
             .build();
 

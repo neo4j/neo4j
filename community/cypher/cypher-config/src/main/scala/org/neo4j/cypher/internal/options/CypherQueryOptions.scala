@@ -285,7 +285,7 @@ case object CypherParallelRuntimeSupportOption extends CypherOptionCompanion[Cyp
 
   case object disabled extends CypherParallelRuntimeSupportOption("disabled")
   case object all extends CypherParallelRuntimeSupportOption("all")
-  override def default: CypherParallelRuntimeSupportOption = disabled
+  override def default: CypherParallelRuntimeSupportOption = all
 
   override def values: Set[CypherParallelRuntimeSupportOption] = Set(disabled, all)
 
