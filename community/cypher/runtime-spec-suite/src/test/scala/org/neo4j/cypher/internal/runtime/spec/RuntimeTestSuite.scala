@@ -71,6 +71,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Status
 import org.scalatest.SucceededStatus
+import org.scalatest.Suite
 import org.scalatest.Tag
 
 import java.time.LocalTime
@@ -135,6 +136,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
 
   private[this] var runtimeTestParameters: RuntimeTestParameters = _
   private[this] var includeOnlyTestNames: Set[String] = _
+  private[this] var customSuiteName: Option[String] = None
+  private[this] var customSuiteId: Option[String] = None
 
   def setRuntimeTestParameters(params: RuntimeTestParameters): Unit = {
     require(runtimeTestSupport == null) // We expect this to be called before we construct runtimeTestSupport
@@ -344,6 +347,15 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     else
       RecordingProbe(variablesToRecord: _*)
   }
+
+  /** Hack to make TC report test results correctly for certain nested suites */
+  def setSuiteNamePrefix(prefix: String): Unit = {
+    customSuiteName = Some(s"$prefix.${super.suiteName}")
+    customSuiteId = Some(s"$prefix.${super.suiteId}")
+  }
+
+  override def suiteId: String = customSuiteId.getOrElse(super.suiteId)
+  override def suiteName: String = customSuiteName.getOrElse(super.suiteName)
 }
 
 /**
