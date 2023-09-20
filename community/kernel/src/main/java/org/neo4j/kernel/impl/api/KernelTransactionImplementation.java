@@ -218,7 +218,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LogProvider logProvider;
     private final CursorContextFactory contextFactory;
     // For concurrent access by monitoring, jobs, etc CURSOR_CONTEXT_HANDLE should be used
+    @SuppressWarnings("FieldMayBeFinal")
     private CursorContext cursorContext;
+
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final TransactionIdGenerator transactionIdGenerator;
     private final ApplyEnrichmentStrategy enrichmentStrategy;
@@ -332,6 +334,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
+        this.cursorContext = CursorContext.NULL_CONTEXT;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         this.transactionIdGenerator = transactionIdGenerator;
         this.databaseHealth = databaseHealth;
