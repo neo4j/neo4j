@@ -28,18 +28,22 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.ALL_SCAN_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EXPAND_ALL_COST
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.INDEX_SCAN_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.SHORTEST_ALL_PRODUCT_GRAPH_COST
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -923,5 +927,45 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     assertTrailHasExpectedCost(testCase1_3, expected)
     assertTrailHasExpectedCost(testCase2_3, expected)
     assertTrailHasExpectedCost(testCase3_3, expected)
+  }
+
+  test("statefulShortestPath") {
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .addFinalState(3)
+      .build()
+
+    val ansCardinality = 10
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .statefulShortestPath(
+        "u",
+        "v",
+        "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE unique(`r`))",
+        None,
+        groupNodes = Set(("n", "n"), ("m", "m")),
+        groupRelationships = Set(("r", "r")),
+        singletonNodeVariables = Set("v"),
+        singletonRelationshipVariables = Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        reverseGroupVariableProjections = false
+      ).withCardinality(100)
+      .allNodeScan("u").withCardinality(ansCardinality)
+      .build()
+
+    costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    ) should equal(Cost(
+      ansCardinality * ALL_SCAN_COST_PER_ROW +
+        ansCardinality * SHORTEST_ALL_PRODUCT_GRAPH_COST
+    ))
   }
 }

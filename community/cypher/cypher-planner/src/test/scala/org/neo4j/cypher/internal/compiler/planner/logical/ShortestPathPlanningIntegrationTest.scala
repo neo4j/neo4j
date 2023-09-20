@@ -75,7 +75,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .addSemanticFeature(SemanticFeature.GpmShortestPath)
     .build()
 
-  //
   test("should plan SHORTEST with 1 QPP, + quantifier, no predicates, left-to-right") {
     val query = "MATCH ANY SHORTEST (u:User)((n)-[r]->(m))+(v) RETURN *"
 
@@ -898,4 +897,83 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .allNodeScan("a")
       .build()
   }
+
+  test("should plan SHORTEST from the lower cardinality side") {
+    val query = "MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B) RETURN *"
+
+    val nfaLR = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (b:B)")
+      .addFinalState(3)
+      .build()
+    val planLR = planner.subPlanBuilder()
+      .statefulShortestPath(
+        "a",
+        "b",
+        "SHORTEST 1 ((a) ((n)-[r]->(m)){1, } (b) WHERE b:B AND unique(`r`))",
+        None,
+        groupNodes = Set(("n", "n"), ("m", "m")),
+        groupRelationships = Set(("r", "r")),
+        singletonNodeVariables = Set("b"),
+        singletonRelationshipVariables = Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfaLR,
+        reverseGroupVariableProjections = false
+      )
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val nfaRL = new TestNFABuilder(0, "b")
+      .addTransition(0, 1, "(b) (m)")
+      .addTransition(1, 2, "(m)<-[r]-(n)")
+      .addTransition(2, 1, "(n) (m)")
+      .addTransition(2, 3, "(n) (a:A)")
+      .addFinalState(3)
+      .build()
+    val planRL = planner.subPlanBuilder()
+      .statefulShortestPath(
+        "b",
+        "a",
+        "SHORTEST 1 ((a) ((n)-[r]->(m)){1, } (b) WHERE a:A AND unique(`r`))",
+        None,
+        groupNodes = Set(("n", "n"), ("m", "m")),
+        groupRelationships = Set(("r", "r")),
+        singletonNodeVariables = Set("a"),
+        singletonRelationshipVariables = Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfaRL,
+        reverseGroupVariableProjections = true
+      )
+      .nodeByLabelScan("b", "B")
+      .build()
+
+    // If :A is cheaper
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(40)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 20)
+      .setRelationshipCardinality("(:A)-[]->()", 20)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 20)
+      .setRelationshipCardinality("()-[]->(:B)", 20)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+      .plan(query).stripProduceResults should equal(planLR)
+
+    // If :B is cheaper
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(40)
+      .setLabelCardinality("A", 20)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("(:A)-[]->()", 20)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 20)
+      .setRelationshipCardinality("()-[]->(:B)", 20)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .build()
+      .plan(query).stripProduceResults should equal(planRL)
+  }
+
 }

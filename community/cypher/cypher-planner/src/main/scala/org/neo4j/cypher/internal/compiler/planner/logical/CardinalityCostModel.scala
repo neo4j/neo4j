@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
@@ -386,6 +387,9 @@ object CardinalityCostModel {
   val EXPAND_ALL_COST: CostPerRow = 1.5
   val ALL_SCAN_COST_PER_ROW = 1.2
 
+  val SHORTEST_INTO_COST = 12.0
+  val SHORTEST_ALL_PRODUCT_GRAPH_COST = 18.0
+
   val INDEX_SCAN_COST_PER_ROW = 1.0
   val INDEX_SEEK_COST_PER_ROW = 1.9
   // When reading from node store or relationship store
@@ -447,9 +451,10 @@ object CardinalityCostModel {
 
   /**
    * @param plan the plan
-   * @param cardinality the outgoing cardinality of the plan ???
+   * @param cardinality the input cardinality of the plan
    * @param semanticTable the semantic table
-   * @return the cost of the plan per outgoing row
+   * @return the cost of the plan per incoming row, if defined.
+   *         For leaf plans, the cost of the plan per outgoing row.
    */
   private def costPerRow(
     plan: LogicalPlan,
@@ -459,10 +464,8 @@ object CardinalityCostModel {
   ): CostPerRow =
     plan match {
       /*
-       * These constants are approximations derived from test runs,
-       * see ActualCostCalculationTest
+       * These constants are approximations derived from test runs.
        */
-
       /*
        * Ties that may occur between leaf plans (e.g. label/type scans and index plans) are arbitrated by a SelectorHeuristic
        */
@@ -565,7 +568,11 @@ object CardinalityCostModel {
         // Sorting 99 rows has cost 0.2 per row.
         DEFAULT_COST_PER_ROW * Math.log(cardinality.amount + 1)
 
-      case _: FindShortestPaths => 12.0
+      case _: FindShortestPaths =>
+        SHORTEST_INTO_COST
+
+      case _: StatefulShortestPath =>
+        SHORTEST_ALL_PRODUCT_GRAPH_COST
 
       case _ // Default
         => DEFAULT_COST_PER_ROW

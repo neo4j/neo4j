@@ -746,23 +746,24 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .produceResults("`end.prop2`")
         .projection("end.prop2 AS `end.prop2`")
         .statefulShortestPath(
-          "end",
           "start",
-          "SHORTEST 1 ((start)-[r]->(end) WHERE start.prop IN [1])",
+          "end",
+          "SHORTEST 1 ((start)-[r]->(end))",
           None,
           Set.empty,
           Set.empty,
-          Set("start"),
+          Set("end"),
           Set("r"),
           StatefulShortestPath.Selector.Shortest(1),
-          new TestNFABuilder(0, "end")
-            .addTransition(0, 1, "(end)<-[r]-(start WHERE start.prop = 1)")
+          new TestNFABuilder(0, "start")
+            .addTransition(0, 1, "(start)-[r]->(end)")
             .addFinalState(1)
             .build(),
-          true
+          reverseGroupVariableProjections = false
         )
+        .filter("start.prop = 1")
         .apply()
-        .|.allNodeScan("end", "a")
+        .|.allNodeScan("start", "a")
         .eager(ListSet(EagernessReason.Unknown))
         .setNodeProperty("a", "prop", "1")
         .allNodeScan("a")
@@ -885,22 +886,23 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .setNodeProperty("end", "prop", "1")
         .eager(ListSet(EagernessReason.Unknown))
         .statefulShortestPath(
-          "end",
           "start",
-          "SHORTEST 1 ((start)-[r:R]->(end) WHERE start.prop IN [1])",
+          "end",
+          "SHORTEST 1 ((start)-[r:R]->(end))",
           None,
           Set.empty,
           Set.empty,
-          Set("start"),
+          Set("end"),
           Set("r"),
           StatefulShortestPath.Selector.Shortest(1),
-          new TestNFABuilder(0, "end")
-            .addTransition(0, 1, "(end)<-[r:R]-(start WHERE start.prop = 1)")
+          new TestNFABuilder(0, "start")
+            .addTransition(0, 1, "(start)-[r:R]->(end)")
             .addFinalState(1)
             .build(),
-          true
+          reverseGroupVariableProjections = false
         )
-        .allNodeScan("end")
+        .filter("start.prop = 1")
+        .allNodeScan("start")
         .build()
     )
   }
