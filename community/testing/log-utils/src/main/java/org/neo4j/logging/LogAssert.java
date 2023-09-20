@@ -25,6 +25,7 @@ import static org.neo4j.internal.helpers.Exceptions.stringify;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +35,7 @@ import org.assertj.core.api.AbstractLongAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.util.Throwables;
 import org.neo4j.logging.AssertableLogProvider.LogCall;
+import org.neo4j.time.Stopwatch;
 
 public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> {
     private Class<?> loggerClazz;
@@ -67,25 +69,15 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
 
     public LogAssert containsMessagesEventually(long maxWaitTimoutMs, String... messages) throws InterruptedException {
         isNotNull();
-        boolean waitedAlready = false;
+        Stopwatch stopwatch = Stopwatch.start();
         for (String message : messages) {
-            if (!haveMessage(message)) {
-                if (!waitedAlready) {
-                    long backoff = 0;
-                    int attempt = 0;
-                    while (!haveMessage(message) && backoff <= maxWaitTimoutMs) {
-                        backoff = (long) Math.pow(2, attempt++);
-                        Thread.sleep(backoff);
-                    }
-
-                    waitedAlready = true;
-                }
-
-                if (!haveMessage(message)) {
+            while (!haveMessage(message)) {
+                if (stopwatch.hasTimedOut(maxWaitTimoutMs, TimeUnit.MILLISECONDS)) {
                     failWithMessage(
                             "Expected log to contain messages: `%s` but no matches found in:%n%s",
                             Arrays.toString(messages), actual.serialize());
                 }
+                Thread.sleep(10);
             }
         }
         return this;
