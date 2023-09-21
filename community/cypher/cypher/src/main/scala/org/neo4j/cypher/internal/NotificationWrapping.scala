@@ -59,6 +59,8 @@ import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
 import org.neo4j.cypher.internal.util.RevokePrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.RevokeRoleCommandHasNoEffectNotification
+import org.neo4j.cypher.internal.util.ServerAlreadyCordoned
+import org.neo4j.cypher.internal.util.ServerAlreadyEnabled
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
@@ -322,6 +324,18 @@ object NotificationWrapping {
         graphdb.InputPosition.empty,
         command,
         cause
+      )
+
+    case ServerAlreadyEnabled(server) =>
+      NotificationCodeWithDescription.serverAlreadyEnabled(
+        graphdb.InputPosition.empty,
+        server
+      )
+
+    case ServerAlreadyCordoned(server) =>
+      NotificationCodeWithDescription.serverAlreadyCordoned(
+        graphdb.InputPosition.empty,
+        server
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

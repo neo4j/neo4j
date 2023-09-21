@@ -56,6 +56,8 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedRelationshipReference;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.runtimeUnsupported;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.serverAlreadyCordoned;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.serverAlreadyEnabled;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.subqueryVariableShadowing;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unboundedShortestPath;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unionReturnOrder;
@@ -818,6 +820,34 @@ class NotificationCodeWithDescriptionTest {
                 "Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.");
     }
 
+    @Test
+    void shouldConstructNotificationsFor_SERVER_ALREADY_ENABLED() {
+        NotificationImplementation notification = serverAlreadyEnabled(InputPosition.empty, "server");
+
+        verifyNotification(
+                notification,
+                "`ENABLE SERVER` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Cluster.ServerAlreadyEnabled",
+                "Server `server` is already enabled. Verify that this is the intended server.",
+                NotificationCategory.TOPOLOGY,
+                null);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_SERVER_ALREADY_CORDONED() {
+        NotificationImplementation notification = serverAlreadyCordoned(InputPosition.empty, "server");
+
+        verifyNotification(
+                notification,
+                "`CORDON SERVER` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Cluster.ServerAlreadyCordoned",
+                "Server `server` is already cordoned. Verify that this is the intended server.",
+                NotificationCategory.TOPOLOGY,
+                null);
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -873,8 +903,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -66, -37, -49, 110, 27, -85, -123, 47, 72, 69, 15, -120, -34, 77, -103, 54, 123, 83, -77, -35, 39, 125, -90,
-            56, 84, 98, -17, 82, -4, -74, -100, -9
+            -68, -45, 119, -108, 79, 88, 47, -109, 78, 123, 119, -18, 51, -96, 55, 22, -39, -108, -44, -125, -67, 82,
+            -20, -20, 7, -106, 31, 18, -114, -50, -51, -35
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

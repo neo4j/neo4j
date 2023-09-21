@@ -239,7 +239,14 @@ public enum NotificationCodeWithDescription {
             Status.Security.ImpossibleRevokeCommand,
             "%s Make sure nothing is misspelled. This notification will become an error in a future major version. "
                     + "See Status Codes documentation for more information.",
-            "`%s` has no effect. %s Make sure nothing is misspelled. This notification will become an error in a future major version. See Status Codes documentation for more information.");
+            "`%s` has no effect. %s Make sure nothing is misspelled. This notification will become an error in a future major version. See Status Codes documentation for more information."),
+
+    SERVER_ALREADY_ENABLED(
+            Status.Cluster.ServerAlreadyEnabled,
+            "Server `%s` is already enabled. Verify that this is the intended server."),
+    SERVER_ALREADY_CORDONED(
+            Status.Cluster.ServerAlreadyCordoned,
+            "Server `%s` is already cordoned. Verify that this is the intended server.");
 
     private final Status status;
     private final String description;
@@ -482,6 +489,14 @@ public enum NotificationCodeWithDescription {
             InputPosition position, String titleParam, String descriptionParam) {
         return IMPOSSIBLE_REVOKE_COMMAND.notificationWithTitleAndDescriptionDetails(
                 position, titleParam, new String[] {descriptionParam}, new String[] {titleParam, descriptionParam});
+    }
+
+    public static NotificationImplementation serverAlreadyEnabled(InputPosition position, String server) {
+        return SERVER_ALREADY_ENABLED.notification(position, server);
+    }
+
+    public static NotificationImplementation serverAlreadyCordoned(InputPosition position, String server) {
+        return SERVER_ALREADY_CORDONED.notification(position, server);
     }
 
     private NotificationImplementation notification(InputPosition position, String... details) {

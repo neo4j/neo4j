@@ -76,3 +76,6 @@ case class GrantRoleCommandHasNoEffectNotification(command: String) extends Inte
 case class RevokeRoleCommandHasNoEffectNotification(command: String) extends InternalNotification
 
 case class ImpossibleRevokeCommandWarning(command: String, cause: String) extends InternalNotification
+
+case class ServerAlreadyEnabled(server: String) extends InternalNotification
+case class ServerAlreadyCordoned(server: String) extends InternalNotification

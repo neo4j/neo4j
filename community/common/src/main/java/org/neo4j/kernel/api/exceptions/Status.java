@@ -657,7 +657,19 @@ public interface Status {
                 ClientError,
                 "The request cannot be processed by this server. Write requests can only be processed by the leader."),
 
-        Routing(ClientError, "Unable to route the request to the appropriate server");
+        Routing(ClientError, "Unable to route the request to the appropriate server"),
+
+        ServerAlreadyEnabled(
+                ClientNotification,
+                "`ENABLE SERVER` has no effect.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.TOPOLOGY),
+
+        ServerAlreadyCordoned(
+                ClientNotification,
+                "`CORDON SERVER` has no effect.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.TOPOLOGY);
 
         private final Code code;
 
@@ -668,6 +680,14 @@ public interface Status {
 
         Cluster(Classification classification, String description) {
             this.code = new Code(classification, this, description);
+        }
+
+        Cluster(
+                Classification classification,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory category) {
+            this.code = new NotificationCode(classification, this, description, severity, category);
         }
     }
 
