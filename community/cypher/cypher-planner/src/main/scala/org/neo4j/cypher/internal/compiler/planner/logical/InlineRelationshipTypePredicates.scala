@@ -50,48 +50,51 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
     with PlanPipelineTransformerFactory {
 
   case object RelationshipTypePredicatesInlined extends StepSequencer.Condition
-  final case class Result(newPatternRelationships: Set[PatternRelationship], inlinedPredicates: Set[Predicate])
+  final case class Result(newPatternRelationships: Seq[PatternRelationship], inlinedPredicates: Set[Predicate])
 
   override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = {
     topDown(
       rewriter = Rewriter.lift {
-        case qg: QueryGraph => {
-          val typePredicates: Map[String, (Predicate, Seq[RelTypeName])] = findRelationshipTypePredicatesPerSymbol(qg)
+        case qg: QueryGraph =>
+          val typePredicates = findRelationshipTypePredicatesPerSymbol(qg)
 
-          val result = qg.patternRelationships.foldLeft(Result(qg.patternRelationships, Set.empty)) {
-            case (resultSoFar @ Result(newPatternRelationships, inlinedPredicates), rel) =>
-              if (rel.types.nonEmpty) resultSoFar
-              else {
-                typePredicates.get(rel.name).fold(resultSoFar) { case (pred, types) =>
-                  Result(newPatternRelationships - rel + rel.copy(types = types), inlinedPredicates + pred)
-                }
-              }
-          }
+          val result = inlineRelationshipTypes(qg.patternRelationships, typePredicates)
 
-          qg.withPatternRelationships(result.newPatternRelationships)
+          qg.withPatternRelationships(result.newPatternRelationships.toSet)
             .withSelections(qg.selections.copy(predicates = qg.selections.predicates -- result.inlinedPredicates))
-        }
-        case qpp: QuantifiedPathPattern => {
-          val typePredicates: Map[String, (Predicate, Seq[RelTypeName])] =
-            findRelationshipTypePredicatesPerSymbol(qpp.asQueryGraph)
 
-          val result = qpp.patternRelationships.foldLeft(Result(qpp.patternRelationships.toSet, Set.empty)) {
-            case (resultSoFar @ Result(newPatternRelationships, inlinedPredicates), rel) =>
-              if (rel.types.nonEmpty) resultSoFar
-              else {
-                typePredicates.get(rel.name).fold(resultSoFar) { case (pred, types) =>
-                  Result(newPatternRelationships - rel + rel.copy(types = types), inlinedPredicates + pred)
-                }
-              }
-          }
+        case qpp: QuantifiedPathPattern =>
+          val typePredicates = findRelationshipTypePredicatesPerSymbol(qpp.asQueryGraph)
+
+          val result = inlineRelationshipTypes(qpp.patternRelationships, typePredicates)
 
           qpp.copy(
-            patternRelationships = result.newPatternRelationships.toSeq,
+            patternRelationships = result.newPatternRelationships,
             selections = qpp.selections.copy(predicates = qpp.selections.predicates -- result.inlinedPredicates)
           )
-        }
       }
     )
+  }
+
+  private def inlineRelationshipTypes(
+    patternRelationships: Iterable[PatternRelationship],
+    typePredicates: Map[String, (Predicate, Seq[RelTypeName])]
+  ): Result = {
+    patternRelationships.foldLeft(Result(Seq.empty, Set.empty)) {
+      case (Result(newPatternRelationships, inlinedPredicates), rel) =>
+        // if there are types we could inline on that relationship
+        typePredicates.get(rel.name)
+          // and that relationship does not have any relationship types yet
+          .filter(_ => rel.types.isEmpty)
+          .map { case (pred, types) =>
+            // then inline the types
+            Result(newPatternRelationships :+ rel.copy(types = types), inlinedPredicates + pred)
+          }
+          .getOrElse(
+            // otherwise just add the relationship as is.
+            Result(newPatternRelationships :+ rel, inlinedPredicates)
+          )
+    }
   }
 
   private def findRelationshipTypePredicatesPerSymbol(qg: QueryGraph): Map[String, (Predicate, Seq[RelTypeName])] = {

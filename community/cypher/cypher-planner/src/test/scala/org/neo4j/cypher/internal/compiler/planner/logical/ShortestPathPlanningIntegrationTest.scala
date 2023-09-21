@@ -65,6 +65,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:User)-[:R]->()", 10)
     .setRelationshipCardinality("(:User)-[:R]->(:B)", 10)
     .setRelationshipCardinality("(:B)-[:R]->(:B)", 10)
+    .setRelationshipCardinality("()-[:R]->(:B)", 10)
     .setRelationshipCardinality("()-[]->(:N)", 10)
     .setRelationshipCardinality("()-[]->(:NN)", 10)
     .setRelationshipCardinality("()-[]->(:User)", 10)
@@ -103,6 +104,71 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           false
         )
         .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("should plan SHORTEST with QPP with several relationships and path assignment") {
+    val query =
+      """MATCH p = SHORTEST 1 (s:User) (()-[:R]->()-[:T]-()-[:T]-()-[:T]-()-[:R]->())+ (t)
+        |RETURN p""".stripMargin
+    val plan = planner.plan(query)
+
+    val pathExpression = PathExpression(NodePathStep(
+      varFor("s"),
+      RepeatPathStep(
+        List(
+          NodeRelPair(varFor("anon_27"), varFor("anon_20")),
+          NodeRelPair(varFor("anon_28"), varFor("anon_16")),
+          NodeRelPair(varFor("anon_30"), varFor("anon_17")),
+          NodeRelPair(varFor("anon_26"), varFor("anon_18")),
+          NodeRelPair(varFor("anon_29"), varFor("anon_19"))
+        ),
+        varFor("t"),
+        NilPathStep()(pos)
+      )(pos)
+    )(pos))(pos)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("p")
+        .projection(Map("p" -> pathExpression))
+        .statefulShortestPath(
+          "s",
+          "t",
+          "SHORTEST 1 ((s) ((anon_21)-[anon_11:R]->(anon_22)-[anon_12:T]-(anon_23)-[anon_13:T]-(anon_24)-[anon_14:T]-(anon_25)-[anon_15:R]->(anon_10) WHERE NOT `anon_15` = `anon_11` AND NOT `anon_14` = `anon_13` AND NOT `anon_14` = `anon_12` AND NOT `anon_13` = `anon_12`){1, } (t) WHERE unique((((`anon_20` + `anon_16`) + `anon_17`) + `anon_18`) + `anon_19`))",
+          None,
+          Set(
+            ("anon_21", "anon_27"),
+            ("anon_22", "anon_28"),
+            ("anon_25", "anon_29"),
+            ("anon_23", "anon_30"),
+            ("anon_24", "anon_26")
+          ),
+          Set(
+            ("anon_11", "anon_20"),
+            ("anon_13", "anon_17"),
+            ("anon_15", "anon_19"),
+            ("anon_12", "anon_16"),
+            ("anon_14", "anon_18")
+          ),
+          Set("t"),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "s")
+            .addTransition(0, 1, "(s) (anon_21)")
+            .addTransition(1, 2, "(anon_21)-[anon_11:R]->(anon_22)")
+            .addTransition(2, 3, "(anon_22)-[anon_12:T]-(anon_23)")
+            .addTransition(3, 4, "(anon_23)-[anon_13:T]-(anon_24)")
+            .addTransition(4, 5, "(anon_24)-[anon_14:T]-(anon_25)")
+            .addTransition(5, 6, "(anon_25)-[anon_15:R]->(anon_10)")
+            .addTransition(6, 1, "(anon_10) (anon_21)")
+            .addTransition(6, 7, "(anon_10) (t)")
+            .addFinalState(7)
+            .build(),
+          reverseGroupVariableProjections = false
+        )
+        .nodeByLabelScan("s", "User")
         .build()
     )
   }

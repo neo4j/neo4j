@@ -99,6 +99,10 @@ class InlineRelationshipTypePredicatesTest extends CypherFunSuite with PlannerQu
     assertIsNotRewritten(testName)
   }
 
+  test("MATCH ( ()-[:R]->()-[:!!T]-()-[:!T]-()-[:T]-()-[:R]->() )+ RETURN *") {
+    assertRewrite(testName, "MATCH ( ()-[:R]->()-[:T]-()-[:!T]-()-[:T]-()-[:R]->() )+ RETURN *")
+  }
+
   test("MATCH ( ()-[r WHERE r:T]-() )+ RETURN *") {
     assertRewrite(testName, "MATCH ( ()-[r:T]-() )+ RETURN *")
   }
