@@ -109,8 +109,8 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
         |DELETE (COLLECT { MATCH (a) RETURN a }[0]),
         |       (COLLECT { MATCH (a) RETURN a }[1])
         |""".stripMargin,
-      """WITH COLLECT { MATCH (a) RETURN a }[1] AS `  UNNAMED1`, 
-        |     COLLECT { MATCH (a) RETURN a }[0] AS `  UNNAMED0`
+      """WITH COLLECT { MATCH (a) RETURN a }[0] AS `  UNNAMED0`,
+        |     COLLECT { MATCH (a) RETURN a }[1] AS `  UNNAMED1`
         |DELETE `  UNNAMED0`, `  UNNAMED1` 
         |""".stripMargin
     )
@@ -135,7 +135,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  test("Does not inserts empty importing WITH if the rewritten updating clause is the second clause in a subquery") {
+  test("Does not insert empty importing WITH if the rewritten updating clause is the second clause in a subquery") {
     assertRewritten(
       """CALL {
         |  MATCH (foo)

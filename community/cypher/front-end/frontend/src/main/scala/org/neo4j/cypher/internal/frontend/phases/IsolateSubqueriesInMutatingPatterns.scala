@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.SubqueryCall
-import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UpdateClause
 import org.neo4j.cypher.internal.ast.With
@@ -48,8 +47,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
-
-import scala.collection.mutable
 
 /**
  * Isolates subquery expressions and CASE expressions in updating clauses by placing them in a preceding WITH clause.
@@ -108,7 +105,8 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
 
         case (uc: UpdateClause, clauseIndex) =>
           val isFirstClause = clauseIndex == 0
-          val rewrittenExpressionsMap = mutable.Map[String, Expression]()
+          case class RewrittenExpression(introducedVariable: String, replacedExpression: Expression)
+          var rewrittenExpressions = Seq.empty[RewrittenExpression]
 
           val rewrittenUc = uc.mapExpressions { exp =>
             case class Acc(foundSubquery: Boolean, foundCrossReferencingSubquery: Boolean)
@@ -119,23 +117,8 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
               }
               case se: SubqueryExpression => {
                 case Acc(_, cr) =>
-                  uc match {
-                    // For CREATE, filter out subqueries that have dependencies on entities created in the same clause.
-                    // Those are deprecated and rewriting them here would change the semantics of the query.
-                    case Create(pattern) =>
-                      val allSymbolDefinitions = semanticTable
-                        .recordedScopes(pattern)
-                        .symbolDefinitions
-                        .map(_.use.value)
-                      val subqueryDependsOnVariableIntroducedInCreate =
-                        allSymbolDefinitions.intersect(se.scopeDependencies).nonEmpty
-                      if (subqueryDependsOnVariableIntroducedInCreate) {
-                        SkipChildren(Acc(true, true))
-                      } else {
-                        SkipChildren(Acc(true, cr))
-                      }
-                    case _ => SkipChildren(Acc(true, cr))
-                  }
+                  val depends = doesSubqueryExpressionDependOnUpdateClause(semanticTable, uc, se)
+                  SkipChildren(Acc(true, cr || depends))
               }
               case _ => acc => TraverseChildren(acc)
             }
@@ -143,7 +126,7 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
             if (foundSubquery & !foundCrossReferencingSubquery) {
               // Replace by a new anonymous variable
               val anonVarName = anonymousVariableNameGenerator.nextName
-              rewrittenExpressionsMap += anonVarName -> exp
+              rewrittenExpressions :+= RewrittenExpression(anonVarName, exp)
               Variable(anonVarName)(exp.position)
             } else {
               // Do not rewrite
@@ -151,7 +134,7 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
             }
           }
 
-          if (rewrittenExpressionsMap.isEmpty) {
+          if (rewrittenExpressions.isEmpty) {
             // Nothing to do
             Seq(uc)
           } else {
@@ -175,12 +158,13 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
             val withClause = With(
               ReturnItems(
                 includeExisting = true,
-                items = rewrittenExpressionsMap.map {
-                  case (name, expression) =>
-                    AliasedReturnItem(expression, Variable(name)(expression.position))(
-                      expression.position
-                    )
-                }.toSeq
+                items = rewrittenExpressions.map {
+                  case RewrittenExpression(name, expression) =>
+                    AliasedReturnItem(
+                      expression,
+                      Variable(name)(expression.position)
+                    )(expression.position)
+                }
               )(uc.position)
             )(uc.position)
 
@@ -200,4 +184,18 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
     })
   }
 
+  private def doesSubqueryExpressionDependOnUpdateClause(semanticTable: => SemanticTable, updateClause: UpdateClause, subqueryExpression: SubqueryExpression): Boolean = {
+    updateClause match {
+      // For CREATE, filter out subqueries that have dependencies on entities created in the same clause.
+      // Those are deprecated and rewriting them here would change the semantics of the query.
+      case Create(pattern) =>
+        val allSymbolDefinitions = semanticTable
+          .recordedScopes(pattern)
+          .symbolDefinitions
+          .map(_.use.value)
+        allSymbolDefinitions.intersect(subqueryExpression.scopeDependencies).nonEmpty
+
+      case _ => false
+    }
+  }
 }

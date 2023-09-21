@@ -83,7 +83,7 @@ case class Component(queryGraph: QueryGraph, plan: LogicalPlan)
  *
  * This class is being replaced by [[ComponentConnectorPlanner]].
  * It is still left in the code in case the replacement leads to unexpected regressions.
- * The plan is to remove this in the future, e.g. in the next mayor version.
+ * The plan is to remove this in the future, e.g. in the next major version.
  *
  * Compared with [[ComponentConnectorPlanner]], this does not always consider ordering
  * during planning, and might thus produce worse plans if there is an ORDER BY.

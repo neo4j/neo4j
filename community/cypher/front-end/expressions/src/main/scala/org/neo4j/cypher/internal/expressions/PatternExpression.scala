@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 case class PatternExpression(pattern: RelationshipsPattern)(
   override val computedIntroducedVariables: Option[Set[LogicalVariable]],
   override val computedScopeDependencies: Option[Set[LogicalVariable]]
-) extends ScopeExpression with ExpressionWithComputedDependencies with SubqueryExpression {
+) extends SubqueryExpression {
 
   override def position: InputPosition = pattern.position
 
