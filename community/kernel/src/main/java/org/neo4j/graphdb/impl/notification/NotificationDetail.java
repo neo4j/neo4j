@@ -41,7 +41,7 @@ public class NotificationDetail {
         return String.format(". ('%s' has been replaced by '%s')", oldName, newName);
     }
 
-    public static String indexes(
+    public static String index(
             final IndexHintIndexType indexType, final String label, final List<String> propertyKeys) {
         final var prettyProperties = commaSeparated(propertyKeys);
         final var prettyLabel = labelOrRelationshipType(label);

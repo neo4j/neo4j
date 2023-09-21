@@ -46,7 +46,7 @@ public enum NotificationCodeWithDescription {
     INDEX_HINT_UNFULFILLABLE(
             Status.Schema.HintedIndexNotFound,
             "The hinted index does not exist, please check the schema (%s)",
-            "Unable to create a plan with `%s` because the index(es) do not exist. See Status "
+            "Unable to create a plan with `%s` because the index does not exist. See Status "
                     + "Codes documentation for suggestions."),
     JOIN_HINT_UNFULFILLABLE(
             Status.Statement.JoinHintUnfulfillableWarning,
@@ -168,7 +168,7 @@ public enum NotificationCodeWithDescription {
     MISSING_PARAMETERS_FOR_EXPLAIN(
             Status.Statement.ParameterNotProvided,
             "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (%s)",
-            "The query plan cannot be cached and is not executable without EXPLAIN due to the undefined parameter(s) `%s`. Provide the parameter(s)."),
+            "The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `%s`. Provide the parameter(s)."),
     CODE_GENERATION_FAILED(
             Status.Statement.CodeGenerationFailed,
             "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)"),
@@ -465,13 +465,6 @@ public enum NotificationCodeWithDescription {
                 .setPosition(position)
                 .setNotificationDetails(oldDetails)
                 .setMessageParameters(parameters)
-                .build();
-    }
-
-    private NotificationImplementation notificationWithTitleDetails(InputPosition position, String... details) {
-        return new NotificationImplementation.NotificationBuilder(this)
-                .setPosition(position)
-                .setTitleDetails(details)
                 .build();
     }
 

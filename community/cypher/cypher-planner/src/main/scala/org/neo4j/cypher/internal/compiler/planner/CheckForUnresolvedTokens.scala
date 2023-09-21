@@ -71,8 +71,7 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
         case Property(variable, prop @ PropertyKeyName(name))
           if isNodeOrRelationship(variable) && isEmptyPropertyName(name) =>
           acc =>
-            val notification = MissingPropertyNameNotification(prop.position, name)
-            TraverseChildren(acc :+ notification)
+            TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
       }
 
       notifications foreach context.notificationLogger.log
