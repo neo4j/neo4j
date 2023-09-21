@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
+import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver
 import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.values.virtual.MapValue
 
 class CypherParsing(
@@ -63,6 +65,33 @@ class CypherParsing(
       semanticFeatures = config.semanticFeatures(),
       obfuscateLiterals = config.obfuscateLiterals()
     )).transform(startState, context)
+  }
+
+  def queryRouterParseQuery(
+    queryText: String,
+    rawQueryText: String,
+    notificationLogger: InternalNotificationLogger,
+    plannerNameText: String = IDPPlannerName.name,
+    offset: Option[InputPosition],
+    tracer: CompilationPhaseTracer,
+    params: MapValue,
+    cancellationChecker: CancellationChecker,
+    globalProcedures: GlobalProcedures
+  ): BaseState = {
+    val plannerName = PlannerNameFor(plannerNameText)
+    val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
+    val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
+    val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint())
+
+    CompilationPhases.fabricParsing(
+      ParsingConfig(
+        extractLiterals = config.extractLiterals(),
+        parameterTypeMapping = paramTypes,
+        semanticFeatures = config.semanticFeatures(),
+        obfuscateLiterals = config.obfuscateLiterals()
+      ),
+      SignatureResolver.from(globalProcedures.getCurrentView)
+    ).transform(startState, context)
   }
 
 }

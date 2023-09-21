@@ -30,12 +30,15 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
 
-sealed trait QueryType
+sealed trait QueryType {
+  def isRead: Boolean = false
+}
 
 object QueryType {
 
   case object Read extends QueryType {
     override def toString: String = "Read query"
+    override def isRead: Boolean = true
   }
 
   case object ReadPlusUnresolved extends QueryType {

@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
 import org.neo4j.fabric.eval.StaticUseEvaluation;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryPreParsedInfoParser;
 import scala.Option;
@@ -47,6 +49,7 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
     private final CypherParsing parsing;
     private final CompilationTracer tracer;
     private final CancellationChecker cancellationChecker;
+    private final GlobalProcedures globalProcedures;
     private final StaticUseEvaluation staticUseEvaluation = new StaticUseEvaluation();
 
     public StandardQueryPreParser(
@@ -54,12 +57,14 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
             PreParser preParser,
             CypherParsing parsing,
             CompilationTracer tracer,
-            CancellationChecker cancellationChecker) {
+            CancellationChecker cancellationChecker,
+            GlobalProcedures globalProcedures) {
         this.cache = cache;
         this.preParser = preParser;
         this.parsing = parsing;
         this.tracer = tracer;
         this.cancellationChecker = cancellationChecker;
+        this.globalProcedures = globalProcedures;
     }
 
     @Override
@@ -77,7 +82,7 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
 
     private BaseState parse(
             Query query, CompilationTracer.QueryCompilationEvent queryTracer, PreParsedQuery preParsedQuery) {
-        return parsing.parseQuery(
+        return parsing.queryRouterParseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
                 new RecordingNotificationLogger(),
@@ -85,7 +90,8 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
                 Option.apply(preParsedQuery.options().offset()),
                 queryTracer,
                 query.parameters(),
-                cancellationChecker);
+                cancellationChecker,
+                globalProcedures);
     }
 
     private PreParsedInfo preParsedInfo(BaseState parsedQuery) {
@@ -93,10 +99,12 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
         Optional<ObfuscationMetadata> obfuscationMetadata = toJava(parsedQuery.maybeObfuscationMetadata());
 
         if (statement instanceof AdministrationCommand) {
-            return new PreParsedInfo(Optional.of(SYSTEM_DATABASE_CATALOG_NAME), obfuscationMetadata);
+            return new PreParsedInfo(
+                    Optional.of(SYSTEM_DATABASE_CATALOG_NAME), obfuscationMetadata, StatementType.of(statement));
         } else {
             var catalogNameOption = staticUseEvaluation.evaluateStaticLeadingGraphSelection(statement);
-            return new PreParsedInfo(OptionConverters.toJava(catalogNameOption), obfuscationMetadata);
+            return new PreParsedInfo(
+                    OptionConverters.toJava(catalogNameOption), obfuscationMetadata, StatementType.of(statement));
         }
     }
 }

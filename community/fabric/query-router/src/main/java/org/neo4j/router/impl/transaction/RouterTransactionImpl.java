@@ -21,7 +21,9 @@ package org.neo4j.router.impl.transaction;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
+import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.TransactionMode;
@@ -29,6 +31,7 @@ import org.neo4j.fabric.transaction.parent.AbstractCompoundTransaction;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RouterTransaction;
@@ -42,8 +45,8 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
     private final DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory;
     private final DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory;
     private final TransactionBookmarkManager transactionBookmarkManager;
-
     private final ConcurrentHashMap<DatabaseReference, DatabaseTransaction> databaseTransactions;
+    private final AtomicReference<StatementType> statementType = new AtomicReference<>();
 
     public RouterTransactionImpl(
             TransactionInfo transactionInfo,
@@ -111,5 +114,32 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
     @Override
     public Optional<Status> getReasonIfTerminated() {
         return getTerminationMark().map(TerminationMark::getReason);
+    }
+
+    @Override
+    public void verifyStatementType(StatementType type) {
+        boolean wasNull = statementType.compareAndSet(null, type);
+        if (!wasNull) {
+            var oldType = statementType.get();
+            if (oldType != type) {
+                var queryAfterQuery = type.isQuery() && oldType.isQuery();
+                var readQueryAfterSchema = type.isReadQuery() && oldType.isSchemaCommand();
+                var schemaAfterReadQuery = type.isSchemaCommand() && oldType.isReadQuery();
+                var allowedCombination = queryAfterQuery || readQueryAfterSchema || schemaAfterReadQuery;
+                if (allowedCombination) {
+                    var writeQueryAfterReadQuery = queryAfterQuery && !type.isReadQuery() && oldType.isReadQuery();
+                    var upgrade = writeQueryAfterReadQuery || schemaAfterReadQuery;
+                    if (upgrade) {
+                        statementType.set(type);
+                    }
+                } else {
+                    throw new FabricException(
+                            Status.Transaction.ForbiddenDueToTransactionType,
+                            "Tried to execute %s after executing %s",
+                            type,
+                            oldType);
+                }
+            }
+        }
     }
 }

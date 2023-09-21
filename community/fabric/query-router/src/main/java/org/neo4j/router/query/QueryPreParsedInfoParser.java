@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
+import org.neo4j.router.impl.query.StatementType;
 
 /**
  * Parse a query into a target database override
@@ -33,7 +34,10 @@ import org.neo4j.cypher.internal.util.ObfuscationMetadata;
  */
 public interface QueryPreParsedInfoParser {
 
-    public record PreParsedInfo(Optional<CatalogName> catalogName, Optional<ObfuscationMetadata> obfuscationMetadata) {}
+    record PreParsedInfo(
+            Optional<CatalogName> catalogName,
+            Optional<ObfuscationMetadata> obfuscationMetadata,
+            StatementType statementType) {}
 
     PreParsedInfo parseQuery(Query query);
 

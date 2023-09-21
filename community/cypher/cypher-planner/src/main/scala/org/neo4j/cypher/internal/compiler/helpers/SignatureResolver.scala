@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric.pipeline
+package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
@@ -86,7 +86,7 @@ class SignatureResolver(
 object SignatureResolver {
 
   def from(procedures: Procedures) =
-    new SignatureResolver(procedures.procedureGet, procedures.functionGet, procedures.signatureVersion());
+    new SignatureResolver(procedures.procedureGet, procedures.functionGet, procedures.signatureVersion())
 
   // Note: Typically the signature resolver should be derived from a transaction bound Procedures object.
   // In some testing situations this can be troublesome to reach, and thus we provide this escape hatch.
@@ -150,10 +150,10 @@ object SignatureResolver {
     )
   }
 
-  def asKernelQualifiedName(name: QualifiedName): procs.QualifiedName =
+  private def asKernelQualifiedName(name: QualifiedName): procs.QualifiedName =
     new procs.QualifiedName(name.namespace.toArray, name.name)
 
-  def asCypherQualifiedName(name: procs.QualifiedName): QualifiedName =
+  private def asCypherQualifiedName(name: procs.QualifiedName): QualifiedName =
     QualifiedName(name.namespace().toSeq, name.name())
 
   private def asCypherValue(neo4jValue: DefaultParameterValue) = ValueUtils.of(neo4jValue.value())
@@ -179,6 +179,10 @@ object SignatureResolver {
     case Neo4jTypes.NTGeometry      => CTGeometry
     case Neo4jTypes.NTMap           => CTMap
     case Neo4jTypes.NTAny           => CTAny
+    case _ => throw new CypherExecutionException(
+        "Unable to execute procedure, because the signature has an unrecognized type: " + neoType.toString,
+        null
+      )
   }
 
   private def asCypherProcMode(mode: Mode): ProcedureAccessMode = mode match {

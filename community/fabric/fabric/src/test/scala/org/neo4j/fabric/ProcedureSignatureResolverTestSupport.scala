@@ -20,11 +20,11 @@
 package org.neo4j.fabric
 
 import org.neo4j.collection.RawIterator
+import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
-import org.neo4j.fabric.pipeline.SignatureResolver
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.FieldSignature.inputField

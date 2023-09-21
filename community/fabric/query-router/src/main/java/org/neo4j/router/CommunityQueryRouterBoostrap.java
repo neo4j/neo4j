@@ -52,6 +52,7 @@ import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
@@ -156,6 +157,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         SystemNanoClock systemNanoClock = resolve(SystemNanoClock.class);
         var statementLifecycles = new QueryStatementLifecycles(
                 databaseManager, monitors, config, tracers.getLockTracer(), systemNanoClock);
+        var globalProcedures = resolve(GlobalProcedures.class);
 
         var transactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
         return new QueryRouterBoltSpi.DatabaseManagementService(
@@ -163,7 +165,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                         config,
                         databaseReferenceResolver,
                         this::createLocationService,
-                        new StandardQueryPreParser(targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}),
+                        new StandardQueryPreParser(
+                                targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}, globalProcedures),
                         new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
                         createRemoteDatabaseTransactionFactory(),
                         new ErrorReporter(this.logService),

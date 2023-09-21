@@ -23,9 +23,12 @@ import java.util.Optional;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.parent.CompoundTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.router.impl.query.StatementType;
 
 public interface RouterTransaction extends CompoundTransaction<DatabaseTransaction> {
     Optional<Status> getReasonIfTerminated();
 
     DatabaseTransaction transactionFor(Location location);
+
+    void verifyStatementType(StatementType type);
 }
