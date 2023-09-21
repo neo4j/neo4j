@@ -157,7 +157,10 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
 
     @Override
     public void close() {
-        new AutoCloseables<>(IndexReaderCloseException::new, searchers).close();
+        final var closeables = new AutoCloseables<>(IndexReaderCloseException::new, searchers);
+        try (closeables) {
+            super.close();
+        }
     }
 
     private ValuesIterator searchLucene(Query query, IndexQueryConstraints constraints) {

@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -57,6 +58,7 @@ public final class IndexingServiceFactory {
             IndexMonitor monitor,
             SchemaState schemaState,
             IndexStatisticsStore indexStatisticsStore,
+            DatabaseIndexStats indexCounters,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             String databaseName,
@@ -80,6 +82,7 @@ public final class IndexingServiceFactory {
         IndexProxyCreator proxySetup = new IndexProxyCreator(
                 samplingConfig,
                 indexStatisticsStore,
+                indexCounters,
                 providerMap,
                 tokenNameLookup,
                 internalLogProvider,

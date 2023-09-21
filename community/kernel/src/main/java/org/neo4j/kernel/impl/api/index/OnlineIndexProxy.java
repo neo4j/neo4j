@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.stats.IndexUsageStatsConsumer;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -42,6 +43,7 @@ public class OnlineIndexProxy implements IndexProxy {
     private final IndexProxyStrategy indexProxyStrategy;
     final IndexAccessor accessor;
     private final IndexUsageTracking usageTracking;
+    private final DatabaseIndexStats indexCounters;
     private boolean started;
 
     // About this flag: there are two online "modes", you might say...
@@ -74,12 +76,14 @@ public class OnlineIndexProxy implements IndexProxy {
             IndexProxyStrategy indexProxyStrategy,
             IndexAccessor accessor,
             boolean forcedIdempotentMode,
-            IndexUsageTracking usageTracking) {
+            IndexUsageTracking usageTracking,
+            DatabaseIndexStats indexCounters) {
         this.usageTracking = usageTracking;
         assert accessor != null;
         this.indexProxyStrategy = indexProxyStrategy;
         this.accessor = accessor;
         this.forcedIdempotentMode = forcedIdempotentMode;
+        this.indexCounters = indexCounters;
     }
 
     @Override
@@ -204,6 +208,9 @@ public class OnlineIndexProxy implements IndexProxy {
 
     @Override
     public void reportUsageStatistics(IndexUsageStatsConsumer consumer) {
-        consumer.addUsageStats(getDescriptor().getId(), usageTracking.getAndReset());
+        final var descriptor = getDescriptor();
+        final var stats = usageTracking.getAndReset();
+        indexCounters.reportQueryCount(descriptor, stats.readCount());
+        consumer.addUsageStats(descriptor.getId(), stats);
     }
 }

@@ -27,6 +27,11 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 
+/**
+ * The difference between this construct and the index statistics store is that the latter
+ * keeps statistics by index in a persistent manner. If an index is dropped, so are its statistics.
+ * These counters, in contrast, are aggregations by index type and are in-memory only (thus reset on restart).
+ */
 public class DatabaseIndexStats extends IndexMonitor.MonitorAdapter implements IndexCounters {
     private static class IndexTypeStats {
         final LongAdder queried = new LongAdder();
@@ -53,9 +58,8 @@ public class DatabaseIndexStats extends IndexMonitor.MonitorAdapter implements I
         return stats.get(type).populated.sum();
     }
 
-    @Override
-    public void queried(IndexDescriptor descriptor) {
-        stats.get(descriptor.getIndexType()).queried.increment();
+    public void reportQueryCount(IndexDescriptor descriptor, long queriesSinceLastReport) {
+        stats.get(descriptor.getIndexType()).queried.add(queriesSinceLastReport);
     }
 
     @Override

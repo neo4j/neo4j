@@ -92,6 +92,7 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
@@ -375,6 +376,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     IndexMonitor.NO_MONITOR,
                     getSchemaState(),
                     mock(IndexStatisticsStore.class),
+                    new DatabaseIndexStats(),
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                     INSTANCE,
                     "",

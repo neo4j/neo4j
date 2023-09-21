@@ -79,23 +79,28 @@ class DatabaseIndexStatsIT {
             names = {"LOOKUP", "FULLTEXT"})
     void shouldTrackIndexCreationAndQueriesSinceStart(IndexType indexType) {
         var stats = db.getDependencyResolver().resolveDependency(DatabaseIndexStats.class);
+        forceReporting();
         assertThat(stats.getPopulationCount(indexType)).isEqualTo(0);
         assertThat(stats.getQueryCount(indexType)).isEqualTo(0);
 
         final var index = createIndex(indexType);
+        forceReporting();
         assertThat(stats.getPopulationCount(indexType)).isEqualTo(1);
         assertThat(stats.getQueryCount(indexType)).isEqualTo(0);
 
         query(index);
+        forceReporting();
         assertThat(stats.getPopulationCount(indexType)).isEqualTo(1);
         assertThat(stats.getQueryCount(indexType)).isEqualTo(1);
 
         query(index);
+        forceReporting();
         assertThat(stats.getPopulationCount(indexType)).isEqualTo(1);
         assertThat(stats.getQueryCount(indexType)).isEqualTo(2);
 
         restart();
         stats = db.getDependencyResolver().resolveDependency(DatabaseIndexStats.class);
+        forceReporting();
         assertThat(stats.getPopulationCount(indexType)).isEqualTo(0);
         assertThat(stats.getQueryCount(indexType)).isEqualTo(0);
     }
@@ -118,6 +123,11 @@ class DatabaseIndexStatsIT {
         }
 
         return indexName;
+    }
+
+    private void forceReporting() {
+        final var indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
+        indexingService.reportUsageStatistics();
     }
 
     private void query(String indexName) {

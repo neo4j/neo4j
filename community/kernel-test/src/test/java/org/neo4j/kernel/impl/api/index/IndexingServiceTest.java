@@ -152,6 +152,7 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
@@ -443,6 +444,7 @@ class IndexingServiceTest {
                 IndexMonitor.NO_MONITOR,
                 schemaState,
                 indexStatisticsStore,
+                new DatabaseIndexStats(),
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
@@ -496,6 +498,7 @@ class IndexingServiceTest {
                 IndexMonitor.NO_MONITOR,
                 schemaState,
                 indexStatisticsStore,
+                new DatabaseIndexStats(),
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
@@ -1152,6 +1155,7 @@ class IndexingServiceTest {
                 IndexMonitor.NO_MONITOR,
                 schemaState,
                 indexStatisticsStore,
+                new DatabaseIndexStats(),
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
@@ -1213,6 +1217,7 @@ class IndexingServiceTest {
                 IndexMonitor.NO_MONITOR,
                 schemaState,
                 indexStatisticsStore,
+                new DatabaseIndexStats(),
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
@@ -1541,6 +1546,7 @@ class IndexingServiceTest {
                 monitor,
                 schemaState,
                 indexStatisticsStore,
+                new DatabaseIndexStats(),
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
@@ -1795,6 +1801,7 @@ class IndexingServiceTest {
                 monitor,
                 schemaState,
                 indexStatisticsStore,
+                new DatabaseIndexStats(),
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",

@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 
 class OnlineIndexProxyTest {
     private final long indexId = 1;
@@ -46,7 +47,8 @@ class OnlineIndexProxyTest {
     @Test
     void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy(indexProxyStrategy, accessor, false, NO_USAGE_TRACKING);
+        OnlineIndexProxy index =
+                new OnlineIndexProxy(indexProxyStrategy, accessor, false, NO_USAGE_TRACKING, new DatabaseIndexStats());
 
         // when
         index.drop();

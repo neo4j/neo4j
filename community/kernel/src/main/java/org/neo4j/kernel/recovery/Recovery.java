@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.FileStoreProviderRegistry;
@@ -617,6 +618,7 @@ public final class Recovery {
                 schemaState,
                 indexStoreViewFactory,
                 indexStatisticsStore,
+                new DatabaseIndexStats(),
                 config,
                 scheduler,
                 indexProviderMap,

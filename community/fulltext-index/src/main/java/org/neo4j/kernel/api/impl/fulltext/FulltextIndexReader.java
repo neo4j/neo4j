@@ -118,6 +118,7 @@ public class FulltextIndexReader implements ValueIndexReader {
             }
         }
         Query query = queryBuilder.build();
+        context.monitor().queried(index);
         usageTracker.queried();
         ValuesIterator itr =
                 searchLucene(query, constraints, context, context.cursorContext(), context.memoryTracker());

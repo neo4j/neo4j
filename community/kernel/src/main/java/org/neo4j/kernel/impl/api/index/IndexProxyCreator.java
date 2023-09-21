@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexUsageTracking;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.logging.InternalLogProvider;
@@ -46,6 +47,7 @@ import org.neo4j.memory.MemoryTracker;
 class IndexProxyCreator {
     private final IndexSamplingConfig samplingConfig;
     private final IndexStatisticsStore indexStatisticsStore;
+    private final DatabaseIndexStats indexCounters;
     private final IndexProviderMap providerMap;
     private final TokenNameLookup tokenNameLookup;
     private final InternalLogProvider logProvider;
@@ -56,6 +58,7 @@ class IndexProxyCreator {
     IndexProxyCreator(
             IndexSamplingConfig samplingConfig,
             IndexStatisticsStore indexStatisticsStore,
+            DatabaseIndexStats indexCounters,
             IndexProviderMap providerMap,
             TokenNameLookup tokenNameLookup,
             InternalLogProvider logProvider,
@@ -64,6 +67,7 @@ class IndexProxyCreator {
             StorageEngineIndexingBehaviour indexingBehaviour) {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
+        this.indexCounters = indexCounters;
         this.providerMap = providerMap;
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
@@ -94,7 +98,8 @@ class IndexProxyCreator {
             monitor.populationCompleteOn(index);
             var usageTracking = createIndexUsageTracking();
             IndexAccessor accessor = onlineAccessorFromProvider(index, samplingConfig);
-            OnlineIndexProxy onlineProxy = new OnlineIndexProxy(indexProxyStrategy, accessor, true, usageTracking);
+            OnlineIndexProxy onlineProxy =
+                    new OnlineIndexProxy(indexProxyStrategy, accessor, true, usageTracking, indexCounters);
             if (flipToTentative) {
                 // This TentativeConstraintIndexProxy will exist between flipping the index to online and the constraint
                 // transaction
@@ -122,7 +127,8 @@ class IndexProxyCreator {
             var usageTracking = createIndexUsageTracking();
             IndexAccessor onlineAccessor = onlineAccessorFromProvider(descriptor, samplingConfig);
             IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy(descriptor);
-            IndexProxy proxy = new OnlineIndexProxy(indexProxyStrategy, onlineAccessor, false, usageTracking);
+            IndexProxy proxy =
+                    new OnlineIndexProxy(indexProxyStrategy, onlineAccessor, false, usageTracking, indexCounters);
             // it will be started later, when recovery is completed
             return new ContractCheckingIndexProxy(proxy);
         } catch (IOException | RuntimeException e) {

@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -98,7 +99,8 @@ class IndexPopulationTest {
     }
 
     private OnlineIndexProxy onlineIndexProxy() {
-        return new OnlineIndexProxy(dummyIndex(), IndexAccessor.EMPTY, false, NO_USAGE_TRACKING);
+        return new OnlineIndexProxy(
+                dummyIndex(), IndexAccessor.EMPTY, false, NO_USAGE_TRACKING, new DatabaseIndexStats());
     }
 
     private FailedIndexProxy failedIndexProxy(MinimalIndexAccessor minimalIndexAccessor) {
