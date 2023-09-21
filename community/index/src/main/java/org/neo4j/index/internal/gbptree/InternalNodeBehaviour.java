@@ -95,7 +95,7 @@ public sealed interface InternalNodeBehaviour<KEY> extends SharedNodeBehaviour<K
             long unstableGeneration,
             CursorContext cursorContext);
 
-    String checkMetaConsistency(PageCursor cursor, int keyCount, GBPTreeConsistencyCheckVisitor visitor);
+    String checkMetaConsistency(PageCursor cursor);
 
     long childAt(PageCursor cursor, int pos, long stableGeneration, long unstableGeneration);
 

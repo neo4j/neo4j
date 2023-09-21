@@ -134,7 +134,7 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
             long unstableGeneration,
             CursorContext cursorContext);
 
-    String checkMetaConsistency(PageCursor cursor, int keyCount, GBPTreeConsistencyCheckVisitor visitor);
+    String checkMetaConsistency(PageCursor cursor);
 
     <ROOT_KEY> void deepVisitValue(PageCursor cursor, int pos, GBPTreeVisitor<ROOT_KEY, KEY, VALUE> visitor)
             throws IOException;

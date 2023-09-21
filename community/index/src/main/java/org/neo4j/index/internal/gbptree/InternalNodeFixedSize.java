@@ -318,7 +318,7 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
             CursorContext cursorContext) {}
 
     @Override
-    public String checkMetaConsistency(PageCursor cursor, int keyCount, GBPTreeConsistencyCheckVisitor visitor) {
+    public String checkMetaConsistency(PageCursor cursor) {
         return "";
     }
 

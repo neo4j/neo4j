@@ -259,9 +259,9 @@ class GBPTreeConsistencyChecker<KEY> {
         String nodeMetaReport;
         do {
             if (isLeaf) {
-                nodeMetaReport = leafNode.checkMetaConsistency(cursor, keyCount, visitor);
+                nodeMetaReport = leafNode.checkMetaConsistency(cursor);
             } else {
-                nodeMetaReport = internalNode.checkMetaConsistency(cursor, keyCount, visitor);
+                nodeMetaReport = internalNode.checkMetaConsistency(cursor);
             }
         } while (cursor.shouldRetry());
         checkAfterShouldRetry(cursor);

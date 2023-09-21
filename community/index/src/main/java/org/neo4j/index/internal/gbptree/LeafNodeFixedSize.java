@@ -282,7 +282,7 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
             CursorContext cursorContext) {}
 
     @Override
-    public String checkMetaConsistency(PageCursor cursor, int keyCount, GBPTreeConsistencyCheckVisitor visitor) {
+    public String checkMetaConsistency(PageCursor cursor) {
         return "";
     }
 

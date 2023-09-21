@@ -662,7 +662,7 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
     }
 
     @Override
-    public String checkMetaConsistency(PageCursor cursor, int keyCount, GBPTreeConsistencyCheckVisitor visitor) {
+    public String checkMetaConsistency(PageCursor cursor) {
         // Reminder: Header layout
         // TotalSpace  |----------------------------------------|
         // ActiveSpace |-----------|   +    |---------|  + |----|
@@ -678,6 +678,7 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
 
         // Verify allocOffset >= offsetArray
         int allocOffset = DynamicSizeUtil.getAllocOffset(cursor);
+        int keyCount = TreeNodeUtil.keyCount(cursor);
         int offsetArray = keyPosOffsetInternal(keyCount);
         if (allocOffset < offsetArray) {
             joiner.add(format(

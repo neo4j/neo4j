@@ -399,14 +399,15 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         var offsets = new int[keyCount];
         var sizes = new int[keyCount];
         // collect alive offsets and sizes
-        recordAliveBlocks(cursor, keyCount, offsets, sizes, payloadSize);
+        recordAliveBlocks(cursor, keyCount, offsets, sizes, payloadSize, true);
 
         compactToRight(cursor, keyCount, offsets, sizes, payloadSize, LeafNodeDynamicSize::keyPosOffsetLeaf);
         // Update dead space
         setDeadSpace(cursor, 0);
     }
 
-    protected void recordAliveBlocks(PageCursor cursor, int keyCount, int[] offsets, int[] sizes, int payloadSize) {
+    protected void recordAliveBlocks(
+            PageCursor cursor, int keyCount, int[] offsets, int[] sizes, int payloadSize, boolean assertKeyCount) {
         DynamicSizeUtil.recordAliveBlocks(cursor, keyCount, offsets, sizes, payloadSize);
     }
 
@@ -854,7 +855,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public String checkMetaConsistency(PageCursor cursor, int keyCount, GBPTreeConsistencyCheckVisitor visitor) {
+    public String checkMetaConsistency(PageCursor cursor) {
         // Reminder: Header layout
         // TotalSpace  |----------------------------------------|
         // ActiveSpace |-----------|   +    |---------|  + |----|
@@ -870,6 +871,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
 
         // Verify allocOffset >= offsetArray
         int allocOffset = DynamicSizeUtil.getAllocOffset(cursor);
+        int keyCount = TreeNodeUtil.keyCount(cursor);
         int offsetArray = keyPosOffsetLeaf(keyCount);
         if (allocOffset < offsetArray) {
             joiner.add(format(
