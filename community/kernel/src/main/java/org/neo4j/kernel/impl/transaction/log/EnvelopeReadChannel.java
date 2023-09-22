@@ -299,6 +299,11 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         }
     }
 
+    @Override
+    public byte getVersion() throws IOException {
+        return payloadVersion;
+    }
+
     /**
      * Move the channel to the next start of the next entry.
      *

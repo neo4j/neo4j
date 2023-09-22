@@ -291,6 +291,9 @@ class QueueTransactionAppenderTestIT {
         }
 
         @Override
+        public void appendedBytes(long bytes) {}
+
+        @Override
         public void close() {
             events.add(EventType.CLOSE);
         }

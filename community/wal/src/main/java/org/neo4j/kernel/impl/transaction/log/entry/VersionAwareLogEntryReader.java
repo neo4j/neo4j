@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
@@ -87,18 +88,20 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
         if (parserSet != null && parserSet.getIntroductionVersion().version() == versionCode) {
             return; // We already have the correct parser set
         }
-
         try {
-            parserSet = LogEntrySerializationSets.serializationSet(
-                    KernelVersion.getForVersion(versionCode), binarySupportedKernelVersions);
+            KernelVersion kernelVersion = KernelVersion.getForVersion(versionCode);
+            parserSet = LogEntrySerializationSets.serializationSet(kernelVersion, binarySupportedKernelVersions);
+
+            if (kernelVersion.isLessThan(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
+                // Since checksum is calculated over the whole entry we need to rewind and begin
+                // a new checksum segment if we change version parser.
+                rewindOneByte(channel);
+                channel.beginChecksum();
+                channel.get();
+            }
         } catch (IllegalArgumentException e) {
             throw UnsupportedLogVersionException.unsupported(binarySupportedKernelVersions, versionCode);
         }
-        // Since checksum is calculated over the whole entry we need to rewind and begin
-        // a new checksum segment if we change version parser.
-        rewindOneByte(channel);
-        channel.beginChecksum();
-        channel.get();
     }
 
     private LogEntry readEntry(ReadableLogPositionAwareChannel channel, byte versionCode, byte typeCode)

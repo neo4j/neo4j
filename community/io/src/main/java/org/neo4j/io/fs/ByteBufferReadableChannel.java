@@ -69,6 +69,11 @@ public class ByteBufferReadableChannel implements ReadableChannel {
     }
 
     @Override
+    public byte getVersion() throws IOException {
+        return get();
+    }
+
+    @Override
     public int read(ByteBuffer dst) throws IOException {
         int remaining = buffer.remaining();
         dst.put(buffer);

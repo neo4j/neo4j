@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.enrichment;
+package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.WritableChannel;
 
-class ChannelBuffer implements WritableChannel, ReadableChannel {
+public class BufferBackedChannel implements WritableChannel, ReadableChannel {
 
     private final ByteBuffer buffer;
     private boolean isClosed;
 
-    ChannelBuffer(int capacity) {
+    public BufferBackedChannel(ByteBuffer buffer) {
+        this.buffer = buffer;
+    }
+
+    public BufferBackedChannel(int capacity) {
         this.buffer = ByteBuffer.allocate(capacity).order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -70,6 +72,11 @@ class ChannelBuffer implements WritableChannel, ReadableChannel {
     }
 
     @Override
+    public byte getVersion() throws IOException {
+        return buffer.get();
+    }
+
+    @Override
     public int read(ByteBuffer dst) {
         final var remaining = buffer.remaining();
         if (remaining >= dst.remaining()) {
@@ -85,51 +92,56 @@ class ChannelBuffer implements WritableChannel, ReadableChannel {
     }
 
     @Override
-    public ChannelBuffer put(byte value) {
+    public BufferBackedChannel put(byte value) {
         buffer.put(value);
         return this;
     }
 
     @Override
-    public ChannelBuffer putShort(short value) {
+    public BufferBackedChannel putShort(short value) {
         buffer.putShort(value);
         return this;
     }
 
     @Override
-    public ChannelBuffer putInt(int value) {
+    public BufferBackedChannel putInt(int value) {
         buffer.putInt(value);
         return this;
     }
 
     @Override
-    public ChannelBuffer putLong(long value) {
+    public BufferBackedChannel putLong(long value) {
         buffer.putLong(value);
         return this;
     }
 
     @Override
-    public ChannelBuffer putFloat(float value) {
+    public BufferBackedChannel putFloat(float value) {
         buffer.putFloat(value);
         return this;
     }
 
     @Override
-    public ChannelBuffer putDouble(double value) {
+    public BufferBackedChannel putDouble(double value) {
         buffer.putDouble(value);
         return this;
     }
 
     @Override
-    public ChannelBuffer put(byte[] value, int offset, int length) {
+    public BufferBackedChannel put(byte[] value, int offset, int length) {
         buffer.put(value, offset, length);
         return this;
     }
 
     @Override
-    public ChannelBuffer putAll(ByteBuffer src) throws IOException {
+    public BufferBackedChannel putAll(ByteBuffer src) throws IOException {
         buffer.put(src);
         return this;
+    }
+
+    @Override
+    public BufferBackedChannel putVersion(byte version) {
+        return put(version);
     }
 
     @Override
@@ -187,11 +199,11 @@ class ChannelBuffer implements WritableChannel, ReadableChannel {
         isClosed = true;
     }
 
-    char getChar() {
+    public char getChar() {
         return buffer.getChar();
     }
 
-    ChannelBuffer flip() {
+    public BufferBackedChannel flip() {
         buffer.flip();
         return this;
     }

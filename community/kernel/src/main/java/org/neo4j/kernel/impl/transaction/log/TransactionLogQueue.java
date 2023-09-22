@@ -282,6 +282,8 @@ public class TransactionLogQueue extends LifecycleAdapter {
                         commandBatchToApply.previousBatchLogPosition());
                 var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
                 logAppendEvent.appendToLogFile(logPositionBeforeCommit, logPositionAfterCommit);
+                logAppendEvent.appendedBytes(
+                        logPositionAfterCommit.getByteOffset() - logPositionBeforeCommit.getByteOffset());
                 commandBatchToApply.batchAppended(logPositionBeforeCommit, logPositionAfterCommit, checksum);
             }
 

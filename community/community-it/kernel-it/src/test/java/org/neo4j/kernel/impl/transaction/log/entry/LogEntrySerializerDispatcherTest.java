@@ -30,13 +30,13 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newSta
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -55,13 +55,13 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.LatestVersions;
+import org.neo4j.test.arguments.KernelVersionSource;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class LogEntrySerializerDispatcherTest {
-    private final KernelVersion version = LATEST_KERNEL_VERSION;
     private final CommandReaderFactory commandReader = TestCommandReaderFactory.INSTANCE;
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition(0, 25);
@@ -72,17 +72,18 @@ class LogEntrySerializerDispatcherTest {
     @Inject
     private TestDirectory directory;
 
-    @Test
-    void writeAndParseChunksEntries() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.7") // chunks added in 5.7
+    void writeAndParseChunksEntries(KernelVersion version) throws IOException {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 var entryWriter = new LogEntryWriter<>(writeChannel, LatestVersions.BINARY_VERSIONS);
-                entryWriter.writeStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY);
-                entryWriter.writeChunkEndEntry(LATEST_KERNEL_VERSION, 17, 13);
-                entryWriter.writeChunkStartEntry(LATEST_KERNEL_VERSION, 11, 13, new LogPosition(14, 15));
-                entryWriter.writeCommitEntry(LATEST_KERNEL_VERSION, 7, 8);
+                entryWriter.writeStartEntry(version, 1, 2, 3, EMPTY_BYTE_ARRAY);
+                entryWriter.writeChunkEndEntry(version, 17, 13);
+                entryWriter.writeChunkStartEntry(version, 11, 13, new LogPosition(14, 15));
+                entryWriter.writeCommitEntry(version, 7, 8);
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
@@ -113,8 +114,9 @@ class LogEntrySerializerDispatcherTest {
         }
     }
 
-    @Test
-    void parseStartEntry() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "4.2") // Oldest version we can write
+    void parseStartEntry(KernelVersion version) throws IOException {
         // given
         final LogEntryStart start = newStartEntry(version, 1, 2, 3, new byte[] {4}, position);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -128,18 +130,19 @@ class LogEntrySerializerDispatcherTest {
         channel.getCurrentLogPosition(marker);
 
         // when
-        final LogEntrySerializer parser = serializationSet(LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
-                .select(LogEntryTypeCodes.TX_START);
-        final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
+        LogEntrySerializer<LogEntry> parser =
+                serializationSet(version, LatestVersions.BINARY_VERSIONS).select(LogEntryTypeCodes.TX_START);
+        LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
         assertEquals(start, logEntry);
     }
 
-    @Test
-    void parseCommitEntry() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "4.2") // Oldest version we can write
+    void parseCommitEntry(KernelVersion version) throws IOException {
         // given
-        final LogEntryCommit commit = newCommitEntry(LATEST_KERNEL_VERSION, 42, 21, -361070784);
+        final LogEntryCommit commit = newCommitEntry(version, 42, 21, -361070784);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong(commit.getTxId());
@@ -149,16 +152,17 @@ class LogEntrySerializerDispatcherTest {
         channel.getCurrentLogPosition(marker);
 
         // when
-        final LogEntrySerializer parser = serializationSet(LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
-                .select(LogEntryTypeCodes.TX_COMMIT);
-        final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
+        LogEntrySerializer<LogEntry> parser =
+                serializationSet(version, LatestVersions.BINARY_VERSIONS).select(LogEntryTypeCodes.TX_COMMIT);
+        LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
         assertEquals(commit, logEntry);
     }
 
-    @Test
-    void shouldParserCommandsUsingAGivenFactory() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "4.2") // Oldest version we can write
+    void shouldParserCommandsUsingAGivenFactory(KernelVersion version) throws IOException {
         // given
         // The record, it will be used as before and after
         TestCommand testCommand = new TestCommand(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -168,18 +172,18 @@ class LogEntrySerializerDispatcherTest {
         channel.getCurrentLogPosition(marker);
 
         // when
-        final LogEntrySerializer parser = serializationSet(LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
-                .select(LogEntryTypeCodes.COMMAND);
-        final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
+        LogEntrySerializer<LogEntry> parser =
+                serializationSet(version, LatestVersions.BINARY_VERSIONS).select(LogEntryTypeCodes.COMMAND);
+        LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
         assertEquals(command, logEntry);
     }
 
-    @Test
-    void shouldThrowWhenParsingUnknownEntry() {
-        assertThrows(IllegalArgumentException.class, () -> serializationSet(
-                        LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
+    @ParameterizedTest
+    @EnumSource
+    void shouldThrowWhenParsingUnknownEntry(KernelVersion version) {
+        assertThrows(IllegalArgumentException.class, () -> serializationSet(version, LatestVersions.BINARY_VERSIONS)
                 .select((byte) 42)); // unused, at lest for now
     }
 }

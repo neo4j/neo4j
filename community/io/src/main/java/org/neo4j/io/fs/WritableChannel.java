@@ -123,7 +123,5 @@ public interface WritableChannel extends WritableByteChannel, ChecksumWriter {
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    default WritableChannel putVersion(byte version) throws IOException {
-        return put(version);
-    }
+    WritableChannel putVersion(byte version) throws IOException;
 }

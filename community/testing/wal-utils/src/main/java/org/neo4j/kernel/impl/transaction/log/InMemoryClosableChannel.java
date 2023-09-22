@@ -31,6 +31,8 @@ import java.util.Arrays;
 import java.util.zip.Checksum;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 
 /**
  * Implementation of {@link ReadableLogPositionAwareChannel} operating over a {@code byte[]} in memory.
@@ -43,6 +45,7 @@ public class InMemoryClosableChannel
     private final boolean isReader;
 
     private boolean open = true;
+    private KernelVersion currentVersion;
 
     public InMemoryClosableChannel() {
         this(false);
@@ -141,6 +144,13 @@ public class InMemoryClosableChannel
     }
 
     @Override
+    public WritableChannel putVersion(byte version) {
+        currentVersion = KernelVersion.getForVersion(version);
+        writer.putVersion(version);
+        return this;
+    }
+
+    @Override
     public boolean isOpen() {
         return open;
     }
@@ -190,6 +200,16 @@ public class InMemoryClosableChannel
     @Override
     public void get(byte[] bytes, int length) throws ReadPastEndException {
         reader.get(bytes, length);
+    }
+
+    @Override
+    public byte getVersion() throws IOException {
+        return reader.getVersion();
+    }
+
+    @Override
+    public byte markAndGetVersion(LogPositionMarker marker) throws IOException {
+        return ReadableLogPositionAwareChannel.super.markAndGetVersion(marker);
     }
 
     @Override
@@ -275,14 +295,12 @@ public class InMemoryClosableChannel
 
     @Override
     public long position() throws IOException {
-        var buffer = isReader ? reader : writer;
-        return buffer.position();
+        return getCurrentBuffer().position();
     }
 
     @Override
     public void position(long byteOffset) {
-        var buffer = isReader ? reader : writer;
-        buffer.position(byteOffset);
+        getCurrentBuffer().position(byteOffset);
     }
 
     @Override
@@ -304,6 +322,10 @@ public class InMemoryClosableChannel
         }
         dst.put(reader.buffer);
         return readerRemaining;
+    }
+
+    ByteBufferBase getCurrentBuffer() {
+        return isReader ? reader : writer;
     }
 
     static class ByteBufferBase implements LogPositionAwareChannel, Closeable {
@@ -410,6 +432,11 @@ public class InMemoryClosableChannel
             ensureAvailableToRead(length);
             buffer.get(bytes, 0, length);
             checksum.update(bytes, 0, length);
+        }
+
+        @Override
+        public byte getVersion() throws ReadPastEndException {
+            return get();
         }
 
         @Override
@@ -536,6 +563,11 @@ public class InMemoryClosableChannel
             src.reset();
             checksum.update(src);
             return this;
+        }
+
+        @Override
+        public WritableChannel putVersion(byte version) {
+            return put(version);
         }
 
         @Override

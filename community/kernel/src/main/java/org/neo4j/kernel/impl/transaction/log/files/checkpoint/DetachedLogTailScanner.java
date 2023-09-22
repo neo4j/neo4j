@@ -232,12 +232,12 @@ public class DetachedLogTailScanner {
                         LogEntry entry;
                         while ((start == null || commit == null) && cursor.next()) {
                             entry = cursor.get();
-                            if (commit == null && entry instanceof LogEntryCommit) {
-                                commit = (LogEntryCommit) entry;
-                            } else if (chunkEnd == null && entry instanceof LogEntryChunkEnd) {
-                                chunkEnd = (LogEntryChunkEnd) entry;
-                            } else if (start == null && entry instanceof LogEntryStart) {
-                                start = (LogEntryStart) entry;
+                            if (commit == null && entry instanceof LogEntryCommit e) {
+                                commit = e;
+                            } else if (chunkEnd == null && entry instanceof LogEntryChunkEnd e) {
+                                chunkEnd = e;
+                            } else if (start == null && entry instanceof LogEntryStart e) {
+                                start = e;
                             }
                         }
                     }
@@ -261,7 +261,7 @@ public class DetachedLogTailScanner {
         return new StartCommitEntries(start, commit, chunkEnd, corruptedTransactionLogs);
     }
 
-    protected void verifyReaderPosition(long version, LogPosition logPosition) throws IOException {
+    private void verifyReaderPosition(long version, LogPosition logPosition) throws IOException {
         LogFile logFile = logFiles.getLogFile();
         long highestLogVersion = logFile.getHighestLogVersion();
         try (PhysicalLogVersionedStoreChannel channel = logFile.openForVersion(version)) {
@@ -269,7 +269,7 @@ public class DetachedLogTailScanner {
         }
     }
 
-    protected void verifyCheckpointPosition(LogPosition lastCheckpointPosition) throws IOException {
+    private void verifyCheckpointPosition(LogPosition lastCheckpointPosition) throws IOException {
         long checkpointLogVersion = lastCheckpointPosition.getLogVersion();
         var checkpointFile = logFiles.getCheckpointFile();
         long highestLogVersion = checkpointFile.getHighestLogVersion();

@@ -32,17 +32,31 @@ import org.neo4j.storageengine.api.StorageCommand;
 public class TestCommand implements StorageCommand {
     private static final KernelVersion LATEST_VERSION = KernelVersion.getLatestVersion(Config.defaults());
     private final byte[] bytes;
+    private final KernelVersion kernelVersion;
 
     public TestCommand() {
-        this(50 /* roughly the size of a NodeCommand */);
+        this(LATEST_VERSION);
+    }
+
+    public TestCommand(KernelVersion kernelVersion) {
+        this(50 /* roughly the size of a NodeCommand */, kernelVersion);
     }
 
     public TestCommand(int size) {
-        this(new byte[size]);
+        this(size, LATEST_VERSION);
+    }
+
+    public TestCommand(int size, KernelVersion kernelVersion) {
+        this(new byte[size], kernelVersion);
     }
 
     public TestCommand(byte[] bytes) {
+        this(bytes, LATEST_VERSION);
+    }
+
+    public TestCommand(byte[] bytes, KernelVersion kernelVersion) {
         this.bytes = bytes;
+        this.kernelVersion = kernelVersion;
     }
 
     @Override
@@ -65,7 +79,7 @@ public class TestCommand implements StorageCommand {
 
     @Override
     public KernelVersion kernelVersion() {
-        return LATEST_VERSION;
+        return kernelVersion;
     }
 
     @Override

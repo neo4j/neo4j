@@ -63,7 +63,7 @@ public class CheckpointInfoFactory {
             TransactionLogFilesContext context,
             LogFile logFile) {
         if (entry instanceof LogEntryDetachedCheckpointV4_2 checkpoint42) {
-            var transactionInfo = readTransactionInfo(context, logFile, checkpoint42.getLogPosition());
+            var transactionInfo = readTransactionInfoFor4_2(context, logFile, checkpoint42.getLogPosition());
             return new CheckpointInfo(
                     checkpoint42.getLogPosition(),
                     checkpoint42.getStoreId(),
@@ -93,7 +93,7 @@ public class CheckpointInfoFactory {
         }
     }
 
-    private static TransactionInfo readTransactionInfo(
+    private static TransactionInfo readTransactionInfoFor4_2(
             TransactionLogFilesContext context, LogFile logFile, LogPosition transactionPosition) {
         try (var channel = logFile.openForVersion(transactionPosition.getLogVersion());
                 var reader = new ReadAheadLogChannel(

@@ -180,6 +180,8 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
                 var logPositionAfterCheckpoint = writer.getCurrentLogPosition();
                 logCheckPointEvent.appendToLogFile(logPositionBeforeCheckpoint, logPositionAfterCheckpoint);
+                logCheckPointEvent.appendedBytes(
+                        logPositionAfterCheckpoint.getByteOffset() - logPositionBeforeCheckpoint.getByteOffset());
                 forceAfterAppend(logCheckPointEvent);
                 logRotation.rotateLogIfNeeded(logCheckPointEvent);
             } catch (Throwable cause) {

@@ -37,6 +37,12 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
     void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend);
 
     /**
+     * Notify how many bytes were appended.
+     * @param bytes number of bytes appended.
+     */
+    void appendedBytes(long bytes);
+
+    /**
      * Mark the end of the process of appending a transaction to the transaction log.
      */
     @Override
@@ -56,6 +62,9 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
     class Empty implements LogAppendEvent {
         @Override
         public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {}
+
+        @Override
+        public void appendedBytes(long bytes) {}
 
         @Override
         public void close() {}

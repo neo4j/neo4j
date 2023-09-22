@@ -63,7 +63,7 @@ public class DefaultTracer implements DatabaseTracer {
 
     public DefaultTracer(PageCacheTracer pageCacheTracer) {
         this.logCheckPointEvent =
-                new CountingLogCheckPointEvent(pageCacheTracer, this::appendLogBytes, countingLogRotateEvent);
+                new CountingLogCheckPointEvent(pageCacheTracer, appendedBytes, countingLogRotateEvent);
     }
 
     @Override
@@ -275,8 +275,11 @@ public class DefaultTracer implements DatabaseTracer {
 
     private class DefaultLogAppendEvent implements LogAppendEvent {
         @Override
-        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {
-            appendLogBytes(logPositionBeforeAppend, logPositionAfterAppend);
+        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {}
+
+        @Override
+        public void appendedBytes(long bytes) {
+            appendedBytes.add(bytes);
         }
 
         @Override

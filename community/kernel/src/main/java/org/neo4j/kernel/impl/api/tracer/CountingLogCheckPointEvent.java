@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.tracer;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -37,17 +37,15 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
     private final AtomicLong checkpointCounter = new AtomicLong();
     private final AtomicLong accumulatedCheckpointTotalTimeMillis = new AtomicLong();
     private final long maxPages;
-    private final BiConsumer<LogPosition, LogPosition> logFileAppendConsumer;
+    private final LongAdder appendedBytes;
     private final CountingLogRotateEvent countingLogRotateEvent;
     private volatile LastCheckpointInfo lastCheckpointInfo = new LastCheckpointInfo(0, 0, 0, 0, 0, 0);
     private final DatabaseFlushEvent databaseFlushEvent;
 
     CountingLogCheckPointEvent(
-            PageCacheTracer pageCacheTracer,
-            BiConsumer<LogPosition, LogPosition> logFileAppendConsumer,
-            CountingLogRotateEvent countingLogRotateEvent) {
+            PageCacheTracer pageCacheTracer, LongAdder appendedBytes, CountingLogRotateEvent countingLogRotateEvent) {
         this.maxPages = pageCacheTracer.maxPages();
-        this.logFileAppendConsumer = logFileAppendConsumer;
+        this.appendedBytes = appendedBytes;
         this.countingLogRotateEvent = countingLogRotateEvent;
         this.databaseFlushEvent = pageCacheTracer.beginDatabaseFlush();
     }
@@ -71,8 +69,11 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
     }
 
     @Override
-    public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {
-        logFileAppendConsumer.accept(positionBeforeCheckpoint, positionAfterCheckpoint);
+    public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {}
+
+    @Override
+    public void appendedBytes(long bytes) {
+        appendedBytes.add(bytes);
     }
 
     @Override

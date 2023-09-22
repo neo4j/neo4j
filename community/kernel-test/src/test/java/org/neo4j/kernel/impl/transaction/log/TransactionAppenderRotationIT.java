@@ -185,6 +185,9 @@ class TransactionAppenderRotationIT {
         public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {}
 
         @Override
+        public void appendedBytes(long bytes) {}
+
+        @Override
         public void close() {}
 
         @Override

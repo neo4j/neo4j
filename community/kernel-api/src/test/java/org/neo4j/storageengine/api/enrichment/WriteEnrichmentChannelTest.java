@@ -36,6 +36,7 @@ import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.neo4j.io.fs.BufferBackedChannel;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.Race;
@@ -367,7 +368,7 @@ class WriteEnrichmentChannelTest {
     @Test
     void serializeRequiresFlippedChannel() {
         try (var channel = channel();
-                var buffer = new ChannelBuffer(channel.size())) {
+                var buffer = new BufferBackedChannel(channel.size())) {
             assertThatThrownBy(() -> channel.serialize(buffer))
                     .isInstanceOf(IOException.class)
                     .hasMessage("Please ensure that the channel has been flipped");
@@ -393,7 +394,7 @@ class WriteEnrichmentChannelTest {
             }
 
             final var sizeBeforeFlip = channel.size();
-            try (var buffer = new ChannelBuffer(sizeBeforeFlip)) {
+            try (var buffer = new BufferBackedChannel(sizeBeforeFlip)) {
                 final var flipped = channel.flip();
                 assertThat(flipped.size())
                         .as("size should remain the same after a flip")
@@ -402,7 +403,6 @@ class WriteEnrichmentChannelTest {
                 assertThat(flipped.size())
                         .as("size should remain the same after a serialize")
                         .isEqualTo(sizeBeforeFlip);
-
                 buffer.flip();
 
                 PrimitiveLine currentLine = null;
@@ -443,7 +443,7 @@ class WriteEnrichmentChannelTest {
             race.addContestants(
                     count,
                     () -> {
-                        try (var buffer = new ChannelBuffer(channel.size())) {
+                        try (var buffer = new BufferBackedChannel(channel.size())) {
                             channel.serialize(buffer);
                             buffer.flip();
 

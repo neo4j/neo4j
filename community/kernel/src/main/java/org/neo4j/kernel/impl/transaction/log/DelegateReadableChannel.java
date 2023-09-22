@@ -81,6 +81,11 @@ public class DelegateReadableChannel implements ReadableLogPositionAwareChannel 
     }
 
     @Override
+    public byte getVersion() throws IOException {
+        return delegate.getVersion();
+    }
+
+    @Override
     public byte markAndGetVersion(LogPositionMarker marker) throws IOException {
         if (delegate instanceof ReadableLogPositionAwareChannel posChannel) {
             return posChannel.markAndGetVersion(marker);

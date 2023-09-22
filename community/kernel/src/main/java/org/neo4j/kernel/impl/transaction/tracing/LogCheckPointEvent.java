@@ -52,6 +52,9 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
         public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {}
 
         @Override
+        public void appendedBytes(long bytes) {}
+
+        @Override
         public DatabaseFlushEvent beginDatabaseFlush() {
             return DatabaseFlushEvent.NULL;
         }
@@ -106,6 +109,12 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
      * @param positionAfterCheckpoint end position
      */
     void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint);
+
+    /**
+     * Notify how many bytes were appended.
+     * @param bytes number of bytes appended.
+     */
+    void appendedBytes(long bytes);
 
     /**
      * Start database flush as part of checkpoint

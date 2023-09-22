@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -72,52 +73,57 @@ class ValueTypeTest {
         }
 
         @Override
-        public FlushableChannel put(byte value) {
+        public CountingChannel put(byte value) {
             position += Byte.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putShort(short value) {
+        public CountingChannel putShort(short value) {
             position += Short.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putInt(int value) {
+        public CountingChannel putInt(int value) {
             position += Integer.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putLong(long value) {
+        public CountingChannel putLong(long value) {
             position += Long.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putFloat(float value) {
+        public CountingChannel putFloat(float value) {
             position += Float.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel putDouble(double value) {
+        public CountingChannel putDouble(double value) {
             position += Double.BYTES;
             return this;
         }
 
         @Override
-        public FlushableChannel put(byte[] value, int offset, int length) {
+        public CountingChannel put(byte[] value, int offset, int length) {
             position += length;
             return this;
         }
 
         @Override
-        public FlushableChannel putAll(ByteBuffer src) {
+        public CountingChannel putAll(ByteBuffer src) {
             position += src.remaining();
             src.position(src.limit()); // Consume buffer
             return this;
+        }
+
+        @Override
+        public WritableChannel putVersion(byte version) {
+            return put(version);
         }
 
         @Override

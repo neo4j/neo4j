@@ -23,15 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.io.fs.BufferBackedChannel;
 
 class StoreIdTest {
     private final String ENGINE_1 = "storage-engine-1";
@@ -57,7 +54,7 @@ class StoreIdTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void testSerialization(boolean betaVersion) throws IOException {
-        var buffer = new ChannelBuffer(100);
+        var buffer = new BufferBackedChannel(100);
         var storeId = new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, betaVersion ? -3 : 3, 7);
         storeId.serialize(buffer);
         buffer.flip();
@@ -69,158 +66,5 @@ class StoreIdTest {
     void betaVersionShouldGiveUserStringIndicatingBeta() {
         var storeId = new StoreId(1234, 789, ENGINE_1, FORMAT_FAMILY_1, -3, 7);
         assertThat(storeId.getStoreVersionUserString()).isEqualTo(ENGINE_1 + "-" + FORMAT_FAMILY_1 + "-3b.7");
-    }
-
-    private static class ChannelBuffer implements WritableChannel, ReadableChannel {
-
-        private final ByteBuffer buffer;
-        private boolean isClosed;
-
-        ChannelBuffer(int capacity) {
-            this.buffer = ByteBuffer.allocate(capacity);
-        }
-
-        @Override
-        public byte get() {
-            return buffer.get();
-        }
-
-        @Override
-        public short getShort() {
-            return buffer.getShort();
-        }
-
-        @Override
-        public int getInt() {
-            return buffer.getInt();
-        }
-
-        @Override
-        public long getLong() {
-            return buffer.getLong();
-        }
-
-        @Override
-        public float getFloat() {
-            return buffer.getFloat();
-        }
-
-        @Override
-        public double getDouble() {
-            return buffer.getDouble();
-        }
-
-        @Override
-        public void get(byte[] bytes, int length) {
-            buffer.get(bytes, 0, length);
-        }
-
-        @Override
-        public WritableChannel put(byte value) {
-            buffer.put(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putShort(short value) {
-            buffer.putShort(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putInt(int value) {
-            buffer.putInt(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putLong(long value) {
-            buffer.putLong(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putFloat(float value) {
-            buffer.putFloat(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putDouble(double value) {
-            buffer.putDouble(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel put(byte[] value, int offset, int length) {
-            buffer.put(value, 0, length);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putAll(ByteBuffer src) {
-            buffer.put(src);
-            return null;
-        }
-
-        @Override
-        public boolean isOpen() {
-            return !isClosed;
-        }
-
-        @Override
-        public void close() {
-            isClosed = true;
-        }
-
-        void flip() {
-            buffer.flip();
-        }
-
-        @Override
-        public int read(ByteBuffer dst) throws IOException {
-            int remaining = dst.remaining();
-            dst.put(buffer);
-            return remaining;
-        }
-
-        @Override
-        public int write(ByteBuffer src) throws IOException {
-            int remaining = src.remaining();
-            buffer.put(src);
-            return remaining;
-        }
-
-        @Override
-        public void beginChecksum() {}
-
-        @Override
-        public int getChecksum() {
-            return BASE_TX_CHECKSUM;
-        }
-
-        @Override
-        public int endChecksumAndValidate() {
-            return buffer.getInt();
-        }
-
-        @Override
-        public void beginChecksumForWriting() {}
-
-        @Override
-        public int putChecksum() {
-            buffer.putInt(BASE_TX_CHECKSUM);
-            return BASE_TX_CHECKSUM;
-        }
-
-        @Override
-        public long position() throws IOException {
-            return buffer.position();
-        }
-
-        @Override
-        public void position(long byteOffset) throws IOException {
-            buffer.position(Math.toIntExact(byteOffset));
-        }
     }
 }

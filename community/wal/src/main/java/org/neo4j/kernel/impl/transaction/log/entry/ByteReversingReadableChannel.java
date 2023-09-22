@@ -70,6 +70,11 @@ public class ByteReversingReadableChannel implements ReadableChannel {
     }
 
     @Override
+    public byte getVersion() throws IOException {
+        return delegate.getVersion();
+    }
+
+    @Override
     public void beginChecksum() {
         delegate.beginChecksum();
     }

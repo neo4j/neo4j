@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.fs.BufferBackedChannel;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -53,7 +54,7 @@ public class EnrichmentCommandReaderFactoryTest {
 
     @Test
     void factoryCanReadDelegatesCommands() throws IOException {
-        try (var channel = new ChannelBuffer(BUFFER_SIZE)) {
+        try (var channel = new BufferBackedChannel(BUFFER_SIZE)) {
             zeroPad(channel);
 
             final var command = new TestCommand(42);
@@ -68,7 +69,7 @@ public class EnrichmentCommandReaderFactoryTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void factoryCanReadEnrichmentCommand(boolean includeUserMetadata) throws IOException {
-        try (var channel = new ChannelBuffer(BUFFER_SIZE)) {
+        try (var channel = new BufferBackedChannel(BUFFER_SIZE)) {
             zeroPad(channel);
 
             final var enrichment = enrichment(includeUserMetadata);
@@ -100,7 +101,7 @@ public class EnrichmentCommandReaderFactoryTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void factoryCanReadMixedCommand(boolean includeUserMetadata) throws IOException {
-        try (var channel = new ChannelBuffer(BUFFER_SIZE)) {
+        try (var channel = new BufferBackedChannel(BUFFER_SIZE)) {
             zeroPad(channel);
 
             final var command1 = new TestCommand(42);

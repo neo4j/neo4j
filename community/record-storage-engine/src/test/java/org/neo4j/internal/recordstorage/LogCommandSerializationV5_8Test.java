@@ -20,32 +20,44 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel.Writer;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.enrichment.CaptureMode;
+import org.neo4j.storageengine.api.enrichment.Enrichment;
 import org.neo4j.storageengine.api.enrichment.TxMetadata;
-import org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel;
 
-public class LogCommandSerializationV5_8Test {
+public class LogCommandSerializationV5_8Test extends LogCommandSerializationV5Base {
 
-    private static final long[] DUMMY_DATA = new long[] {1, 2, 3};
-    private static final int DUMMY_DATA_LENGTH = DUMMY_DATA.length * Long.BYTES;
+    @Override
+    LogCommandSerializationV5_8 createReader() {
+        return LogCommandSerializationV5_8.INSTANCE;
+    }
+
+    @Override
+    LogCommandSerializationV5_8 writer() {
+        return LogCommandSerializationV5_8.INSTANCE;
+    }
+
+    byte[] enrichmentUserMetadata() {
+        return null;
+    }
 
     @Test
     void enrichmentSupported() throws IOException {
-        final var metadata = metadata();
+        final var metadata = TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L);
+
+        final var entities = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var details = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var changes = random.nextBytes(new byte[random.nextInt(1, 123)]);
+        final var values = random.nextBytes(new byte[random.nextInt(0, 123)]);
+        final var userMetadata = enrichmentUserMetadata();
+
         try (var channel = new InMemoryClosableChannel()) {
-            final var serialization = LogCommandSerializationV5_8.INSTANCE;
+            final var serialization = createReader();
 
             final var writer = channel.writer();
             writer.beginChecksumForWriting();
@@ -53,26 +65,50 @@ public class LogCommandSerializationV5_8Test {
             // write directly as version has now moved on
             writer.put(NeoCommandType.ENRICHMENT_COMMAND);
             metadata.serialize(writer);
-            writer.putInt(DUMMY_DATA_LENGTH);
-            writer.putInt(DUMMY_DATA_LENGTH);
-            writer.putInt(DUMMY_DATA_LENGTH);
-            writer.putInt(DUMMY_DATA_LENGTH);
-            serializeDummyData(writer);
-            serializeDummyData(writer);
-            serializeDummyData(writer);
-            serializeDummyData(writer);
+            writer.putInt(entities.length);
+            writer.putInt(details.length);
+            writer.putInt(changes.length);
+            writer.putInt(values.length);
+            if (userMetadata != null) {
+                writer.putInt(userMetadata.length);
+            }
+            writer.put(entities, entities.length);
+            writer.put(details, details.length);
+            writer.put(changes, changes.length);
+            writer.put(values, values.length);
+            if (userMetadata != null) {
+                writer.put(userMetadata, userMetadata.length);
+            }
 
             final var afterEnrichment = writer.getCurrentLogPosition();
             writer.putChecksum();
 
             final var command = serialization.read(channel);
             assertThat(command).isInstanceOf(RecordEnrichmentCommand.class);
-            assertMetadata(
-                    metadata, ((RecordEnrichmentCommand) command).enrichment().metadata());
+
+            final var enrichment = (Enrichment.Read) ((RecordEnrichmentCommand) command).enrichment();
+            assertMetadata(metadata, enrichment.metadata());
+            assertBuffer(enrichment.entities(), entities);
+            assertBuffer(enrichment.entityDetails(), details);
+            assertBuffer(enrichment.entityChanges(), changes);
+            assertBuffer(enrichment.values(), values);
+
+            if (userMetadata == null) {
+                assertThat(enrichment.userMetadata()).isNotPresent();
+            } else {
+                assertBuffer(enrichment.userMetadata().orElseThrow(), userMetadata);
+            }
+
             assertThat(channel.reader().getCurrentLogPosition())
-                    .as("should have read the metadata and past the dummy data blocks")
+                    .as("should have read the metadata and past the data buffers")
                     .isEqualTo(afterEnrichment);
         }
+    }
+
+    private static void assertBuffer(ByteBuffer actual, byte[] expected) {
+        final var actualBytes = new byte[expected.length];
+        actual.get(actualBytes);
+        assertThat(actualBytes).isEqualTo(expected);
     }
 
     static void assertMetadata(TxMetadata expected, TxMetadata actual) {
@@ -85,34 +121,5 @@ public class LogCommandSerializationV5_8Test {
                 .isEqualTo(actual.subject().executingUser());
         assertThat(expected.connectionInfo().protocol())
                 .isEqualTo(actual.connectionInfo().protocol());
-    }
-
-    private static void serializeDummyData(Writer writer) throws IOException {
-        try (var dataChannel = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE)) {
-            for (var entity : DUMMY_DATA) {
-                dataChannel.putLong(entity);
-            }
-
-            dataChannel.flip().serialize(writer);
-        }
-    }
-
-    static TxMetadata metadata() {
-        return TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L);
-    }
-
-    private static SecurityContext securityContext() {
-        final var subject = subject();
-        final var securityContext = mock(SecurityContext.class);
-        when(securityContext.subject()).thenReturn(subject);
-        when(securityContext.connectionInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION);
-        return securityContext;
-    }
-
-    private static AuthSubject subject() {
-        final var authSubject = mock(AuthSubject.class);
-        when(authSubject.authenticatedUser()).thenReturn("me");
-        when(authSubject.executingUser()).thenReturn("me");
-        return authSubject;
     }
 }

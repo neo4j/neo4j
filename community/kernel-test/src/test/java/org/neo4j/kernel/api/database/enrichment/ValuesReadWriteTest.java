@@ -28,7 +28,7 @@ import java.util.List;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.io.fs.BufferBackedChannel;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel;
 import org.neo4j.test.RandomSupport;
@@ -65,14 +65,14 @@ class ValuesReadWriteTest {
     }
 
     private void doRoundTrips(AnyValue value) throws IOException {
-        final var positions = new int[1]; // random.nextInt(50, 666)
+        final var positions = new int[random.nextInt(50, 666)];
         try (var writeChannel = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE)) {
             final var writer = new ValuesWriter(writeChannel);
             for (var i = 0; i < positions.length; i++) {
                 positions[i] = writer.write(value);
             }
 
-            var buffer = BufferBackedChannel.fill(writeChannel.flip());
+            var buffer = fill(writeChannel.flip());
             for (var i = 0; i < positions.length; i++) {
                 assertThat(ValuesReader.BY_ID.get(buffer.get()).read(buffer)).isEqualTo(value);
             }
@@ -210,88 +210,11 @@ class ValuesReadWriteTest {
         }
     }
 
-    private record BufferBackedChannel(ByteBuffer buffer) implements WritableChannel {
-
-        static ByteBuffer fill(WriteEnrichmentChannel channel) throws IOException {
-            final var buffer = ByteBuffer.allocate(channel.size()).order(ByteOrder.LITTLE_ENDIAN);
-            try (var bufferChannel = new BufferBackedChannel(buffer)) {
-                channel.serialize(bufferChannel);
-                return buffer.flip();
-            }
+    private static ByteBuffer fill(WriteEnrichmentChannel channel) throws IOException {
+        final var buffer = ByteBuffer.allocate(channel.size()).order(ByteOrder.LITTLE_ENDIAN);
+        try (var bufferChannel = new BufferBackedChannel(buffer)) {
+            channel.serialize(bufferChannel);
+            return buffer.flip();
         }
-
-        @Override
-        public WritableChannel put(byte value) {
-            buffer.put(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putShort(short value) {
-            buffer.putShort(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putInt(int value) {
-            buffer.putInt(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putLong(long value) {
-            buffer.putLong(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putFloat(float value) {
-            buffer.putFloat(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putDouble(double value) {
-            buffer.putDouble(value);
-            return this;
-        }
-
-        @Override
-        public WritableChannel put(byte[] value, int offset, int length) {
-            buffer.put(value, offset, length);
-            return this;
-        }
-
-        @Override
-        public WritableChannel putAll(ByteBuffer src) {
-            buffer.put(src);
-            return this;
-        }
-
-        @Override
-        public int write(ByteBuffer src) {
-            final var remaining = src.remaining();
-            buffer.put(src);
-            return remaining;
-        }
-
-        @Override
-        public void beginChecksumForWriting() {
-            // no-op
-        }
-
-        @Override
-        public int putChecksum() {
-            // no-op
-            return 0;
-        }
-
-        @Override
-        public boolean isOpen() {
-            return true;
-        }
-
-        @Override
-        public void close() {}
     }
 }

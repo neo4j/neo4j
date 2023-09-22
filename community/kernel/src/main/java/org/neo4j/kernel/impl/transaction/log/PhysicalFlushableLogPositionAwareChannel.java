@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.memory.ScopedBuffer;
 
 /**
@@ -114,6 +115,11 @@ public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPos
     @Override
     public FlushableChannel putAll(ByteBuffer src) throws IOException {
         return channel.putAll(src);
+    }
+
+    @Override
+    public WritableChannel putVersion(byte version) throws IOException {
+        return channel.putVersion(version);
     }
 
     @Override

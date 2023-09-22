@@ -40,6 +40,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.fs.BufferBackedChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
@@ -61,7 +62,7 @@ class EnrichmentTest {
 
         // when
         final var capacity = 4096;
-        try (var channel = new ChannelBuffer(capacity)) {
+        try (var channel = new BufferBackedChannel(capacity)) {
             metadata.serialize(channel);
 
             final var enrichmentSize = (int) (capacity - channel.position() - (Integer.BYTES * 4));
@@ -129,7 +130,7 @@ class EnrichmentTest {
 
         // when
         final var capacity = 2048;
-        try (var channel = new ChannelBuffer(capacity)) {
+        try (var channel = new BufferBackedChannel(capacity)) {
             metadata.serialize(channel);
 
             final int enrichmentSize;
@@ -207,7 +208,7 @@ class EnrichmentTest {
                     metadataChannel.flip());
 
             final var capacity = 4096;
-            try (var channel = new ChannelBuffer(capacity)) {
+            try (var channel = new BufferBackedChannel(capacity)) {
                 // write it twice - checks that buffer is reset for each round (ex. clustering leader->members)
                 enrichment.serialize(channel);
                 enrichment.serialize(channel);
@@ -264,7 +265,7 @@ class EnrichmentTest {
 
         final var capacity = 4096;
         final Enrichment.Read enrichment;
-        try (var channel = new ChannelBuffer(capacity)) {
+        try (var channel = new BufferBackedChannel(capacity)) {
             metadata.serialize(channel);
             channel.putInt(entitiesData.length)
                     .putInt(detailsData.length)
@@ -288,7 +289,7 @@ class EnrichmentTest {
             enrichment = Enrichment.Read.deserialize(kernelVersion, channel.flip(), tracker);
         }
 
-        try (var channel = new ChannelBuffer(capacity)) {
+        try (var channel = new BufferBackedChannel(capacity)) {
             // write it twice - checks that buffer is reset for each round (ex. clustering leader->members)
             enrichment.serialize(channel);
             enrichment.serialize(channel);

@@ -39,55 +39,55 @@ public class OutputStreamWritableChannel implements FlushableChannel {
     }
 
     @Override
-    public FlushableChannel put(byte value) throws IOException {
+    public OutputStreamWritableChannel put(byte value) throws IOException {
         dataOutputStream.writeByte(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putShort(short value) throws IOException {
+    public OutputStreamWritableChannel putShort(short value) throws IOException {
         dataOutputStream.writeShort(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putInt(int value) throws IOException {
+    public OutputStreamWritableChannel putInt(int value) throws IOException {
         dataOutputStream.writeInt(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putLong(long value) throws IOException {
+    public OutputStreamWritableChannel putLong(long value) throws IOException {
         dataOutputStream.writeLong(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putFloat(float value) throws IOException {
+    public OutputStreamWritableChannel putFloat(float value) throws IOException {
         dataOutputStream.writeFloat(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putDouble(double value) throws IOException {
+    public OutputStreamWritableChannel putDouble(double value) throws IOException {
         dataOutputStream.writeDouble(value);
         return this;
     }
 
     @Override
-    public FlushableChannel put(byte[] value, int length) throws IOException {
+    public OutputStreamWritableChannel put(byte[] value, int length) throws IOException {
         dataOutputStream.write(value, 0, length);
         return this;
     }
 
     @Override
-    public FlushableChannel put(byte[] value, int offset, int length) throws IOException {
+    public OutputStreamWritableChannel put(byte[] value, int offset, int length) throws IOException {
         dataOutputStream.write(value, offset, length);
         return this;
     }
 
     @Override
-    public FlushableChannel putAll(ByteBuffer src) throws IOException {
+    public OutputStreamWritableChannel putAll(ByteBuffer src) throws IOException {
         if (src.hasArray()) {
             dataOutputStream.write(src.array(), src.position(), src.remaining());
         } else {
@@ -96,6 +96,11 @@ public class OutputStreamWritableChannel implements FlushableChannel {
             }
         }
         return this;
+    }
+
+    @Override
+    public WritableChannel putVersion(byte version) throws IOException {
+        return put(version);
     }
 
     @Override

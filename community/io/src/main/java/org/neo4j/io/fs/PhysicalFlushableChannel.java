@@ -88,43 +88,43 @@ public class PhysicalFlushableChannel implements FlushableChannel {
     }
 
     @Override
-    public FlushableChannel put(byte value) throws IOException {
+    public PhysicalFlushableChannel put(byte value) throws IOException {
         bufferWithGuaranteedSpace(Byte.BYTES).put(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putShort(short value) throws IOException {
+    public PhysicalFlushableChannel putShort(short value) throws IOException {
         bufferWithGuaranteedSpace(Short.BYTES).putShort(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putInt(int value) throws IOException {
+    public PhysicalFlushableChannel putInt(int value) throws IOException {
         bufferWithGuaranteedSpace(Integer.BYTES).putInt(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putLong(long value) throws IOException {
+    public PhysicalFlushableChannel putLong(long value) throws IOException {
         bufferWithGuaranteedSpace(Long.BYTES).putLong(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putFloat(float value) throws IOException {
+    public PhysicalFlushableChannel putFloat(float value) throws IOException {
         bufferWithGuaranteedSpace(Float.BYTES).putFloat(value);
         return this;
     }
 
     @Override
-    public FlushableChannel putDouble(double value) throws IOException {
+    public PhysicalFlushableChannel putDouble(double value) throws IOException {
         bufferWithGuaranteedSpace(Double.BYTES).putDouble(value);
         return this;
     }
 
     @Override
-    public FlushableChannel put(byte[] value, int offset, int length) throws IOException {
+    public PhysicalFlushableChannel put(byte[] value, int offset, int length) throws IOException {
         assert length >= 0;
         int localOffset = 0;
         int capacity = buffer.capacity();
@@ -139,7 +139,7 @@ public class PhysicalFlushableChannel implements FlushableChannel {
     }
 
     @Override
-    public FlushableChannel putAll(ByteBuffer src) throws IOException {
+    public PhysicalFlushableChannel putAll(ByteBuffer src) throws IOException {
         if (src.remaining() <= buffer.remaining()) {
             buffer.put(src);
             return this;
@@ -153,6 +153,11 @@ public class PhysicalFlushableChannel implements FlushableChannel {
         checksum.update(src);
 
         return this;
+    }
+
+    @Override
+    public PhysicalFlushableChannel putVersion(byte version) throws IOException {
+        return put(version);
     }
 
     @Override

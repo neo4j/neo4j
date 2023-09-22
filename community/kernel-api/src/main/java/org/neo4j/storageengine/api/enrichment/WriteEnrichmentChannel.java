@@ -337,6 +337,12 @@ public class WriteEnrichmentChannel implements WritableChannel {
     }
 
     @Override
+    public WriteEnrichmentChannel putVersion(byte version) {
+        put(version);
+        return this;
+    }
+
+    @Override
     public int write(ByteBuffer src) {
         final var allToWrite = src.remaining();
         var remaining = allToWrite;

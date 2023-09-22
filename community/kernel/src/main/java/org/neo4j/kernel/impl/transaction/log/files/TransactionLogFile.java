@@ -256,6 +256,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             transactionLogWriter.append(byteBuffer);
             var logPositionAfter = transactionLogWriter.getCurrentPosition();
             logAppend.appendToLogFile(logPositionBefore, logPositionAfter);
+            logAppend.appendedBytes(logPositionAfter.getByteOffset() - logPositionBefore.getByteOffset());
             return logPositionBefore;
         }
     }

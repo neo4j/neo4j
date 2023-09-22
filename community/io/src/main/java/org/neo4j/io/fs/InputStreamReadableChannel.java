@@ -68,6 +68,11 @@ public class InputStreamReadableChannel implements ReadableChannel {
     }
 
     @Override
+    public byte getVersion() throws IOException {
+        return dataInputStream.readByte();
+    }
+
+    @Override
     public boolean isOpen() {
         return !isClosed;
     }

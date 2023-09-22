@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.fs.BufferBackedChannel;
 
 class TxMetadataTest {
     @Test
@@ -37,7 +38,7 @@ class TxMetadataTest {
         final var metadata = TxMetadata.create(CaptureMode.DIFF, serverId, securityContext(), 42L);
 
         // when
-        try (var channel = new ChannelBuffer(1024)) {
+        try (var channel = new BufferBackedChannel(1024)) {
             metadata.serialize(channel);
 
             channel.flip();
