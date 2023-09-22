@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.internal.helpers.collection.LfuCache;
@@ -152,6 +151,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                     // Write it to the root mapping tree
                     rootMappingWriter.merge(
                             dataRootKey, new RootMappingValue().initialize(dataRoot), DONT_ALLOW_CREATE_EXISTING_ROOT);
+                    support.structureWriteLog().createRoot(unstableGeneration, rootId);
                 } catch (DataTreeAlreadyExistsException e) {
                     support.idProvider().releaseId(stableGeneration, unstableGeneration, rootId, cursorCreator);
                     throw e;
@@ -179,52 +179,22 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 this,
                 ROOT_LAYER_FLAG)) {
             while (true) {
-                MutableLong rootIdToRelease = new MutableLong();
-                ValueMerger<ROOT_KEY, RootMappingValue> rootMappingMerger =
-                        (existingKey, newKey, existingValue, newValue) -> {
-                            // Here we have the latch on the root mapping and want to acquire a latch on the data root
-                            // There could be another writer having the latch on the data root, and as part of
-                            // split/shrink/successor,
-                            // wants to setRoot which means that it wants to acquire the latch on the root mapping ->
-                            // deadlock
-
-                            var rootLatch = support.latchService().latch(existingValue.rootId);
-                            try {
-                                if (!rootLatch.tryAcquireWrite()) {
-                                    // Someone else is just now writing to the contents of this data tree.
-                                    // Back out and try again
-                                    rootIdToRelease.setValue(-1);
-                                    return ValueMerger.MergeResult.UNCHANGED;
-                                }
-                                try (PageCursor cursor = support.openRootCursor(
-                                        existingValue.asRoot(), PF_SHARED_WRITE_LOCK, cursorContext)) {
-                                    if (TreeNodeUtil.keyCount(cursor) != 0) {
-                                        throw new DataTreeNotEmptyException(dataRootKey);
-                                    }
-                                    rootIdToRelease.setValue(existingValue.rootId);
-                                    return ValueMerger.MergeResult.REMOVED;
-                                } catch (IOException e) {
-                                    throw new UncheckedIOException(e);
-                                } finally {
-                                    rootLatch.releaseWrite();
-                                }
-                            } finally {
-                                rootLatch.deref();
-                            }
-                        };
-
+                var rootMappingMerger = new RootDeleteValueMerger(cursorContext, dataRootKey);
                 rootMappingWriter.mergeIfExists(
                         dataRootKey, new RootMappingValue().initialize(new Root(-1, -1)), rootMappingMerger);
-                if (rootIdToRelease.longValue() == 0) {
+                var rootId = rootMappingMerger.rootIdToRelease;
+                if (rootId == 0) {
                     throw new DataTreeNotFoundException(dataRootKey);
                 }
-                if (rootIdToRelease.longValue() != -1) {
+                if (rootId != -1) {
                     long generation = support.generation();
+                    var unstableGeneration = unstableGeneration(generation);
+                    support.structureWriteLog().deleteRoot(unstableGeneration, rootId);
                     support.idProvider()
                             .releaseId(
                                     stableGeneration(generation),
-                                    unstableGeneration(generation),
-                                    rootIdToRelease.longValue(),
+                                    unstableGeneration,
+                                    rootId,
                                     bind(support, PF_SHARED_WRITE_LOCK, cursorContext));
                     break;
                 }
@@ -616,4 +586,54 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     }
 
     private record DataTreeRoot<DATA_ROOT_KEY>(DATA_ROOT_KEY key, Root root) {}
+
+    private class RootDeleteValueMerger implements ValueMerger<ROOT_KEY, RootMappingValue> {
+        private final CursorContext cursorContext;
+        private final ROOT_KEY dataRootKey;
+        private long rootIdToRelease;
+
+        public RootDeleteValueMerger(CursorContext cursorContext, ROOT_KEY dataRootKey) {
+            this.cursorContext = cursorContext;
+            this.dataRootKey = dataRootKey;
+        }
+
+        @Override
+        public MergeResult merge(
+                ROOT_KEY existingKey, ROOT_KEY newKey, RootMappingValue existingValue, RootMappingValue newValue) {
+            // Here we have the latch on the root mapping and want to acquire a latch on the data root
+            // There could be another writer having the latch on the data root, and as part of
+            // split/shrink/successor,
+            // wants to setRoot which means that it wants to acquire the latch on the root mapping ->
+            // deadlock
+
+            var rootLatch = support.latchService().latch(existingValue.rootId);
+            try {
+                if (!rootLatch.tryAcquireWrite()) {
+                    // Someone else is just now writing to the contents of this data tree.
+                    // Back out and try again
+                    rootIdToRelease = -1;
+                    return MergeResult.UNCHANGED;
+                }
+                try (PageCursor cursor =
+                        support.openRootCursor(existingValue.asRoot(), PF_SHARED_WRITE_LOCK, cursorContext)) {
+                    if (TreeNodeUtil.keyCount(cursor) != 0) {
+                        throw new DataTreeNotEmptyException(dataRootKey);
+                    }
+                    rootIdToRelease = existingValue.rootId;
+                    return MergeResult.REMOVED;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                } finally {
+                    rootLatch.releaseWrite();
+                }
+            } finally {
+                rootLatch.deref();
+            }
+        }
+
+        @Override
+        public void reset() {
+            rootIdToRelease = 0;
+        }
+    }
 }

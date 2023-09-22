@@ -84,7 +84,11 @@ class LoggingStructureWriteLogTest {
                                                     randomTreeNodeId(rng),
                                                     randomTreeNodeId(rng),
                                                     randomTreeNodeId(rng));
-                                            case TREE_GROW, TREE_SHRINK, FREELIST -> new Event(
+                                            case TREE_GROW,
+                                                    TREE_SHRINK,
+                                                    FREELIST,
+                                                    CREATE_ROOT,
+                                                    DELETE_ROOT -> new Event(
                                                     type, randomGeneration(rng), randomTreeNodeId(rng));
                                             case CHECKPOINT -> new Event(
                                                     type,
@@ -165,6 +169,16 @@ class LoggingStructureWriteLogTest {
             public void shrinkTree(long timeMillis, long sessionId, long generation, long deletedRootId) {
                 readEvents.add(new Event(Type.TREE_SHRINK, generation, deletedRootId));
             }
+
+            @Override
+            public void createRoot(long timeMillis, long generation, long id) {
+                readEvents.add(new Event(Type.CREATE_ROOT, generation, id));
+            }
+
+            @Override
+            public void deleteRoot(long timeMillis, long generation, long id) {
+                readEvents.add(new Event(Type.DELETE_ROOT, generation, id));
+            }
         });
         return readEvents;
     }
@@ -204,6 +218,8 @@ class LoggingStructureWriteLogTest {
                 case TREE_GROW -> session.growTree(data.get(0), data.get(1));
                 case TREE_SHRINK -> session.shrinkTree(data.get(0), data.get(1));
                 case CHECKPOINT -> log.checkpoint(data.get(0), data.get(1), data.get(2));
+                case CREATE_ROOT -> log.createRoot(data.get(0), data.get(1));
+                case DELETE_ROOT -> log.deleteRoot(data.get(0), data.get(1));
                 default -> throw new UnsupportedOperationException(type.toString());
             }
         }

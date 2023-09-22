@@ -676,6 +676,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         rootLayer.initializeAfterCreation(firstRoot, cursorContext);
         freeList.initializeAfterCreation(
                 bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext), IdSpace.MIN_FREELIST_NODE_ID);
+        structureWriteLog.createRoot(unstableGeneration(generation), firstRoot.id());
     }
 
     /**

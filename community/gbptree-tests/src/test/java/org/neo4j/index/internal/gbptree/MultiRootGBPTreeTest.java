@@ -708,6 +708,28 @@ class MultiRootGBPTreeTest {
         });
     }
 
+    @Test
+    void shouldDeleteRootConcurrently() throws IOException {
+        // when
+        var rootKey = rootKeyLayout.key(0);
+        tree.create(rootKey, NULL_CONTEXT);
+        var race = new Race();
+        race.addContestants(
+                8,
+                throwing(() -> {
+                    try {
+                        tree.delete(rootKey, NULL_CONTEXT);
+                    } catch (DataTreeNotFoundException ignored) {
+                    }
+                }),
+                1);
+        race.goUnchecked();
+
+        // then
+        assertThatThrownBy(() -> tree.access(rootKey).writer(NULL_CONTEXT))
+                .isInstanceOf(DataTreeNotFoundException.class);
+    }
+
     private void deleteRootContents(long key) throws IOException {
         List<RawBytes> keys = new ArrayList<>();
         try (var seek = allSeek(key)) {

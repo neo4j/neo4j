@@ -36,4 +36,9 @@ class TrackingValueMerger<K, V> implements ValueMerger<K, V> {
     boolean wasMerged() {
         return merged;
     }
+
+    @Override
+    public void reset() {
+        merged = false;
+    }
 }

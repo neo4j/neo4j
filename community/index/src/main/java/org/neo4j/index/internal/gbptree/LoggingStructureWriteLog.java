@@ -82,6 +82,16 @@ class LoggingStructureWriteLog implements StructureWriteLog {
     }
 
     @Override
+    public void createRoot(long generation, long id) {
+        writeEntry(Type.CREATE_ROOT, -1, generation, id);
+    }
+
+    @Override
+    public void deleteRoot(long generation, long id) {
+        writeEntry(Type.DELETE_ROOT, -1, generation, id);
+    }
+
+    @Override
     public synchronized void checkpoint(
             long previousStableGeneration, long newStableGeneration, long newUnstableGeneration) {
         writeEntry(Type.CHECKPOINT, -1, newStableGeneration, previousStableGeneration, newUnstableGeneration);
@@ -207,7 +217,9 @@ class LoggingStructureWriteLog implements StructureWriteLog {
         FREELIST((byte) 3),
         TREE_GROW((byte) 4),
         TREE_SHRINK((byte) 5),
-        CHECKPOINT((byte) 6);
+        CHECKPOINT((byte) 6),
+        CREATE_ROOT((byte) 7),
+        DELETE_ROOT((byte) 8);
 
         private final byte type;
 
@@ -233,6 +245,10 @@ class LoggingStructureWriteLog implements StructureWriteLog {
         void growTree(long timeMillis, long sessionId, long generation, long createdRootId);
 
         void shrinkTree(long timeMillis, long sessionId, long generation, long deletedRootId);
+
+        void createRoot(long timeMillis, long generation, long id);
+
+        void deleteRoot(long timeMillis, long generation, long id);
     }
 
     public static void read(FileSystemAbstraction fs, Path baseFile, Events events) throws IOException {
@@ -272,6 +288,8 @@ class LoggingStructureWriteLog implements StructureWriteLog {
                     case TREE_GROW -> events.growTree(timeMillis, sessionId, generation, channel.getLong());
                     case TREE_SHRINK -> events.shrinkTree(timeMillis, sessionId, generation, channel.getLong());
                     case CHECKPOINT -> events.checkpoint(timeMillis, channel.getLong(), generation, channel.getLong());
+                    case CREATE_ROOT -> events.createRoot(timeMillis, generation, channel.getLong());
+                    case DELETE_ROOT -> events.deleteRoot(timeMillis, generation, channel.getLong());
                     default -> throw new UnsupportedOperationException(type.toString());
                 }
             }
@@ -344,6 +362,20 @@ class LoggingStructureWriteLog implements StructureWriteLog {
             System.out.printf(
                     "%s CP %d %d %d%n",
                     date(timeMillis), previousStableGeneration, newStableGeneration, newUnstableGeneration);
+        }
+
+        @Override
+        public void createRoot(long timeMillis, long generation, long id) {
+            if (idFilter.test(id)) {
+                System.out.printf("%s CR %d %d%n", date(timeMillis), generation, id);
+            }
+        }
+
+        @Override
+        public void deleteRoot(long timeMillis, long generation, long id) {
+            if (idFilter.test(id)) {
+                System.out.printf("%s DR %d %d%n", date(timeMillis), generation, id);
+            }
         }
     }
 

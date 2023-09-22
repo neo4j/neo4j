@@ -222,6 +222,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                             cursorContext)) {
                 // OK, didn't work. Flip to pessimistic mode and try again.
                 coordination.flipToPessimisticMode();
+                valueMerger.reset();
                 assert structurePropagation.isEmpty();
                 treeLogic.reset();
                 if (!goToRoot()

@@ -34,6 +34,10 @@ public interface StructureWriteLog extends AutoCloseable {
 
     Session newSession();
 
+    void createRoot(long generation, long id);
+
+    void deleteRoot(long generation, long id);
+
     void checkpoint(long previousStableGeneration, long newStableGeneration, long newUnstableGeneration);
 
     void close();
@@ -64,6 +68,12 @@ public interface StructureWriteLog extends AutoCloseable {
         public Session newSession() {
             return this;
         }
+
+        @Override
+        public void createRoot(long generation, long id) {}
+
+        @Override
+        public void deleteRoot(long generation, long id) {}
 
         @Override
         public void split(long generation, long parentId, long childId, long createdChildId) {}

@@ -48,6 +48,13 @@ public interface ValueMerger<KEY, VALUE> {
     MergeResult merge(KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue);
 
     /**
+     * Called by writer if {@link #merge(Object, Object, Object, Object)} has been invoked, but writer
+     * had to flip internal mode and retry operation. If the {@link ValueMerger} has any state then it should
+     * be cleared in this method.
+     */
+    default void reset() {}
+
+    /**
      * Result of a merge, i.e. what the (mutable) values passed into {@link #merge(Object, Object, Object, Object)} mean when the call is completed.
      */
     enum MergeResult {

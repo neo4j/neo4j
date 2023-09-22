@@ -455,4 +455,8 @@ class RootLayerSupport {
     PagedFile pagedFile() {
         return pagedFile;
     }
+
+    StructureWriteLog structureWriteLog() {
+        return structureWriteLog;
+    }
 }
