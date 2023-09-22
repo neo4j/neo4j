@@ -89,7 +89,7 @@ object ASTCachedProperty {
  * retrieved very fast, but care has to be taken to it doesn't get out-dated by writes to
  * the graph/transaction state.
  *
- * @param originalEntityName the name of the variable how it appeared in the first Property access.
+ * @param originalEntity     the name of the entity how it first appeared in the query, that is, before any projections.
  * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
  *                           if the variable name was changed in between.
  * @param knownToAccessStore `true` if we know that the evaluation of this CachedProperty will access the store, `false` otherwise.
@@ -113,9 +113,9 @@ case class CachedProperty(
  * A specialized version of `CachedProperty` that doesn't read the actual value but only produces
  * `TRUE` if the property is there or `NULL` otherwise.
  *
- * @param originalEntityName the name of the variable how it appeared in the first Property access.
- * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
- *                           if the variable name was changed in between.
+ * @param originalEntity the name of the entity how it first appeared in the query, that is, before any projections.
+ * @param entityVariable the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
+ *                       if the variable name was changed in between.
  */
 case class CachedHasProperty(
   originalEntity: LogicalVariable,

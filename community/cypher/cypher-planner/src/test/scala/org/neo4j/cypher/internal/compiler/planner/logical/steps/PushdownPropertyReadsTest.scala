@@ -23,27 +23,28 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.PushdownPropertyReads.Acc
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.PushdownPropertyReads.CardinalityOptimum
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.LogicalPlans
-import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
+import org.scalatest.PrivateMethodTester
 
 class PushdownPropertyReadsTest
     extends CypherFunSuite
     with PlanMatchHelp
     with LogicalPlanConstructionTestSupport
-    with LogicalPlanTestOps {
+    with LogicalPlanTestOps
+    with PrivateMethodTester {
 
   test("should pushdown read in projection") {
     val plan = new LogicalPlanBuilder()
@@ -606,13 +607,10 @@ class PushdownPropertyReadsTest
 
     val plan = planBuilder.build()
 
-    val Acc(_, propertyReadOptima, _, _, _) =
-      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
-        plan,
-        PushdownPropertyReads.foldSingleChildPlan(effectiveCardinalities, semanticTable),
-        PushdownPropertyReads.foldTwoChildPlan(effectiveCardinalities, semanticTable),
-        PushdownPropertyReads.mapArguments
-      )
+    val findPropertyReadOptima = PrivateMethod[Seq[(CardinalityOptimum, PushDownProperty)]]('findPropertyReadOptima)
+
+    val propertyReadOptima =
+      PushdownPropertyReads invokePrivate findPropertyReadOptima(plan, effectiveCardinalities, semanticTable)
 
     propertyReadOptima.size should equal(1)
   }
@@ -1455,6 +1453,47 @@ class PushdownPropertyReadsTest
         .projection("n AS mysteryNode")
         .expand("(n)-->(m)")
         .cacheProperties("n.prop")
+        .allNodeScan("n")
+        .build()
+  }
+
+  test("should pushdown read but not through projection if cardinality is lower after") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("`  a@2`", "`  b@3`")
+      .projection("`  a@0`.id AS `  a@2`", "`  b@1`.id AS `  b@3`").withEffectiveCardinality(10000.0)
+      .apply().withEffectiveCardinality(10000.0)
+      .|.merge(
+        nodes = Seq(),
+        relationships = Seq(createRelationship("r", "  a@0", "Type", "  b@1")),
+        onMatch = Seq(),
+        onCreate = Seq(),
+        lockNodes = Set("  a@0", "  b@1")
+      ).withEffectiveCardinality(1)
+      .|.expandInto("(`  a@0`)-[r:Type]->(`  b@1`)").withEffectiveCardinality(0.002)
+      .|.argument("  a@0", "  b@1").withEffectiveCardinality(1)
+      .projection("n AS `  a@0`", "m AS `  b@1`").withEffectiveCardinality(10000.0)
+      .cartesianProduct().withEffectiveCardinality(10000.0)
+      .|.allNodeScan("m").withEffectiveCardinality(100.0)
+      .allNodeScan("n").withEffectiveCardinality(100.0)
+
+    val rewritten = PushdownPropertyReads.pushdown(
+      plan.build(),
+      plan.effectiveCardinalities,
+      Attributes(plan.idGen, plan.effectiveCardinalities),
+      plan.getSemanticTable
+    )
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("`  a@2`", "`  b@3`")
+        .projection("`  a@0`.id AS `  a@2`", "`  b@1`.id AS `  b@3`")
+        .apply()
+        .|.merge(Seq(), Seq(createRelationship("r", "  a@0", "Type", "  b@1")), Seq(), Seq(), Set("  a@0", "  b@1"))
+        .|.cacheProperties("`  a@0`.id", "`  b@1`.id")
+        .|.expandInto("(`  a@0`)-[r:Type]->(`  b@1`)")
+        .|.argument("  a@0", "  b@1")
+        .projection("n AS `  a@0`", "m AS `  b@1`")
+        .cartesianProduct()
+        .|.allNodeScan("m")
         .allNodeScan("n")
         .build()
   }

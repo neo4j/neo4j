@@ -79,12 +79,21 @@ case object PushdownPropertyReads {
   // Negligible quantity of cardinality when considering pushdown
   private val CARDINALITY_EPSILON = EffectiveCardinality(0.0000001)
 
-  def isNodeOrRel(variable: LogicalVariable, semanticTable: SemanticTable): Boolean =
+  private def isNodeOrRel(variable: LogicalVariable, semanticTable: SemanticTable): Boolean =
     semanticTable.typeFor(variable).isAnyOf(CTNode, CTRelationship)
 
+  /**
+   * Used to take note of the optimum cardinality for reading from a variable.
+   * @param cardinality the optimum cardinality
+   * @param logicalPlanId id of the plan at which this optimum cardinality was reached
+   * @param variableName name of the variable to read at that plan
+   */
   case class CardinalityOptimum(cardinality: EffectiveCardinality, logicalPlanId: Id, variableName: String)
 
-  case class Acc(
+  /**
+   * @param variableOptima for each variable, what plan operator would be the optimum to read its value from
+   */
+  private case class Acc(
     variableOptima: Map[String, CardinalityOptimum],
     propertyReadOptima: Seq[(CardinalityOptimum, PushDownProperty)],
     availableProperties: Set[PushDownProperty],
@@ -92,7 +101,10 @@ case object PushdownPropertyReads {
     incomingCardinality: EffectiveCardinality
   )
 
-  def shouldCoRead(optimumProperties: List[(CardinalityOptimum, PushDownProperty)], plan: LogicalPlan): Boolean = {
+  private def shouldCoRead(
+    optimumProperties: List[(CardinalityOptimum, PushDownProperty)],
+    plan: LogicalPlan
+  ): Boolean = {
     optimumProperties.size > 1 &&
     plan.rhs.isEmpty &&
     plan.lhs.nonEmpty &&
@@ -100,13 +112,13 @@ case object PushdownPropertyReads {
     optimumProperties.exists { case (_, p) => !p.inMapProjection } // Map projection is faster than cached properties
   }
 
-  def findProperties(expression: Any, semanticTable: SemanticTable): Seq[PushDownProperty] =
+  private def findProperties(expression: Any, semanticTable: SemanticTable): Seq[PushDownProperty] =
     expression.folder.treeFold(Seq.empty[PushDownProperty]) {
       case PushableProperty(p) if isNodeOrRel(p.variable, semanticTable) =>
         acc => TraverseChildren(acc :+ p)
     }
 
-  def foldSingleChildPlan(
+  private def foldSingleChildPlan(
     effectiveCardinalities: EffectiveCardinalities,
     semanticTable: SemanticTable
   )(acc: Acc, plan: LogicalPlan): Acc = {
@@ -207,13 +219,12 @@ case object PushdownPropertyReads {
 
       case _ =>
         val newLowestCardinalities =
-          acc.variableOptima.view.mapValues(optimum =>
-            if (outgoingCardinality <= (optimum.cardinality + CARDINALITY_EPSILON)) {
-              CardinalityOptimum(outgoingCardinality, plan.id, optimum.variableName)
-            } else {
-              optimum
-            }
-          )
+          acc.variableOptima.map {
+            case (variableName, optimum) if outgoingCardinality <= (optimum.cardinality + CARDINALITY_EPSILON) =>
+              // if we take the different plan as the optimum, then we also need to take the new variable name there
+              variableName -> CardinalityOptimum(outgoingCardinality, plan.id, variableName)
+            case x => x
+          }
 
         val currentVariables = plan.availableSymbols
         val newVariables = currentVariables.map(_.name) -- acc.variableOptima.keySet
@@ -277,7 +288,7 @@ case object PushdownPropertyReads {
         val outgoingAvailableProperties = acc.availableProperties ++ newPropertyExpressions ++ propertiesFromPlan
 
         Acc(
-          outgoingVariableOptima.toMap,
+          outgoingVariableOptima,
           outgoingReadOptima,
           outgoingAvailableProperties,
           acc.availableWholeEntities ++ maybeEntityFromPlan.map(_.name),
@@ -286,7 +297,7 @@ case object PushdownPropertyReads {
     }
   }
 
-  def foldTwoChildPlan(
+  private def foldTwoChildPlan(
     effectiveCardinalities: EffectiveCardinalities,
     semanticTable: SemanticTable
   )(lhsAcc: Acc, rhsAcc: Acc, plan: LogicalPlan): Acc = {
@@ -381,7 +392,7 @@ case object PushdownPropertyReads {
     }
   }
 
-  def mapArguments(argumentAcc: Acc, plan: LogicalPlan): Acc = {
+  private def mapArguments(argumentAcc: Acc, plan: LogicalPlan): Acc = {
     plan match {
       case _: TransactionForeach =>
         Acc(
@@ -403,7 +414,6 @@ case object PushdownPropertyReads {
    *
    * Note, input position is NOT guaranteed to be accurate in cached properties.
    */
-
   def pushdown(
     logicalPlan: LogicalPlan,
     effectiveCardinalities: EffectiveCardinalities,
@@ -411,13 +421,7 @@ case object PushdownPropertyReads {
     semanticTable: SemanticTable
   ): LogicalPlan = {
 
-    val Acc(_, propertyReadOptima, _, _, _) =
-      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
-        logicalPlan,
-        foldSingleChildPlan(effectiveCardinalities, semanticTable),
-        foldTwoChildPlan(effectiveCardinalities, semanticTable),
-        mapArguments
-      )
+    val propertyReadOptima = findPropertyReadOptima(logicalPlan, effectiveCardinalities, semanticTable)
 
     val propertyMap = new mutable.HashMap[Id, Set[PushDownProperty]].withDefaultValue(Set.empty)
     propertyReadOptima foreach {
@@ -435,6 +439,24 @@ case object PushdownPropertyReads {
     })
 
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]
+  }
+
+  /**
+   * Tries to find, for a read property (_2 in tuple), where would cardinality-wise be the optimum place to put it in the plan (_1 in the tuple)
+   */
+  private def findPropertyReadOptima(
+    logicalPlan: LogicalPlan,
+    effectiveCardinalities: EffectiveCardinalities,
+    semanticTable: SemanticTable
+  ): Seq[(CardinalityOptimum, PushDownProperty)] = {
+    val Acc(_, propertyReadOptima, _, _, _) =
+      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
+        logicalPlan,
+        foldSingleChildPlan(effectiveCardinalities, semanticTable),
+        foldTwoChildPlan(effectiveCardinalities, semanticTable),
+        mapArguments
+      )
+    propertyReadOptima
   }
 
   private def asProperty(idName: String)(indexedProperty: IndexedProperty): PushDownProperty = {

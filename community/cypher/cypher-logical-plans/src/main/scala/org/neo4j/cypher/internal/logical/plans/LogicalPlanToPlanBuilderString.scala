@@ -274,10 +274,13 @@ object LogicalPlanToPlanBuilderString {
       case Foreach(_, variable, list, mutations) =>
         s"${wrapInQuotations(variable)}, ${wrapInQuotations(expressionStringifier(list))}, Seq(${mutations.map(mutationToString).mkString(", ")})"
 
-      case Expand(_, from, dir, types, to, relName, _) =>
+      case Expand(_, from, dir, types, to, rel, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
-        s""" "(${from.name})$dirStrA[${relName.name}$typeStr]$dirStrB(${to.name})" """.trim
+        val fromName = escapeIdentifier(from.name)
+        val relName = escapeIdentifier(rel.name)
+        val toName = escapeIdentifier(to.name)
+        s""" "($fromName)$dirStrA[$relName$typeStr]$dirStrB($toName)" """.trim
       case VarExpand(_, from, dir, pDir, types, to, relName, length, mode, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
