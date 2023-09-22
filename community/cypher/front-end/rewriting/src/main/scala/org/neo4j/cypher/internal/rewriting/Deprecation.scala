@@ -41,10 +41,12 @@ import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.util.ASTNode
@@ -83,6 +85,7 @@ object Deprecations {
           Some(Ref(rel) -> rel.copy(labelExpression = Some(rewrittenExpression))(rel.position)),
           Some(DeprecatedRelTypeSeparatorNotification(
             labelExpression.folder.treeFindByClass[ColonDisjunction].get.position,
+            s":${stringifier.stringifyLabelExpression(labelExpression)}",
             s":${stringifier.stringifyLabelExpression(rewrittenExpression)}"
           ))
         )
@@ -98,12 +101,32 @@ object Deprecations {
         )
 
       case ShortestPathsPatternPart(
-          RelationshipChain(_: NodePattern, relPat @ RelationshipPattern(_, _, None, _, _, _), _),
-          _
+          RelationshipChain(
+            _: NodePattern,
+            relPat @ RelationshipPattern(variable, labelExpression, None, properties, predicate, direction),
+            _
+          ),
+          single
         ) =>
+        val newRelPat = RelationshipPattern(
+          variable,
+          labelExpression,
+          Some(Some(Range(
+            Some(UnsignedDecimalIntegerLiteral("1")(relPat.position)),
+            Some(UnsignedDecimalIntegerLiteral("1")(relPat.position))
+          )(relPat.position))),
+          properties,
+          predicate,
+          direction
+        )(relPat.position)
+        val deprecated = if (single) s"shortestPath(${relPat.asCanonicalStringVal})"
+        else s"allShortestPaths(${relPat.asCanonicalStringVal})"
+        val replacement = if (single) s"shortestPath(${newRelPat.asCanonicalStringVal})"
+        else s"allShortestPaths(${newRelPat.asCanonicalStringVal})"
+
         Deprecation(
           None,
-          Some(FixedLengthRelationshipInShortestPath(relPat.position))
+          Some(FixedLengthRelationshipInShortestPath(relPat.position, deprecated, replacement))
         )
 
       case c @ CreateDatabase(nn @ NamespacedName(_, Some(_)), _, _, _, _) =>
@@ -182,17 +205,25 @@ object Deprecations {
     }
 
     override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = Function.unlift {
-      case s @ SetExactPropertiesFromMapItem(_, e: Variable)
-        if semanticTable.typeFor(e).isAnyOf(CTNode, CTRelationship) =>
+      case s @ SetExactPropertiesFromMapItem(lhs: Variable, rhs: Variable)
+        if semanticTable.typeFor(rhs).isAnyOf(CTNode, CTRelationship) =>
         Some(Deprecation(
-          Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, e))(s.position)),
-          Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
+          Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, rhs))(s.position)),
+          Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(
+            rhs.position,
+            s"SET ${lhs.name} = ${rhs.name}",
+            s"SET ${lhs.name} = properties(${rhs.name})"
+          ))
         ))
-      case s @ SetIncludingPropertiesFromMapItem(_, e: Variable)
-        if semanticTable.typeFor(e).isAnyOf(CTNode, CTRelationship) =>
+      case s @ SetIncludingPropertiesFromMapItem(lhs: Variable, rhs: Variable)
+        if semanticTable.typeFor(rhs).isAnyOf(CTNode, CTRelationship) =>
         Some(Deprecation(
-          Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, e))(s.position)),
-          Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
+          Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, rhs))(s.position)),
+          Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(
+            rhs.position,
+            s"SET ${lhs.name} += ${rhs.name}",
+            s"SET ${lhs.name} += properties(${rhs.name})"
+          ))
         ))
 
       case Create(pattern) =>

@@ -52,39 +52,64 @@ public enum NotificationCodeWithDescription {
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
             Status.Statement.DynamicProperty,
             "Using a dynamic property makes it impossible to use an index lookup for this query (%s)"),
-    DEPRECATED_FUNCTION(Status.Statement.FeatureDeprecationWarning, "The query used a deprecated function%s"),
-    DEPRECATED_PROCEDURE(Status.Statement.FeatureDeprecationWarning, "The query used a deprecated procedure%s"),
+    DEPRECATED_FUNCTION_WITHOUT_REPLACEMENT(
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated function%s",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_2),
+
+    DEPRECATED_FUNCTION_WITH_REPLACEMENT(
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated function%s",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
+    DEPRECATED_PROCEDURE_WITHOUT_REPLACEMENT(
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated procedure%s",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_2),
+
+    DEPRECATED_PROCEDURE_WITH_REPLACEMENT(
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated procedure%s",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
 
     DEPRECATED_RUNTIME_OPTION(
-            Status.Statement.FeatureDeprecationWarning, "The query used a deprecated runtime option. (%s)"),
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated runtime option. (%s)",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
     PROCEDURE_WARNING(
             Status.Procedure.ProcedureWarning,
             "The query used a procedure that generated a warning. (%s)",
             "The procedure `%s` generates the warning `%s`."),
     DEPRECATED_PROCEDURE_RETURN_FIELD(
-            Status.Statement.FeatureDeprecationWarning, "The query used a deprecated field from a procedure. (%s)"),
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated field from a procedure. (%s)",
+            "`%s` returned by procedure `%s` is deprecated. See Status Codes documentation for suggestions."),
     DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
             Status.Statement.FeatureDeprecationWarning,
-            "The semantics of using colon in the separation of alternative relationship types will change in a future version. (%s)"),
+            "The semantics of using colon in the separation of alternative relationship types will change in a future version. (%s)",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
     DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE(
             Status.Statement.FeatureDeprecationWarning,
             "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
-                    + "Please use properties() instead."),
+                    + "Please use properties() instead.",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
 
     DEPRECATED_PROPERTY_REFERENCE_IN_CREATE(
             Status.Statement.FeatureDeprecationWarning,
             // referencing that entity in a property definition in the same create clause
+            "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated.",
             "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated."),
 
     DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP(
             Status.Statement.FeatureDeprecationWarning,
             "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "
-                    + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit."),
+                    + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit.",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
     DEPRECATED_TEXT_INDEX_PROVIDER(
             Status.Statement.FeatureDeprecationWarning,
             "The `" + TextIndexProvider.DESCRIPTOR.name()
                     + "` provider for text indexes is deprecated and will be removed in a future version. "
-                    + "Please use `" + TrigramIndexProvider.DESCRIPTOR.name() + "` instead."),
+                    + "Please use `" + TrigramIndexProvider.DESCRIPTOR.name() + "` instead.",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
     EAGER_LOAD_CSV(
             Status.Statement.EagerOperator,
             "Using LOAD CSV with a large data set in a query where the execution plan contains the "
@@ -136,6 +161,8 @@ public enum NotificationCodeWithDescription {
     UNION_RETURN_ORDER(
             Status.Statement.FeatureDeprecationWarning,
             "All subqueries in a UNION [ALL] should have the same ordering for the return columns. "
+                    + "Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.",
+            "All subqueries in a UNION [ALL] should have the same ordering for the return columns. "
                     + "Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version."),
     HOME_DATABASE_NOT_PRESENT(
             Status.Database.HomeDatabaseNotFound,
@@ -144,6 +171,8 @@ public enum NotificationCodeWithDescription {
     DEPRECATED_DATABASE_NAME(
             Status.Statement.FeatureDeprecationWarning,
             "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
+                    + "Names containing `.` should be escaped. (%s)",
+            "Databases and aliases with unescaped `.` are deprecated unless they belong to a composite database. "
                     + "Names containing `.` should be escaped. (%s)"),
     UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION(
             Status.Statement.UnsatisfiableRelationshipTypeExpression,
@@ -163,7 +192,8 @@ public enum NotificationCodeWithDescription {
             Status.Statement.FeatureDeprecationWarning,
             "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement. "
                     + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
-                    + "For more information, see Cypher Manual -> Cypher planner."),
+                    + "For more information, see Cypher Manual -> Cypher planner.",
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_2),
     COMMAND_HAS_NO_EFFECT(
             Status.Security.CommandHasNoEffect, "%s See Status Codes documentation for more information."),
     IMPOSSIBLE_REVOKE_COMMAND(
@@ -220,16 +250,34 @@ public enum NotificationCodeWithDescription {
         return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(position, param);
     }
 
-    public static NotificationImplementation deprecatedFunction(InputPosition position, String param) {
-        return DEPRECATED_FUNCTION.notification(position, param);
+    public static NotificationImplementation deprecatedFunctionWithoutReplacement(
+            InputPosition position, String param, String oldName) {
+        return DEPRECATED_FUNCTION_WITHOUT_REPLACEMENT.notificationWithMessage(
+                position, new String[] {param}, new String[] {oldName});
     }
 
-    public static NotificationImplementation deprecatedProcedure(InputPosition position, String param) {
-        return DEPRECATED_PROCEDURE.notification(position, param);
+    public static NotificationImplementation deprecatedFunctionWithReplacement(
+            InputPosition position, String param, String oldName, String newName) {
+        return DEPRECATED_FUNCTION_WITH_REPLACEMENT.notificationWithMessage(
+                position, new String[] {param}, new String[] {oldName, newName});
     }
 
-    public static NotificationImplementation deprecatedRuntimeOption(InputPosition position, String param) {
-        return DEPRECATED_RUNTIME_OPTION.notification(position, param);
+    public static NotificationImplementation deprecatedProcedureWithoutReplacement(
+            InputPosition position, String param, String oldName) {
+        return DEPRECATED_PROCEDURE_WITHOUT_REPLACEMENT.notificationWithMessage(
+                position, new String[] {param}, new String[] {oldName});
+    }
+
+    public static NotificationImplementation deprecatedProcedureWithReplacement(
+            InputPosition position, String param, String oldName, String newName) {
+        return DEPRECATED_PROCEDURE_WITH_REPLACEMENT.notificationWithMessage(
+                position, new String[] {param}, new String[] {oldName, newName});
+    }
+
+    public static NotificationImplementation deprecatedRuntimeOption(
+            InputPosition position, String param, String oldOption, String newOption) {
+        return DEPRECATED_RUNTIME_OPTION.notificationWithMessage(
+                position, new String[] {param}, new String[] {oldOption, newOption});
     }
 
     public static NotificationImplementation procedureWarning(
@@ -238,28 +286,39 @@ public enum NotificationCodeWithDescription {
                 position, new String[] {parameter}, new String[] {procedure, warning});
     }
 
-    public static NotificationImplementation deprecatedProcedureReturnField(InputPosition position, String param) {
-        return DEPRECATED_PROCEDURE_RETURN_FIELD.notification(position, param);
+    public static NotificationImplementation deprecatedProcedureReturnField(
+            InputPosition position, String param, String procedure, String field) {
+        return DEPRECATED_PROCEDURE_RETURN_FIELD.notificationWithMessage(
+                position, new String[] {param}, new String[] {field, procedure});
     }
 
-    public static NotificationImplementation deprecatedRelationshipTypeSeparator(InputPosition position, String param) {
-        return DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(position, param);
+    public static NotificationImplementation deprecatedRelationshipTypeSeparator(
+            InputPosition position, String param, String deprecated, String replacement) {
+        return DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notificationWithMessage(
+                position, new String[] {param}, new String[] {deprecated, replacement});
     }
 
-    public static NotificationImplementation deprecatedNodeOrRelationshipOnRhsSetClause(InputPosition position) {
-        return DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(position);
+    public static NotificationImplementation deprecatedNodeOrRelationshipOnRhsSetClause(
+            InputPosition position, String deprecated, String replacement) {
+        return DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notificationWithMessage(
+                position, new String[] {}, new String[] {deprecated, replacement});
     }
 
     public static NotificationImplementation deprecatedPropertyReferenceInCreate(InputPosition position, String param) {
-        return DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notification(position, param);
+        return DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notificationWithMessage(
+                position, new String[] {param}, new String[] {param});
     }
 
-    public static NotificationImplementation deprecatedShortestPathWithFixedLengthRelationship(InputPosition position) {
-        return DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(position);
+    public static NotificationImplementation deprecatedShortestPathWithFixedLengthRelationship(
+            InputPosition position, String deprecated, String replacement) {
+        return DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notificationWithMessage(
+                position, new String[] {}, new String[] {deprecated, replacement});
     }
 
     public static NotificationImplementation deprecatedTextIndexProvider(InputPosition position) {
-        return DEPRECATED_TEXT_INDEX_PROVIDER.notification(position);
+        return DEPRECATED_TEXT_INDEX_PROVIDER.notificationWithMessage(position, new String[] {}, new String[] {
+            TextIndexProvider.DESCRIPTOR.name(), TrigramIndexProvider.DESCRIPTOR.name()
+        });
     }
 
     public static NotificationImplementation eagerLoadCsv(InputPosition position) {
@@ -323,7 +382,7 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation deprecatedDatabaseName(InputPosition position, String param) {
-        return DEPRECATED_DATABASE_NAME.notification(position, param);
+        return DEPRECATED_DATABASE_NAME.notificationWithMessage(position, new String[] {param}, new String[] {param});
     }
 
     public static NotificationImplementation unsatisfiableRelationshipTypeExpression(
@@ -344,7 +403,8 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation deprecatedConnectComponentsPlannerPreParserOption(InputPosition position) {
-        return DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(position);
+        return DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notificationWithMessage(
+                position, new String[] {}, new String[] {"connectComponentsPlanner"});
     }
 
     public static NotificationImplementation commandHasNoEffect(
@@ -390,4 +450,8 @@ public enum NotificationCodeWithDescription {
                 .setNotificationDetails(descriptionDetails)
                 .build();
     }
+
+    private static final String DEPRECATION_MESSAGE_1 = "`%s` is deprecated. It is replaced by `%s`.";
+
+    private static final String DEPRECATION_MESSAGE_2 = "`%s` is deprecated and will be removed without a replacement.";
 }

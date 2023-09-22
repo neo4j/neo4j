@@ -28,12 +28,12 @@ import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
 public class NotificationDetail {
 
+    public static String deprecatedName(final String oldName) {
+        return String.format(": `%s`.", oldName);
+    }
+
     public static String deprecatedName(final String oldName, final String newName) {
-        if (newName == null || newName.trim().isEmpty()) {
-            return String.format(": `%s`.", oldName);
-        } else {
-            return String.format(". ('%s' has been replaced by '%s')", oldName, newName);
-        }
+        return String.format(". ('%s' has been replaced by '%s')", oldName, newName);
     }
 
     public static String nodeAnyIndex(

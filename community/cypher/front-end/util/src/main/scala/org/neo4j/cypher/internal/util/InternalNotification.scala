@@ -29,10 +29,17 @@ case class UnboundedShortestPathNotification(position: InputPosition, pattern: S
 case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String)
     extends InternalNotification
 
-case class DeprecatedRelTypeSeparatorNotification(position: InputPosition, rewrittenExpression: String)
-    extends InternalNotification
+case class DeprecatedRelTypeSeparatorNotification(
+  position: InputPosition,
+  oldExpression: String,
+  rewrittenExpression: String
+) extends InternalNotification
 
-case class DeprecatedNodesOrRelationshipsInSetClauseNotification(position: InputPosition) extends InternalNotification
+case class DeprecatedNodesOrRelationshipsInSetClauseNotification(
+  position: InputPosition,
+  deprecated: String,
+  replacement: String
+) extends InternalNotification
 
 case class DeprecatedPropertyReferenceInCreate(position: InputPosition, varName: String) extends InternalNotification
 
@@ -42,12 +49,13 @@ case class UnionReturnItemsInDifferentOrder(position: InputPosition) extends Int
 
 case class HomeDatabaseNotPresent(databaseName: String) extends InternalNotification
 
-case class FixedLengthRelationshipInShortestPath(position: InputPosition) extends InternalNotification
+case class FixedLengthRelationshipInShortestPath(position: InputPosition, deprecated: String, replacement: String)
+    extends InternalNotification
 
 case class DeprecatedDatabaseNameNotification(databaseName: String, position: Option[InputPosition])
     extends InternalNotification
 
-case class DeprecatedRuntimeNotification(msg: String)
+case class DeprecatedRuntimeNotification(msg: String, oldOption: String, newOption: String)
     extends InternalNotification
 
 case class DeprecatedTextIndexProvider(position: InputPosition) extends InternalNotification

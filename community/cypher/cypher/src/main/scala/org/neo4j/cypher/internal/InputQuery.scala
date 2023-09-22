@@ -45,7 +45,11 @@ sealed trait InputQuery {
 
   def notifications: Seq[InternalNotification] = options.queryOptions.runtime match {
     case CypherRuntimeOption.interpreted =>
-      Seq(DeprecatedRuntimeNotification("'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead"))
+      Seq(DeprecatedRuntimeNotification(
+        "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead",
+        "runtime=interpreted",
+        "runtime=slotted"
+      ))
     case _ => Seq.empty
   }
 }

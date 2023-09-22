@@ -22,21 +22,13 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunctions
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FUNCTION
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROPERTY_REFERENCE_IN_CREATE
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_TEXT_INDEX_PROVIDER
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNION_RETURN_ORDER
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunction
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithReplacement
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedure
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithReplacement
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship
@@ -63,10 +55,26 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   // DEPRECATED PROCEDURE THINGS
 
-  test("deprecated procedure calls") {
+  test("deprecated procedure calls without replacement") {
+    val queries = Seq("CALL oldProcNotReplaced()", "CALL oldProcNotReplaced() RETURN 1")
+    val detail = NotificationDetail.deprecatedName("oldProcNotReplaced")
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) => deprecatedProcedureWithoutReplacement(pos, detail, "oldProcNotReplaced")
+    )
+  }
+
+  test("deprecated procedure calls with replacement") {
     val queries = Seq("CALL oldProc()", "CALL oldProc() RETURN 1")
     val detail = NotificationDetail.deprecatedName("oldProc", "newProc")
-    assertNotification(queries, true, DEPRECATED_PROCEDURE, detail, deprecatedProcedure)
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) => deprecatedProcedureWithReplacement(pos, detail, "oldProc", "newProc")
+    )
   }
 
   test("non-deprecated procedure calls") {
@@ -78,7 +86,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated procedure result field") {
     val query = "CALL changedProc() YIELD oldField RETURN oldField"
     val detail = NotificationDetail.deprecatedField("changedProc", "oldField")
-    assertNotification(Seq(query), true, DEPRECATED_PROCEDURE_RETURN_FIELD, detail, deprecatedProcedureReturnField)
+    assertNotification(
+      Seq(query),
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) => deprecatedProcedureReturnField(pos, detail, "changedProc", "oldField")
+    )
   }
 
   test("non-deprecated procedure result field") {
@@ -87,13 +100,33 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNoDeprecations(queries)
   }
 
-  test("deprecated function calls") {
+  test("deprecated function calls without replacement") {
+    val queries = Seq(
+      "RETURN org.example.com.oldFuncNotReplaced()",
+      "MATCH (n) WHERE org.example.com.oldFuncNotReplaced() = 1 RETURN n"
+    )
+    val detail = NotificationDetail.deprecatedName("org.example.com.oldFuncNotReplaced")
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "org.example.com.oldFuncNotReplaced")
+    )
+  }
+
+  test("deprecated function calls with replacement") {
     val queries = Seq(
       "RETURN org.example.com.oldFunc()",
       "MATCH (n) WHERE org.example.com.oldFunc() = 1 RETURN n"
     )
     val detail = NotificationDetail.deprecatedName("org.example.com.oldFunc", "org.example.com.newFunc")
-    assertNotification(queries, true, DEPRECATED_FUNCTION, detail, deprecatedFunction)
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) =>
+        deprecatedFunctionWithReplacement(pos, detail, "org.example.com.oldFunc", "org.example.com.newFunc")
+    )
   }
 
   test("deprecated aggregation function calls") {
@@ -102,7 +135,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "UNWIND [1, 2, 3] AS nums WITH org.example.com.oldAggFunc(nums) AS aggTest RETURN aggTest"
     )
     val detail = NotificationDetail.deprecatedName("org.example.com.oldAggFunc", "org.example.com.newAggFunc")
-    assertNotification(queries, true, DEPRECATED_FUNCTION, detail, deprecatedFunction)
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) =>
+        deprecatedFunctionWithReplacement(pos, detail, "org.example.com.oldAggFunc", "org.example.com.newAggFunc")
+    )
   }
 
   test("non-deprecated function calls") {
@@ -132,10 +171,9 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     assertNotification(
       queries,
-      true,
-      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR,
+      shouldContainNotification = true,
       deprecationNotificationDetail(":A|B|C"),
-      deprecatedRelationshipTypeSeparator
+      (pos, detail) => deprecatedRelationshipTypeSeparator(pos, detail, ":A|:B|:C", ":A|B|C")
     )
 
     // clear caches of the rewritten queries to not keep notifications around
@@ -143,17 +181,28 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test("deprecate using nodes/relationships on the RHS of a Set Clause") {
-    val queries = Seq(
-      "MATCH (g)-[r:KNOWS]->(k) SET g = r",
-      "MATCH (g)-[r:KNOWS]->(k) SET g = k",
-      "MATCH (g)-[r:KNOWS]->(k) SET g += r",
-      "MATCH (g)-[r:KNOWS]->(k) SET g += k"
-    )
     assertNotification(
-      queries,
-      true,
-      DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE,
-      deprecatedNodeOrRelationshipOnRhsSetClause
+      Seq("MATCH (g)-[r:KNOWS]->(k) SET g = r"),
+      shouldContainNotification = true,
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g = r", "SET g = properties(r)")
+    )
+
+    assertNotification(
+      Seq("MATCH (g)-[r:KNOWS]->(k) SET g = k"),
+      shouldContainNotification = true,
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g = k", "SET g = properties(k)")
+    )
+
+    assertNotification(
+      Seq("MATCH (g)-[r:KNOWS]->(k) SET g += r"),
+      shouldContainNotification = true,
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g += r", "SET g += properties(r)")
+    )
+
+    assertNotification(
+      Seq("MATCH (g)-[r:KNOWS]->(k) SET g += k"),
+      shouldContainNotification = true,
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g += k", "SET g += properties(k)")
     )
   }
 
@@ -178,15 +227,26 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test("deprecate fixed length relationships in shortestPath and allShortestPaths") {
-    val queries = Seq(
-      "MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b",
-      "MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b"
-    )
     assertNotification(
-      queries,
-      true,
-      DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP,
-      deprecatedShortestPathWithFixedLengthRelationship
+      Seq("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b"),
+      shouldContainNotification = true,
+      pos =>
+        deprecatedShortestPathWithFixedLengthRelationship(
+          pos,
+          "allShortestPaths((a)-[r]->(b))",
+          "allShortestPaths((a)-[r*1..1]->(b))"
+        )
+    )
+
+    assertNotification(
+      Seq("MATCH (a), (b), shortestPath((a)<-[r:TYPE]-(b)) RETURN b"),
+      shouldContainNotification = true,
+      pos =>
+        deprecatedShortestPathWithFixedLengthRelationship(
+          pos,
+          "shortestPath((a)<-[r:TYPE]-(b))",
+          "shortestPath((a)<-[r:TYPE*1..1]-(b))"
+        )
     )
   }
 
@@ -199,7 +259,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       deprecatedProviderQueries,
       shouldContainNotification = true,
-      DEPRECATED_TEXT_INDEX_PROVIDER,
       deprecatedTextIndexProvider
     )
 
@@ -283,7 +342,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       queries,
       shouldContainNotification = true,
-      UNION_RETURN_ORDER,
       unionReturnOrder
     )
   }
@@ -327,14 +385,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "RETURN id(null)",
       "MATCH ()-[r]->() RETURN id(r)"
     )
-    val detail = NotificationDetail.deprecatedName("id", null)
+    val detail = NotificationDetail.deprecatedName("id")
 
     assertNotification(
       queries,
       shouldContainNotification = true,
-      DEPRECATED_FUNCTION,
       detail,
-      deprecatedFunction
+      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "id")
     )
   }
 
@@ -346,7 +403,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       queries,
       shouldContainNotification = true,
-      DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION,
       deprecatedConnectComponentsPlannerPreParserOption
     )
   }
@@ -374,7 +430,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       deprecated,
       shouldContainNotification = true,
-      DEPRECATED_PROPERTY_REFERENCE_IN_CREATE,
       "a",
       deprecatedPropertyReferenceInCreate
     )

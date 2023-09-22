@@ -26,14 +26,17 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedDatabaseName;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFormat;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunction;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithReplacement;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedure;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithReplacement;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRuntimeOption;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedTextIndexProvider;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.eagerLoadCsv;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.exhaustiveShortestPath;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.homeDatabaseNotPresent;
@@ -179,7 +182,8 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE() {
         String identifierDetail = NotificationDetail.deprecatedName("oldName", "newName");
-        NotificationImplementation notification = deprecatedProcedure(InputPosition.empty, identifierDetail);
+        NotificationImplementation notification =
+                deprecatedProcedureWithReplacement(InputPosition.empty, identifierDetail, "oldName", "newName");
 
         verifyNotification(
                 notification,
@@ -188,13 +192,14 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated procedure. ('oldName' has been replaced by 'newName')",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`oldName` is deprecated. It is replaced by `newName`.");
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName() {
-        String identifierDetail = NotificationDetail.deprecatedName("oldName", "");
-        NotificationImplementation notification = deprecatedProcedure(InputPosition.empty, identifierDetail);
+        String identifierDetail = NotificationDetail.deprecatedName("oldName");
+        NotificationImplementation notification =
+                deprecatedProcedureWithoutReplacement(InputPosition.empty, identifierDetail, "oldName");
 
         verifyNotification(
                 notification,
@@ -203,7 +208,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated procedure: `oldName`.",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`oldName` is deprecated and will be removed without a replacement.");
     }
 
     @Test
@@ -237,7 +242,8 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_FUNCTION() {
         String identifierDetail = NotificationDetail.deprecatedName("oldName", "newName");
-        NotificationImplementation notification = deprecatedFunction(InputPosition.empty, identifierDetail);
+        NotificationImplementation notification =
+                deprecatedFunctionWithReplacement(InputPosition.empty, identifierDetail, "oldName", "newName");
 
         verifyNotification(
                 notification,
@@ -246,13 +252,14 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated function. ('oldName' has been replaced by 'newName')",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`oldName` is deprecated. It is replaced by `newName`.");
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_FUNCTION_with_no_newName() {
-        String identifierDetail = NotificationDetail.deprecatedName("oldName", "");
-        NotificationImplementation notification = deprecatedFunction(InputPosition.empty, identifierDetail);
+        String identifierDetail = NotificationDetail.deprecatedName("oldName");
+        NotificationImplementation notification =
+                deprecatedFunctionWithoutReplacement(InputPosition.empty, identifierDetail, "oldName");
 
         verifyNotification(
                 notification,
@@ -261,13 +268,13 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated function: `oldName`.",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`oldName` is deprecated and will be removed without a replacement.");
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_RUNTIME_OPTION() {
-        NotificationImplementation notification =
-                deprecatedRuntimeOption(InputPosition.empty, "option=deprecatedOption");
+        NotificationImplementation notification = deprecatedRuntimeOption(
+                InputPosition.empty, "option=deprecatedOption", "option=oldOption", "option=newOption");
 
         verifyNotification(
                 notification,
@@ -276,7 +283,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated runtime option. (option=deprecatedOption)",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`option=oldOption` is deprecated. It is replaced by `option=newOption`.");
     }
 
     @Test
@@ -296,36 +303,38 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_RETURN_FIELD() {
-        NotificationImplementation notification =
-                deprecatedProcedureReturnField(InputPosition.empty, "deprecatedField");
+        NotificationImplementation notification = deprecatedProcedureReturnField(
+                InputPosition.empty, "'field' returned by 'proc' is deprecated.", "proc", "field");
 
         verifyNotification(
                 notification,
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated field from a procedure. (deprecatedField)",
+                "The query used a deprecated field from a procedure. ('field' returned by 'proc' is deprecated.)",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`field` returned by procedure `proc` is deprecated. See Status Codes documentation for suggestions.");
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR() {
-        NotificationImplementation notification = deprecatedRelationshipTypeSeparator(InputPosition.empty, "a:b");
+        NotificationImplementation notification =
+                deprecatedRelationshipTypeSeparator(InputPosition.empty, "Please use ':A|B' instead", ":A:|B", ":A|B");
 
         verifyNotification(
                 notification,
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The semantics of using colon in the separation of alternative relationship types will change in a future version. (a:b)",
+                "The semantics of using colon in the separation of alternative relationship types will change in a future version. (Please use ':A|B' instead)",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`:A:|B` is deprecated. It is replaced by `:A|B`.");
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE() {
-        NotificationImplementation notification = deprecatedNodeOrRelationshipOnRhsSetClause(InputPosition.empty);
+        NotificationImplementation notification =
+                deprecatedNodeOrRelationshipOnRhsSetClause(InputPosition.empty, "SET a = b", "SET a = properties(b)");
 
         verifyNotification(
                 notification,
@@ -335,13 +344,13 @@ class NotificationCodeWithDescriptionTest {
                 "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
                         + "Please use properties() instead.",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`SET a = b` is deprecated. It is replaced by `SET a = properties(b)`.");
     }
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP() {
-        NotificationImplementation notification =
-                deprecatedShortestPathWithFixedLengthRelationship(InputPosition.empty);
+        NotificationImplementation notification = deprecatedShortestPathWithFixedLengthRelationship(
+                InputPosition.empty, "shortestPath((n)-[r]->(m))", "shortestPath((n)-[r*1..1]->(m))");
 
         verifyNotification(
                 notification,
@@ -351,7 +360,21 @@ class NotificationCodeWithDescriptionTest {
                 "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "
                         + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit.",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`shortestPath((n)-[r]->(m))` is deprecated. It is replaced by `shortestPath((n)-[r*1..1]->(m))`.");
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_DEPRECATED_TEXT_INDEX_PROVIDER() {
+        NotificationImplementation notification = deprecatedTextIndexProvider(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "The `text-1.0` provider for text indexes is deprecated and will be removed in a future version. Please use `text-2.0` instead.",
+                NotificationCategory.DEPRECATION,
+                "`text-1.0` is deprecated. It is replaced by `text-2.0`.");
     }
 
     @Test
@@ -558,7 +581,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_DATABASE_NAME() {
-        NotificationImplementation notification = deprecatedDatabaseName(InputPosition.empty, "db.one");
+        NotificationImplementation notification = deprecatedDatabaseName(InputPosition.empty, "Name: db.one");
 
         verifyNotification(
                 notification,
@@ -566,9 +589,10 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
-                        + "Names containing `.` should be escaped. (db.one)",
+                        + "Names containing `.` should be escaped. (Name: db.one)",
                 NotificationCategory.DEPRECATION,
-                null);
+                "Databases and aliases with unescaped `.` are deprecated unless they belong to a composite database. "
+                        + "Names containing `.` should be escaped. (Name: db.one)");
     }
 
     @Test
@@ -628,7 +652,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.",
                 NotificationCategory.DEPRECATION,
-                null);
+                "All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.");
     }
 
     @Test
@@ -645,7 +669,7 @@ class NotificationCodeWithDescriptionTest {
                         + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
                         + "For more information, see Cypher Manual -> Cypher planner.",
                 NotificationCategory.DEPRECATION,
-                null);
+                "`connectComponentsPlanner` is deprecated and will be removed without a replacement.");
     }
 
     @Test
@@ -690,7 +714,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.",
                 NotificationCategory.DEPRECATION,
-                null);
+                "Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.");
     }
 
     private void verifyNotification(
@@ -748,8 +772,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -39, -7, -62, 83, -119, 77, -27, 35, 17, -13, 112, -36, 61, 27, -17, -40, -93, 37, 30, -72, -4, -14, 28,
-            -85, -10, -126, 18, 103, -88, 67, 1, 49
+            87, 23, -114, 36, -30, 42, -66, -42, 120, 47, -83, -84, -105, -52, 81, 79, 19, -40, 55, -107, -51, -25, -28,
+            91, 100, -25, 37, -30, -6, -18, -93, 17
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
 
@@ -33,7 +32,6 @@ trait DeprecationTestSupport extends Suite with Matchers {
   def assertNotification(
     queries: Seq[String],
     shouldContainNotification: Boolean,
-    notificationCode: NotificationCodeWithDescription,
     details: String,
     createNotification: (InputPosition, String) => Notification
   ): Unit = {
@@ -45,7 +43,7 @@ trait DeprecationTestSupport extends Suite with Matchers {
           val notifications: Iterable[Notification] = result.getNotifications()
           val hasNotification =
             notifications.exists(notification =>
-              matchesCode(notification, notificationCode, details, createNotification)
+              matchesCode(notification, details, createNotification)
             )
           withClue(notifications) {
             hasNotification should be(shouldContainNotification)
@@ -60,10 +58,9 @@ trait DeprecationTestSupport extends Suite with Matchers {
   def assertNotification(
     queries: Seq[String],
     shouldContainNotification: Boolean,
-    notificationCode: NotificationCodeWithDescription,
-    createNotification: (InputPosition) => Notification
+    createNotification: InputPosition => Notification
   ): Unit = {
-    assertNotification(queries, shouldContainNotification, notificationCode, "", (pos, _) => createNotification(pos))
+    assertNotification(queries, shouldContainNotification, "", (pos, _) => createNotification(pos))
   }
 
   // this is hacky but we have no other way to probe the notification's status (`Status.Statement.FeatureDeprecationWarning`)
@@ -95,7 +92,6 @@ trait DeprecationTestSupport extends Suite with Matchers {
 
   private def matchesCode(
     notification: Notification,
-    notificationCode: NotificationCodeWithDescription,
     details: String,
     createNotification: (InputPosition, String) => Notification
   ): Boolean = {
@@ -104,5 +100,6 @@ trait DeprecationTestSupport extends Suite with Matchers {
     notification.getCode.equals(expected.getCode) &&
     notification.getDescription.equals(expected.getDescription) &&
     notification.getSeverity.equals(expected.getSeverity)
+    // TODO: also compare messages once those are public (https://trello.com/c/VoNT60cD/100-make-notification-visible-to-the-drivers)
   }
 }

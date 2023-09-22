@@ -216,6 +216,10 @@ public class NotificationTestSupport {
         @Procedure(name = "oldProc", deprecatedBy = "newProc")
         public void oldProc() {}
 
+        @Deprecated
+        @Procedure(name = "oldProcNotReplaced")
+        public void oldProcNotReplaced() {}
+
         @Procedure("changedProc")
         public Stream<ChangedResults> changedProc() {
             return Stream.of(new ChangedResults());
@@ -232,6 +236,12 @@ public class NotificationTestSupport {
         @UserFunction(name = "org.example.com.oldFunc", deprecatedBy = "org.example.com.newFunc")
         public Long oldFunc() {
             return 2L;
+        }
+
+        @Deprecated
+        @UserFunction(name = "org.example.com.oldFuncNotReplaced")
+        public Long oldFuncNotReplaced() {
+            return 5L;
         }
 
         @UserAggregationFunction(name = "org.example.com.newAggFunc")

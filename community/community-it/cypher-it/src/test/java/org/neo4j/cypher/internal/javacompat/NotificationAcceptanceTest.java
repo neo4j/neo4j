@@ -466,6 +466,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 "EXPLAIN CYPHER runtime=interpreted RETURN 1",
                 InputPosition.empty,
                 "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead",
-                NotificationCodeWithDescription::deprecatedRuntimeOption);
+                (position, param) -> NotificationCodeWithDescription.deprecatedRuntimeOption(
+                        position, param, "runtime=interpreted", "runtime=slotted"));
     }
 }

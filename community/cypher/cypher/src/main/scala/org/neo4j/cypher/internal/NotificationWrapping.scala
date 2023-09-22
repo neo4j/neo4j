@@ -147,28 +147,52 @@ object NotificationWrapping {
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
       NotificationCodeWithDescription.exhaustiveShortestPath(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCodeWithDescription.deprecatedFunction(
-        pos.withOffset(offset).asInputPosition,
-        NotificationDetail.deprecatedName(oldName, newName)
-      )
+      if (newName == null || newName.trim.isEmpty)
+        NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement(
+          pos.withOffset(offset).asInputPosition,
+          NotificationDetail.deprecatedName(oldName),
+          oldName
+        )
+      else
+        NotificationCodeWithDescription.deprecatedFunctionWithReplacement(
+          pos.withOffset(offset).asInputPosition,
+          NotificationDetail.deprecatedName(oldName, newName),
+          oldName,
+          newName
+        )
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      NotificationCodeWithDescription.deprecatedProcedure(
-        pos.withOffset(offset).asInputPosition,
-        NotificationDetail.deprecatedName(oldName, newName)
-      )
+      if (newName == null || newName.trim.isEmpty)
+        NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement(
+          pos.withOffset(offset).asInputPosition,
+          NotificationDetail.deprecatedName(oldName),
+          oldName
+        )
+      else
+        NotificationCodeWithDescription.deprecatedProcedureWithReplacement(
+          pos.withOffset(offset).asInputPosition,
+          NotificationDetail.deprecatedName(oldName, newName),
+          oldName,
+          newName
+        )
     case DeprecatedFieldNotification(pos, procedure, field) =>
       NotificationCodeWithDescription.deprecatedProcedureReturnField(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.deprecatedField(procedure, field)
+        NotificationDetail.deprecatedField(procedure, field),
+        procedure,
+        field
       )
-    case DeprecatedRelTypeSeparatorNotification(pos, rewrittenExpression) =>
+    case DeprecatedRelTypeSeparatorNotification(pos, oldExpression, rewrittenExpression) =>
       NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.deprecationNotificationDetail(rewrittenExpression)
+        NotificationDetail.deprecationNotificationDetail(rewrittenExpression),
+        oldExpression,
+        rewrittenExpression
       )
-    case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos) =>
+    case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos, deprecated, replacement) =>
       NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause(
-        pos.withOffset(offset).asInputPosition
+        pos.withOffset(offset).asInputPosition,
+        deprecated,
+        replacement
       )
     case DeprecatedPropertyReferenceInCreate(pos, name) =>
       NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate(
@@ -211,9 +235,11 @@ object NotificationWrapping {
         s"HOME DATABASE: $name",
         name
       )
-    case FixedLengthRelationshipInShortestPath(pos) =>
+    case FixedLengthRelationshipInShortestPath(pos, deprecated, replacement) =>
       NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship(
-        pos.withOffset(offset).asInputPosition
+        pos.withOffset(offset).asInputPosition,
+        deprecated,
+        replacement
       )
 
     case DeprecatedTextIndexProvider(pos) =>
@@ -227,10 +253,12 @@ object NotificationWrapping {
         s"Name: $name"
       )
 
-    case DeprecatedRuntimeNotification(msg) =>
+    case DeprecatedRuntimeNotification(msg, oldOption, newOption) =>
       NotificationCodeWithDescription.deprecatedRuntimeOption(
         graphdb.InputPosition.empty,
-        msg
+        msg,
+        oldOption,
+        newOption
       )
 
     case UnsatisfiableRelationshipTypeExpression(position, relTypeExpression) =>
