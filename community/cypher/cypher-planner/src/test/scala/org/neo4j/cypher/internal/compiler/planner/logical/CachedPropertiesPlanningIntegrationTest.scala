@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -188,5 +190,40 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
       .cacheProperties("cacheNFromStore[n.prop]")
       .nodeByLabelScan("n", "N") // 500 rows, effective 5
       .build()
+  }
+
+  test("should plan caching of properties with the right names after projection") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:Type]->()", 20)
+      .build()
+
+    val query =
+      """MATCH (n), (m)
+        |WITH n AS a, m AS b
+        |MERGE (a)-[r:Type]->(b)
+        |RETURN a.id AS a, b.id AS b""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        .projection(Map(
+          "a" -> cachedNodeProp("n", "id", "a"),
+          "b" -> cachedNodeProp("m", "id", "b")
+        ))
+        .apply()
+        .|.merge(Seq(), Seq(createRelationship("r", "a", "Type", "b")), Seq(), Seq(), Set("a", "b"))
+        .|.cacheProperties(Set[LogicalProperty](
+        cachedNodeProp("n", "id", "a", knownToAccessStore = true),
+        cachedNodeProp("m", "id", "b", knownToAccessStore = true)
+      ))
+        .|.expandInto("(a)-[r:Type]->(b)")
+        .|.argument("a", "b")
+        .projection("n AS a", "m AS b")
+        .cartesianProduct()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
   }
 }

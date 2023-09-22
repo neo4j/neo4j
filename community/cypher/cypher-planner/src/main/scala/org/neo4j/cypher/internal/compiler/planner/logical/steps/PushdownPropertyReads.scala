@@ -76,12 +76,21 @@ case object PushdownPropertyReads {
   // Negligible quantity of cardinality when considering pushdown
   private val CARDINALITY_EPSILON = EffectiveCardinality(0.0000001)
 
-  def isNodeOrRel(variable: LogicalVariable, semanticTable: SemanticTable): Boolean =
+  private def isNodeOrRel(variable: LogicalVariable, semanticTable: SemanticTable): Boolean =
     semanticTable.types.get(variable)
       .exists(t => t.actual == CTNode.invariant || t.actual == CTRelationship.invariant)
 
+  /**
+   * Used to take note of the optimum cardinality for reading from a variable.
+   * @param cardinality the optimum cardinality
+   * @param logicalPlanId id of the plan at which this optimum cardinality was reached
+   * @param variableName name of the variable to read at that plan
+   */
   case class CardinalityOptimum(cardinality: EffectiveCardinality, logicalPlanId: Id, variableName: String)
 
+  /**
+   * @param variableOptima for each variable, what plan operator would be the optimum to read its value from
+   */
   case class Acc(
     variableOptima: Map[String, CardinalityOptimum],
     propertyReadOptima: Seq[(CardinalityOptimum, Property)],
@@ -169,13 +178,12 @@ case object PushdownPropertyReads {
 
       case _ =>
         val newLowestCardinalities =
-          acc.variableOptima.mapValues(optimum =>
-            if (outgoingCardinality <= (optimum.cardinality + CARDINALITY_EPSILON)) {
-              CardinalityOptimum(outgoingCardinality, plan.id, optimum.variableName)
-            } else {
-              optimum
-            }
-          )
+          acc.variableOptima.map {
+            case (variableName, optimum) if outgoingCardinality <= (optimum.cardinality + CARDINALITY_EPSILON) =>
+              // if we take the different plan as the optimum, then we also need to take the new variable name there
+              variableName -> CardinalityOptimum(outgoingCardinality, plan.id, variableName)
+            case x => x
+          }
 
         val currentVariables = plan.availableSymbols
         val newVariables = currentVariables -- acc.variableOptima.keySet
@@ -254,7 +262,7 @@ case object PushdownPropertyReads {
     }
   }
 
-  def foldTwoChildPlan(effectiveCardinalities: EffectiveCardinalities, semanticTable: SemanticTable)(lhsAcc: Acc, rhsAcc: Acc, plan: LogicalPlan): Acc = {
+  private def foldTwoChildPlan(effectiveCardinalities: EffectiveCardinalities, semanticTable: SemanticTable)(lhsAcc: Acc, rhsAcc: Acc, plan: LogicalPlan): Acc = {
     plan match {
 
       // Do _not_ pushdown from on top of these plans to the LHS or the RHS
@@ -280,7 +288,7 @@ case object PushdownPropertyReads {
         val newVariables = plan.availableSymbols
         val outgoingCardinality = effectiveCardinalities(plan.id)
         val outgoingVariableOptima =
-          newVariables.map(v => (v.name, CardinalityOptimum(outgoingCardinality, plan.id, v.name))).toMap
+          newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
         Acc(
           // Keep only optima of variables introduced in these plans
           outgoingVariableOptima,
@@ -316,7 +324,7 @@ case object PushdownPropertyReads {
         // on the RHS. Otherwise let's check the LHS, or discard the variable optimum.
         val correctedOptima = rhsAcc.variableOptima.foldLeft(Map.empty[String, CardinalityOptimum]) {
           case (acc, (varName, rhsOptimum)) =>
-            if (ap.right.availableSymbols.map(_.name).contains(varName)) acc + (varName -> rhsOptimum)
+            if (ap.right.availableSymbols.contains(varName)) acc + (varName -> rhsOptimum)
             else if (lhsAcc.variableOptima.contains(varName)) acc + (varName -> lhsAcc.variableOptima(varName))
             else acc
         }
@@ -346,7 +354,7 @@ case object PushdownPropertyReads {
     }
   }
 
-  def mapArguments(argumentAcc: Acc, plan: LogicalPlan): Acc = {
+  private def mapArguments(argumentAcc: Acc, plan: LogicalPlan): Acc = {
     plan match {
       case _: TransactionForeach =>
         Acc(
@@ -374,13 +382,7 @@ case object PushdownPropertyReads {
                attributes: Attributes[LogicalPlan],
                semanticTable: SemanticTable): LogicalPlan = {
 
-    val Acc(_, propertyReadOptima, _, _, _) =
-      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
-        logicalPlan,
-        foldSingleChildPlan(effectiveCardinalities, semanticTable),
-        foldTwoChildPlan(effectiveCardinalities, semanticTable),
-        mapArguments
-      )
+    val propertyReadOptima = findPropertyReadOptima(logicalPlan, effectiveCardinalities, semanticTable)
 
     val propertyMap = new mutable.HashMap[Id, Set[Property]].withDefaultValue(Set.empty)
     propertyReadOptima foreach {
@@ -398,6 +400,24 @@ case object PushdownPropertyReads {
     })
 
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]
+  }
+
+  /**
+   * Tries to find, for a read property (_2 in tuple), where would cardinality-wise be the optimum place to put it in the plan (_1 in the tuple)
+   */
+  private[steps] def findPropertyReadOptima(
+    logicalPlan: LogicalPlan,
+    effectiveCardinalities: EffectiveCardinalities,
+    semanticTable: SemanticTable
+  ): Seq[(CardinalityOptimum, Property)] = {
+    val Acc(_, propertyReadOptima, _, _, _) =
+      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
+        logicalPlan,
+        foldSingleChildPlan(effectiveCardinalities, semanticTable),
+        foldTwoChildPlan(effectiveCardinalities, semanticTable),
+        mapArguments
+      )
+    propertyReadOptima
   }
 
   private def asProperty(idName: String)(indexedProperty: IndexedProperty): Property =
