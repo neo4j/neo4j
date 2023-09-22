@@ -74,6 +74,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -420,7 +421,8 @@ class MemoryRecommendationsCommandTest {
                     String name = path.getName(path.getNameCount() - 4).toString();
                     boolean isLuceneFile = TextIndexProvider.DESCRIPTOR.name().equals(name)
                             || TrigramIndexProvider.DESCRIPTOR.name().equals(name)
-                            || FulltextIndexProviderFactory.DESCRIPTOR.name().equals(name);
+                            || FulltextIndexProviderFactory.DESCRIPTOR.name().equals(name)
+                            || VectorIndexProvider.DESCRIPTOR.name().equals(name);
                     if (!FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals(
                             path.getFileName().toString())) {
                         (isLuceneFile ? luceneTotal : pageCacheTotal).add(Files.size(path));
