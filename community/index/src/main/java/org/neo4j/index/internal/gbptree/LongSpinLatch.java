@@ -112,7 +112,7 @@ class LongSpinLatch {
                 bits -> {
                     var refCount = (bits & REF_COUNT_MASK) >>> REF_COUNT_SHIFT;
                     refCount++;
-                    assert ((refCount << REF_COUNT_SHIFT) & REF_COUNT_MASK) == (refCount << REF_COUNT_SHIFT);
+                    assert ((refCount << REF_COUNT_SHIFT) & REF_COUNT_MASK) == (refCount << REF_COUNT_SHIFT) : refCount;
                     return (bits & ~REF_COUNT_MASK) | (refCount << REF_COUNT_SHIFT);
                 },
                 false,
