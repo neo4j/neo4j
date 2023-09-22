@@ -59,7 +59,7 @@ import org.neo4j.util.concurrent.Futures;
  * @param <DATA_KEY> keys used in the data entries in the data roots.
  * @param <DATA_VALUE> values used in the data entries in the data roots.
  */
-public class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> {
+class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> {
     private static final int BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT =
             16 /*obj.overhead*/ + 16 /*obj.fields*/ + 16 /*inner root instance*/ + 8 /* cache references*/;
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
@@ -504,25 +504,25 @@ public class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<RO
         }
 
         @Override
-        public Root getRoot() {
-            var dataRoot = rootMappingCache.computeIfAbsent(dataRootKey, this::getFromTree);
+        public Root getRoot(CursorContext context) {
+            var dataRoot = rootMappingCache.computeIfAbsent(dataRootKey, key -> getFromTree(key, context));
             if (dataRoot.root() == ROOT_UNDER_CREATION) {
-                // Lets read from the tree to see if there is something here and not just a stale cache value!
-                return getFromTree(dataRootKey).root();
+                //                 Lets read from the tree to see if there is something here and not just a stale cache
+                // value!
+                return getFromTree(dataRootKey, context).root();
             }
             return dataRoot.root();
         }
 
-        private DataTreeRoot<ROOT_KEY> getFromTree(ROOT_KEY key) {
-            try (CursorContext cursorContext = contextFactory.create("Get root mapping");
-                    Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
-                            support.internalAllocateSeeker(rootLayout, cursorContext, rootLeafNode, rootInternalNode),
-                            () -> root,
-                            key,
-                            key,
-                            DEFAULT_MAX_READ_AHEAD,
-                            LEAF_LEVEL,
-                            SeekCursor.NO_MONITOR)) {
+        private DataTreeRoot<ROOT_KEY> getFromTree(ROOT_KEY key, CursorContext context) {
+            try (Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
+                    support.internalAllocateSeeker(rootLayout, context, rootLeafNode, rootInternalNode),
+                    c -> root,
+                    key,
+                    key,
+                    DEFAULT_MAX_READ_AHEAD,
+                    LEAF_LEVEL,
+                    SeekCursor.NO_MONITOR)) {
                 if (!seek.next()) {
                     throw new DataTreeNotFoundException(key);
                 }

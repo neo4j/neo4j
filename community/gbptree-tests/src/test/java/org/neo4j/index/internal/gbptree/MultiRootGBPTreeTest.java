@@ -428,6 +428,62 @@ class MultiRootGBPTreeTest {
     }
 
     @Test
+    void shouldCreateDeleteAndUpdateRootsConcurrently() throws IOException {
+        // when
+        var ops = new AtomicInteger();
+        var race = new Race().withEndCondition(() -> ops.get() > 10000);
+        List<RawBytes> keys = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            keys.add(rootKeyLayout.key(i));
+        }
+        race.addContestants(3, throwing(() -> {
+            try {
+                RawBytes key = random.among(keys);
+                tree.create(key, NULL_CONTEXT);
+                updateKey(key, false);
+            } catch (DataTreeAlreadyExistsException ignored) {
+            }
+            ops.incrementAndGet();
+        }));
+        race.addContestants(3, throwing(() -> {
+            try {
+                RawBytes key = random.among(keys);
+                updateKey(key, true);
+                tree.delete(key, NULL_CONTEXT);
+            } catch (DataTreeNotFoundException | DataTreeNotEmptyException ignored) {
+            }
+            ops.incrementAndGet();
+        }));
+
+        race.addContestants(3, throwing(() -> {
+            updateKey(random.among(keys), false);
+            ops.incrementAndGet();
+        }));
+
+        race.addContestant(throwing(() -> {
+            Thread.sleep(1);
+            tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }));
+        race.goUnchecked();
+
+        assertThat(consistencyCheckStrict(tree)).isTrue();
+    }
+
+    private void updateKey(RawBytes key, boolean delete) throws IOException {
+        try {
+            var access = tree.access(key);
+            try (var writer = access.writer(NULL_CONTEXT)) {
+                if (delete) {
+                    writer.remove(layout.key(0));
+                } else {
+                    writer.put(layout.key(0), valueWithKey(random.nextInt(), random.nextInt()));
+                }
+            }
+        } catch (DataTreeNotFoundException ignored) {
+        }
+    }
+
+    @Test
     void shouldDeleteRoot() throws IOException {
         // given
         long externalId1 = 123456;
