@@ -54,7 +54,7 @@ class PageList implements PageReferenceTranslator {
     static final int META_DATA_BYTES_PER_PAGE = 32;
     static final long MAX_PAGES = Integer.MAX_VALUE;
 
-    private static final int UNBOUND_LAST_MODIFIED_TX_ID = -1;
+    private static final long UNBOUND_LAST_MODIFIED_TX_ID = 0;
     private static final long MAX_USAGE_COUNT = 4;
     private static final int SHIFT_FILE_PAGE_ID = 24;
     private static final int SHIFT_SWAPPER_ID = 3;
@@ -199,7 +199,7 @@ class PageList implements PageReferenceTranslator {
         return pageRef + OFFSET_LAST_TX_ID;
     }
 
-    private static long offPreviousChainTransactionId(long pageRef) {
+    private static long offPageHorizon(long pageRef) {
         return pageRef + OFFSET_PREVIOUS_CHAIN_TX_ID;
     }
 
@@ -359,12 +359,12 @@ class PageList implements PageReferenceTranslator {
         UnsafeUtil.compareAndSetMaxLong(null, offLastModifiedTransactionId(pageRef), modifierTxId);
     }
 
-    static long getAndResetPreviousChainModifiedTxId(long pageRef) {
-        return UnsafeUtil.getAndSetLong(null, offPreviousChainTransactionId(pageRef), UNKNOWN_CHAIN_MODIFIER);
+    static long getAndResetPageHorizon(long pageRef) {
+        return UnsafeUtil.getAndSetLong(null, offPageHorizon(pageRef), UNKNOWN_CHAIN_MODIFIER);
     }
 
-    static void setPreviousChainModifiedTxId(long pageRef, long modifierTxId) {
-        UnsafeUtil.compareAndSetMaxLong(null, offPreviousChainTransactionId(pageRef), modifierTxId);
+    static void setPageHorizon(long pageRef, long modifierTxId) {
+        UnsafeUtil.compareAndSetMaxLong(null, offPageHorizon(pageRef), modifierTxId);
     }
 
     static int getSwapperId(long pageRef) {
