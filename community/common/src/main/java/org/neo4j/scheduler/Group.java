@@ -113,6 +113,7 @@ public enum Group {
     CORE_STATE_APPLIER("CoreStateApplier"),
     AKKA_HELPER("AkkaActorSystemRestarter"),
     LIGHTHOUSE("Lighthouse"),
+    LIGHTHOUSE_RECEIVER("LighthouseReceiver", ExecutorServiceFactory.singleThread()),
     DOWNLOAD_SNAPSHOT("DownloadSnapshot"),
     CATCHUP_CHANNEL_POOL("CatchupChannelPool"),
     CATCHUP_CLIENT("CatchupClient"),
