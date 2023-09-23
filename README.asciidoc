@@ -46,11 +46,11 @@ Before you start running the unit and integration tests in the Neo4j Maven proje
 
 After running a `mvn clean install`, `cd` into `packaging/standalone/target` and extract the version you want, then:
 
-  bin/neo4j-admin start
+  bin/neo4j-admin server start
 
 in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want to run:
 
-  bin\neo4j-admin start
+  bin\neo4j-admin server start
 
 instead.
 
