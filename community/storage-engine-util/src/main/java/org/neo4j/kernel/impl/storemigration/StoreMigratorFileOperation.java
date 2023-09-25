@@ -25,7 +25,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 
-final class StoreMigratorFileOperation {
+public final class StoreMigratorFileOperation {
     private StoreMigratorFileOperation() {}
 
     /**
@@ -55,7 +55,7 @@ final class StoreMigratorFileOperation {
         }
     }
 
-    static void fileOperation(
+    public static void fileOperation(
             FileOperation operation,
             FileSystemAbstraction fs,
             DatabaseLayout fromLayout,

@@ -28,7 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * Different operations on a file, for example copy or move, given a {@link FileSystemAbstraction} and
  * source/destination.
  */
-enum FileOperation {
+public enum FileOperation {
     COPY {
         /**
          * Copies a file from one directory to another.
