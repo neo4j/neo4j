@@ -220,10 +220,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     }
 
     @Description(
-            "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to 0, one worker will be started"
-                    + " for every logical processor available to the Java Virtual Machine. If set to a negative number we will subtract the "
-                    + "value from the number of logical processors available; for example say Neo4j is running on a server with 16 available "
-                    + "processors, using `server.cypher.parallel.worker_limit = -1` would then mean that 15 threads are available for the parallel runtime.")
+            "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to a positive number, that number of workers will be "
+                    + "started. If set to 0, one worker will be started for every logical processor available to the Java Virtual Machine. If set to a negative "
+                    + "number we will subtract the value from the number of logical processors available; for example say Neo4j is running on a server with 16 "
+                    + "available processors, using `server.cypher.parallel.worker_limit = -1` would then mean that 15 threads are available for the parallel "
+                    + "runtime.")
     public static final Setting<Integer> cypher_worker_limit =
             newBuilder("server.cypher.parallel.worker_limit", INT, 0).build();
 
