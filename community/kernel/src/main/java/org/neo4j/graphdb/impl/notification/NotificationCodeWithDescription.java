@@ -52,7 +52,7 @@ public enum NotificationCodeWithDescription {
             Status.Statement.JoinHintUnfulfillableWarning,
             "The hinted join was not planned. This could happen because no generated plan contained the join key, "
                     + "please try using a different join key or restructure your query. (%s)",
-            "Unable to create a plan with `JOIN` on `%s`. Try to change the join key(s) or restructure your "
+            "Unable to create a plan with `JOIN ON %s`. Try to change the join key(s) or restructure your "
                     + "query. See Status Codes documentation for suggestions."),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
             Status.Statement.DynamicProperty,
@@ -123,7 +123,7 @@ public enum NotificationCodeWithDescription {
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                     + "how problems could be avoided.",
-            "The query execution plan contains the `EAGER` operator. `LOAD CSV` in combination with `EAGER` "
+            "The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with `Eager` "
                     + "can consume a lot of memory. See Status Codes documentation for suggestions."),
     DEPRECATED_FORMAT(
             Status.Request.DeprecatedFormat,

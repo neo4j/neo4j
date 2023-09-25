@@ -204,7 +204,7 @@ class NotificationCodeWithDescriptionTest {
                         + "please try using a different join key or restructure your query. "
                         + "(hinted join key identifiers are: n, node2)",
                 NotificationCategory.HINT,
-                "Unable to create a plan with `JOIN` on `n, node2`. Try to change the join key(s) or restructure "
+                "Unable to create a plan with `JOIN ON n, node2`. Try to change the join key(s) or restructure "
                         + "your query. See Status Codes documentation for suggestions.");
     }
 
@@ -425,8 +425,8 @@ class NotificationCodeWithDescriptionTest {
                         + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                         + "how problems could be avoided.",
                 NotificationCategory.PERFORMANCE,
-                "The query execution plan contains the `EAGER` operator. `LOAD CSV` in combination with "
-                        + "`EAGER` can consume a lot of memory. See Status Codes documentation for suggestions.");
+                "The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with "
+                        + "`Eager` can consume a lot of memory. See Status Codes documentation for suggestions.");
     }
 
     @Test
