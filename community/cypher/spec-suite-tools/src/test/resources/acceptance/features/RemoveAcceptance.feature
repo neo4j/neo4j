@@ -20,55 +20,35 @@
 
 #encoding: utf-8
 
-Feature: DeleteAcceptance
-
-  Scenario: Return properties from deleted node
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (:L {prop1: 42, prop2: 1337})
-      """
-    When executing query:
-      """
-      MATCH (n:L)
-      WITH n, properties(n) AS props
-      DELETE n
-      RETURN props
-      """
-    Then the result should be, in any order:
-      | props                    |
-      | {prop1: 42, prop2: 1337} |
-    And the side effects should be:
-      | -nodes      | 1 |
-      | -labels     | 1 |
-      | -properties | 2 |
+Feature: RemoveAcceptance
 
   Scenario: Does not observe row-by-row visibility
     Given an empty graph
     And having executed:
       """
-      CREATE ()-[:REL]->()<-[:REL]-()
+      CREATE ({prop: true})-[:REL]->()<-[:REL]-({prop: true})
       """
     When executing query:
       """
       MATCH (n)-->()
-      DETACH DELETE [(n)--()--() | n][0]
+      REMOVE ([(n {prop: true})--()--({prop: true}) | n][0]).prop
       """
     Then the side effects should be:
-      | -nodes         | 2 |
-      | -relationships | 2 |
+      | -properties | 2 |
 
   Scenario: Does not observe item-by-item visibility
     Given an empty graph
     And having executed:
       """
-      CREATE (n {id: 0}), (m {id:1})
+      CREATE (n:N {prop: true}), (m {prop: true})
       """
     When executing query:
       """
-      MATCH (n {id: 0}), (m {id:1})
-      DELETE n, (COLLECT { MATCH (o) RETURN o ORDER BY o.id ASC }[0])
+      MATCH (n:N), (m {prop: true})
+      REMOVE
+        n:N,
+        (CASE WHEN n:N THEN n ELSE m END).prop
       """
     Then the side effects should be:
-      | -nodes      | 1 |
+      | -labels     | 1 |
       | -properties | 1 |
