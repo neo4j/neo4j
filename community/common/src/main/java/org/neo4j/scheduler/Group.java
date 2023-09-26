@@ -142,6 +142,8 @@ public enum Group {
     AUTH_CACHE("AuthCache", ExecutorServiceFactory.workStealing()),
     SECURITY_MAINTAINENCE("SecurityMaintainence"),
 
+    GDS_CLUSTER_WRITE("GdsClusterWrite"),
+
     // TESTING
     TESTING("TestingGroup", ExecutorServiceFactory.callingThread());
 
