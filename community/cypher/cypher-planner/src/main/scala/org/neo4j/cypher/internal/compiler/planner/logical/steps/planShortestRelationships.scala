@@ -138,12 +138,17 @@ case object planShortestRelationships {
 
     val lpp = context.staticComponents.logicalPlanProducer
 
+    val argumentNodes = shortestRelationship.rel.boundaryNodesSet
+    val otherDependencies = pathPredicates.flatMap(_.dependencies.map(_.name)) -- shortestRelationship.name ++
+      Set(nodePredicates, relPredicates).flatMap(_.flatMap { varPred =>
+        varPred.predicate.dependencies.map(_.name) - varPred.variable.name
+      })
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
-      patternNodes = shortestRelationship.rel.boundaryNodesSet,
+      patternNodes = argumentNodes,
       patternRels = Set.empty,
-      other = Set.empty,
+      other = otherDependencies,
       context = context
     )
 
@@ -162,9 +167,9 @@ case object planShortestRelationships {
     val lhs = lpp.planApply(inner, lhsOption, context)
 
     val rhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
-      patternNodes = shortestRelationship.rel.boundaryNodesSet,
+      patternNodes = argumentNodes,
       patternRels = Set.empty,
-      other = Set.empty,
+      other = otherDependencies,
       context = context
     )
 

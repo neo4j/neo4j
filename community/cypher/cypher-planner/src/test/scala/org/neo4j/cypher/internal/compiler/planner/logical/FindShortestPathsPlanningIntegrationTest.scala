@@ -302,6 +302,58 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
   }
 
+  test("should include dependencies in argument for fallback plan of var expand during shortest path") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 99999)
+      .build()
+    val query =
+      """
+        |WITH 1 AS nodeVal, 2 AS relVal, 3 AS pathVal
+        |MATCH p=shortestPath((a)-[*]->(b))
+        |WHERE all(r IN relationships(p) WHERE r.prop = relVal)
+        |AND all(n IN nodes(p) WHERE n.prop = nodeVal)
+        |AND length(p) > pathVal
+        |RETURN p
+        |""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("p")
+        .apply()
+        .|.antiConditionalApply("p")
+        .|.|.top(1, "anon_1 ASC")
+        .|.|.projection("length(p) AS anon_1")
+        .|.|.filter("length(p) > pathVal")
+        .|.|.projection(Map("p" -> outgoingPathExpression("a", "anon_0", "b")))
+        .|.|.expand(
+          "(a)-[anon_0*1..]->(b)",
+          expandMode = ExpandInto,
+          projectedDir = OUTGOING,
+          nodePredicates = Seq(Predicate("n", "cacheNFromStore[n.prop] = nodeVal")),
+          relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] = relVal"))
+        )
+        .|.|.argument("relVal", "nodeVal", "a", "pathVal", "b")
+        .|.apply()
+        .|.|.optional("nodeVal", "pathVal", "b", "relVal", "a")
+        .|.|.shortestPath(
+          "(a)-[anon_0*1..]->(b)",
+          pathName = Some("p"),
+          nodePredicates = Seq(Predicate("n", "cacheNFromStore[n.prop] = nodeVal")),
+          relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] = relVal")),
+          pathPredicates = Seq("length(p) > pathVal"),
+          withFallback = true
+        )
+        .|.|.argument("relVal", "nodeVal", "a", "pathVal", "b")
+        .|.cartesianProduct()
+        .|.|.allNodeScan("b", "nodeVal", "relVal", "pathVal")
+        .|.allNodeScan("a", "nodeVal", "relVal", "pathVal")
+        .projection("1 AS nodeVal", "2 AS relVal", "3 AS pathVal")
+        .argument()
+        .build()
+    )
+  }
+
   test("should extract predicates regardless of function name spelling") {
     val functionNames = Seq(("nodes", "relationships"), ("NODES", "RELATIONSHIPS"))
     for ((nodesF, relationshipsF) <- functionNames) withClue((nodesF, relationshipsF)) {
