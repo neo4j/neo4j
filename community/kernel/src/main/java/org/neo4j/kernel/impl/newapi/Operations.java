@@ -314,6 +314,15 @@ public class Operations implements Write, SchemaWrite {
     @Override
     public long relationshipCreate(long sourceNode, int relationshipType, long targetNode)
             throws EntityNotFoundException {
+        // We have seen a case where a relationship of type -1 has been 'created' resulting in a
+        // relationship group of type 65535 but no relationship (because there is a guard for that
+        // for some reason). Throwing here in the hopes of getting to the bottom of how this can ever happen
+        if (relationshipType < 0) {
+            throw new IllegalArgumentException(
+                    "Tried to create relationship with invalid type '%d' between nodes with ids '%d' and '%d'"
+                            .formatted(relationshipType, sourceNode, targetNode));
+        }
+
         ktx.securityAuthorizationHandler()
                 .assertAllowsCreateRelationship(
                         ktx.securityContext(), token::relationshipTypeGetName, relationshipType);
