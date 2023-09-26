@@ -111,9 +111,6 @@ BSD - Scala License
 
 BSD License
   asm
-  asm-analysis
-  asm-tree
-  asm-util
   Zstandard
 
 BSD License 2-clause
