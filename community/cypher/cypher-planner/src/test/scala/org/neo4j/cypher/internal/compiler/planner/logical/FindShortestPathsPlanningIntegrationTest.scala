@@ -19,7 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
@@ -76,6 +86,52 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .expandAll("(a)<-[r1]-(b)")
       .nodeByLabelScan("a", "X")
       .build()
+  }
+
+  test("should include dependencies in argument for fallback plan of var expand during shortest path") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 99999)
+      .build()
+    val query =
+      """
+        |WITH 1 AS nodeVal, 2 AS relVal, 3 AS pathVal
+        |MATCH p=shortestPath((a)-[*]->(b))
+        |WHERE all(r IN relationships(p) WHERE r.prop = relVal)
+        |AND all(n IN nodes(p) WHERE n.prop = nodeVal)
+        |AND length(p) > pathVal
+        |RETURN p
+        |""".stripMargin
+
+    val pathExpr =
+      PathExpression(
+        NodePathStep(varFor("a"),
+          MultiRelationshipPathStep(varFor("anon_0"), SemanticDirection.OUTGOING, Some(varFor("b")),
+            NilPathStep()(pos))(pos))(pos)
+      )(pos)
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("p")
+        .apply()
+        .|.antiConditionalApply("p")
+        .|.|.top(Seq(Ascending("anon_1")), 1)
+        .|.|.projection("length(p) AS anon_1")
+        .|.|.filter("length(p) > pathVal", "all(r IN relationships(p) WHERE cacheRFromStore[r.prop] = relVal)", "all(n IN nodes(p) WHERE cacheNFromStore[n.prop] = nodeVal)")
+        .|.|.projection(Map("p" -> pathExpr))
+        .|.|.expand("(a)-[anon_0*1..]->(b)", expandMode = ExpandInto, projectedDir = OUTGOING)
+        .|.|.argument("relVal", "nodeVal", "a", "pathVal", "b")
+        .|.apply()
+        .|.|.optional("nodeVal", "pathVal", "b", "relVal", "a")
+        .|.|.shortestPath("(a)-[anon_0*1..]->(b)", pathName = Some("p"), predicates = Seq("all(r IN relationships(p) WHERE cacheRFromStore[r.prop] = relVal)", "all(n IN nodes(p) WHERE cacheNFromStore[n.prop] = nodeVal)", "length(p) > pathVal"), withFallback = true)
+        .|.|.argument("relVal", "nodeVal", "a", "pathVal", "b")
+        .|.cartesianProduct()
+        .|.|.allNodeScan("b", "nodeVal", "relVal", "pathVal")
+        .|.allNodeScan("a", "nodeVal", "relVal", "pathVal")
+        .projection("1 AS nodeVal", "2 AS relVal", "3 AS pathVal")
+        .argument()
+        .build()
+    )
   }
 
   test("should extract predicates regardless of function name spelling") {

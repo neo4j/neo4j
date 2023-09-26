@@ -99,12 +99,14 @@ case object planShortestPaths {
 
     val lpp = context.logicalPlanProducer
 
+    val dependencies = predicates.flatMap(_.dependencies.map(_.name) -- shortestPath.name).toSet
+
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = context.logicalPlanProducer.planArgument(
       patternNodes = Set(shortestPath.rel.nodes._1, shortestPath.rel.nodes._2),
       patternRels = Set.empty,
-      other = Set.empty,
+      other = dependencies,
       context = context)
 
     val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
@@ -115,7 +117,7 @@ case object planShortestPaths {
     val rhsArgument = context.logicalPlanProducer.planArgument(
       patternNodes = Set(shortestPath.rel.nodes._1, shortestPath.rel.nodes._2),
       patternRels = Set.empty,
-      other = Set.empty,
+      other = dependencies,
       context = context)
 
     val rhs = if (context.errorIfShortestPathFallbackUsedAtRuntime) {
