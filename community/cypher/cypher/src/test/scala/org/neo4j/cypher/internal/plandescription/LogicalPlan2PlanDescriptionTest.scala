@@ -6809,7 +6809,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   private def cachedProp(varName: String, propName: String): CachedProperty =
-    CachedProperty(varName, varFor(varName), PropertyKeyName(propName)(pos), NODE_TYPE)(pos)
+    CachedProperty(varFor(varName), varFor(varName), PropertyKeyName(propName)(pos), NODE_TYPE)(pos)
 
   private def label(name: String): LabelName = LabelName(name)(pos)
 

@@ -321,9 +321,12 @@ class SlottedRowTest extends CypherFunSuite {
   }
 
   private def prop(node: String, prop: String) =
-    CachedProperty(node, Variable(node)(InputPosition.NONE), PropertyKeyName(prop)(InputPosition.NONE), NODE_TYPE)(
-      InputPosition.NONE
-    ).runtimeKey
+    CachedProperty(
+      Variable(node)(InputPosition.NONE),
+      Variable(node)(InputPosition.NONE),
+      PropertyKeyName(prop)(InputPosition.NONE),
+      NODE_TYPE
+    )(InputPosition.NONE).runtimeKey
 
   private def mutatingLeftDoesNotAffectRight(left: CypherRow, right: CypherRow, extraCachedOffset: Int): Unit = {
     // given

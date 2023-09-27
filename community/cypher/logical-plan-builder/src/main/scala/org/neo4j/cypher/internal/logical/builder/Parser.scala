@@ -50,28 +50,28 @@ import org.neo4j.cypher.internal.util.topDown
 object Parser {
 
   val injectCachedProperties: Rewriter = topDown(Rewriter.lift {
-    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+    case ContainerIndex(Variable(name), Property(v: Variable, pkn: PropertyKeyName))
       if name == "cache" || name == "cacheN" =>
-      CachedProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+      CachedProperty(v, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v: Variable, pkn: PropertyKeyName))
       if name == "cacheFromStore" || name == "cacheNFromStore" =>
-      CachedProperty(node, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable("cacheR"), Property(v @ Variable(relationship), pkn: PropertyKeyName)) =>
-      CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable("cacheRFromStore"), Property(v @ Variable(relationship), pkn: PropertyKeyName)) =>
-      CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+      CachedProperty(v, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable("cacheR"), Property(v: Variable, pkn: PropertyKeyName)) =>
+      CachedProperty(v, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable("cacheRFromStore"), Property(v: Variable, pkn: PropertyKeyName)) =>
+      CachedProperty(v, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v: Variable, pkn: PropertyKeyName))
       if name == "cacheNHasProperty" =>
-      CachedHasProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v @ Variable(rel), pkn: PropertyKeyName))
+      CachedHasProperty(v, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v: Variable, pkn: PropertyKeyName))
       if name == "cacheRHasProperty" =>
-      CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v @ Variable(node), pkn: PropertyKeyName))
+      CachedHasProperty(v, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v: Variable, pkn: PropertyKeyName))
       if name == "cacheNHasPropertyFromStore" =>
-      CachedHasProperty(node, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v @ Variable(rel), pkn: PropertyKeyName))
+      CachedHasProperty(v, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v: Variable, pkn: PropertyKeyName))
       if name == "cacheRHasPropertyFromStore" =>
-      CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
+      CachedHasProperty(v, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
 
   })
 

@@ -237,7 +237,7 @@ trait AstConstructionTestSupport {
     currentVarName: String,
     knownToAccessStore: Boolean = false
   ): CachedProperty =
-    CachedProperty(variable, varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
+    CachedProperty(varFor(variable), varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
 
   def cachedNodeHasProp(variable: String, propKey: String): CachedHasProperty =
     cachedNodeHasProp(variable, propKey, variable)
@@ -248,7 +248,7 @@ trait AstConstructionTestSupport {
     currentVarName: String,
     knownToAccessStore: Boolean = false
   ): CachedHasProperty =
-    CachedHasProperty(variable, varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
+    CachedHasProperty(varFor(variable), varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
 
   def cachedRelProp(variable: String, propKey: String): CachedProperty =
     cachedRelProp(variable, propKey, variable)
@@ -262,7 +262,9 @@ trait AstConstructionTestSupport {
     currentVarName: String,
     knownToAccessStore: Boolean = false
   ): CachedProperty =
-    CachedProperty(variable, varFor(currentVarName), propName(propKey), RELATIONSHIP_TYPE, knownToAccessStore)(pos)
+    CachedProperty(varFor(variable), varFor(currentVarName), propName(propKey), RELATIONSHIP_TYPE, knownToAccessStore)(
+      pos
+    )
 
   def prop(map: Expression, key: String): Property =
     Property(map, propName(key))(pos)

@@ -97,7 +97,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     new NodeValueHit(nodeValue.id, values.map(Values.of).toArray, null)
 
   protected def cachedProperty(node: String, property: PropertyKeyToken): CachedProperty =
-    CachedProperty("n", Variable(node)(pos), PropertyKeyName(property.name)(pos), NODE_TYPE)(pos)
+    CachedProperty(Variable("n")(pos), Variable(node)(pos), PropertyKeyName(property.name)(pos), NODE_TYPE)(pos)
 
   private def mockedQueryContext[T] = {
     val query = mock[QueryContext](RETURNS_DEEP_STUBS)

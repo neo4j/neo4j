@@ -409,9 +409,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
             }
             val newProperty = {
               if (needsValue) {
-                CachedProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
+                CachedProperty(originalVar, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
               } else {
-                CachedHasProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
+                CachedHasProperty(originalVar, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
               }
             }
             // Register the new variables in the semantic table

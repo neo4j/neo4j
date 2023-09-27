@@ -40,7 +40,12 @@ trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
   protected val node3 = newMockedNode(3)
 
   protected def prop(node: String, prop: String) =
-    CachedProperty(node, Variable(node)(InputPosition.NONE), PropertyKeyName(prop)(InputPosition.NONE), NODE_TYPE)(
+    CachedProperty(
+      Variable(node)(InputPosition.NONE),
+      Variable(node)(InputPosition.NONE),
+      PropertyKeyName(prop)(InputPosition.NONE),
+      NODE_TYPE
+    )(
       InputPosition.NONE
     )
 

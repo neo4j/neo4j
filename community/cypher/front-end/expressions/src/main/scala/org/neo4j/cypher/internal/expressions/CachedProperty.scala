@@ -96,7 +96,7 @@ object ASTCachedProperty {
  *                           This is purely used for Cost estimation and has no effect on the runtime.
  */
 case class CachedProperty(
-  override val originalEntityName: String,
+  originalEntity: LogicalVariable,
   entityVariable: LogicalVariable,
   override val propertyKey: PropertyKeyName,
   override val entityType: EntityType,
@@ -104,6 +104,7 @@ case class CachedProperty(
 )(val position: InputPosition) extends ASTCachedProperty {
 
   override val entityName: String = entityVariable.name
+  override def originalEntityName: String = originalEntity.name
 
   override def asCanonicalStringVal: String = s"cache[$propertyAccessString]"
 }
@@ -117,7 +118,7 @@ case class CachedProperty(
  *                           if the variable name was changed in between.
  */
 case class CachedHasProperty(
-  override val originalEntityName: String,
+  originalEntity: LogicalVariable,
   entityVariable: LogicalVariable,
   override val propertyKey: PropertyKeyName,
   override val entityType: EntityType,
@@ -125,6 +126,7 @@ case class CachedHasProperty(
 )(val position: InputPosition) extends ASTCachedProperty {
 
   override val entityName: String = entityVariable.name
+  override def originalEntityName: String = originalEntity.name
 
   override def asCanonicalStringVal: String = s"cache[$propertyAccessString]"
 }

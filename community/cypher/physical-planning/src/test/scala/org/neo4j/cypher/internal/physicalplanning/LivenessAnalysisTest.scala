@@ -20,7 +20,12 @@
 package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -336,6 +341,18 @@ class LivenessAnalysisTest extends CypherFunSuite {
       .|.allNodeScan("a")
       .projection("1 AS x").expectLive("x")
       .argument().expectLive()
+      .assertCorrectLiveness()
+  }
+
+  test("cached properties") {
+    new PlanWithLiveAsserts()
+      .produceResults("p").expectLive("p")
+      .projection(Map(
+        "p" -> CachedProperty(varFor("n"), varFor("m"), PropertyKeyName("p")(pos), NODE_TYPE)(pos)
+      )).expectLive("p", "n", "m")
+      .eager().expectLive("n", "m")
+      .projection("n AS m").expectLive("n", "m")
+      .allNodeScan("n").expectLive("n")
       .assertCorrectLiveness()
   }
 }

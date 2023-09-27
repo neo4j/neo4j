@@ -3226,7 +3226,7 @@ case class LogicalPlanProducer(
           case (
               newName,
               Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(
-                `varName`,
+                Variable(`varName`),
                 _,
                 PropertyKeyName(`propName`),
                 _,
@@ -3256,10 +3256,10 @@ case class LogicalPlanProducer(
     val trimmed = providedOrder.columns.takeWhile {
       case ordering.ColumnOrder(Property(Variable(varName), PropertyKeyName(propName))) =>
         grouping.values.exists {
-          case CachedProperty(`varName`, _, PropertyKeyName(`propName`), _, _)    => true
-          case CachedHasProperty(`varName`, _, PropertyKeyName(`propName`), _, _) => true
-          case Property(Variable(`varName`), PropertyKeyName(`propName`))         => true
-          case _                                                                  => false
+          case CachedProperty(Variable(`varName`), _, PropertyKeyName(`propName`), _, _)    => true
+          case CachedHasProperty(Variable(`varName`), _, PropertyKeyName(`propName`), _, _) => true
+          case Property(Variable(`varName`), PropertyKeyName(`propName`))                   => true
+          case _                                                                            => false
         }
       case ordering.ColumnOrder(expression) =>
         grouping.values.exists {

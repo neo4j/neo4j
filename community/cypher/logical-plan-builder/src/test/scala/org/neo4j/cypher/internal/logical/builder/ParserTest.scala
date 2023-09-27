@@ -53,7 +53,7 @@ class ParserTest extends CypherFunSuite with TestName {
   // Finds cached property
   test("cache[n.prop] AS b") {
     Parser.parseProjections(testName) should be(Map("b" -> CachedProperty(
-      "n",
+      Variable("n")(pos),
       Variable("n")(pos),
       PropertyKeyName("prop")(pos),
       NODE_TYPE
@@ -70,7 +70,7 @@ class ParserTest extends CypherFunSuite with TestName {
   // Finds nested cached property
   test("cache[b.foo] + 5 AS abc09") {
     Parser.parseProjections(testName) should be(Map("abc09" -> Add(
-      CachedProperty("b", Variable("b")(pos), PropertyKeyName("foo")(pos), NODE_TYPE)(pos),
+      CachedProperty(Variable("b")(pos), Variable("b")(pos), PropertyKeyName("foo")(pos), NODE_TYPE)(pos),
       SignedDecimalIntegerLiteral("5")(pos)
     )(pos)))
   }

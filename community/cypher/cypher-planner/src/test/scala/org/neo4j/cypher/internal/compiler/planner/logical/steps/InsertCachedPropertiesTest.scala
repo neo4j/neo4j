@@ -96,16 +96,16 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val rProp2 = Property(r, prop)(InputPosition(7, 8, 9))
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
-  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(nProp1.position)
-  private val cachedNHasProp1 = CachedHasProperty("n", n, prop, NODE_TYPE)(nProp1.position)
-  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(nFoo1.position)
-  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(nProp2.position)
-  private val cachedNHasProp2 = CachedHasProperty("n", n, prop, NODE_TYPE)(nProp2.position)
-  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(nProp3.position)
-  private val cachedRRelProp1 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp1.position)
-  private val cachedRRelHasProp1 = CachedHasProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp1.position)
-  private val cachedRRelProp2 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp2.position)
-  private val cachedRRelHasProp2 = CachedHasProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp2.position)
+  private val cachedNProp1 = CachedProperty(n, n, prop, NODE_TYPE)(nProp1.position)
+  private val cachedNHasProp1 = CachedHasProperty(n, n, prop, NODE_TYPE)(nProp1.position)
+  private val cachedNFoo1 = CachedProperty(n, n, foo, NODE_TYPE)(nFoo1.position)
+  private val cachedNProp2 = CachedProperty(n, n, prop, NODE_TYPE)(nProp2.position)
+  private val cachedNHasProp2 = CachedHasProperty(n, n, prop, NODE_TYPE)(nProp2.position)
+  private val cachedNProp3 = CachedProperty(n, n, prop, NODE_TYPE)(nProp3.position)
+  private val cachedRRelProp1 = CachedProperty(r, r, prop, RELATIONSHIP_TYPE)(rProp1.position)
+  private val cachedRRelHasProp1 = CachedHasProperty(r, r, prop, RELATIONSHIP_TYPE)(rProp1.position)
+  private val cachedRRelProp2 = CachedProperty(r, r, prop, RELATIONSHIP_TYPE)(rProp2.position)
+  private val cachedRRelHasProp2 = CachedHasProperty(r, r, prop, RELATIONSHIP_TYPE)(rProp2.position)
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
@@ -581,7 +581,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, _) = replace(plan, initialTable)
     val expectedPlan = new LogicalPlanBuilder()
       .produceResults("z")
-      .projection(Map("z" -> CachedProperty("n", m, prop, NODE_TYPE)(InputPosition.NONE)))
+      .projection(Map("z" -> CachedProperty(n, m, prop, NODE_TYPE)(InputPosition.NONE)))
       .apply()
       .|.union()
       .|.|.projection("n as m")
@@ -940,7 +940,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       new LogicalPlanBuilder()
         .produceResults("`n3.prop`")
         .projection(Map("n3.prop" -> CachedProperty(
-          "n",
+          n,
           Variable("n3")(n2InputPosition),
           PropertyKeyName("prop")(InputPosition.NONE),
           NODE_TYPE
@@ -949,7 +949,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         .apply()
         .|.nodeByLabelScan("m", "B")
         .cacheProperties(Set[LogicalProperty](CachedProperty(
-          "n",
+          n,
           Variable("n2")(n2InputPosition),
           PropertyKeyName("prop")(InputPosition.NONE),
           NODE_TYPE,
@@ -981,7 +981,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         .projection("cache[n.prop] AS x")
         .expandAll("(n)-->(m)")
         .cacheProperties(Set[LogicalProperty](CachedProperty(
-          "n",
+          n,
           Variable("n")(InputPosition.NONE),
           PropertyKeyName("prop")(InputPosition.NONE),
           NODE_TYPE,
@@ -1709,13 +1709,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         "n",
         "prop",
         value = Add(
-          CachedProperty("n", Variable("n2")(pos), PropertyKeyName("prop")(pos), NODE_TYPE)(pos),
+          CachedProperty(n, Variable("n2")(pos), PropertyKeyName("prop")(pos), NODE_TYPE)(pos),
           SignedDecimalIntegerLiteral("1")(pos)
         )(pos)
       )
       .eager()
       .projection(Map("oldValue" -> CachedProperty(
-        "n",
+        n,
         Variable("n2")(pos),
         PropertyKeyName("prop")(pos),
         NODE_TYPE,

@@ -38,7 +38,7 @@ case class IndexedProperty(
 
   def asCachedProperty(node: LogicalVariable): CachedProperty =
     CachedProperty(
-      node.name,
+      node,
       node,
       PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE),
       entityType

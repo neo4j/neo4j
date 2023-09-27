@@ -964,8 +964,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("should compute union mapping with aliases if out defined for original") {
     // given
-    val aProp = CachedProperty("a", varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
-    val xProp = CachedProperty("x", varFor("x"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+    val aProp = CachedProperty(varFor("a"), varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+    val xProp = CachedProperty(varFor("x"), varFor("x"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
     val in = SlotConfiguration.empty
       .newLong("a", false, CTNode)
       .addAlias("aa", "a")
@@ -1034,7 +1034,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("should compute union mapping with aliases if out defined for alias") {
     // given
-    val aProp = CachedProperty("a", varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+    val aProp = CachedProperty(varFor("a"), varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
     val in = SlotConfiguration.empty
       .newLong("a", false, CTNode)
       .addAlias("aa", "a")
@@ -1047,7 +1047,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     inRow.setRefAt(0, Values.stringValue("b")) // b
     inRow.setCachedPropertyAt(1, Values.stringValue("aprop")) // a.prop
 
-    val aaProp = CachedProperty("a", varFor("aa"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+    val aaProp = CachedProperty(varFor("a"), varFor("aa"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
     val out = SlotConfiguration.empty
       .newLong("aa", false, CTNode)
       .newReference("bb", true, CTAny)
