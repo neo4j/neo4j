@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Resolved
@@ -91,6 +92,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
+      new SelectivityTrackerRegistrator(),
       CypherRuntimeConfiguration.defaultConfiguration
     ))
 

@@ -81,11 +81,10 @@ case class AndedPropertyComparablePredicates(
   override def children: Seq[AstNode[_]] = Seq(ident, prop) ++ predicates.toIndexedSeq
 }
 
-case class AndsWithSelectivityTracking(predicates: Vector[Predicate]) extends Predicate {
-
-  private val selectivityTracker: SelectivityTracker = new SelectivityTracker(predicates.size)
+case class AndsWithSelectivityTracking(predicates: Vector[Predicate], trackerIndex: Int) extends Predicate {
 
   def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    val selectivityTracker: SelectivityTracker = state.selectivityTrackerStorage.get(trackerIndex, predicates.length)
     val result = selectivityTracker.getOrder().foldLeft(Try[IsMatchResult](IsTrue)) {
       (previousValue, predicateIndex) =>
         previousValue match {
@@ -118,7 +117,7 @@ case class AndsWithSelectivityTracking(predicates: Vector[Predicate]) extends Pr
   override def children: Seq[AstNode[_]] = predicates
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(AndsWithSelectivityTracking(predicates.map(_.rewriteAsPredicate(f))))
+    f(copy(predicates = predicates.map(_.rewriteAsPredicate(f))))
 
   override def toString: String =
     predicates.mkString(" ~AND ~")

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexes
+import org.neo4j.cypher.internal.runtime.QuerySelectivityTrackers
 import org.neo4j.cypher.internal.runtime.createParameterArray
 import org.neo4j.cypher.internal.runtime.interpreted.BaseExecutionResultBuilderFactory
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionResultBuilder
@@ -39,6 +40,7 @@ import org.neo4j.values.virtual.MapValue
 class SlottedExecutionResultBuilderFactory(
   pipe: Pipe,
   queryIndexes: QueryIndexes,
+  querySelectivityTrackers: QuerySelectivityTrackers,
   nExpressionSlots: Int,
   columns: Seq[String],
   parameterMapping: ParameterMapping,
@@ -77,6 +79,7 @@ class SlottedExecutionResultBuilderFactory(
         queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
         queryIndexes.initiateNodeTokenIndex(queryContext),
         queryIndexes.initiateRelationshipTokenIndex(queryContext),
+        querySelectivityTrackers.initializeTrackers(),
         new Array[AnyValue](nExpressionSlots),
         subscriber,
         memoryTrackingController,

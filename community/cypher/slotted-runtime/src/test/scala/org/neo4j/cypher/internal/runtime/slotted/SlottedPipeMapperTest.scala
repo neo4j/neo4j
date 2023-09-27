@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -146,6 +147,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       CommunityExpressionConverter(
         ReadTokenContext.EMPTY,
         anonymousVariableNameGenerator,
+        new SelectivityTrackerRegistrator(),
         CypherRuntimeConfiguration.defaultConfiguration
       )
     )

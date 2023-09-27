@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
@@ -80,6 +81,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
+      new SelectivityTrackerRegistrator,
       CypherRuntimeConfiguration.defaultConfiguration
     ))
 

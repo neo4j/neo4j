@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerStorage
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.AndsWithSelectivityTracking
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsFalse
@@ -33,7 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AndsWithSelectivityTrackingTest extends CypherFunSuite {
-  private val state = QueryStateHelper.empty
+  private val state = QueryStateHelper.emptyWith(selectivityTrackerStorage = new SelectivityTrackerStorage(1))
   private val ctx = CypherRow.empty
 
   private val nullPredicate = mock[Predicate]
@@ -60,7 +61,7 @@ class AndsWithSelectivityTrackingTest extends CypherFunSuite {
     ands(nullPredicate, F).isMatch(ctx, state) should equal(IsFalse)
   }
 
-  private def ands(predicates: Predicate*) = AndsWithSelectivityTracking(Vector(predicates: _*))
+  private def ands(predicates: Predicate*) = AndsWithSelectivityTracking(Vector(predicates: _*), 0)
   private def T = True()
   private def F = Not(True())
 }

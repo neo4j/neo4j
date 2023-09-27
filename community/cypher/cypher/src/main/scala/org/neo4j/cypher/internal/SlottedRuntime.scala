@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.physicalplanning.PhysicalPlan
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanner
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverter
@@ -64,7 +65,8 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
     baseConverters: List[ExpressionConverter],
     context: CONTEXT,
     physicalPlan: PhysicalPlan,
-    query: LogicalQuery
+    query: LogicalQuery,
+    selectivityTrackerRegistrator: SelectivityTrackerRegistrator
   ): (List[ExpressionConverter], () => Seq[Argument], () => Set[InternalNotification]) = {
     (baseConverters, NO_METADATA, NO_WARNINGS)
   }
@@ -89,11 +91,13 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         printRewrittenPlanInfo(physicalPlan.logicalPlan)
       }
 
+      val selectivityTrackerRegistrator = new SelectivityTrackerRegistrator()
       val baseConverters = List(
         SlottedExpressionConverters(physicalPlan),
         CommunityExpressionConverter(
           context.tokenContext,
           context.anonymousVariableNameGenerator,
+          selectivityTrackerRegistrator,
           context.config
         )
       )
@@ -102,7 +106,7 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         if (context.materializedEntitiesMode) {
           (MaterializedEntitiesExpressionConverter(context.tokenContext) +: baseConverters, NO_METADATA, NO_WARNINGS)
         } else if (context.compileExpressions) {
-          compileExpressions(baseConverters, context, physicalPlan, query)
+          compileExpressions(baseConverters, context, physicalPlan, query, selectivityTrackerRegistrator)
         } else {
           (baseConverters, NO_METADATA, NO_WARNINGS)
         }
@@ -140,6 +144,7 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         new SlottedExecutionResultBuilderFactory(
           pipe,
           queryIndexRegistrator.result(),
+          selectivityTrackerRegistrator.result(),
           physicalPlan.nExpressionSlots,
           columns,
           physicalPlan.parameterMapping,

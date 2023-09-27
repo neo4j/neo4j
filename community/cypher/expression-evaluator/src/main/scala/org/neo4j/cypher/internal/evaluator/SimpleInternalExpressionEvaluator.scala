@@ -29,6 +29,10 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.ParameterMapping
+import org.neo4j.cypher.internal.runtime.QuerySelectivityTrackers
+import org.neo4j.cypher.internal.runtime.SelectivityTracker
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerStorage
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.createParameterArray
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
@@ -96,6 +100,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
       params = slottedParams,
       cursors = new ExpressionCursors(NULL_CURSOR_FACTORY, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE),
       queryIndexes = Array.empty[IndexReadSession],
+      selectivityTrackerStorage = SimpleInternalExpressionEvaluator.alwaysNewSelectivityTrackerStorage,
       nodeLabelTokenReadSession = None,
       relTypeTokenReadSession = None,
       expressionVariables = new Array(nExpressionSlots),
@@ -120,10 +125,27 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
 object SimpleInternalExpressionEvaluator {
 
+  // to avoid growing tracker count indefinitely in `CONVERTERS`
+  private val noopSelectivityTrackerRegistrator = new SelectivityTrackerRegistrator {
+    override def register(): Int = 0
+    override def result(): QuerySelectivityTrackers = noopQuerySelectivityTrackers
+  }
+
+  private val noopQuerySelectivityTrackers = new QuerySelectivityTrackers(0) {
+    override def initializeTrackers(): SelectivityTrackerStorage = alwaysNewSelectivityTrackerStorage
+  }
+
+  val alwaysNewSelectivityTrackerStorage: SelectivityTrackerStorage = new SelectivityTrackerStorage(0) {
+
+    override def get(trackerIndex: Int, predicatesCount: Int): SelectivityTracker =
+      new SelectivityTracker(predicatesCount)
+  }
+
   private val CONVERTERS =
     new ExpressionConverters(CommunityExpressionConverter(
       ReadTokenContext.EMPTY,
       new AnonymousVariableNameGenerator(),
+      noopSelectivityTrackerRegistrator,
       CypherRuntimeConfiguration.defaultConfiguration
     ))
 

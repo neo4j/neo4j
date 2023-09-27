@@ -91,6 +91,7 @@ object StaticEvaluation {
       params = slottedParams,
       cursors = null,
       queryIndexes = Array.empty,
+      selectivityTrackerStorage = SimpleInternalExpressionEvaluator.alwaysNewSelectivityTrackerStorage,
       nodeLabelTokenReadSession = None,
       relTypeTokenReadSession = None,
       expressionVariables = new Array(nExpressionSlots),

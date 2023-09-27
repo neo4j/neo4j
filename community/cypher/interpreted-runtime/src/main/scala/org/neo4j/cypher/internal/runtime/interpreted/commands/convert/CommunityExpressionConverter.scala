@@ -126,6 +126,7 @@ import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
@@ -157,6 +158,7 @@ import org.neo4j.values.storable.Values.intValue
 case class CommunityExpressionConverter(
   tokenContext: ReadTokenContext,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  selectivityTrackerRegistrator: SelectivityTrackerRegistrator,
   runtimeConfig: CypherRuntimeConfiguration
 ) extends ExpressionConverter {
 
@@ -205,9 +207,8 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.Ands =>
         predicates.Ands(NonEmptyList.from(e.exprs.map(self.toCommandPredicate(id, _))))
       case e: internal.expressions.AndsReorderable =>
-        // TODO: we temporarily disable selectivity tracking because of a concurrency issue
-        // predicates.AndsWithSelectivityTracking(e.exprs.toVector.map(self.toCommandPredicate(id, _)))
-        predicates.Ands(NonEmptyList.from(e.exprs.map(self.toCommandPredicate(id, _))))
+        val trackerIndex = selectivityTrackerRegistrator.register()
+        predicates.AndsWithSelectivityTracking(e.exprs.toVector.map(self.toCommandPredicate(id, _)), trackerIndex)
       case e: internal.expressions.Ors => predicates.Ors(NonEmptyList.from(e.exprs.map(self.toCommandPredicate(id, _))))
       case e: internal.expressions.Not => predicates.Not(self.toCommandPredicate(id, e.rhs))
       case e: internal.expressions.Equals =>

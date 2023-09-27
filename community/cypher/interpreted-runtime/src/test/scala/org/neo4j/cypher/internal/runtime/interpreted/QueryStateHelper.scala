@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.ResourceMonitor
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerStorage
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NullPipeDecorator
@@ -75,6 +76,7 @@ object QueryStateHelper extends MockitoSugar {
     expressionCursors: ExpressionCursors =
       new ExpressionCursors(mockCursorFactory, CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE),
     queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
+    selectivityTrackerStorage: SelectivityTrackerStorage = mock[SelectivityTrackerStorage],
     nodeTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
     relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
     expressionVariables: Array[AnyValue] = Array.empty,
@@ -89,6 +91,7 @@ object QueryStateHelper extends MockitoSugar {
       params,
       expressionCursors,
       queryIndexes,
+      selectivityTrackerStorage,
       nodeTokenIndex,
       relTokenIndex,
       expressionVariables,

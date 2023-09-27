@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerStorage
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
@@ -50,6 +51,7 @@ class QueryState(
   val params: Array[AnyValue],
   val cursors: ExpressionCursors,
   val queryIndexes: Array[IndexReadSession],
+  val selectivityTrackerStorage: SelectivityTrackerStorage,
   val nodeLabelTokenReadSession: Option[TokenReadSession],
   val relTypeTokenReadSession: Option[TokenReadSession],
   val expressionVariables: Array[AnyValue],
@@ -101,6 +103,7 @@ class QueryState(
       params,
       cursors,
       queryIndexes,
+      selectivityTrackerStorage,
       nodeLabelTokenReadSession,
       relTypeTokenReadSession,
       expressionVariables,
@@ -122,6 +125,7 @@ class QueryState(
       params,
       cursors,
       queryIndexes,
+      selectivityTrackerStorage,
       nodeLabelTokenReadSession,
       relTypeTokenReadSession,
       expressionVariables,
@@ -143,6 +147,7 @@ class QueryState(
       params,
       cursors,
       queryIndexes,
+      selectivityTrackerStorage,
       nodeLabelTokenReadSession,
       relTypeTokenReadSession,
       expressionVariables,
@@ -164,6 +169,7 @@ class QueryState(
       params,
       cursors,
       queryIndexes,
+      selectivityTrackerStorage,
       nodeLabelTokenReadSession,
       relTypeTokenReadSession,
       expressionVariables,
@@ -219,6 +225,7 @@ class QueryState(
       params,
       newCursors,
       newQueryIndexes,
+      selectivityTrackerStorage,
       newNodeLabelTokenReadSession,
       newRelTypeTokenReadSession,
       newExpressionVariables,
@@ -267,6 +274,7 @@ object QueryState {
     queryIndexes: Array[IndexReadSession],
     nodeLabelTokenReadSession: Option[TokenReadSession],
     relTypeTokenReadSession: Option[TokenReadSession],
+    selectivityTrackerStorage: SelectivityTrackerStorage,
     expressionVariables: Array[AnyValue],
     subscriber: QuerySubscriber,
     memoryTrackingController: MemoryTrackingController,
@@ -285,6 +293,7 @@ object QueryState {
       params,
       cursors,
       queryIndexes,
+      selectivityTrackerStorage,
       nodeLabelTokenReadSession,
       relTypeTokenReadSession,
       expressionVariables,
@@ -305,6 +314,7 @@ object QueryState {
     params: Array[AnyValue],
     cursors: ExpressionCursors,
     queryIndexes: Array[IndexReadSession],
+    selectivityTrackerStorage: SelectivityTrackerStorage,
     nodeLabelTokenReadSession: Option[TokenReadSession],
     relTypeTokenReadSession: Option[TokenReadSession],
     expressionVariables: Array[AnyValue],
@@ -325,6 +335,7 @@ object QueryState {
       params,
       cursors,
       queryIndexes,
+      selectivityTrackerStorage,
       nodeLabelTokenReadSession,
       relTypeTokenReadSession,
       expressionVariables,

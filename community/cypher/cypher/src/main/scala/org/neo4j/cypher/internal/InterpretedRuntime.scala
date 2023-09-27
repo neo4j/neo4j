@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
+import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionResultBuilderFactory
@@ -59,9 +60,12 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       expressionVariableAllocation.allocate(query.logicalPlan)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
 
+    val selectivityTrackerRegistrator = new SelectivityTrackerRegistrator()
+
     val converters = new ExpressionConverters(CommunityExpressionConverter(
       context.tokenContext,
       context.anonymousVariableNameGenerator,
+      selectivityTrackerRegistrator,
       context.config
     ))
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
@@ -84,6 +88,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(
       pipe,
       queryIndexRegistrator.result(),
+      selectivityTrackerRegistrator.result(),
       nExpressionSlots,
       parameterMapping,
       ArraySeq.unsafeWrapArray(columns),
