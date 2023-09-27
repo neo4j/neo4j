@@ -199,6 +199,13 @@ abstract class Expression extends ASTNode {
     case IsAggregate(_) => true
   }
 
+  /**
+   * Return true if this expression contains a scope expression.
+   */
+  def containsScopeExpression: Boolean = this.folder.treeExists {
+    case _: ScopeExpression => true
+  }
+
   // Note! Will not consider ResolvedFunctionInvocation which can be non deterministic.
   def isDeterministic: Boolean = this.folder.treeForall {
     case f: FunctionInvocation => isFunctionDeterministic(f.function)

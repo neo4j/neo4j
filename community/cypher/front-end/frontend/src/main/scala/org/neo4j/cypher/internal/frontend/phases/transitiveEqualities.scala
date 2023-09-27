@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.And
@@ -74,7 +73,8 @@ case object transitiveEqualities extends StatementRewriter with StepSequencer.St
     // NOTE that this might introduce duplicate predicates, however at a later rewrite
     // when AND is turned into ANDS we remove all duplicates
     private val whereRewriter: Rewriter = bottomUp(Rewriter.lift {
-      case and @ (And(_, _: ExistsExpression) | And(_: ExistsExpression, _)) =>
+      // Do not rewrite if there are multiple scopes in the WHERE clause to avoid to leak variables between different scopes
+      case and: And if and.containsScopeExpression =>
         and
       case and @ And(lhs, rhs) =>
         val transitions = collect(lhs) ++ collect(rhs)
