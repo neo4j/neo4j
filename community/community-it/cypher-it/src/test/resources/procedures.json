@@ -129,6 +129,47 @@
     "enterpriseOnly": false
   },
   {
+    "name": "db.create.setNodeVectorProperty",
+    "description": "Set a vector property on a given node in a more space efficient representation than Cypher's SET.",
+    "mode": "WRITE",
+    "worksOnSystem": false,
+    "signature": "db.create.setNodeVectorProperty(node :: NODE, key :: STRING, vector :: LIST<FLOAT>)",
+    "argumentDescription": [
+      {
+        "name": "node",
+        "description": "node :: NODE",
+        "type": "NODE",
+        "isDeprecated": false
+      },
+      {
+        "name": "key",
+        "description": "key :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "vector",
+        "description": "vector :: LIST<FLOAT>",
+        "type": "LIST<FLOAT>",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
     "name": "db.create.setVectorProperty",
     "description": "Set a vector property on a given node in a more space efficient representation than Cypher's SET.",
     "mode": "WRITE",
@@ -154,7 +195,7 @@
         "isDeprecated": false
       }
     ],
-    "returnDescription" : [
+    "returnDescription": [
       {
         "name": "node",
         "description": "node :: NODE",
@@ -170,9 +211,9 @@
     "rolesBoostedExecution": [
       "admin"
     ],
-    "isDeprecated": false,
+    "isDeprecated": true,
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },
@@ -474,7 +515,7 @@
         "isDeprecated": false
       }
     ],
-    "returnDescription" : [],
+    "returnDescription": [],
     "admin": false,
     "rolesExecution": [
       "PUBLIC",
@@ -515,7 +556,7 @@
         "isDeprecated": false
       }
     ],
-    "returnDescription" : [
+    "returnDescription": [
       {
         "name": "node",
         "description": "node :: NODE",

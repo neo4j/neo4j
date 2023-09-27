@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -162,16 +163,29 @@ public class VectorIndexProcedures {
     }
 
     @Description("Set a vector property on a given node in a more space efficient representation than Cypher's SET.")
-    @Procedure(name = "db.create.setVectorProperty", mode = WRITE)
-    public Stream<NodeRecord> setVectorProperty(
+    @Procedure(name = "db.create.setNodeVectorProperty", mode = WRITE)
+    public void setNodeVectorProperty(
             @Name("node") Node node, @Name("key") String propKey, @Name("vector") List<Double> vector) {
-        Objects.requireNonNull(node, "'node' must not be null");
-        Objects.requireNonNull(propKey, "'key' must not be null");
-        Objects.requireNonNull(vector, "'vector' must not be null");
+        setVectorProperty(
+                Objects.requireNonNull(node, "'node' must not be null"),
+                Objects.requireNonNull(propKey, "'key' must not be null"),
+                Objects.requireNonNull(vector, "'vector' must not be null"));
+    }
 
-        // assume EUCLIDEAN as the bare minimum invariant
-        node.setProperty(propKey, validVector(VectorSimilarityFunction.EUCLIDEAN, vector));
+    @Description("Set a vector property on a given node in a more space efficient representation than Cypher's SET.")
+    @Procedure(name = "db.create.setVectorProperty", mode = WRITE, deprecatedBy = "db.create.setNodeVectorProperty")
+    @Deprecated(since = "5.13.0", forRemoval = true)
+    public Stream<NodeRecord> deprecatedSetVectorProperty(
+            @Name("node") Node node, @Name("key") String propKey, @Name("vector") List<Double> vector) {
+        setNodeVectorProperty(node, propKey, vector);
         return Stream.of(new NodeRecord(node));
+    }
+
+    public record NodeRecord(Node node) {}
+
+    private void setVectorProperty(Entity entity, String propKey, List<Double> vector) {
+        // assume EUCLIDEAN as the bare minimum invariant
+        entity.setProperty(propKey, validVector(VectorSimilarityFunction.EUCLIDEAN, vector));
     }
 
     private float[] validVector(VectorSimilarityFunction similarityFunction, List<Double> candidate) {
@@ -247,8 +261,6 @@ public class VectorIndexProcedures {
             }
         }
     }
-
-    public record NodeRecord(Node node) {}
 
     private record NeighborSpliterator(Transaction tx, NodeValueIndexCursor cursor, int k)
             implements Spliterator<Neighbor> {

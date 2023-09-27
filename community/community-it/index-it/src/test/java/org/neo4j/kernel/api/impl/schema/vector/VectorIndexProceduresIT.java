@@ -209,9 +209,33 @@ class VectorIndexProceduresIT {
             try (final var tx = db.beginTx()) {
                 final var node = tx.createNode(LABEL);
                 id = node.getId();
-                try (final var result = setVectorProperty(tx, node, candidate)) {
-                    assertThatCode(() -> collectNodes(result)).doesNotThrowAnyException();
-                }
+                assertThatCode(() -> setNodeVectorProperty(tx, node, candidate)).doesNotThrowAnyException();
+                tx.commit();
+            }
+
+            try (final var tx = db.beginTx()) {
+                final var node = tx.getNodeById(id);
+                assertThat(node.getPropertyKeys()).contains(PROPERTY_KEY);
+                final var vector = node.getProperty(PROPERTY_KEY);
+                assertThat(vector)
+                        .asInstanceOf(InstanceOfAssertFactories.FLOAT_ARRAY)
+                        .containsExactly(Lists.immutable
+                                .ofAll(candidate)
+                                .collectFloat(Double::floatValue)
+                                .toArray());
+            }
+        }
+
+        @ParameterizedTest
+        @MethodSource("canSetValidVector")
+        @Deprecated(since = "5.13.0", forRemoval = true)
+        void canSetValidVectorDeprecated(List<Double> candidate) {
+            final long id;
+            try (final var tx = db.beginTx()) {
+                final var node = tx.createNode(LABEL);
+                id = node.getId();
+                assertThatCode(() -> collectNodes(deprecatedSetVectorProperty(tx, node, candidate)))
+                        .doesNotThrowAnyException();
                 tx.commit();
             }
 
@@ -239,7 +263,30 @@ class VectorIndexProceduresIT {
             try (final var tx = db.beginTx()) {
                 final var node = tx.createNode(LABEL);
                 final var rootAssert = assertThatThrownBy(
-                                () -> setVectorProperty(tx, node, candidate), "invalid vectors should throw")
+                                () -> setNodeVectorProperty(tx, node, candidate), "invalid vectors should throw")
+                        .rootCause();
+
+                if (candidate != null) {
+                    rootAssert
+                            .isInstanceOf(IllegalArgumentException.class)
+                            .hasMessageContainingAll("Index query vector must contain finite values", "Provided");
+                } else {
+                    rootAssert
+                            .isInstanceOf(NullPointerException.class)
+                            .hasMessageContainingAll("vector", "must not be null");
+                }
+            }
+        }
+
+        @ParameterizedTest
+        @MethodSource("cannotSetInvalidVector")
+        @Deprecated(since = "5.13.0", forRemoval = true)
+        void cannotSetInvalidVectorDeprecated(List<Double> candidate) {
+            try (final var tx = db.beginTx()) {
+                final var node = tx.createNode(LABEL);
+                final var rootAssert = assertThatThrownBy(
+                                () -> collectNodes(deprecatedSetVectorProperty(tx, node, candidate)),
+                                "invalid vectors should throw")
                         .rootCause();
 
                 if (candidate != null) {
@@ -287,11 +334,7 @@ class VectorIndexProceduresIT {
                 parameters.put(parameter, value);
 
                 final var assertion = assertThatCode(() -> action.accept(parameters));
-                if (expectedError.isPresent()) {
-                    assertion.hasMessageContaining(expectedError.get());
-                } else {
-                    assertion.doesNotThrowAnyException();
-                }
+                expectedError.ifPresentOrElse(assertion::hasMessageContaining, assertion::doesNotThrowAnyException);
             }
         }
 
@@ -376,9 +419,8 @@ class VectorIndexProceduresIT {
         }
 
         private List<Neighbor> queryNodesAndCollect(Map<String, Object> parameters) {
-            try (final var tx = db.beginTx();
-                    final var results = queryNodes(tx, parameters)) {
-                return collectNeighbors(results);
+            try (final var tx = db.beginTx()) {
+                return collectNeighbors(queryNodes(tx, parameters));
             }
         }
 
@@ -402,7 +444,13 @@ class VectorIndexProceduresIT {
                     "query", query);
         }
 
-        private static Result setVectorProperty(Transaction tx, Node node, List<Double> vector) {
+        private static void setNodeVectorProperty(Transaction tx, Node node, List<Double> vector) {
+            tx.execute(
+                    "CALL db.create.setNodeVectorProperty($node, $propKey, $vector)",
+                    Maps.mutable.of("node", node, "propKey", PROPERTY_KEY, "vector", vector));
+        }
+
+        private static Result deprecatedSetVectorProperty(Transaction tx, Node node, List<Double> vector) {
             return tx.execute(
                     "CALL db.create.setVectorProperty($node, $propKey, $vector)",
                     Maps.mutable.of("node", node, "propKey", PROPERTY_KEY, "vector", vector));
@@ -410,14 +458,18 @@ class VectorIndexProceduresIT {
 
         private static List<Neighbor> collectNeighbors(Result results) {
             final var neighbors = new ArrayList<Neighbor>();
-            results.accept(row -> neighbors.add(
-                    new Neighbor(row.getNode("node"), row.getNumber("score").doubleValue())));
+            try (results) {
+                results.accept(row -> neighbors.add(
+                        new Neighbor(row.getNode("node"), row.getNumber("score").doubleValue())));
+            }
             return neighbors;
         }
 
         private static List<NodeRecord> collectNodes(Result results) {
             final var nodes = new ArrayList<NodeRecord>();
-            results.accept(row -> nodes.add(new NodeRecord(row.getNode("node"))));
+            try (results) {
+                results.accept(row -> nodes.add(new NodeRecord(row.getNode("node"))));
+            }
             return nodes;
         }
 
