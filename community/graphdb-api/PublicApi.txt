@@ -153,6 +153,7 @@ org.neo4j.graphdb.NotificationCategory::GENERIC org.neo4j.graphdb.NotificationCa
 org.neo4j.graphdb.NotificationCategory::HINT org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::PERFORMANCE org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::SECURITY org.neo4j.graphdb.NotificationCategory public static final
+org.neo4j.graphdb.NotificationCategory::TOPOLOGY org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::UNKNOWN org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::UNRECOGNIZED org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::UNSUPPORTED org.neo4j.graphdb.NotificationCategory public static final

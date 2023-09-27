@@ -64,5 +64,10 @@ public enum NotificationCategory {
     /**
      * Security warnings
      */
-    SECURITY
+    SECURITY,
+
+    /**
+     * Topology notifications
+     */
+    TOPOLOGY
 }
