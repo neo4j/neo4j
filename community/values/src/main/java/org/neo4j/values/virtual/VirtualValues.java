@@ -124,6 +124,10 @@ public final class VirtualValues {
         return new FullNodeReference(id, elementId);
     }
 
+    public static FullNodeReference node(long id, String elementId, long sourceId) {
+        return new CompositeDatabaseValue.CompositeFullNodeReference(id, elementId, sourceId);
+    }
+
     public static RelationshipReference relationship(long id) {
         return new RelationshipReference(id);
     }
@@ -192,6 +196,12 @@ public final class VirtualValues {
         return new NodeValue.DirectNodeValue(id, elementId, labels, properties, false);
     }
 
+    public static NodeValue compositeGraphNodeValue(
+            long id, String elementId, long sourceId, TextArray labels, MapValue properties) {
+        return new CompositeDatabaseValue.CompositeGraphDirectNodeValue(
+                id, elementId, sourceId, labels, properties, false);
+    }
+
     public static NodeValue nodeValue(
             long id, String elementId, TextArray labels, MapValue properties, boolean isDeleted) {
         return new NodeValue.DirectNodeValue(id, elementId, labels, properties, isDeleted);
@@ -206,6 +216,18 @@ public final class VirtualValues {
             MapValue properties) {
         return new RelationshipValue.DirectRelationshipValue(
                 id, elementId, startNode, endNode, type, properties, false);
+    }
+
+    public static RelationshipValue compositeGraphRelationshipValue(
+            long id,
+            String elementId,
+            long sourceId,
+            VirtualNodeReference startNode,
+            VirtualNodeReference endNode,
+            TextValue type,
+            MapValue properties) {
+        return new CompositeDatabaseValue.CompositeDirectRelationshipValue(
+                id, elementId, sourceId, startNode, endNode, type, properties, false);
     }
 
     public static RelationshipValue relationshipValue(

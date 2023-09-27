@@ -221,86 +221,91 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
         abstract void onNext(Record record);
     }
 
-    class TaggingQuerySubject extends BasicQuerySubject implements QuerySubject {
-        private final long sourceTag;
+    class CompositeQuerySubject extends BasicQuerySubject implements QuerySubject {
+        private final long sourceId;
 
-        public TaggingQuerySubject(long sourceId) {
-            this.sourceTag = SourceTagging.makeSourceTag(sourceId);
+        public CompositeQuerySubject(long sourceId) {
+            this.sourceId = SourceTagging.makeSourceTag(sourceId);
         }
 
         @Override
         public void onField(int offset, AnyValue value) {
-            AnyValue tagged = withTaggedId(value);
-            super.onField(offset, tagged);
+            AnyValue compositeDatabaseValue = toCompositeDatabaseValue(value);
+            super.onField(offset, compositeDatabaseValue);
         }
 
-        private AnyValue withTaggedId(AnyValue value) {
+        private AnyValue toCompositeDatabaseValue(AnyValue value) {
             if (value instanceof VirtualNodeValue) {
                 if (value instanceof NodeValue node) {
-                    return withTaggedId(node);
+                    return toCompositeDatabaseValue(node);
                 } else {
                     throw unableToTagError(value);
                 }
             } else if (value instanceof VirtualRelationshipValue) {
                 if (value instanceof RelationshipValue rel) {
-                    return withTaggedId(rel);
+                    return toCompositeDatabaseValue(rel);
                 } else {
                     throw unableToTagError(value);
                 }
             } else if (value instanceof PathValue) {
-                return withTaggedId((PathValue) value);
+                return toCompositeDatabaseValue((PathValue) value);
             } else if (value instanceof ListValue) {
-                return withTaggedId((ListValue) value);
+                return toCompositeDatabaseValue((ListValue) value);
             } else if (value instanceof MapValue) {
-                return withTaggedId((MapValue) value);
+                return toCompositeDatabaseValue((MapValue) value);
             } else {
                 return value;
             }
         }
 
-        private NodeValue withTaggedId(NodeValue n) {
-            return VirtualValues.nodeValue(tag(n.id()), n.elementId(), n.labels(), n.properties());
+        private NodeValue toCompositeDatabaseValue(NodeValue n) {
+            return VirtualValues.compositeGraphNodeValue(
+                    tag(n.id()), n.elementId(), sourceId, n.labels(), n.properties());
         }
 
-        private RelationshipValue withTaggedId(RelationshipValue r) {
-            return VirtualValues.relationshipValue(
-                    tag(r.id()),
+        private RelationshipValue toCompositeDatabaseValue(RelationshipValue r) {
+            return VirtualValues.compositeGraphRelationshipValue(
+                    r.id(),
                     r.elementId(),
-                    VirtualValues.node(tag(r.startNodeId()), r.startNode().elementId()),
-                    VirtualValues.node(tag(r.endNodeId()), r.endNode().elementId()),
+                    sourceId,
+                    VirtualValues.node(tag(r.startNodeId()), r.startNode().elementId(), sourceId),
+                    VirtualValues.node(tag(r.endNodeId()), r.endNode().elementId(), sourceId),
                     r.type(),
                     r.properties());
         }
 
-        private PathValue withTaggedId(PathValue pathValue) {
+        private PathValue toCompositeDatabaseValue(PathValue pathValue) {
             return VirtualValues.path(
-                    Arrays.stream(pathValue.nodes()).map(this::withTaggedId).toArray(NodeValue[]::new),
+                    Arrays.stream(pathValue.nodes())
+                            .map(this::toCompositeDatabaseValue)
+                            .toArray(NodeValue[]::new),
                     Arrays.stream(pathValue.relationships())
-                            .map(this::withTaggedId)
+                            .map(this::toCompositeDatabaseValue)
                             .toArray(RelationshipValue[]::new));
         }
 
-        private ListValue withTaggedId(ListValue listValue) {
-            return VirtualValues.list(
-                    Arrays.stream(listValue.asArray()).map(this::withTaggedId).toArray(AnyValue[]::new));
+        private ListValue toCompositeDatabaseValue(ListValue listValue) {
+            return VirtualValues.list(Arrays.stream(listValue.asArray())
+                    .map(this::toCompositeDatabaseValue)
+                    .toArray(AnyValue[]::new));
         }
 
-        private MapValue withTaggedId(MapValue mapValue) {
+        private MapValue toCompositeDatabaseValue(MapValue mapValue) {
             if (mapValue.isEmpty()) {
                 return mapValue;
             }
             MapValueBuilder builder = new MapValueBuilder(mapValue.size());
-            mapValue.foreach((key, value) -> builder.add(key, withTaggedId(value)));
+            mapValue.foreach((key, value) -> builder.add(key, toCompositeDatabaseValue(value)));
             return builder.build();
         }
 
         private long tag(long id) {
-            return SourceTagging.tagId(id, sourceTag);
+            return SourceTagging.tagId(id, sourceId);
         }
 
         private static FabricException unableToTagError(AnyValue value) {
             return new FabricException(
-                    Status.General.UnknownError, "Unable to add source tag to entity of type " + value.getTypeName());
+                    Status.General.UnknownError, "Unable to add graph id to entity of type " + value.getTypeName());
         }
     }
 }

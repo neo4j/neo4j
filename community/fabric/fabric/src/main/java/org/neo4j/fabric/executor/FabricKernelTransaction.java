@@ -84,7 +84,7 @@ public class FabricKernelTransaction {
                 execute(query, params, childExecutionContext, convert(input), childQueryMonitor);
 
         QuerySubject subject = executionOptions.addSourceTag()
-                ? new QuerySubject.TaggingQuerySubject(executionOptions.sourceId())
+                ? new QuerySubject.CompositeQuerySubject(executionOptions.sourceId())
                 : new QuerySubject.BasicQuerySubject();
 
         StatementResult result = StatementResults.connectVia(execution, subject);
