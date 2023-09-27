@@ -444,7 +444,7 @@ case object PushdownPropertyReads {
   /**
    * Tries to find, for a read property (_2 in tuple), where would cardinality-wise be the optimum place to put it in the plan (_1 in the tuple)
    */
-  private def findPropertyReadOptima(
+  private[steps] def findPropertyReadOptima(
     logicalPlan: LogicalPlan,
     effectiveCardinalities: EffectiveCardinalities,
     semanticTable: SemanticTable

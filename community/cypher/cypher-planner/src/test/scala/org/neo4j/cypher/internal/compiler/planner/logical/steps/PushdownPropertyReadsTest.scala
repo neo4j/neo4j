@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.PushdownPropertyReads.CardinalityOptimum
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.LiteralEntry
@@ -37,14 +36,12 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
-import org.scalatest.PrivateMethodTester
 
 class PushdownPropertyReadsTest
     extends CypherFunSuite
     with PlanMatchHelp
     with LogicalPlanConstructionTestSupport
-    with LogicalPlanTestOps
-    with PrivateMethodTester {
+    with LogicalPlanTestOps {
 
   test("should pushdown read in projection") {
     val plan = new LogicalPlanBuilder()
@@ -607,10 +604,8 @@ class PushdownPropertyReadsTest
 
     val plan = planBuilder.build()
 
-    val findPropertyReadOptima = PrivateMethod[Seq[(CardinalityOptimum, PushDownProperty)]]('findPropertyReadOptima)
-
     val propertyReadOptima =
-      PushdownPropertyReads invokePrivate findPropertyReadOptima(plan, effectiveCardinalities, semanticTable)
+      PushdownPropertyReads.findPropertyReadOptima(plan, effectiveCardinalities, semanticTable)
 
     propertyReadOptima.size should equal(1)
   }
