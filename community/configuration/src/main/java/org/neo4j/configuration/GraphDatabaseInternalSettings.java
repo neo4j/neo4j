@@ -283,7 +283,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description(
             "Maximum number of queries that the Cypher worker threads for the parallel runtime will start working on concurrently. "
-                    + "If set to 0, a default value of `internal.cypher.number_of_workers` will be chosen.")
+                    + "If set to 0, a default value of `server.cypher.parallel.worker_limit` will be chosen.")
     public static final Setting<Integer> cypher_max_active_queries_count = newBuilder(
                     "internal.cypher.max_number_of_active_queries", INT, 0)
             .addConstraint(min(0))
@@ -293,8 +293,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description(
             "Maximum number of cached thread execution contexts per query used by Cypher workers for the parallel runtime. If set to 0, a default value that is"
-                    + " a multiple of `internal.cypher.number_of_workers` will be chosen. If not 0, it will be round up to minimum `internal.cypher.number_of_workers`,"
-                    + " and round down to the nearest multiple of `internal.cypher.number_of_workers`. The default value should be good enough for most use cases, "
+                    + " a multiple of `server.cypher.parallel.worker_limit` will be chosen. If not 0, it will be round up to minimum `server.cypher.parallel.worker_limit`,"
+                    + " and round down to the nearest multiple of `server.cypher.parallel.worker_limit`. The default value should be good enough for most use cases, "
                     + " but it can be tweaked based on the workload as a trade-off between performance and available memory.")
     public static final Setting<Integer> cypher_max_cached_worker_resources_count = newBuilder(
                     "internal.cypher.max_number_of_cached_worker_resources", INT, 0)

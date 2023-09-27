@@ -324,7 +324,7 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.cypher.non_indexed_label_warning_threshold",
                         "internal.cypher.non_indexed_label_warning_threshold"),
-                new Mapping("unsupported.cypher.number_of_workers", "internal.cypher.number_of_workers"),
+                new Mapping("unsupported.cypher.number_of_workers", "server.cypher.parallel.worker_limit"),
                 new Mapping("unsupported.cypher.pipelined.batch_size_big", "internal.cypher.pipelined.batch_size_big"),
                 new Mapping(
                         "unsupported.cypher.pipelined.batch_size_small", "internal.cypher.pipelined.batch_size_small"),
