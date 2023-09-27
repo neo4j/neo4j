@@ -73,6 +73,7 @@ class VersionAwareLogEntryReaderTest {
         checksums.put(KernelVersion.V5_10, 815128623);
         checksums.put(KernelVersion.V5_11, 556721746);
         checksums.put(KernelVersion.V5_12, 776463481);
+        checksums.put(KernelVersion.V5_13, 39381672);
         final LogEntryCommit commit = newCommitEntry(kernelVersion, 42, 21, checksums.get(kernelVersion));
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
