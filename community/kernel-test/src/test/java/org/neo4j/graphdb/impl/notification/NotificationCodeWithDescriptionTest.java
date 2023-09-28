@@ -22,7 +22,10 @@ package org.neo4j.graphdb.impl.notification;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.codeGenerationFailed;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffect;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectGrantRole;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectRevokePrivilege;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectRevokeRole;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedDatabaseName;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFormat;
@@ -726,16 +729,61 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
-    void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT() {
-        NotificationImplementation notification = commandHasNoEffect(
-                InputPosition.empty, "CREATE DATABASE db IF NOT EXISTS", "Database db already exist.");
+    void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT_ASSIGN_PRIVILEGE() {
+        NotificationImplementation notification =
+                commandHasNoEffectAssignPrivilege(InputPosition.empty, "GRANT WRITE ON GRAPH * TO editor");
 
         verifyNotification(
                 notification,
-                "`CREATE DATABASE db IF NOT EXISTS` has no effect.",
+                "`GRANT WRITE ON GRAPH * TO editor` has no effect.",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
-                "Database db already exist. See Status Codes documentation for more information.",
+                "The role already has the privilege. See Status Codes documentation for more information.",
+                NotificationCategory.SECURITY,
+                null);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT_REVOKE_PRIVILEGE() {
+        NotificationImplementation notification = commandHasNoEffectRevokePrivilege(
+                InputPosition.empty, "REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader");
+
+        verifyNotification(
+                notification,
+                "`REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Security.CommandHasNoEffect",
+                "The role does not have the privilege. See Status Codes documentation for more information.",
+                NotificationCategory.SECURITY,
+                null);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT_GRANT_ROLE() {
+        NotificationImplementation notification =
+                commandHasNoEffectGrantRole(InputPosition.empty, "GRANT ROLE aliceRole TO alice");
+
+        verifyNotification(
+                notification,
+                "`GRANT ROLE aliceRole TO alice` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Security.CommandHasNoEffect",
+                "The user already has the role. See Status Codes documentation for more information.",
+                NotificationCategory.SECURITY,
+                null);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT_REVOKE_ROLE() {
+        NotificationImplementation notification =
+                commandHasNoEffectRevokeRole(InputPosition.empty, "REVOKE ROLE other FROM alice");
+
+        verifyNotification(
+                notification,
+                "`REVOKE ROLE other FROM alice` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Security.CommandHasNoEffect",
+                "The user does not have the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 null);
     }
@@ -825,8 +873,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            87, 23, -114, 36, -30, 42, -66, -42, 120, 47, -83, -84, -105, -52, 81, 79, 19, -40, 55, -107, -51, -25, -28,
-            91, 100, -25, 37, -30, -6, -18, -93, 17
+            -66, -37, -49, 110, 27, -85, -123, 47, 72, 69, 15, -120, -34, 77, -103, 54, 123, 83, -77, -35, 39, 125, -90,
+            56, 84, 98, -17, 82, -4, -74, -100, -9
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

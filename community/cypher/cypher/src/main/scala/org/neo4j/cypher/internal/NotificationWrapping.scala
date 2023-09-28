@@ -294,31 +294,27 @@ object NotificationWrapping {
       )
 
     case AssignPrivilegeCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.commandHasNoEffect(
+      NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege(
         graphdb.InputPosition.empty,
-        command,
-        "The role already has the privilege."
+        command
       )
 
     case RevokePrivilegeCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.commandHasNoEffect(
+      NotificationCodeWithDescription.commandHasNoEffectRevokePrivilege(
         graphdb.InputPosition.empty,
-        command,
-        "The role does not have the privilege."
+        command
       )
 
     case GrantRoleCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.commandHasNoEffect(
+      NotificationCodeWithDescription.commandHasNoEffectGrantRole(
         graphdb.InputPosition.empty,
-        command,
-        "The user already has the role."
+        command
       )
 
     case RevokeRoleCommandHasNoEffectNotification(command) =>
-      NotificationCodeWithDescription.commandHasNoEffect(
+      NotificationCodeWithDescription.commandHasNoEffectRevokeRole(
         graphdb.InputPosition.empty,
-        command,
-        "The user does not have the role."
+        command
       )
 
     case ImpossibleRevokeCommandWarning(command, cause) =>
