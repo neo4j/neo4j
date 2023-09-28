@@ -144,6 +144,13 @@ abstract class Expression extends ASTNode {
   }
 
   /**
+   * Return true if this expression contains a scope expression.
+   */
+  def containsScopeExpression: Boolean = this.folder.treeExists {
+    case _: ScopeExpression => true
+  }
+
+  /**
    * Returns the first encountered aggregate expression, or None if none existed.
    */
   def findAggregate:Option[Expression] = this.folder.treeFind[Expression] {

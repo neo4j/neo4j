@@ -120,7 +120,7 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
     assertNotRewritten("MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop OR b.prop = 42} RETURN a")
   }
 
-  // Should not leak inner predicates to the outside
+  // Should not leak inner predicates to the outside - EXISTS
 
   test("MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop} AND a.prop = 42") {
     assertNotRewritten( "MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop} AND a.prop = 42 RETURN a")
@@ -136,6 +136,42 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("MATCH (a)-->(b) WHERE a.prop = b.prop AND EXISTS {MATCH (a) WHERE a.prop = 42}") {
     assertNotRewritten( "MATCH (a)-->(b) WHERE a.prop = b.prop AND EXISTS {MATCH (a) WHERE a.prop = 42} RETURN a")
+  }
+
+  test("MATCH (a) WHERE NOT EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop} AND a.prop = 42") {
+    assertNotRewritten("MATCH (a) WHERE NOT EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop} AND a.prop = 42 RETURN a")
+  }
+
+  // Should not leak inner predicates to the outside - other scope expressions
+
+  test("MATCH (a)-->(b) WHERE any(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop") {
+    assertNotRewritten(
+      "MATCH (a)-->(b) WHERE any(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop RETURN a"
+    )
+  }
+
+  test("MATCH (a)-->(b) WHERE all(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop RETURN a") {
+    assertNotRewritten(
+      "MATCH (a)-->(b) WHERE all(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop RETURN a"
+    )
+  }
+
+  test("MATCH (a)-->(b) WHERE single(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop") {
+    assertNotRewritten(
+      "MATCH (a)-->(b) WHERE single(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop RETURN a"
+    )
+  }
+
+  test("MATCH (a)-->(b) WHERE none(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop") {
+    assertNotRewritten(
+      "MATCH (a)-->(b) WHERE none(x IN [1, 2, 3] WHERE a.prop = toInteger(x)) AND a.prop = b.prop RETURN a"
+    )
+  }
+
+  test("MATCH (a)-->(b) WHERE [ x IN [1, 2, 3] WHERE a.prop = toInteger(x) | true ] AND a.prop = b.prop") {
+    assertNotRewritten(
+      "MATCH (a)-->(b) WHERE [ x IN [1, 2, 3] WHERE a.prop = toInteger(x) | true ] AND a.prop = b.prop RETURN a"
+    )
   }
 
   // Test for circular rewrites

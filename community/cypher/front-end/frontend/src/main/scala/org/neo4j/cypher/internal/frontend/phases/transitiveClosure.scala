@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
@@ -74,7 +73,8 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
     //NOTE that this might introduce duplicate predicates, however at a later rewrite
     //when AND is turned into ANDS we remove all duplicates
     private val whereRewriter: Rewriter = bottomUp(Rewriter.lift {
-      case and@(And(_, _: ExistsSubClause) | And(_: ExistsSubClause, _)) =>
+      // Do not rewrite if there are multiple scopes in the WHERE clause to avoid to leak variables between different scopes
+      case and: And if and.containsScopeExpression =>
         and
       case and@And(lhs, rhs) =>
         val closures = collect(lhs) ++ collect(rhs)
