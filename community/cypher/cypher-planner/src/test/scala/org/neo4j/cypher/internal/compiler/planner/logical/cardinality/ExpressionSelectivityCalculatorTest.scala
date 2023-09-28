@@ -77,11 +77,14 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -118,8 +121,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   // RELATIONSHIPS
 
-  protected val indexFriends: IndexDescriptor =
+  protected val indexFriendsRange: IndexDescriptor =
     IndexDescriptor.forRelType(getIndexType, RelTypeId(0), Seq(PropertyKeyId(0)))
+  protected val indexFriendsText: IndexDescriptor = indexFriendsRange.copy(indexType = IndexDescriptor.IndexType.Text)
+  protected val indexFriendsPoint: IndexDescriptor = indexFriendsRange.copy(indexType = IndexDescriptor.IndexType.Point)
 
   protected val relPropName = "relProp"
   protected val rProp: Property = prop("r", relPropName)
@@ -128,6 +133,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected val rFriendsRelTypeInfo: Map[String, RelTypeName] = Map("r" -> friendsRelTypeName)
 
   protected val friendsPropIsNotNullSel: Double = 0.2
+  protected val friendsTextPropIsNotNullSel: Double = 0.15
+  protected val friendsPointPropIsNotNullSel: Double = 0.05
   protected val indexFriendsUniqueSel: Double = 1.0 / 180.0
 
   // EXPRESSIONS
@@ -644,7 +651,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       val stringPredicateResult = calculator(stringPredicate.expr)
 
       stringPredicateResult.factor should equal(
-        friendsPropIsNotNullSel
+        friendsTextPropIsNotNullSel
           * DEFAULT_RANGE_SEEK_FACTOR
       )
     }
@@ -1074,7 +1081,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   test("isNotNull with one relType, one index") {
     val calculator = setUpCalculator(
       relTypeInfo = rFriendsRelTypeInfo,
-      stats = mockStats(labelOrRelCardinalities = Map(indexFriends.relType -> 1000.0))
+      stats = mockStats(labelOrRelCardinalities = Map(indexFriendsRange.relType -> 1000.0))
     )
 
     val isNotNullResult = calculator(rIsNotNull.expr)
@@ -1516,8 +1523,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val calculator = setUpCalculator(
       relTypeInfo = rFriendsRelTypeInfo,
       stats = mockStats(
-        labelOrRelCardinalities = Map(indexFriends.relType -> 1000.0),
-        indexCardinalities = Map(indexFriends -> 200.0)
+        labelOrRelCardinalities = Map(indexFriendsRange.relType -> 1000.0),
+        indexCardinalities = Map(indexFriendsRange -> 200.0)
       )
     )
 
@@ -1812,6 +1819,142 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     result shouldBe Selectivity.ONE
   }
 
+  test("IS :: STRING without label info should use default values") {
+    val predicate = isTyped(nProp, CTString)
+    val calculator = setUpCalculator()
+    val result = calculator(predicate)
+
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      DEFAULT_TYPE_SELECTIVITY,
+      DEFAULT_PROPERTY_SELECTIVITY.negate
+    )).get
+  }
+
+  test("IS :: STRING NOT NULL without label info should use default values") {
+    val predicate = isTyped(nProp, CTPoint.updateIsNullable(false))
+    val calculator = setUpCalculator()
+    val result = calculator(predicate)
+    result shouldBe DEFAULT_TYPE_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY
+  }
+
+  test("IS :: INTEGER should use node RANGE index") {
+    val predicate = isTyped(nProp, CTInteger)
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(predicate)
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      DEFAULT_TYPE_SELECTIVITY,
+      personPropIsNotNullSel.toSelectivity.negate
+    )).get
+  }
+
+  test("IS :: INTEGER should use relationship RANGE index") {
+    val predicate = isTyped(rProp, CTInteger)
+    val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
+    val result = calculator(predicate)
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      DEFAULT_TYPE_SELECTIVITY,
+      friendsPropIsNotNullSel.toSelectivity.negate
+    )).get
+  }
+
+  test("IS :: STRING should use node TEXT index") {
+    val predicate = isTyped(nProp, CTString)
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(predicate)
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      personTextPropIsNotNullSel.toSelectivity,
+      personPropIsNotNullSel.toSelectivity.negate
+    )).get
+  }
+
+  test("IS :: STRING should use relationship TEXT index") {
+    val predicate = isTyped(rProp, CTString)
+    val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
+    val result = calculator(predicate)
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      friendsTextPropIsNotNullSel.toSelectivity,
+      friendsPropIsNotNullSel.toSelectivity.negate
+    )).get
+  }
+
+  test("IS :: POINT should use node POINT index") {
+    val predicate = isTyped(nProp, CTPoint)
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(predicate)
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      personPointPropIsNotNullSel.toSelectivity,
+      personPropIsNotNullSel.toSelectivity.negate
+    )).get
+  }
+
+  test("IS :: POINT should use relationship POINT index") {
+    val predicate = isTyped(rProp, CTPoint)
+    val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
+    val result = calculator(predicate)
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      friendsPointPropIsNotNullSel.toSelectivity,
+      friendsPropIsNotNullSel.toSelectivity.negate
+    )).get
+  }
+
+  test("IS :: BOOLEAN NOT NULL should use node RANGE index") {
+    val predicate = isTyped(nProp, CTBoolean.updateIsNullable(false))
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(predicate)
+    result.factor shouldBe personPropIsNotNullSel * DEFAULT_TYPE_SELECTIVITY.factor
+  }
+
+  test("IS :: DATE NOT NULL should use relationship RANGE index") {
+    val predicate = isTyped(rProp, CTDate.updateIsNullable(false))
+    val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
+    val result = calculator(predicate)
+    result.factor shouldBe friendsPropIsNotNullSel * DEFAULT_TYPE_SELECTIVITY.factor
+  }
+
+  test("IS :: STRING should use node property type constraint") {
+    val predicate = isTyped(nProp, CTString)
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.STRING)))
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ONE
+  }
+
+  test("IS :: STRING should use relationship property type constraint") {
+    val predicate = isTyped(rProp, CTString)
+    val calculator = setUpCalculator(
+      relTypeInfo = rFriendsRelTypeInfo,
+      typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING)))
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ONE
+  }
+
+  test("IS :: STRING NOT NULL should use node property type constraint") {
+    val predicate = isTyped(nProp, CTString.updateIsNullable(false))
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.STRING)))
+    )
+    val result = calculator(predicate)
+
+    result.factor shouldBe personPropIsNotNullSel
+  }
+
+  test("IS :: STRING NOT NULL should use relationship property type constraint") {
+    val predicate = isTyped(rProp, CTString.updateIsNullable(false))
+    val calculator = setUpCalculator(
+      relTypeInfo = rFriendsRelTypeInfo,
+      typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING)))
+    )
+    val result = calculator(predicate)
+
+    result.factor shouldBe friendsPropIsNotNullSel
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {
@@ -1820,9 +1963,9 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     semanticTable.resolvedLabelNames.put("Animal", indexAnimal.label)
     semanticTable.resolvedPropertyKeyNames.put("nodeProp", indexPersonRange.property)
 
-    semanticTable.resolvedRelTypeNames.put("Friends", indexFriends.relType)
-    semanticTable.resolvedRelTypeNames.put("Friends", indexFriends.relType)
-    semanticTable.resolvedPropertyKeyNames.put("relProp", indexFriends.property)
+    semanticTable.resolvedRelTypeNames.put("Friends", indexFriendsRange.relType)
+    semanticTable.resolvedRelTypeNames.put("Friends", indexFriendsRange.relType)
+    semanticTable.resolvedPropertyKeyNames.put("relProp", indexFriendsRange.property)
 
     semanticTable
       .addTypeInfo(literalInt(3), CTInteger)
@@ -1837,13 +1980,14 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     relTypeInfo: RelTypeInfo = Map.empty,
     stats: GraphStatistics = mockStats(),
     semanticTable: SemanticTable = setupSemanticTable(),
-    existenceConstraints: Set[(ElementTypeName, String)] = Set.empty
+    existenceConstraints: Set[(ElementTypeName, String)] = Set.empty,
+    typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]] = Map.empty
   ): Expression => Selectivity = {
     implicit val sT: SemanticTable = semanticTable
     implicit val indexCPPC: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default
 
     val combiner = IndependenceCombiner
-    val planContext = mockPlanContext(stats, existenceConstraints)
+    val planContext = mockPlanContext(stats, existenceConstraints, typeConstraints)
     val calculator = ExpressionSelectivityCalculator(planContext.statistics, combiner)
     val compositeCalculator = CompositeExpressionSelectivityCalculator(planContext)
     implicit val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
@@ -1852,7 +1996,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       simpleExpressionEvaluator
     )
 
-    exp: Expression => calculator(exp, labelInfo, relTypeInfo, existenceConstraints)
+    exp: Expression => calculator(exp, labelInfo, relTypeInfo, existenceConstraints, typeConstraints)
   }
 
   /**
@@ -1865,18 +2009,22 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     allNodesCardinality: Double = 10000.0,
     allRelCardinality: Double = 10000.0,
     labelOrRelCardinalities: Map[NameId, Double] =
-      Map(indexPersonRange.label -> 1000.0, indexFriends.relType -> 1000.0),
+      Map(indexPersonRange.label -> 1000.0, indexFriendsRange.relType -> 1000.0),
     indexCardinalities: Map[IndexDescriptor, Double] = Map(
       indexPersonRange -> 200.0,
       indexPersonText -> 100.0,
       indexPersonPoint -> 100.0,
-      indexFriends -> 200.0
+      indexFriendsRange -> 200.0,
+      indexFriendsText -> 150.0,
+      indexFriendsPoint -> 50.0
     ),
     indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(
       indexPersonRange -> 180.0,
       indexPersonText -> 60.0,
       indexPersonPoint -> 70.0,
-      indexFriends -> 180.0
+      indexFriendsRange -> 180.0,
+      indexFriendsText -> 100.0,
+      indexFriendsPoint -> 30.0
     )
   ) extends GraphStatistics {
 
@@ -1933,7 +2081,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   protected def mockPlanContext(
     stats: GraphStatistics,
-    existenceConstraints: Set[(ElementTypeName, String)]
+    existenceConstraints: Set[(ElementTypeName, String)],
+    typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]]
   ): PlanContext = new NotImplementedPlanContext {
 
     val indexMap: Map[Int, IndexDescriptor] = stats match {
@@ -1952,6 +2101,14 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       existenceConstraints.collect {
         case (RelTypeName(`relTypeName`), prop) => prop
       }
+    }
+
+    override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = {
+      typeConstraints.getOrElse(AstConstructionTestSupport.labelName(labelName), Map.empty)
+    }
+
+    override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]] = {
+      typeConstraints.getOrElse(AstConstructionTestSupport.relTypeName(relTypeName), Map.empty)
     }
 
     override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = indexMap.valuesIterator
@@ -1975,6 +2132,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   protected def rAnded(exprs: NonEmptyList[InequalityExpression]): Expression =
     AndedPropertyInequalities(varFor("r"), rProp, exprs)
+
+  implicit private class DoubleToSelectivitySyntax(selectivityValue: Double) {
+    def toSelectivity: Selectivity = Selectivity.of(selectivityValue).get
+  }
 }
 
 object ExpressionSelectivityCalculatorTest {

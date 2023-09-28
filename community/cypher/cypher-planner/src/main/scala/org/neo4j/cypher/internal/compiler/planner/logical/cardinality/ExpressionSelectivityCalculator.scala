@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
@@ -93,6 +94,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.PropertyTypeMapper
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
@@ -105,8 +107,10 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.PointType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.internal.helpers.MathUtil.Erf.erf
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
 
@@ -124,6 +128,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     IndexType.Point
   )
 
+  private val indexTypesPriorityForPointPredicates: Seq[IndexType] = Seq(
+    IndexType.Point,
+    IndexType.Range
+  )
+
   private def indexTypesForPropertyEquality(propertyType: CypherType): Seq[IndexType] = Seq(
     Some(IndexType.Range),
     // We cannot use a text index for cardinality estimation unless we know that the property type is a String
@@ -136,16 +145,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     Some(IndexType.Range)
   ).flatten
 
-  private val indexTypesPriorityForPointPredicates: Seq[IndexType] = Seq(
-    IndexType.Point,
-    IndexType.Range
-  )
-
   def apply(
     exp: Expression,
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
-    existenceConstraints: Set[(ElementTypeName, String)]
+    existenceConstraints: Set[(ElementTypeName, String)],
+    typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]]
   )(
     implicit semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
@@ -165,7 +170,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // SubPredicate(sub, super)
     case partial: PartialPredicate[_] =>
-      apply(partial.coveredPredicate, labelInfo, relTypeInfo, existenceConstraints)
+      apply(partial.coveredPredicate, labelInfo, relTypeInfo, existenceConstraints, typeConstraints)
 
     // WHERE x.prop =/IN ...
     case AsPropertySeekable(seekable) =>
@@ -198,13 +203,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, substring)
 
     case IsStringProperty(LogicalProperty(Variable(variable), propertyKey)) =>
-      calculateSelectivityForPropertyTypePredicateFromIndex(
+      isStringPropertySelectivity(
         variable,
         labelInfo,
         relTypeInfo,
-        propertyKey,
-        indexTypesPriorityForSubstringSargable
-      )
+        propertyKey
+      ).getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
 
     // WHERE x.prop =~ expression
     case RegexMatch(Property(Variable(name), propertyKey), _) =>
@@ -227,13 +231,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPointBoundingBoxSeekable(seekable, labelInfo, relTypeInfo)
 
     case IsPointProperty(LogicalProperty(Variable(variable), propertyKey)) =>
-      calculateSelectivityForPropertyTypePredicateFromIndex(
+      isPointPropertySelectivity(
         variable,
         labelInfo,
         relTypeInfo,
-        propertyKey,
-        indexTypesPriorityForPointPredicates
-      )
+        propertyKey
+      ).getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable) =>
@@ -244,11 +247,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       // Whether negated or not, predicates like CONTAINS and ENDS WITH will only apply to string properties
       val propertyTypeSelectivity =
         propertyTypeSelectivityForScannable(scannable, labelInfo, relTypeInfo, existenceConstraints)
-      apply(inner, labelInfo, relTypeInfo, existenceConstraints).negate * propertyTypeSelectivity
+      apply(inner, labelInfo, relTypeInfo, existenceConstraints, typeConstraints).negate * propertyTypeSelectivity
 
     // WHERE NOT [...]
     case Not(inner) =>
-      apply(inner, labelInfo, relTypeInfo, existenceConstraints).negate
+      apply(inner, labelInfo, relTypeInfo, existenceConstraints, typeConstraints).negate
 
     // WHERE x.prop IS NOT NULL
     case AsPropertyScannable(scannable) =>
@@ -281,7 +284,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       Selectivity.ONE
 
     case Ors(expressions) =>
-      val selectivities = expressions.toIndexedSeq.map(apply(_, labelInfo, relTypeInfo, existenceConstraints))
+      val selectivities =
+        expressions.toIndexedSeq.map(apply(_, labelInfo, relTypeInfo, existenceConstraints, typeConstraints))
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) =/IN [...]
@@ -313,6 +317,21 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     case _: AssertIsNode =>
       Selectivity.ONE
+
+    // WHERE a.prop IS :: <TYPE> [NOT NULL]
+    case IsTyped(LogicalProperty(Variable(variable), propertyKey), typeName) =>
+      val typeSelectivity =
+        isPropertyOfTypeSelectivity(variable, propertyKey, typeName, labelInfo, relTypeInfo, typeConstraints)
+
+      val propIsNotNullSelectivity =
+        calculateSelectivityForPropertyExistence(variable, labelInfo, relTypeInfo, propertyKey, existenceConstraints)
+
+      if (typeName.isNullable) {
+        combiner.orTogetherSelectivities(Seq(typeSelectivity, propIsNotNullSelectivity.negate))
+          .getOrElse(DEFAULT_TYPE_SELECTIVITY)
+      } else {
+        typeSelectivity * propIsNotNullSelectivity
+      }
 
     case _ =>
       DEFAULT_PREDICATE_SELECTIVITY
@@ -376,7 +395,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     relTypeInfo: RelTypeInfo,
     propertyKey: PropertyKeyName,
     indexTypesPriorityOrder: Seq[IndexType]
-  )(implicit semanticTable: SemanticTable): Selectivity = {
+  )(implicit semanticTable: SemanticTable): Option[Selectivity] = {
     val indexPropertyExistsSelectivities: Seq[(Selectivity, IndexType)] =
       multipleIndexPropertyExistsSelectivitiesFor(
         variable,
@@ -389,7 +408,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     indexPropertyExistsSelectivities
       .headOption
       .map(_._1)
-      .getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
   }
 
   private def multipleIndexPropertyExistsSelectivitiesFor(
@@ -646,6 +664,36 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     }
   }
 
+  private def isStringPropertySelectivity(
+    variable: String,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    propertyKey: PropertyKeyName
+  )(implicit semanticTable: SemanticTable): Option[Selectivity] = {
+    calculateSelectivityForPropertyTypePredicateFromIndex(
+      variable,
+      labelInfo,
+      relTypeInfo,
+      propertyKey,
+      indexTypesPriorityForSubstringSargable
+    )
+  }
+
+  private def isPointPropertySelectivity(
+    variable: String,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    propertyKey: PropertyKeyName
+  )(implicit semanticTable: SemanticTable): Option[Selectivity] = {
+    calculateSelectivityForPropertyTypePredicateFromIndex(
+      variable,
+      labelInfo,
+      relTypeInfo,
+      propertyKey,
+      indexTypesPriorityForPointPredicates
+    )
+  }
+
   private def propertyTypeSelectivityForScannable(
     scannable: Scannable[Expression],
     labelInfo: LabelInfo,
@@ -654,21 +702,19 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   )(implicit semanticTable: SemanticTable): Selectivity = {
     scannable.cypherType match {
       case CTString =>
-        calculateSelectivityForPropertyTypePredicateFromIndex(
+        isStringPropertySelectivity(
           scannable.name,
           labelInfo,
           relTypeInfo,
-          scannable.propertyKey,
-          indexTypesPriorityForSubstringSargable
-        )
+          scannable.propertyKey
+        ).getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
       case CTPoint =>
-        calculateSelectivityForPropertyTypePredicateFromIndex(
+        isPointPropertySelectivity(
           scannable.name,
           labelInfo,
           relTypeInfo,
-          scannable.propertyKey,
-          indexTypesPriorityForPointPredicates
-        )
+          scannable.propertyKey
+        ).getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
       case _ =>
         calculateSelectivityForPropertyExistence(
           scannable.name,
@@ -678,6 +724,57 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
           existenceConstraints
         )
     }
+  }
+
+  private def isPropertyOfTypeSelectivity(
+    variable: String,
+    propertyKey: PropertyKeyName,
+    typeName: CypherType,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]]
+  )(implicit semanticTable: SemanticTable): Selectivity = {
+    val typeConstraintSelectivity: Option[Selectivity] =
+      propertyTypeSelectivityFromTypeConstraints(
+        variable,
+        propertyKey,
+        typeName,
+        labelInfo,
+        relTypeInfo,
+        typeConstraints
+      )
+
+    typeConstraintSelectivity.orElse {
+      typeName match {
+        case _: StringType => isStringPropertySelectivity(variable, labelInfo, relTypeInfo, propertyKey)
+        case _: PointType  => isPointPropertySelectivity(variable, labelInfo, relTypeInfo, propertyKey)
+        case _             => None
+      }
+    }.getOrElse(DEFAULT_TYPE_SELECTIVITY)
+  }
+
+  private def propertyTypeSelectivityFromTypeConstraints(
+    variable: String,
+    propertyKey: PropertyKeyName,
+    typeName: CypherType,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]]
+  ): Option[Selectivity] = {
+    val labels = labelInfo.getOrElse(variable, Set.empty)
+    val relTypes = relTypeInfo.get(variable)
+
+    val matchingConstraintSelectivities = for {
+      elementTypeName <- (labels ++ relTypes)
+      schemaType <- PropertyTypeMapper.asSchemaValueType(typeName)
+      propConstraints <- typeConstraints.get(elementTypeName)
+      constraint <- propConstraints.get(propertyKey.name)
+      if constraint.contains(schemaType)
+    } yield {
+      Selectivity.ONE
+    }
+
+    matchingConstraintSelectivities.headOption
   }
 }
 

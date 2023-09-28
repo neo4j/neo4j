@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 /**
  * Test that CompositeExpressionSelectivityCalculator returns the same results as ExpressionSelectivityCalculator for single expressions.
@@ -46,9 +47,10 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
     relTypeInfo: RelTypeInfo,
     stats: GraphStatistics,
     semanticTable: SemanticTable,
-    existenceConstraints: Set[(ElementTypeName, String)]
+    existenceConstraints: Set[(ElementTypeName, String)],
+    typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]]
   ): Expression => Selectivity = {
-    val planContext = mockPlanContext(stats, existenceConstraints)
+    val planContext = mockPlanContext(stats, existenceConstraints, typeConstraints)
     val compositeCalculator = CompositeExpressionSelectivityCalculator(planContext)
     val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
       SimpleMetricsFactory.newQueryGraphCardinalityModel(

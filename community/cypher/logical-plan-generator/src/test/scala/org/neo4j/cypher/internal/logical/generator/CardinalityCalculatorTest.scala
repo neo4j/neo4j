@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -93,6 +94,11 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
       override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+      override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = Map.empty
+
+      override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]] =
+        Map.empty
     }
   }
 

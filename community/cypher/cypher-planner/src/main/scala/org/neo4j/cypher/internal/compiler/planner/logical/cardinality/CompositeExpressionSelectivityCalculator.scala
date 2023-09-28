@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 import scala.annotation.tailrec
 
@@ -112,6 +113,16 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
         planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName.name).map(relTypeName -> _)
     }
 
+  private val getNodePropertiesWithTypeConstraint =
+    CachedFunction[LabelName, (ElementTypeName, Map[String, Seq[SchemaValueType]])] {
+      label => label -> planContext.getNodePropertiesWithTypeConstraint(label.name)
+    }
+
+  private val getRelationshipPropertiesWithTypeConstraint =
+    CachedFunction[RelTypeName, (ElementTypeName, Map[String, Seq[SchemaValueType]])] {
+      relTypeName => relTypeName -> planContext.getRelationshipPropertiesWithTypeConstraint(relTypeName.name)
+    }
+
   override def apply(
     selections: Selections,
     labelInfo: LabelInfo,
@@ -139,12 +150,18 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       forLabels ++ forRelationships
     }
 
+    val typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]] = {
+      val forLabels = labelInfo.values.flatten.map(getNodePropertiesWithTypeConstraint).toMap
+      val forRelationships = relTypeInfo.values.map(getRelationshipPropertiesWithTypeConstraint).toMap
+      forLabels ++ forRelationships
+    }
+
     // Used when we can conclude that no composite index influences the result
     def fallback: Selectivity = {
       val simpleSelectivities =
         unwrappedSelections
           .flatPredicates
-          .map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo, existenceConstraints)(
+          .map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo, existenceConstraints, typeConstraints)(
             semanticTable,
             indexPredicateProviderContext,
             cardinalityModel
@@ -230,7 +247,13 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
     // Forward all not covered predicates to the singleExpressionSelectivityCalculator.
     val notCoveredPredicatesSelectivities =
-      notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo, existenceConstraints)(
+      notCoveredPredicates.map(singleExpressionSelectivityCalculator(
+        _,
+        labelInfo,
+        relTypeInfo,
+        existenceConstraints,
+        typeConstraints
+      )(
         semanticTable,
         indexPredicateProviderContext,
         cardinalityModel

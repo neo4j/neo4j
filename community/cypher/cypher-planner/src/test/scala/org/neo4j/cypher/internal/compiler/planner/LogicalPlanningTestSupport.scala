@@ -115,6 +115,7 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.constraints.SchemaValueType
 
 import scala.collection.mutable
 
@@ -187,6 +188,11 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
 
       override def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Set[String] =
         Set.empty
+
+      override def getNodePropertiesWithTypeConstraint(labelName: String): Map[String, Seq[SchemaValueType]] = Map.empty
+
+      override def getRelationshipPropertiesWithTypeConstraint(relTypeName: String): Map[String, Seq[SchemaValueType]] =
+        Map.empty
 
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
 
