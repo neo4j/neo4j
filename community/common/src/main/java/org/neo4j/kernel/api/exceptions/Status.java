@@ -692,7 +692,10 @@ public interface Status {
     enum ChangeDataCapture implements Status {
         Disabled(DatabaseError, "Change Data Capture is not currently enabled for this database"),
         ScanFailure(DatabaseError, "Unable to read the Change Data Capture data for this database"),
-        InvalidIdentifier(ClientError, "Invalid change identifier");
+        InvalidIdentifier(ClientError, "Invalid change identifier"),
+        FutureIdentifier(
+                TransientError,
+                "Change identifier points to a future transaction that has not yet happened on this database instance");
 
         private final Code code;
 
