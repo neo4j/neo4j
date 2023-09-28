@@ -128,7 +128,7 @@ public enum NotificationCodeWithDescription {
     DEPRECATED_FORMAT(
             Status.Request.DeprecatedFormat,
             "The requested format has been deprecated. (%s)",
-            "The requested `%s` format is deprecated. Replace it with `%s`."),
+            NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
     LARGE_LABEL_LOAD_CSV(
             Status.Statement.NoApplicableIndex,
             "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "

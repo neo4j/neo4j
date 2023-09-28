@@ -440,7 +440,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Request.DeprecatedFormat",
                 "The requested format has been deprecated. (u627)",
                 NotificationCategory.DEPRECATION,
-                "The requested `deprecatedFormat` format is deprecated. Replace it with `newFormat`.");
+                "`deprecatedFormat` is deprecated. It is replaced by `newFormat`.");
     }
 
     @Test
