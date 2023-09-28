@@ -740,7 +740,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The role already has the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                null);
+                "`GRANT WRITE ON GRAPH * TO editor` has no effect. The role already has the privilege. See Status Codes documentation for more information.");
     }
 
     @Test
@@ -755,7 +755,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The role does not have the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                null);
+                "`REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role does not have the privilege. See Status Codes documentation for more information.");
     }
 
     @Test
@@ -770,7 +770,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user already has the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                null);
+                "`GRANT ROLE aliceRole TO alice` has no effect. The user already has the role. See Status Codes documentation for more information.");
     }
 
     @Test
@@ -785,23 +785,23 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user does not have the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                null);
+                "`REVOKE ROLE other FROM alice` has no effect. The user does not have the role. See Status Codes documentation for more information.");
     }
 
     @Test
     void shouldConstructNotificationsFor_IMPOSSIBLE_REVOKE_COMMAND() {
         NotificationImplementation notification =
-                impossibleRevokeCommand(InputPosition.empty, "REVOKE admin FROM ALICE", "Role does not exist.");
+                impossibleRevokeCommand(InputPosition.empty, "REVOKE admina FROM ALICE", "Role does not exist.");
 
         verifyNotification(
                 notification,
-                "`REVOKE admin FROM ALICE` has no effect.",
+                "`REVOKE admina FROM ALICE` has no effect.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Security.ImpossibleRevokeCommand",
                 "Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version. "
                         + "See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                null);
+                "`REVOKE admina FROM ALICE` has no effect. Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version. See Status Codes documentation for more information.");
     }
 
     @Test
