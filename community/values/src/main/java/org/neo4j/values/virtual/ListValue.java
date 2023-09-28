@@ -184,7 +184,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public IterationPreference iterationPreference() {
-            return IterationPreference.ITERATION;
+            if (values instanceof ArrayList<?>) {
+                return RANDOM_ACCESS;
+            } else {
+                return IterationPreference.ITERATION;
+            }
         }
 
         @Override
