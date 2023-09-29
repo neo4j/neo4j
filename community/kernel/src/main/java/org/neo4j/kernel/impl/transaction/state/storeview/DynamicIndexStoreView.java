@@ -89,14 +89,14 @@ public class DynamicIndexStoreView implements IndexStoreView {
             boolean parallelWrite,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
-        var tokenIndex = findTokenIndex(NODE);
+        var tokenIndex = findTokenIndex(NODE, false);
         if (tokenIndex.isPresent()) {
             // Token index present. Lock it and check again.
             var lockClient = lockManager.newClient();
             var instantiatedIndexedScan = false;
             try {
-                lockTokenIndexForScan(tokenIndex.get(), lockClient);
-                tokenIndex = findTokenIndex(NODE);
+                lockTokenIndexForScan(tokenIndex.get().descriptor(), lockClient);
+                tokenIndex = findTokenIndex(NODE, true);
                 if (tokenIndex.isPresent()) {
                     var nodeStoreScan = new LabelIndexedNodeStoreScan(
                             config,
@@ -145,14 +145,14 @@ public class DynamicIndexStoreView implements IndexStoreView {
             boolean parallelWrite,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
-        var tokenIndex = findTokenIndex(RELATIONSHIP);
+        var tokenIndex = findTokenIndex(RELATIONSHIP, false);
         if (tokenIndex.isPresent()) {
             // Token index present. Lock it and check again.
             var lockClient = lockManager.newClient();
             var instantiatedIndexedScan = false;
             try {
-                lockTokenIndexForScan(tokenIndex.get(), lockClient);
-                tokenIndex = findTokenIndex(RELATIONSHIP);
+                lockTokenIndexForScan(tokenIndex.get().descriptor(), lockClient);
+                tokenIndex = findTokenIndex(RELATIONSHIP, true);
                 if (tokenIndex.isPresent()) {
                     StoreScan storeScan;
                     if (fullScanStoreView.storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex()) {
@@ -215,7 +215,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
         return fullScanStoreView.isEmpty(cursorContext);
     }
 
-    private Optional<TokenIndexData> findTokenIndex(EntityType entityType) {
+    private Optional<TokenIndexData> findTokenIndex(EntityType entityType, boolean instantiateReader) {
         IndexDescriptor descriptor;
         try (StorageReader reader = storageEngine.newReader()) {
             descriptor =
@@ -228,7 +228,8 @@ public class DynamicIndexStoreView implements IndexStoreView {
         try {
             IndexProxy indexProxy = indexProxies.getIndexProxy(descriptor);
             if (indexProxy.getState() == InternalIndexState.ONLINE) {
-                return Optional.of(new TokenIndexData(indexProxy.newTokenReader(), indexProxy.getDescriptor()));
+                return Optional.of(new TokenIndexData(
+                        instantiateReader ? indexProxy.newTokenReader() : null, indexProxy.getDescriptor()));
             }
         } catch (IndexNotFoundKernelException e) {
             log.warn("Token index missing for entity: %s, switching to full scan", entityType, e);
@@ -236,12 +237,10 @@ public class DynamicIndexStoreView implements IndexStoreView {
         return Optional.empty();
     }
 
-    private void lockTokenIndexForScan(TokenIndexData index, LockManager.Client lockClient) {
+    private void lockTokenIndexForScan(IndexDescriptor index, LockManager.Client lockClient) {
         lockClient.initialize(LeaseService.NoLeaseClient.INSTANCE, SYSTEM_TRANSACTION_ID, INSTANCE, config);
         lockClient.acquireShared(
-                LockTracer.NONE,
-                index.descriptor().schema().keyType(),
-                index.descriptor().schema().lockingKeys());
+                LockTracer.NONE, index.schema().keyType(), index.schema().lockingKeys());
     }
 
     private record TokenIndexData(TokenIndexReader reader, IndexDescriptor descriptor) {}
