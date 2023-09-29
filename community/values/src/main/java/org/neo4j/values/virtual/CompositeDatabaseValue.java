@@ -32,7 +32,8 @@ public interface CompositeDatabaseValue {
 
         /**
          * @param id internal id of the node.
-         * @param sourceId a unique id in the current transaction, of the graph this node belongs to.
+         * @param elementId the element id of the node.
+         * @param sourceId a unique id of the constituent graph in the current transaction.
          * @param labels label names of this node.
          * @param properties properties of this node.
          * @param isDeleted whether this node is deleted.
@@ -71,11 +72,11 @@ public interface CompositeDatabaseValue {
     class CompositeDirectRelationshipValue extends RelationshipValue.DirectRelationshipValue
             implements CompositeDatabaseValue {
         private final long sourceId;
-
         /**
          * @param id the id of the relationship.
+         * @param elementId the element id of the relationship.
+         * @param sourceId a unique id of the constituent graph in the current transaction.
          * @param startNode start node of this relationship.
-         * @param sourceId a unique id in the current transaction, of the graph this relationship belongs to.
          * @param endNode end node of this relationship.
          * @param type type name of this relationship.
          * @param properties properties of this relationship
@@ -123,6 +124,11 @@ public interface CompositeDatabaseValue {
 
         private final long sourceId;
 
+        /**
+         * @param id the id of the node.
+         * @param elementId the element id of the node.
+         * @param sourceId a unique id of the constituent graph in the current transaction.
+         */
         public CompositeFullNodeReference(long id, String elementId, long sourceId) {
             super(id, elementId);
             this.sourceId = sourceId;
