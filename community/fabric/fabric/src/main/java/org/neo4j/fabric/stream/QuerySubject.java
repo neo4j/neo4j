@@ -222,10 +222,12 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
     }
 
     class CompositeQuerySubject extends BasicQuerySubject implements QuerySubject {
+        private final long sourceTagId;
         private final long sourceId;
 
         public CompositeQuerySubject(long sourceId) {
-            this.sourceId = SourceTagging.makeSourceTag(sourceId);
+            this.sourceTagId = SourceTagging.makeSourceTag(sourceId);
+            this.sourceId = sourceId;
         }
 
         @Override
@@ -300,7 +302,7 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
         }
 
         private long tag(long id) {
-            return SourceTagging.tagId(id, sourceId);
+            return SourceTagging.tagId(id, sourceTagId);
         }
 
         private static FabricException unableToTagError(AnyValue value) {
