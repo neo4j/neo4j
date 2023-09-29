@@ -142,7 +142,11 @@ public enum Group {
     AUTH_CACHE("AuthCache", ExecutorServiceFactory.workStealing()),
     SECURITY_MAINTAINENCE("SecurityMaintainence"),
 
+    // GDS
     GDS_CLUSTER_WRITE("GdsClusterWrite"),
+
+    // ARROW
+    ARROW_WRITE("ArrowWrite"),
 
     // TESTING
     TESTING("TestingGroup", ExecutorServiceFactory.callingThread());
