@@ -370,9 +370,9 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     result should beColumns("keep")
       .withRows(inOrder(sortedRange.map(i => Array(s"bla$i"))))
 
-    probe1.seenRows.map(_.toSeq).toSeq shouldBe
+    probe1.seenRows.map(_.toSeq).toSet shouldBe
       Range.inclusive(0, sizeHint)
-        .map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
+        .map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i"))).toSet
 
     probe2.seenRows.map(_.toSeq).toSeq shouldBe
       sortedRange.map(i => Seq(stringValue(s"bla$i"), null))

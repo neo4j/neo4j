@@ -179,7 +179,8 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.limit(limit)
       .|.nonFuseable()
-      .|.unwind("range(1, 10) AS b")
+      .|.projection("a + 1 AS b")
+      .|.unwind(s"range(1, $sizeHint) AS ignore")
       .|.argument("a")
       .input(variables = Seq("a"))
       .build()
@@ -189,8 +190,7 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = for {
       a <- 1 to sizeHint
-      b <- (1 to 10).take(limit)
-    } yield Array[Any](a, b)
+    } yield Array[Any](a, a + 1)
 
     runtimeResult should beColumns("a", "b").withRows(expected)
   }
