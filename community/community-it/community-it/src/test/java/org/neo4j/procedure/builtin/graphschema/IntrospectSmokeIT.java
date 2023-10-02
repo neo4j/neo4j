@@ -711,6 +711,9 @@ class IntrospectSmokeIT {
                         "CALL internal.introspect.asJson({useConstantIds: true, prettyPrint: true, sampleOnly: $sampleOnly}) YIELD value RETURN value AS result",
                         Map.of("sampleOnly", sampleOnly),
                         r -> r.next().get("result"));
-        assertThat(result).isEqualTo(expected);
+
+        // Windows is adding \r to newlines, but our expectation is \n.
+        var sanitizedString = ((String) result).replace("\r\n", "\n");
+        assertThat(sanitizedString).isEqualTo(expected);
     }
 }
