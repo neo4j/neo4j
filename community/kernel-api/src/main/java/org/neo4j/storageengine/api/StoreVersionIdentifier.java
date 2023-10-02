@@ -86,4 +86,9 @@ public class StoreVersionIdentifier implements StoreVersionUserStringProvider {
     public int hashCode() {
         return Objects.hash(storageEngineName, formatName, majorVersion, minorVersion);
     }
+
+    @Override
+    public String toString() {
+        return getStoreVersionUserString();
+    }
 }
