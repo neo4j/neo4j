@@ -18,9 +18,11 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.TestContext
 import org.neo4j.cypher.internal.rewriting.RewriteTest
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -294,10 +296,46 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
     )
   }
 
+  test("should not rewrite NULL inside a subquery expression") {
+    assertRewrite(
+      """RETURN
+        |  NULL AS x,
+        |  COUNT { RETURN 123 ORDER BY NULL } + sum(123) AS result""".stripMargin,
+      """WITH sum(123) AS `  UNNAMED0`, NULL AS x
+        |RETURN
+        |  x AS x,
+        |  COUNT { RETURN 123 ORDER BY NULL } + `  UNNAMED0` AS result""".stripMargin
+    )
+  }
+
+  test("should not rewrite parameter inside a subquery expression") {
+    assertRewrite(
+      """RETURN
+        |  $param AS x,
+        |  COUNT { RETURN 123 ORDER BY $param } + sum(123) AS result""".stripMargin,
+      """WITH sum(123) AS `  UNNAMED0`, $param AS x
+        |RETURN
+        |  x AS x,
+        |  COUNT { RETURN 123 ORDER BY $param } + `  UNNAMED0` AS result""".stripMargin
+    )
+  }
+
   override protected def parseForRewriting(queryText: String): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(Some(pos))
     super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeWithAndReturnClauses(
       exceptionFactory
     )))
+  }
+
+  override protected def getRewrite(originalQuery: String, expectedQuery: String): (Statement, AnyRef) = {
+    val original = parseForRewriting(originalQuery)
+    val expected = parseForRewriting(expectedQuery)
+    val semanticCheckResult = SemanticChecker.check(original)
+
+    val originalWithDeps = original.endoRewrite(computeDependenciesForExpressions(semanticCheckResult.state))
+
+    val result = rewrite(originalWithDeps)
+    (expected, result)
+
   }
 }

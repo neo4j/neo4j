@@ -3869,6 +3869,27 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build()
   }
 
+  test("should plan COUNT with ORDER BY NULL, aggregation, combined with another aggregating expression") {
+    val planner = plannerBuilder().setAllNodesCardinality(100).build()
+    val q =
+      """RETURN
+        |  NULL AS x,
+        |  COUNT { RETURN stDev(1) ORDER BY NULL } + count(*) AS result
+        |""".stripMargin
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("anon_1 + anon_0 AS result")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_1"))
+      .|.sort("NULL ASC")
+      .|.projection("NULL AS NULL")
+      .|.aggregation(Seq(), Seq("stDev(1) AS `stDev(1)`"))
+      .|.argument()
+      .aggregation(Seq("NULL AS x"), Seq("count(*) AS anon_0"))
+      .argument()
+      .build()
+  }
+
   object VariableSet {
 
     def unapplySeq(s: Set[LogicalVariable]): Option[Seq[String]] = {

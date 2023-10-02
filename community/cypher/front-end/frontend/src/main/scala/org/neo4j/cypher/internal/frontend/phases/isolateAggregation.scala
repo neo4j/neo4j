@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.hasAggregateButIsNotAggregate
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
@@ -105,8 +106,11 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
   }
 
   private def createRewriterFor(withReturnItems: Set[ReturnItem]): Rewriter = {
+    val aliasedExpressionRefs: Set[Ref[AnyRef]] = withReturnItems.map(ri => Ref(ri.expression))
+
     def inner = Rewriter.lift {
-      case original: Expression =>
+      // Don't rewrite constant expressions, unless they were explicitly aliased.
+      case original: Expression if aliasedExpressionRefs.contains(Ref(original)) || isNotConstantExpression(original) =>
         val rewrittenExpression = withReturnItems.collectFirst {
           case item @ AliasedReturnItem(expression, _) if original == expression =>
             item.alias.get.copyId
@@ -147,10 +151,13 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
         }
     }(originalExpressions).filter {
       // Constant expressions should never be isolated
-      expr => IsAggregate(expr) || expr.dependencies.nonEmpty
+      isNotConstantExpression
     }
     expressionsToGoToWith
   }
+
+  private def isNotConstantExpression(expr: Expression): Boolean =
+    IsAggregate(expr) || expr.dependencies.nonEmpty
 
   private def clauseNeedingWork(c: Clause): Boolean = c.folder.treeExists {
     case e: Expression => hasAggregateButIsNotAggregate(e)
