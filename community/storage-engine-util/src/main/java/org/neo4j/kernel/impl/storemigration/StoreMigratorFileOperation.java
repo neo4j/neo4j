@@ -37,7 +37,7 @@ public final class StoreMigratorFileOperation {
      * @param toLayout directory to receive the database files.
      * @throws IOException if any of the operations fail for any reason.
      */
-    static void fileOperation(
+    public static void fileOperation(
             FileOperation operation,
             FileSystemAbstraction fs,
             DatabaseLayout fromLayout,
