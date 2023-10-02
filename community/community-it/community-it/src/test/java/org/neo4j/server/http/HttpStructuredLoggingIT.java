@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -31,6 +32,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -62,7 +64,8 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase
     };
 
     @Test
-    void shouldLogRequestsInStructuredFormat( ) throws Exception
+    @Timeout( 60 )
+    void shouldLogRequestsInStructuredFormat() throws Exception
     {
         var bootstrapper = new CommunityBootstrapper();
         HttpResponse<String> response;
@@ -100,20 +103,25 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase
         }
         assertThat( response.statusCode() ).isEqualTo( 200 );
 
-        var httpLogLines =
-                Files.readAllLines( httpLogPath ).stream()
-                     .map( s ->
-                           {
-                               try
+        List<Map<String,String>> httpLogLines = new java.util.ArrayList<>();
+
+        while ( httpLogLines.size() == 0 )
+        {
+            httpLogLines.addAll(
+                    Files.readAllLines( httpLogPath ).stream()
+                         .map( s ->
                                {
-                                   return OBJECT_MAPPER.readValue( s, MAP_TYPE );
-                               }
-                               catch ( JsonProcessingException e )
-                               {
-                                   throw new RuntimeException( e );
-                               }
-                           } )
-                     .collect( Collectors.toList() );
+                                   try
+                                   {
+                                       return OBJECT_MAPPER.readValue( s, MAP_TYPE );
+                                   }
+                                   catch ( JsonProcessingException e )
+                                   {
+                                       throw new RuntimeException( e );
+                                   }
+                               } )
+                         .collect( Collectors.toList() ) );
+        }
 
         assertThat( httpLogLines )
                 .anyMatch( logEntry -> logEntry.getOrDefault( "message", "" ).contains( HttpStructuredLoggingIT.class.getSimpleName() ) );
