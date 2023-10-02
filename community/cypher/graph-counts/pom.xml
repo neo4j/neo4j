@@ -39,7 +39,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-ast-factory</artifactId>
-            <version>5.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- test  -->
