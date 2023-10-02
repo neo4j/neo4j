@@ -109,21 +109,19 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
           var rewrittenExpressions = Seq.empty[RewrittenExpression]
 
           val rewrittenUc = uc.mapExpressions { exp =>
-            case class Acc(foundSubquery: Boolean, foundCrossReferencingSubquery: Boolean)
 
-            val Acc(foundSubquery, foundCrossReferencingSubquery) = exp.folder.treeFold(Acc(false, false)) {
-              case _: CaseExpression => {
-                case Acc(_, cr) => TraverseChildren(Acc(true, cr))
-              }
-              case se: SubqueryExpression => {
-                case Acc(_, cr) =>
-                  val depends = doesSubqueryExpressionDependOnUpdateClause(semanticTable, uc, se)
-                  SkipChildren(Acc(true, cr || depends))
-              }
-              case _ => acc => TraverseChildren(acc)
+            val state = exp.folder.treeFold[State](NothingFound) {
+              case _: CaseExpression =>
+                state => TraverseChildren(state.foundSubquery)
+              case se: SubqueryExpression if doesSubqueryExpressionDependOnUpdateClause(semanticTable, uc, se) =>
+                state => SkipChildren(state.foundCrossReference)
+              case _: SubqueryExpression =>
+                state => SkipChildren(state.foundSubquery)
+              case _ =>
+                state => TraverseChildren(state)
             }
 
-            if (foundSubquery & !foundCrossReferencingSubquery) {
+            if (state == SubqueryFound) {
               // Replace by a new anonymous variable
               val anonVarName = anonymousVariableNameGenerator.nextName
               rewrittenExpressions :+= RewrittenExpression(anonVarName, exp)
@@ -197,5 +195,19 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
 
       case _ => false
     }
+  }
+
+  trait State {
+    def foundSubquery: State = SubqueryFound
+
+    def foundCrossReference: State = CrossReferenceFound
+  }
+
+  case object NothingFound extends State
+
+  case object SubqueryFound extends State
+
+  case object CrossReferenceFound extends State {
+    override def foundSubquery: State = CrossReferenceFound
   }
 }
