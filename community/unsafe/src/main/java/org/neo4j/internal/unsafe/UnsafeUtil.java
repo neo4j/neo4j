@@ -735,11 +735,7 @@ public final class UnsafeUtil {
     }
 
     private static void freeHeapByteBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
-        var capacity = byteBuffer.capacity();
-        if (capacity == 0) {
-            // nothing to "free"
-            return;
-        }
+        int capacity = byteBuffer.capacity();
         // nerf buffer to break any future access
         nerfBuffer(byteBuffer);
         memoryTracker.releaseHeap(capacity);

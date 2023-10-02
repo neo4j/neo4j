@@ -120,6 +120,7 @@
       -XX:+UnlockDiagnosticVMOptions
       -XX:+DebugNonSafepoints
       -XX:MaxMetaspaceSize=550m
+      -XX:+EnableDynamicAgentLoading
       ${jdk.custom.options}
       ${test.runner.jvm.settings.db.format}
       ${test.runner.jvm.settings.additional}

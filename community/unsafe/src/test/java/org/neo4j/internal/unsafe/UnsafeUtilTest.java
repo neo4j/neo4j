@@ -289,22 +289,21 @@ class UnsafeUtilTest {
             a.mark();
             a.limit(202);
 
-            int sizeInBytes2 = 424;
-            long address2 = allocateMemory(sizeInBytes2, tracker);
+            long address2 = allocateMemory(sizeInBytes, tracker);
             try {
-                setMemory(address2, sizeInBytes2, (byte) 0);
-                initDirectByteBuffer(a, address2, sizeInBytes2);
+                setMemory(address2, sizeInBytes, (byte) 0);
+                initDirectByteBuffer(a, address2, sizeInBytes);
                 assertThat(a.hasArray()).isEqualTo(false);
                 assertThat(a.isDirect()).isEqualTo(true);
-                assertThat(a.capacity()).isEqualTo(sizeInBytes2);
-                assertThat(a.limit()).isEqualTo(sizeInBytes2);
+                assertThat(a.capacity()).isEqualTo(sizeInBytes);
+                assertThat(a.limit()).isEqualTo(sizeInBytes);
                 assertThat(a.position()).isEqualTo(0);
-                assertThat(a.remaining()).isEqualTo(sizeInBytes2);
+                assertThat(a.remaining()).isEqualTo(sizeInBytes);
                 assertThat(getByte(address2)).isEqualTo((byte) 0);
                 a.put((byte) -1);
                 assertThat(getByte(address2)).isEqualTo((byte) -1);
             } finally {
-                free(address2, sizeInBytes2, tracker);
+                free(address2, sizeInBytes, tracker);
             }
         } finally {
             free(address, sizeInBytes, tracker);

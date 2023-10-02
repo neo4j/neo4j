@@ -34,6 +34,9 @@ final class UnsafeBlockSwapper implements BlockSwapper {
     private static ByteBuffer proxy(long buffer, int bufferLength) throws IOException {
         ByteBuffer buf = PROXY_CACHE.get();
         if (buf != null) {
+            if (buf.capacity() != bufferLength) {
+                return createAndGetNewBuffer(buffer, bufferLength);
+            }
             UnsafeUtil.initDirectByteBuffer(buf, buffer, bufferLength);
             return buf;
         }
