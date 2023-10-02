@@ -25,10 +25,10 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -389,11 +389,24 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     @Override
     public boolean markForTermination( Status reason )
     {
-        exclusiveLock.lock();
-        try
-        {
-            if ( state != State.OPEN )
-            {
+        // While state is open, take the lock by polling.
+        // We do this to re-check state, which could be set by another thread committing or rolling back.
+        while (true) {
+            try {
+                if (state != State.OPEN) {
+                    return false;
+                } else {
+                    if (exclusiveLock.tryLock(100, TimeUnit.MILLISECONDS)) {
+                        break;
+                    }
+                }
+            } catch (InterruptedException e) {
+                throw terminationFailedError();
+            }
+        }
+
+        try {
+            if (state != State.OPEN) {
                 return false;
             }
 
@@ -401,13 +414,17 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             state = State.TERMINATED;
 
             doRollback( singleDbTransaction -> singleDbTransaction.terminate( reason ) );
-        }
-        finally
-        {
+
+        } finally {
             exclusiveLock.unlock();
         }
 
         return true;
+    }
+
+    private FabricException terminationFailedError() {
+        return new FabricException(
+                Status.Transaction.TransactionTerminationFailed, "Failed to terminate composite transaction %d", id);
     }
 
     @Override

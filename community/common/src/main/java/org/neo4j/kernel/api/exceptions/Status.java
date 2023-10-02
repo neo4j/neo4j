@@ -138,6 +138,8 @@ public interface Status
         // database errors
         TransactionStartFailed( DatabaseError,
                 "The database was unable to start the transaction." ),
+        TransactionTerminationFailed(DatabaseError, "The database was unable to terminate the transaction."),
+
         TransactionRollbackFailed( DatabaseError,
                 "The database was unable to roll back the transaction." ),
         TransactionCommitFailed( DatabaseError,
