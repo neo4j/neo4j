@@ -1817,7 +1817,7 @@ case class BFSPruningVarExpand(
     extends AbstractVarExpand(from, types, to, nodePredicates, relationshipPredicates, idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + to
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + to ++ depthName
 
   override def withNewPredicates(
     newNodePredicates: Seq[VariablePredicate],
@@ -2331,7 +2331,7 @@ case class NodeCountFromCountStore(
   implicit idGen: IdGen
 ) extends LogicalLeafPlan(idGen) with StableLeafPlan {
 
-  override val availableSymbols: Set[LogicalVariable] = Set(idName)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
   override def usedVariables: Set[LogicalVariable] = Set.empty
 

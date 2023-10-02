@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanCondition
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.phases.ValidateAvailableSymbols
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsIDReferences
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.PlanIDsAreCompressed
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity.SelectionPredicatesSortedBySelectivity
@@ -134,7 +136,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
   override def postConditions: Set[StepSequencer.Condition] = Set(
     LogicalPlanRewritten,
     // This belongs to simplifyPredicates
-    AndedPropertyInequalitiesRemoved
+    AndedPropertyInequalitiesRemoved,
+    LogicalPlanCondition.wrap(ValidateAvailableSymbols)
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
