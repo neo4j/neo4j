@@ -40,6 +40,8 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntInteger
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntString
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
+import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater
 import org.neo4j.internal.kernel.api.procs.UserAggregator
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction.BasicUserAggregationFunction
@@ -59,6 +61,7 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.LongAdder
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
@@ -1484,6 +1487,16 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
       .in("in6", Neo4jTypes.NTString, ntString("hello"))
       .threadSafe
       .build()
+    val countCreateReducerCalls = UserFunctionSignature.functionSignature("test", "countCreateReducerCalls")
+      .out(Neo4jTypes.NTString)
+      .in("in1", Neo4jTypes.NTInteger, ntInteger(0L))
+      .in("in2", Neo4jTypes.NTFloat, ntFloat(Math.PI))
+      .in("in3", Neo4jTypes.NTBoolean, ntBoolean(true))
+      .in("in4", Neo4jTypes.NTMap, ntMap(java.util.Map.of("default", "yes")))
+      .in("in5", Neo4jTypes.NTByteArray, ntByteArray(Array[Byte](1, 2, 3)))
+      .in("in6", Neo4jTypes.NTString, ntString("hello"))
+      .threadSafe
+      .build()
 
     Seq(
       new BasicUserAggregationFunction(noArgumentNonThreadSafe) {
@@ -1539,6 +1552,18 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
           }
 
           override def result(): AnyValue = Values.stringValue("yes")
+        }
+      },
+      new BasicUserAggregationFunction(countCreateReducerCalls) {
+        private val counter = new LongAdder()
+        override def create(ctx: Context): UserAggregator = ???
+        override def createReducer(ctx: Context): UserAggregationReducer = new UserAggregationReducer {
+          counter.increment()
+          override def newUpdater(): UserAggregationUpdater = new UserAggregationUpdater {
+            override def update(input: Array[AnyValue]): Unit = {}
+            override def applyUpdates(): Unit = {}
+          }
+          override def result(): AnyValue = Values.longValue(counter.sum())
         }
       }
     )
@@ -1814,6 +1839,30 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
 
     // then
     runtimeResult should beColumns("p").withSingleRow("yes")
+  }
+
+  test("should only call createReducer once") {
+    given {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num1" -> i, "num2" -> i)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("test.countCreateReducerCalls() AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withSingleRow(1)
   }
 
   test("should handle non-thread-safe user-defined aggregation with no argument") {

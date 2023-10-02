@@ -71,7 +71,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Status
 import org.scalatest.SucceededStatus
-import org.scalatest.Suite
 import org.scalatest.Tag
 
 import java.time.LocalTime
