@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.NullCheckAssert
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.functions
@@ -149,6 +150,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.ZERO_INT
 import org.neo4j.values.storable.Values.intValue
 
@@ -450,6 +452,7 @@ case class CommunityExpressionConverter(
       case ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Many, rhs) =>
         commands.expressions.ElementIdListToRelationshipIdListFunction(self.toCommandExpression(id, rhs))
       case _: IsRepeatTrailUnique => predicates.True()
+      case _: NullCheckAssert     => commands.expressions.Literal(NO_VALUE)
       case _                      => null
     }
 
