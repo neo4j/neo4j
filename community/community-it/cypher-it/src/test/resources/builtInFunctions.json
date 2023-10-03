@@ -261,6 +261,60 @@
     "isDeprecated": false
   },
   {
+    "name": "char_length",
+    "category": "Scalar",
+    "description": "Returns the number of Unicode characters in a `STRING`.",
+    "signature": "char_length(input :: STRING) :: INTEGER",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "INTEGER",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
+    "name": "character_length",
+    "category": "Scalar",
+    "description": "Returns the number of Unicode characters in a `STRING`.",
+    "signature": "character_length(input :: STRING) :: INTEGER",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "INTEGER",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
     "name": "coalesce",
     "category": "Scalar",
     "description": "Returns the first non-null value in a list of expressions.",

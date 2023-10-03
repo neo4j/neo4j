@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.functions.Atan
 import org.neo4j.cypher.internal.expressions.functions.Atan2
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Ceil
+import org.neo4j.cypher.internal.expressions.functions.CharacterLength
 import org.neo4j.cypher.internal.expressions.functions.Coalesce
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Cos
@@ -478,7 +479,9 @@ case class CommunityExpressionConverter(
           commands.expressions.Distinct(command, inner)
         else
           command
-      case Ceil     => commands.expressions.CeilFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Ceil => commands.expressions.CeilFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case CharacterLength =>
+        commands.expressions.CharacterLengthFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Coalesce => commands.expressions.CoalesceFunction(toCommandExpression(id, invocation.arguments, self): _*)
       case Collect =>
         val inner = self.toCommandExpression(id, invocation.arguments.head)

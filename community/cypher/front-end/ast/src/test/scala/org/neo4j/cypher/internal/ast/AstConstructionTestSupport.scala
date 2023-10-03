@@ -145,6 +145,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Avg
+import org.neo4j.cypher.internal.expressions.functions.CharacterLength
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.ElementId
@@ -376,6 +377,9 @@ trait AstConstructionTestSupport {
 
   def min(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Min.name)(pos))
+
+  def characterLength(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(CharacterLength.name)(pos))
 
   def size(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Size.name)(pos))

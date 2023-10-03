@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.CharLengthFunctionRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.FixedLengthShortestToAllRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
@@ -86,7 +87,8 @@ object ASTRewriter {
         FixedLengthShortestToAllRewriter,
         cypherTypeNormalizationRewriter,
         RewriteSizeOfCollectToCount,
-        ReplacePatternComprehensionWithCollectSubquery
+        ReplacePatternComprehensionWithCollectSubquery,
+        CharLengthFunctionRewriter
       ),
       initialConditions = SemanticInfoAvailable ++ Set(
         ReturnItemsAreAliased,

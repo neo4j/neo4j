@@ -1129,6 +1129,17 @@ public final class CypherFunctions {
         }
     }
 
+    public static AnyValue characterLength(AnyValue item) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof TextValue) {
+            return size(item);
+        } else {
+            throw new CypherTypeException(
+                    "Invalid input for function 'character_length()': Expected a String, got: " + item);
+        }
+    }
+
     public static AnyValue size(AnyValue item) {
         if (item == NO_VALUE) {
             return NO_VALUE;

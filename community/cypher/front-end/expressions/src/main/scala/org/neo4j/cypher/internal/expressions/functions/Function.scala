@@ -50,6 +50,8 @@ object Function {
     Atan2,
     Avg,
     Ceil,
+    CharLength,
+    CharacterLength,
     Coalesce,
     Collect,
     Ceil,
