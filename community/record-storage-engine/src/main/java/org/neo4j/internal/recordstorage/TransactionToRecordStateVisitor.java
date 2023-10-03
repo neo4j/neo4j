@@ -36,6 +36,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
 
 class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
     private boolean clearSchemaState;
@@ -46,6 +47,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
     private final ConstraintRuleAccessor constraintSemantics;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
+    private final boolean transientMissingSchema;
 
     TransactionToRecordStateVisitor(
             TransactionRecordState recordState,
@@ -53,7 +55,8 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
             SchemaRuleAccess schemaRuleAccess,
             ConstraintRuleAccessor constraintSemantics,
             CursorContext cursorContext,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            boolean transientMissingSchema) {
         this.recordState = recordState;
         this.schemaState = schemaState;
         this.schemaStorage = schemaRuleAccess;
@@ -61,6 +64,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
         this.constraintSemantics = constraintSemantics;
         this.cursorContext = cursorContext;
         this.storeCursors = storeCursors;
+        this.transientMissingSchema = transientMissingSchema;
     }
 
     @Override
@@ -208,6 +212,11 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
                 }
             }
         } catch (SchemaRuleNotFoundException e) {
+            if (transientMissingSchema) {
+                throw new TransactionConflictException(
+                        "Concurrent modification exception. Constraint to be removed already removed by another transaction.",
+                        e);
+            }
             throw new IllegalStateException(
                     "Constraint to be removed should exist, since its existence should have been validated earlier "
                             + "and the schema should have been locked.",

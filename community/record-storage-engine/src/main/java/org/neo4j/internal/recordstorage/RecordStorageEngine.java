@@ -168,6 +168,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             new EnumMap<>(TransactionApplicationMode.class);
     private final RecordDatabaseEntityCounters storeEntityCounters;
     private final RecordStorageIndexingBehaviour indexingBehaviour;
+    private final boolean multiVersion;
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
@@ -224,9 +225,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
         Stream.of(SchemaIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
 
-        indexingBehaviour = new RecordStorageIndexingBehaviour(
+        this.indexingBehaviour = new RecordStorageIndexingBehaviour(
                 neoStores.getNodeStore().getRecordsPerPage(),
                 neoStores.getRelationshipStore().getRecordsPerPage());
+        this.multiVersion = neoStores.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED);
         try {
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
             schemaCache = new SchemaCache(constraintSemantics, indexConfigCompleter, indexingBehaviour);
@@ -400,7 +402,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     private boolean isMultiVersionedFormat() {
-        return neoStores.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED);
+        return multiVersion;
     }
 
     @Override
@@ -463,7 +465,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
         // Visit transaction state and populate these record state objects
         TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor(
-                recordState, schemaState, schemaRuleAccess, constraintSemantics, cursorContext, storeCursors);
+                recordState,
+                schemaState,
+                schemaRuleAccess,
+                constraintSemantics,
+                cursorContext,
+                storeCursors,
+                multiVersion);
         CountsRecordState countsRecordState = new CountsRecordState(serialization);
         txStateVisitor = additionalTxStateVisitor.apply(txStateVisitor);
         txStateVisitor = new TransactionCountingStateVisitor(

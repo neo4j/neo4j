@@ -43,9 +43,13 @@ public class TransactionConflictException extends RuntimeException implements St
                 createMessage(databaseFile.getName(), pageId, observedVersion, highestClosed, nonVisibleTransactions);
     }
 
-    public TransactionConflictException(Exception e) {
-        super(e);
-        this.message = GENERIC_MESSAGE;
+    public TransactionConflictException(String message, Exception cause) {
+        super(cause);
+        this.message = message;
+    }
+
+    public TransactionConflictException(Exception cause) {
+        this(GENERIC_MESSAGE, cause);
     }
 
     public TransactionConflictException(RecordDatabaseFile databaseFile, long pageId) {
