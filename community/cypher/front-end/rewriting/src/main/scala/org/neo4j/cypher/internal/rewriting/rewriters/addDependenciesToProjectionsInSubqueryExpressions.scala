@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
@@ -86,9 +87,12 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
     }
 
   def rewriteSingleQuery(query: SingleQuery, scopeDependencies: Set[LogicalVariable]): SingleQuery = {
-    val newClauses = query.clauses.map {
-      case w: With => addDependenciesToWithClause(w, scopeDependencies)
-      case x       => x
+    val newClauses = query.clauses.flatMap {
+      case w: With => Seq(addDependenciesToWithClause(w, scopeDependencies))
+      case ret: Return if ret.orderBy.nonEmpty =>
+        val (newWith, newReturn) = splitReturnClause(ret)
+        Seq(addDependenciesToWithClause(newWith, scopeDependencies), newReturn)
+      case x => Seq(x)
     }
     query.copy(clauses = newClauses)(query.position)
   }
@@ -99,6 +103,19 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
     }
     val newReturnItems = (w.returnItems.items ++ scopeDependenciesAsReturnItems).toSet
     w.copy(returnItems = w.returnItems.copy(items = newReturnItems.toSeq)(w.returnItems.position))(w.position)
+  }
+
+  /*
+   * RETURN x + y ORDER BY x SKIP 10 LIMIT 5
+   * =>
+   * WITH x + y AS `x + y` ORDER BY x SKIP 10 LIMIT 5
+   * RETURN `x + y`
+   */
+  private def splitReturnClause(r: Return): (With, Return) = {
+    val newWith = With(r.distinct, r.returnItems, r.orderBy, r.skip, r.limit, r.where)(r.position)
+    val newReturn =
+      Return(r.returnItems.mapItems(items => items.map(ri => AliasedReturnItem(ri.alias.get))))(r.position)
+    (newWith, newReturn)
   }
 
   override def preConditions: Set[Condition] = Set(

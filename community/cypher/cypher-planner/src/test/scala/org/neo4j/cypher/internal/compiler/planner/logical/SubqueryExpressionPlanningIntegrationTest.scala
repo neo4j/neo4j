@@ -2974,18 +2974,18 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build())
   }
 
-  test("should plan FULL COUNT expression with ignored ORDER BY") {
+  test("should plan FULL COUNT expression with ORDER BY") {
     val plan = planner.plan(
       "MATCH (a:Person) WHERE COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN a ORDER BY a } > 1 RETURN a"
     ).stripProduceResults
     plan should equal(planner.subPlanBuilder()
-      .filterExpression(HasDegreeGreaterThan(
-        varFor("a"),
-        Some(RelTypeName("KNOWS")(pos)),
-        SemanticDirection.OUTGOING,
-        literalInt(1)
-      )(pos))
-      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .filter("anon_0 > 1")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.sort("a ASC")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person")
       .build())
   }
 
@@ -3067,13 +3067,14 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build()
   }
 
-  test("should plan FULL COUNT expression with a CALL Subquery and ignored ORDER BY") {
+  test("should plan FULL COUNT expression with a CALL Subquery and ORDER BY") {
     val plan = planner.plan(
       "MATCH (a:Person) RETURN COUNT { MATCH (a)-[r:KNOWS]->(c) CALL { WITH a MATCH (a)-[:HAS_DOG]-(b) RETURN b} RETURN a ORDER BY a} AS foo"
     ).stripProduceResults
     plan shouldBe planner.subPlanBuilder()
       .apply()
       .|.aggregation(Seq(), Seq("count(*) AS foo"))
+      .|.sort("a ASC")
       .|.expandAll("(a)-[anon_0:HAS_DOG]-(b)")
       .|.expandAll("(a)-[r:KNOWS]->(c)")
       .|.argument("a")
@@ -3826,6 +3827,46 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .nodeByLabelScan("person", "Person")
         .build()
     )
+  }
+
+  test("should plan COLLECT with ORDER BY external variable") {
+    val planner = plannerBuilder().setAllNodesCardinality(100).build()
+    val q =
+      """WITH 123 AS x, 321 AS y
+        |RETURN COLLECT {
+        |  RETURN x + y
+        |  ORDER BY x
+        |} AS result""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .rollUpApply("result", "x + y")
+      .|.projection("x + y AS `x + y`")
+      .|.sort("x ASC")
+      .|.argument("x", "y")
+      .projection("123 AS x", "321 AS y")
+      .argument()
+      .build()
+  }
+
+  test("should plan COLLECT with ORDER BY external variable and aggregation") {
+    val planner = plannerBuilder().setAllNodesCardinality(100).build()
+    val q =
+      """WITH 123 AS x, 321 AS y
+        |RETURN COLLECT {
+        |  RETURN sum(x + y) AS total
+        |  ORDER BY x
+        |} AS result""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .rollUpApply("result", "total")
+      .|.sort("x ASC")
+      .|.aggregation(Seq("x AS x", "y AS y"), Seq("sum(x + y) AS total"))
+      .|.argument("x", "y")
+      .projection("123 AS x", "321 AS y")
+      .argument()
+      .build()
   }
 
   object VariableSet {

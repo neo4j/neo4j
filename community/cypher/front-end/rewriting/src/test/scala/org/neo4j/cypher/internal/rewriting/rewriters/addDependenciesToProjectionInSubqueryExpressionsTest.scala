@@ -457,6 +457,22 @@ class addDependenciesToProjectionInSubqueryExpressionsTest extends CypherFunSuit
     assertIsNotRewritten(testName)
   }
 
+  test("should rewrite RETURN ORDER BY into WITH ORDER BY RETURN") {
+    assertRewrite(
+      """WITH 123 AS x, 321 AS y
+        |RETURN COLLECT {
+        |  RETURN x + y
+        |  ORDER BY x SKIP 10 LIMIT 5
+        |} AS result""".stripMargin,
+      """WITH 123 AS x, 321 AS y
+        |RETURN COLLECT {
+        |  WITH x + y AS `x + y`, x AS x, y AS y
+        |  ORDER BY x SKIP 10 LIMIT 5
+        |  RETURN `x + y` AS `x + y`
+        |} AS result""".stripMargin
+    )
+  }
+
   private def assertIsNotRewritten(query: String): Unit = {
     assertRewrite(query, query)
   }
