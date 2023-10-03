@@ -81,8 +81,8 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private SingleDbTransaction writingTransaction;
 
     FabricTransactionImpl( FabricTransactionInfo transactionInfo, TransactionBookmarkManager bookmarkManager, FabricRemoteExecutor remoteExecutor,
-            FabricLocalExecutor localExecutor, ErrorReporter errorReporter, TransactionManager transactionManager,
-            FabricConfig fabricConfig, Catalog catalogSnapshot )
+                           FabricLocalExecutor localExecutor, ErrorReporter errorReporter, TransactionManager transactionManager,
+                           FabricConfig fabricConfig, Catalog catalogSnapshot )
     {
         this.transactionInfo = transactionInfo;
         this.errorReporter = errorReporter;
@@ -284,8 +284,8 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     }
 
     private static List<Throwable> doOnChildren( Iterable<ReadingTransaction> readingTransactions,
-            SingleDbTransaction writingTransaction,
-            Function<SingleDbTransaction,Mono<Void>> operation )
+                                                 SingleDbTransaction writingTransaction,
+                                                 Function<SingleDbTransaction,Mono<Void>> operation )
     {
         var failures = Flux
                 .fromIterable( readingTransactions )
@@ -391,22 +391,32 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     {
         // While state is open, take the lock by polling.
         // We do this to re-check state, which could be set by another thread committing or rolling back.
-        while (true) {
-            try {
-                if (state != State.OPEN) {
+        while ( true )
+        {
+            try
+            {
+                if ( state != State.OPEN )
+                {
                     return false;
-                } else {
-                    if (exclusiveLock.tryLock(100, TimeUnit.MILLISECONDS)) {
+                }
+                else
+                {
+                    if ( exclusiveLock.tryLock( 100, TimeUnit.MILLISECONDS ) )
+                    {
                         break;
                     }
                 }
-            } catch (InterruptedException e) {
+            }
+            catch ( InterruptedException e )
+            {
                 throw terminationFailedError();
             }
         }
 
-        try {
-            if (state != State.OPEN) {
+        try
+        {
+            if ( state != State.OPEN )
+            {
                 return false;
             }
 
@@ -414,17 +424,19 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             state = State.TERMINATED;
 
             doRollback( singleDbTransaction -> singleDbTransaction.terminate( reason ) );
-
-        } finally {
+        }
+        finally
+        {
             exclusiveLock.unlock();
         }
 
         return true;
     }
 
-    private FabricException terminationFailedError() {
+    private FabricException terminationFailedError()
+    {
         return new FabricException(
-                Status.Transaction.TransactionTerminationFailed, "Failed to terminate composite transaction %d", id);
+                Status.Transaction.TransactionTerminationFailed, "Failed to terminate composite transaction %d", id );
     }
 
     @Override
@@ -564,12 +576,12 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     {
         // There are two situations and the error should reflect them in order not to confuse the users:
         // 1. This is actually the same database, but the location has changed, because of leader switch in the cluster.
-        if ( writingTransaction.getLocation().getUuid().equals(attempt.getUuid()) )
+        if ( writingTransaction.getLocation().getUuid().equals( attempt.getUuid() ) )
         {
             return new FabricException(
                     Status.Transaction.LeaderSwitch,
                     "Could not write to a database due to a cluster leader switch that occurred during the transaction. "
-                            + "Previous leader: %s, Current leader: %s.",
+                    + "Previous leader: %s, Current leader: %s.",
                     writingTransaction.getLocation(), attempt );
         }
 

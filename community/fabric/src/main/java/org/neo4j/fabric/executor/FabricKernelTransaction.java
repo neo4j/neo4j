@@ -156,14 +156,17 @@ public class FabricKernelTransaction
         openExecutionContexts.forEach( TransactionalContext::close );
     }
 
-    public void terminate(Status reason) {
-        terminateIfPossible(reason);
+    public void terminate( Status reason )
+    {
+        terminateIfPossible( reason );
     }
 
-    public void terminateIfPossible(Status reason) {
-        if (internalTransaction.isOpen()
-            && internalTransaction.terminationReason().isEmpty()) {
-            internalTransaction.terminate(reason);
+    public void terminateIfPossible( Status reason )
+    {
+        if ( internalTransaction.isOpen()
+             && internalTransaction.terminationReason().isEmpty() )
+        {
+            internalTransaction.terminate( reason );
         }
     }
 

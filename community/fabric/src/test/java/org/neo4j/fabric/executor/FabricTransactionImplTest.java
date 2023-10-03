@@ -35,6 +35,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.runtime.AccessMode;
@@ -66,147 +67,162 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.FakeClock;
 
-public class FabricTransactionImplTest {
+public class FabricTransactionImplTest
+{
     private static final FakeClock clock = new FakeClock();
     private static final Log log = mock( Log.class );
 
     @Test
-    void testChildrenAreTerminated() {
+    void testChildrenAreTerminated()
+    {
         var config = Config.defaults();
-        var bookmarkManager = mock(TransactionBookmarkManager.class);
+        var bookmarkManager = mock( TransactionBookmarkManager.class );
 
-        var loc1 = new Location.Local(1, UUID.randomUUID(), "one");
-        var loc2 = new Location.Local(2, UUID.randomUUID(), "two");
-        var loc3 = new Location.Local(3, UUID.randomUUID(), "three");
+        var loc1 = new Location.Local( 1, UUID.randomUUID(), "one" );
+        var loc2 = new Location.Local( 2, UUID.randomUUID(), "two" );
+        var loc3 = new Location.Local( 3, UUID.randomUUID(), "three" );
 
-        var itx1 = internalTransaction(true, null);
-        var itx2 = internalTransaction(true, null);
-        var itx3 = internalTransaction(true, null);
+        var itx1 = internalTransaction( true, null );
+        var itx2 = internalTransaction( true, null );
+        var itx3 = internalTransaction( true, null );
 
         var transactionManager =
-                transactionManager(config, localExecutor(config, Map.of(loc1, itx1, loc2, itx2, loc3, itx3)));
-        var tx = transactionManager.begin(createTransactionInfo(), bookmarkManager);
+                transactionManager( config, localExecutor( config, Map.of( loc1, itx1, loc2, itx2, loc3, itx3 ) ) );
+        var tx = transactionManager.begin( createTransactionInfo(), bookmarkManager );
 
-        tx.execute(ctx -> {
-            var local = ctx.getLocal();
-            local.getOrCreateTx(loc1, DEFINITELY_READ);
-            local.getOrCreateTx(loc2, DEFINITELY_READ);
-            local.getOrCreateTx(loc3, DEFINITELY_READ);
-            tx.markForTermination(Terminated);
+        tx.execute( ctx ->
+                    {
+                        var local = ctx.getLocal();
+                        local.getOrCreateTx( loc1, DEFINITELY_READ );
+                        local.getOrCreateTx( loc2, DEFINITELY_READ );
+                        local.getOrCreateTx( loc3, DEFINITELY_READ );
+                        tx.markForTermination( Terminated );
 
-            verify(itx1).terminate(Terminated);
-            verify(itx2).terminate(Terminated);
-            verify(itx3).terminate(Terminated);
+                        verify( itx1 ).terminate( Terminated );
+                        verify( itx2 ).terminate( Terminated );
+                        verify( itx3 ).terminate( Terminated );
 
-            return null;
-        });
+                        return null;
+                    } );
     }
 
     @Test
-    void testClosedChildrenAreNotTerminated() {
+    void testClosedChildrenAreNotTerminated()
+    {
         var config = Config.defaults();
-        var bookmarkManager = mock(TransactionBookmarkManager.class);
+        var bookmarkManager = mock( TransactionBookmarkManager.class );
 
-        var loc1 = new Location.Local(1, UUID.randomUUID(), "one");
-        var loc2 = new Location.Local(2, UUID.randomUUID(), "two");
-        var loc3 = new Location.Local(3, UUID.randomUUID(), "three");
+        var loc1 = new Location.Local( 1, UUID.randomUUID(), "one" );
+        var loc2 = new Location.Local( 2, UUID.randomUUID(), "two" );
+        var loc3 = new Location.Local( 3, UUID.randomUUID(), "three" );
 
-        var itx1 = internalTransaction(true, null);
-        var itx2 = internalTransaction(false, null);
-        var itx3 = internalTransaction(true, null);
+        var itx1 = internalTransaction( true, null );
+        var itx2 = internalTransaction( false, null );
+        var itx3 = internalTransaction( true, null );
 
         var transactionManager =
-                transactionManager(config, localExecutor(config, Map.of(loc1, itx1, loc2, itx2, loc3, itx3)));
-        var tx = transactionManager.begin(createTransactionInfo(), bookmarkManager);
+                transactionManager( config, localExecutor( config, Map.of( loc1, itx1, loc2, itx2, loc3, itx3 ) ) );
+        var tx = transactionManager.begin( createTransactionInfo(), bookmarkManager );
 
-        tx.execute(ctx -> {
-            var local = ctx.getLocal();
-            local.getOrCreateTx(loc1, DEFINITELY_READ);
-            local.getOrCreateTx(loc2, DEFINITELY_READ);
-            local.getOrCreateTx(loc3, DEFINITELY_READ);
-            tx.markForTermination(Terminated);
+        tx.execute( ctx ->
+                    {
+                        var local = ctx.getLocal();
+                        local.getOrCreateTx( loc1, DEFINITELY_READ );
+                        local.getOrCreateTx( loc2, DEFINITELY_READ );
+                        local.getOrCreateTx( loc3, DEFINITELY_READ );
+                        tx.markForTermination( Terminated );
 
-            verify(itx1).terminate(Terminated);
-            verify(itx2, never()).terminate(Terminated);
-            verify(itx3).terminate(Terminated);
+                        verify( itx1 ).terminate( Terminated );
+                        verify( itx2, never() ).terminate( Terminated );
+                        verify( itx3 ).terminate( Terminated );
 
-            return null;
-        });
+                        return null;
+                    } );
     }
 
     @Test
-    void testTerminatedChildrenAreNotTerminated() {
+    void testTerminatedChildrenAreNotTerminated()
+    {
         var config = Config.defaults();
-        var bookmarkManager = mock(TransactionBookmarkManager.class);
+        var bookmarkManager = mock( TransactionBookmarkManager.class );
 
-        var loc1 = new Location.Local(1, UUID.randomUUID(), "one");
-        var loc2 = new Location.Local(2, UUID.randomUUID(), "two");
-        var loc3 = new Location.Local(3, UUID.randomUUID(), "three");
+        var loc1 = new Location.Local( 1, UUID.randomUUID(), "one" );
+        var loc2 = new Location.Local( 2, UUID.randomUUID(), "two" );
+        var loc3 = new Location.Local( 3, UUID.randomUUID(), "three" );
 
-        var itx1 = internalTransaction(true, null);
-        var itx2 = internalTransaction(true, TransactionTimedOut);
-        var itx3 = internalTransaction(true, null);
+        var itx1 = internalTransaction( true, null );
+        var itx2 = internalTransaction( true, TransactionTimedOut );
+        var itx3 = internalTransaction( true, null );
 
         var transactionManager =
-                transactionManager(config, localExecutor(config, Map.of(loc1, itx1, loc2, itx2, loc3, itx3)));
-        var tx = transactionManager.begin(createTransactionInfo(), bookmarkManager);
+                transactionManager( config, localExecutor( config, Map.of( loc1, itx1, loc2, itx2, loc3, itx3 ) ) );
+        var tx = transactionManager.begin( createTransactionInfo(), bookmarkManager );
 
-        tx.execute(ctx -> {
-            var local = ctx.getLocal();
-            local.getOrCreateTx(loc1, DEFINITELY_READ);
-            local.getOrCreateTx(loc2, DEFINITELY_READ);
-            local.getOrCreateTx(loc3, DEFINITELY_READ);
-            tx.markForTermination(Terminated);
+        tx.execute( ctx ->
+                    {
+                        var local = ctx.getLocal();
+                        local.getOrCreateTx( loc1, DEFINITELY_READ );
+                        local.getOrCreateTx( loc2, DEFINITELY_READ );
+                        local.getOrCreateTx( loc3, DEFINITELY_READ );
+                        tx.markForTermination( Terminated );
 
-            verify(itx1).terminate(Terminated);
-            verify(itx2, never()).terminate(Terminated);
-            verify(itx3).terminate(Terminated);
+                        verify( itx1 ).terminate( Terminated );
+                        verify( itx2, never() ).terminate( Terminated );
+                        verify( itx3 ).terminate( Terminated );
 
-            return null;
-        });
+                        return null;
+                    } );
     }
 
-    private static InternalTransaction internalTransaction(boolean open, Status terminated) {
-        var itx = mock(InternalTransaction.class);
-        when(itx.isOpen()).thenReturn(open);
-        when(itx.terminationReason()).thenReturn(Optional.ofNullable(terminated));
+    private static InternalTransaction internalTransaction( boolean open, Status terminated )
+    {
+        var itx = mock( InternalTransaction.class );
+        when( itx.isOpen() ).thenReturn( open );
+        when( itx.terminationReason() ).thenReturn( Optional.ofNullable( terminated ) );
         return itx;
     }
 
     private static FabricLocalExecutor localExecutor(
-            Config config, Map<Location.Local, InternalTransaction> transactionMap) {
-        var fabricDatabaseManager = mock(FabricDatabaseManager.class);
-        transactionMap.forEach((loc, itx) -> {
-            try {
-                var graphDatabaseFacade = mock( GraphDatabaseFacade.class, RETURNS_MOCKS);
-                when(graphDatabaseFacade.databaseId())
-                        .thenReturn(DatabaseIdFactory.from(loc.getDatabaseName(), loc.getUuid()));
-                when(graphDatabaseFacade.beginTransaction(any(), any(), any(), any(), any()))
-                        .thenReturn(itx);
-                when(fabricDatabaseManager.getDatabaseFacade(eq(loc.getDatabaseName())))
-                        .thenReturn(graphDatabaseFacade);
-                DependencyResolver dependencyResolverMock = mock( DependencyResolver.class );
-                when(dependencyResolverMock.resolveDependency( GraphDatabaseQueryService.class )).thenReturn( mock(GraphDatabaseQueryService.class, RETURNS_MOCKS) );
-                when(graphDatabaseFacade.getDependencyResolver()).thenReturn( dependencyResolverMock );
-            } catch (UnavailableException e) {
-                throw new RuntimeException(e);
-            }
-        });
+            Config config, Map<Location.Local,InternalTransaction> transactionMap )
+    {
+        var fabricDatabaseManager = mock( FabricDatabaseManager.class );
+        transactionMap.forEach( ( loc, itx ) ->
+                                {
+                                    try
+                                    {
+                                        var graphDatabaseFacade = mock( GraphDatabaseFacade.class, RETURNS_MOCKS );
+                                        when( graphDatabaseFacade.databaseId() )
+                                                .thenReturn( DatabaseIdFactory.from( loc.getDatabaseName(), loc.getUuid() ) );
+                                        when( graphDatabaseFacade.beginTransaction( any(), any(), any(), any(), any() ) )
+                                                .thenReturn( itx );
+                                        when( fabricDatabaseManager.getDatabaseFacade( eq( loc.getDatabaseName() ) ) )
+                                                .thenReturn( graphDatabaseFacade );
+                                        DependencyResolver dependencyResolverMock = mock( DependencyResolver.class );
+                                        when( dependencyResolverMock.resolveDependency( GraphDatabaseQueryService.class ) )
+                                                .thenReturn( mock( GraphDatabaseQueryService.class, RETURNS_MOCKS ) );
+                                        when( graphDatabaseFacade.getDependencyResolver() ).thenReturn( dependencyResolverMock );
+                                    }
+                                    catch ( UnavailableException e )
+                                    {
+                                        throw new RuntimeException( e );
+                                    }
+                                } );
 
-        return new FabricLocalExecutor( FabricConfig.from(config), fabricDatabaseManager, FabricDatabaseAccess.NO_RESTRICTION);
+        return new FabricLocalExecutor( FabricConfig.from( config ), fabricDatabaseManager, FabricDatabaseAccess.NO_RESTRICTION );
     }
 
-    private static TransactionManager transactionManager( Config config, FabricLocalExecutor localExecutor) {
-        var remoteExecutor = mock(FabricRemoteExecutor.class, RETURNS_MOCKS);
-        var errorReporter = mock(ErrorReporter.class);
-        var transactionMonitor = mock(FabricTransactionMonitor.class);
-        var guard = mock(AvailabilityGuard.class);
-        var securityLog = mock(AbstractSecurityLog.class);
-        var catalogManager = mock(CatalogManager.class);
+    private static TransactionManager transactionManager( Config config, FabricLocalExecutor localExecutor )
+    {
+        var remoteExecutor = mock( FabricRemoteExecutor.class, RETURNS_MOCKS );
+        var errorReporter = mock( ErrorReporter.class );
+        var transactionMonitor = mock( FabricTransactionMonitor.class );
+        var guard = mock( AvailabilityGuard.class );
+        var securityLog = mock( AbstractSecurityLog.class );
+        var catalogManager = mock( CatalogManager.class );
         var fabricConfig = new FabricConfig( () -> Duration.ZERO, null, false, true );
 
         var logService = mock( LogService.class );
-        when(logService.getInternalLog( TransactionMonitor.class )).thenReturn( log );
+        when( logService.getInternalLog( TransactionMonitor.class ) ).thenReturn( log );
         return new TransactionManager(
                 remoteExecutor,
                 localExecutor,
@@ -220,10 +236,11 @@ public class FabricTransactionImplTest {
                 errorReporter );
     }
 
-    private static FabricTransactionInfo createTransactionInfo() {
-        var databaseName = new NormalizedDatabaseName("a");
-        var databaseId = DatabaseIdFactory.from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
+    private static FabricTransactionInfo createTransactionInfo()
+    {
+        var databaseName = new NormalizedDatabaseName( "a" );
+        var databaseId = DatabaseIdFactory.from( databaseName.name(), UUID.randomUUID() );
+        var databaseRef = new DatabaseReference.Internal( databaseName, databaseId );
         return new FabricTransactionInfo(
                 AccessMode.READ,
                 LoginContext.AUTH_DISABLED,
@@ -232,6 +249,6 @@ public class FabricTransactionImplTest {
                 false,
                 Duration.ZERO,
                 emptyMap(),
-                new RoutingContext( true, emptyMap()));
+                new RoutingContext( true, emptyMap() ) );
     }
 }
