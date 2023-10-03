@@ -19,7 +19,9 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Comparator;
 import org.neo4j.exceptions.IncomparableValuesException;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -49,6 +51,10 @@ public interface CompositeDatabaseValue {
             return sourceId;
         }
 
+        /**
+         * @param other
+         * @return true if the entity is a node which has the same id and sourceId as this object, otherwise false.
+         */
         @Override
         public boolean equals(VirtualValue other) {
             if (!super.equals(other)) {
@@ -58,9 +64,24 @@ public interface CompositeDatabaseValue {
             if (other instanceof CompositeDatabaseValue compositeValue) {
                 return sourceId == compositeValue.sourceId();
             } else {
+                /*
+                 * If we get here, it means we try to compare a composite node with a non-composite node, which has the same id.
+                 * It is not possible to compare those values as they might OR might not refer to the same element.
+                 *
+                 * We should never get here, as we always work with either only composite or only non-composite values.
+                 */
                 throw new IncomparableValuesException(
                         this.getClass().getSimpleName(), other.getClass().getSimpleName());
             }
+        }
+
+        @Override
+        public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
+            var idComparison = Long.compare(id(), ((VirtualNodeValue) other).id());
+
+            return idComparison != 0
+                    ? idComparison
+                    : Long.compare(sourceId(), ((CompositeDatabaseValue) other).sourceId());
         }
 
         @Override
@@ -100,6 +121,10 @@ public interface CompositeDatabaseValue {
             return sourceId;
         }
 
+        /**
+         * @param other
+         * @return true if the entity is a relationship which has the same id and sourceId as this object, otherwise false.
+         */
         @Override
         public boolean equals(VirtualValue other) {
             if (!super.equals(other)) {
@@ -109,9 +134,24 @@ public interface CompositeDatabaseValue {
             if (other instanceof CompositeDatabaseValue compositeValue) {
                 return sourceId == compositeValue.sourceId();
             } else {
+                /*
+                 * If we get here, it means we try to compare a composite relationship with a non-composite relationship, which has the same id.
+                 * It is not possible to compare those values as they might OR might not refer to the same element.
+                 *
+                 * We should never get here, as we always work with either only composite or only non-composite values.
+                 */
                 throw new IncomparableValuesException(
                         this.getClass().getSimpleName(), other.getClass().getSimpleName());
             }
+        }
+
+        @Override
+        public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
+            var idComparison = Long.compare(id(), ((VirtualNodeValue) other).id());
+
+            return idComparison != 0
+                    ? idComparison
+                    : Long.compare(sourceId(), ((CompositeDatabaseValue) other).sourceId());
         }
 
         @Override
@@ -133,7 +173,10 @@ public interface CompositeDatabaseValue {
             super(id, elementId);
             this.sourceId = sourceId;
         }
-
+        /**
+         * @param other
+         * @return true if the entity is a node which has the same id and sourceId as this object, otherwise false.
+         */
         @Override
         public boolean equals(VirtualValue other) {
             if (!super.equals(other)) {
@@ -143,9 +186,24 @@ public interface CompositeDatabaseValue {
             if (other instanceof CompositeDatabaseValue compositeValue) {
                 return sourceId == compositeValue.sourceId();
             } else {
+                /*
+                 * If we get here, it means we try to compare a composite node with a non-composite node, which has the same id.
+                 * It is not possible to compare those values as they might OR might not refer to the same element.
+                 *
+                 * We should never get here, as we always work with either only composite or only non-composite values.
+                 */
                 throw new IncomparableValuesException(
                         this.getClass().getSimpleName(), other.getClass().getSimpleName());
             }
+        }
+
+        @Override
+        public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
+            var idComparison = Long.compare(id(), ((VirtualNodeValue) other).id());
+
+            return idComparison != 0
+                    ? idComparison
+                    : Long.compare(sourceId(), ((CompositeDatabaseValue) other).sourceId());
         }
 
         @Override
