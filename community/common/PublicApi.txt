@@ -185,6 +185,7 @@ org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionMarkedAsFailed or
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionNotFound org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionRollbackFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionStartFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionTerminationFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionTimedOut org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionValidationFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransientTransactionFailure org.neo4j.kernel.api.exceptions.Status.Transaction public static final
