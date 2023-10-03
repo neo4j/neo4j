@@ -41,7 +41,7 @@ class CachedStatisticsBackedCardinalityModelTest extends CypherFunSuite with Log
     CompositeExpressionSelectivityCalculator(config.planContext)
 
   val queryGraphCardinalityModel: Metrics.QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(config.planContext, selectivityCalculator, IndependenceCombiner)
+    new AssumeIndependenceQueryGraphCardinalityModel(config.planContext, selectivityCalculator, IndependenceCombiner)
 
   val cardinalityModel: StatisticsBackedCardinalityModel =
     new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, selectivityCalculator, simpleExpressionEvaluator)

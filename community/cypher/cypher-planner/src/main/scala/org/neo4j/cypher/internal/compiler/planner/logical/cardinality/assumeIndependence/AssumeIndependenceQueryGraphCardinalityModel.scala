@@ -20,30 +20,25 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
-import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel.CardinalityAndInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
-import org.neo4j.cypher.internal.util.Multiplier
+import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 
-case class AssumeIndependenceQueryGraphCardinalityModel(
+final class AssumeIndependenceQueryGraphCardinalityModel(
   planContext: PlanContext,
   selectivityCalculator: SelectivityCalculator,
   combiner: SelectivityCombiner
-) extends QueryGraphCardinalityModel {
-
-  implicit private val numericMultiplier: NumericMultiplier.type = NumericMultiplier
-
-  private val nodeConnectionMultiplierCalculator = NodeConnectionMultiplierCalculator(planContext.statistics, combiner)
+) extends QueryGraphCardinalityModel with NodeConnectionCardinalityModel {
 
   override def apply(
     queryGraph: QueryGraph,
@@ -53,123 +48,77 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
     cardinalityModel: CardinalityModel
   ): Cardinality = {
-    val cardinalityAndInput = CardinalityAndInput(Cardinality.SINGLE, labelInfo, relTypeInfo)
-    // Fold over query graph and optional query graphs, aggregating cardinality and label info using QueryGraphSolverInput
-    val afterOuter =
-      visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable, indexPredicateProviderContext, cardinalityModel)
-    val afterOptionalMatches = visitOptionalMatchQueryGraphs(
-      queryGraph.optionalMatches,
-      afterOuter,
+    // Plan context statistics must be consulted at least one per query, otherwise approximately 60k tests fail, so we cache the total number of nodes here
+    val allNodesCardinality = planContext.statistics.nodesAllCardinality()
+    val context = QueryGraphCardinalityContext(
+      planContext.statistics,
+      selectivityCalculator,
+      combiner,
+      relTypeInfo,
       semanticTable,
       indexPredicateProviderContext,
-      cardinalityModel
+      cardinalityModel,
+      allNodesCardinality
     )
-    afterOptionalMatches.cardinality
+    // First calculate the cardinality of the "top-level" match query graph while keeping track of newly encountered node labels
+    val (moreLabelInfo, matchCardinality) = getBaseQueryGraphCardinality(context, labelInfo, queryGraph)
+    val optionalMatchesCardinality =
+      queryGraph
+        .optionalMatches
+        // calculate the cardinality of each optional match, accumulating labels and threading them through
+        .foldMap(moreLabelInfo)(getBaseQueryGraphCardinality(context, _, _))
+        ._2 // we only care about cardinality, we can ditch the accumulated labels at this point
+        .filter(_ >= Cardinality.SINGLE) // we only want to modify the total cardinality if the optional match at hands increases it, we ignore it otherwise
+        .product(NumericCardinality)
+
+    matchCardinality * optionalMatchesCardinality
   }
 
-  private def visitQueryGraph(
-    outer: QueryGraph,
-    cardinalityAndInput: CardinalityAndInput,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
-  ): CardinalityAndInput = {
-    cardinalityAndInput.copy(cardinality =
-      cardinalityForQueryGraph(
-        outer,
-        cardinalityAndInput.labelInfo,
-        cardinalityAndInput.relTypeInfo,
-        semanticTable,
-        indexPredicateProviderContext,
-        cardinalityModel
-      )
-    )
-  }
-
-  private def visitOptionalMatchQueryGraphs(
-    optionals: Seq[QueryGraph],
-    cardinalityAndInput: CardinalityAndInput,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
-  ): CardinalityAndInput = {
-    optionals.foldLeft(cardinalityAndInput) { case (current, optional) =>
-      visitOptionalQueryGraph(optional, current, semanticTable, indexPredicateProviderContext, cardinalityModel)
-    }
-  }
-
-  private def visitOptionalQueryGraph(
-    optional: QueryGraph,
-    cardinalityAndInput: CardinalityAndInput,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
-  ): CardinalityAndInput = {
-    val inputWithKnownLabelInfo = cardinalityAndInput.withFusedLabelInfo(optional.selections.labelInfo)
-    val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(
-      optional,
-      inputWithKnownLabelInfo.labelInfo,
-      inputWithKnownLabelInfo.relTypeInfo,
-      semanticTable,
-      indexPredicateProviderContext,
-      cardinalityModel
-    )
-    // OPTIONAL MATCH can't decrease cardinality
-    inputWithKnownLabelInfo.copy(
-      cardinality = Cardinality.max(cardinalityAndInput.cardinality, optionalCardinality)
-    )
-  }
-
-  private def cardinalityForQueryGraph(
-    qg: QueryGraph,
+  /**
+   * Calculates the cardinality of a single "top-level" query graph, ignoring optional matches and mutating patterns, adding newly encountered node labels to the provided LabelInfo
+   */
+  private def getBaseQueryGraphCardinality(
+    context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    relTypeInfo: RelTypeInfo,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
-  ): Cardinality = {
-    val patternMultiplier =
-      calculateMultiplier(qg, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext, cardinalityModel)
-    val numberOfPatternNodes = qg.patternNodes.count { n =>
-      !qg.argumentIds.contains(n) && !qg.patternRelationships.exists(r =>
-        qg.argumentIds.contains(r.name) && Seq(r.left, r.right).contains(n)
-      )
-    }
+    queryGraph: QueryGraph
+  ): (LabelInfo, Cardinality) = {
+    val predicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
 
-    val numberOfGraphNodes = planContext.statistics.nodesAllCardinality()
+    // Calculate the multiplier for each node connection, accumulating bound nodes and arguments and threading them through
+    val (boundNodesAndArguments, nodeConnectionMultipliers) =
+      queryGraph
+        .nodeConnections
+        .toSeq
+        .foldMap(BoundNodesAndArguments.withArguments(queryGraph.argumentIds)) {
+          (boundNodesAndArguments, nodeConnection) =>
+            getNodeConnectionMultiplier(context, predicates, boundNodesAndArguments, nodeConnection)
+        }
 
-    (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
-  }
+    // Number of nodes with no labels at all, different from the number of nodes with any labels (i.e. the total number of nodes)
+    lazy val nodeWithNoLabelsCardinality = context.graphStatistics.nodesWithLabelCardinality(None)
 
-  private def calculateMultiplier(
-    qg: QueryGraph,
-    labels: LabelInfo,
-    relTypes: RelTypeInfo,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
-  ): Multiplier = {
-    val expressionSelectivity =
-      selectivityCalculator(
-        qg.selections,
-        labels,
-        relTypes,
-        semanticTable,
-        indexPredicateProviderContext,
-        cardinalityModel
-      )
+    // Calculate the cardinality of the node patterns that are still not bound
+    val nodesCardinality =
+      queryGraph.patternNodes
+        .diff(boundNodesAndArguments.boundNodes)
+        .toList
+        .map { node =>
+          if (boundNodesAndArguments.argumentIds.contains(node)) {
+            // In case the node is passed as an argument in the query graph (or indeed the endpoint of a relationship passed as an argument),
+            // then we apply the selectivity of the additional labels defined in this query graph but not in the previous ones.
+            // For example: MATCH (n:A) OPTIONAL MATCH (n:B) <- we would apply the selectivity of label B here
+            Cardinality(getArgumentSelectivity(context, predicates.localLabelInfo, node).factor)
+          } else
+            getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
+        }.product(NumericCardinality)
 
-    val nodeConnections = qg.nodeConnections.toIndexedSeq
-    val patternMultipliers = nodeConnections
-      .filter {
-        case r: PatternRelationship if qg.argumentIds.contains(r.name) => false
-        case _                                                         => true
-      }.map(nodeConnectionMultiplierCalculator.nodeConnectionMultiplier(_, labels, qg.selections)(
-        semanticTable,
-        cardinalityModel,
-        indexPredicateProviderContext
-      ))
+    val otherPredicatesSelectivity = context.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
 
-    patternMultipliers.product * expressionSelectivity
+    val cardinality =
+      nodesCardinality *
+        nodeConnectionMultipliers.product(NumericMultiplier) *
+        otherPredicatesSelectivity
+
+    (predicates.allLabelInfo, cardinality)
   }
 }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.util.Cardinality.lift
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -241,6 +242,10 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
   test("MATCH (a)-->(b)") {
     expectCardinality(R)
+  }
+
+  test("MATCH (a)-[r:T1]->(a)") {
+    expectCardinality(ANY_T1_ANY / N)
   }
 
   test("MATCH (a:A)-[r:T1]->(b:B)") {
@@ -454,6 +459,10 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
   test("MATCH ()-[t: T1]->() WITH t AS t WHERE t.prop = 2") {
     expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
+  test("MATCH (a:A)-[r:T1]->(b:B)-[s:T2]->(c:C), (a)-[:T1]->(c)") {
+    expectCardinality(A_T1_B * B_T2_C * A_T1_C / A / B / C * uniquenessSelectivityForNRels(2).factor)
   }
 
   test("MATCH ()-[t: T1]->() WITH *, 1 AS horizon MATCH ()-[t]->()") {
@@ -807,6 +816,17 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..2]->(b:B)", varLength0_0 + varLength1_1 + varLength2_2)
   }
 
+  test("var-length 0..0 in a longer pattern") {
+    queryShouldHaveCardinality(
+      "MATCH ()-[:T1]->(:A)-[:T2*0..0]->(:B)<-[:T1]-()",
+      ANY_T1_A * ANY_T1_B / N * uniquenessSelectivityForNRels(2).factor
+    )
+    queryShouldHaveCardinality(
+      "MATCH ()-[:T1]->(:A:B)<-[:T1]-()",
+      ANY_T1_A * ANY_T1_A / A * Bsel * uniquenessSelectivityForNRels(2).factor
+    )
+  }
+
   test("QPP {2} should be equal to non-QPP") {
     queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T1]->(:B)", varLength2_2)
     queryShouldHaveCardinality("MATCH (:A) (()-[r:T1]->()){2,2} (:B)", varLength2_2)
@@ -1006,4 +1026,11 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
   private def expectPlanCardinality(findPlanId: PartialFunction[LogicalPlan, Boolean], expected: Double): Unit =
     planShouldHaveCardinality(testName, findPlanId, expected)
+
+  private def uniquenessSelectivityForNRels(n: Int): Selectivity =
+    RepetitionCardinalityModel.relationshipUniquenessSelectivity(
+      differentRelationships = 0,
+      uniqueRelationships = 1,
+      repetitions = n
+    )
 }

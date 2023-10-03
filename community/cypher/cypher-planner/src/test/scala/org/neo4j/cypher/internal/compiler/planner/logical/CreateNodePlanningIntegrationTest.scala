@@ -115,7 +115,12 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   }
 
   test("should plan multiple creates via multiple operators if they have dependencies via exists expressions") {
-    val planner = plannerBuilder().setAllNodesCardinality(0).build()
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(0)
+        .setRelationshipCardinality("()-[]->()", 0)
+        .build()
+
     val plan = planner.plan(
       """CREATE (n)-[r:REL]->(m)
         |CREATE (o {p: exists( ()--() ) });""".stripMargin

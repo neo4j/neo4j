@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -79,7 +79,7 @@ case class recordEffectiveOutputCardinality(
                 // The RHS is executed for each chunk of LHS rows
                 effectiveBatchSize.numBatchesFor(lhsEffectiveCardinality)
               case t: Trail =>
-                val repetitions = NodeConnectionMultiplierCalculator.qppRangeForEstimations(t.repetition).end
+                val repetitions = RepetitionCardinalityModel.quantifiedPathPatternRepetitionAsRange(t.repetition).end
                 val repetitionsFedBackToRHS = Cardinality(repetitions - 1)
                 lhsEffectiveCardinality + rhsEffectiveCardinality * repetitionsFedBackToRHS
               case _: ApplyPlan =>

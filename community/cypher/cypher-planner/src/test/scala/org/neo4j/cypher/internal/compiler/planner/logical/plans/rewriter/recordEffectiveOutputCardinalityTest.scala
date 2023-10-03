@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -393,7 +393,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // WHEN
     val (plan, cardinalities) = rewrite(initial, Volcano)
 
-    val rowsFedBackToRHS = expandCardinality * (MAX_VAR_LENGTH - 1)
+    val rowsFedBackToRHS = expandCardinality * (RepetitionCardinalityModel.MAX_VAR_LENGTH - 1)
     val expectedRHS = lhsCardinality + rowsFedBackToRHS
     // THEN
     val expected = new LogicalPlanBuilder(false)

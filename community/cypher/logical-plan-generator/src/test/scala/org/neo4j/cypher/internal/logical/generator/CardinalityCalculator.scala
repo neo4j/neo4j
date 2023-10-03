@@ -126,7 +126,7 @@ object CardinalityCalculator {
           Set(PatternRelationship(relName.name, (from.name, to.name), dir, relTypes, SimplePatternLength)),
         argumentIds = state.arguments.map(_.name)
       )
-      val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(
+      val qgCardinalityModel = new AssumeIndependenceQueryGraphCardinalityModel(
         planContext,
         SimpleMetricsFactory.newSelectivityCalculator(planContext),
         IndependenceCombiner

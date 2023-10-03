@@ -42,10 +42,11 @@ object SeqSupport {
      * @param acc the initial value of the accumulator
      * @param f binary function from the current accumulator and an element of the sequence to both the new accumulator and the mapped element
      * @tparam A the type of the accumulator
+     * @tparam B the type of the mapped elements
      * @return a tuple of: the final value of the accumulator, and the mapped sequence
      */
-    def foldMap[A](acc: A)(f: (A, T) => (A, T)): (A, Seq[T]) = {
-      val builder = Seq.newBuilder[T]
+    def foldMap[A, B](acc: A)(f: (A, T) => (A, B)): (A, Seq[B]) = {
+      val builder = Seq.newBuilder[B]
       var current = acc
 
       for (element <- inner) {

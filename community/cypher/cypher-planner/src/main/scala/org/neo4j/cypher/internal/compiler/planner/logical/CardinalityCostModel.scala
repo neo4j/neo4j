@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.g
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.hackyRelTypeScanCost
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.qppRangeForEstimations
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -265,7 +265,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       val lhsCardinality = effectiveCardinalities.lhs
       val rhsCardinality = effectiveCardinalities.rhs
 
-      val qppRange = qppRangeForEstimations(t.repetition)
+      val qppRange = RepetitionCardinalityModel.quantifiedPathPatternRepetitionAsRange(t.repetition)
 
       // For iteration 1 the RHS executes with LHS cardinality.
       val iteration1Cost =

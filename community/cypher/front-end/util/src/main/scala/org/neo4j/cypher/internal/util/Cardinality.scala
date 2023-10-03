@@ -123,6 +123,7 @@ case class Multiplier(coefficient: Double) extends Ordered[Multiplier] {
   def *(other: Multiplier): Multiplier = other.coefficient * coefficient
   def *(selectivity: Selectivity): Multiplier = coefficient * selectivity.factor
   def *(cardinality: Cardinality): Cardinality = coefficient * cardinality.amount
+  def ^(a: Int): Multiplier = Multiplier(Math.pow(coefficient, a))
 
   def ceil: Multiplier = Math.ceil(coefficient)
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -59,8 +58,8 @@ trait NodeConnectionManipulation {
         // We can't instantiate a quantifier with an upper bound of 0, so we start with at least 1
         val minimumUpperBound = math.max(qpp.repetition.min, 1)
         val maximumUpperBound = qpp.repetition.max match {
-          case UpperBound.Unlimited  => MAX_VAR_LENGTH
-          case UpperBound.Limited(n) => math.min(n, MAX_VAR_LENGTH)
+          case UpperBound.Unlimited  => RepetitionCardinalityModel.MAX_VAR_LENGTH
+          case UpperBound.Limited(n) => math.min(n, RepetitionCardinalityModel.MAX_VAR_LENGTH)
         }
         LazyList.range(
           start = minimumUpperBound,

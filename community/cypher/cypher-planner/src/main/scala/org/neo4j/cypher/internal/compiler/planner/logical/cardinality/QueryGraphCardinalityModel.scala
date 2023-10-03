@@ -27,5 +27,5 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 object QueryGraphCardinalityModel {
 
   def default(planContext: PlanContext, selectivityCalculator: SelectivityCalculator): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(planContext, selectivityCalculator, IndependenceCombiner)
+    new AssumeIndependenceQueryGraphCardinalityModel(planContext, selectivityCalculator, IndependenceCombiner)
 }
