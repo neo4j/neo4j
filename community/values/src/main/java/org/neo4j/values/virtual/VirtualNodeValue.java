@@ -20,6 +20,7 @@
 package org.neo4j.values.virtual;
 
 import java.util.Comparator;
+import org.neo4j.exceptions.IncomparableValuesException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.TernaryComparator;
@@ -54,6 +55,15 @@ public abstract class VirtualNodeValue extends VirtualValue {
     public boolean equals(VirtualValue other) {
         if (!(other instanceof VirtualNodeValue that)) {
             return false;
+        } else if (!(this instanceof VirtualNodeReference) && other instanceof CompositeDatabaseValue) {
+            /*
+             * If we get here, it means we try to compare a composite node with a node that does not have an element id.
+             * It is not possible to compare those values as they might OR might not refer to the same element.
+             *
+             * We should never get here, as we always work with either only composite or only non-composite values.
+             */
+            throw new IncomparableValuesException(
+                    this.getClass().getSimpleName(), other.getClass().getSimpleName());
         }
         return id() == that.id();
     }

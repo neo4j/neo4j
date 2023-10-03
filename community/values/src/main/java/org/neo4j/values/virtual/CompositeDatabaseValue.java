@@ -57,12 +57,16 @@ public interface CompositeDatabaseValue {
          */
         @Override
         public boolean equals(VirtualValue other) {
+            assert (other instanceof VirtualNodeReference);
+
             if (!super.equals(other)) {
                 return false;
             }
 
             if (other instanceof CompositeDatabaseValue compositeValue) {
                 return sourceId == compositeValue.sourceId();
+            } else if (other instanceof VirtualNodeReference nodeReference) {
+                return elementId().equals(nodeReference.elementId());
             } else {
                 /*
                  * If we get here, it means we try to compare a composite node with a non-composite node, which has the same id.
@@ -127,12 +131,16 @@ public interface CompositeDatabaseValue {
          */
         @Override
         public boolean equals(VirtualValue other) {
+            assert (other instanceof RelationshipValue);
+
             if (!super.equals(other)) {
                 return false;
             }
 
             if (other instanceof CompositeDatabaseValue compositeValue) {
                 return sourceId == compositeValue.sourceId();
+            } else if (other instanceof RelationshipValue relationshipValue) {
+                return elementId().equals(relationshipValue.elementId());
             } else {
                 /*
                  * If we get here, it means we try to compare a composite relationship with a non-composite relationship, which has the same id.
@@ -179,12 +187,16 @@ public interface CompositeDatabaseValue {
          */
         @Override
         public boolean equals(VirtualValue other) {
+            assert (other instanceof VirtualNodeReference);
+
             if (!super.equals(other)) {
                 return false;
             }
 
             if (other instanceof CompositeDatabaseValue compositeValue) {
                 return sourceId == compositeValue.sourceId();
+            } else if (other instanceof VirtualNodeReference nodeReference) {
+                return elementId().equals(nodeReference.elementId());
             } else {
                 /*
                  * If we get here, it means we try to compare a composite node with a non-composite node, which has the same id.
