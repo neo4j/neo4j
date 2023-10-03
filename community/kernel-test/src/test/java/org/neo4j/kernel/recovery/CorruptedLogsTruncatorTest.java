@@ -27,15 +27,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.recovery.CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FilenameUtils;
@@ -63,18 +66,22 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class CorruptedLogsTruncatorTest {
-    private static final long SINGLE_LOG_FILE_SIZE = LATEST_LOG_FORMAT.getHeaderSize() + 9L;
+    // Size of the log files, except the last one
+    private static final long LOG_FILES_SIZE = 1162L;
+    // Offset in the last log file where data ends
+    private static final long LAST_LOG_DATA_END = LATEST_LOG_FORMAT.getHeaderSize() + 9L;
+
     private static final int TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES = 12;
     // There is one file for the separate checkpoints as well
     private static final int TOTAL_NUMBER_OF_LOG_FILES = 13;
-    private static final long ROTATION_THRESHOLD = 1024L;
+    private static final int ROTATION_THRESHOLD = 1024;
+    private static final int PAYLOAD_LENGTH = ROTATION_THRESHOLD / 2;
 
     @Inject
     private FileSystemAbstraction fs;
@@ -97,15 +104,16 @@ class CorruptedLogsTruncatorTest {
         transactionIdStore = new SimpleTransactionIdStore();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseDirectory, fs)
-                .withRotationThreshold(SINGLE_LOG_FILE_SIZE)
+                .withBufferSize(ROTATION_THRESHOLD)
+                .withRotationThreshold(ROTATION_THRESHOLD)
+                .withEnvelopeSegmentBlockSize(ROTATION_THRESHOLD / 4)
                 .withKernelVersionProvider(LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .withConfig(Config.newBuilder()
-                        .set(
-                                GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold,
+                        .set(GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold, (long)
                                 ROTATION_THRESHOLD)
                         .build())
                 .build();
@@ -152,12 +160,10 @@ class CorruptedLogsTruncatorTest {
         long fileSizeBeforeAppend = Files.size(logFile.getHighestLogFile());
         LogPosition endOfLogsPosition = new LogPosition(highestLogVersion, fileSizeBeforeAppend);
 
-        FlushableLogPositionAwareChannel channel =
-                logFile.getTransactionLogWriter().getChannel();
-        for (int i = 0; i < RandomUtils.nextInt(100, 10240); i++) {
-            channel.putLong(0);
+        try (OutputStream outputStream = fs.openAsOutputStream(logFile.getHighestLogFile(), true)) {
+            int zeroes = RandomUtils.nextInt(100, 10240);
+            outputStream.write(new byte[zeroes]);
         }
-        channel.prepareForFlush().flush();
 
         long fileAfterZeroAppend = Files.size(logFile.getHighestLogFile());
 
@@ -216,9 +222,8 @@ class CorruptedLogsTruncatorTest {
         var logFile = logFiles.getLogFile();
         long highestLogVersion = logFile.getHighestLogVersion();
         Path highestLogFile = logFile.getHighestLogFile();
-        long fileSizeBeforePrune = Files.size(highestLogFile);
         int bytesToPrune = 5;
-        long byteOffset = fileSizeBeforePrune - bytesToPrune;
+        long byteOffset = LAST_LOG_DATA_END - bytesToPrune;
         LogPosition prunePosition = new LogPosition(highestLogVersion, byteOffset);
 
         logPruner.truncate(prunePosition);
@@ -236,7 +241,7 @@ class CorruptedLogsTruncatorTest {
         checkArchiveName(highestLogVersion, byteOffset, corruptedLogsArchive);
         try (ZipFile zipFile = new ZipFile(corruptedLogsArchive)) {
             assertEquals(1, zipFile.size());
-            checkEntryNameAndSize(zipFile, highestLogFile.getFileName().toString(), bytesToPrune);
+            checkEntryNameAndSize(zipFile, highestLogFile.getFileName().toString(), ROTATION_THRESHOLD - byteOffset);
         }
     }
 
@@ -260,18 +265,18 @@ class CorruptedLogsTruncatorTest {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionId,
-                        LatestVersions.LATEST_KERNEL_VERSION,
+                        LATEST_KERNEL_VERSION,
                         new LogPosition(highestCorrectLogFileIndex, byteOffset - 1),
                         Instant.now(),
                         "within okay transactions");
-        /* Write checkpoints that should be truncated. Write enough to get them get them in two files. */
+        // Write checkpoints that should be truncated. Write enough to get them get them in two files.
         for (int i = 0; i < 4; i++) {
             checkpointFile
                     .getCheckpointAppender()
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionId,
-                            LatestVersions.LATEST_KERNEL_VERSION,
+                            LATEST_KERNEL_VERSION,
                             new LogPosition(highestCorrectLogFileIndex, byteOffset + 1),
                             Instant.now(),
                             "in the part being truncated");
@@ -306,8 +311,7 @@ class CorruptedLogsTruncatorTest {
             long nextLogFileIndex = highestCorrectLogFileIndex + 1;
             int lastFileIndex = TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES - 1;
             for (long index = nextLogFileIndex; index < lastFileIndex; index++) {
-                checkEntryNameAndSize(
-                        zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + index, SINGLE_LOG_FILE_SIZE);
+                checkEntryNameAndSize(zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + index, LOG_FILES_SIZE);
             }
             checkEntryNameAndSize(
                     zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + lastFileIndex, highestLogFileLength);
@@ -347,15 +351,28 @@ class CorruptedLogsTruncatorTest {
     }
 
     private static void generateTransactionLogFiles(LogFiles logFiles) throws IOException {
+        byte[] payload = new byte[PAYLOAD_LENGTH];
+        Arrays.fill(payload, (byte) 0xFF);
+
         LogFile logFile = logFiles.getLogFile();
         FlushableLogPositionAwareChannel writer =
                 logFile.getTransactionLogWriter().getChannel();
-        for (byte i = 0; i < 107; i++) {
-            writer.put(i);
-            writer.prepareForFlush();
+        // Fill up all but the last log file
+        while (logFile.getHighestLogVersion() < TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES - 1) {
+            writer.beginChecksumForWriting();
+            writer.putVersion(LATEST_KERNEL_VERSION.version());
+
+            writer.put(payload, PAYLOAD_LENGTH);
+            writer.putChecksum();
             if (logFile.rotationNeeded()) {
                 logFile.rotate();
             }
         }
+        // Write a small entry to the last log
+        writer.beginChecksumForWriting();
+        writer.putVersion(LATEST_KERNEL_VERSION.version());
+        writer.put((byte) 42);
+        writer.putChecksum();
+        writer.prepareForFlush().flush();
     }
 }

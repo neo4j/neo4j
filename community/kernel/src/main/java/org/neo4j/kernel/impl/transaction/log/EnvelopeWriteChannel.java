@@ -326,7 +326,6 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     }
 
     /**
-     *
      * @param initialPosition initial position where we should start appending.
      */
     private void initialPositions(long initialPosition) {
@@ -335,7 +334,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         lastWrittenPosition = bufferWindowOffset;
         nextSegmentOffset = (bufferWindowOffset / segmentBlockSize + 1) * segmentBlockSize; // Round up to next
         rotateAtSize = logRotation.rotationSize();
-        requireMultipleOf("Rotation size", rotateAtSize, "buffer size", buffer.capacity());
+        requireMultipleOf("Rotation size", rotateAtSize, "segment size", segmentBlockSize);
         if (rotateAtSize == 0) {
             rotateAtSize = Long.MAX_VALUE; // Rotation disabled
         }

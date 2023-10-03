@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -243,7 +244,9 @@ class TransactionLogChannelAllocatorIT {
                 config,
                 null,
                 LatestVersions.BINARY_VERSIONS,
-                false);
+                false,
+                LogSegments.DEFAULT_LOG_SEGMENT_SIZE,
+                256);
     }
 
     private static class AdviseCountingChannelNativeAccessor extends ChannelNativeAccessor.EmptyChannelNativeAccessor {

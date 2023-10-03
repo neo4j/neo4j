@@ -24,6 +24,8 @@ import static java.util.Objects.requireNonNullElseGet;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
+import static org.neo4j.internal.helpers.MathUtil.roundUp;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -35,6 +37,7 @@ import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,6 +48,7 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -99,6 +103,8 @@ public class LogFilesBuilder {
     private NativeAccess nativeAccess;
     private KernelVersionProvider kernelVersionProvider = KernelVersionProvider.THROWING_PROVIDER;
     private LogTailMetadata externalLogTail;
+    private int envelopeSegmentBlockSize = LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
+    private int bufferSize;
     private boolean readOnlyLogs;
 
     private LogFilesBuilder() {}
@@ -279,6 +285,16 @@ public class LogFilesBuilder {
         return this;
     }
 
+    public LogFilesBuilder withEnvelopeSegmentBlockSize(int envelopeSegmentBlockSize) {
+        this.envelopeSegmentBlockSize = envelopeSegmentBlockSize;
+        return this;
+    }
+
+    public LogFilesBuilder withBufferSize(int overrideBufferSize) {
+        this.bufferSize = overrideBufferSize;
+        return this;
+    }
+
     public LogFilesBuilder withKernelVersionProvider(KernelVersionProvider kernelVersionProvider) {
         this.kernelVersionProvider = kernelVersionProvider;
         return this;
@@ -339,7 +355,9 @@ public class LogFilesBuilder {
                 config,
                 externalLogTail,
                 new BinarySupportedKernelVersions(config),
-                readOnlyLogs);
+                readOnlyLogs,
+                envelopeSegmentBlockSize,
+                getBufferSize());
     }
 
     private CommandReaderFactory commandReaderFactory() {
@@ -394,15 +412,25 @@ public class LogFilesBuilder {
         return NativeAccessProvider.getNativeAccess();
     }
 
+    private int getBufferSize() {
+        if (bufferSize == 0) {
+            return (int) roundUp(config.get(transaction_log_buffer_size), envelopeSegmentBlockSize);
+        }
+        return (int) roundUp(bufferSize, envelopeSegmentBlockSize);
+    }
+
     private AtomicLong getRotationThresholdAndRegisterForUpdates() {
         if (rotationThreshold != null) {
-            return new AtomicLong(rotationThreshold);
+            return new AtomicLong(MathUtil.roundUp(rotationThreshold, envelopeSegmentBlockSize));
         }
         if (readOnlyStores) {
-            return new AtomicLong(Long.MAX_VALUE);
+            return new AtomicLong(roundUp(Long.MAX_VALUE - envelopeSegmentBlockSize, envelopeSegmentBlockSize));
         }
-        AtomicLong configThreshold = new AtomicLong(config.get(logical_log_rotation_threshold));
-        config.addListener(logical_log_rotation_threshold, (prev, update) -> configThreshold.set(update));
+        AtomicLong configThreshold =
+                new AtomicLong(roundUp(config.get(logical_log_rotation_threshold), envelopeSegmentBlockSize));
+        config.addListener(
+                logical_log_rotation_threshold,
+                (prev, update) -> configThreshold.set(roundUp(update, envelopeSegmentBlockSize)));
         return configThreshold;
     }
 

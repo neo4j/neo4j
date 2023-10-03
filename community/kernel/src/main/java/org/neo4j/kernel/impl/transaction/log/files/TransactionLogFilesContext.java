@@ -63,6 +63,8 @@ public class TransactionLogFilesContext {
     private final LogTailMetadata externalTailInfo;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final boolean readOnly;
+    private final int envelopeSegmentBlockSize;
+    private final int bufferSize;
 
     public TransactionLogFilesContext(
             AtomicLong rotationThreshold,
@@ -88,7 +90,9 @@ public class TransactionLogFilesContext {
             Config config,
             LogTailMetadata externalTailInfo,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
-            boolean readOnly) {
+            boolean readOnly,
+            int envelopeSegmentBlockSize,
+            int bufferSize) {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
@@ -113,6 +117,8 @@ public class TransactionLogFilesContext {
         this.externalTailInfo = externalTailInfo;
         this.binarySupportedKernelVersions = binarySupportedKernelVersions;
         this.readOnly = readOnly;
+        this.envelopeSegmentBlockSize = envelopeSegmentBlockSize;
+        this.bufferSize = bufferSize;
     }
 
     AtomicLong getRotationThreshold() {
@@ -209,5 +215,13 @@ public class TransactionLogFilesContext {
 
     public boolean isReadOnly() {
         return readOnly;
+    }
+
+    public int getEnvelopeSegmentBlockSize() {
+        return envelopeSegmentBlockSize;
+    }
+
+    public int getBufferSize() {
+        return bufferSize;
     }
 }
