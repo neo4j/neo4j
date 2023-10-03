@@ -56,6 +56,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
+import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
@@ -172,7 +173,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                         new ErrorReporter(this.logService),
                         systemNanoClock,
                         transactionIdTracker,
-                        statementLifecycles),
+                        statementLifecycles,
+                        monitors.newMonitor(QueryRoutingMonitor.class)),
                 databaseReferenceResolver,
                 getCompositeDatabaseStack());
     }

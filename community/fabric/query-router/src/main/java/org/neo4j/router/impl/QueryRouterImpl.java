@@ -30,6 +30,7 @@ import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.router.QueryRouter;
 import org.neo4j.router.impl.query.CompositeQueryPreParsedInfoService;
@@ -59,6 +60,7 @@ public class QueryRouterImpl implements QueryRouter {
     private final SystemNanoClock systemNanoClock;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
     private final QueryStatementLifecycles statementLifecycles;
+    private final QueryRoutingMonitor queryRoutingMonitor;
 
     public QueryRouterImpl(
             Config config,
@@ -70,7 +72,8 @@ public class QueryRouterImpl implements QueryRouter {
             ErrorReporter errorReporter,
             SystemNanoClock systemNanoClock,
             LocalGraphTransactionIdTracker transactionIdTracker,
-            QueryStatementLifecycles statementLifecycles) {
+            QueryStatementLifecycles statementLifecycles,
+            QueryRoutingMonitor queryRoutingMonitor) {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
@@ -81,6 +84,7 @@ public class QueryRouterImpl implements QueryRouter {
         this.systemNanoClock = systemNanoClock;
         this.transactionIdTracker = transactionIdTracker;
         this.statementLifecycles = statementLifecycles;
+        this.queryRoutingMonitor = queryRoutingMonitor;
     }
 
     @Override
@@ -147,6 +151,7 @@ public class QueryRouterImpl implements QueryRouter {
             context.verifyStatementType(preparsedInfo.statementType());
             var target = context.preParsedInfo().target(preparsedInfo);
             var location = context.locationService().locationOf(target);
+            updateQueryRouterMetric(location);
             var databaseTransaction = context.transactionFor(location);
             statementLifecycle.doneRouterProcessing(
                     preparsedInfo.obfuscationMetadata().get(), target.isComposite());
@@ -155,6 +160,16 @@ public class QueryRouterImpl implements QueryRouter {
             statementLifecycle.endFailure(e);
 
             throw e;
+        }
+    }
+
+    private void updateQueryRouterMetric(Location location) {
+        if (location instanceof Location.Local) {
+            queryRoutingMonitor.queryRoutedLocal();
+        } else if (location instanceof Location.Remote.Internal) {
+            queryRoutingMonitor.queryRoutedRemoteInternal();
+        } else {
+            queryRoutingMonitor.queryRoutedRemoteExternal();
         }
     }
 }
