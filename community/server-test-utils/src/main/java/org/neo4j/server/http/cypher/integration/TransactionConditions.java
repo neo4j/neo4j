@@ -85,6 +85,33 @@ public final class TransactionConditions {
         };
     }
 
+    public static Consumer<HTTP.Response> hasOneErrorOf(final Status... expectedErrors) {
+        return response -> {
+            try {
+                // we just need to compare single error but we could expand this later.
+                var error = response.get("errors").get(0);
+                Iterator<Status> expected = iterator(expectedErrors);
+
+                var errorFound = false;
+
+                while (!errorFound && expected.hasNext()) {
+                    errorFound = error.get("code")
+                            .asText()
+                            .equals(expected.next().code().serialize());
+                }
+
+                if (errorFound == false) {
+                    Assertions.fail("Error " + errorFound + " does not match any of the following expected errors "
+                            + Arrays.stream(expectedErrors)
+                                    .map(s -> s.code().serialize())
+                                    .toList());
+                }
+            } catch (JsonParseException e) {
+                assertThat(e).isNull();
+            }
+        };
+    }
+
     static JsonNode getJsonNodeWithName(HTTP.Response response, String name) throws JsonParseException {
         return response.get("results").get(0).get("data").get(0).get(name);
     }

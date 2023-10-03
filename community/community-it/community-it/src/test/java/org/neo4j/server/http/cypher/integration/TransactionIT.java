@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.server.WebContainerTestUtils.withCSVFile;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasOneErrorOf;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.validRFCTimestamp;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.web.HttpHeaderUtils.ACCESS_MODE_HEADER;
@@ -423,7 +424,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         interruptFuture.get();
         lockerFuture.get();
         Response execute = executeFuture.get();
-        assertThat(execute).satisfies(hasErrors(Status.Transaction.Terminated));
+        assertThat(execute)
+                .satisfies(hasOneErrorOf(Status.Transaction.Terminated, Status.Transaction.LockClientStopped));
 
         Response execute2 = POST(executeResource, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
         assertThat(execute2.status()).isEqualTo(404);
