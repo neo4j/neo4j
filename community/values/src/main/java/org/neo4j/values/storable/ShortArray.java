@@ -48,6 +48,10 @@ public class ShortArray extends IntegralArray {
         return value[index];
     }
 
+    public short shortValue(int index) {
+        return value[index];
+    }
+
     @Override
     protected int computeHashToMemoize() {
         return NumberValues.hash(value);

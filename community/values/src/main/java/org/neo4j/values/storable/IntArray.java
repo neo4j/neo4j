@@ -48,6 +48,10 @@ public final class IntArray extends IntegralArray {
         return value[index];
     }
 
+    public int intValue(int index) {
+        return value[index];
+    }
+
     @Override
     protected int computeHashToMemoize() {
         return NumberValues.hash(value);

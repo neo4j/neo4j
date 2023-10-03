@@ -70,6 +70,8 @@ import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeArray;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueAsJava;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
@@ -247,6 +249,12 @@ public interface ValueMapper<Base> {
 
         @Override
         public List<?> mapSequence(SequenceValue value) {
+            if (value instanceof ListValue.ArrayValueListValue arrayList) {
+                final var list = ListValueAsJava.asObject(arrayList);
+                if (list != null) {
+                    return list;
+                }
+            }
             List<Object> list = new ArrayList<>(value.length());
             value.forEach(v -> list.add(v.map(this)));
             return list;
