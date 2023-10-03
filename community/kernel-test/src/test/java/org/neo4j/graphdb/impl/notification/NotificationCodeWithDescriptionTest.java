@@ -547,8 +547,8 @@ class NotificationCodeWithDescriptionTest {
                         + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
                         + "MATCH containing the shortest path from the existential predicates on that path.",
                 NotificationCategory.PERFORMANCE,
-                "The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. Use "
-                        + "`WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
+                "The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. "
+                        + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
                         + "for suggestions.");
     }
 

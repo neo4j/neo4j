@@ -161,8 +161,8 @@ public enum NotificationCodeWithDescription {
             "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path "
                     + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
                     + "MATCH containing the shortest path from the existential predicates on that path.",
-            "The query runs with exhaustive shortest path due to the existential predicate(s) `%s`. Use "
-                    + "`WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
+            "The query runs with exhaustive shortest path due to the existential predicate(s) `%s`. "
+                    + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
                     + "for suggestions."),
     RUNTIME_EXPERIMENTAL(Status.Statement.RuntimeExperimental, "You are using an experimental feature (%s)"),
     MISSING_PARAMETERS_FOR_EXPLAIN(
