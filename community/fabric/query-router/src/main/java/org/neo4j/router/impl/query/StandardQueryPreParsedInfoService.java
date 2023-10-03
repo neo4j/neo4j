@@ -42,7 +42,8 @@ public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInf
                 .map(CatalogName::qualifiedNameString)
                 .map(databaseReferenceResolver::resolve);
         if (parsedTarget
-                .filter(target -> target.isComposite() || !target.isPrimary())
+                .filter(target -> target.isComposite()
+                        || (!target.isPrimary() && target.namespace().isPresent()))
                 .isPresent()) {
             var message = "Accessing a composite database and its constituents is only allowed when connected to it. "
                     + "Attempted to access '%s' while connected to '%s'";

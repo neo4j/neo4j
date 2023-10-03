@@ -20,6 +20,7 @@
 package org.neo4j.router.impl.transaction;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
@@ -28,7 +29,6 @@ import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.fabric.transaction.parent.AbstractCompoundTransaction;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.transaction.DatabaseTransaction;
@@ -44,7 +44,7 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
     private final DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory;
     private final DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory;
     private final TransactionBookmarkManager transactionBookmarkManager;
-    private final ConcurrentHashMap<DatabaseReference, DatabaseTransaction> databaseTransactions;
+    private final ConcurrentHashMap<UUID, DatabaseTransaction> databaseTransactions;
     private StatementType statementType = null;
 
     public RouterTransactionImpl(
@@ -70,7 +70,7 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
                     case READ -> TransactionMode.DEFINITELY_READ;
                 };
         return databaseTransactions.computeIfAbsent(
-                location.databaseReference(),
+                location.databaseReference().id(),
                 ref -> registerNewChildTransaction(location, mode, () -> createTransactionFor(location)));
     }
 
