@@ -75,7 +75,6 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
 
 class RangeCompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
     extends CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest {
-  override def getIndexType: IndexDescriptor.IndexType = IndexType.Range
 
   override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
     Seq(startsWith _, contains _, endsWith _)

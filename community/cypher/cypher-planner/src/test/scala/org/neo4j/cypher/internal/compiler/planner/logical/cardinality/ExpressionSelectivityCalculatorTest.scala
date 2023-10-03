@@ -88,16 +88,15 @@ import org.neo4j.internal.schema.constraints.SchemaValueType
 
 abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  def getIndexType: IndexDescriptor.IndexType
-
   // NODES
 
   protected val indexPersonRange: IndexDescriptor =
-    IndexDescriptor.forLabel(getIndexType, LabelId(0), Seq(PropertyKeyId(0)))
+    IndexDescriptor.forLabel(IndexType.Range, LabelId(0), Seq(PropertyKeyId(0)))
   protected val indexPersonText: IndexDescriptor = indexPersonRange.copy(indexType = IndexDescriptor.IndexType.Text)
   protected val indexPersonPoint: IndexDescriptor = indexPersonRange.copy(indexType = IndexDescriptor.IndexType.Point)
 
-  protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(getIndexType, LabelId(1), Seq(PropertyKeyId(0)))
+  protected val indexAnimal: IndexDescriptor =
+    IndexDescriptor.forLabel(IndexType.Range, LabelId(1), Seq(PropertyKeyId(0)))
 
   protected val nodePropName = "nodeProp"
   protected val nProp: Property = prop("n", nodePropName)
@@ -122,7 +121,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   // RELATIONSHIPS
 
   protected val indexFriendsRange: IndexDescriptor =
-    IndexDescriptor.forRelType(getIndexType, RelTypeId(0), Seq(PropertyKeyId(0)))
+    IndexDescriptor.forRelType(IndexType.Range, RelTypeId(0), Seq(PropertyKeyId(0)))
   protected val indexFriendsText: IndexDescriptor = indexFriendsRange.copy(indexType = IndexDescriptor.IndexType.Text)
   protected val indexFriendsPoint: IndexDescriptor = indexFriendsRange.copy(indexType = IndexDescriptor.IndexType.Point)
 
@@ -2162,7 +2161,6 @@ object ExpressionSelectivityCalculatorTest {
 }
 
 class RangeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalculatorTest {
-  override def getIndexType: IndexDescriptor.IndexType = IndexType.Range
 
   override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
     Seq(startsWith _, endsWith _, contains _)
