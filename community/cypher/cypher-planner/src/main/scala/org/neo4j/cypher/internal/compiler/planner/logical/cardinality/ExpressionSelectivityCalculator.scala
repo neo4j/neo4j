@@ -327,10 +327,15 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         calculateSelectivityForPropertyExistence(variable, labelInfo, relTypeInfo, propertyKey, existenceConstraints)
 
       if (typeName.isNullable) {
-        combiner.orTogetherSelectivities(Seq(typeSelectivity, propIsNotNullSelectivity.negate))
-          .getOrElse(DEFAULT_TYPE_SELECTIVITY)
+        // IS :: <TYPE>
+        combiner.orTogetherSelectivities(Seq(
+          typeSelectivity, // must be value of <TYPE>
+          propIsNotNullSelectivity.negate // OR NULL
+        )).getOrElse(DEFAULT_TYPE_SELECTIVITY)
       } else {
-        typeSelectivity * propIsNotNullSelectivity
+        // IS :: <TYPE> NOT NULL
+        typeSelectivity * // must be value of <TYPE>
+          propIsNotNullSelectivity // AND NOT NULL
       }
 
     case _ =>
