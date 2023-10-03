@@ -30,4 +30,11 @@ public interface TerminationGuard {
      * exception if it has.
      */
     void check();
+
+    static TerminationGuard chain(TerminationGuard first, TerminationGuard second) {
+        return () -> {
+            first.check();
+            second.check();
+        };
+    }
 }
