@@ -24,7 +24,7 @@ import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -56,7 +56,7 @@ public class UnauthenticatedIT {
     }
 
     @TransportTest
-    void shouldTimeoutWhenTruncatedHelloIsReceived(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldTimeoutWhenTruncatedHelloIsReceived(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
         var msg = wire.hello();
         var buffer = msg.readSlice(msg.readableBytes() / 2);
@@ -69,8 +69,8 @@ public class UnauthenticatedIT {
     }
 
     @TransportTest
-    void shouldTerminateConnectionWhenLargeHelloIsReceived(BoltWire wire, @Negotiated TransportConnection connection)
-            throws IOException {
+    void shouldTerminateConnectionWhenLargeHelloIsReceived(
+            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
 
         connection.send(wire.hello(x -> {
             for (int i = 0; i < 200; i++) {
@@ -84,7 +84,7 @@ public class UnauthenticatedIT {
     }
 
     @TransportTest
-    void shouldTerminateConnectionWhenLargeDeclaredMetaMapIsReceived(@Negotiated TransportConnection connection)
+    void shouldTerminateConnectionWhenLargeDeclaredMetaMapIsReceived(@VersionSelected TransportConnection connection)
             throws IOException {
         connection.send(PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(1, BoltV40Wire.MESSAGE_TAG_HELLO))
@@ -100,8 +100,8 @@ public class UnauthenticatedIT {
     }
 
     @TransportTest
-    void shouldTerminateConnectionWhenLargeDeclaredListParameterIsReceived(@Negotiated TransportConnection connection)
-            throws IOException {
+    void shouldTerminateConnectionWhenLargeDeclaredListParameterIsReceived(
+            @VersionSelected TransportConnection connection) throws IOException {
         connection.send(PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(1, BoltV40Wire.MESSAGE_TAG_HELLO))
                 .writeMapHeader(1)

@@ -28,6 +28,7 @@ import org.neo4j.bolt.protocol.common.fsm.transition.authentication.Authenticati
 import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTransition;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogoffMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogonMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.decoder.generic.TelemetryMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
@@ -73,6 +74,8 @@ public final class BoltProtocolV50 extends AbstractBoltProtocol {
                 .unregister(DefaultLogoffMessageDecoder.getInstance())
                 .register(HelloMessageDecoderV41.getInstance())
                 .register(BeginMessageDecoderV50.getInstance())
-                .register(RunMessageDecoderV44.getInstance());
+                .register(RunMessageDecoderV44.getInstance())
+                // Generic
+                .unregister(TelemetryMessageDecoder.getInstance());
     }
 }

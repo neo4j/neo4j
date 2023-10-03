@@ -30,6 +30,7 @@ import io.netty.channel.ServerChannel;
 import java.net.SocketAddress;
 import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.AbstractConnector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -71,6 +72,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
             int streamingBufferSize,
             int streamingFlushThreshold,
             RoutingService routingService,
+            BoltDriverMetricsMonitor driverMetricsMonitor,
             InternalLogProvider userLogProvider,
             InternalLogProvider internalLogProvider) {
         super(
@@ -89,6 +91,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
                 streamingBufferSize,
                 streamingFlushThreshold,
                 routingService,
+                driverMetricsMonitor,
                 internalLogProvider);
         this.bindAddress = bindAddress;
         this.userLog = userLogProvider.getLog(getClass());

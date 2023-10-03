@@ -22,6 +22,7 @@ package org.neo4j.bolt.protocol.v52;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.message.decoder.generic.TelemetryMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v52.message.decoder.authentication.HelloMessageDecoderV52;
 import org.neo4j.packstream.struct.StructRegistry;
@@ -46,6 +47,8 @@ public final class BoltProtocolV52 extends AbstractBoltProtocol {
     protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
         return super.createRequestMessageRegistry()
                 // Authentication
-                .register(HelloMessageDecoderV52.getInstance());
+                .register(HelloMessageDecoderV52.getInstance())
+                // Generic
+                .unregister(TelemetryMessageDecoder.getInstance());
     }
 }

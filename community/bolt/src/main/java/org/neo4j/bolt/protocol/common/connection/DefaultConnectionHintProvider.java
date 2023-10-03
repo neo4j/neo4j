@@ -26,6 +26,7 @@ import org.neo4j.values.storable.Values;
 
 public final class DefaultConnectionHintProvider {
     private static final String HINT_CONNECTION_RECV_TIMEOUT_SECONDS = "connection.recv_timeout_seconds";
+    private static final String HINT_DRIVER_TELEMETRY_ENABLED = "telemetry.enabled";
 
     public static final Function<Config, ConnectionHintProvider> CONNECTION_HINT_PROVIDER_FUNCTION =
             config -> hints -> {
@@ -37,6 +38,10 @@ public final class DefaultConnectionHintProvider {
                             HINT_CONNECTION_RECV_TIMEOUT_SECONDS,
                             Values.longValue(keepAliveInterval.toSeconds() * keepAliveProbes));
                 }
+
+                hints.add(
+                        HINT_DRIVER_TELEMETRY_ENABLED,
+                        Values.booleanValue(config.get(BoltConnector.server_bolt_telemetry_enabled)));
             };
 
     private DefaultConnectionHintProvider() {}

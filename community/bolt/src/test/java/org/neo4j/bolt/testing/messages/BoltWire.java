@@ -35,6 +35,10 @@ import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.factory.BeginMessageBuilder;
+import org.neo4j.bolt.testing.messages.factory.HelloMessageBuilder;
+import org.neo4j.bolt.testing.messages.factory.RunMessageBuilder;
+import org.neo4j.bolt.testing.messages.factory.TelemetryMessageBuilder;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.values.virtual.MapValue;
 
@@ -50,7 +54,8 @@ public interface BoltWire {
                 new BoltV50Wire(),
                 new BoltV51Wire(),
                 new BoltV52Wire(),
-                new BoltV53Wire());
+                new BoltV53Wire(),
+                new BoltV54Wire());
     }
 
     /**
@@ -120,8 +125,8 @@ public interface BoltWire {
         return hello(x -> x);
     }
 
-    default ByteBuf hello(UnaryOperator<HelloBuilder> fn) {
-        return fn.apply(new HelloBuilder(
+    default ByteBuf hello(UnaryOperator<HelloMessageBuilder> fn) {
+        return fn.apply(new HelloMessageBuilder(
                         this.getProtocolVersion(), this.getUserAgent(), this.getEnabledFeatures(), this.getBoltAgent()))
                 .build();
     }
@@ -151,8 +156,8 @@ public interface BoltWire {
         return begin(x -> x);
     }
 
-    default ByteBuf begin(UnaryOperator<BeginBuilder> fn) {
-        return fn.apply(new BeginBuilder(this.getProtocolVersion())).build();
+    default ByteBuf begin(UnaryOperator<BeginMessageBuilder> fn) {
+        return fn.apply(new BeginMessageBuilder(this.getProtocolVersion())).build();
     }
 
     default ByteBuf discard() {
@@ -203,6 +208,10 @@ public interface BoltWire {
     }
 
     ByteBuf route(RoutingContext context, Collection<String> bookmarks, String db, String impersonatedUser);
+
+    default ByteBuf telemetry(UnaryOperator<TelemetryMessageBuilder> fn) {
+        return fn.apply(new TelemetryMessageBuilder(this.getProtocolVersion())).build();
+    }
 
     void nodeValue(PackstreamBuf buf, String elementId, int id, List<String> labels);
 

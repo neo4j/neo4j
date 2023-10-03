@@ -40,6 +40,7 @@ import javax.net.ssl.SSLException;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionMetricsMonitor;
+import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
@@ -124,7 +125,8 @@ public class BoltServer extends LifecycleAdapter {
     private BoltMemoryPool memoryPool;
     private EventLoopGroup eventLoopGroup;
     private ExecutorService executorService;
-    private BoltConnectionMetricsMonitor metricsMonitor;
+    private BoltConnectionMetricsMonitor connectionMetricsMonitor;
+    private BoltDriverMetricsMonitor driverMetricsMonitor;
 
     public BoltServer(
             DbmsInfo dbmsInfo,
@@ -218,7 +220,13 @@ public class BoltServer extends LifecycleAdapter {
 
         eventLoopGroup = transport.createEventLoopGroup(jobScheduler.threadFactory(Group.BOLT_NETWORK_IO));
         executorService = executorServiceFactory.create();
-        metricsMonitor = monitors.newMonitor(BoltConnectionMetricsMonitor.class);
+        connectionMetricsMonitor = monitors.newMonitor(BoltConnectionMetricsMonitor.class);
+
+        if (config.get(BoltConnector.server_bolt_telemetry_enabled)) {
+            driverMetricsMonitor = monitors.newMonitor(BoltDriverMetricsMonitor.class);
+        } else {
+            driverMetricsMonitor = BoltDriverMetricsMonitor.noop();
+        }
 
         ByteBufAllocator allocator = getBufferAllocator();
         var connectionFactory = createConnectionFactory();
@@ -389,10 +397,10 @@ public class BoltServer extends LifecycleAdapter {
 
     private void registerConnector(Connector connector) {
         // append a listener which handles the creation of metrics
-        connector.registerListener(new MetricsConnectorListener(metricsMonitor));
+        connector.registerListener(new MetricsConnectorListener(connectionMetricsMonitor));
 
         if (config.get(BoltConnectorInternalSettings.enable_response_metrics)) {
-            connector.registerListener(new ResponseMetricsConnectorListener(metricsMonitor));
+            connector.registerListener(new ResponseMetricsConnectorListener(connectionMetricsMonitor));
         }
 
         // if an authentication timeout has been configured, we'll register a listener which appends the necessary
@@ -482,6 +490,7 @@ public class BoltServer extends LifecycleAdapter {
                 streamingBufferSize,
                 streamingFlushThreshold,
                 routingService,
+                driverMetricsMonitor,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -518,6 +527,7 @@ public class BoltServer extends LifecycleAdapter {
                 streamingBufferSize,
                 streamingFlushThreshold,
                 routingService,
+                driverMetricsMonitor,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -550,7 +560,8 @@ public class BoltServer extends LifecycleAdapter {
                 transport,
                 eventLoopGroup,
                 config,
-                allocator);
+                allocator,
+                driverMetricsMonitor);
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter {

@@ -17,28 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
 
-import java.util.Map;
+package org.neo4j.bolt.testing.messages.factory;
+
+import io.netty.buffer.ByteBuf;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 
-public class BoltV53Wire extends BoltV52Wire {
-    public BoltV53Wire(ProtocolVersion version) {
-        super(version);
-    }
+public interface WireMessageBuilder<T extends WireMessageBuilder<T>> extends MessageComponentBuilder<T> {
+    ProtocolVersion getProtocolVersion();
 
-    public BoltV53Wire() {
-        super(BoltProtocolV53.VERSION);
-    }
-
-    @Override
-    public String getUserAgent() {
-        return "BoltWire/5.3";
-    }
-
-    @Override
-    public Map<String, String> getBoltAgent() {
-        return Map.of("product", "bolt-wire/5.3");
-    }
+    ByteBuf build();
 }

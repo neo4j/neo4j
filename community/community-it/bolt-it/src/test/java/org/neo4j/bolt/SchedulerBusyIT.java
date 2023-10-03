@@ -28,7 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
@@ -119,7 +119,7 @@ public class SchedulerBusyIT {
             BoltWire wire,
             @Authenticated TransportConnection connection1,
             @Authenticated TransportConnection connection2,
-            @Negotiated TransportConnection connection3)
+            @VersionSelected TransportConnection connection3)
             throws IOException {
         // saturate the thread pool using autocommit transactions (this works since open transactions currently force
         // Bolt to stick to the worker thread until closed or timed out)
@@ -151,8 +151,8 @@ public class SchedulerBusyIT {
             BoltWire wire,
             @Authenticated TransportConnection connection1,
             @Authenticated TransportConnection connection2,
-            @Negotiated TransportConnection connection3,
-            @Negotiated TransportConnection connection4)
+            @VersionSelected TransportConnection connection3,
+            @VersionSelected TransportConnection connection4)
             throws Exception {
         // saturate the thread pool using autocommit transactions (this works since open transactions currently force
         // Bolt to stick to the worker thread until closed or timed out)

@@ -33,7 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
@@ -88,7 +88,7 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldRespondWithCredentialsExpiredOnFirstUse(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldRespondWithCredentialsExpiredOnFirstUse(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
@@ -100,7 +100,8 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldFailIfWrongCredentials(BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
+    void shouldFailIfWrongCredentials(BoltWire wire, @VersionSelected TransportConnection connection)
+            throws IOException {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "wrong")));
 
         BoltConnectionAssertions.assertThat(connection)
@@ -127,8 +128,8 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldFailIfWrongCredentialsFollowingSuccessfulLogin(BoltWire wire, @Negotiated TransportConnection connection)
-            throws IOException {
+    void shouldFailIfWrongCredentialsFollowingSuccessfulLogin(
+            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
         // authenticate normally using the preset credentials and update the password to a new value
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
@@ -162,7 +163,7 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldFailIfMalformedAuthTokenWrongType(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldFailIfMalformedAuthTokenWrongType(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
         connection.send(wire.hello(
                 x -> x.withBasicScheme().withBadPrincipal(List.of("neo4j")).withCredentials("neo4j")));
@@ -174,7 +175,7 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldFailIfMalformedAuthTokenMissingKey(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldFailIfMalformedAuthTokenMissingKey(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
         connection.send(wire.hello(x -> x.withBasicScheme()
                 .withPrincipal("neo4j")
@@ -187,7 +188,7 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldFailIfMalformedAuthTokenMissingScheme(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldFailIfMalformedAuthTokenMissingScheme(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
 
         connection.send(wire.hello(x -> x.withPrincipal("neo4j").withCredentials("neo4j")));
@@ -200,7 +201,7 @@ public class LegacyAuthenticationIT {
 
     @ProtocolTest
     protected void shouldFailIfMalformedAuthTokenUnknownScheme(
-            BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
         connection.send(
                 wire.hello(x -> x.withScheme("unknown").withPrincipal("neo4j").withCredentials("neo4j")));
 
@@ -228,7 +229,7 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldFailWhenReusingTheSamePassword(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldFailWhenReusingTheSamePassword(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
@@ -267,7 +268,7 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldFailWhenSubmittingEmptyPassword(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldFailWhenSubmittingEmptyPassword(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
@@ -296,7 +297,7 @@ public class LegacyAuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldNotBeAbleToReadWhenPasswordChangeRequired(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldNotBeAbleToReadWhenPasswordChangeRequired(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException {
         // authenticate with the default (expired) credentials
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));

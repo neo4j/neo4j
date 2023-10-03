@@ -22,13 +22,9 @@ package org.neo4j.bolt.test.connection.initializer;
 import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import org.assertj.core.api.Assertions;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
-import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
@@ -39,7 +35,7 @@ import org.neo4j.bolt.testing.messages.BoltWire;
  * <p />
  * This initializer may be registered via the {@link Authenticated} annotation or any of its children.
  */
-public final class AuthenticateConnectionInitializer implements ConnectionInitializer {
+public final class AuthenticateConnectionInitializer extends AbstractNegotiatingConnectionInitializer {
 
     @Override
     public void initialize(
@@ -48,30 +44,13 @@ public final class AuthenticateConnectionInitializer implements ConnectionInitia
         var command = this.getCommand(context, wire);
 
         try {
-            // If using new method hello will not have auth and needs to be sent to get the authentication state
-            if (wire.supportsLogonMessage()) {
-                connection.send(wire.hello());
-            } else {
-                connection.send(command);
-            }
+            connection.send(command);
 
-            if (wire.getEnabledFeatures().isEmpty()) {
+            if (wire.supportsLogonMessage()) {
                 BoltConnectionAssertions.assertThat(connection).receivesSuccess();
             } else {
-                BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> {
-                    Assertions.assertThat(meta)
-                            .hasEntrySatisfying("patch_bolt", features -> Assertions.assertThat(features)
-                                    .asInstanceOf(InstanceOfAssertFactories.list(String.class))
-                                    .containsAll(wire.getEnabledFeatures().stream()
-                                            .map(Feature::getId)
-                                            .collect(Collectors.toSet())));
-                });
-            }
-
-            // Then in new auth you auth after hello
-            if (wire.supportsLogonMessage()) {
-                connection.send(command);
-                BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+                BoltConnectionAssertions.assertThat(connection)
+                        .receivesSuccess(meta -> this.assertNegotiatedFeatures(wire, meta));
             }
         } catch (IOException | AssertionError ex) {
             throw new ParameterResolutionException("Failed to authenticate connection", ex);

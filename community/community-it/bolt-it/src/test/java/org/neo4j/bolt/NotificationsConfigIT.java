@@ -28,14 +28,14 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
-import org.neo4j.bolt.testing.messages.NotificationsMessageBuilder;
+import org.neo4j.bolt.testing.messages.factory.NotificationsMessageBuilder;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
@@ -51,7 +51,7 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldReturnWarning(BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+    public void shouldReturnWarning(BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
         connection.send(wire.hello(x -> x.withSeverity(NotificationConfiguration.Severity.WARNING)));
         connection.send(wire.logon());
         connection
@@ -77,8 +77,8 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldReturnSingleCartesianProductWarning(BoltWire wire, @Negotiated TransportConnection connection)
-            throws Throwable {
+    public void shouldReturnSingleCartesianProductWarning(
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
         connection.send(wire.hello(x -> {
             x.withDisabledCategories(Set.of(NotificationConfiguration.Category.UNRECOGNIZED));
             return x;
@@ -98,7 +98,7 @@ public class NotificationsConfigIT {
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldReturnSingleUnboundedVariableLengthWarning(
-            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
         connection.send(wire.hello(x -> {
             x.withDisabledCategories(Set.of(NotificationConfiguration.Category.UNRECOGNIZED));
             return x;
@@ -117,8 +117,8 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldReturnSingleRepeatedRelationshipWarning(BoltWire wire, @Negotiated TransportConnection connection)
-            throws Throwable {
+    public void shouldReturnSingleRepeatedRelationshipWarning(
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
         connection.send(wire.hello());
         connection.send(wire.logon());
         connection.send(wire.run("MATCH ()-[r]-()-[r]-() RETURN r AS r")).send(wire.pull());
@@ -132,7 +132,7 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldSendFailureWithUnknownSeverity(BoltWire wire, @Negotiated TransportConnection connection)
+    public void shouldSendFailureWithUnknownSeverity(BoltWire wire, @VersionSelected TransportConnection connection)
             throws Throwable {
         connection.send(wire.hello(x -> x.withUnknownSeverity("WANING")));
 
@@ -141,7 +141,7 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldSendFailureWithUnknownCategory(BoltWire wire, @Negotiated TransportConnection connection)
+    public void shouldSendFailureWithUnknownCategory(BoltWire wire, @VersionSelected TransportConnection connection)
             throws Throwable {
         connection.send(wire.hello(x -> x.withUnknownDisabledCategories(List.of("Pete"))));
 
@@ -150,8 +150,8 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldNotReturnNotificationsWhenAllDisabled(BoltWire wire, @Negotiated TransportConnection connection)
-            throws Throwable {
+    public void shouldNotReturnNotificationsWhenAllDisabled(
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
 
         connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
@@ -165,7 +165,7 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldReturnMultipleNotifications(BoltWire wire, @Negotiated TransportConnection connection)
+    public void shouldReturnMultipleNotifications(BoltWire wire, @VersionSelected TransportConnection connection)
             throws Throwable {
 
         connection.send(wire.hello());
@@ -184,7 +184,7 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldEnableNotificationsForQuery(BoltWire wire, @Negotiated TransportConnection connection)
+    public void shouldEnableNotificationsForQuery(BoltWire wire, @VersionSelected TransportConnection connection)
             throws Throwable {
         connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
@@ -219,8 +219,8 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldSendFailureOnRunWithUnknownSeverity(BoltWire wire, @Negotiated TransportConnection connection)
-            throws Throwable {
+    public void shouldSendFailureOnRunWithUnknownSeverity(
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
         connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
@@ -232,8 +232,8 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldSendFailureOnRunWithUnknownCategory(BoltWire wire, @Negotiated TransportConnection connection)
-            throws Throwable {
+    public void shouldSendFailureOnRunWithUnknownCategory(
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
 
         connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
@@ -247,7 +247,7 @@ public class NotificationsConfigIT {
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldEnableNotificationsForQueryUsingCategories(
-            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
 
         connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
@@ -283,7 +283,7 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldEnableNotificationsInBegin(BoltWire wire, @Negotiated TransportConnection connection)
+    public void shouldEnableNotificationsInBegin(BoltWire wire, @VersionSelected TransportConnection connection)
             throws Throwable {
 
         connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
@@ -322,7 +322,7 @@ public class NotificationsConfigIT {
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldEnableNotificationsInBeginWithCategories(
-            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
 
         connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
@@ -360,7 +360,7 @@ public class NotificationsConfigIT {
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldNotReturnNotificationsInDisabledCategories(
-            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
         connection.send(wire.hello(x -> x.withDisabledCategories(
                 List.of(NotificationConfiguration.Category.GENERIC, NotificationConfiguration.Category.UNRECOGNIZED))));
         connection.send(wire.logon());
@@ -376,7 +376,7 @@ public class NotificationsConfigIT {
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldNotReturnNotificationsWhenNotHighEnoughSeverity(
-            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws Throwable {
         connection.send(wire.hello(x -> x.withSeverity(NotificationConfiguration.Severity.WARNING)));
         connection.send(wire.logon());
         connection

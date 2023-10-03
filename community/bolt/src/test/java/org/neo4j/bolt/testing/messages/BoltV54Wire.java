@@ -17,30 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Map;
+import java.util.function.UnaryOperator;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.v54.BoltProtocolV54;
+import org.neo4j.bolt.testing.messages.factory.TelemetryMessageBuilder;
 
-public interface WireMessageBuilder<T> {
-    Map<String, Object> getMeta();
+public class BoltV54Wire extends BoltV53Wire {
+    public BoltV54Wire() {
+        super(BoltProtocolV54.VERSION);
+    }
 
-    ProtocolVersion getProtocolVersion();
+    @Override
+    public String getUserAgent() {
+        return "BoltWire/5.4";
+    }
 
-    T getThis();
+    @Override
+    public ProtocolVersion getProtocolVersion() {
+        return super.getProtocolVersion();
+    }
 
-    ByteBuf build();
-
-    /**
-     * Use this to inject bad key-value pairs into metadata.
-     * Do not use it to add metadata with known keys.
-     * @param key an unknown metadata key.
-     * @param value a value
-     * @return this;
-     */
-    default T withBadKeyPair(String key, Object value) {
-        getMeta().put(key, value);
-        return getThis();
+    @Override
+    public ByteBuf telemetry(UnaryOperator<TelemetryMessageBuilder> fn) {
+        return fn.apply(new TelemetryMessageBuilder(this.getProtocolVersion())).build();
     }
 }

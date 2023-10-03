@@ -31,7 +31,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
@@ -95,7 +95,7 @@ public class TransportSecurityIT {
 
     @TransportTest
     @IncludeTransport(TransportType.TCP_TLS)
-    void shouldUseConfiguredCertificate(@Negotiated SecureSocketConnection connection) {
+    void shouldUseConfiguredCertificate(@VersionSelected SecureSocketConnection connection) {
         var certificatesSeen = connection.getServerCertificatesSeen();
 
         assertThat(certificatesSeen).containsExactly(this.certificate);

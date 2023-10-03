@@ -23,7 +23,9 @@ import java.io.IOException;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 
@@ -32,17 +34,32 @@ import org.neo4j.bolt.testing.messages.BoltWire;
  * <p />
  * This initializer may be registered via the {@link Negotiated} annotation or any of its children.
  */
-public final class NegotiateConnectionInitializer implements ConnectionInitializer {
+public final class NegotiateConnectionInitializer extends AbstractNegotiatingConnectionInitializer {
 
     @Override
     public void initialize(
             ExtensionContext extensionContext, ParameterContext context, BoltWire wire, TransportConnection connection)
             throws ParameterResolutionException {
+        if (!wire.supportsLogonMessage()) {
+            // if the selected protocol version does not support explicit authentication, we will make
+            // sure that the test has been set up correctly (e.g. requires authentication)
+            if (!context.isAnnotated(Authenticated.class)) {
+                // if no authentication has been requested, the test was targeted incorrectly as it
+                // will implicitly complete authentication as part of the negotiation phase
+                throw new UnsupportedOperationException(
+                        "Cannot enter AUTHENTICATION stage via negotiation message in protocol version "
+                                + wire.getProtocolVersion());
+            }
+            return;
+        }
+
         try {
-            wire.negotiate(connection);
-        } catch (IOException ex) {
-            throw new ParameterResolutionException(
-                    "Failed to negotiate protocol revision " + wire.getProtocolVersion(), ex);
+            connection.send(wire.hello());
+
+            BoltConnectionAssertions.assertThat(connection)
+                    .receivesSuccess(meta -> this.assertNegotiatedFeatures(wire, meta));
+        } catch (IOException | AssertionError ex) {
+            throw new ParameterResolutionException("Failed to authenticate connection", ex);
         }
     }
 }

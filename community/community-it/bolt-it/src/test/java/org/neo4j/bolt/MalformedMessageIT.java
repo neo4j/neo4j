@@ -22,8 +22,7 @@ package org.neo4j.bolt;
 import java.io.IOException;
 import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
-import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -59,7 +58,7 @@ public class MalformedMessageIT {
     }
 
     @ProtocolTest
-    void shouldHandleMessagesWithIncorrectFields(@Authenticated TransportConnection connection) throws IOException {
+    void shouldHandleMessagesWithIncorrectFields(@VersionSelected TransportConnection connection) throws IOException {
         // Given I send a message with the wrong types in its fields
         var msg = PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(3, RunMessage.SIGNATURE))
@@ -78,7 +77,7 @@ public class MalformedMessageIT {
     }
 
     @ProtocolTest
-    void shouldHandleUnknownMarkerBytes(@Negotiated TransportConnection connection) throws IOException {
+    void shouldHandleUnknownMarkerBytes(@VersionSelected TransportConnection connection) throws IOException {
         // Given I send a message with an invalid type
         var msg = PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(3, RunMessage.SIGNATURE))

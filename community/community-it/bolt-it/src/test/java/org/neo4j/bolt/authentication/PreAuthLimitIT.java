@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
@@ -90,7 +90,7 @@ public class PreAuthLimitIT {
 
     @ProtocolTest
     void shouldFailDueToMessageBeingTooLargeInUnauthenticatedState(
-            BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
         connection.send(createValidBufferOf1023bytes(BoltV51Wire.MESSAGE_TAG_HELLO));
 
         BoltConnectionAssertions.assertThat(connection)
@@ -101,7 +101,7 @@ public class PreAuthLimitIT {
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 0)})
     void shouldFailDueToMessageBeingTooLargeInAuthenticationState(
-            BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
         connection.send(wire.hello());
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
@@ -150,7 +150,7 @@ public class PreAuthLimitIT {
 
     @ProtocolTest
     void whenInUnauthenticatedStateShouldErrorIfConnectionOpenTooLong(
-            BoltWire wire, @Negotiated TransportConnection connection) throws IOException, InterruptedException {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException, InterruptedException {
         BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
 
         Thread.sleep(1000); // This is to ensure the log contains the message before it runs.
@@ -164,7 +164,7 @@ public class PreAuthLimitIT {
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 0)})
     void whenInAuthenticationStateShouldErrorIfConnectionOpenTooLong(
-            BoltWire wire, @Negotiated TransportConnection connection) throws IOException, InterruptedException {
+            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException, InterruptedException {
         connection.send(wire.hello());
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
@@ -194,7 +194,7 @@ public class PreAuthLimitIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 0)})
-    void whenLoggedInShouldBeNoAuthenticationTimout(BoltWire wire, @Negotiated TransportConnection connection)
+    void whenLoggedInShouldBeNoAuthenticationTimout(BoltWire wire, @VersionSelected TransportConnection connection)
             throws IOException, InterruptedException {
         connection.send(wire.hello());
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();

@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol;
 
 import org.neo4j.bolt.fsm.StateMachineConfiguration;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
+import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
@@ -29,6 +30,7 @@ import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTrans
 import org.neo4j.bolt.protocol.common.fsm.transition.ready.CreateAutocommitStatementStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.ready.CreateTransactionStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.ready.RouteStateTransition;
+import org.neo4j.bolt.protocol.common.fsm.transition.ready.TelemetryStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.transaction.CommitTransactionalStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.transaction.CreateStatementStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.transaction.RollbackTransactionalStateTransition;
@@ -42,6 +44,7 @@ import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogo
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultGoodbyeMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultResetMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultRouteMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.decoder.generic.TelemetryMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.streaming.DefaultDiscardMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.streaming.DefaultPullMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.transaction.DefaultBeginMessageDecoder;
@@ -92,7 +95,8 @@ public abstract class AbstractBoltProtocol implements BoltProtocol {
                         CreateTransactionStateTransition.getInstance(),
                         RouteStateTransition.getInstance(),
                         CreateAutocommitStatementStateTransition.getInstance(),
-                        LogoffStateTransition.getInstance())
+                        LogoffStateTransition.getInstance(),
+                        TelemetryStateTransition.getInstance())
                 .withState(
                         States.AUTO_COMMIT,
                         AutocommitDiscardStreamingStateTransition.getInstance(),
@@ -123,7 +127,9 @@ public abstract class AbstractBoltProtocol implements BoltProtocol {
                 .register(DefaultBeginMessageDecoder.getInstance())
                 .register(DefaultCommitMessageDecoder.getInstance())
                 .register(DefaultRollbackMessageDecoder.getInstance())
-                .register(DefaultRunMessageDecoder.getInstance());
+                .register(DefaultRunMessageDecoder.getInstance())
+                // Generic
+                .register(TelemetryMessageDecoder.getInstance());
     }
 
     protected StructRegistry.Builder<Connection, ResponseMessage> createResponseMessageRegistry() {
@@ -136,5 +142,10 @@ public abstract class AbstractBoltProtocol implements BoltProtocol {
     @Override
     public String toString() {
         return this.version().toString();
+    }
+
+    @Override
+    public ConnectionHintProvider connectionHintProvider() {
+        return ConnectionHintProvider.noop();
     }
 }

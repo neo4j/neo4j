@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
@@ -57,6 +58,8 @@ public abstract class AbstractConnector implements Connector {
 
     private final ConnectionRegistry connectionRegistry;
 
+    private final BoltDriverMetricsMonitor driverMetricsMonitor;
+
     private final int streamingBufferSize;
     private final int streamingFlushThreshold;
 
@@ -78,6 +81,7 @@ public abstract class AbstractConnector implements Connector {
             int streamingBufferSize,
             int streamingFlushThreshold,
             RoutingService routingService,
+            BoltDriverMetricsMonitor driverMetricsMonitor,
             InternalLogProvider logging) {
         this.id = id;
         this.clock = clock;
@@ -95,6 +99,8 @@ public abstract class AbstractConnector implements Connector {
 
         this.streamingBufferSize = streamingBufferSize;
         this.streamingFlushThreshold = streamingFlushThreshold;
+
+        this.driverMetricsMonitor = driverMetricsMonitor;
 
         this.connectionRegistry = new ConnectionRegistry(id, connectionTracker, logging);
     }
@@ -157,6 +163,11 @@ public abstract class AbstractConnector implements Connector {
     @Override
     public RoutingService routingService() {
         return this.routingService;
+    }
+
+    @Override
+    public BoltDriverMetricsMonitor driverMetricsMonitor() {
+        return driverMetricsMonitor;
     }
 
     @Override

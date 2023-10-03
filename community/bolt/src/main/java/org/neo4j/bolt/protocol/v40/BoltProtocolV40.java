@@ -37,6 +37,7 @@ import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogo
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultGoodbyeMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultResetMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultRouteMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.decoder.generic.TelemetryMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.streaming.DefaultDiscardMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.streaming.DefaultPullMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -114,7 +115,9 @@ public class BoltProtocolV40 extends AbstractBoltProtocol {
                 .register(DefaultPullMessageDecoder.getInstance())
                 // Transaction
                 .register(BeginMessageDecoderV40.getInstance())
-                .register(RunMessageDecoderV40.getInstance());
+                .register(RunMessageDecoderV40.getInstance())
+                // Generic
+                .unregister(TelemetryMessageDecoder.getInstance());
     }
 
     @Override

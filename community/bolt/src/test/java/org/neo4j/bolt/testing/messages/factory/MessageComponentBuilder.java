@@ -17,28 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.testing.messages.factory;
 
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 
-public class BoltV53Wire extends BoltV52Wire {
-    public BoltV53Wire(ProtocolVersion version) {
-        super(version);
-    }
+public interface MessageComponentBuilder<T extends MessageComponentBuilder<T>> {
+    Map<String, Object> getMeta();
 
-    public BoltV53Wire() {
-        super(BoltProtocolV53.VERSION);
-    }
-
-    @Override
-    public String getUserAgent() {
-        return "BoltWire/5.3";
-    }
-
-    @Override
-    public Map<String, String> getBoltAgent() {
-        return Map.of("product", "bolt-wire/5.3");
+    /**
+     * Use this to inject bad key-value pairs into metadata.
+     * Do not use it to add metadata with known keys.
+     *
+     * @param key an unknown metadata key.
+     * @param value a value
+     * @return this;
+     */
+    @SuppressWarnings("unchecked")
+    default T withBadKeyPair(String key, Object value) {
+        getMeta().put(key, value);
+        return (T) this;
     }
 }

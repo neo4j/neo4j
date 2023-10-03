@@ -24,6 +24,7 @@ import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
@@ -130,6 +131,13 @@ public interface Connector extends Lifecycle {
      * @return a transaction manager.
      */
     TransactionManager transactionManager();
+
+    /**
+     * Retrieves the bolt driver metrics monitor that allows us to increment the metrics for the different driver types
+     *
+     * @return a BoltDriverMetricsMonitor
+     */
+    BoltDriverMetricsMonitor driverMetricsMonitor();
 
     /**
      * Retrieves the configured routingService

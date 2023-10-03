@@ -27,6 +27,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_addre
 import static org.neo4j.configuration.SettingConstraints.NO_ALL_INTERFACES_ADDRESS;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
@@ -53,6 +54,11 @@ public final class BoltConnector implements SettingsDeclaration {
     @Description("Enable the bolt connector")
     @DocumentedDefaultValue("true") // Should document server defaults.
     public static final Setting<Boolean> enabled = ConnectorDefaults.bolt_enabled;
+
+    @Description("Enable the collection of driver telemetry.")
+    @DocumentedDefaultValue("false")
+    public static final Setting<Boolean> server_bolt_telemetry_enabled =
+            newBuilder("server.bolt.telemetry.enabled", BOOL, false).build();
 
     @Description("Encryption level to require this connector to use")
     public static final Setting<EncryptionLevel> encryption_level = newBuilder(

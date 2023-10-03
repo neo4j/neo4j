@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.testing.messages.factory;
 
 import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
@@ -69,11 +69,6 @@ public final class RunMessageBuilder implements NotificationsMessageBuilder<RunM
     @Override
     public ProtocolVersion getProtocolVersion() {
         return protocolVersion;
-    }
-
-    @Override
-    public RunMessageBuilder getThis() {
-        return this;
     }
 
     @Override

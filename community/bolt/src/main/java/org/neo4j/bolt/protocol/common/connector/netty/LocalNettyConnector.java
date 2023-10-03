@@ -27,6 +27,7 @@ import io.netty.channel.ServerChannel;
 import java.net.SocketAddress;
 import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
@@ -75,7 +76,8 @@ public class LocalNettyConnector extends AbstractNettyConnector {
             ConnectorTransport connectorTransport,
             EventLoopGroup workerGroup,
             Config config,
-            ByteBufAllocator byteBufAllocator) {
+            ByteBufAllocator byteBufAllocator,
+            BoltDriverMetricsMonitor driverMetricsMonitor) {
         super(
                 id,
                 bindAddress,
@@ -93,6 +95,7 @@ public class LocalNettyConnector extends AbstractNettyConnector {
                 streamingBufferSize,
                 streamingFlushThreshold,
                 routingService,
+                driverMetricsMonitor,
                 userLogProvider,
                 internalLogProvider);
         this.transport = connectorTransport;

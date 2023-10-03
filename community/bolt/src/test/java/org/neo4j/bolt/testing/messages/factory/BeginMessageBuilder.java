@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.testing.messages.factory;
 
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
@@ -30,34 +30,34 @@ import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 
-public final class BeginBuilder implements NotificationsMessageBuilder<BeginBuilder> {
+public final class BeginMessageBuilder implements NotificationsMessageBuilder<BeginMessageBuilder> {
     private static final short MESSAGE_TAG_BEGIN = (short) 0x11;
     private final ProtocolVersion version;
     private final HashMap<String, Object> meta;
 
-    public BeginBuilder(ProtocolVersion version) {
+    public BeginMessageBuilder(ProtocolVersion version) {
         this.meta = new HashMap<>();
         this.version = version;
     }
 
-    public BeginBuilder withDatabase(String value) {
+    public BeginMessageBuilder withDatabase(String value) {
         meta.put("db", value);
         return this;
     }
 
-    public BeginBuilder withImpersonatedUser(String value) {
+    public BeginMessageBuilder withImpersonatedUser(String value) {
         if (version.compareTo(BoltProtocolV44.VERSION) >= 0) {
             meta.put("imp_user", value);
         }
         return this;
     }
 
-    public BeginBuilder withBookmarks(Collection<String> value) {
+    public BeginMessageBuilder withBookmarks(Collection<String> value) {
         meta.put("bookmarks", new ArrayList<>(value));
         return this;
     }
 
-    public BeginBuilder withTransactionType(String transactionType) {
+    public BeginMessageBuilder withTransactionType(String transactionType) {
         if (version.compareTo(BoltProtocolV50.VERSION) >= 0) {
             meta.put("tx_type", transactionType);
         }
@@ -72,11 +72,6 @@ public final class BeginBuilder implements NotificationsMessageBuilder<BeginBuil
     @Override
     public ProtocolVersion getProtocolVersion() {
         return version;
-    }
-
-    @Override
-    public BeginBuilder getThis() {
-        return this;
     }
 
     @Override

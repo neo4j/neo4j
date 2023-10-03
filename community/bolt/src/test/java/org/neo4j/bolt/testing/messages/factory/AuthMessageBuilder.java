@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.testing.messages.factory;
 
 public interface AuthMessageBuilder<T extends AuthMessageBuilder<T>> extends WireMessageBuilder<T> {
     default T withBasicScheme() {
@@ -30,26 +30,26 @@ public interface AuthMessageBuilder<T extends AuthMessageBuilder<T>> extends Wir
 
     default T withScheme(String scheme) {
         getMeta().put("scheme", scheme);
-        return getThis();
+        return (T) this;
     }
 
     default T withPrincipal(String principal) {
         getMeta().put("principal", principal);
-        return getThis();
+        return (T) this;
     }
 
     default T withBadPrincipal(Object principal) {
         getMeta().put("principal", principal);
-        return getThis();
+        return (T) this;
     }
 
     default T withCredentials(String credentials) {
         getMeta().put("credentials", credentials);
-        return getThis();
+        return (T) this;
     }
 
     default T withRealm(String realm) {
         getMeta().put("realm", realm);
-        return getThis();
+        return (T) this;
     }
 }

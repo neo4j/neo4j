@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.testing.messages.factory;
 
 import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
@@ -30,7 +30,8 @@ import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 
-public final class HelloBuilder implements AuthMessageBuilder<HelloBuilder>, NotificationsMessageBuilder<HelloBuilder> {
+public final class HelloMessageBuilder
+        implements AuthMessageBuilder<HelloMessageBuilder>, NotificationsMessageBuilder<HelloMessageBuilder> {
     private static final short MESSAGE_TAG_HELLO = (short) 0x01;
     private final HashMap<String, Object> meta;
     private final ProtocolVersion version;
@@ -38,7 +39,7 @@ public final class HelloBuilder implements AuthMessageBuilder<HelloBuilder>, Not
     private final Set<Feature> defaultFeatures;
     private final Map<String, String> defaultBoltAgent;
 
-    public HelloBuilder(
+    public HelloMessageBuilder(
             ProtocolVersion version,
             String defaultUserAgent,
             Set<Feature> features,
@@ -50,27 +51,27 @@ public final class HelloBuilder implements AuthMessageBuilder<HelloBuilder>, Not
         this.defaultFeatures = features;
     }
 
-    public HelloBuilder withUserAgent(Object agent) {
+    public HelloMessageBuilder withUserAgent(Object agent) {
         meta.put("user_agent", agent);
         return this;
     }
 
-    public HelloBuilder withBoltAgent(Map<String, String> agent) {
+    public HelloMessageBuilder withBoltAgent(Map<String, String> agent) {
         meta.put("bolt_agent", agent);
         return this;
     }
 
-    public HelloBuilder withBadBoltAgent(Object agent) {
+    public HelloMessageBuilder withBadBoltAgent(Object agent) {
         meta.put("bolt_agent", agent);
         return this;
     }
 
-    public HelloBuilder withRoutingContext(RoutingContext routingContext) {
+    public HelloMessageBuilder withRoutingContext(RoutingContext routingContext) {
         meta.put("routing", routingContext.getParameters());
         return this;
     }
 
-    public HelloBuilder withFeatures(Object features) {
+    public HelloMessageBuilder withFeatures(Object features) {
         meta.put("patch_bolt", features);
         return this;
     }
@@ -83,11 +84,6 @@ public final class HelloBuilder implements AuthMessageBuilder<HelloBuilder>, Not
     @Override
     public ProtocolVersion getProtocolVersion() {
         return this.version;
-    }
-
-    @Override
-    public HelloBuilder getThis() {
-        return this;
     }
 
     @Override

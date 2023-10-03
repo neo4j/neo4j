@@ -17,28 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.protocol.v54;
 
-import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
+import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 
-public class BoltV53Wire extends BoltV52Wire {
-    public BoltV53Wire(ProtocolVersion version) {
-        super(version);
-    }
+public class BoltProtocolV54 extends AbstractBoltProtocol {
+    public static final ProtocolVersion VERSION = new ProtocolVersion(5, 4);
 
-    public BoltV53Wire() {
-        super(BoltProtocolV53.VERSION);
-    }
+    private static final BoltProtocolV54 INSTANCE = new BoltProtocolV54();
 
-    @Override
-    public String getUserAgent() {
-        return "BoltWire/5.3";
+    private BoltProtocolV54() {}
+
+    public static BoltProtocolV54 getInstance() {
+        return INSTANCE;
     }
 
     @Override
-    public Map<String, String> getBoltAgent() {
-        return Map.of("product", "bolt-wire/5.3");
+    public ProtocolVersion version() {
+        return VERSION;
     }
 }

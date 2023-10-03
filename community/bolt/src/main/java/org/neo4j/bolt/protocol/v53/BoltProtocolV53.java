@@ -22,7 +22,11 @@ package org.neo4j.bolt.protocol.v53;
 import java.util.Set;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.common.message.decoder.generic.TelemetryMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.packstream.struct.StructRegistry;
 
 public class BoltProtocolV53 extends AbstractBoltProtocol {
     public static final ProtocolVersion VERSION = new ProtocolVersion(5, 3);
@@ -43,5 +47,12 @@ public class BoltProtocolV53 extends AbstractBoltProtocol {
     @Override
     public Set<Feature> features() {
         return Set.of(Feature.UTC_DATETIME);
+    }
+
+    @Override
+    protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
+        return super.createRequestMessageRegistry()
+                // Generic
+                .unregister(TelemetryMessageDecoder.getInstance());
     }
 }

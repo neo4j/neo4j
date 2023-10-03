@@ -31,7 +31,7 @@ import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
-import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
+import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.initializer.EnableFeature;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
@@ -384,7 +384,7 @@ public class StreamingIT {
 
     @ProtocolTest
     @ExcludeWire(@Version(major = 4))
-    void shouldNotNegotiateUTCPatch(BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
+    void shouldNotNegotiateUTCPatch(BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
         wire.enable(Feature.UTC_DATETIME);
         connection.send(wire.hello());
 

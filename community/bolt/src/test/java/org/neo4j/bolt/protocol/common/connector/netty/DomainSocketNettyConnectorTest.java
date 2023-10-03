@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.EpollConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.KqueueConnectorTransport;
@@ -114,6 +115,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 512,
                 0,
                 Mockito.mock(RoutingService.class),
+                BoltDriverMetricsMonitor.noop(),
                 logging,
                 logging);
     }
@@ -177,6 +179,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                         512,
                         0,
                         Mockito.mock(RoutingService.class),
+                        BoltDriverMetricsMonitor.noop(),
                         logging,
                         logging))
                 .withMessageContaining("Unsupported transport: NIO does not support domain sockets")
