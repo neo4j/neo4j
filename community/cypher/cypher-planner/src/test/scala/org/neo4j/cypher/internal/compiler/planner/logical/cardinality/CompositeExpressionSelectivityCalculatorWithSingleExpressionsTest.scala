@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
