@@ -259,14 +259,17 @@ public enum NotificationCodeWithDescription {
 
     SERVER_ALREADY_ENABLED(
             Status.Cluster.ServerAlreadyEnabled,
-            "Server `%s` is already enabled. Verify that this is the intended server."),
+            "Server `%s` is already enabled. Verify that this is the intended server.",
+            "`ENABLE SERVER` has no effect. Server `%s` is already enabled. Verify that this is the intended server."),
     SERVER_ALREADY_CORDONED(
             Status.Cluster.ServerAlreadyCordoned,
-            "Server `%s` is already cordoned. Verify that this is the intended server."),
+            "Server `%s` is already cordoned. Verify that this is the intended server.",
+            "`CORDON SERVER` has no effect. Server `%s` is already cordoned. Verify that this is the intended server."),
 
     NO_DATABASES_REALLOCATED(
             Status.Cluster.NoDatabasesReallocated,
-            "No databases were reallocated. No better allocation is currently possible."),
+            "No databases were reallocated. No better allocation is currently possible.",
+            "`REALLOCATE DATABASES` has no effect. No databases were reallocated. No better allocation is currently possible."),
 
     SIDE_EFFECT_VISIBILITY(
             Status.Statement.SideEffectVisibility,
@@ -543,11 +546,11 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation serverAlreadyEnabled(InputPosition position, String server) {
-        return SERVER_ALREADY_ENABLED.notification(position, server);
+        return SERVER_ALREADY_ENABLED.notificationWithMessage(position, new String[] {server}, new String[] {server});
     }
 
     public static NotificationImplementation serverAlreadyCordoned(InputPosition position, String server) {
-        return SERVER_ALREADY_CORDONED.notification(position, server);
+        return SERVER_ALREADY_CORDONED.notificationWithMessage(position, new String[] {server}, new String[] {server});
     }
 
     public static NotificationImplementation noDatabasesReallocated(InputPosition position) {

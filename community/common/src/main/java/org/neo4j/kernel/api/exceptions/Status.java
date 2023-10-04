@@ -680,7 +680,7 @@ public interface Status {
 
         NoDatabasesReallocated(
                 ClientNotification,
-                "`REALLOCATE DATABASES` had no effect.",
+                "`REALLOCATE DATABASES` has no effect.",
                 SeverityLevel.INFORMATION,
                 NotificationCategory.TOPOLOGY),
 

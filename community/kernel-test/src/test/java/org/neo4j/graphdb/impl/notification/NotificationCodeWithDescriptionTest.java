@@ -871,7 +871,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.ServerAlreadyEnabled",
                 "Server `server` is already enabled. Verify that this is the intended server.",
                 NotificationCategory.TOPOLOGY,
-                null);
+                "`ENABLE SERVER` has no effect. Server `server` is already enabled. Verify that this is the intended server.");
     }
 
     @Test
@@ -885,7 +885,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.ServerAlreadyCordoned",
                 "Server `server` is already cordoned. Verify that this is the intended server.",
                 NotificationCategory.TOPOLOGY,
-                null);
+                "`CORDON SERVER` has no effect. Server `server` is already cordoned. Verify that this is the intended server.");
     }
 
     @Test
@@ -894,12 +894,12 @@ class NotificationCodeWithDescriptionTest {
 
         verifyNotification(
                 notification,
-                "`REALLOCATE DATABASES` had no effect.",
+                "`REALLOCATE DATABASES` has no effect.",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Cluster.NoDatabasesReallocated",
                 "No databases were reallocated. No better allocation is currently possible.",
                 NotificationCategory.TOPOLOGY,
-                null);
+                "`REALLOCATE DATABASES` has no effect. No databases were reallocated. No better allocation is currently possible.");
     }
 
     @Test
@@ -989,8 +989,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            116, 27, -104, -47, 120, -11, 12, 78, 88, -127, -102, -76, -85, -104, -10, -110, 89, 111, -2, 32, 97, -93,
-            -41, -95, 43, -91, -55, 115, -21, -123, -31, -91
+            -28, -71, 38, 54, 97, -112, -5, 12, 103, -124, 85, -73, 94, 31, -10, -92, 23, 87, -3, -79, -8, -16, -128,
+            90, -88, 126, -63, -34, -48, 95, 20, -83
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {
