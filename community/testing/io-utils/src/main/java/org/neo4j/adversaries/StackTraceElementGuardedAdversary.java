@@ -21,6 +21,7 @@ package org.neo4j.adversaries;
 
 import java.lang.StackWalker.StackFrame;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.Predicate;
 
 public class StackTraceElementGuardedAdversary implements Adversary {
@@ -49,6 +50,11 @@ public class StackTraceElementGuardedAdversary implements Adversary {
     @Override
     public Optional<Throwable> getLastAdversaryException() {
         return delegate.getLastAdversaryException();
+    }
+
+    @Override
+    public Random random() {
+        return delegate.random();
     }
 
     private boolean calledFromVictimStackTraceElement() {

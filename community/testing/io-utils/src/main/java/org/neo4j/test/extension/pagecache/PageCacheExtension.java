@@ -25,9 +25,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@ExtendWith({DefaultFileSystemExtension.class, TestDirectorySupportExtension.class, PageCacheSupportExtension.class})
+@ExtendWith({
+    DefaultFileSystemExtension.class,
+    TestDirectorySupportExtension.class,
+    RandomExtension.class,
+    PageCacheSupportExtension.class
+})
 public @interface PageCacheExtension {}

@@ -24,7 +24,7 @@ import static org.neo4j.io.ByteUnit.parse;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.ObjectUtils;
 import org.neo4j.adversaries.Adversary;
@@ -60,7 +60,7 @@ public class PageCacheSupport {
     }
 
     public PageCache getPageCache(FileSystemAbstraction fs) {
-        return getPageCache(fs, config());
+        return getPageCache(fs, config(), new Random());
     }
 
     /**
@@ -74,11 +74,17 @@ public class PageCacheSupport {
     public PageCache getPageCache(FileSystemAbstraction fs, PageCacheConfig overriddenConfig) {
         SingleFilePageSwapperFactory factory =
                 new SingleFilePageSwapperFactory(fs, new DefaultPageCacheTracer(), EmptyMemoryTracker.INSTANCE);
-        return getPageCache(factory, overriddenConfig);
+        return getPageCache(factory, overriddenConfig, new Random());
+    }
+
+    public PageCache getPageCache(FileSystemAbstraction fs, PageCacheConfig overriddenConfig, Random random) {
+        SingleFilePageSwapperFactory factory =
+                new SingleFilePageSwapperFactory(fs, new DefaultPageCacheTracer(), EmptyMemoryTracker.INSTANCE);
+        return getPageCache(factory, overriddenConfig, random);
     }
 
     public PageCache getPageCache(PageSwapperFactory swapperFactory) {
-        return getPageCache(swapperFactory, config());
+        return getPageCache(swapperFactory, config(), new Random());
     }
 
     /**
@@ -89,7 +95,7 @@ public class PageCacheSupport {
      * constructor, if any.
      * @return the opened {@link PageCache}.
      */
-    public PageCache getPageCache(PageSwapperFactory factory, PageCacheConfig overriddenConfig) {
+    public PageCache getPageCache(PageSwapperFactory factory, PageCacheConfig overriddenConfig, Random random) {
         closeExistingPageCache();
         var memoryTracker = new LocalMemoryTracker();
         MemoryAllocator mman = MemoryAllocator.createAllocator(
@@ -108,7 +114,7 @@ public class PageCacheSupport {
         configuration = reservedPageBytes != null ? configuration.reservedPageBytes(reservedPageBytes) : configuration;
         initializeJobScheduler();
         pageCache = new MuninnPageCache(factory, jobScheduler, configuration);
-        pageCachePostConstruct(overriddenConfig);
+        pageCachePostConstruct(overriddenConfig, random);
         return pageCache;
     }
 
@@ -120,13 +126,13 @@ public class PageCacheSupport {
         return ObjectUtils.firstNonNull(base, overridden, defaultValue);
     }
 
-    protected void pageCachePostConstruct(PageCacheConfig overriddenConfig) {
+    protected void pageCachePostConstruct(PageCacheConfig overriddenConfig, Random random) {
         if (selectConfig(baseConfig.inconsistentReads, overriddenConfig.inconsistentReads, TRUE)) {
             AtomicBoolean controller =
                     selectConfig(baseConfig.nextReadIsInconsistent, overriddenConfig.nextReadIsInconsistent, null);
             Adversary adversary = controller != null
-                    ? new AtomicBooleanInconsistentReadAdversary(controller)
-                    : new RandomInconsistentReadAdversary();
+                    ? new AtomicBooleanInconsistentReadAdversary(controller, random)
+                    : new RandomInconsistentReadAdversary(random);
             pageCache = new AdversarialPageCache(pageCache, adversary);
         }
         if (selectConfig(baseConfig.accessChecks, overriddenConfig.accessChecks, false)) {
@@ -168,9 +174,11 @@ public class PageCacheSupport {
 
     public static class AtomicBooleanInconsistentReadAdversary implements Adversary {
         final AtomicBoolean nextReadIsInconsistent;
+        private final Random random;
 
-        public AtomicBooleanInconsistentReadAdversary(AtomicBoolean nextReadIsInconsistent) {
+        public AtomicBooleanInconsistentReadAdversary(AtomicBoolean nextReadIsInconsistent, Random random) {
             this.nextReadIsInconsistent = nextReadIsInconsistent;
+            this.random = random;
         }
 
         @Override
@@ -187,9 +195,20 @@ public class PageCacheSupport {
         public Optional<Throwable> getLastAdversaryException() {
             return Optional.empty();
         }
+
+        @Override
+        public Random random() {
+            return random;
+        }
     }
 
     private static class RandomInconsistentReadAdversary implements Adversary {
+        private final Random random;
+
+        RandomInconsistentReadAdversary(Random random) {
+            this.random = random;
+        }
+
         @Override
         @SafeVarargs
         public final void injectFailure(Class<? extends Throwable>... failureTypes) {}
@@ -197,12 +216,17 @@ public class PageCacheSupport {
         @Override
         @SafeVarargs
         public final boolean injectFailureOrMischief(Class<? extends Throwable>... failureTypes) {
-            return ThreadLocalRandom.current().nextBoolean();
+            return random.nextBoolean();
         }
 
         @Override
         public Optional<Throwable> getLastAdversaryException() {
             return Optional.empty();
+        }
+
+        @Override
+        public Random random() {
+            return random;
         }
     }
 }

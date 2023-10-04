@@ -20,6 +20,7 @@
 package org.neo4j.adversaries;
 
 import java.util.Optional;
+import java.util.Random;
 
 public interface Adversary {
     /**
@@ -37,4 +38,9 @@ public interface Adversary {
      * @return return exception that was thrown last by adversary if any
      */
     Optional<Throwable> getLastAdversaryException();
+
+    /**
+     * @return A random instance to use
+     */
+    Random random();
 }

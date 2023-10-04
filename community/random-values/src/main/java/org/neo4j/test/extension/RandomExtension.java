@@ -41,8 +41,8 @@ import org.opentest4j.TestAbortedException;
 
 public class RandomExtension extends StatefulFieldExtension<RandomSupport>
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestExecutionExceptionHandler {
-    private static final String RANDOM = "random";
-    private static final Namespace RANDOM_NAMESPACE = Namespace.create(RANDOM);
+    public static final String RANDOM = "random";
+    public static final Namespace RANDOM_NAMESPACE = Namespace.create(RANDOM);
 
     private final RandomValues.Configuration config;
 

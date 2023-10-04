@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * A {@linkplain PageCache page cache} that wraps another page cache and an {@linkplain Adversary adversary} to provide
@@ -121,5 +122,10 @@ public class AdversarialPageCache implements PageCache {
     @Override
     public IOBufferFactory getBufferFactory() {
         return delegate.getBufferFactory();
+    }
+
+    @VisibleForTesting
+    public Adversary adversary() {
+        return adversary;
     }
 }

@@ -29,7 +29,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
@@ -41,21 +41,12 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 @PageCacheExtension
 class StringCollisionValuesTest {
-    @RegisterExtension
-    static final RandomExtension randomExtension = new RandomExtension(new RandomValues.Default() {
-        @Override
-        public int stringMaxLength() {
-            return (1 << Short.SIZE) - 1;
-        }
-    });
-
     @Inject
     private RandomSupport random;
 
@@ -64,6 +55,17 @@ class StringCollisionValuesTest {
 
     @Inject
     private PageCache pageCache;
+
+    @BeforeEach
+    void before() {
+        random.withConfiguration(new RandomValues.Default() {
+            @Override
+            public int stringMaxLength() {
+                return (1 << Short.SIZE) - 1;
+            }
+        });
+        random.reset();
+    }
 
     private static Stream<BiFunction<PageCache, Path, NumberArrayFactory>> data() {
         return Stream.of(

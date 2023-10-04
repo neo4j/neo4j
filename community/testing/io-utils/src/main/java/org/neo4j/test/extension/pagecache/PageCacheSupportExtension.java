@@ -22,13 +22,16 @@ package org.neo4j.test.extension.pagecache;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.util.Optional;
+import java.util.Random;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.FileSystemExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.utils.PageCacheConfig;
 import org.neo4j.test.utils.PageCacheSupport;
@@ -64,21 +67,24 @@ public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
                 fileSystemStore.get(FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class);
         FileSystemAbstraction pageCacheFileSystem =
                 Optional.ofNullable(contextFileSystem).orElseGet(DefaultFileSystemAbstraction::new);
-        return new PageCacheSupport().getPageCache(pageCacheFileSystem, config);
+        Store randomStore = getStore(extensionContext, RandomExtension.RANDOM_NAMESPACE);
+        RandomSupport randomSupport = randomStore.get(RandomExtension.RANDOM, RandomSupport.class);
+        Random random = randomSupport != null ? randomSupport.random() : new Random();
+        return new PageCacheSupport().getPageCache(pageCacheFileSystem, config, random);
     }
 
     /**
      * @return Return a new page cache using the provided filesystem and config. This page cache must be closed after use.
      */
     public static PageCache getPageCache(FileSystemAbstraction fs, PageCacheConfig config) {
-        return new PageCacheSupport().getPageCache(fs, config);
+        return new PageCacheSupport().getPageCache(fs, config, new Random());
     }
 
     /**
      * @return Return a new page cache using the provided filesystem. This page cache must be closed after use.
      */
     public PageCache getPageCache(FileSystemAbstraction fs) {
-        return new PageCacheSupport().getPageCache(fs, config);
+        return getPageCache(fs, config);
     }
 
     @Override

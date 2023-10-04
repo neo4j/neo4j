@@ -54,7 +54,7 @@ public class RandomSupport {
     private long globalSeed;
     private long seed;
     private boolean hasGlobalSeed;
-    private Random random;
+    private final Random random = new Random();
     private RandomValues randoms;
 
     private RandomValues.Configuration config = RandomValues.DEFAULT_CONFIGURATION;
@@ -270,7 +270,7 @@ public class RandomSupport {
     // ============================
 
     public void reset() {
-        random = new Random(seed);
+        random.setSeed(seed);
         randoms = RandomValues.create(random, config);
     }
 

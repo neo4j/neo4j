@@ -63,4 +63,9 @@ public abstract class AbstractAdversary implements Adversary {
     public Optional<Throwable> getLastAdversaryException() {
         return ofNullable(adversaryException);
     }
+
+    @Override
+    public Random random() {
+        return rng;
+    }
 }

@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -84,7 +84,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor {
                 return value;
             }
             if (currentReadIsInconsistent && (--callCounter) <= 0) {
-                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                var rng = random();
                 long x = value.longValue();
                 if (x != 0 && rng.nextBoolean()) {
                     x = ~x;
@@ -102,7 +102,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor {
                 callCounter++;
             } else if (currentReadIsInconsistent) {
                 byte[] gunk = new byte[length];
-                ThreadLocalRandom.current().nextBytes(gunk);
+                random().nextBytes(gunk);
                 System.arraycopy(gunk, 0, data, arrayOffset, length);
                 inconsistentReadHistory.add(Arrays.copyOf(data, data.length));
             }
@@ -128,11 +128,16 @@ class AdversarialReadPageCursor extends DelegatingPageCursor {
             return adversary.getLastAdversaryException();
         }
 
+        @Override
+        public Random random() {
+            return adversary.random();
+        }
+
         private boolean hasPreparedInconsistentRead() {
             if (currentReadIsPreparingInconsistent) {
                 currentReadIsPreparingInconsistent = false;
                 currentReadIsInconsistent = true;
-                callCounter = ThreadLocalRandom.current().nextInt(callCounter + 1);
+                callCounter = random().nextInt(callCounter + 1);
                 inconsistentReadHistory = new ArrayList<>();
                 return true;
             }
