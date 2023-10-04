@@ -95,14 +95,12 @@ public class DelegateReadableChannel implements ReadableLogPositionAwareChannel 
 
     @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) {
-        assertAssigned();
         positionMarker.unspecified();
         return positionMarker;
     }
 
     @Override
     public LogPosition getCurrentLogPosition() {
-        assertAssigned();
         return LogPosition.UNSPECIFIED;
     }
 
