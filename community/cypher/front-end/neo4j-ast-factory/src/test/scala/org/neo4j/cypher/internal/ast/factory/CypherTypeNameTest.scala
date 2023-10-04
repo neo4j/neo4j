@@ -141,23 +141,23 @@ class CypherTypeNameTest extends CypherFunSuite {
   test("NULL update nullable false should return NOTHING") {
     val nullType = NullType()(pos)
     val nothingTypeName = NothingType()(pos)
-    nullType.updateIsNullable(false) should be(nothingTypeName)
+    nullType.withIsNullable(false) should be(nothingTypeName)
   }
 
   test("NULL update nullable true should return NULL") {
     val nullType = NullType()(pos)
-    nullType.updateIsNullable(true) should be(nullType)
+    nullType.withIsNullable(true) should be(nullType)
   }
 
   // RULES TESTED: 2
   test("NOTHING update nullable false should return NOTHING") {
     val nothingTypeName = NothingType()(pos)
-    nothingTypeName.updateIsNullable(false) should be(nothingTypeName)
+    nothingTypeName.withIsNullable(false) should be(nothingTypeName)
   }
 
   test("NOTHING update nullable true should return NOTHING") {
     val nothingTypeName = NothingType()(pos)
-    nothingTypeName.updateIsNullable(true) should be(nothingTypeName)
+    nothingTypeName.withIsNullable(true) should be(nothingTypeName)
   }
 
   test("ANY<> update nullable false should return ANY<> with all values changed") {
@@ -169,7 +169,7 @@ class CypherTypeNameTest extends CypherFunSuite {
       IntegerType(isNullable = false)(pos),
       BooleanType(isNullable = false)(pos)
     ))(pos)
-    closedDynamicUnionType.updateIsNullable(false) should be(closedDynamicUnionTypeUpdated)
+    closedDynamicUnionType.withIsNullable(false) should be(closedDynamicUnionTypeUpdated)
   }
 
   test("ANY<> update nullable true should return ANY<> with all values changed") {
@@ -181,18 +181,18 @@ class CypherTypeNameTest extends CypherFunSuite {
       IntegerType(isNullable = true)(pos),
       BooleanType(isNullable = true)(pos)
     ))(pos)
-    closedDynamicUnionType.updateIsNullable(true) should be(closedDynamicUnionTypeUpdated)
+    closedDynamicUnionType.withIsNullable(true) should be(closedDynamicUnionTypeUpdated)
   }
 
   typesWithoutInnerTypesPlusSimpleListPlusAny.foreach { case (typeName, typeExpr) =>
     test(s"$typeName update nullable true should return that type as nullable") {
       val expr = typeExpr(false)
-      expr.updateIsNullable(true) should be(typeExpr(true))
+      expr.withIsNullable(true) should be(typeExpr(true))
     }
 
     test(s"$typeName update nullable false should return that type as not nullable") {
       val expr = typeExpr(true)
-      expr.updateIsNullable(false) should be(typeExpr(false))
+      expr.withIsNullable(false) should be(typeExpr(false))
     }
   }
 
@@ -435,7 +435,7 @@ class CypherTypeNameTest extends CypherFunSuite {
     )
 
     CypherType.normalizeTypes(
-      ClosedDynamicUnionType(setOfAllPropertyTypes.map(_.updateIsNullable(false)) ++ Set(
+      ClosedDynamicUnionType(setOfAllPropertyTypes.map(_.withIsNullable(false)) ++ Set(
         NodeType(isNullable = false)(pos),
         RelationshipType(isNullable = false)(pos),
         MapType(isNullable = false)(pos),
@@ -488,7 +488,7 @@ class CypherTypeNameTest extends CypherFunSuite {
     )
 
     CypherType.normalizeTypes(PropertyValueType(isNullable = false)(pos)) should be(
-      ClosedDynamicUnionType(setOfAllPropertyTypes.map(_.updateIsNullable(false)))(pos)
+      ClosedDynamicUnionType(setOfAllPropertyTypes.map(_.withIsNullable(false)))(pos)
     )
 
     CypherType.normalizeTypes(ClosedDynamicUnionType(
@@ -1047,23 +1047,23 @@ class CypherTypeNameTest extends CypherFunSuite {
   }
 
   test(s"NULL NOT NULL should have correct description of NOTHING") {
-    NullType()(pos).updateIsNullable(false).description should be("NOTHING")
+    NullType()(pos).withIsNullable(false).description should be("NOTHING")
   }
 
   test(s"LIST<NULL> should have correct descriptions") {
     ListType(NullType()(pos), isNullable = true)(pos).description should be(s"LIST<NULL>")
-    ListType(NullType()(pos).updateIsNullable(false), isNullable = true)(pos).description should be(
+    ListType(NullType()(pos).withIsNullable(false), isNullable = true)(pos).description should be(
       s"LIST<NOTHING>"
     )
     ListType(NullType()(pos), isNullable = false)(pos).description should be(s"LIST<NULL> NOT NULL")
-    ListType(NullType()(pos).updateIsNullable(false), isNullable = false)(pos).description should be(
+    ListType(NullType()(pos).withIsNullable(false), isNullable = false)(pos).description should be(
       s"LIST<NOTHING> NOT NULL"
     )
   }
 
   test(s"ANY<NULL> should have correct descriptions") {
     ClosedDynamicUnionType(Set(NullType()(pos)))(pos).description should be(s"NULL")
-    ClosedDynamicUnionType(Set(NullType()(pos).updateIsNullable(false)))(pos).description should be(s"NOTHING")
+    ClosedDynamicUnionType(Set(NullType()(pos).withIsNullable(false)))(pos).description should be(s"NOTHING")
   }
 
   test("lists with multiple types should have correct descriptions") {
@@ -1230,7 +1230,7 @@ class CypherTypeNameTest extends CypherFunSuite {
   )(pos)
   private val rule1Normalized = BooleanType(isNullable = true)(pos)
 
-  private val rule2 = NullType()(pos).updateIsNullable(false)
+  private val rule2 = NullType()(pos).withIsNullable(false)
   private val rule2Normalized = NothingType()(pos)
 
   private val rule3 = ClosedDynamicUnionType(

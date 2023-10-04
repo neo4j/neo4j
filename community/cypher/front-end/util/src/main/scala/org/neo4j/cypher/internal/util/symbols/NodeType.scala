@@ -24,7 +24,7 @@ case class NodeType(isNullable: Boolean)(val position: InputPosition) extends Cy
   override val toCypherTypeString = "NODE"
 
   override def sortOrder: Int = CypherTypeOrder.NODE.id
-  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
   def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }

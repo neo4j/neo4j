@@ -29,7 +29,7 @@ trait CypherType extends ASTNode {
 
   def hasValueRepresentation: Boolean = false
 
-  def updateIsNullable(isNullable: Boolean): CypherType
+  def withIsNullable(isNullable: Boolean): CypherType
 
   def description: String = if (isNullable) toCypherTypeString else s"$toCypherTypeString NOT NULL"
 
@@ -191,7 +191,7 @@ object CypherType {
     // if mixed, remove the NOT NULL
     // Example: remove NOT NULL on INTEGER for BOOLEAN | INTEGER NOT NULL
     var updatedTypes = if (combinedTypes.forall(_.isNullable) || combinedTypes.forall(!_.isNullable)) combinedTypes
-    else combinedTypes.map(t => if (!t.isNullable) t.updateIsNullable(true) else t)
+    else combinedTypes.map(t => if (!t.isNullable) t.withIsNullable(true) else t)
 
     // If all types are present, rewrite to Any
     if (allTypes(updatedTypes.head.isNullable).forall(updatedTypes.map(_.withPosition(InputPosition.NONE)).contains))

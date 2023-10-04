@@ -26,7 +26,7 @@ case class NullType()(val position: InputPosition) extends CypherType {
   override def sortOrder: Int = CypherTypeOrder.NULL.id
   override def isNullable: Boolean = true
 
-  override def updateIsNullable(isNullable: Boolean): CypherType =
+  override def withIsNullable(isNullable: Boolean): CypherType =
     if (isNullable) this
     else NothingType()(position)
 

@@ -25,7 +25,7 @@ case class PathType(isNullable: Boolean)(val position: InputPosition) extends Cy
 
   override def sortOrder: Int = CypherTypeOrder.PATH.id
 
-  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
   def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }

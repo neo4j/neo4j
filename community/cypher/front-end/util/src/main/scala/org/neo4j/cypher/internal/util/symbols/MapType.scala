@@ -25,7 +25,7 @@ case class MapType(isNullable: Boolean)(val position: InputPosition) extends Cyp
 
   override def sortOrder: Int = CypherTypeOrder.MAP.id
 
-  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
   def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }

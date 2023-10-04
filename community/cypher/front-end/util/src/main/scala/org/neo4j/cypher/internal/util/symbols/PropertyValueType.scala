@@ -59,7 +59,7 @@ case class PropertyValueType(isNullable: Boolean)(val position: InputPosition) e
     )(position)
   )
 
-  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
   def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }

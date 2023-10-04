@@ -1830,7 +1830,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: STRING NOT NULL without label info should use default values") {
-    val predicate = isTyped(nProp, CTPoint.updateIsNullable(false))
+    val predicate = isTyped(nProp, CTPoint.withIsNullable(false))
     val calculator = setUpCalculator()
     val result = calculator(predicate)
     result shouldBe DEFAULT_TYPE_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY
@@ -1897,14 +1897,14 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: BOOLEAN NOT NULL should use node RANGE index") {
-    val predicate = isTyped(nProp, CTBoolean.updateIsNullable(false))
+    val predicate = isTyped(nProp, CTBoolean.withIsNullable(false))
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
     val result = calculator(predicate)
     result.factor shouldBe personPropIsNotNullSel * DEFAULT_TYPE_SELECTIVITY.factor
   }
 
   test("IS :: DATE NOT NULL should use relationship RANGE index") {
-    val predicate = isTyped(rProp, CTDate.updateIsNullable(false))
+    val predicate = isTyped(rProp, CTDate.withIsNullable(false))
     val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
     val result = calculator(predicate)
     result.factor shouldBe friendsPropIsNotNullSel * DEFAULT_TYPE_SELECTIVITY.factor
@@ -1933,7 +1933,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: STRING NOT NULL should use node property type constraint") {
-    val predicate = isTyped(nProp, CTString.updateIsNullable(false))
+    val predicate = isTyped(nProp, CTString.withIsNullable(false))
     val calculator = setUpCalculator(
       labelInfo = nIsPersonLabelInfo,
       typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.STRING)))
@@ -1944,7 +1944,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: STRING NOT NULL should use relationship property type constraint") {
-    val predicate = isTyped(rProp, CTString.updateIsNullable(false))
+    val predicate = isTyped(rProp, CTString.withIsNullable(false))
     val calculator = setUpCalculator(
       relTypeInfo = rFriendsRelTypeInfo,
       typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING)))

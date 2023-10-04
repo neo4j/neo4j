@@ -29,7 +29,7 @@ case class AnyType(isNullable: Boolean)(val position: InputPosition) extends Cyp
 
   override def sortOrder: Int = CypherTypeOrder.ANY.id
 
-  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
   override def isSubtypeOf(otherCypherType: CypherType): Boolean = otherCypherType match {
     case _: AnyType => isNullableSubtypeOf(this, otherCypherType)

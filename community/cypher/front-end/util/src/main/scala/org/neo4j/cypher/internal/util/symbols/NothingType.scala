@@ -29,7 +29,7 @@ case class NothingType()(val position: InputPosition) extends CypherType {
   override def isNullable: Boolean = false
   override def description: String = toCypherTypeString
 
-  override def updateIsNullable(isNullable: Boolean): CypherType = this
+  override def withIsNullable(isNullable: Boolean): CypherType = this
 
   override def isSubtypeOf(otherCypherType: CypherType): Boolean = true
 

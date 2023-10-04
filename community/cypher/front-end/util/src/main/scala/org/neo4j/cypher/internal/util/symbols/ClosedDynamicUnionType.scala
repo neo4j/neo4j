@@ -43,8 +43,8 @@ case class ClosedDynamicUnionType(innerTypes: Set[CypherType])(val position: Inp
     if (flattenedInner.size == 1) flattenedInner.head else this.copy(flattenedInner)(position)
   }
 
-  override def updateIsNullable(isNullable: Boolean): CypherType =
-    this.copy(innerTypes.map(_.updateIsNullable(isNullable)))(position)
+  override def withIsNullable(isNullable: Boolean): CypherType =
+    this.copy(innerTypes.map(_.withIsNullable(isNullable)))(position)
 
   def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 

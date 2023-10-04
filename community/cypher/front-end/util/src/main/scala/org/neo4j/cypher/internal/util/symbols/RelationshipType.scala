@@ -25,7 +25,7 @@ case class RelationshipType(isNullable: Boolean)(val position: InputPosition) ex
 
   override def sortOrder: Int = CypherTypeOrder.RELATIONSHIP.id
 
-  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
   def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }

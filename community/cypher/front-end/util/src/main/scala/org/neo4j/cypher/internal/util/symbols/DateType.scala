@@ -27,7 +27,7 @@ case class DateType(isNullable: Boolean)(val position: InputPosition) extends Cy
 
   override def hasValueRepresentation: Boolean = true
 
-  override def updateIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
   def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
 }
