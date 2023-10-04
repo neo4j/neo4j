@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilderImplementation;
 import org.neo4j.graphdb.config.Setting;
@@ -153,7 +154,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .setDefault(GraphDatabaseInternalSettings.vm_pause_monitor_enabled, false)
                 .setDefault(GraphDatabaseSettings.check_point_iops_limit, -1)
                 .setDefault(GraphDatabaseInternalSettings.gbptree_structure_log_enabled, true)
-                .setDefault(GraphDatabaseSettings.filewatcher_enabled, false);
+                .setDefault(GraphDatabaseSettings.filewatcher_enabled, false)
+                .setDefault(BoltConnector.listen_address, new SocketAddress("localhost", 0));
         return builder.build();
     }
 
