@@ -21,12 +21,19 @@ package org.neo4j.kernel.database;
 
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
-/**
- * This is a supplier of {@link StorageEngineFactory}.
- * It's used to supply a {@link Database} of the necessary factory (and in turn the engine) at the time when the database is initiated.
- * When the database object is created the correct engine to use is not guaranteed to be known.
- */
-@FunctionalInterface
-public interface StorageEngineFactorySupplier {
-    StorageEngineFactory create();
+public class DelegatingStorageEngineFactorySupplier implements StorageEngineFactorySupplier {
+    private volatile StorageEngineFactorySupplier delegate;
+
+    public DelegatingStorageEngineFactorySupplier(StorageEngineFactorySupplier defaultDelegate) {
+        this.delegate = defaultDelegate;
+    }
+
+    public void setDelegate(StorageEngineFactorySupplier delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public StorageEngineFactory create() {
+        return delegate.create();
+    }
 }
