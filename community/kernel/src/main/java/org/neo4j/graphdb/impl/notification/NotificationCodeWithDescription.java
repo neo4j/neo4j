@@ -39,7 +39,7 @@ public enum NotificationCodeWithDescription {
                     + "use of this cross "
                     + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (%s)",
             "The disconnected patterns `%s` build a cartesian product. A cartesian product may produce a large amount of "
-                    + "data and slow down query processing. See Status Codes documentation for suggestions."),
+                    + "data and slow down query processing."),
     RUNTIME_UNSUPPORTED(
             Status.Statement.RuntimeUnsupportedWarning,
             "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)",
@@ -47,19 +47,17 @@ public enum NotificationCodeWithDescription {
     INDEX_HINT_UNFULFILLABLE(
             Status.Schema.HintedIndexNotFound,
             "The hinted index does not exist, please check the schema (%s)",
-            "Unable to create a plan with `%s` because the index does not exist. See Status "
-                    + "Codes documentation for suggestions."),
+            "Unable to create a plan with `%s` because the index does not exist."),
     JOIN_HINT_UNFULFILLABLE(
             Status.Statement.JoinHintUnfulfillableWarning,
             "The hinted join was not planned. This could happen because no generated plan contained the join key, "
                     + "please try using a different join key or restructure your query. (%s)",
-            "Unable to create a plan with `JOIN ON %s`. Try to change the join key(s) or restructure your "
-                    + "query. See Status Codes documentation for suggestions."),
+            "Unable to create a plan with `JOIN ON %s`. Try to change the join key(s) or restructure your query."),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
             Status.Statement.DynamicProperty,
             "Using a dynamic property makes it impossible to use an index lookup for this query (%s)",
-            "An index exists on label/type(s) `%s`. It is not possible to use these indexes for dynamic "
-                    + "properties. Consider using static properties. See Status Codes documentation for suggestions."),
+            "An index exists on label/type(s) `%s`. It is not possible to use indexes for dynamic "
+                    + "properties. Consider using static properties."),
     DEPRECATED_FUNCTION_WITHOUT_REPLACEMENT(
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated function%s",
@@ -90,7 +88,7 @@ public enum NotificationCodeWithDescription {
     DEPRECATED_PROCEDURE_RETURN_FIELD(
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated field from a procedure. (%s)",
-            "`%s` returned by procedure `%s` is deprecated. See Status Codes documentation for suggestions."),
+            "`%s` returned by procedure `%s` is deprecated."),
     DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
             Status.Statement.FeatureDeprecationWarning,
             "The semantics of using colon in the separation of alternative relationship types will change in a future version. (%s)",
@@ -139,7 +137,7 @@ public enum NotificationCodeWithDescription {
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                     + "how problems could be avoided.",
             "The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with `Eager` "
-                    + "can consume a lot of memory. See Status Codes documentation for suggestions."),
+                    + "can consume a lot of memory."),
     DEPRECATED_FORMAT(
             Status.Request.DeprecatedFormat,
             "The requested format has been deprecated. (%s)",
@@ -177,8 +175,7 @@ public enum NotificationCodeWithDescription {
                     + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
                     + "MATCH containing the shortest path from the existential predicates on that path.",
             "The query runs with exhaustive shortest path due to the existential predicate(s) `%s`. "
-                    + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
-                    + "for suggestions."),
+                    + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s)."),
     MISSING_PARAMETERS_FOR_EXPLAIN(
             Status.Statement.ParameterNotProvided,
             "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (%s)",
@@ -219,8 +216,7 @@ public enum NotificationCodeWithDescription {
             Status.Statement.RepeatedRelationshipReference,
             "A relationship is referenced more than once in the query, which leads to no results because"
                     + " relationships must not occur more than once in each result. (%s)",
-            "`%s` is repeated in `%s`, which leads to no results. "
-                    + "See Status Codes documentation for suggestions."),
+            "`%s` is repeated in `%s`, which leads to no results."),
     REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
             "A variable-length relationship variable is bound more than once, which leads to no results because"
@@ -235,28 +231,28 @@ public enum NotificationCodeWithDescription {
     COMMAND_HAS_NO_EFFECT_ASSIGN_PRIVILEGE(
             Status.Security.CommandHasNoEffect,
             "The role already has the privilege. See Status Codes documentation for more information.",
-            "`%s` has no effect. The role already has the privilege. See Status Codes documentation for more information."),
+            "`%s` has no effect. The role already has the privilege."),
 
     COMMAND_HAS_NO_EFFECT_REVOKE_PRIVILEGE(
             Status.Security.CommandHasNoEffect,
             "The role does not have the privilege. See Status Codes documentation for more information.",
-            "`%s` has no effect. The role does not have the privilege. See Status Codes documentation for more information."),
+            "`%s` has no effect. The role does not have the privilege."),
 
     COMMAND_HAS_NO_EFFECT_GRANT_ROLE(
             Status.Security.CommandHasNoEffect,
             "The user already has the role. See Status Codes documentation for more information.",
-            "`%s` has no effect. The user already has the role. See Status Codes documentation for more information."),
+            "`%s` has no effect. The user already has the role."),
 
     COMMAND_HAS_NO_EFFECT_REVOKE_ROLE(
             Status.Security.CommandHasNoEffect,
             "The user does not have the role. See Status Codes documentation for more information.",
-            "`%s` has no effect. The user does not have the role. See Status Codes documentation for more information."),
+            "`%s` has no effect. The user does not have the role."),
 
     IMPOSSIBLE_REVOKE_COMMAND(
             Status.Security.ImpossibleRevokeCommand,
             "%s Make sure nothing is misspelled. This notification will become an error in a future major version. "
                     + "See Status Codes documentation for more information.",
-            "`%s` has no effect. %s Make sure nothing is misspelled. This notification will become an error in a future major version. See Status Codes documentation for more information."),
+            "`%s` has no effect. %s Make sure nothing is misspelled. This notification will become an error in a future major version."),
 
     SERVER_ALREADY_ENABLED(
             Status.Cluster.ServerAlreadyEnabled,

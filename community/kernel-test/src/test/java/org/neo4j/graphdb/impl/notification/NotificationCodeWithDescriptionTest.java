@@ -98,7 +98,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                "Unable to create a plan with `INDEX :Person(name)` because the index does not exist. See Status Codes documentation for suggestions.");
+                "Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -115,7 +115,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                "Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist. See Status Codes documentation for suggestions.");
+                "Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -133,7 +133,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                "Unable to create a plan with `INDEX :Person(name)` because the index does not exist. See Status Codes documentation for suggestions.");
+                "Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -151,7 +151,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
-                "Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist. See Status Codes documentation for suggestions.");
+                "Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -169,7 +169,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`age`))",
                 NotificationCategory.HINT,
-                "Unable to create a plan with `TEXT INDEX :Person(name, age)` because the index does not exist. See Status Codes documentation for suggestions.");
+                "Unable to create a plan with `TEXT INDEX :Person(name, age)` because the index does not exist.");
     }
 
     @Test
@@ -193,8 +193,7 @@ class NotificationCodeWithDescriptionTest {
                         + "(identifiers are: (n, node2))",
                 NotificationCategory.PERFORMANCE,
                 "The disconnected patterns `(node1), (node)--(node2)` build a cartesian product. "
-                        + "A cartesian product may produce a large amount of data and slow down query processing. "
-                        + "See Status Codes documentation for suggestions.");
+                        + "A cartesian product may produce a large amount of data and slow down query processing.");
     }
 
     @Test
@@ -214,7 +213,7 @@ class NotificationCodeWithDescriptionTest {
                         + "(hinted join key identifiers are: n, node2)",
                 NotificationCategory.HINT,
                 "Unable to create a plan with `JOIN ON n, node2`. Try to change the join key(s) or restructure "
-                        + "your query. See Status Codes documentation for suggestions.");
+                        + "your query.");
     }
 
     @Test
@@ -278,8 +277,8 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.DynamicProperty",
                 "Using a dynamic property makes it impossible to use an index lookup for this query (indexed label is: (:A))",
                 NotificationCategory.PERFORMANCE,
-                "An index exists on label/type(s) `A`. It is not possible to use these indexes for dynamic "
-                        + "properties. Consider using static properties. See Status Codes documentation for suggestions.");
+                "An index exists on label/type(s) `A`. It is not possible to use indexes for dynamic "
+                        + "properties. Consider using static properties.");
     }
 
     @Test
@@ -356,7 +355,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated field from a procedure. ('field' returned by 'proc' is deprecated.)",
                 NotificationCategory.DEPRECATION,
-                "`field` returned by procedure `proc` is deprecated. See Status Codes documentation for suggestions.");
+                "`field` returned by procedure `proc` is deprecated.");
     }
 
     @Test
@@ -436,7 +435,7 @@ class NotificationCodeWithDescriptionTest {
                         + "how problems could be avoided.",
                 NotificationCategory.PERFORMANCE,
                 "The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with "
-                        + "`Eager` can consume a lot of memory. See Status Codes documentation for suggestions.");
+                        + "`Eager` can consume a lot of memory.");
     }
 
     @Test
@@ -583,8 +582,7 @@ class NotificationCodeWithDescriptionTest {
                         + "MATCH containing the shortest path from the existential predicates on that path.",
                 NotificationCategory.PERFORMANCE,
                 "The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. "
-                        + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
-                        + "for suggestions.");
+                        + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s).");
     }
 
     @Test
@@ -720,8 +718,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
                 "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC,
-                "`r` is repeated in `()-[r]->()<-[r]-()`, which leads to no results. "
-                        + "See Status Codes documentation for suggestions.");
+                "`r` is repeated in `()-[r]->()<-[r]-()`, which leads to no results.");
     }
 
     @Test
@@ -782,7 +779,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The role already has the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                "`GRANT WRITE ON GRAPH * TO editor` has no effect. The role already has the privilege. See Status Codes documentation for more information.");
+                "`GRANT WRITE ON GRAPH * TO editor` has no effect. The role already has the privilege.");
     }
 
     @Test
@@ -797,7 +794,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The role does not have the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                "`REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role does not have the privilege. See Status Codes documentation for more information.");
+                "`REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role does not have the privilege.");
     }
 
     @Test
@@ -812,7 +809,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user already has the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                "`GRANT ROLE aliceRole TO alice` has no effect. The user already has the role. See Status Codes documentation for more information.");
+                "`GRANT ROLE aliceRole TO alice` has no effect. The user already has the role.");
     }
 
     @Test
@@ -827,7 +824,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user does not have the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                "`REVOKE ROLE other FROM alice` has no effect. The user does not have the role. See Status Codes documentation for more information.");
+                "`REVOKE ROLE other FROM alice` has no effect. The user does not have the role.");
     }
 
     @Test
@@ -843,7 +840,7 @@ class NotificationCodeWithDescriptionTest {
                 "Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version. "
                         + "See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                "`REVOKE admina FROM ALICE` has no effect. Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version. See Status Codes documentation for more information.");
+                "`REVOKE admina FROM ALICE` has no effect. Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version.");
     }
 
     @Test
