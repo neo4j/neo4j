@@ -146,7 +146,7 @@ public enum ValueType {
         return extremeValues;
     }
 
-    static ValueType[] arrayTypes() {
+    public static ValueType[] arrayTypes() {
         return Arrays.stream(ValueType.values()).filter(t -> t.arrayType).toArray(ValueType[]::new);
     }
 }
