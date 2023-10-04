@@ -84,6 +84,25 @@ class LfuCacheTest {
     }
 
     @Test
+    void remove() {
+        final var cache = new LfuCache<Integer, String>("TestCache", 3);
+        final var key1 = 13;
+        final var key2 = 42;
+        final var key3 = 69;
+        final var key4 = 666;
+
+        cache.put(key1, String.valueOf(key1));
+        cache.put(key2, String.valueOf(key2));
+        cache.put(key3, String.valueOf(key3));
+
+        cache.remove(key1);
+        assertThat(cache.keySet()).containsExactlyInAnyOrder(key2, key3);
+
+        cache.put(key4, String.valueOf(key4));
+        assertThat(cache.keySet()).containsExactlyInAnyOrder(key2, key3, key4);
+    }
+
+    @Test
     void shouldClear() {
         LfuCache<Integer, String> cache = new LfuCache<>("TestCache", 3);
 

@@ -64,8 +64,8 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
                 raw);
     }
 
-    protected ReadAheadLogChannel(LogVersionedStoreChannel startingChannel, ScopedBuffer scopedBuffer) {
-        this(startingChannel, LogVersionBridge.NO_MORE_CHANNELS, scopedBuffer, false);
+    protected ReadAheadLogChannel(LogVersionedStoreChannel startingChannel, ScopedBuffer scopedBuffer, boolean raw) {
+        this(startingChannel, LogVersionBridge.NO_MORE_CHANNELS, scopedBuffer, raw);
     }
 
     /**

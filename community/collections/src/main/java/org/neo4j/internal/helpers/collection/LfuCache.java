@@ -93,12 +93,21 @@ public class LfuCache<K, E> {
         return cache.getIfPresent(key);
     }
 
+    public void remove(K key) {
+        requireNonNull(key);
+        cache.invalidate(key);
+    }
+
     public void clear() {
         cache.invalidateAll();
     }
 
     public int size() {
         return cache.asMap().size();
+    }
+
+    public long estimatedSize() {
+        return cache.estimatedSize();
     }
 
     public Set<K> keySet() {
