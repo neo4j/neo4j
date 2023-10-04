@@ -2584,6 +2584,8 @@ case class LogicalPlan2PlanDescription(
       case (1, Some(1)) => pretty""
       case (1, None)    => pretty"*"
       case (1, Some(m)) => pretty"*..${asPrettyString.raw(m.toString)}"
+      case (`minLength`, Some(`minLength`)) =>
+        pretty"*${asPrettyString.raw(minLength.toString)}"
       case _ =>
         pretty"*${asPrettyString.raw(minLength.toString)}..${asPrettyString.raw(maxLength.map(_.toString).getOrElse(""))}"
     }

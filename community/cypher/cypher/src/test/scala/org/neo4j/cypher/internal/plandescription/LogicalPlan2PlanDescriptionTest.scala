@@ -5586,6 +5586,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set("a", "to", "rel")
       )
     )
+
+    // With fixed length
+    assertGood(
+      attach(
+        VarExpand(
+          lhsLP,
+          varFor("a"),
+          OUTGOING,
+          OUTGOING,
+          Seq(relType("LIKES"), relType("LOVES")),
+          varFor("to"),
+          varFor("rel"),
+          VarPatternLength(2, Some(2)),
+          ExpandAll
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "VarLengthExpand(All)",
+        SingleChild(lhsPD),
+        Seq(details("(a)-[rel:LIKES|LOVES*2]->(to)")),
+        Set("a", "to", "rel")
+      )
+    )
   }
 
   test("Updates") {
