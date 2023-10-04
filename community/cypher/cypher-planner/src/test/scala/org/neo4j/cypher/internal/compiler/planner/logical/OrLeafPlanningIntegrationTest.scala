@@ -1235,7 +1235,7 @@ class OrLeafPlanningIntegrationTest
     val plan = runWithTimeout(1000)(cfg.plan(query))
 
     plan.folder.treeCount {
-      case _: NodeIndexSeek => true
+      case _: NodeIndexSeek => ()
     } should be(90)
   }
 

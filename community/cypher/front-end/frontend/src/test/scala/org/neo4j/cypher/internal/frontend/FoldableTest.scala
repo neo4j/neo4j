@@ -407,7 +407,7 @@ class FoldableTest extends CypherFunSuite {
     val cancellation = new TestCountdownCancellationChecker(2)
     val ex = the[Exception].thrownBy(
       ast.folder(cancellation).treeCount {
-        case _: Val => true
+        case _: Val => ()
       }
     )
 

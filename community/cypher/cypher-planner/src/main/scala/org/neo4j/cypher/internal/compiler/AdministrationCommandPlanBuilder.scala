@@ -1321,7 +1321,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }
 
         val callCount = q.folder.treeCount {
-          case _: CallClause => true
+          case _: CallClause => ()
         }
         if (callCount > 1) {
           throw new RuntimeException(

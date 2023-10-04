@@ -164,7 +164,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     )
 
     val cachePropertyPlans = plan.folder.treeCount {
-      case _: CacheProperties => true
+      case _: CacheProperties => ()
     }
 
     withClue(plan) {

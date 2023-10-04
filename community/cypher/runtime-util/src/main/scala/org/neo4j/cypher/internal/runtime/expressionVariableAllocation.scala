@@ -67,7 +67,7 @@ object expressionVariableAllocation {
     val availableExpressionVars = new AvailableExpressionVariables
     // We reserve the first number of slots for runtime constants
     val numberOfConstantVariables = input.folder.treeCount {
-      case _: RuntimeConstant => true
+      case _: RuntimeConstant => ()
     }
     var constantCounter = 0
 

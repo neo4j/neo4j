@@ -30,7 +30,7 @@ This rewriter tries to limit rewriters that grow the product AST too much
 case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewritingMonitor) extends Rewriter {
 
   private def astNodeSize(value: Any): Int = value.folder.treeCount {
-    case _: ASTNode => true
+    case _: ASTNode => ()
   }
 
   final def apply(that: AnyRef): AnyRef = {

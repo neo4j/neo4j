@@ -311,7 +311,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
 
     val nodeIndexSeeks = plan.folder.treeCount {
-      case _: NodeIndexSeek => true
+      case _: NodeIndexSeek => ()
     }
 
     withClue(plan) {
@@ -389,7 +389,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
 
     val relIndexSeeks = plan.folder.treeCount {
-      case _: DirectedRelationshipIndexSeek => true
+      case _: DirectedRelationshipIndexSeek => ()
     }
 
     withClue(plan) {
@@ -1069,7 +1069,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |""".stripMargin
     )
 
-    val numSorts = plan.folder.treeCount { case _: Sort => true }
+    val numSorts = plan.folder.treeCount { case _: Sort => () }
     numSorts shouldEqual 1
   }
 

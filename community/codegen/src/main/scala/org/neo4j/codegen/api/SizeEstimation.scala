@@ -146,7 +146,7 @@ object SizeEstimation {
 
             // for each or contained in the ands we also save in on two JUMP INSTRUCTIONS and TRUE, FALSE
             val numberOfOrs = ands.folder.treeCount {
-              case _: BooleanOr => true
+              case _: BooleanOr => ()
             }
             -5 + onFalse.map(_ => JUMP_INSTRUCTION).getOrElse(0) - numberOfOrs * 8
           case Condition(_: BooleanOr, _, onFalse) =>
@@ -166,7 +166,7 @@ object SizeEstimation {
 
             // for each or contained in the ands we also save in on two JUMP INSTRUCTIONS and TRUE, FALSE
             val numberOfOrs = ands.folder.treeCount {
-              case _: BooleanOr => true
+              case _: BooleanOr => ()
             }
             -5 + JUMP_INSTRUCTION - numberOfOrs * 8
           case Loop(_: BooleanOr, _, _) =>

@@ -190,9 +190,9 @@ object Foldable {
       optionFindAcc[A](mutable.Stack(foldedOver), cancellation)
 
     /*
-    Searches in trees, counting how many matches are found
+    Searches in trees, counting values for which partial function `f` is defined.
      */
-    def treeCount(f: PartialFunction[Any, Boolean]): Int = {
+    def treeCount(f: PartialFunction[Any, Unit]): Int = {
       val lifted = f.lift
       countAcc(mutable.Stack(foldedOver), (a: Any) => lifted(a).map(_ => 1), 0, cancellation)
     }
