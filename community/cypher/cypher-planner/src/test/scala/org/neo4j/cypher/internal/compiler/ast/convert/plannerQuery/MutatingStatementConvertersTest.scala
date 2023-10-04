@@ -242,7 +242,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a", "u"),
         rightBinding = NodeBinding("b", "v"),
-        patternRelationships = List(PatternRelationship(
+        patternRelationships = NonEmptyList(PatternRelationship(
           name = "r",
           boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
@@ -259,7 +259,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       QuantifiedPathPattern(
         leftBinding = NodeBinding("c", "v"),
         rightBinding = NodeBinding("d", "w"),
-        patternRelationships = List(PatternRelationship(
+        patternRelationships = NonEmptyList(PatternRelationship(
           name = "r2",
           boundaryNodes = ("c", "d"),
           dir = SemanticDirection.OUTGOING,

@@ -61,9 +61,6 @@ object NonEmptyList {
 
   implicit class IterableConverter[T](iterable: Iterable[T]) {
 
-    def toReverseNonEmptyListOption: Option[NonEmptyList[T]] =
-      iterable.iterator.asReverseNonEmptyListOption
-
     def toNonEmptyListOption: Option[NonEmptyList[T]] =
       iterable.iterator.asNonEmptyListOption
 
@@ -74,9 +71,6 @@ object NonEmptyList {
   }
 
   implicit class VectorConverter[T](vector: Vector[T]) {
-
-    def toReverseNonEmptyListOption: Option[NonEmptyList[T]] =
-      vector.iterator.asReverseNonEmptyListOption
 
     def toNonEmptyListOption: Option[NonEmptyList[T]] =
       vector.reverseIterator.asReverseNonEmptyListOption
@@ -117,6 +111,9 @@ object NonEmptyList {
      */
     def :+[X >: T](elem: X): NonEmptyList[X] =
       tail.fold[NonEmptyList[X]](Last(elem))(_ :+ elem)
+
+    def toSeq: Seq[T] =
+      tail.map(_.toIndexedSeq).getOrElse(IndexedSeq.empty)
   }
 
   @tailrec
@@ -140,6 +137,8 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
   def head: T
 
   def last: T
+
+  def tail: Seq[T]
 
   def tailOption: Option[NonEmptyList[T]]
 
@@ -206,6 +205,9 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
     case Fby(elem, _) if predicate(elem) => true
     case Fby(_, tail)                    => tail.exists[X](predicate)
   }
+
+  def contains[X >: T](element: X): Boolean =
+    exists(_ == element)
 
   final def map[S](f: T => S): NonEmptyList[S] = self match {
     case Fby(elem, tail) => tail.mapAndPrependReversedTo[T, S](f, Last(f(elem))).reverse
@@ -393,21 +395,22 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
   }
 }
 
-final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T] {
+final case class Fby[+T](head: T, nonEmptyTail: NonEmptyList[T]) extends NonEmptyList[T] {
 
   self =>
 
-  override def last: T = tail.last
-  override def tailOption: Option[NonEmptyList[T]] = Some(tail)
+  override def last: T = nonEmptyTail.last
+  override def tail: Seq[T] = nonEmptyTail.toIndexedSeq
+  override def tailOption: Option[NonEmptyList[T]] = Some(nonEmptyTail)
 
-  override def initOption: Option[NonEmptyList[T]] = tail.initOption match {
+  override def initOption: Option[NonEmptyList[T]] = nonEmptyTail.initOption match {
     case Some(init) => Some(Fby(head, init))
     case None       => Some(Last(head))
   }
   override def hasTail: Boolean = true
   override def isLast: Boolean = false
-  override def toString: String = s"${head.toString}, ${tail.toString}"
-  override def size: Int = 1 + tail.size
+  override def toString: String = s"${head.toString}, ${nonEmptyTail.toString}"
+  override def size: Int = 1 + nonEmptyTail.size
 
   override def iterator: Iterator[T] = new Iterator[T] {
     private var remaining: Option[NonEmptyList[T]] = Some(self)
@@ -429,6 +432,9 @@ final case class Last[+T](head: T) extends NonEmptyList[T] {
   self =>
 
   override def last: T = head
+
+  override def tail: Seq[T] = Seq.empty
+
   override def tailOption: Option[NonEmptyList[T]] = None
   override def initOption: Option[NonEmptyList[T]] = None
   override def hasTail: Boolean = false

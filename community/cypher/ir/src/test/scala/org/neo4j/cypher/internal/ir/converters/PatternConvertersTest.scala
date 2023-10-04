@@ -84,7 +84,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a", "start"),
         rightBinding = NodeBinding("b", "c"),
-        patternRelationships = List(PatternRelationship(
+        patternRelationships = NonEmptyList(PatternRelationship(
           name = "r",
           boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
@@ -201,7 +201,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a", "start"),
         rightBinding = NodeBinding("b", "c"),
-        patternRelationships = List(PatternRelationship(
+        patternRelationships = NonEmptyList(PatternRelationship(
           name = "r",
           boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,

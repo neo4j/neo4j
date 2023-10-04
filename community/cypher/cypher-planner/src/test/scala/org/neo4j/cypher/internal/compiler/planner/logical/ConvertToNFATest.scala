@@ -43,7 +43,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   private val `(start) ((a)-[r]->(b))+ (end)` = QuantifiedPathPattern(
     leftBinding = NodeBinding("a", "start"),
     rightBinding = NodeBinding("b", "end"),
-    patternRelationships = List(PatternRelationship(
+    patternRelationships = NonEmptyList(PatternRelationship(
       name = "r",
       boundaryNodes = ("a", "b"),
       dir = SemanticDirection.OUTGOING,
@@ -62,7 +62,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     QuantifiedPathPattern(
       leftBinding = NodeBinding("a", "start"),
       rightBinding = NodeBinding("b", "end"),
-      patternRelationships = List(PatternRelationship(
+      patternRelationships = NonEmptyList(PatternRelationship(
         name = "r",
         boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,
@@ -219,7 +219,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     val qpp = QuantifiedPathPattern(
       leftBinding = NodeBinding("a", "start"),
       rightBinding = NodeBinding("c", "d"),
-      patternRelationships = List(
+      patternRelationships = NonEmptyList(
         PatternRelationship(
           name = "r",
           boundaryNodes = ("a", "b"),
@@ -309,7 +309,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     val qpp = QuantifiedPathPattern(
       leftBinding = NodeBinding("a", "start"),
       rightBinding = NodeBinding("b", "c"),
-      patternRelationships = List(PatternRelationship(
+      patternRelationships = NonEmptyList(PatternRelationship(
         name = "r",
         boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,

@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -1249,7 +1250,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         leftBinding = NodeBinding("n", "anon_0"),
         rightBinding = NodeBinding("m", "anon_1"),
         patternRelationships =
-          List(PatternRelationship(
+          NonEmptyList(PatternRelationship(
             "r",
             ("n", "m"),
             SemanticDirection.OUTGOING,

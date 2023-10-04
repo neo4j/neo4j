@@ -105,7 +105,7 @@ object QuantifiedPathPatternConverters {
   final private case class QuantifiedPathPatternBuilder(
     leftMostNode: String,
     rightMostNode: String,
-    patternRelationships: Vector[PatternRelationship],
+    patternRelationships: NonEmptyList[PatternRelationship],
     nodeVariableGroupings: Set[VariableGrouping],
     relationshipVariableGroupings: Set[VariableGrouping]
   ) {
@@ -147,7 +147,7 @@ object QuantifiedPathPatternConverters {
       QuantifiedPathPatternBuilder(
         leftMostNode = patternRelationship.left,
         rightMostNode = patternRelationship.right,
-        patternRelationships = Vector(patternRelationship),
+        patternRelationships = NonEmptyList(patternRelationship),
         nodeVariableGroupings = variableGroupings.forSingletonNames(patternNodes),
         relationshipVariableGroupings = variableGroupings.forSingletonName(patternRelationship.name).toSet
       )

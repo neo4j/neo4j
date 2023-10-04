@@ -220,7 +220,7 @@ case class VariableGrouping(singletonName: String, groupName: String) {
 final case class QuantifiedPathPattern(
   leftBinding: NodeBinding,
   rightBinding: NodeBinding,
-  patternRelationships: Seq[PatternRelationship],
+  patternRelationships: NonEmptyList[PatternRelationship],
   argumentIds: Set[String] = Set.empty,
   selections: Selections = Selections(),
   repetition: Repetition,
@@ -229,7 +229,7 @@ final case class QuantifiedPathPattern(
 ) extends ExhaustiveNodeConnection {
 
   // all pattern nodes are part of a relationship because a QPP has always at least one relationship and is linear in shape
-  val patternNodes: Set[String] = patternRelationships.flatMap(_.boundaryNodesSet).toSet
+  val patternNodes: Set[String] = patternRelationships.iterator.flatMap(_.boundaryNodesSet).toSet
 
   // all variables are meant as singletons except those in the groupings
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
@@ -274,7 +274,7 @@ final case class QuantifiedPathPattern(
       singletonToGroup(nodeVariableGroupings, patternRelationships.last.right).map(NodePathVariable) ++:
         Seq(NodePathVariable(right))
 
-    NodePathVariable(left) +: patternRelationships.foldRight(rightTail) {
+    NodePathVariable(left) +: patternRelationships.iterator.foldRight(rightTail) {
       case (rel, acc) =>
         singletonToGroup(nodeVariableGroupings, rel.left).map(NodePathVariable) ++:
           singletonToGroup(relationshipVariableGroupings, rel.name).map(RelationshipPathVariable) ++:
@@ -289,7 +289,7 @@ final case class QuantifiedPathPattern(
     val where =
       if (selections.isEmpty) ""
       else selections.flatPredicates.map(QueryGraph.stringifier(_)).mkString(" WHERE ", " AND ", "")
-    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships)}$where)${repetition.solvedString} (${rightBinding.outer})"
+    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships.toIndexedSeq)}$where)${repetition.solvedString} (${rightBinding.outer})"
   }
 
   override def solvedString: String =

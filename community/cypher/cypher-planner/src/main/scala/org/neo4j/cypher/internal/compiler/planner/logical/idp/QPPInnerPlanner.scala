@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 /**
  * Produces a logical plan for the the inner pattern of a QPP, which is the equivalent of the RHS of the Trail operator.
@@ -173,7 +174,7 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
     else qpp.rightBinding.inner
   }
 
-  private def additionalTrailPredicates(qpp: QuantifiedPathPattern): Seq[Expression] =
+  private def additionalTrailPredicates(qpp: QuantifiedPathPattern): NonEmptyList[Expression] =
     qpp.patternRelationships.map(r =>
       IsRepeatTrailUnique(Variable(r.name)(InputPosition.NONE))(InputPosition.NONE)
     )

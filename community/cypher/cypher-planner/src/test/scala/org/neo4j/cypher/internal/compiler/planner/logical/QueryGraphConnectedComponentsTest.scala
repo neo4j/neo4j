@@ -60,7 +60,7 @@ class QueryGraphConnectedComponentsTest
     QuantifiedPathPattern(
       leftBinding = NodeBinding(s"${from}_inner_singleton", from),
       rightBinding = NodeBinding(s"${to}_inner_singleton", to),
-      patternRelationships = List(rel(s"${from}_inner_singleton", s"${to}_inner_singleton", "r")),
+      patternRelationships = NonEmptyList(rel(s"${from}_inner_singleton", s"${to}_inner_singleton", "r")),
       repetition = Repetition(0, Unlimited),
       nodeVariableGroupings = Set(
         VariableGrouping(s"${from}_inner_singleton", s"${from}_inner_group"),

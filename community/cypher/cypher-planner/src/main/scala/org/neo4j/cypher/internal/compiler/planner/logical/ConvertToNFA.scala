@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.exceptions.InternalException
 
@@ -78,7 +79,7 @@ object ConvertToNFA {
     val nonInlinedSelections =
       convertToNfa(
         builder,
-        directedConnections.toIterable,
+        directedConnections,
         spp.selections ++ predicatesOnTargetNode,
         fromLeft,
         availableSymbols,
@@ -97,7 +98,7 @@ object ConvertToNFA {
    */
   private def convertToNfa(
     builder: NFABuilder,
-    connections: Iterable[ExhaustiveNodeConnection],
+    connections: NonEmptyList[ExhaustiveNodeConnection],
     selections: Selections,
     fromLeft: Boolean,
     availableSymbols: Set[String],

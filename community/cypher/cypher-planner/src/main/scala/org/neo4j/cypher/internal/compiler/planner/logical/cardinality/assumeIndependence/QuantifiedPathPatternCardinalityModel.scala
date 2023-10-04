@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Selectivity
 
 import scala.collection.mutable
@@ -57,7 +58,7 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
         labelInfo = predicates.allLabelInfo,
         extraRelTypeInfo = quantifiedPathPattern.patternRelationships.collect {
           case PatternRelationship(name, _, _, Seq(relType), _) => name -> relType
-        }.toMap,
+        }.toSeq.toMap,
         predicates = predicates.otherPredicates
       )
 
@@ -160,7 +161,7 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
   private def getPatternRelationshipsCardinality(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    patternRelationships: Seq[PatternRelationship]
+    patternRelationships: NonEmptyList[PatternRelationship]
   ): Cardinality = {
     val firstRelationship = patternRelationships.head
     val firstRelationshipCardinality = getSimpleRelationshipCardinality(

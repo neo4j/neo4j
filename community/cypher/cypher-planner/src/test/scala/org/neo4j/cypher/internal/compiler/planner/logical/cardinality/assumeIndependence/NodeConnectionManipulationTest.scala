@@ -42,7 +42,7 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
         leftBinding = NodeBinding("b", "a"),
         rightBinding = NodeBinding("c", "d"),
         patternRelationships =
-          List(PatternRelationship(
+          NonEmptyList(PatternRelationship(
             "r",
             ("b", "c"),
             SemanticDirection.OUTGOING,
@@ -70,7 +70,7 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
         leftBinding = NodeBinding("f", "e"),
         rightBinding = NodeBinding("g", "h"),
         patternRelationships =
-          List(PatternRelationship(
+          NonEmptyList(PatternRelationship(
             "t",
             ("f", "g"),
             SemanticDirection.INCOMING,
@@ -112,7 +112,7 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
         leftBinding = NodeBinding("b", "a"),
         rightBinding = NodeBinding("c", "d"),
         patternRelationships =
-          List(PatternRelationship(
+          NonEmptyList(PatternRelationship(
             "r",
             ("b", "c"),
             SemanticDirection.OUTGOING,

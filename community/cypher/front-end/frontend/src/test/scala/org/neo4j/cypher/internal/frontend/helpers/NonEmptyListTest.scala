@@ -231,6 +231,19 @@ class NonEmptyListTest extends CypherFunSuite {
     NonEmptyList(1, 2, 3).exists(_ >= 3) should be(true)
   }
 
+  test("contains should work as expected") {
+    NonEmptyList(1).contains(2) should be(false)
+    NonEmptyList(1).contains(1) should be(true)
+    NonEmptyList(1, 2, 3).contains(4) should be(false)
+    NonEmptyList(1, 2, 3).contains(1) should be(true)
+    NonEmptyList(1, 2, 3).contains(3) should be(true)
+  }
+
+  test("tail should work as expected") {
+    NonEmptyList(1).tail should be(Seq.empty)
+    NonEmptyList(1, 2, 3).tail should be(Seq(2, 3))
+  }
+
   test("forall should work as expected") {
     NonEmptyList(1).forall(_ == 2) should be(false)
     NonEmptyList(1).forall(_ == 1) should be(true)

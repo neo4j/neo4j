@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
@@ -94,7 +95,7 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with Quan
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a_i", "start"),
         rightBinding = NodeBinding("c_i", "end"),
-        patternRelationships = List(
+        patternRelationships = NonEmptyList(
           PatternRelationship(
             "r_i",
             ("a_i", "b_i"),

@@ -587,7 +587,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     QuantifiedPathPattern(
       leftBinding = NodeBinding("a", "start"),
       rightBinding = NodeBinding("b", "end"),
-      patternRelationships = List(PatternRelationship(
+      patternRelationships = NonEmptyList(PatternRelationship(
         name = "r",
         boundaryNodes = ("a", "b"),
         dir = SemanticDirection.OUTGOING,

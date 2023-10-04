@@ -1682,7 +1682,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r",
               ("n", "m"),
               SemanticDirection.OUTGOING,
@@ -1707,7 +1707,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("anon_1", "anon_0"),
           rightBinding = NodeBinding("anon_3", "anon_4"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "anon_5",
               ("anon_1", "anon_3"),
               SemanticDirection.OUTGOING,
@@ -1732,7 +1732,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("n", "a"),
           rightBinding = NodeBinding("m", "b"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r",
               ("n", "m"),
               SemanticDirection.OUTGOING,
@@ -1767,7 +1767,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("n", "b"),
           rightBinding = NodeBinding("m", "x"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r2",
               ("n", "m"),
               SemanticDirection.OUTGOING,
@@ -1795,7 +1795,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("n", "b"),
           rightBinding = NodeBinding("m", "x"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r2",
               ("n", "m"),
               SemanticDirection.OUTGOING,
@@ -1825,7 +1825,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r1",
               ("n", "m"),
               SemanticDirection.OUTGOING,
@@ -1840,7 +1840,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("x", "anon_1"),
           rightBinding = NodeBinding("y", "anon_2"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r2",
               ("x", "y"),
               SemanticDirection.OUTGOING,
@@ -1869,7 +1869,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("a", "anon_0"),
           rightBinding = NodeBinding("c", "anon_1"),
           patternRelationships =
-            List(
+            NonEmptyList(
               PatternRelationship(
                 "r1",
                 ("a", "b"),
@@ -1895,7 +1895,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("x", "anon_1"),
           rightBinding = NodeBinding("y", "anon_2"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r3",
               ("x", "y"),
               SemanticDirection.OUTGOING,
@@ -1924,7 +1924,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("a", "anon_0"),
           rightBinding = NodeBinding("d", "anon_1"),
           patternRelationships =
-            List(
+            NonEmptyList(
               PatternRelationship(
                 "r1",
                 ("a", "b"),
@@ -1979,7 +1979,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             leftBinding = NodeBinding("n", "anon_0"),
             rightBinding = NodeBinding("m", "anon_1"),
             patternRelationships =
-              List(PatternRelationship(
+              NonEmptyList(PatternRelationship(
                 "r",
                 ("n", "m"),
                 SemanticDirection.OUTGOING,
@@ -2008,7 +2008,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       leftBinding = NodeBinding(n, "a"),
       rightBinding = NodeBinding(m, m_outer),
       patternRelationships =
-        List(PatternRelationship(
+        NonEmptyList(PatternRelationship(
           r,
           (n, m),
           SemanticDirection.OUTGOING,
@@ -2043,7 +2043,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r",
               ("n", "m"),
               SemanticDirection.OUTGOING,
@@ -2069,7 +2069,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
           patternRelationships =
-            List(PatternRelationship(
+            NonEmptyList(PatternRelationship(
               "r",
               ("n", "m"),
               SemanticDirection.OUTGOING,
@@ -2255,7 +2255,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a", "start"),
         rightBinding = NodeBinding("b", "end"),
-        patternRelationships = List(PatternRelationship(
+        patternRelationships = NonEmptyList(PatternRelationship(
           name = "r",
           boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,
@@ -2333,7 +2333,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a", "start"),
         rightBinding = NodeBinding("b", "end"),
-        patternRelationships = List(PatternRelationship(
+        patternRelationships = NonEmptyList(PatternRelationship(
           name = "r",
           boundaryNodes = ("a", "b"),
           dir = SemanticDirection.OUTGOING,

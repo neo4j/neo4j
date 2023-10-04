@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -177,7 +178,7 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
   val `(a) ((n)-[r]->(m))+ (b)` : QuantifiedPathPattern = QuantifiedPathPattern(
     leftBinding = NodeBinding("n", "a"),
     rightBinding = NodeBinding("m", "b"),
-    patternRelationships = Seq(PatternRelationship("r", ("n", "m"), OUTGOING, Seq.empty, SimplePatternLength)),
+    patternRelationships = NonEmptyList(PatternRelationship("r", ("n", "m"), OUTGOING, Seq.empty, SimplePatternLength)),
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
@@ -188,7 +189,7 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
   val `(c) ((x)-[r]->(y))+ (d)` : QuantifiedPathPattern = QuantifiedPathPattern(
     leftBinding = NodeBinding("x", "c"),
     rightBinding = NodeBinding("y", "d"),
-    patternRelationships = Seq(PatternRelationship("r", ("x", "y"), OUTGOING, Seq.empty, SimplePatternLength)),
+    patternRelationships = NonEmptyList(PatternRelationship("r", ("x", "y"), OUTGOING, Seq.empty, SimplePatternLength)),
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),

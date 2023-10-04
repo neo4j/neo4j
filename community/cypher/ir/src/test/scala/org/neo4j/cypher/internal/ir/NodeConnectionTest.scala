@@ -39,7 +39,7 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
   private val `(start) ((a)-[r]->(b)-[s]->(c))+ (end)` = QuantifiedPathPattern(
     leftBinding = NodeBinding("a", "start"),
     rightBinding = NodeBinding("c", "end"),
-    patternRelationships = List(
+    patternRelationships = NonEmptyList(
       PatternRelationship(
         name = "r",
         boundaryNodes = ("a", "b"),
