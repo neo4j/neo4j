@@ -79,7 +79,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
 
   case object UnitTruncate {
 
-    def unapply(v: Any): Option[String] = v match {
+    def unapply(v: Any): Option[LogicalVariable] = v match {
       case TransactionForeach(
           NodeLeafPlan(n),
           DeletePlan(m),
@@ -97,7 +97,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
 
   case object ReturningTruncate {
 
-    def unapply(v: Any): Option[String] = v match {
+    def unapply(v: Any): Option[LogicalVariable] = v match {
       case TransactionApply(
           NodeLeafPlan(n),
           Projection(
@@ -132,8 +132,8 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
 
   case object NodeLeafPlan {
 
-    def unapply(v: Any): Option[String] = v match {
-      case plan: NodeLogicalLeafPlan     => Some(plan.idName.name)
+    def unapply(v: Any): Option[LogicalVariable] = v match {
+      case plan: NodeLogicalLeafPlan     => Some(plan.idName)
       case Selection(_, NodeLeafPlan(n)) => Some(n)
       case _                             => None
     }
@@ -141,14 +141,14 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
 
   case object DeletePlan {
 
-    def unapply(v: Any): Option[String] = v match {
+    def unapply(v: Any): Option[LogicalVariable] = v match {
       case DetachDeleteNode(
           _: Argument,
-          LogicalVariable(n)
+          n: LogicalVariable
         ) => Some(n)
       case DeleteNode(
           _: Argument,
-          LogicalVariable(n)
+          n: LogicalVariable
         ) => Some(n)
       case _ => None
     }

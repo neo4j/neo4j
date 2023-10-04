@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -245,18 +244,18 @@ object TrailToVarExpandRewriter {
      */
     def unapply(trailRhs: LogicalPlan): Option[(Expand, Seq[VariablePredicate])] = {
       def relationshipVariablePredicate(
-        innerRel: String,
-        innerNodes: Set[String]
+        innerRel: LogicalVariable,
+        innerNodes: Set[LogicalVariable]
       ): PartialFunction[Expression, VariablePredicate] = {
-        case p if p.dependencies.map(_.name)(innerRel) && p.dependencies.map(_.name).intersect(innerNodes).isEmpty =>
-          VariablePredicate(Variable(innerRel)(InputPosition.NONE), p)
+        case p if p.dependencies(innerRel) && p.dependencies.intersect(innerNodes).isEmpty =>
+          VariablePredicate(innerRel, p)
       }
 
       trailRhs match {
         case Selection(Ands(predicates), expand @ Expand(_: Argument, from, _, _, to, relationship, ExpandAll)) =>
           val rewritableCandidates = predicates.filterNot(_.isInstanceOf[IsRepeatTrailUnique])
           val rewritable =
-            rewritableCandidates.collect(relationshipVariablePredicate(relationship.name, Set(from.name, to.name)))
+            rewritableCandidates.collect(relationshipVariablePredicate(relationship, Set(from, to)))
           val allPredicatesAreRewritable = rewritableCandidates.size == rewritable.size
           Option.when(allPredicatesAreRewritable)((expand, rewritable.toSeq))
         case _ => None
