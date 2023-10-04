@@ -112,6 +112,8 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
 
 abstract class AdministrationChainedExecutionPlan(source: Option[ExecutionPlan])
     extends ChainedExecutionPlan[SystemUpdateCountingQueryContext](source) {
+  // To avoid code generation for administration commands
+  protected val queryPrefix: String = "CYPHER operatorEngine=interpreted expressionEngine=interpreted "
 
   override def createContext(originalCtx: QueryContext): SystemUpdateCountingQueryContext =
     SystemUpdateCountingQueryContext.from(originalCtx)

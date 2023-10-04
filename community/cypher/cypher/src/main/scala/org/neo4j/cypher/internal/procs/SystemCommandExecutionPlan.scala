@@ -76,7 +76,7 @@ case class SystemCommandExecutionPlan(
 
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, new QueryHandler(), updatedParams)
       val execution = normalExecutionEngine.executeSubquery(
-        query,
+        queryPrefix + query,
         updatedParams,
         tc,
         isOutermostQuery = false,
