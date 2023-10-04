@@ -177,7 +177,7 @@ class OptionReaderTest extends CypherFunSuite {
     ))
 
     exception.getMessage.should(
-      be("Cannot use RUNTIME 'parallel' with 'internal.cypher.parallel_runtime_support:disabled'.")
+      be("Parallel runtime has been disabled, please enable it or upgrade to a bigger Aura instance.")
     )
   }
 

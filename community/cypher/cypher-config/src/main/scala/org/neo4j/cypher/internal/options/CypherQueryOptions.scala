@@ -64,7 +64,7 @@ case class CypherQueryOptions(
 
   if (ILLEGAL_PARALLEL_RUNTIME_COMBINATIONS((parallelRuntimeSupportOption, runtime))) {
     throw new InvalidCypherOption(
-      s"Cannot use RUNTIME '${runtime.name}' with '${GraphDatabaseInternalSettings.cypher_parallel_runtime_support.name()}:${parallelRuntimeSupportOption.name}'."
+      "Parallel runtime has been disabled, please enable it or upgrade to a bigger Aura instance."
     )
   }
 
