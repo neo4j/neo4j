@@ -50,8 +50,8 @@ object LogicalPlans {
    *   A = mapTwoChildPlan(a, B, C)
    */
   def map[T](plan: LogicalPlan, mapper: Mapper[T]): T = {
-    val planStack = new mutable.ArrayStack[LogicalPlan]()
-    val resultStack = new mutable.ArrayStack[T]()
+    val planStack = new mutable.Stack[LogicalPlan]()
+    val resultStack = new mutable.Stack[T]()
     var comingFrom = plan
     def populate(plan: LogicalPlan): Unit = {
       var current = plan

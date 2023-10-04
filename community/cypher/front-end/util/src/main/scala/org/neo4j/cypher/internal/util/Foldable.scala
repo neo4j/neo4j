@@ -187,7 +187,7 @@ object Foldable {
     Allows searching through object tree and object collections for a class
      */
     def treeFindByClass[A: ClassTag]: Option[A] =
-      optionFindAcc[A](mutable.ArrayStack(foldedOver), cancellation)
+      optionFindAcc[A](mutable.Stack(foldedOver), cancellation)
 
     /*
     Searches in trees, counting how many matches are found
@@ -333,7 +333,7 @@ object Foldable {
 
   @tailrec
   private def optionFindAcc[A: ClassTag](
-    remaining: mutable.ArrayStack[Any],
+    remaining: mutable.Stack[Any],
     cancellation: CancellationChecker
   ): Option[A] = {
     cancellation.throwIfCancelled()

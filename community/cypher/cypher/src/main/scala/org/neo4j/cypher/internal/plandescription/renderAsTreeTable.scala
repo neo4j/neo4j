@@ -268,7 +268,7 @@ private object TreeTableBuilder {
 
   private def compactAndCollectPlans(rootPlan: InternalPlanDescription): Iterator[LevelledPlan] =
     new Iterator[LevelledPlan] {
-      private val stack = mutable.ArrayStack[LevelledPlan](LevelledPlan(compactPlan(rootPlan), Root))
+      private val stack = mutable.Stack[LevelledPlan](LevelledPlan(compactPlan(rootPlan), Root))
 
       override def hasNext: Boolean = stack.nonEmpty
 

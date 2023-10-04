@@ -160,7 +160,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
       val otherPlan = obj.asInstanceOf[LogicalPlan]
       if (this.eq(otherPlan)) return true
       if (this.getClass != otherPlan.getClass) return false
-      val stack = new mutable.ArrayStack[(Iterator[Any], Iterator[Any])]()
+      val stack = new mutable.Stack[(Iterator[Any], Iterator[Any])]()
       var p1 = this.productIterator
       var p2 = otherPlan.productIterator
       while (p1.hasNext && p2.hasNext) {
