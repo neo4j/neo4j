@@ -26,19 +26,14 @@ import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewrit
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.topDown
-
-case object TimestampRewritten extends Condition
 
 case object timestampRewriter extends Step with PreparatoryRewritingRewriterFactory {
 
   override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set(!FunctionInvocationsResolved)
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(TimestampRewritten)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

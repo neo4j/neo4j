@@ -36,11 +36,8 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-case object PropertiesCombined extends StepSequencer.Condition
-
 case object combineSetProperty extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set()
-  override def postConditions: Set[StepSequencer.Condition] = Set(PropertiesCombined)
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   override def getRewriter(

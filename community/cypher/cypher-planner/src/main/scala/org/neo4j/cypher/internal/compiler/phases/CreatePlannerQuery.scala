@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
-import org.neo4j.cypher.internal.frontend.phases.AmbiguousNamesDisambiguated
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.InPredicatesCollapsed
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.PredicatesInCNF
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -70,10 +70,10 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     StatementCondition(containsNoNodesOfType[UnionAll]),
     StatementCondition(containsNoNodesOfType[UnionDistinct]),
     // The PlannerQuery we create should already contain disambiguated names
-    AmbiguousNamesDisambiguated,
+    Namespacer.completed,
     // and we want to take advantage of isolated aggregations in the planner
     StatementCondition(aggregationsAreIsolated),
-    InPredicatesCollapsed
+    collapseMultipleInPredicates.completed
   ) ++
     // The PlannerQuery should be created based on normalised predicates
     PredicatesInCNF ++

@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.ANY
 
-case object ExplicitParametersKnowTheirTypes extends StepSequencer.Condition
-
 case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, ParameterTypeInfo]) extends Rewriter {
 
   private val rewriter: Rewriter = bottomUp(Rewriter.lift {
@@ -45,8 +43,6 @@ case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, Param
 
 case object parameterValueTypeReplacement extends Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(ExplicitParametersKnowTheirTypes)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

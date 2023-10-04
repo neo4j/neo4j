@@ -33,8 +33,6 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case object QppsHavePaddedNodes extends StepSequencer.Condition
-
 /**
  * A Quantified Path Pattern should always have a node or relationship chain surrounding it,
  * a user may omit these in their query whilst the planner expects them, this rewriter will therefore add
@@ -52,8 +50,6 @@ case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step w
   private val filler = NodePattern(None, None, None, None)(InputPosition.NONE)
 
   override def preConditions: Set[StepSequencer.Condition] = Set()
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(QppsHavePaddedNodes)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] =
     SemanticInfoAvailable ++ Set(

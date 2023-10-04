@@ -36,8 +36,6 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case object OnlyDesugaredMapProjections extends StepSequencer.Condition
-
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user
 has used an all properties selector ( n{ .* } ), we need to do the work in runtime.
@@ -76,8 +74,6 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
 
 case object desugarMapProjection extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(OnlyDesugaredMapProjections)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

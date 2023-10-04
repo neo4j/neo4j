@@ -50,7 +50,7 @@ case object normalizeComparisons extends StepSequencer.Step with ASTRewriterFact
   ): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    HasLabelsOrTypesReplacedIfPossible, // These have to have been rewritten to HasLabels / HasTypes at this point
+    normalizeHasLabelsAndHasType.completed, // These have to have been rewritten to HasLabels / HasTypes at this point
     !containsNamedPathOnlyForShortestPath // this rewriter will not achieve 'noReferenceEqualityAmongVariables' if projectNamedPaths run first
   )
 

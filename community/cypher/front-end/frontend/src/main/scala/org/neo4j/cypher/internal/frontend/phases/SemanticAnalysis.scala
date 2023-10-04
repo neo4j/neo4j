@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-case object TokensResolved extends StepSequencer.Condition
-
 /**
  * Do variable binding, typing, type checking and other semantic checks.
  */

@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
-case object InequalitiesNormalized extends StepSequencer.Condition
-
 case object normalizeInequalities extends Rewriter with CnfPhase {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
@@ -66,8 +64,6 @@ case object normalizeInequalities extends Rewriter with CnfPhase {
     // If the predicates are already in CNF (AndsAboveOrs), there are more opportunities for this rewriter to be applied
     AndsAboveOrs
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(InequalitiesNormalized)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 }

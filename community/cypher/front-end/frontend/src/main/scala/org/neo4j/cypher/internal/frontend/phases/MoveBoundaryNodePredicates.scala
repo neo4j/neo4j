@@ -27,13 +27,12 @@ import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
-import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.QppPredicatesCopiedToJuxtaposedNodes
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.rewriters.NoNodeOrRelationshipPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.ParenthesizedPathUnwrapped
-import org.neo4j.cypher.internal.rewriting.rewriters.QppsHavePaddedNodes
+import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.unwrapParenthesizedPath
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
@@ -43,17 +42,13 @@ import scala.collection.immutable.ListSet
 case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
-  case object BoundaryNodePredicatesMoved extends StepSequencer.Condition
-
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    NoNodeOrRelationshipPredicates,
+    normalizePredicates.completed,
     AndRewrittenToAnds,
-    QppsHavePaddedNodes,
-    QppPredicatesCopiedToJuxtaposedNodes,
-    ParenthesizedPathUnwrapped
+    QuantifiedPathPatternNodeInsertRewriter.completed,
+    CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.completed,
+    unwrapParenthesizedPath.completed
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(BoundaryNodePredicatesMoved)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

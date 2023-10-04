@@ -70,6 +70,6 @@ case object LabelExpressionPredicateNormalizer extends StepSequencer.Step with A
    * @return the conditions that this step invalidates as a side-effect of its work.
    */
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    HasLabelsOrTypesReplacedIfPossible
+    normalizeHasLabelsAndHasType.completed
   ) ++ SemanticInfoAvailable
 }

@@ -124,15 +124,11 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
     (relCopy, Some(predicate))
   }
 
-  case object InScopeZeroLengthRelationshipsHaveBeenExtracted extends StepSequencer.Condition
-
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
     CompilationContains[PlannerQuery],
-    VarLengthQuantifierMerged
+    VarLengthQuantifierMerger.completed
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(InScopeZeroLengthRelationshipsHaveBeenExtracted)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

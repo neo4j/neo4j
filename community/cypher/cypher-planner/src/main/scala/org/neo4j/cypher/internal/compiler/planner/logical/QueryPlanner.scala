@@ -26,19 +26,16 @@ import org.neo4j.cypher.internal.compiler.phases.AttributeFullyAssigned
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.EmptyRelationshipListEndpointProjection.InScopeZeroLengthRelationshipsHaveBeenExtracted
-import org.neo4j.cypher.internal.compiler.planner.logical.InlineRelationshipTypePredicates.RelationshipTypePredicatesInlined
+import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.UnnecessaryOptionalMatchesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.QppPredicatesCopiedToJuxtaposedNodes
+import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
 import org.neo4j.cypher.internal.frontend.phases.Phase
-import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -152,14 +149,14 @@ case object QueryPlanner
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
     CompilationContains[PlannerQuery],
-    UnnecessaryOptionalMatchesRemoved,
-    ExpressionsRewrittenToGetDegree,
-    UnfulfillableQueryGraphsRemoved,
-    InScopeZeroLengthRelationshipsHaveBeenExtracted,
-    VarLengthQuantifierMerged,
-    TokensResolved,
-    QppPredicatesCopiedToJuxtaposedNodes,
-    RelationshipTypePredicatesInlined
+    OptionalMatchRemover.completed,
+    GetDegreeRewriterStep.completed,
+    UnfulfillableQueryRewriter.completed,
+    EmptyRelationshipListEndpointProjection.completed,
+    VarLengthQuantifierMerger.completed,
+    ResolveTokens.completed,
+    CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.completed,
+    InlineRelationshipTypePredicates.completed
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

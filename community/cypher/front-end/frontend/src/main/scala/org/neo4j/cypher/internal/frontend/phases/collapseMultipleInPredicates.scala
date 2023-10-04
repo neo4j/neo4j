@@ -23,15 +23,13 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.PredicatesInCNF
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.collection.immutable.Iterable
-
-case object EqualityRewrittenToIn extends StepSequencer.Condition
-case object InPredicatesCollapsed extends StepSequencer.Condition
 
 /**
  * This class merges multiple IN predicates into larger ones.
@@ -43,7 +41,7 @@ case object InPredicatesCollapsed extends StepSequencer.Condition
  */
 case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
-  case class InValue(lhs: Expression, expr: Expression)
+  private case class InValue(lhs: Expression, expr: Expression)
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = bottomUp(
     rewriter = Rewriter.lift {
@@ -78,9 +76,8 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
     cancellation = context.cancellationChecker
   )
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn) ++ PredicatesInCNF
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(InPredicatesCollapsed)
+  override def preConditions: Set[StepSequencer.Condition] =
+    Set(rewriteEqualityToInPredicate.completed) ++ PredicatesInCNF
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 

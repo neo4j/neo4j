@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-case object OrderByIdRewritten extends StepSequencer.Condition
-
 /**
  * Rewrites `ORDER BY id(n)` TO `ORDER BY n`.
  * This allows using the order of a label scan or rel-type scan to solve the query.
@@ -56,8 +54,6 @@ case class rewriteOrderById(semanticState: SemanticState) extends Rewriter {
 case object rewriteOrderById extends Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set()
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(OrderByIdRewritten)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo // It can invalidate this condition by rewriting things inside the RETURN.

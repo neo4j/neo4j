@@ -31,13 +31,9 @@ import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-case object NoLiteralDynamicPropertyLookups extends StepSequencer.Condition
-
 case object replaceLiteralDynamicPropertyLookups extends Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(NoLiteralDynamicPropertyLookups)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

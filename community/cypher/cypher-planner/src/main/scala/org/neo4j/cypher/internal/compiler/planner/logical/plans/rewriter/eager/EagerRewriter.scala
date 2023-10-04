@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.PlanIDsAreCompressed
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -110,7 +110,7 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Rewriting logical plans introduces new IDs
-    PlanIDsAreCompressed
+    CompressPlanIDs.completed
   )
 
   override def getTransformer(

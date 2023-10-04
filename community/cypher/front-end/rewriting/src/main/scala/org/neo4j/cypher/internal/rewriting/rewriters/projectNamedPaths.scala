@@ -295,7 +295,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     // RepeatPathStep assumes everything is named
     noUnnamedNodesAndRelationships,
     // We rely on padded nodes between QPPs
-    QppsHavePaddedNodes
+    QuantifiedPathPatternNodeInsertRewriter.completed
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

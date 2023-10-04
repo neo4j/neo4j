@@ -435,14 +435,10 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     qg.patternRelationships.flatMap(_.coveredIds)
   }
 
-  case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
-
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
     CompilationContains[PlannerQuery]
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(UnnecessaryOptionalMatchesRemoved)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object cypherTypeNormalizationRewriter extends StepSequencer.Step with ASTRewriterFactory {
 
-  case object CypherTypeNameNormalized extends StepSequencer.Condition
-
   override def getRewriter(
     semanticState: SemanticState,
     parameterTypeMapping: Map[String, ParameterTypeInfo],
@@ -40,8 +38,6 @@ case object cypherTypeNormalizationRewriter extends StepSequencer.Step with ASTR
   ): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set()
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(CypherTypeNameNormalized)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set()
 

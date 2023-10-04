@@ -35,13 +35,10 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.annotation.tailrec
-
-case object ShowRewrittenToShowYieldWhereReturn extends Condition
 
 // We would want this to be part of a later phase, e.g. ASTRewriter.
 // That is problematic because it needs to run expandStar, but the YIELD and RETURN clauses need scoping information.
@@ -53,8 +50,6 @@ case object ShowRewrittenToShowYieldWhereReturn extends Condition
 case object rewriteShowQuery extends Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(ShowRewrittenToShowYieldWhereReturn)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Introduces YIELD * and RETURN *

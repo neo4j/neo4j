@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
@@ -106,7 +105,8 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
     BaseContains[SemanticTable]
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(TokensResolved)
+  // necessary because VisitorPhase defines empty postConditions
+  override def postConditions: Set[StepSequencer.Condition] = Set(completed)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

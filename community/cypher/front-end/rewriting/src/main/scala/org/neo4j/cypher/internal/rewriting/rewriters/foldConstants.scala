@@ -48,8 +48,6 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-case object ConstantNumberLiteralsFolded extends StepSequencer.Condition
-
 case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef =
@@ -168,8 +166,6 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
 
 case object foldConstants extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set()
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(ConstantNumberLiteralsFolded)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

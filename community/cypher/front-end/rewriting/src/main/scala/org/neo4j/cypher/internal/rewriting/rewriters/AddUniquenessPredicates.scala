@@ -58,16 +58,12 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
 
 case object AddUniquenessPredicates extends AddRelationshipPredicates[NodeConnection] {
-  case object rewritten extends StepSequencer.Condition
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(rewritten)
 
   override val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case m @ Match(_, matchMode, pattern: Pattern, _, where) if matchMode.requiresDifferentRelationships =>

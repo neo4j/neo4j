@@ -45,8 +45,6 @@ import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
-case object AmbiguousNamesDisambiguated extends StepSequencer.Condition
-
 /**
  * Rename variables so they are all unique.
  */
@@ -180,7 +178,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
   override def postConditions: Set[StepSequencer.Condition] = Set(
     StatementCondition(containsNoNodesOfType[UnionAll]),
     StatementCondition(containsNoNodesOfType[UnionDistinct]),
-    AmbiguousNamesDisambiguated
+    completed
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes

@@ -38,7 +38,7 @@ case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, Base
 
   override def preConditions: Set[StepSequencer.Condition] =
     projectNamedPaths.preConditions.map(StatementCondition.wrap) ++ Set(
-      AmbiguousNamesDisambiguated,
+      Namespacer.completed,
       // Pattern comprehensions must have been rewritten to COLLECT,
       // since this rewriter does not match on named paths in pattern comprehensions.
       StatementCondition(containsNoNodesOfType[PatternComprehension])
@@ -50,7 +50,7 @@ case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, Base
   override def invalidatedConditions: Set[StepSequencer.Condition] =
     SemanticInfoAvailable +
       // We may duplicate grouping variables of QPPs
-      AmbiguousNamesDisambiguated
+      Namespacer.completed
 
   override def getTransformer(
     pushdownPropertyReads: Boolean,

@@ -50,7 +50,6 @@ case class AmbiguousAggregationAnalysis(features: SemanticFeature*)
 }
 
 case object AmbiguousAggregationAnalysis extends StepSequencer.Step with ParsePipelineTransformerFactory {
-  case object AmbiguousAggregationErrorsReported extends StepSequencer.Condition
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement],
@@ -58,8 +57,6 @@ case object AmbiguousAggregationAnalysis extends StepSequencer.Step with ParsePi
     // `.introducedVariables`, which is called in this Phase.
     ExpressionsHaveComputedDependencies
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(AmbiguousAggregationErrorsReported)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

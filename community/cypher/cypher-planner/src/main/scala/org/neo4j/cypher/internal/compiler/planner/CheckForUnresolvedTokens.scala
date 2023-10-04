@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -41,8 +40,6 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-
-case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Condition
 
 /**
  * Find labels, relationships types and property keys that do not exist in the db and issue warnings.
@@ -81,11 +78,12 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
   override def phase = LOGICAL_PLANNING
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    TokensResolved,
+    ResolveTokens.completed,
     CompilationContains[PlannerQuery]
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(NotificationsForUnresolvedTokensGenerated)
+  // necessary because VisitorPhase defines empty postConditions
+  override def postConditions: Set[StepSequencer.Condition] = Set(completed)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

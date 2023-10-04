@@ -39,8 +39,6 @@ import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
-case object PlanIDsAreCompressed extends StepSequencer.Condition
-
 /**
  * Compresses the plan IDs so that they are consecutive numbers starting from 0.
  * Create a copy of the planning attributes with the new IDs.
@@ -105,10 +103,6 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // Traverses the logical plan
     CompilationContains[LogicalPlan]
-  )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(
-    PlanIDsAreCompressed
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

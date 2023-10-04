@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.frontend.phases.AmbiguousNamesDisambiguated
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -48,8 +48,6 @@ import scala.collection.immutable.ListSet
  */
 case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
-
-  case object RelationshipTypePredicatesInlined extends StepSequencer.Condition
   final case class Result(newPatternRelationships: Seq[PatternRelationship], inlinedPredicates: Set[Predicate])
 
   override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = {
@@ -130,10 +128,8 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
     // This works on the IR
     CompilationContains[PlannerQuery],
     // We rewrite variables by name, so they need to be unique.
-    AmbiguousNamesDisambiguated
+    Namespacer.completed
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipTypePredicatesInlined)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

@@ -40,8 +40,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
-case object UnfulfillableQueryGraphsRemoved extends StepSequencer.Condition
-
 case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
@@ -83,8 +81,6 @@ case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSeq
     queryGraph.selections.flatPredicates.collect {
       case p @ False() => p
     }.nonEmpty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(UnfulfillableQueryGraphsRemoved)
 
   // we just want to have the planner query created
   override def preConditions: Set[StepSequencer.Condition] =

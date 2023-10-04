@@ -40,8 +40,6 @@ import org.neo4j.cypher.internal.util.topDown
  */
 case object FixedLengthShortestToAllRewriter extends StepSequencer.Step with ASTRewriterFactory {
 
-  case object FixedLengthShortestRewrittenToAll extends StepSequencer.Condition
-
   override def getRewriter(
     semanticState: SemanticState,
     parameterTypeMapping: Map[String, ParameterTypeInfo],
@@ -50,8 +48,6 @@ case object FixedLengthShortestToAllRewriter extends StepSequencer.Step with AST
   ): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set()
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(FixedLengthShortestRewrittenToAll)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

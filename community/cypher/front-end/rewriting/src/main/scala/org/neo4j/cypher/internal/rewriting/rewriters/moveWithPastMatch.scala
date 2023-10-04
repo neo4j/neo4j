@@ -35,8 +35,6 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
-
 /**
  * Rewrites `WITH 1 AS foo MATCH (x)` => `MATCH (x) WITH 1 AS foo, x`.
  *
@@ -57,8 +55,6 @@ case object moveWithPastMatch extends StepSequencer.Step with ASTRewriterFactory
   override def preConditions: Set[StepSequencer.Condition] = Set(
     containsNoReturnAll // It's better to know the variables in WITH already
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(IndependentWithsMovedAfterMatch)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo // It can invalidate this condition by copying WITH clauses

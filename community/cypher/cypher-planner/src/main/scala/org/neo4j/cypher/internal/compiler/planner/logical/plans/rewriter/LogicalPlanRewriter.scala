@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.ValidateAvailableSymbols
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsIDReferences
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.PlanIDsAreCompressed
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity.SelectionPredicatesSortedBySelectivity
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -142,9 +142,9 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Rewriting logical plans introduces new IDs
-    PlanIDsAreCompressed,
+    CompressPlanIDs.completed,
     // fuseSelections and simplifySelections can invalidate this condition
-    SelectionPredicatesSortedBySelectivity
+    SortPredicatesBySelectivity.completed
   )
 
   override def getTransformer(

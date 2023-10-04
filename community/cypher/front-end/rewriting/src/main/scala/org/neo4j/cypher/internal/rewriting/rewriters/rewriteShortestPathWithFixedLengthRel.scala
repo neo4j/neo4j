@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.topDown
 
-case object NoShortestPathWithFixedLength extends StepSequencer.Condition
-
 /**
  * Rewrites shortestPath and allShortestPaths for fixed length relationships to limit 1 or just the pattern.
  */
@@ -56,8 +54,6 @@ object rewriteShortestPathWithFixedLengthRel extends Rewriter {
 case object rewriteShortestPathWithFixedLengthRelationship extends Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set()
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(NoShortestPathWithFixedLength)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

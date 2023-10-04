@@ -69,7 +69,8 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
 
   override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement], BaseContains[SemanticState])
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(GraphTargetVerified)
+  // necessary because VisitorPhase defines empty postConditions
+  override def postConditions: Set[StepSequencer.Condition] = Set(completed)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -175,5 +176,3 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
 
   private case class GraphNameWithContext(graphName: CatalogName, combinedWithAmbientGraph: Boolean)
 }
-
-case object GraphTargetVerified extends StepSequencer.Condition

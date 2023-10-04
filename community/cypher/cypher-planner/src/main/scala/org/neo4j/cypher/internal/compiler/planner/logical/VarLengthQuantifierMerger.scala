@@ -34,8 +34,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
-case object VarLengthQuantifierMerged extends StepSequencer.Condition
-
 case object VarLengthQuantifierMerger extends PlannerQueryRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
@@ -62,8 +60,6 @@ case object VarLengthQuantifierMerger extends PlannerQueryRewriter with StepSequ
 
   override def preConditions: Set[StepSequencer.Condition] =
     Set(CompilationContains[PlannerQuery]) // = CreatePlannerQuery.postConditions
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(VarLengthQuantifierMerged)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

@@ -71,14 +71,13 @@ case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState] with 
 
   override val phase = SEMANTIC_TYPE_CHECK
 
-  case object AdditionalSemanticTypeChecksPerformed extends StepSequencer.Condition
-
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement],
     BaseContains[SemanticTable]
   ) ++ SemanticInfoAvailable
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(AdditionalSemanticTypeChecksPerformed)
+  // necessary because VisitorPhase defines empty postConditions
+  override def postConditions: Set[StepSequencer.Condition] = Set(completed)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

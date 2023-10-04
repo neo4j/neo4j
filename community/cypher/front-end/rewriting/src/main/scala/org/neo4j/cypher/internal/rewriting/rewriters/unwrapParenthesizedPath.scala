@@ -37,12 +37,9 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
-
-case object ParenthesizedPathUnwrapped extends Condition
 
 /**
  * We parse parenthesized path patterns and represent them in the AST as they are, as we have the information anyways and will need it later on.
@@ -56,8 +53,6 @@ case object ParenthesizedPathUnwrapped extends Condition
 case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(ParenthesizedPathUnwrapped)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + AndRewrittenToAnds
 

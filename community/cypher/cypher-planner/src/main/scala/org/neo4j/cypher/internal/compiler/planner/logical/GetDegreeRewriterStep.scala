@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 
-case object ExpressionsRewrittenToGetDegree extends StepSequencer.Condition
-
 case object GetDegreeRewriterStep extends PlannerQueryRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
@@ -41,8 +39,6 @@ case object GetDegreeRewriterStep extends PlannerQueryRewriter with StepSequence
     // This works on the IR
     CompilationContains[PlannerQuery]
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(ExpressionsRewrittenToGetDegree)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

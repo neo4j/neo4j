@@ -58,15 +58,9 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
     with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
-  case object SelectionPredicatesSortedBySelectivity extends StepSequencer.Condition
-
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
   override def preConditions: Set[StepSequencer.Condition] = Set(LogicalPlanRewritten)
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(
-    SelectionPredicatesSortedBySelectivity
-  )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

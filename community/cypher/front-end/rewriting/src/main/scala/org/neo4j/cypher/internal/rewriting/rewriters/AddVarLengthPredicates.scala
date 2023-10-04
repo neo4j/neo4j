@@ -34,12 +34,9 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
 case object AddVarLengthPredicates extends AddRelationshipPredicates[RelationshipPattern] {
-
-  case object rewritten extends StepSequencer.Condition
 
   override val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case matchClause @ Match(_, _, pattern: Pattern, _, where) =>
@@ -64,9 +61,6 @@ case object AddVarLengthPredicates extends AddRelationshipPredicates[Relationshi
       case RelationshipChain(_, rel @ RelationshipPattern(_, _, Some(_), _, _, _), _) =>
         acc => TraverseChildren(acc :+ rel)
     }
-
-  override def postConditions: Set[StepSequencer.Condition] =
-    Set(rewritten)
 
   def createPredicatesFor(relationships: Seq[RelationshipPattern], pos: InputPosition): Seq[Expression] =
     relationships.flatMap {

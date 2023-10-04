@@ -40,8 +40,6 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case object NoNodeOrRelationshipPredicates extends StepSequencer.Condition
-
 case object normalizePredicates extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
@@ -50,8 +48,6 @@ case object normalizePredicates extends StepSequencer.Step with ASTRewriterFacto
     // Pattern comprehensions must have been rewritten to COLLECT
     containsNoNodesOfType[PatternComprehension]
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(NoNodeOrRelationshipPredicates)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + AndRewrittenToAnds
 

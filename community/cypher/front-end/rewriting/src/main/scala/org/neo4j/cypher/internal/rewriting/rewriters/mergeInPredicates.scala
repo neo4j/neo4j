@@ -33,11 +33,8 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
-
-case object MultipleInPredicatesAreMerged extends Condition
 
 /**
  * Merges multiple IN predicates into one.
@@ -61,8 +58,6 @@ case object mergeInPredicates extends Step with PreparatoryRewritingRewriterFact
     !LiteralsExtracted,
     !SensitiveLiteralsExtracted
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(MultipleInPredicatesAreMerged)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

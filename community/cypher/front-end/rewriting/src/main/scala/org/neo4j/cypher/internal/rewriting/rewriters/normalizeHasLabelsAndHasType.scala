@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case object HasLabelsOrTypesReplacedIfPossible extends StepSequencer.Condition
-
 trait HasLabelsAndHasTypeNormalizer extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
@@ -76,10 +74,8 @@ case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Ha
 case object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    NoNodeOrRelationshipPredicates // We first need to extract predicates from nodes and relationships
+    normalizePredicates.completed // We first need to extract predicates from nodes and relationships
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(HasLabelsOrTypesReplacedIfPossible)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

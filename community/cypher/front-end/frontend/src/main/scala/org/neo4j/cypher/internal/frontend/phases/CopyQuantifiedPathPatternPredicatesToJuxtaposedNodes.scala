@@ -20,28 +20,23 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
-import org.neo4j.cypher.internal.rewriting.rewriters.NoNodeOrRelationshipPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.QppsHavePaddedNodes
+import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case object CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
     extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  case object QppPredicatesCopiedToJuxtaposedNodes extends StepSequencer.Condition
-
   override def preConditions: Set[StepSequencer.Condition] = Set(
     ExpressionsHaveComputedDependencies,
     StatementCondition.wrap(noUnnamedNodesAndRelationships),
-    QppsHavePaddedNodes,
-    NoNodeOrRelationshipPredicates,
+    QuantifiedPathPatternNodeInsertRewriter.completed,
+    normalizePredicates.completed,
     AndRewrittenToAnds,
-    AmbiguousNamesDisambiguated
+    Namespacer.completed
   )
-
-  override def postConditions: Set[StepSequencer.Condition] =
-    Set(QppPredicatesCopiedToJuxtaposedNodes)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] =
     Set(ExpressionsHaveComputedDependencies)

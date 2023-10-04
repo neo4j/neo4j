@@ -208,6 +208,11 @@ object StepSequencer {
   trait Step {
 
     /**
+     * Default condition for this step once completed.
+     */
+    object completed extends Condition
+
+    /**
      * @return the conditions that needs to be met before this step can be allowed to run.
      */
     def preConditions: Set[Condition]
@@ -216,7 +221,7 @@ object StepSequencer {
      * @return the conditions that are guaranteed to be met after this step has run.
      *         Must not be empty, and must not contain any elements that are postConditions of other steps.
      */
-    def postConditions: Set[Condition]
+    def postConditions: Set[StepSequencer.Condition] = Set(completed)
 
     /**
      * @return the conditions that this step invalidates as a side-effect of its work.

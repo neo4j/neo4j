@@ -39,8 +39,6 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-case object IterablePredicatesRewrittenToIn extends StepSequencer.Condition
-
 /**
  * Rewrites [[org.neo4j.cypher.internal.expressions.IterablePredicateExpression]]s to IN expressions when possible.
  *
@@ -57,10 +55,8 @@ case object simplifyIterablePredicates extends StepSequencer.Step with ASTRewrit
   })
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    AddUniquenessPredicates.rewritten // Introduces AnyIterablePredicate and NoneIterablePredicate
+    AddUniquenessPredicates.completed // Introduces AnyIterablePredicate and NoneIterablePredicate
   )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(IterablePredicatesRewrittenToIn)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 

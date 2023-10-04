@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.Logical
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.CacheAll
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.ProtectedProperties
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity.SelectionPredicatesSortedBySelectivity
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
@@ -104,8 +103,6 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 import scala.collection.mutable
-
-case object PropertiesAreCached extends StepSequencer.Condition
 
 /**
  * A logical plan rewriter that also changes the semantic table (thus a Transformer).
@@ -484,16 +481,12 @@ case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineT
     LogicalPlanContainsEagerIfNeeded
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(
-    PropertiesAreCached
-  )
-
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Rewriting logical plans introduces new IDs
-    PlanIDsAreCompressed,
+    CompressPlanIDs.completed,
     // Since CachedProperties are cheaper than Properties, the previously best predicate evaluation order in a Selection
     // might not be the best order any more.
-    SelectionPredicatesSortedBySelectivity
+    SortPredicatesBySelectivity.completed
   )
 
   override def getTransformer(

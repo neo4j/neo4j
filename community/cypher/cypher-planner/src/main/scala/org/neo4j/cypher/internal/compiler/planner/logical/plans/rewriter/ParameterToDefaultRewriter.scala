@@ -36,8 +36,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
 
-case object ParametersRewrittenToDefault extends StepSequencer.Condition
-
 /**
  * Change Parameters in logical plan to default Type and Size.
  */
@@ -64,10 +62,6 @@ case object ParameterToDefaultRewriter extends LogicalPlanRewriter with StepSequ
     LogicalPlanRewritten,
     // This should happen after finding the final plan + Eager changes effective cardinality
     LogicalPlanContainsEagerIfNeeded
-  )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(
-    ParametersRewrittenToDefault
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

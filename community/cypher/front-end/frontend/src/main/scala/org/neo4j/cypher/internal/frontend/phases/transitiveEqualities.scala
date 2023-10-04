@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -34,8 +35,6 @@ import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
-
-case object TransitiveEqualitiesAppliedToWhereClauses extends StepSequencer.Condition
 
 /**
  * Applies Transitive Property of Equality to WHERE clauses.
@@ -128,16 +127,14 @@ case object transitiveEqualities extends StatementRewriter with StepSequencer.St
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter matches on Equals, so it must run before that is rewritten to In
-    !EqualityRewrittenToIn,
+    !rewriteEqualityToInPredicate.completed,
     // This rewriter matches on And, so it must run before that is rewritten to Ands
     !AndRewrittenToAnds
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(TransitiveEqualitiesAppliedToWhereClauses)
-
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // This Rewriter creates Equals AST nodes.
-    EqualityRewrittenToIn
+    rewriteEqualityToInPredicate.completed
   ) ++ SemanticInfoAvailable // Introduces new AST nodes
 
   override def getTransformer(

@@ -165,14 +165,14 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // Otherwise it might rewrite ambiguous symbols incorrectly, e.g. when a grouping variable is shadowed in for-comprehension.
-    AmbiguousNamesDisambiguated
+    Namespacer.completed
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(StatementCondition(aggregationsAreIsolated))
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Can introduces new ambiguous variable names itself.
-    AmbiguousNamesDisambiguated
+    Namespacer.completed
   ) ++ SemanticInfoAvailable // Adds a WITH clause with no SemanticInfo
 
   override def getTransformer(
