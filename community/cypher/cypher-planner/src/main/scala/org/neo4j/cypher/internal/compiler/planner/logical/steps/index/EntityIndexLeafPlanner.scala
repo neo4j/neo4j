@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingPointIndexType
@@ -36,8 +37,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.IsPointProperty
-import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -62,7 +61,9 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTPointNotNull
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTStringNotNull
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
 import org.neo4j.internal.schema.constraints.SchemaValueType
@@ -278,7 +279,7 @@ object EntityIndexLeafPlanner {
     private def convertToTextScannablePredicate(expr: Expression): Expression = {
       unwrapPartial(expr) match {
         case AsExplicitlyPropertyScannable(scannable) if cypherType == CTString => scannable.expr
-        case expr => PartialPredicate(IsStringProperty(property)(predicate.position), expr)
+        case expr => PartialPredicate(IsTyped(property, CTStringNotNull)(predicate.position), expr)
       }
     }
 
@@ -297,7 +298,7 @@ object EntityIndexLeafPlanner {
     private def convertToPointScannablePredicate(expr: Expression): Expression = {
       unwrapPartial(expr) match {
         case AsExplicitlyPropertyScannable(scannable) if cypherType == CTPoint => scannable.expr
-        case expr => PartialPredicate(IsPointProperty(property)(predicate.position), expr)
+        case expr => PartialPredicate(IsTyped(property, CTPointNotNull)(predicate.position), expr)
       }
     }
 

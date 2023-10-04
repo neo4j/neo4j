@@ -27,7 +27,7 @@ case class PointType(isNullable: Boolean)(val position: InputPosition) extends C
 
   override def hasValueRepresentation: Boolean = true
 
-  override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
+  override def withIsNullable(isNullable: Boolean): PointType = this.copy(isNullable = isNullable)(position)
 
-  def withPosition(newPosition: InputPosition): CypherType = this.copy()(position = newPosition)
+  def withPosition(newPosition: InputPosition): PointType = this.copy()(position = newPosition)
 }

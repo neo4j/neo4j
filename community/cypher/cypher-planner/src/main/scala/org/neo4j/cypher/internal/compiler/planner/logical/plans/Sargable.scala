@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -33,8 +34,6 @@ import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.IsPointProperty
-import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -72,6 +71,8 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.PointType
+import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object WithSeekableArgs {
@@ -452,10 +453,10 @@ object Scannable {
 
   def isEquivalentScannable(predicate1: Expression, predicate2: Expression): Boolean = {
     def explicitlyScannableProperty(predicate: Expression) = predicate match {
-      case AsExplicitlyPropertyScannable(scannable) => Some(scannable.property)
-      case IsStringProperty(property)               => Some(property)
-      case IsPointProperty(property)                => Some(property)
-      case _                                        => None
+      case AsExplicitlyPropertyScannable(scannable)              => Some(scannable.property)
+      case IsTyped(property: LogicalProperty, StringType(false)) => Some(property)
+      case IsTyped(property: LogicalProperty, PointType(false))  => Some(property)
+      case _                                                     => None
     }
 
     explicitlyScannableProperty(predicate1) == explicitlyScannableProperty(predicate2)

@@ -67,9 +67,7 @@ import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.IsPointProperty
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
-import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
@@ -202,7 +200,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case EndsWith(Property(Variable(name), propertyKey), substring) =>
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, substring)
 
-    case IsStringProperty(LogicalProperty(Variable(variable), propertyKey)) =>
+    case IsTyped(LogicalProperty(Variable(variable), propertyKey), StringType(false)) =>
       isStringPropertySelectivity(
         variable,
         labelInfo,
@@ -230,7 +228,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsBoundingBoxSeekable(seekable) =>
       calculateSelectivityForPointBoundingBoxSeekable(seekable, labelInfo, relTypeInfo)
 
-    case IsPointProperty(LogicalProperty(Variable(variable), propertyKey)) =>
+    case IsTyped(LogicalProperty(Variable(variable), propertyKey), PointType(false)) =>
       isPointPropertySelectivity(
         variable,
         labelInfo,

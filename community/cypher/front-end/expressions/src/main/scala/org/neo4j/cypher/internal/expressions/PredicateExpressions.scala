@@ -480,19 +480,3 @@ case class VarLengthUpperBound(override val relName: Variable, override val boun
     position: InputPosition
   ): InequalityExpression = LessThanOrEqual(relationshipExpression, boundExpression)(position)
 }
-
-/**
- * Only used during planning as a partial predicate solved by a TEXT index scan.
- * Doesn't have a corresponding runtime implementation.
- */
-case class IsStringProperty(property: LogicalProperty)(val position: InputPosition) extends BooleanExpression {
-  override def isConstantForQuery: Boolean = property.isConstantForQuery
-}
-
-/**
- * Only used during planning as a partial predicate solved by a POINT index scan.
- * Doesn't have a corresponding runtime implementation.
- */
-case class IsPointProperty(property: LogicalProperty)(val position: InputPosition) extends BooleanExpression {
-  override def isConstantForQuery: Boolean = property.isConstantForQuery
-}

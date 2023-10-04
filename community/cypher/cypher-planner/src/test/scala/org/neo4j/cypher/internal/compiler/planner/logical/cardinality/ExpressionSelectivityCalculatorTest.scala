@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -47,8 +48,6 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
-import org.neo4j.cypher.internal.expressions.IsPointProperty
-import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
@@ -82,7 +81,9 @@ import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTPointNotNull
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTStringNotNull
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
@@ -1644,7 +1645,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("isStringProperty") {
-    val predicate = IsStringProperty(nProp)(InputPosition.NONE)
+    val predicate = IsTyped(nProp, CTStringNotNull)(pos)
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
     val result = calculator(predicate)
     result.factor shouldEqual personTextPropIsNotNullSel
@@ -1668,7 +1669,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("isPointProperty") {
-    val predicate = IsPointProperty(nProp)(InputPosition.NONE)
+    val predicate = IsTyped(nProp, CTPointNotNull)(InputPosition.NONE)
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
     val result = calculator(predicate)
     result.factor shouldEqual personPointPropIsNotNullSel
@@ -1830,7 +1831,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: STRING NOT NULL without label info should use default values") {
-    val predicate = isTyped(nProp, CTPoint.withIsNullable(false))
+    val predicate = isTyped(nProp, CTPointNotNull)
     val calculator = setUpCalculator()
     val result = calculator(predicate)
     result shouldBe DEFAULT_TYPE_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY
@@ -1933,7 +1934,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: STRING NOT NULL should use node property type constraint") {
-    val predicate = isTyped(nProp, CTString.withIsNullable(false))
+    val predicate = isTyped(nProp, CTStringNotNull)
     val calculator = setUpCalculator(
       labelInfo = nIsPersonLabelInfo,
       typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.STRING)))
@@ -1944,7 +1945,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: STRING NOT NULL should use relationship property type constraint") {
-    val predicate = isTyped(rProp, CTString.withIsNullable(false))
+    val predicate = isTyped(rProp, CTStringNotNull)
     val calculator = setUpCalculator(
       relTypeInfo = rFriendsRelTypeInfo,
       typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING)))

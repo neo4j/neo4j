@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
@@ -30,8 +31,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.IsPointProperty
-import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
@@ -50,7 +49,9 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTPointNotNull
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTStringNotNull
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -282,7 +283,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
           Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE))
         )
         val textScan = (
-          Some(PartialPredicate(IsStringProperty(property)(expr.position), expr)),
+          Some(PartialPredicate(IsTyped(property, CTStringNotNull)(expr.position), expr)),
           Set(
             IndexRequirement.SupportsIndexQuery(IndexQueryType.ALL_ENTRIES),
             IndexRequirement.HasType(IndexType.Text)
@@ -316,7 +317,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
           Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE))
         )
         val pointScan = (
-          Some(PartialPredicate(IsPointProperty(property)(expr.position), expr)),
+          Some(PartialPredicate(IsTyped(property, CTPointNotNull)(expr.position), expr)),
           Set(
             IndexRequirement.SupportsIndexQuery(IndexQueryType.ALL_ENTRIES),
             IndexRequirement.HasType(IndexType.Point)
