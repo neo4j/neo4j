@@ -20,27 +20,30 @@
 package org.neo4j.internal.kernel.api.security;
 
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public record LabelPropertySegment(String label, String property, Value value, boolean equals) implements Segment {
+public record PatternSegment(Set<String> labels, String property, Value value, boolean equals) implements Segment {
 
-    public LabelPropertySegment(String property, Value value, boolean equals) {
-        this(null, property, value, equals);
+    private static final Set<String> EMPTY = Set.of();
+
+    public PatternSegment(String property, Value value, boolean equals) {
+        this(EMPTY, property, value, equals);
     }
 
-    public LabelPropertySegment(String label, String property, Value value, boolean equals) {
+    public PatternSegment {
+        Objects.requireNonNull(labels, "labels must not be null");
         Objects.requireNonNull(property, "property must not be null");
         Objects.requireNonNull(value, "value must not be null");
-        this.property = property;
-        this.value = value;
-        this.equals = equals;
-        this.label = (Objects.equals(label, "*") ? null : label);
     }
 
     @Override
     public String toString() {
-        String nodeString = String.format("(n%s)", label == null ? "" : ":" + label);
+        String labelsString =
+                labels.isEmpty() ? "" : labels.stream().sorted().collect(Collectors.joining("|", ":", ""));
+        String nodeString = String.format("(n%s)", labelsString);
         String propertyString = String.format("n.%s", property);
         String predicateString = (this.value == Values.NO_VALUE
                 ? (this.equals ? "IS NULL" : "IS NOT NULL")

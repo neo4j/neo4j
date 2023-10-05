@@ -61,6 +61,10 @@ object SemanticFeature {
     override def name: String = "Match modes"
   }
 
+  case object PropertyValueAccessRules extends SemanticFeature with FeatureToString {
+    override def name: String = "Property value access rules"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -68,7 +72,8 @@ object SemanticFeature {
     UseAsSingleGraphSelector,
     ShowSetting,
     GpmShortestPath,
-    MatchModes
+    MatchModes,
+    PropertyValueAccessRules
   )
 
   def fromString(str: String): SemanticFeature =

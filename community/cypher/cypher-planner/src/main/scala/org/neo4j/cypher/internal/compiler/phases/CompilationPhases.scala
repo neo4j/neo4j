@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates
 import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Deprecations
@@ -231,6 +232,7 @@ object CompilationPhases {
   // Alternative Phase 3
   def systemPipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     RewriteProcedureCalls andThen
+      simplifyPredicates andThen
       AdministrationCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
         UnsupportedSystemCommand

@@ -16,19 +16,38 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
+import org.neo4j.cypher.internal.expressions.BooleanExpression
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NaN
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
@@ -38,6 +57,7 @@ import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnalysisTooling {
@@ -544,6 +564,72 @@ sealed abstract class PrivilegeCommand(
 
   protected def immutableKeywordOrEmptyString(immutable: Boolean): String = if (immutable) " IMMUTABLE" else ""
 
+  private def nanError(l: NaN) =
+    error(s"NaN is not supported for property-based access control.", l.position)
+
+  private val featureCheck =
+    requireFeatureSupport(s"The `$name` clause", SemanticFeature.PropertyValueAccessRules, position)
+
+  private def checkActionTypeForPropertyRules(privilegeType: PrivilegeType): SemanticCheck = {
+    privilegeType match {
+      case GraphPrivilege(action, _) => action match {
+          case ReadAction | TraverseAction | MatchAction => SemanticCheck.success
+          case _ => error(s"${action.name} is not supported for property value access rules.", position)
+        }
+      case _ => error("Not supported.", position) // We should never end up here
+    }
+  }
+
+  private def privilegeQualifierCheckForPropertyRules(qualifiers: List[PrivilegeQualifier]): SemanticCheck = {
+    qualifiers.foldLeft(SemanticCheck.success)((acc, qualifier) => {
+      acc.chain(qualifier match {
+        case PatternQualifier(_, v, e) =>
+          featureCheck chain
+            v.foldSemanticCheck(declareVariable(_, CTNode)) chain
+            SemanticExpressionCheck.check(SemanticContext.Results, e) chain
+            checkActionTypeForPropertyRules(privilege) chain
+            checkExpression(e)
+        case _ => SemanticCheck.success
+      })
+    })
+  }
+
+  private def checkExpression(expression: Expression) = {
+    (expression match {
+      case Not(e: BooleanExpression) => e
+      case e                         => e
+    }) match {
+      case Equals(_: Property, l: NaN)    => nanError(l)
+      case NotEquals(_: Property, l: NaN) => nanError(l)
+      case Equals(p: Property, l: Null) =>
+        error(s"${p.propertyKey.name} = NULL always evaluates to NULL. Use IS NULL instead.", l.position)
+      case NotEquals(p: Property, l: Null) =>
+        error(s"${p.propertyKey.name} <> NULL always evaluates to NULL. Use IS NOT NULL instead.", l.position)
+      case map @ MapExpression(items) if items.size > 1 =>
+        error("Property rules can only contain one property.", map.position)
+      case MapExpression(Seq((pk: PropertyKeyName, l: Null))) =>
+        error(
+          s"{${pk.name}:NULL} always evaluates to NULL. Use WHERE syntax in combination with IS NULL instead.",
+          l.position
+        )
+      case Equals(_: Property, _: Literal) | NotEquals(_: Property, _: Literal) |
+        Equals(_: Property, _: ExplicitParameter) | NotEquals(_: Property, _: ExplicitParameter) |
+        In(_: Property, _ @ListLiteral(Seq(_: Literal))) | In(_: Property, _ @ListLiteral(Seq(_: ExplicitParameter))) |
+        In(_: Property, _: ExplicitParameter) | Not(In(_: Property, _ @ListLiteral(Seq(_: Literal)))) |
+        Not(In(_: Property, _ @ListLiteral(Seq(_: ExplicitParameter)))) |
+        Not(In(_: Property, _: ExplicitParameter)) |
+        IsNull(_: Property) | IsNotNull(_: Property) |
+        MapExpression(Seq((_: PropertyKeyName, _: Literal))) |
+        MapExpression(Seq((_: PropertyKeyName, _: ExplicitParameter))) =>
+        SemanticCheck.success
+      case _ => error(
+          "Only single literal-based predicate expressions are allowed for property-based access control. Expression: " +
+            s"${ExpressionStringifier.apply(_.asCanonicalStringVal).apply(expression)} is not supported.",
+          expression.position
+        )
+    }
+  }
+
   override def semanticCheck: SemanticCheck = {
     val showSettingFeatureCheck = privilege match {
       case DbmsPrivilege(ShowSettingAction) =>
@@ -551,7 +637,7 @@ sealed abstract class PrivilegeCommand(
       case _ => SemanticCheck.success
     }
 
-    privilege match {
+    (privilege match {
       case DbmsPrivilege(u: UnassignableAction) =>
         error(s"`GRANT`, `DENY` and `REVOKE` are not supported for `${u.name}`", position)
       case GraphPrivilege(_, _: DefaultGraphScope) =>
@@ -568,7 +654,7 @@ sealed abstract class PrivilegeCommand(
         }
       case _ => showSettingFeatureCheck chain super.semanticCheck chain
           SemanticState.recordCurrentScope(this)
-    }
+    }) chain privilegeQualifierCheckForPropertyRules(qualifier)
   }
 }
 

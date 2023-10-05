@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -74,7 +75,10 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     this::accept,
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors)));
+                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                    () -> storageReader.allocatePropertyCursor(
+                            cursorContext, storeCursors, EmptyMemoryTracker.INSTANCE) // TODO: add a memorytracker
+                    ));
         }
 
         try {
@@ -124,7 +128,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                             c -> {},
                             storageReader.allocateNodeCursor(cursorContext, storeCursors),
                             storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                            storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors))));
+                            storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                            () -> storageReader.allocatePropertyCursor(
+                                    cursorContext,
+                                    storeCursors,
+                                    EmptyMemoryTracker.INSTANCE) // TODO: add a memorytracker
+                            )));
         }
 
         try {
@@ -179,7 +188,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                             c -> {},
                             storageReader.allocateNodeCursor(cursorContext, storeCursors),
                             storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                            storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors))));
+                            storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                            () -> storageReader.allocatePropertyCursor(
+                                    cursorContext,
+                                    storeCursors,
+                                    EmptyMemoryTracker.INSTANCE) // TODO: add a memorytracker
+                            )));
         }
 
         try {
@@ -230,6 +244,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             return trace(new DefaultPropertyCursor(
                     this::accept,
                     storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
+                    () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
                     nodeCursor,
                     relCursor));
         }
@@ -281,10 +296,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     c -> {},
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
+                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                    () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker));
             var propertyCursor = new DefaultPropertyCursor(
                     c -> {},
                     storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
+                    () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
                     new FullAccessNodeCursor(c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors)),
                     new FullAccessRelationshipScanCursor(
                             c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors)));
@@ -359,7 +376,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                             c -> {},
                             storageReader.allocateNodeCursor(cursorContext, storeCursors),
                             storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                            storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors))));
+                            storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                            () -> storageReader.allocatePropertyCursor(
+                                    cursorContext,
+                                    storeCursors,
+                                    EmptyMemoryTracker.INSTANCE) // TODO: add a memorytracker
+                            )));
         }
 
         try {
@@ -405,12 +427,16 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     c -> {},
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
+                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                    () -> storageReader.allocatePropertyCursor(
+                            cursorContext, storeCursors, EmptyMemoryTracker.INSTANCE) // TODO: add a memorytracker
+                    );
             DefaultRelationshipScanCursor relationshipScanCursor = new DefaultRelationshipScanCursor(
                     c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors), nodeCursor);
             var propertyCursor = new DefaultPropertyCursor(
                     c -> {},
                     storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
+                    () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
                     new FullAccessNodeCursor(c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors)),
                     new FullAccessRelationshipScanCursor(
                             c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors)));
@@ -440,7 +466,10 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     c -> {},
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
+                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                    () -> storageReader.allocatePropertyCursor(
+                            cursorContext, storeCursors, EmptyMemoryTracker.INSTANCE) // TODO: add a memorytracker
+                    );
             if (indexingBehaviour.useNodeIdsInRelationshipTokenIndex()) {
                 var relationshipTraversalCursor = new DefaultRelationshipTraversalCursor(
                         c -> {},

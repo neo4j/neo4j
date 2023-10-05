@@ -213,7 +213,8 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => {
       CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures ++ config.toggledFeatures(Map(
         GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix,
-        GraphDatabaseInternalSettings.query_router_new_stack -> SemanticFeature.UseAsSingleGraphSelector.productPrefix
+        GraphDatabaseInternalSettings.query_router_new_stack -> SemanticFeature.UseAsSingleGraphSelector.productPrefix,
+        GraphDatabaseInternalSettings.property_value_access_rules -> SemanticFeature.PropertyValueAccessRules.productPrefix
       )))
     }
   }

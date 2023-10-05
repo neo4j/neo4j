@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.newapi;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 
+import java.util.function.Supplier;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
@@ -34,6 +36,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.ReadSecurityPropertyProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
@@ -41,6 +44,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.util.EagerDegrees;
@@ -55,6 +59,8 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     final StorageNodeCursor storeCursor;
     private final StorageNodeCursor securityStoreNodeCursor;
     private final StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
+    private StoragePropertyCursor securityPropertyCursor;
+    private final Supplier<StoragePropertyCursor> securityPropertyCursorSupplier;
     private long currentAddedInTx = NO_ID;
     private long single;
     private boolean isSingle;
@@ -64,11 +70,13 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
             CursorPool<DefaultNodeCursor> pool,
             StorageNodeCursor storeCursor,
             StorageNodeCursor securityStoreNodeCursor,
-            StorageRelationshipTraversalCursor securityStoreRelationshipCursor) {
+            StorageRelationshipTraversalCursor securityStoreRelationshipCursor,
+            Supplier<StoragePropertyCursor> securityPropertyCursorSupplier) {
         super(pool);
         this.storeCursor = storeCursor;
         this.securityStoreNodeCursor = securityStoreNodeCursor;
         this.securityStoreRelationshipCursor = securityStoreRelationshipCursor;
+        this.securityPropertyCursorSupplier = securityPropertyCursorSupplier;
     }
 
     void scan(Read read) {
@@ -315,8 +323,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
                 if (!loop) { // No need to check labels for loops. We already know we are allowed since we have the node
                     // loaded in this cursor
                     securityStoreNodeCursor.single(outgoing ? target : source);
-                    if (!securityStoreNodeCursor.next()
-                            || !accessMode.allowsTraverseNode(securityStoreNodeCursor.labels())) {
+                    if (!securityStoreNodeCursor.next() || !allowsTraverse(securityStoreNodeCursor)) {
                         continue;
                     }
                 }
@@ -325,6 +332,36 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
                 }
             }
         }
+    }
+
+    private boolean allowsTraverse(StorageNodeCursor nodeCursor) {
+        if (accessMode.allowsTraverseAllLabels()) {
+            return true;
+        }
+
+        var labels = nodeCursor.labels();
+        if (accessMode.hasTraversePropertyRules()) {
+            var securityProperties = accessMode.getTraverseSecurityProperties(labels);
+            if (securityProperties.notEmpty()) { // This means there are property-based rules affecting THIS NODE
+                var securityPropertyProvider = getSecurityPropertyProvider(nodeCursor, securityProperties);
+                return accessMode.allowsTraverseNodeWithPropertyRules(securityPropertyProvider, labels);
+            }
+        }
+        return accessMode.allowsTraverseNode(labels);
+    }
+
+    private StoragePropertyCursor lazyInitAndGetSecurityPropertyCursor() {
+        if (securityPropertyCursor == null) {
+            securityPropertyCursor = securityPropertyCursorSupplier.get();
+        }
+        return securityPropertyCursor;
+    }
+
+    private ReadSecurityPropertyProvider getSecurityPropertyProvider(
+            StorageNodeCursor storageNodeCursor, IntSet securityProperties) {
+        storageNodeCursor.properties(
+                lazyInitAndGetSecurityPropertyCursor(), PropertySelection.selection(securityProperties.toArray()));
+        return new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropertyCursor);
     }
 
     @Override
@@ -367,7 +404,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     }
 
     boolean allowsTraverse() {
-        return accessMode.allowsTraverseAllLabels() || accessMode.allowsTraverseNode(storeCursor.labels());
+        return allowsTraverse(storeCursor);
     }
 
     boolean allowsTraverseAll() {
@@ -387,6 +424,9 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
             }
             if (securityStoreRelationshipCursor != null) {
                 securityStoreRelationshipCursor.reset();
+            }
+            if (securityPropertyCursor != null) {
+                securityPropertyCursor.reset();
             }
             accessMode = null;
         }
@@ -436,7 +476,9 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     @Override
     public void release() {
-        try (securityStoreRelationshipCursor;
+        final var localSecurityPropertyCursor = securityPropertyCursor;
+        try (localSecurityPropertyCursor;
+                securityStoreRelationshipCursor;
                 securityStoreNodeCursor;
                 storeCursor) {
             // A concise and low-cost way of closing all these cursors w/o the overhead of, say IOUtils.closeAll

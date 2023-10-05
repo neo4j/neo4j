@@ -153,6 +153,8 @@ case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPositi
   )
 
   override def canonicalOperatorSymbol = "<>"
+
+  def switchSides: NotEquals = copy(rhs, lhs)(position)
 }
 
 case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression

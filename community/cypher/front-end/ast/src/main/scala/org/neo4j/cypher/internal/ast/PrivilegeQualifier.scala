@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
 
@@ -37,6 +39,10 @@ final case class LabelQualifier(label: String)(val position: InputPosition) exte
   }
 }
 
+final case class LabelAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): LabelAllQualifier.this.type = this
+}
+
 final case class RelationshipQualifier(reltype: String)(val position: InputPosition) extends GraphPrivilegeQualifier {
 
   override def dup(children: Seq[AnyRef]): RelationshipQualifier.this.type = {
@@ -44,6 +50,10 @@ final case class RelationshipQualifier(reltype: String)(val position: InputPosit
       children.head.asInstanceOf[String]
     )(position).asInstanceOf[this.type]
   }
+}
+
+final case class RelationshipAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): RelationshipAllQualifier.this.type = this
 }
 
 final case class ElementQualifier(value: String)(val position: InputPosition) extends GraphPrivilegeQualifier {
@@ -65,16 +75,23 @@ final case class ElementsAllQualifier()(val position: InputPosition) extends Gra
     Seq(LabelAllQualifier()(position), RelationshipAllQualifier()(position))
 }
 
+final case class PatternQualifier(
+  labelQualifiers: Seq[PrivilegeQualifier],
+  variable: Option[Variable],
+  expression: Expression
+) extends GraphPrivilegeQualifier {
+
+  override def dup(children: Seq[AnyRef]): PatternQualifier.this.type = {
+    PatternQualifier(
+      children.head.asInstanceOf[Seq[PrivilegeQualifier]],
+      children(1).asInstanceOf[Option[Variable]],
+      children(2).asInstanceOf[Expression]
+    ).asInstanceOf[this.type]
+  }
+}
+
 final case class AllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
   override def dup(children: Seq[AnyRef]): AllQualifier.this.type = this
-}
-
-final case class LabelAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): LabelAllQualifier.this.type = this
-}
-
-final case class RelationshipAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): RelationshipAllQualifier.this.type = this
 }
 
 // Database qualifiers

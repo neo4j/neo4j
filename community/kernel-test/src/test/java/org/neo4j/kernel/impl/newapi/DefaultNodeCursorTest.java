@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
@@ -51,7 +53,9 @@ class DefaultNodeCursorTest {
 
         var storageCursor = mock(StorageNodeCursor.class);
         var storageRelCursor = mock(StorageRelationshipTraversalCursor.class);
-        try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, storageCursor, storageRelCursor)) {
+        Supplier<StoragePropertyCursor> storagePropertyCursorSupplier = () -> mock(StoragePropertyCursor.class);
+        try (var defaultCursor = new DefaultNodeCursor(
+                (c) -> {}, storageCursor, storageCursor, storageRelCursor, storagePropertyCursorSupplier)) {
             defaultCursor.single(NODEID, read);
             assertTrue(defaultCursor.next());
             assertFalse(defaultCursor.hasLabel());
@@ -67,7 +71,9 @@ class DefaultNodeCursorTest {
 
         var storageCursor = mock(StorageNodeCursor.class);
         var storageRelCursor = mock(StorageRelationshipTraversalCursor.class);
-        try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, storageCursor, storageRelCursor)) {
+        Supplier<StoragePropertyCursor> storagePropertyCursorSupplier = () -> mock(StoragePropertyCursor.class);
+        try (var defaultCursor = new DefaultNodeCursor(
+                (c) -> {}, storageCursor, storageCursor, storageRelCursor, storagePropertyCursorSupplier)) {
             defaultCursor.single(NODEID, read);
             assertTrue(defaultCursor.next());
             assertFalse(defaultCursor.hasLabel(7));

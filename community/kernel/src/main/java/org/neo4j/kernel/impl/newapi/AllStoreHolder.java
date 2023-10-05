@@ -590,7 +590,8 @@ public abstract class AllStoreHolder extends Read {
     }
 
     Iterator<IndexDescriptor> indexesGetForLabel(StorageSchemaReader reader, int labelId) {
-        if (getAccessMode().allowsTraverseNode(labelId)) {
+        AccessMode accessMode = getAccessMode();
+        if (accessMode.allowsTraverseNode(labelId) || accessMode.hasApplicableTraverseAllowPropertyRules(labelId)) {
             Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel(labelId);
 
             if (hasTxStateWithChanges()) {

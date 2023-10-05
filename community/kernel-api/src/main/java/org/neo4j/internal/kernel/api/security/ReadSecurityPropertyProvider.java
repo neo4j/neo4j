@@ -19,9 +19,32 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.values.storable.Value;
 
 public interface ReadSecurityPropertyProvider {
     IntObjectMap<Value> getSecurityProperties();
+
+    class LazyReadSecurityPropertyProvider implements ReadSecurityPropertyProvider {
+        private final StoragePropertyCursor securityPropCursor;
+        private MutableIntObjectMap<Value> properties;
+
+        public LazyReadSecurityPropertyProvider(StoragePropertyCursor securityPropCursor) {
+            this.securityPropCursor = securityPropCursor;
+        }
+
+        @Override
+        public IntObjectMap<Value> getSecurityProperties() {
+            if (properties == null) {
+                properties = IntObjectMaps.mutable.empty();
+                while (securityPropCursor.next()) {
+                    properties.put(securityPropCursor.propertyKey(), securityPropCursor.propertyValue());
+                }
+            }
+            return properties;
+        }
+    }
 }

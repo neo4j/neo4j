@@ -5848,7 +5848,7 @@ PRIVILEGE_TYPE allPrivilege(Token start, boolean immutable) throws Exception:
     )
 }
 
-PRIVILEGE_TYPE createPrivilege(Token start, boolean immutable):
+PRIVILEGE_TYPE createPrivilege(Token start, boolean immutable) throws Exception:
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
@@ -5955,7 +5955,7 @@ PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
     ) { return privilege; }
 }
 
-PRIVILEGE_TYPE setPrivilege(Token start, boolean immutable):
+PRIVILEGE_TYPE setPrivilege(Token start, boolean immutable) throws Exception:
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
@@ -6128,7 +6128,7 @@ List<String> globs():
     }
 }
 
-PRIVILEGE_TYPE qualifiedGraphPrivilegesWithProperty(Token start, boolean immutable):
+PRIVILEGE_TYPE qualifiedGraphPrivilegesWithProperty(Token start, boolean immutable) throws Exception:
 {
     ADMINISTRATION_ACTION action = null;
     GRAPH_SCOPE graph = null;
@@ -6147,7 +6147,7 @@ PRIVILEGE_TYPE qualifiedGraphPrivilegesWithProperty(Token start, boolean immutab
     }
 }
 
-PRIVILEGE_TYPE qualifiedGraphPrivileges(Token start, boolean immutable):
+PRIVILEGE_TYPE qualifiedGraphPrivileges(Token start, boolean immutable) throws Exception:
 {
     ADMINISTRATION_ACTION action = null;
     GRAPH_SCOPE graph = null;
@@ -6191,11 +6191,13 @@ PRIVILEGE_RESOURCE propertyResource():
     }
 }
 
-List<PRIVILEGE_QUALIFIER> graphQualifier():
+List<PRIVILEGE_QUALIFIER> graphQualifier() throws Exception:
 {
     List<PRIVILEGE_QUALIFIER> qualifier = new ArrayList<>();
-    List<String> names = null;
     Token n = null;
+    VARIABLE v = null;
+    List<StringPos<POS>> labels = null;
+    EXPRESSION propertyRuleExpression = null;
 }
 {
     (
@@ -6204,13 +6206,30 @@ List<PRIVILEGE_QUALIFIER> graphQualifier():
             | ( n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } ( <COMMA> n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } )* )
         )
         | (<NODE> | <NODES>) (
-            <TIMES> { qualifier.add( astFactory.allLabelsQualifier( pos(token) ) ); }
-            | ( n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } ( <COMMA> n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } )* )
-        )
+             <TIMES> { qualifier.add( astFactory.allLabelsQualifier( pos(token) ) ); }
+             | ( n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } ( <COMMA> n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } )* )
+         )
         | (<ELEMENT> | <ELEMENTS>) (
             <TIMES> { qualifier.add( astFactory.allElementsQualifier( pos(token) ) ); }
             | ( n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } ( <COMMA> n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } )* )
         )
+        | <FOR> <LPAREN> (v=Variable())? (labels=LabelOrRelTypes())?
+            (
+                LOOKAHEAD(<RPAREN>) <RPAREN> <WHERE> propertyRuleExpression=Expression()
+                | LOOKAHEAD(<WHERE>) <WHERE> propertyRuleExpression=Expression() <RPAREN>
+                | propertyRuleExpression=MapLiteral() <RPAREN>
+            )
+            {
+    List<PRIVILEGE_QUALIFIER> labelQualifiers = new ArrayList<>();
+    if ( labels == null ) {
+        labelQualifiers.add(astFactory.allLabelsQualifier( pos(token) ));
+    } else {
+        for(var label: labels) {
+          labelQualifiers.add(astFactory.labelQualifier(label.pos, label.string));
+        }
+    }
+    qualifier.add(astFactory.patternQualifier( labelQualifiers, v, propertyRuleExpression));
+}
     )?
     {
         if ( qualifier.isEmpty() ) {

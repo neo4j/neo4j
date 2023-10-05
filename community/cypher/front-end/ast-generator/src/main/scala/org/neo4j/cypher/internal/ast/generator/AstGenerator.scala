@@ -188,6 +188,7 @@ import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ParsedAsYield
+import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
@@ -572,8 +573,8 @@ object AstGenerator {
  * Implements instances of Gen[T] for all query ast nodes
  * Generated queries are syntactically (but not semantically) valid
  */
+//noinspection ScalaWeakerAccess
 class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[String]] = None) {
-
   // HELPERS
   // ==========================================================================
 
@@ -2295,6 +2296,59 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     )
   } yield qualifier
 
+  def _propertyRuleGraphQualifier: Gen[List[GraphPrivilegeQualifier]] = for {
+    multiQualifiers <- oneOrMore(_identifier)
+    variable <- _variable
+    expression <- _propertyRuleExpression(variable)
+    qualifier <- oneOf(
+      PatternQualifier(multiQualifiers.map(LabelQualifier(_)(pos)), Some(variable), expression),
+      PatternQualifier(List(LabelAllQualifier()(pos)), Some(variable), expression)
+    )
+  } yield List(qualifier)
+
+  def _propertyRuleExpression(variable: Variable): Gen[Expression] = for {
+    propertyName <- _propertyKeyName
+    rhs <- _propertyRuleLiteral
+    v <- _variable
+    pred <- oneOf(
+      _propertyRuleUnaryPredicate(Property(variable, propertyName)(pos)),
+      _propertyRuleComparisonPredicate(Property(variable, propertyName)(pos), rhs),
+      _propertyRuleUnaryPredicate(Property(v, propertyName)(pos)),
+      _propertyRuleComparisonPredicate(Property(v, propertyName)(pos), rhs)
+    )
+  } yield pred
+
+  def _propertyRuleLiteral: Gen[Expression] = {
+    oneOf(
+      lzy(_stringLit),
+      lzy(_booleanLit),
+      lzy(_signedDecIntLit),
+      lzy(_signedHexIntLit),
+      lzy(_signedOctIntLitOldSyntax),
+      lzy(_signedOctIntLit),
+      lzy(_doubleLit),
+      lzy(_parameter),
+      lzy(_infinityLit),
+      lzy(_nanLit)
+    )
+  }
+
+  def _propertyRuleComparisonPredicate(l: Expression, r: Expression): Gen[Expression] = oneOf(
+    Equals(l, r)(pos),
+    Not(Equals(l, r)(pos))(pos),
+    NotEquals(l, r)(pos),
+    Not(NotEquals(l, r)(pos))(pos),
+    In(l, ListLiteral(Seq(r))(pos))(pos),
+    Not(In(l, ListLiteral(Seq(r))(pos))(pos))(pos)
+  )
+
+  def _propertyRuleUnaryPredicate(p: Property): Gen[Expression] = oneOf(
+    IsNull(p)(pos),
+    Not(IsNull(p)(pos))(pos),
+    IsNotNull(p)(pos),
+    Not(IsNotNull(p)(pos))(pos)
+  )
+
   def _graphQualifierAndResource(graphAction: GraphAction)
     : Gen[(List[GraphPrivilegeQualifier], Option[ActionResource])] =
     if (graphAction == AllGraphAction) {
@@ -2309,15 +2363,25 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         resourceNames <- oneOrMore(_identifier)
         resource <- oneOf(LabelsResource(resourceNames)(pos), AllLabelResource()(pos))
       } yield (List(LabelAllQualifier()(pos)), Some(resource))
-    } else if (
-      graphAction == TraverseAction || graphAction == CreateElementAction || graphAction == DeleteElementAction
-    ) {
-      // TRAVERSE, CREATE/DELETE ELEMENT have any graph qualifier and no resource
+    } else if (graphAction == TraverseAction) {
+      // TRAVERSE has either a _graphQualifier or a _propertyRuleGraphQualifier, and no resource
+      for {
+        qualifier <- oneOf(_graphQualifier, _propertyRuleGraphQualifier)
+      } yield (qualifier, None)
+    } else if (graphAction == CreateElementAction || graphAction == DeleteElementAction) {
+      // CREATE/DELETE ELEMENT have any graph qualifier and no resource
       for {
         qualifier <- _graphQualifier
       } yield (qualifier, None)
+    } else if (graphAction == ReadAction || graphAction == MatchAction) {
+      // READ, MATCH have either a _graphQualifier or a _propertyRuleGraphQualifier, and property resource
+      for {
+        qualifier <- oneOf(_graphQualifier, _propertyRuleGraphQualifier)
+        resourceNames <- oneOrMore(_identifier)
+        resource <- oneOf(PropertiesResource(resourceNames)(pos), AllPropertyResource()(pos))
+      } yield (qualifier, Some(resource))
     } else {
-      // READ, MATCH, MERGE, SET PROPERTY have any graph qualifier and property resource
+      // MERGE, SET PROPERTY have any graph qualifier and property resource
       for {
         qualifier <- _graphQualifier
         resourceNames <- oneOrMore(_identifier)

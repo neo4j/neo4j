@@ -1195,7 +1195,17 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL allLabelsQualifier(NULL p) {
+        return null;
+    }
+
+    @Override
     public NULL relationshipQualifier(NULL p, String relationshipType) {
+        return null;
+    }
+
+    @Override
+    public NULL allRelationshipsQualifier(NULL p) {
         return null;
     }
 
@@ -1210,12 +1220,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL allLabelsQualifier(NULL p) {
-        return null;
-    }
-
-    @Override
-    public NULL allRelationshipsQualifier(NULL p) {
+    public NULL patternQualifier(List<NULL> qualifiers, NULL variable, NULL expression) {
         return null;
     }
 

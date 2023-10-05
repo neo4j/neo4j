@@ -195,6 +195,7 @@ import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ParsedAsYield
+import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
@@ -2488,16 +2489,35 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
 
   override def labelQualifier(p: InputPosition, label: String): PrivilegeQualifier = LabelQualifier(label)(p)
 
+  override def allLabelsQualifier(p: InputPosition): PrivilegeQualifier = LabelAllQualifier()(p)
+
   override def relationshipQualifier(p: InputPosition, relationshipType: String): PrivilegeQualifier =
     RelationshipQualifier(relationshipType)(p)
+
+  override def allRelationshipsQualifier(p: InputPosition): PrivilegeQualifier = RelationshipAllQualifier()(p)
 
   override def elementQualifier(p: InputPosition, name: String): PrivilegeQualifier = ElementQualifier(name)(p)
 
   override def allElementsQualifier(p: InputPosition): PrivilegeQualifier = ElementsAllQualifier()(p)
 
-  override def allLabelsQualifier(p: InputPosition): PrivilegeQualifier = LabelAllQualifier()(p)
+  override def patternQualifier(
+    qualifiers: util.List[PrivilegeQualifier],
+    variable: Variable,
+    expression: Expression
+  ): PrivilegeQualifier = {
+    def switchSides(expression: Expression): Expression =
+      expression match {
+        case eq @ Equals(_, _: Property)     => eq.switchSides
+        case neq @ NotEquals(_, _: Property) => neq.switchSides
+        case _                               => expression
+      }
 
-  override def allRelationshipsQualifier(p: InputPosition): PrivilegeQualifier = RelationshipAllQualifier()(p)
+    val e = expression match {
+      case notExpression @ Not(inner) => Not(switchSides(inner))(notExpression.position)
+      case e                          => switchSides(e)
+    }
+    PatternQualifier(qualifiers.asScala.toList, Option(variable), e)
+  }
 
   override def allQualifier(): util.List[PrivilegeQualifier] = {
     val list = new util.ArrayList[PrivilegeQualifier]()

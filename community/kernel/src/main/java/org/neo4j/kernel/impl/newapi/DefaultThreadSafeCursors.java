@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -63,7 +64,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                 },
                 storageReader.allocateNodeCursor(cursorContext, storeCursors),
                 storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors)));
+                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, EmptyMemoryTracker.INSTANCE)));
     }
 
     @Override
@@ -133,6 +135,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
+                () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
                 allocateFullAccessNodeCursor(cursorContext),
                 allocateFullAccessRelationshipScanCursor(cursorContext)));
     }

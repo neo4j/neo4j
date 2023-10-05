@@ -850,8 +850,18 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL allLabelsQualifier(NULL p) {
+        throw new UnsupportedOperationException("allLabelsQualifier is not a literal");
+    }
+
+    @Override
     public NULL relationshipQualifier(NULL p, String relationshipType) {
         throw new UnsupportedOperationException("relationshipQualifier is not a literal");
+    }
+
+    @Override
+    public NULL allRelationshipsQualifier(NULL p) {
+        throw new UnsupportedOperationException("allRelationshipsQualifier is not a literal");
     }
 
     @Override
@@ -865,13 +875,8 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL allLabelsQualifier(NULL p) {
-        throw new UnsupportedOperationException("allLabelsQualifier is not a literal");
-    }
-
-    @Override
-    public NULL allRelationshipsQualifier(NULL p) {
-        throw new UnsupportedOperationException("allRelationshipsQualifier is not a literal");
+    public NULL patternQualifier(List<NULL> qualifiers, Object variable, Object where) {
+        throw new UnsupportedOperationException("patternQualifier is not a literal");
     }
 
     @Override

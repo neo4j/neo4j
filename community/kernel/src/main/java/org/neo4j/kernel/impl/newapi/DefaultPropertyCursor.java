@@ -26,11 +26,13 @@ import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.util.Iterator;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.ReadSecurityPropertyProvider;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -45,6 +47,8 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     private static final int NODE = -2;
     private Read read;
     private final StoragePropertyCursor storeCursor;
+    private StoragePropertyCursor securityPropertyCursor;
+    private final Supplier<StoragePropertyCursor> securityPropertyCursorSupplier;
     private final FullAccessNodeCursor securityNodeCursor;
     private final FullAccessRelationshipScanCursor securityRelCursor;
     private EntityState propertiesState;
@@ -57,14 +61,17 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     private int type = NO_TOKEN;
     private boolean addedInTx;
     private PropertySelection selection;
+    private ReadSecurityPropertyProvider securityPropertyProvider;
 
     DefaultPropertyCursor(
             CursorPool<DefaultPropertyCursor> pool,
             StoragePropertyCursor storeCursor,
+            Supplier<StoragePropertyCursor> securityPropertyCursorSupplier,
             FullAccessNodeCursor securityNodeCursor,
             FullAccessRelationshipScanCursor securityRelCursor) {
         super(pool);
         this.storeCursor = storeCursor;
+        this.securityPropertyCursorSupplier = securityPropertyCursorSupplier;
         this.securityNodeCursor = securityNodeCursor;
         this.securityRelCursor = securityRelCursor;
     }
@@ -75,8 +82,10 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         init(selection, read);
         this.type = NODE;
         storeCursor.initNodeProperties(reference, selection);
+        ensureAccessMode();
+        initSecurityPropertyProvision(
+                (propertyCursor, propertySelection) -> propertyCursor.initNodeProperties(reference, propertySelection));
         this.entityReference = nodeReference;
-
         initializeNodeTransactionState(nodeReference, read);
     }
 
@@ -89,11 +98,39 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.addedInTx = nodeCursor.currentNodeIsAddedInTx();
         if (!addedInTx) {
             storeCursor.initNodeProperties(nodeCursor.storeCursor, selection);
+            ensureAccessMode();
+            initSecurityPropertyProvision((propertyCursor, propertySelection) ->
+                    propertyCursor.initNodeProperties(nodeCursor.storeCursor, propertySelection));
         } else {
             storeCursor.initNodeProperties(NULL_REFERENCE, ALL_PROPERTIES);
+            securityPropertyProvider = null;
         }
 
         initializeNodeTransactionState(entityReference, read);
+    }
+
+    void initSecurityPropertyProvision(BiConsumer<StoragePropertyCursor, PropertySelection> initNodeProperties) {
+        securityPropertyProvider = null;
+        if (securityPropertyCursorSupplier == null || !accessMode.hasPropertyReadRules()) {
+            return;
+        }
+        // We have property read rules
+        PropertySelection securityProperties = accessMode.getSecurityPropertySelection(selection);
+        if (securityProperties == null) {
+            // The property read rules were not relevant to this `selection`.
+            return;
+        }
+        // We have RELEVANT property read rules (i.e. they pertain to the `selection`)
+        initNodeProperties.accept(lazyInitAndGetSecurityPropertyCursor(), securityProperties);
+        securityPropertyProvider =
+                new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropertyCursor);
+    }
+
+    private StoragePropertyCursor lazyInitAndGetSecurityPropertyCursor() {
+        if (securityPropertyCursor == null) {
+            securityPropertyCursor = securityPropertyCursorSupplier.get();
+        }
+        return securityPropertyCursor;
     }
 
     private void initializeNodeTransactionState(long nodeReference, Read read) {
@@ -160,10 +197,25 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.type = NO_TOKEN;
     }
 
+    boolean allowed(int[] propertyKeys, long[] labels) {
+        ensureAccessMode();
+        if (isNode()) {
+            return accessMode.allowsReadNodeProperties(
+                    () -> Labels.from(labels), propertyKeys, securityPropertyProvider);
+        }
+
+        for (int propertyKey : propertyKeys) {
+            if (!accessMode.allowsReadRelationshipProperty(this, propertyKey)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     boolean allowed(int propertyKey) {
         if (isNode()) {
             ensureAccessMode();
-            return accessMode.allowsReadNodeProperty(this, propertyKey);
+            return accessMode.allowsReadNodeProperty(this, propertyKey, securityPropertyProvider);
         } else {
             ensureAccessMode();
             return accessMode.allowsReadRelationshipProperty(this, propertyKey);
@@ -207,6 +259,10 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             txStateValue = null;
             read = null;
             storeCursor.reset();
+            if (securityPropertyCursor != null) {
+                securityPropertyCursor.reset();
+            }
+            securityPropertyProvider = null;
             accessMode = null;
         }
         super.closeInternal();
@@ -296,6 +352,9 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     public void release() {
         if (storeCursor != null) {
             storeCursor.close();
+        }
+        if (securityPropertyCursor != null) {
+            securityPropertyCursor.close();
         }
         if (securityNodeCursor != null) {
             securityNodeCursor.close();

@@ -115,13 +115,14 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
             return false;
         }
 
-        boolean allowed = true;
         long[] labels = securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
-        for (int prop : propertyIds) {
-            allowed &= accessMode.allowsReadNodeProperty(() -> Labels.from(labels), prop);
-        }
 
-        return allowed;
+        if (accessMode.hasPropertyReadRules(propertyIds)) {
+            securityNodeCursor.properties(propertyCursor, PropertySelection.selection(propertyIds));
+            return propertyCursor.allowed(propertyIds, labels);
+        } else {
+            return accessMode.allowsReadNodeProperties(() -> Labels.from(labels), propertyIds);
+        }
     }
 
     @Override

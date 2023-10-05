@@ -128,6 +128,7 @@ import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ParsedAsYield
+import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
@@ -225,11 +226,21 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.escapeName
 import org.neo4j.cypher.internal.expressions.CoerceTo
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 
@@ -1407,7 +1418,7 @@ object Prettifier {
     }
   }
 
-  def extractQualifierPart(qualifier: List[PrivilegeQualifier]): Option[String] = {
+  private def extractQualifierPart(qualifier: List[PrivilegeQualifier]): Option[String] = {
     def stringifyQualifiedName(glob: String) =
       glob.split('.').map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
 
@@ -1421,6 +1432,55 @@ object Prettifier {
       case SettingQualifier(glob)      => stringifyQualifiedName(glob)
     }
 
+    def extractPropertyRuleExpression(
+      labelQualifiers: Seq[PrivilegeQualifier],
+      variable: Option[Variable],
+      expression: Expression
+    ) = {
+      val labels = Some(labelQualifiers
+        .flatMap {
+          case lq: LabelQualifier => Some(ExpressionStringifier.backtick(lq.label))
+          case _                  => None
+        }.mkString("|"))
+        .filterNot(_.equals(""))
+        .map(labels => s":$labels")
+        .getOrElse("")
+
+      val variableNameString = variable.map(v => ExpressionStringifier.backtick(v.name))
+
+      def propertyAndWherePrettifier(e: Expression) =
+        s"(${variableNameString.getOrElse("")}$labels) WHERE ${ExpressionStringifier.apply(e => e.asCanonicalStringVal).apply(e)}"
+
+      def propertyInNodePrettifier(propertyKeyName: PropertyKeyName, value: Expression) =
+        s"(${variableNameString.getOrElse("n")}$labels) " +
+          s"WHERE ${variableNameString.getOrElse("n")}.${ExpressionStringifier.backtick(propertyKeyName.name)} = " +
+          s"${ExpressionStringifier.apply(value => value.asCanonicalStringVal).apply(value)}"
+
+      expression match {
+        case _ @MapExpression(Seq((propertyKeyName, value))) => propertyInNodePrettifier(propertyKeyName, value)
+        case e: Equals                                       => propertyAndWherePrettifier(e)
+        case e: NotEquals                                    => propertyAndWherePrettifier(e)
+        case e: IsNull                                       => propertyAndWherePrettifier(e)
+        case e: IsNotNull                                    => propertyAndWherePrettifier(e)
+        case e @ In(_, _ @ListLiteral(Seq(_)))               => propertyAndWherePrettifier(e)
+        case e @ In(_, _: ExplicitParameter)                 => propertyAndWherePrettifier(e)
+        case e @ Not(innerExpression) => innerExpression match {
+            case _: Equals                        => propertyAndWherePrettifier(e)
+            case _: NotEquals                     => propertyAndWherePrettifier(e)
+            case _: IsNull                        => propertyAndWherePrettifier(e)
+            case _: IsNotNull                     => propertyAndWherePrettifier(e)
+            case _ @In(_, _ @ListLiteral(Seq(_))) => propertyAndWherePrettifier(e)
+            case e @ In(_, _: ExplicitParameter)  => propertyAndWherePrettifier(e)
+            case _ => throw new IllegalStateException(
+                s"Unknown expression: ${ExpressionStringifier.apply(e => e.asCanonicalStringVal).apply(e)}"
+              )
+          }
+        case e => throw new IllegalStateException(
+            s"Unknown expression: ${ExpressionStringifier.apply(e => e.asCanonicalStringVal).apply(e)}"
+          )
+      }
+    }
+
     qualifier match {
       case l @ LabelQualifier(_) :: Nil           => Some("NODE " + l.map(stringify).mkString(", "))
       case l @ LabelQualifier(_) :: _             => Some("NODES " + l.map(stringify).mkString(", "))
@@ -1430,18 +1490,20 @@ object Prettifier {
       case RelationshipAllQualifier() :: Nil      => Some("RELATIONSHIPS *")
       case elems @ ElementQualifier(_) :: _       => Some("ELEMENTS " + elems.map(stringify).mkString(", "))
       case ElementsAllQualifier() :: Nil          => Some("ELEMENTS *")
-      case UserQualifier(user) :: Nil             => Some("(" + escapeName(user) + ")")
-      case users @ UserQualifier(_) :: _          => Some("(" + users.map(stringify).mkString(", ") + ")")
-      case UserAllQualifier() :: Nil              => Some("(*)")
-      case AllQualifier() :: Nil                  => None
-      case AllDatabasesQualifier() :: Nil         => None
-      case p @ ProcedureQualifier(_) :: _         => Some(p.map(stringify).mkString(", "))
-      case ProcedureAllQualifier() :: Nil         => Some("*")
-      case p @ FunctionQualifier(_) :: _          => Some(p.map(stringify).mkString(", "))
-      case FunctionAllQualifier() :: Nil          => Some("*")
-      case p @ SettingQualifier(_) :: _           => Some(p.map(stringify).mkString(", "))
-      case SettingAllQualifier() :: Nil           => Some("*")
-      case _                                      => Some("<unknown>")
+      case PatternQualifier(lqs, v, e) :: Nil =>
+        Some(s"FOR ${extractPropertyRuleExpression(lqs, v, e)}")
+      case UserQualifier(user) :: Nil     => Some("(" + escapeName(user) + ")")
+      case users @ UserQualifier(_) :: _  => Some("(" + users.map(stringify).mkString(", ") + ")")
+      case UserAllQualifier() :: Nil      => Some("(*)")
+      case AllQualifier() :: Nil          => None
+      case AllDatabasesQualifier() :: Nil => None
+      case p @ ProcedureQualifier(_) :: _ => Some(p.map(stringify).mkString(", "))
+      case ProcedureAllQualifier() :: Nil => Some("*")
+      case p @ FunctionQualifier(_) :: _  => Some(p.map(stringify).mkString(", "))
+      case FunctionAllQualifier() :: Nil  => Some("*")
+      case p @ SettingQualifier(_) :: _   => Some(p.map(stringify).mkString(", "))
+      case SettingAllQualifier() :: Nil   => Some("*")
+      case _                              => Some("<unknown>")
     }
   }
 

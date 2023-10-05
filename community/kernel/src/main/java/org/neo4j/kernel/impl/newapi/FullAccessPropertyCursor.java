@@ -24,7 +24,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 
 class FullAccessPropertyCursor extends DefaultPropertyCursor {
     FullAccessPropertyCursor(CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor) {
-        super(pool, storeCursor, null, null);
+        super(pool, storeCursor, null, null, null);
     }
 
     @Override

@@ -559,15 +559,18 @@ public interface ASTFactory<
 
     PRIVILEGE_QUALIFIER labelQualifier(POS p, String label);
 
+    PRIVILEGE_QUALIFIER allLabelsQualifier(POS p);
+
     PRIVILEGE_QUALIFIER relationshipQualifier(POS p, String relationshipType);
+
+    PRIVILEGE_QUALIFIER allRelationshipsQualifier(POS p);
 
     PRIVILEGE_QUALIFIER elementQualifier(POS p, String name);
 
     PRIVILEGE_QUALIFIER allElementsQualifier(POS p);
 
-    PRIVILEGE_QUALIFIER allLabelsQualifier(POS p);
-
-    PRIVILEGE_QUALIFIER allRelationshipsQualifier(POS p);
+    PRIVILEGE_QUALIFIER patternQualifier(
+            List<PRIVILEGE_QUALIFIER> qualifiers, VARIABLE variable, EXPRESSION expression);
 
     List<PRIVILEGE_QUALIFIER> allQualifier();
 
