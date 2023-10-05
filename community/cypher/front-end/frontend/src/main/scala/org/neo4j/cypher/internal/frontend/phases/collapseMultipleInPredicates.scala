@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityTo
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.collection.immutable.Iterable
@@ -39,7 +40,7 @@ import scala.collection.immutable.Iterable
  * MATCH (n) WHERE n.prop IN [1,2,3] OR n.prop IN [4,5,6]
  * -> MATCH (n) WHERE n.prop IN [1,2,3,4,5,6]
  */
-case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step
+case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
   private case class InValue(lhs: Expression, expr: Expression)
 

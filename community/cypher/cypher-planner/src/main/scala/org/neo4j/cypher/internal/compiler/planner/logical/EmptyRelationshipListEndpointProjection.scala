@@ -37,12 +37,14 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.topDown
 
 /**
  * Rename repeated var-length relationships if they cannot get solved by ProjectEndpoints.
  */
 case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = {

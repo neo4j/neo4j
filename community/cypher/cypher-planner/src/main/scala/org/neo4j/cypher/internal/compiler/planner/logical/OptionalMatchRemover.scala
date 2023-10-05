@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
@@ -67,7 +68,7 @@ import scala.util.control.TailCalls.TailRec
  *
  * Move pattern parts of the optional match into a WHERE clause in the optional match, if possible.
  */
-case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer.Step
+case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)

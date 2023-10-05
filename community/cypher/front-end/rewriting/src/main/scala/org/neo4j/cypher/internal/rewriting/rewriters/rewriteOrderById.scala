@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -51,7 +52,7 @@ case class rewriteOrderById(semanticState: SemanticState) extends Rewriter {
 
 }
 
-case object rewriteOrderById extends Step with ASTRewriterFactory {
+case object rewriteOrderById extends Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set()
 

@@ -35,11 +35,12 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.unwrapParenthesizedPath
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.immutable.ListSet
 
-case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequencer.Step
+case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(

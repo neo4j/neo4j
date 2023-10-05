@@ -27,11 +27,12 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-case object replaceLiteralDynamicPropertyLookups extends Step with ASTRewriterFactory {
+case object replaceLiteralDynamicPropertyLookups extends Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

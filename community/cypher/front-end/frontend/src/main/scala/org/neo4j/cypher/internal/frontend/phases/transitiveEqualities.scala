@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 
@@ -42,7 +43,8 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
  * Given a where clause, `WHERE a.prop = b.prop AND b.prop = 42` we rewrite the query
  * into `WHERE a.prop = 42 AND b.prop = 42`
  */
-case object transitiveEqualities extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object transitiveEqualities extends StatementRewriter with StepSequencer.Step with DefaultPostCondition
+    with PlanPipelineTransformerFactory {
 
   override def instance(from: BaseState, ignored: BaseContext): Rewriter = transitiveEqualitiesRewriter
 

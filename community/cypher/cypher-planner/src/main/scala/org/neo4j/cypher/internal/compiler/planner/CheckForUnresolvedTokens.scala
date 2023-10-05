@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
  * Find labels, relationships types and property keys that do not exist in the db and issue warnings.
  */
 case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {

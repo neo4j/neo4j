@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.util.PredicateOrdering
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -56,6 +57,7 @@ import scala.collection.immutable.ListSet
  */
 case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState]
     with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING

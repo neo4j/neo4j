@@ -37,10 +37,11 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case object normalizePredicates extends StepSequencer.Step with ASTRewriterFactory {
+case object normalizePredicates extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // unnamed pattern cannot be rewritten, so they need to be handled first

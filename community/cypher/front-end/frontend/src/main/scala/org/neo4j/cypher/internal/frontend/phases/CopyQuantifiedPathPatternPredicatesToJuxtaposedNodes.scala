@@ -25,9 +25,10 @@ import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpre
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 
 case object CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
-    extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+    extends StatementRewriter with StepSequencer.Step with DefaultPostCondition with PlanPipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     ExpressionsHaveComputedDependencies,

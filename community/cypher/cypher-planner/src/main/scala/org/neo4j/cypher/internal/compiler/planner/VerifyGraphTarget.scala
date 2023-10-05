@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.kernel.database.DatabaseReferenceRepository
@@ -59,6 +60,7 @@ import scala.jdk.javaapi.OptionConverters.toScala
  * performed by semantic analysis.
  */
 case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = CompilationPhase.LOGICAL_PLANNING

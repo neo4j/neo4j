@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
@@ -38,7 +39,8 @@ import org.neo4j.cypher.internal.util.topDown
  * a user may omit these in their query whilst the planner expects them, this rewriter will therefore add
  * a filler Node in
  */
-case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step with ASTRewriterFactory {
+case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step with DefaultPostCondition
+    with ASTRewriterFactory {
 
   override def getRewriter(
     semanticState: SemanticState,

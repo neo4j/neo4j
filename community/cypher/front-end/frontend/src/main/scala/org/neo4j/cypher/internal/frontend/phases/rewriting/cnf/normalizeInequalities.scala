@@ -29,9 +29,10 @@ import org.neo4j.cypher.internal.rewriting.conditions.OrRewrittenToOrs
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.topDown
 
-case object normalizeInequalities extends Rewriter with CnfPhase {
+case object normalizeInequalities extends Rewriter with CnfPhase with DefaultPostCondition {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 

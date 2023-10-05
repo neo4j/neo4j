@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -47,7 +48,7 @@ import scala.annotation.tailrec
 // It is not possible to modify or create scope at this point, to do so we would need to be a phase.
 // Because of the restricted nature of SHOW commands being only `SHOW ... YIELD ... RETURN ...` this works for now,
 // but we should revisit if we become more complicated/flexible.
-case object rewriteShowQuery extends Step with PreparatoryRewritingRewriterFactory {
+case object rewriteShowQuery extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

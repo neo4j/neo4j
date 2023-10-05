@@ -35,11 +35,12 @@ import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewrit
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
 // rewrites SHOW ... WHERE <e> " ==> SHOW ... YIELD * WHERE <e>
-case object expandShowWhere extends Step with PreparatoryRewritingRewriterFactory {
+case object expandShowWhere extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.immutable.ListSet
@@ -47,6 +48,7 @@ import scala.collection.immutable.ListSet
  * But it also opens up simpler planning for other queries.
  */
 case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
   final case class Result(newPatternRelationships: Seq[PatternRelationship], inlinedPredicates: Set[Predicate])
 

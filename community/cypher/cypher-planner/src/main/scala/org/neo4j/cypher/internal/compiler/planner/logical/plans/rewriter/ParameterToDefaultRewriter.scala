@@ -34,12 +34,13 @@ import org.neo4j.cypher.internal.rewriting.rewriters.parameterRewriter
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.attribution.Attributes
 
 /**
  * Change Parameters in logical plan to default Type and Size.
  */
-case object ParameterToDefaultRewriter extends LogicalPlanRewriter with StepSequencer.Step
+case object ParameterToDefaultRewriter extends LogicalPlanRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def instance(

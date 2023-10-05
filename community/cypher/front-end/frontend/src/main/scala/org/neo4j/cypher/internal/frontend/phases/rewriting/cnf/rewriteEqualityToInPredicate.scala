@@ -31,12 +31,13 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
 
 /**
  * Normalize equality predicates into IN comparisons.
  */
-case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step
+case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   val instance: Rewriter = bottomUp(Rewriter.lift {

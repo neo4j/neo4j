@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -71,7 +72,7 @@ case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Ha
     semanticState.expressionType(expr).actual == CTRelationship.invariant
 }
 
-case object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterFactory {
+case object normalizeHasLabelsAndHasType extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     normalizePredicates.completed // We first need to extract predicates from nodes and relationships

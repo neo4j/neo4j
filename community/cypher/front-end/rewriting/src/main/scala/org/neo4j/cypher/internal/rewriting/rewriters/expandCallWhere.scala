@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewrit
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
 // Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
-case object expandCallWhere extends Step with PreparatoryRewritingRewriterFactory {
+case object expandCallWhere extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanUsesEffectiveOutputCardinality
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.CacheAll
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.ProtectedProperties
@@ -97,6 +97,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -467,7 +468,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     Property(entity, PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
 }
 
-case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransformerFactory {
+case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCondition
+    with PlanPipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter operates on the LogicalPlan
@@ -475,7 +477,7 @@ case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineT
     // AndedPropertyInequalities contain the same property twice, which would mess up our counts.
     AndedPropertyInequalitiesRemoved,
     // PushdownPropertyReads needs effectiveCardinalities
-    LogicalPlanUsesEffectiveOutputCardinality,
+    CardinalityRewriter.completed,
     // There are rules to make sure not to push reads over Eager boundaries, so we need those to be
     // present before this phase.
     LogicalPlanContainsEagerIfNeeded

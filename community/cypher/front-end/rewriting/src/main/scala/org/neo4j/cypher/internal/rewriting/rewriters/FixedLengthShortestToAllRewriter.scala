@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
@@ -38,7 +39,8 @@ import org.neo4j.cypher.internal.util.topDown
  * Rewrites selectors ALL SHORTEST and SHORTEST k GROUPS to ALL,
  * if the path pattern following them is of fixed length.
  */
-case object FixedLengthShortestToAllRewriter extends StepSequencer.Step with ASTRewriterFactory {
+case object FixedLengthShortestToAllRewriter extends StepSequencer.Step with DefaultPostCondition
+    with ASTRewriterFactory {
 
   override def getRewriter(
     semanticState: SemanticState,

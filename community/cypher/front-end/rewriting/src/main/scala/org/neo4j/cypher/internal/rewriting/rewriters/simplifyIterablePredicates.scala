@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -46,7 +47,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
  * any(x IN list WHERE x = 1) ==> 1 IN x
  * none(x IN list WHERE x = 2) ==> not(2 IN x)
  */
-case object simplifyIterablePredicates extends StepSequencer.Step with ASTRewriterFactory {
+case object simplifyIterablePredicates extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
     case any @ AnyIterablePredicate(SimpleEqualsFilterScope(inLhs), list) => In(inLhs, list)(any.position)

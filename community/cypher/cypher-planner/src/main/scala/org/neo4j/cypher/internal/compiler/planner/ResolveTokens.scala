@@ -36,11 +36,13 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 
 /**
  * Resolve token ids for labels, property keys and relationship types.
  */
 case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext): Unit = {

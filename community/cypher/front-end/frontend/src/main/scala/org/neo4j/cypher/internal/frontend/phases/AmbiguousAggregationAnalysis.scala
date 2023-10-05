@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransfor
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
@@ -49,7 +50,8 @@ case class AmbiguousAggregationAnalysis(features: SemanticFeature*)
 
 }
 
-case object AmbiguousAggregationAnalysis extends StepSequencer.Step with ParsePipelineTransformerFactory {
+case object AmbiguousAggregationAnalysis extends StepSequencer.Step with DefaultPostCondition
+    with ParsePipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement],

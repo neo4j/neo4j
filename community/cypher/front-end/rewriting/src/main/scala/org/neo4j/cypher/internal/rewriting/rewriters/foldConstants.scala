@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
@@ -164,7 +165,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
   private def asAst(b: Boolean, e: Expression) = if (b) True()(e.position) else False()(e.position)
 }
 
-case object foldConstants extends StepSequencer.Step with ASTRewriterFactory {
+case object foldConstants extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set()
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable

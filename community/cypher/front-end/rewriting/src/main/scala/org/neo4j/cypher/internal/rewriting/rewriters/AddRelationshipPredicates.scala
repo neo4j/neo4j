@@ -32,10 +32,11 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-trait AddRelationshipPredicates[NC] extends Step with ASTRewriterFactory {
+trait AddRelationshipPredicates[NC] extends Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     noUnnamedNodesAndRelationships

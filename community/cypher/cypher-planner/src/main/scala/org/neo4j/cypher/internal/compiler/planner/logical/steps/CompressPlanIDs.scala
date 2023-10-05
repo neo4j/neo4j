@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.topDown
@@ -46,7 +47,9 @@ import scala.collection.mutable
  * This is helpful for physical planning attributes that do not have to create so large arrays.
  * It also reduces the size of what we need to put into the query cache.
  */
-case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step
+case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState]
+    with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING

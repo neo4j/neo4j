@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -50,7 +51,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
  *   - juxtaposing (non-quantified) parenthesized path patterns with other parts of the query
  *
  */
-case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterFactory {
+case object unwrapParenthesizedPath extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

@@ -29,8 +29,9 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 
-case object GetDegreeRewriterStep extends PlannerQueryRewriter with StepSequencer.Step
+case object GetDegreeRewriterStep extends PlannerQueryRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = getDegreeRewriter

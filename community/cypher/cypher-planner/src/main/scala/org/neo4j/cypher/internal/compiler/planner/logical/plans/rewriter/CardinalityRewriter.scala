@@ -34,14 +34,14 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.attribution.Attributes
-
-case object LogicalPlanUsesEffectiveOutputCardinality extends StepSequencer.Condition
 
 /**
  * Change logical plans to reflect the effective output cardinality.
  */
 case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def instance(
@@ -67,7 +67,7 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
-    LogicalPlanUsesEffectiveOutputCardinality,
+    completed,
     AttributeFullyAssigned[EffectiveCardinalities]
   )
 

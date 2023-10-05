@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
@@ -48,7 +49,9 @@ import scala.collection.mutable
 /**
  * Rename variables so they are all unique.
  */
-case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
+case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
+    with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
   type VariableRenamings = Map[Ref[LogicalVariable], LogicalVariable]
 

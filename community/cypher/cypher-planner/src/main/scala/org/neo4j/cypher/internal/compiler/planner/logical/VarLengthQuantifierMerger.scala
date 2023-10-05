@@ -32,9 +32,10 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.topDown
 
-case object VarLengthQuantifierMerger extends PlannerQueryRewriter with StepSequencer.Step
+case object VarLengthQuantifierMerger extends PlannerQueryRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = topDown(

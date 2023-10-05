@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -43,7 +44,7 @@ import org.neo4j.cypher.internal.util.topDown
  * This could potentially move projections to a point of higher cardinality, but the cached properties mechanism
  * should take care that expensive projections are pushed down again.
  */
-case object moveWithPastMatch extends StepSequencer.Step with ASTRewriterFactory {
+case object moveWithPastMatch extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def getRewriter(
     semanticState: SemanticState,

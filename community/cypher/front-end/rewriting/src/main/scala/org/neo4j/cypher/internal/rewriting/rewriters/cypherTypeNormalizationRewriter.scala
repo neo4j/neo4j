@@ -24,11 +24,13 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case object cypherTypeNormalizationRewriter extends StepSequencer.Step with ASTRewriterFactory {
+case object cypherTypeNormalizationRewriter extends StepSequencer.Step with DefaultPostCondition
+    with ASTRewriterFactory {
 
   override def getRewriter(
     semanticState: SemanticState,

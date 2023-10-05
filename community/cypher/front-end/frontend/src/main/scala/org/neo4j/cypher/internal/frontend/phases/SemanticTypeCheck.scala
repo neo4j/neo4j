@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -54,7 +55,9 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
  *
  * Does not change the State, just checks for semantic errors.
  */
-case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState] with StepSequencer.Step
+case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState]
+    with StepSequencer.Step
+    with DefaultPostCondition
     with ParsePipelineTransformerFactory {
 
   type SemanticErrorCheck = (BaseState, BaseContext) => Seq[SemanticError]

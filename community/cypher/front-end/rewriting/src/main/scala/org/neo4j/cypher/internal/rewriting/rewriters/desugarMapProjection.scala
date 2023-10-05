@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
@@ -72,7 +73,7 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   }
 }
 
-case object desugarMapProjection extends StepSequencer.Step with ASTRewriterFactory {
+case object desugarMapProjection extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
