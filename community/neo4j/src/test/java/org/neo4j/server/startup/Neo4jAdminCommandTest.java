@@ -30,12 +30,14 @@ import static org.neo4j.server.startup.ServerCommandIT.isCurrentlyRunningAsWindo
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.annotations.service.ServiceProvider;
@@ -46,6 +48,7 @@ import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.helpers.ProcessUtils;
 import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
 
@@ -109,6 +112,7 @@ class Neo4jAdminCommandTest {
 
         @Test
         @DisabledOnOs(OS.WINDOWS)
+        @DisabledIf("isMissingTestRequiredTools")
         void shouldPassThroughAndAcceptVerboseAndExpandCommands() throws Exception {
             addConf(GraphDatabaseSettings.initial_default_database, "$(echo foo)");
             if (fork.run(() -> assertThat(
@@ -116,6 +120,17 @@ class Neo4jAdminCommandTest {
                     .isEqualTo(EXIT_CODE_OK))) {
                 assertThat(out.toString()).containsSubsequence("Writing report to", "100%");
                 assertThat(err.toString()).isEmpty();
+            }
+        }
+
+        boolean isMissingTestRequiredTools() {
+            try {
+                ProcessUtils.executeCommandWithOutput("ps", Duration.ofMinutes(1));
+                return false;
+            } catch (IllegalArgumentException iae) {
+                return true;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
 

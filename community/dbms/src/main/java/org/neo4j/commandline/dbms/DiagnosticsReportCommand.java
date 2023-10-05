@@ -253,36 +253,22 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
     }
 
     static String describeClassifier(String classifier) {
-        switch (classifier) {
-            case "logs":
-                return "include log files";
-            case "config":
-                return "include configuration files";
-            case "plugins":
-                return "include a view of the plugin directory";
-            case "tree":
-                return "include a view of the tree structure of the data directory";
-            case "tx":
-                return "include transaction logs";
-            case "metrics":
-                return "include metrics";
-            case "threads":
-                return "include a thread dump of the running instance";
-            case "heap":
-                return "include a heap dump";
-            case "sysprop":
-                return "include a list of java system properties";
-            case "raft":
-                return "include the raft log";
-            case "ccstate":
-                return "include the current cluster state";
-            case "ps":
-                return "include a list of running processes";
-            case "version":
-                return "include version of neo4j";
-            default:
-        }
-        throw new IllegalArgumentException("Unknown classifier: " + classifier);
+        return switch (classifier) {
+            case "logs" -> "include log files";
+            case "config" -> "include configuration files";
+            case "plugins" -> "include a view of the plugin directory";
+            case "tree" -> "include a view of the tree structure of the data directory";
+            case "tx" -> "include transaction logs";
+            case "metrics" -> "include metrics";
+            case "threads" -> "include a thread dump of the running instance";
+            case "heap" -> "include a heap dump";
+            case "sysprop" -> "include a list of java system properties";
+            case "raft" -> "include the raft log";
+            case "ccstate" -> "include the current cluster state";
+            case "ps" -> "include a list of running processes";
+            case "version" -> "include version of neo4j";
+            default -> throw new IllegalArgumentException("Unknown classifier: " + classifier);
+        };
     }
 
     private static DiagnosticsReportSource runningProcesses() {
