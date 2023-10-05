@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -851,7 +852,7 @@ case class Match(
   }
 
   def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.treeFold(Set.empty[LogicalVariable]) {
-    case _: FullSubqueryExpression   => acc => SkipChildren(acc)
+    case _: ScopeExpression          => acc => SkipChildren(acc)
     case logicalVar: LogicalVariable => acc => TraverseChildren(acc ++ Set(logicalVar))
   }
 }

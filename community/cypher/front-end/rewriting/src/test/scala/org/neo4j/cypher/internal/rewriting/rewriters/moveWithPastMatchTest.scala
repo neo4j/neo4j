@@ -339,4 +339,62 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
       )
     })
   }
+
+  test("Variables inside List Comprehension should not be moved past WITH") {
+    assertRewrite(
+      """WITH 0 AS n0
+        |MATCH (n {n1:[x IN [] | 0]})
+        |RETURN 0
+        |""".stripMargin,
+      """
+        |MATCH (n {n1:[x IN [] | 0]})
+        |WITH 0 AS n0, n AS n
+        |RETURN 0
+        |""".stripMargin
+    )
+  }
+
+  test("Variables inside List Comprehension inside functions should not be moved past WITH") {
+    assertRewrite(
+      """WITH 0 AS n0
+        |MATCH ()-[t:T2{k:size([x IN [NULL]|NULL])}]-()
+        |RETURN 1 AS a2
+        |""".stripMargin,
+      """
+        |MATCH ()-[t:T2 {k: size([x IN [NULL] | NULL])}]-()
+        |WITH 0 AS n0, t AS t
+        |RETURN 1 AS a2
+        |""".stripMargin
+    )
+  }
+
+  test("Variables inside Reduce function should not be moved past WITH") {
+    assertRewrite(
+      """WITH 0 AS n0
+        |MATCH (n { n1 : reduce(x = 0, a IN [1, 2] | x + a)})
+        |RETURN 1 AS a2
+        |""".stripMargin,
+      """
+        |MATCH (n { n1 : reduce(x = 0, a IN [1, 2] | x + a)})
+        |WITH 0 AS n0, n AS n
+        |RETURN 1 AS a2
+        |""".stripMargin
+    )
+  }
+
+  test("Variables inside scoped expressions should not be moved past WITH") {
+    List("all", "any", "none", "single").foreach(scopedExpression => {
+      assertRewrite(
+        s"""WITH 0 AS n0
+           |MATCH (n { n1 : $scopedExpression(x IN [1] WHERE x < 60)} )
+           |RETURN 1 AS a2
+           |""".stripMargin,
+        s"""
+           |MATCH (n { n1 : $scopedExpression(x IN [1] WHERE x < 60)} )
+           |WITH 0 AS n0, n AS n
+           |RETURN 1 AS a2
+           |""".stripMargin
+      )
+    })
+  }
 }
