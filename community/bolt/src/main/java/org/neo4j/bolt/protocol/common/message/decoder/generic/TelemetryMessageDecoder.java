@@ -28,7 +28,6 @@ import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.util.PackstreamConditions;
-import org.neo4j.values.storable.LongValue;
 
 public class TelemetryMessageDecoder implements MessageDecoder<TelemetryMessage> {
 
@@ -51,20 +50,13 @@ public class TelemetryMessageDecoder implements MessageDecoder<TelemetryMessage>
         PackstreamConditions.requireLength(header, 1);
 
         var valueReader = connection.valueReader(buffer);
-        var metrics = valueReader.readMap();
+        var apiType = valueReader.readLong();
 
-        if (metrics.containsKey(apiKey)) {
-            var api = metrics.get(apiKey);
-
-            if (api instanceof LongValue longValue) {
-                var driverInterfaceTypeUsage = TelemetryMessage.DriverInterfaceType.fromLong(longValue.value());
-                return new TelemetryMessage(driverInterfaceTypeUsage);
-            } else {
-                throw new IllegalStructArgumentException(
-                        "api", "Expected IntValue but got " + api.getClass().getSimpleName());
-            }
+        if (apiType != null) {
+            var driverInterfaceTypeUsage = TelemetryMessage.DriverInterfaceType.fromLong(apiType.value());
+            return new TelemetryMessage(driverInterfaceTypeUsage);
         } else {
-            throw new IllegalStructArgumentException(apiKey, "Expected map with api as a key but got " + metrics);
+            throw new IllegalStructArgumentException(apiKey, "Expected Integer but nothing was sent with the message");
         }
     }
 }

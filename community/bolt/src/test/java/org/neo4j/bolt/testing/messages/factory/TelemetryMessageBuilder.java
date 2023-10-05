@@ -21,7 +21,7 @@
 package org.neo4j.bolt.testing.messages.factory;
 
 import io.netty.buffer.ByteBuf;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -31,7 +31,7 @@ public class TelemetryMessageBuilder implements WireMessageBuilder<TelemetryMess
     private static final short SIGNATURE = 0x54;
 
     private final ProtocolVersion version;
-    private final Map<String, Object> meta = new HashMap<>();
+    private byte apiType;
 
     public TelemetryMessageBuilder(ProtocolVersion version) {
         this.version = version;
@@ -39,7 +39,7 @@ public class TelemetryMessageBuilder implements WireMessageBuilder<TelemetryMess
 
     @Override
     public Map<String, Object> getMeta() {
-        return this.meta;
+        return Collections.emptyMap();
     }
 
     @Override
@@ -48,22 +48,27 @@ public class TelemetryMessageBuilder implements WireMessageBuilder<TelemetryMess
     }
 
     public TelemetryMessageBuilder withManagedTransactionFunctions() {
-        this.meta.put("api", 0);
+        apiType = (byte) 0;
         return this;
     }
 
     public TelemetryMessageBuilder withUnmanagedTransactions() {
-        this.meta.put("api", 1);
+        apiType = (byte) 1;
         return this;
     }
 
     public TelemetryMessageBuilder withImplicitTransactions() {
-        this.meta.put("api", 2);
+        apiType = (byte) 2;
         return this;
     }
 
     public TelemetryMessageBuilder withExecute() {
-        this.meta.put("api", 3);
+        apiType = (byte) 3;
+        return this;
+    }
+
+    public TelemetryMessageBuilder withANonValidAPIType() {
+        apiType = (byte) 4;
         return this;
     }
 
@@ -71,7 +76,7 @@ public class TelemetryMessageBuilder implements WireMessageBuilder<TelemetryMess
     public ByteBuf build() {
         return PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(1, SIGNATURE))
-                .writeMap(this.meta)
+                .writeTinyInt(apiType)
                 .getTarget();
     }
 }

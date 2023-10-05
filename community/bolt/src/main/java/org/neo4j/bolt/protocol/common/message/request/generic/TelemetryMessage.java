@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.packstream.error.reader.PackstreamReaderException;
 
 public record TelemetryMessage(DriverInterfaceType interfaceType) implements RequestMessage {
     public static final short SIGNATURE = 0x54;
@@ -56,10 +57,10 @@ public record TelemetryMessage(DriverInterfaceType interfaceType) implements Req
             DRIVER_INTERFACE_MAP = Collections.unmodifiableMap(map);
         }
 
-        public static DriverInterfaceType fromLong(long type) {
+        public static DriverInterfaceType fromLong(long type) throws PackstreamReaderException {
             DriverInterfaceType interfaceType = DRIVER_INTERFACE_MAP.get(type);
             if (interfaceType == null) {
-                throw new IllegalArgumentException("Unknown driver interface type " + type);
+                throw new PackstreamReaderException("Unknown driver interface type " + type);
             }
 
             return interfaceType;

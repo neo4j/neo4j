@@ -141,4 +141,13 @@ public class TelemetryIT {
                         Status.Request.Invalid,
                         "Message of type TelemetryMessage cannot be handled by a session in the AUTHENTICATION state.");
     }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 3, range = 3)})
+    void shouldCloseConnectionWhenANonSupportedApiTypeIsSent(
+            @Authenticated TransportConnection connection, BoltWire wire) throws IOException {
+        connection.send(wire.telemetry(TelemetryMessageBuilder::withANonValidAPIType));
+
+        BoltConnectionAssertions.assertThat(connection).receivesFailure();
+    }
 }
