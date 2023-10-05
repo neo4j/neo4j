@@ -1937,6 +1937,13 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val predicate = isTyped(nProp, CTStringNotNull)
     val calculator = setUpCalculator(
       labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(
+        indexCardinalities = Map(
+          // If we had both a text and a range index, the two indices should have the same values under the given constraint.
+          // To test that we actually use the range index, we therefore need to remove the text index.
+          indexPersonRange -> 200.0
+        )
+      ),
       typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.STRING)))
     )
     val result = calculator(predicate)
@@ -1948,6 +1955,13 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val predicate = isTyped(rProp, CTStringNotNull)
     val calculator = setUpCalculator(
       relTypeInfo = rFriendsRelTypeInfo,
+      stats = mockStats(
+        indexCardinalities = Map(
+          // If we had both a text and a range index, the two indices should have the same values under the given constraint.
+          // To test that we actually use the range index, we therefore need to remove the text index.
+          indexFriendsRange -> 200.0
+        )
+      ),
       typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING)))
     )
     val result = calculator(predicate)
