@@ -128,6 +128,7 @@ public enum Group {
     TOPOLOGY_MAINTENANCE("TopologyMaintenance"),
     TOPOLOGY_GRAPH_WRITE_SUPPORT("TopologyGraphWriteSupport"),
     CONNECTIVITY_CHECKS("ConnectivityChecks"),
+    RAFTED_STATUS_CHECKS("RaftedStatusChecks"),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT("ServerTransactionTimeout"),
