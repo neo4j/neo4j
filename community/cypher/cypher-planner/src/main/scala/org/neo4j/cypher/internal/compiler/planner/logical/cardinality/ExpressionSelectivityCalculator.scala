@@ -200,14 +200,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case EndsWith(Property(Variable(name), propertyKey), substring) =>
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, substring)
 
-    case IsTyped(LogicalProperty(Variable(variable), propertyKey), StringType(false)) =>
-      isStringPropertySelectivity(
-        variable,
-        labelInfo,
-        relTypeInfo,
-        propertyKey
-      ).getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
-
     // WHERE x.prop =~ expression
     case RegexMatch(Property(Variable(name), propertyKey), _) =>
       // as we cannot reason about the regular expression that we compare with, then we should probably treat it just like
@@ -227,14 +219,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // WHERE point.withinBBox(p.prop, ll, ur) that could benefit from an index
     case AsBoundingBoxSeekable(seekable) =>
       calculateSelectivityForPointBoundingBoxSeekable(seekable, labelInfo, relTypeInfo)
-
-    case IsTyped(LogicalProperty(Variable(variable), propertyKey), PointType(false)) =>
-      isPointPropertySelectivity(
-        variable,
-        labelInfo,
-        relTypeInfo,
-        propertyKey
-      ).getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable) =>
@@ -318,23 +302,46 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE a.prop IS :: <TYPE> [NOT NULL]
     case IsTyped(LogicalProperty(Variable(variable), propertyKey), typeName) =>
-      val typeSelectivity =
-        isPropertyOfTypeSelectivity(variable, propertyKey, typeName, labelInfo, relTypeInfo, typeConstraints)
-
-      val propIsNotNullSelectivity =
-        calculateSelectivityForPropertyExistence(variable, labelInfo, relTypeInfo, propertyKey, existenceConstraints)
-
-      if (typeName.isNullable) {
-        // IS :: <TYPE>
-        combiner.orTogetherSelectivities(Seq(
-          typeSelectivity, // must be value of <TYPE>
-          propIsNotNullSelectivity.negate // OR NULL
-        )).getOrElse(DEFAULT_TYPE_SELECTIVITY)
-      } else {
-        // IS :: <TYPE> NOT NULL
-        typeSelectivity * // must be value of <TYPE>
-          propIsNotNullSelectivity // AND NOT NULL
+      val indexesToAnswerCompletePredicate = typeName match {
+        // IS :: <TYPE> NOT NULL -> This could be answered by an index
+        case StringType(false) => Seq(IndexType.Text)
+        case PointType(false)  => Seq(IndexType.Point)
+        case _                 => Seq.empty
       }
+      calculateSelectivityForPropertyTypePredicateFromIndex(
+        variable,
+        labelInfo,
+        relTypeInfo,
+        propertyKey,
+        indexesToAnswerCompletePredicate
+      )
+        .getOrElse {
+          // If we cannot get the selectivity from an index directly, we assume independence
+          // and calculate the type and the existence selectivity separately
+          val typeSelectivity =
+            isPropertyOfTypeSelectivity(variable, propertyKey, typeName, labelInfo, relTypeInfo, typeConstraints)
+
+          val propIsNotNullSelectivity =
+            calculateSelectivityForPropertyExistence(
+              variable,
+              labelInfo,
+              relTypeInfo,
+              propertyKey,
+              existenceConstraints
+            )
+
+          if (typeName.isNullable) {
+            // IS :: <TYPE>
+            combiner.orTogetherSelectivities(Seq(
+              typeSelectivity, // must be value of <TYPE>
+              propIsNotNullSelectivity.negate // OR NULL
+            )).getOrElse(DEFAULT_TYPE_SELECTIVITY)
+          } else {
+            // IS :: <TYPE> NOT NULL
+            typeSelectivity * // must be value of <TYPE>
+              propIsNotNullSelectivity // AND NOT NULL
+          }
+        }
 
     case _ =>
       DEFAULT_PREDICATE_SELECTIVITY
@@ -667,7 +674,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     }
   }
 
-  private def isStringPropertySelectivity(
+  private def isStringPropertyNotNullSelectivityFromIndex(
     variable: String,
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
@@ -682,7 +689,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     )
   }
 
-  private def isPointPropertySelectivity(
+  private def isPointPropertyNotNullSelectivityFromIndex(
     variable: String,
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
@@ -705,14 +712,14 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   )(implicit semanticTable: SemanticTable): Selectivity = {
     scannable.cypherType match {
       case CTString =>
-        isStringPropertySelectivity(
+        isStringPropertyNotNullSelectivityFromIndex(
           scannable.name,
           labelInfo,
           relTypeInfo,
           scannable.propertyKey
         ).getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
       case CTPoint =>
-        isPointPropertySelectivity(
+        isPointPropertyNotNullSelectivityFromIndex(
           scannable.name,
           labelInfo,
           relTypeInfo,
@@ -749,8 +756,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     typeConstraintSelectivity.orElse {
       typeName match {
-        case _: StringType => isStringPropertySelectivity(variable, labelInfo, relTypeInfo, propertyKey)
-        case _: PointType  => isPointPropertySelectivity(variable, labelInfo, relTypeInfo, propertyKey)
+        case _: StringType => isStringPropertyNotNullSelectivityFromIndex(variable, labelInfo, relTypeInfo, propertyKey)
+        case _: PointType  => isPointPropertyNotNullSelectivityFromIndex(variable, labelInfo, relTypeInfo, propertyKey)
         case _             => None
       }
     }.getOrElse(DEFAULT_TYPE_SELECTIVITY)

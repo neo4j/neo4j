@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -67,7 +66,6 @@ import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.ApproximateSize
 import org.neo4j.cypher.internal.util.Cardinality
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -1645,7 +1643,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("isStringProperty") {
-    val predicate = IsTyped(nProp, CTStringNotNull)(pos)
+    val predicate = isTyped(nProp, CTStringNotNull)
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
     val result = calculator(predicate)
     result.factor shouldEqual personTextPropIsNotNullSel
@@ -1669,7 +1667,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("isPointProperty") {
-    val predicate = IsTyped(nProp, CTPointNotNull)(InputPosition.NONE)
+    val predicate = isTyped(nProp, CTPointNotNull)
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
     val result = calculator(predicate)
     result.factor shouldEqual personPointPropIsNotNullSel
@@ -1867,6 +1865,23 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     )).get
   }
 
+  test("IS :: STRING with RANGE index") {
+    val predicate = isTyped(nProp, CTString)
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(
+        indexCardinalities = Map(
+          indexPersonRange -> 200.0
+        )
+      )
+    )
+    val result = calculator(predicate)
+    result shouldBe IndependenceCombiner.orTogetherSelectivities(Seq(
+      personPropIsNotNullSel.toSelectivity,
+      personPropIsNotNullSel.toSelectivity.negate
+    )).get
+  }
+
   test("IS :: STRING should use relationship TEXT index") {
     val predicate = isTyped(rProp, CTString)
     val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
@@ -1949,6 +1964,17 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val result = calculator(predicate)
 
     result.factor shouldBe personPropIsNotNullSel
+  }
+
+  test("IS :: STRING should use node property existence constraint") {
+    val predicate = isTyped(nProp, CTString)
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      existenceConstraints = Set(personLabelName -> nodePropName)
+    )
+    val result = calculator(predicate)
+
+    result.factor shouldBe personTextPropIsNotNullSel
   }
 
   test("IS :: STRING NOT NULL should use relationship property type constraint") {
