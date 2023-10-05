@@ -67,7 +67,8 @@ public class ExecutionContextNode extends AbstractNodeEntity {
     @Override
     public boolean hasProperty(String key) {
         var cursors = executionContext.cursors();
-        try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
+        try (NodeCursor nodes =
+                        cursors.allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleNode(nodes);
@@ -78,7 +79,8 @@ public class ExecutionContextNode extends AbstractNodeEntity {
     @Override
     public Object getProperty(String key) {
         var cursors = executionContext.cursors();
-        try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
+        try (NodeCursor nodes =
+                        cursors.allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleNode(nodes);
@@ -89,7 +91,8 @@ public class ExecutionContextNode extends AbstractNodeEntity {
     @Override
     public Object getProperty(String key, Object defaultValue) {
         var cursors = executionContext.cursors();
-        try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
+        try (NodeCursor nodes =
+                        cursors.allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleNode(nodes);
@@ -100,7 +103,8 @@ public class ExecutionContextNode extends AbstractNodeEntity {
     @Override
     public Iterable<String> getPropertyKeys() {
         var cursors = executionContext.cursors();
-        try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
+        try (NodeCursor nodes =
+                        cursors.allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleNode(nodes);
@@ -111,7 +115,8 @@ public class ExecutionContextNode extends AbstractNodeEntity {
     @Override
     public Map<String, Object> getProperties(String... keys) {
         var cursors = executionContext.cursors();
-        try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
+        try (NodeCursor nodes =
+                        cursors.allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleNode(nodes);
@@ -122,7 +127,8 @@ public class ExecutionContextNode extends AbstractNodeEntity {
     @Override
     public Map<String, Object> getAllProperties() {
         var cursors = executionContext.cursors();
-        try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
+        try (NodeCursor nodes =
+                        cursors.allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleNode(nodes);
@@ -170,49 +176,63 @@ public class ExecutionContextNode extends AbstractNodeEntity {
 
     @Override
     public Iterable<RelationshipType> getRelationshipTypes() {
-        try (NodeCursor nodes = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor nodes = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             return getRelationshipTypes(nodes);
         }
     }
 
     @Override
     public int getDegree() {
-        try (NodeCursor nodes = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor nodes = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             return getDegree(nodes);
         }
     }
 
     @Override
     public int getDegree(RelationshipType type) {
-        try (NodeCursor nodes = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor nodes = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             return getDegree(type, nodes);
         }
     }
 
     @Override
     public int getDegree(Direction direction) {
-        try (NodeCursor nodes = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor nodes = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             return getDegree(direction, nodes);
         }
     }
 
     @Override
     public int getDegree(RelationshipType type, Direction direction) {
-        try (NodeCursor nodes = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor nodes = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             return getDegree(type, direction, nodes);
         }
     }
 
     @Override
     public boolean hasLabel(Label label) {
-        try (NodeCursor nodes = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor nodes = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             return hasLabel(label, nodes);
         }
     }
 
     @Override
     public Iterable<Label> getLabels() {
-        try (NodeCursor nodes = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor nodes = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             return getLabels(nodes);
         }
     }
@@ -285,7 +305,9 @@ public class ExecutionContextNode extends AbstractNodeEntity {
             Direction direction,
             int[] typeIds,
             RelationshipFactory<Relationship> factory) {
-        try (NodeCursor node = executionContext.cursors().allocateNodeCursor(executionContext.cursorContext())) {
+        try (NodeCursor node = executionContext
+                .cursors()
+                .allocateNodeCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             executionContext.dataRead().singleNode(nodeId, node);
             if (!node.next()) {
                 throw new NotFoundException(format("Node %d not found", nodeId));

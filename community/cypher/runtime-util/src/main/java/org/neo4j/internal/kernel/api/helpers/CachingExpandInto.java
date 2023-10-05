@@ -255,7 +255,11 @@ public class CachingExpandInto extends DefaultCloseListenable {
             long toNode,
             CursorContext cursorContext) {
         return connectingRelationships(
-                nodeCursor, cursors.allocateRelationshipTraversalCursor(cursorContext), fromNode, types, toNode);
+                nodeCursor,
+                cursors.allocateRelationshipTraversalCursor(cursorContext, scopedMemoryTracker),
+                fromNode,
+                types,
+                toNode);
     }
 
     private int calculateDegreeInTxState(long node, RelationshipSelection selection) {

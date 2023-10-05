@@ -97,7 +97,7 @@ class FulltextIndexTransactionState implements Closeable {
 
         try (NodeCursor nodeCursor = visitingNodes ? cursors.allocateFullAccessNodeCursor(cursorContext) : null;
                 RelationshipScanCursor relationshipCursor =
-                        visitingNodes ? null : cursors.allocateRelationshipScanCursor(cursorContext);
+                        visitingNodes ? null : cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
                 PropertyCursor propertyCursor =
                         cursors.allocateFullAccessPropertyCursor(cursorContext, memoryTracker)) {
             state.accept(txStateVisitor.init(read, nodeCursor, relationshipCursor, propertyCursor));

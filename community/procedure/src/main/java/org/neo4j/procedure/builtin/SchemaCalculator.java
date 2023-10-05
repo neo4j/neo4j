@@ -179,7 +179,8 @@ public class SchemaCalculator {
 
     private void scanEverythingBelongingToRelationships(
             RelationshipMappings relMappings, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        try (RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor(cursorContext);
+        try (RelationshipScanCursor relationshipScanCursor =
+                        cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor(cursorContext, memoryTracker)) {
             dataRead.allRelationshipsScan(relationshipScanCursor);
             while (relationshipScanCursor.next()) {
@@ -236,7 +237,7 @@ public class SchemaCalculator {
 
     private void scanEverythingBelongingToNodes(
             NodeMappings nodeMappings, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        try (NodeCursor nodeCursor = cursors.allocateNodeCursor(cursorContext);
+        try (NodeCursor nodeCursor = cursors.allocateNodeCursor(cursorContext, memoryTracker);
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor(cursorContext, memoryTracker)) {
             dataRead.allNodesScan(nodeCursor);
             while (nodeCursor.next()) {

@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -29,17 +30,30 @@ import org.neo4j.memory.MemoryTracker;
 public interface CursorFactory {
     // entities
 
-    NodeCursor allocateNodeCursor(CursorContext cursorContext);
+    NodeCursor allocateNodeCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
+
+    default NodeCursor allocateNodeCursor(CursorContext cursorContext) {
+        return allocateNodeCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
+    }
 
     NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext);
 
-    RelationshipScanCursor allocateRelationshipScanCursor(CursorContext cursorContext);
+    RelationshipScanCursor allocateRelationshipScanCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
+
+    default RelationshipScanCursor allocateRelationshipScanCursor(CursorContext cursorContext) {
+        return allocateRelationshipScanCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
+    }
 
     RelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext);
 
     // traversal
 
-    RelationshipTraversalCursor allocateRelationshipTraversalCursor(CursorContext cursorContext);
+    RelationshipTraversalCursor allocateRelationshipTraversalCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
+
+    default RelationshipTraversalCursor allocateRelationshipTraversalCursor(CursorContext cursorContext) {
+        return allocateRelationshipTraversalCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
+    }
 
     RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(CursorContext cursorContext);
 
@@ -59,14 +73,23 @@ public interface CursorFactory {
     RelationshipValueIndexCursor allocateFullAccessRelationshipValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker);
 
-    NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext);
+    NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
+
+    default NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext) {
+        return allocateNodeLabelIndexCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
+    }
 
     NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor(CursorContext cursorContext);
 
     RelationshipValueIndexCursor allocateRelationshipValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker);
 
-    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext);
+    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
+
+    default RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext) {
+        return allocateRelationshipTypeIndexCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
+    }
 
     RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext);
 }

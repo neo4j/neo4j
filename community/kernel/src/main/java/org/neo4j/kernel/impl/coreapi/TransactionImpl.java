@@ -507,7 +507,7 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         @Override
         public ResourceIterator<Node> apply(TransactionImpl tx) {
             KernelTransaction ktx = tx.transaction;
-            NodeCursor cursor = ktx.cursors().allocateNodeCursor(ktx.cursorContext());
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor(ktx.cursorContext(), ktx.memoryTracker());
             ktx.dataRead().allNodesScan(cursor);
             return new CursorIterator<>(cursor, NodeCursor::nodeReference, c -> tx.newNodeEntity(c.nodeReference()));
         }
@@ -542,7 +542,8 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         @Override
         public ResourceIterator<Relationship> apply(TransactionImpl tx) {
             KernelTransaction ktx = tx.transaction;
-            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor(ktx.cursorContext());
+            RelationshipScanCursor cursor =
+                    ktx.cursors().allocateRelationshipScanCursor(ktx.cursorContext(), ktx.memoryTracker());
             ktx.dataRead().allRelationshipsScan(cursor);
             return new CursorIterator<>(
                     cursor, RelationshipScanCursor::relationshipReference, c -> tx.newRelationshipEntity(cursor));

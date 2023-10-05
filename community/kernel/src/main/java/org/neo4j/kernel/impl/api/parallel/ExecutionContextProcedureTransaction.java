@@ -108,7 +108,7 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
 
             @Override
             protected ResourceIterator<Node> newIterator() {
-                NodeCursor cursor = cursors().allocateNodeCursor(cursorContext());
+                NodeCursor cursor = cursors().allocateNodeCursor(cursorContext(), memoryTracker());
                 dataRead().allNodesScan(cursor);
                 return new CursorIterator<>(cursor, NodeCursor::nodeReference, c -> newNodeEntity(c.nodeReference()));
             }
@@ -129,7 +129,8 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
 
             @Override
             protected ResourceIterator<Relationship> newIterator() {
-                RelationshipScanCursor cursor = cursors().allocateRelationshipScanCursor(cursorContext());
+                RelationshipScanCursor cursor =
+                        cursors().allocateRelationshipScanCursor(cursorContext(), memoryTracker());
                 dataRead().allRelationshipsScan(cursor);
                 return new CursorIterator<>(
                         cursor,

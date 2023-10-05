@@ -576,7 +576,10 @@ private[internal] class TransactionBoundReadQueryContext(
   // We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.dataRead
 
-  private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor(transactionalContext.cursorContext)
+  private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor(
+    transactionalContext.cursorContext,
+    transactionalContext.memoryTracker
+  )
 
   protected def tokenRead: TokenRead = transactionalContext.tokenRead
 
@@ -717,7 +720,10 @@ private[internal] class TransactionBoundReadQueryContext(
   ): ClosingLongIterator with RelationshipIterator = {
     val read = reads()
     val typeCursor =
-      transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.cursorContext)
+      transactionalContext.cursors.allocateRelationshipTypeIndexCursor(
+        transactionalContext.cursorContext,
+        transactionalContext.memoryTracker
+      )
     read.relationshipTypeScan(
       session,
       typeCursor,
@@ -730,19 +736,34 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   override def nodeCursor(): NodeCursor =
-    transactionalContext.cursors.allocateNodeCursor(transactionalContext.cursorContext)
+    transactionalContext.cursors.allocateNodeCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
 
   override def nodeLabelIndexCursor(): NodeLabelIndexCursor =
-    transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.cursorContext)
+    transactionalContext.cursors.allocateNodeLabelIndexCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
 
   override def relationshipTypeIndexCursor(): RelationshipTypeIndexCursor =
-    transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.cursorContext)
+    transactionalContext.cursors.allocateRelationshipTypeIndexCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
 
   override def traversalCursor(): RelationshipTraversalCursor =
-    transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.cursorContext)
+    transactionalContext.cursors.allocateRelationshipTraversalCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
 
   override def scanCursor(): RelationshipScanCursor =
-    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.cursorContext)
+    transactionalContext.cursors.allocateRelationshipScanCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
 
   override def relationshipById(
     relationshipId: Long,
@@ -1642,13 +1663,19 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   private def allocateAndTraceNodeCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeCursor(transactionalContext.cursorContext)
+    val cursor = transactionalContext.cursors.allocateNodeCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceRelationshipScanCursor() = {
-    val cursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.cursorContext)
+    val cursor = transactionalContext.cursors.allocateRelationshipScanCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
     resources.trace(cursor)
     cursor
   }
@@ -1673,7 +1700,10 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   private def allocateAndTraceNodeLabelIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.cursorContext)
+    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor(
+      transactionalContext.cursorContext,
+      transactionalContext.memoryTracker
+    )
     resources.trace(cursor)
     cursor
   }

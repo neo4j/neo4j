@@ -44,15 +44,15 @@ class ExpressionCursors(
   memoryTracker: MemoryTracker
 ) extends DefaultCloseListenable with ResourceManagedCursorPool {
 
-  private[this] var _nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
+  private[this] var _nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorContext, memoryTracker)
 
   private[this] var _relationshipScanCursor: RelationshipScanCursor =
-    cursorFactory.allocateRelationshipScanCursor(cursorContext)
+    cursorFactory.allocateRelationshipScanCursor(cursorContext, memoryTracker)
   private[this] var _propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor(cursorContext, memoryTracker)
 
   def nodeCursor: NodeCursor = {
     if (_nodeCursor == null) {
-      _nodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
+      _nodeCursor = cursorFactory.allocateNodeCursor(cursorContext, memoryTracker)
     }
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_nodeCursor))
     _nodeCursor
@@ -60,7 +60,7 @@ class ExpressionCursors(
 
   def relationshipScanCursor: RelationshipScanCursor = {
     if (_relationshipScanCursor == null) {
-      _relationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)
+      _relationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext, memoryTracker)
     }
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_relationshipScanCursor))
     _relationshipScanCursor

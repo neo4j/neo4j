@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -55,7 +54,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public DefaultNodeCursor allocateNodeCursor(CursorContext cursorContext) {
+    public DefaultNodeCursor allocateNodeCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultNodeCursor(
                 defaultNodeCursor -> {
@@ -65,7 +64,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                 storageReader.allocateNodeCursor(cursorContext, storeCursors),
                 storageReader.allocateNodeCursor(cursorContext, storeCursors),
                 storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
-                () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, EmptyMemoryTracker.INSTANCE)));
+                () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker)));
     }
 
     @Override
@@ -80,7 +79,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public DefaultRelationshipScanCursor allocateRelationshipScanCursor(CursorContext cursorContext) {
+    public DefaultRelationshipScanCursor allocateRelationshipScanCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultRelationshipScanCursor(
                 defaultRelationshipScanCursor -> {
@@ -88,7 +88,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
-                allocateNodeCursor(cursorContext)));
+                allocateNodeCursor(cursorContext, memoryTracker)));
     }
 
     @Override
@@ -103,7 +103,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public DefaultRelationshipTraversalCursor allocateRelationshipTraversalCursor(CursorContext cursorContext) {
+    public DefaultRelationshipTraversalCursor allocateRelationshipTraversalCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultRelationshipTraversalCursor(
                 defaultRelationshipTraversalCursor -> {
@@ -111,7 +112,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
-                allocateNodeCursor(cursorContext)));
+                allocateNodeCursor(cursorContext, memoryTracker)));
     }
 
     @Override
@@ -155,7 +156,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public NodeValueIndexCursor allocateNodeValueIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         return trace(new DefaultNodeValueIndexCursor(
                 DefaultNodeValueIndexCursor::release,
-                allocateNodeCursor(cursorContext),
+                allocateNodeCursor(cursorContext, memoryTracker),
                 allocatePropertyCursor(cursorContext, memoryTracker),
                 memoryTracker));
     }
@@ -167,9 +168,9 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext) {
+    public NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         return trace(new DefaultNodeLabelIndexCursor(
-                DefaultNodeLabelIndexCursor::release, allocateNodeCursor(cursorContext)));
+                DefaultNodeLabelIndexCursor::release, allocateNodeCursor(cursorContext, memoryTracker)));
     }
 
     @Override
@@ -182,7 +183,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         return trace(new DefaultRelationshipValueIndexCursor(
                 DefaultRelationshipValueIndexCursor::release,
-                allocateRelationshipScanCursor(cursorContext),
+                allocateRelationshipScanCursor(cursorContext, memoryTracker),
                 allocatePropertyCursor(cursorContext, memoryTracker),
                 memoryTracker));
     }
@@ -195,16 +196,17 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext) {
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (indexingBehaviour.useNodeIdsInRelationshipTokenIndex()) {
             return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
                     DefaultNodeBasedRelationshipTypeIndexCursor::release,
-                    allocateNodeCursor(cursorContext),
-                    allocateRelationshipTraversalCursor(cursorContext)));
+                    allocateNodeCursor(cursorContext, memoryTracker),
+                    allocateRelationshipTraversalCursor(cursorContext, memoryTracker)));
         } else {
             return trace(new DefaultRelationshipBasedRelationshipTypeIndexCursor(
                     DefaultRelationshipBasedRelationshipTypeIndexCursor::release,
-                    allocateRelationshipScanCursor(cursorContext)));
+                    allocateRelationshipScanCursor(cursorContext, memoryTracker)));
         }
     }
 

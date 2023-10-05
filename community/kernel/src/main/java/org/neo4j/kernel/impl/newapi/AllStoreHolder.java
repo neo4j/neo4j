@@ -165,7 +165,7 @@ public abstract class AllStoreHolder extends Read {
         } else if (!existsInNodeStore) {
             return false;
         } else {
-            try (DefaultNodeCursor node = cursors.allocateNodeCursor(cursorContext())) {
+            try (DefaultNodeCursor node = cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
                 singleNode(reference, node);
                 return node.next();
             }
@@ -220,7 +220,7 @@ public abstract class AllStoreHolder extends Read {
             // nodes with the label can be traversed.
             long count = 0;
             // DefaultNodeCursor already contains traversal checks within next()
-            try (DefaultNodeCursor nodes = cursors.allocateNodeCursor(cursorContext())) {
+            try (DefaultNodeCursor nodes = cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
                 this.allNodesScan(nodes);
                 while (nodes.next()) {
                     if (labelId == TokenRead.ANY_LABEL || nodes.hasLabel(labelId)) {
@@ -280,9 +280,12 @@ public abstract class AllStoreHolder extends Read {
                 var index = findUsableTokenIndex(EntityType.RELATIONSHIP);
                 if (index != IndexDescriptor.NO_INDEX) {
                     long count = 0;
-                    try (var relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor(cursorContext());
-                            DefaultNodeCursor sourceNode = cursors.allocateNodeCursor(cursorContext());
-                            DefaultNodeCursor targetNode = cursors.allocateNodeCursor(cursorContext())) {
+                    try (var relationshipsWithType =
+                                    cursors.allocateRelationshipTypeIndexCursor(cursorContext(), memoryTracker());
+                            DefaultNodeCursor sourceNode =
+                                    cursors.allocateNodeCursor(cursorContext(), memoryTracker());
+                            DefaultNodeCursor targetNode =
+                                    cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
                         var session = tokenReadSession(index);
                         this.relationshipTypeScan(
                                 session,
@@ -301,7 +304,8 @@ public abstract class AllStoreHolder extends Read {
         }
 
         long count;
-        try (DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor(cursorContext());
+        try (DefaultRelationshipScanCursor rels =
+                        cursors.allocateRelationshipScanCursor(cursorContext(), memoryTracker());
                 DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor(cursorContext());
                 DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor(cursorContext())) {
             this.allRelationshipsScan(rels);
@@ -405,7 +409,8 @@ public abstract class AllStoreHolder extends Read {
         } else if (!existsInRelStore) {
             return false;
         } else {
-            try (DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor(cursorContext())) {
+            try (DefaultRelationshipScanCursor rels =
+                    cursors.allocateRelationshipScanCursor(cursorContext(), memoryTracker())) {
                 singleRelationship(reference, rels);
                 return rels.next();
             }

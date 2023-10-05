@@ -380,7 +380,7 @@ public abstract class DataLookup {
         if (index != IndexDescriptor.NO_INDEX) {
             try {
                 var session = dataRead().tokenReadSession(index);
-                var cursor = cursors().allocateRelationshipTypeIndexCursor(cursorContext());
+                var cursor = cursors().allocateRelationshipTypeIndexCursor(cursorContext(), memoryTracker());
                 dataRead().relationshipTypeScan(session, cursor, unconstrained(), query, cursorContext());
                 return new TrackedCursorIterator<>(
                         cursor,
@@ -396,7 +396,7 @@ public abstract class DataLookup {
     }
 
     private ResourceIterator<Relationship> allRelationshipsByTypeWithoutIndex(int typeId) {
-        var cursor = cursors().allocateRelationshipScanCursor(cursorContext());
+        var cursor = cursors().allocateRelationshipScanCursor(cursorContext(), memoryTracker());
         dataRead().allRelationshipsScan(cursor);
         var filteredCursor = new FilteringRelationshipScanCursorWrapper(cursor, CursorPredicates.hasType(typeId));
         return new TrackedCursorIterator<>(
@@ -419,7 +419,7 @@ public abstract class DataLookup {
         if (index != IndexDescriptor.NO_INDEX) {
             try {
                 var session = dataRead().tokenReadSession(index);
-                var cursor = cursors().allocateNodeLabelIndexCursor(cursorContext());
+                var cursor = cursors().allocateNodeLabelIndexCursor(cursorContext(), memoryTracker());
                 dataRead().nodeLabelScan(session, cursor, unconstrained(), query, cursorContext());
                 return new TrackedCursorIterator<>(
                         cursor,
@@ -435,7 +435,7 @@ public abstract class DataLookup {
     }
 
     private ResourceIterator<Node> allNodesByLabelWithoutIndex(int labelId) {
-        NodeCursor cursor = cursors().allocateNodeCursor(cursorContext());
+        NodeCursor cursor = cursors().allocateNodeCursor(cursorContext(), memoryTracker());
         dataRead().allNodesScan(cursor);
         var filteredCursor = new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(labelId));
         return new TrackedCursorIterator<>(
@@ -492,10 +492,10 @@ public abstract class DataLookup {
         if (index != IndexDescriptor.NO_INDEX) {
             try {
                 var session = dataRead().tokenReadSession(index);
-                var cursor = cursors().allocateNodeLabelIndexCursor(cursorContext());
+                var cursor = cursors().allocateNodeLabelIndexCursor(cursorContext(), memoryTracker());
                 dataRead().nodeLabelScan(session, cursor, unconstrained(), tokenQuery, cursorContext());
 
-                var nodeCursor = cursors().allocateNodeCursor(cursorContext());
+                var nodeCursor = cursors().allocateNodeCursor(cursorContext(), memoryTracker());
                 var propertyCursor = cursors().allocatePropertyCursor(cursorContext(), memoryTracker());
 
                 return new NodeLabelPropertyIterator(
@@ -515,7 +515,7 @@ public abstract class DataLookup {
 
     private TrackedCursorIterator<FilteringNodeCursorWrapper, Node> getNodesByLabelAndPropertyViaAllNodesScan(
             int labelId, PropertyIndexQuery[] queries) {
-        var nodeCursor = cursors().allocateNodeCursor(cursorContext());
+        var nodeCursor = cursors().allocateNodeCursor(cursorContext(), memoryTracker());
         var labelFilteredCursor = new FilteringNodeCursorWrapper(nodeCursor, CursorPredicates.hasLabel(labelId));
 
         var propertyCursor = cursors().allocatePropertyCursor(cursorContext(), memoryTracker());
@@ -655,10 +655,10 @@ public abstract class DataLookup {
         if (index != IndexDescriptor.NO_INDEX) {
             try {
                 var session = dataRead().tokenReadSession(index);
-                var cursor = cursors().allocateRelationshipTypeIndexCursor(cursorContext());
+                var cursor = cursors().allocateRelationshipTypeIndexCursor(cursorContext(), memoryTracker());
                 dataRead().relationshipTypeScan(session, cursor, unconstrained(), tokenQuery, cursorContext());
 
-                var relationshipScanCursor = cursors().allocateRelationshipScanCursor(cursorContext());
+                var relationshipScanCursor = cursors().allocateRelationshipScanCursor(cursorContext(), memoryTracker());
                 var propertyCursor = cursors().allocatePropertyCursor(cursorContext(), memoryTracker());
 
                 return new RelationshipTypePropertyIterator(
@@ -679,7 +679,7 @@ public abstract class DataLookup {
 
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyViaAllRelsScan(
             int typeId, PropertyIndexQuery[] queries) {
-        var relationshipScanCursor = cursors().allocateRelationshipScanCursor(cursorContext());
+        var relationshipScanCursor = cursors().allocateRelationshipScanCursor(cursorContext(), memoryTracker());
         var typeFiltered =
                 new FilteringRelationshipScanCursorWrapper(relationshipScanCursor, CursorPredicates.hasType(typeId));
 

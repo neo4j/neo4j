@@ -61,8 +61,8 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
     @Override
     public boolean hasProperty(String key) {
         var cursors = executionContext.cursors();
-        try (RelationshipScanCursor relationships =
-                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
@@ -73,8 +73,8 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
     @Override
     public Object getProperty(String key) {
         var cursors = executionContext.cursors();
-        try (RelationshipScanCursor relationships =
-                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
@@ -85,8 +85,8 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
     @Override
     public Object getProperty(String key, Object defaultValue) {
         var cursors = executionContext.cursors();
-        try (RelationshipScanCursor relationships =
-                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
@@ -108,8 +108,8 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
     @Override
     public Iterable<String> getPropertyKeys() {
         var cursors = executionContext.cursors();
-        try (RelationshipScanCursor relationships =
-                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
@@ -120,8 +120,8 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
     @Override
     public Map<String, Object> getProperties(String... keys) {
         var cursors = executionContext.cursors();
-        try (RelationshipScanCursor relationships =
-                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
@@ -132,8 +132,8 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
     @Override
     public Map<String, Object> getAllProperties() {
         var cursors = executionContext.cursors();
-        try (RelationshipScanCursor relationships =
-                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
@@ -148,8 +148,9 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
 
     @Override
     public Node getStartNode() {
-        try (RelationshipScanCursor relationships =
-                executionContext.cursors().allocateRelationshipScanCursor(executionContext.cursorContext())) {
+        try (RelationshipScanCursor relationships = executionContext
+                .cursors()
+                .allocateRelationshipScanCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
             return new ExecutionContextNode(relationships.sourceNodeReference(), executionContext);
         }
@@ -157,8 +158,9 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
 
     @Override
     public Node getEndNode() {
-        try (RelationshipScanCursor relationships =
-                executionContext.cursors().allocateRelationshipScanCursor(executionContext.cursorContext())) {
+        try (RelationshipScanCursor relationships = executionContext
+                .cursors()
+                .allocateRelationshipScanCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
             return new ExecutionContextNode(relationships.targetNodeReference(), executionContext);
         }
@@ -176,8 +178,9 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
 
     @Override
     public RelationshipType getType() {
-        try (RelationshipScanCursor relationships =
-                executionContext.cursors().allocateRelationshipScanCursor(executionContext.cursorContext())) {
+        try (RelationshipScanCursor relationships = executionContext
+                .cursors()
+                .allocateRelationshipScanCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
             int type = relationships.type();
             if (type == NO_ID) {

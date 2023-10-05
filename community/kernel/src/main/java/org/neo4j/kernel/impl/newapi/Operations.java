@@ -224,8 +224,8 @@ public class Operations implements Write, SchemaWrite {
     public void initialize(CursorContext cursorContext) {
         this.nodeCursor = cursors.allocateFullAccessNodeCursor(cursorContext);
         this.propertyCursor = cursors.allocateFullAccessPropertyCursor(cursorContext, memoryTracker);
-        this.relationshipCursor = cursors.allocateRelationshipScanCursor(cursorContext);
-        this.restrictedNodeCursor = cursors.allocateNodeCursor(cursorContext);
+        this.relationshipCursor = cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
+        this.restrictedNodeCursor = cursors.allocateNodeCursor(cursorContext, memoryTracker);
         this.restrictedPropertyCursor = cursors.allocatePropertyCursor(cursorContext, memoryTracker);
     }
 
