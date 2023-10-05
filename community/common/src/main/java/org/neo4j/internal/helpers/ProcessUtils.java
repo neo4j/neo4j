@@ -72,6 +72,14 @@ public final class ProcessUtils {
         return Arrays.asList(getClassPath().split(File.pathSeparator));
     }
 
+    public static void setClassPath(String classPath) {
+        System.setProperty("java.class.path", classPath);
+    }
+
+    public static void amendClassPath(String entry) {
+        System.setProperty("java.class.path", getClassPath() + File.pathSeparator + entry);
+    }
+
     /**
      * Get the classpath as a single string of all the classpath file entries, separated by the path separator.
      * <p>

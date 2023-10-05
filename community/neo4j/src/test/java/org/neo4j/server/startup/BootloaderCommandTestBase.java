@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.internal.helpers.ProcessUtils.start;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
 
 import java.io.ByteArrayInputStream;
@@ -168,6 +169,18 @@ abstract class BootloaderCommandTestBase {
         };
 
         return createCommand(new PrintStream(out), new PrintStream(err), envLookup, propLookup, version);
+    }
+
+    protected static String readFile(Path file) {
+        try {
+            return Files.readString(file);
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    protected String getDebugLogLines() {
+        return readFile(config.get(GraphDatabaseSettings.logs_directory).resolve(DEBUG_LOG));
     }
 
     protected abstract CommandLine createCommand(

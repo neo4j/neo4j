@@ -22,7 +22,6 @@ package org.neo4j.server.startup;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.internal.helpers.ProcessUtils.getModuleOptions;
-import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 
 import java.io.FileOutputStream;
@@ -30,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.apache.commons.io.IOUtils;
@@ -127,20 +125,8 @@ abstract class ServerProcessTestBase extends BootloaderCommandTestBase {
         return StringUtils.isNotEmpty(pidStr) ? Long.parseLong(pidStr) : null;
     }
 
-    protected String getDebugLogLines() {
-        return readFile(config.get(GraphDatabaseSettings.logs_directory).resolve(DEBUG_LOG));
-    }
-
     protected String getUserLogLines() {
         return readFile(config.get(GraphDatabaseSettings.logs_directory).resolve(USER_LOG));
-    }
-
-    private static String readFile(Path file) {
-        try {
-            return Files.readString(file);
-        } catch (IOException e) {
-            return "";
-        }
     }
 
     public static boolean isCurrentlyRunningAsWindowsAdmin() {
