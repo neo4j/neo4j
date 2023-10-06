@@ -164,13 +164,12 @@ public class TransactionLogInitializer
 
     private void appendEmptyTransactionAndCheckPoint( LogFiles logFiles, String reason ) throws IOException
     {
-        TransactionId committedTx = store.getLastCommittedTransaction();
-        long timestamp = committedTx.commitTimestamp();
-        long transactionId = committedTx.transactionId();
+        long timestamp = store.getLastCommittedTransaction().commitTimestamp();
+        long transactionId = store.nextCommittingTransactionId();
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
         PhysicalTransactionRepresentation emptyTx = emptyTransaction( timestamp );
-        int checksum = transactionLogWriter.append( emptyTx, BASE_TX_ID, BASE_TX_CHECKSUM );
+        int checksum = transactionLogWriter.append( emptyTx, transactionId, BASE_TX_CHECKSUM );
         logFile.forceAfterAppend( LogAppendEvent.NULL );
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint( logFiles, reason, position );

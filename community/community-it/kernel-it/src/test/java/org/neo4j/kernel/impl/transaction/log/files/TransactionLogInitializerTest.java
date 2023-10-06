@@ -62,6 +62,7 @@ class TransactionLogInitializerTest
         when( metaStore.getLastCommittedTransaction() ).thenReturn( txn );
         when( metaStore.getLastCommittedTransactionId() ).thenReturn( txn.transactionId() );
         when( metaStore.getLastClosedTransactionId() ).thenReturn( txn.transactionId() );
+        when( metaStore.nextCommittingTransactionId() ).thenReturn( txn.transactionId() + 1 );
         DatabaseLayout databaseLayout = Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
 
         //When
