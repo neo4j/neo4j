@@ -3910,6 +3910,36 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build()
   }
 
+  test("should plan ORDER BY subquery expression with relationships uniqueness predicate and projected relationship") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val q =
+      """MATCH p = (a)-[rel]->(b)
+        |WITH relationships(p)[0] AS r
+        |ORDER BY count { (x)-[r]->(y)-[rr]->(z) }
+        |RETURN r
+        |""".stripMargin
+
+    // p = (a)-[rel]->(b)
+    val pathExpr = PathExpressionBuilder.node("a").outTo("rel", "b").build()
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("anon_1 ASC")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_1"))
+      .|.filter("NOT rr = r")
+      .|.expandAll("(y)-[rr]->(z)")
+      .|.projectEndpoints("(x)-[r]->(y)", startInScope = false, endInScope = false)
+      .|.argument("r")
+      .projection(Map("r" -> containerIndex(relationships(pathExpr), 0)))
+      .allRelationshipsScan("(a)-[rel]->(b)")
+      .build()
+  }
+
   object VariableSet {
 
     def unapplySeq(s: Set[LogicalVariable]): Option[Seq[String]] = {

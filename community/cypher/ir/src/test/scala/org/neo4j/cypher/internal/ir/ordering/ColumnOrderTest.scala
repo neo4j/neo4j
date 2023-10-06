@@ -63,4 +63,16 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
     columnOrder.dependencies shouldBe Set(varFor("a1"))
   }
+
+  test(
+    "Column Order on relationships uniqueness predicate, with non-empty projection list containing non-var expressions, should return correct dependencies"
+  ) {
+    val pathVar = varFor("path")
+    val projections = Map(
+      "r" -> nullLiteral,
+      "rr" -> containerIndex(function("relationships", pathVar), 0)
+    )
+    val columnOrder = Asc(differentRelationships("r", "rr"), projections)
+    columnOrder.dependencies shouldBe Set(pathVar)
+  }
 }

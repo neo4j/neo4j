@@ -155,6 +155,7 @@ import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Nodes
+import org.neo4j.cypher.internal.expressions.functions.Relationships
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
@@ -734,6 +735,10 @@ trait AstConstructionTestSupport {
 
   def nodes(p: PathExpression): FunctionInvocation = {
     FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)
+  }
+
+  def relationships(p: PathExpression): FunctionInvocation = {
+    FunctionInvocation(FunctionName(Relationships.name)(p.position), p)(p.position)
   }
 
   def singleQuery(cs: Clause, position: InputPosition): Query =

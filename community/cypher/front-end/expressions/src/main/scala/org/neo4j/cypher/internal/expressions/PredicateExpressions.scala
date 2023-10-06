@@ -387,7 +387,7 @@ sealed trait RelationshipUniquenessPredicate extends BooleanExpression
  * @param rel1 first relationship
  * @param rel2 second relationship
  */
-case class DifferentRelationships(rel1: LogicalVariable, rel2: LogicalVariable)(val position: InputPosition)
+case class DifferentRelationships(rel1: Expression, rel2: Expression)(val position: InputPosition)
     extends RelationshipUniquenessPredicate {
   override def isConstantForQuery: Boolean = false
 }
