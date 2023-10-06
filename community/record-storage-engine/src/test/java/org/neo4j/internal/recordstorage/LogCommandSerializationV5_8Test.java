@@ -93,7 +93,7 @@ public class LogCommandSerializationV5_8Test extends LogCommandSerializationV5Ba
             assertBuffer(enrichment.entityChanges(), changes);
             assertBuffer(enrichment.values(), values);
 
-            if (userMetadata == null) {
+            if (userMetadata == null || userMetadata.length == 0) {
                 assertThat(enrichment.userMetadata()).isNotPresent();
             } else {
                 assertBuffer(enrichment.userMetadata().orElseThrow(), userMetadata);
