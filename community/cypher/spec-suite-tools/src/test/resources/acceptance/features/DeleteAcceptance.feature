@@ -72,3 +72,34 @@ Feature: DeleteAcceptance
     Then the side effects should be:
       | -nodes      | 1 |
       | -properties | 1 |
+
+  Scenario: NODETACH keyword delete works on nodes
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:L)
+      """
+    When executing query:
+      """
+      MATCH (n:L)
+      NODETACH DELETE n
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | -nodes      | 1 |
+      | -labels     | 1 |
+      | -properties | 0 |
+
+  @allowCustomErrors
+  Scenario: NODETACH keyword fails if relationships are present
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:L)-[:R]->(:G)
+      """
+    When executing query:
+      """
+      MATCH (n:L)
+      NODETACH DELETE n
+      """
+    Then a ConstraintValidationFailed should be raised at runtime: DeleteConnectedNode

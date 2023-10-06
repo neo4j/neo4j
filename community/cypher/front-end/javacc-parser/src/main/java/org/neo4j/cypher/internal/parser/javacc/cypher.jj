@@ -539,6 +539,7 @@ TOKEN [IGNORE_CASE] :
     | < NAN: "NAN" >
     | < NEW: "NEW" >
     | < NODE: "NODE" >
+    | < NODETACH: "NODETACH" >
     | < NODES: "NODES" >
     | < NONE: "NONE" >
     | < NOT: "NOT" >
@@ -1946,7 +1947,7 @@ CLAUSE DeleteClause() throws Exception:
     List<EXPRESSION> list = new ArrayList<>();
 }
 {
-    ( detachT=<DETACH> { detach = true; } )? t=<DELETE> e=Expression() {list.add( e );} ( <COMMA> e=Expression() { list.add( e ); } )*
+    ( detachT=<DETACH> { detach = true; } | detachT=<NODETACH> )? t=<DELETE> e=Expression() {list.add( e );} ( <COMMA> e=Expression() { list.add( e ); } )*
     {
         return astFactory.deleteClause( pos( detachT != null ? detachT : t ), detach, list );
     }
@@ -7013,6 +7014,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<NAN>
         | t=<NEW>
         | t=<NODE>
+        | t=<NODETACH>
         | t=<NODES>
         | t=<NONE>
         | t=<NOTHING>

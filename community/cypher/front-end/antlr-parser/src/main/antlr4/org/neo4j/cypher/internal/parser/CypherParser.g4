@@ -95,7 +95,7 @@ removeItem:
    (propertyExpression | variable nodeLabels);
 
 deleteClause:
-   DETACH? DELETE expression (COMMA expression)*;
+   (DETACH | NODETACH)? DELETE expression (COMMA expression)*;
 
 matchClause:
    ((OPTIONAL MATCH) | MATCH) matchMode? patternList hints* whereClause?;

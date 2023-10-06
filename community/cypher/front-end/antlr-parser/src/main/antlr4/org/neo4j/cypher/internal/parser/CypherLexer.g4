@@ -527,6 +527,9 @@ NEW:
 NODE:
    N O D E;
 
+NODETACH:
+   N O D E T A C H;
+
 NODES:
    N O D E S;
 
