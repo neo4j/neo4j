@@ -31,7 +31,6 @@ import static org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory.EMPTY_
 import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
-import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
@@ -676,9 +675,6 @@ public final class Recovery {
                 failOnCorruptedLogFiles,
                 config);
 
-        var transactionAppender =
-                createTransactionAppender(logFiles, metadataProvider, config, databaseHealth, scheduler, logProvider);
-
         LifeSupport schemaLife = new LifeSupport();
         schemaLife.add(storageEngine.schemaAndTokensLifecycle());
         schemaLife.add(indexingService);
@@ -731,7 +727,6 @@ public final class Recovery {
         recoveryLife.add(new MissingTransactionLogsCheck(config, logTailMetadata, recoveryLog));
         recoveryLife.add(logFiles);
         recoveryLife.add(transactionLogsRecovery);
-        recoveryLife.add(transactionAppender);
         recoveryLife.add(checkPointer);
         try {
             recoveryLife.start();
