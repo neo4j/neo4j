@@ -183,4 +183,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
     protected <T> T resolve(Class<T> type) {
         return dependencies.resolveDependency(type);
     }
+
+    protected LogService getLogService() {
+        return logService;
+    }
 }
