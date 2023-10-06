@@ -19,18 +19,17 @@
  */
 package org.neo4j.bolt.txtracking;
 
+import static org.neo4j.util.Preconditions.checkArgument;
+import static org.neo4j.util.Preconditions.requireNonNegative;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
-
-import static org.neo4j.util.Preconditions.checkArgument;
-import static org.neo4j.util.Preconditions.requireNonNegative;
 
 /**
  * A {@link ReconciledTransactionTracker} used for standalone and clustered databases that have a reconciler and allow updates of the system database.
@@ -155,8 +154,15 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
                         "Received illegal transaction ID %s which is lower than the current transaction ID %s. Sequence: %s", reconciledTransactionId,
                         currentLastReconciledTxId, sequence );
 
-                log.debug( "Updating %s with transaction ID %s", sequence, reconciledTransactionId );
                 sequence.offer( reconciledTransactionId, NO_METADATA );
+                if ( sequence.getHighestGapFreeNumber() != sequence.highestEverSeen() )
+                {
+                    log.info( "Updated %s with transaction ID %s", sequence, reconciledTransactionId );
+                }
+                else
+                {
+                    log.debug( "Updated %s with transaction ID %s", sequence, reconciledTransactionId );
+                }
             }
         }
         finally
