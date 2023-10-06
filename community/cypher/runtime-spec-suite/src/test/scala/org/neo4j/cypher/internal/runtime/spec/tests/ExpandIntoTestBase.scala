@@ -466,6 +466,56 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("a", "b").withNoRows()
   }
+
+  test("expand into in plan with eager and let anti semi apply") {
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(3, "A")
+      val rels = for {
+        a <- nodes
+        b <- nodes
+      } yield {
+        a.createRelationshipTo(b, RelationshipType.withName("R"))
+      }
+      (nodes, rels)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("var6", "var0", "var1", "var3", "var2")
+      .letAntiSemiApply("var6")
+      .|.expandInto("(var4)<-[var5*3..4]-(var1)")
+      .|.eager()
+      .|.nodeByElementIdSeek(
+        "var4",
+        Set("var0", "var1", "var2", "var3"),
+        s"'${nodes(1).getElementId}'",
+        s"'${nodes(2).getElementId}'"
+      )
+      .expandInto("(var1)-[var3:R2|R]->(var2)")
+      .sort("var0 ASC", "var1 ASC", "var2 ASC")
+      .unionRelationshipTypesScan("(var1)-[var0:R]-(var2)", IndexOrderNone)
+      .build()
+
+    val result = execute(query, runtime)
+
+    val expected = Seq(
+      Array(false, rels(0), nodes(0), rels(0), nodes(0)),
+      Array(false, rels(1), nodes(0), rels(1), nodes(1)),
+      Array(false, rels(1), nodes(1), rels(3), nodes(0)),
+      Array(false, rels(2), nodes(0), rels(2), nodes(2)),
+      Array(false, rels(2), nodes(2), rels(6), nodes(0)),
+      Array(false, rels(3), nodes(0), rels(1), nodes(1)),
+      Array(false, rels(3), nodes(1), rels(3), nodes(0)),
+      Array(false, rels(4), nodes(1), rels(4), nodes(1)),
+      Array(false, rels(5), nodes(1), rels(5), nodes(2)),
+      Array(false, rels(5), nodes(2), rels(7), nodes(1)),
+      Array(false, rels(6), nodes(0), rels(2), nodes(2)),
+      Array(false, rels(6), nodes(2), rels(6), nodes(0)),
+      Array(false, rels(7), nodes(1), rels(5), nodes(2)),
+      Array(false, rels(7), nodes(2), rels(7), nodes(1)),
+      Array(false, rels(8), nodes(2), rels(8), nodes(2))
+    )
+    result should beColumns("var6", "var0", "var1", "var3", "var2").withRows(inAnyOrder(expected))
+  }
 }
 
 // Supported by interpreted, slotted, pipelined, parallel
