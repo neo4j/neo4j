@@ -204,15 +204,23 @@ public class RelationshipImporter extends EntityImporter {
                 }
             }
             badCollector.collectBadRelationship(
-                    startId,
+                    idToReport(startId, relationshipRecord.getFirstNode()),
                     startIdGroup,
-                    type,
-                    endId,
+                    idToReport(type, relationshipRecord.getType()),
+                    idToReport(endId, relationshipRecord.getSecondNode()),
                     endIdGroup,
                     relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId);
             entityPropertyCount = 0;
         }
         reset();
+    }
+
+    /**
+     * An input ID can be reported either as a "user input id" such as a string or long, temporary to the import,
+     * or as an actual internal ID. Reporting bad relationships gets more precise if both are considered.
+     */
+    private Object idToReport(Object inputId, long recordFieldId) {
+        return inputId != null ? inputId : recordFieldId != -1 ? recordFieldId : null;
     }
 
     @Override

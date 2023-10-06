@@ -974,7 +974,7 @@ public class EncodingIdMapperTest {
 
         @Override
         public void collectBadRelationship(
-                Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue) {
+                Object startId, Group startIdGroup, Object type, Object endId, Group endIdGroup, Object specificValue) {
             throw new UnsupportedOperationException();
         }
 

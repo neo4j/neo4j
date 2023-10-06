@@ -30,7 +30,7 @@ import org.neo4j.common.EntityType;
  */
 public interface Collector extends AutoCloseable {
     void collectBadRelationship(
-            Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue);
+            Object startId, Group startIdGroup, Object type, Object endId, Group endIdGroup, Object specificValue);
 
     void collectDuplicateNode(Object id, long actualId, Group group);
 
@@ -78,7 +78,7 @@ public interface Collector extends AutoCloseable {
         public void collectBadRelationship(
                 Object startId,
                 Group startIdGroup,
-                String type,
+                Object type,
                 Object endId,
                 Group endIdGroup,
                 Object specificValue) {}
@@ -126,7 +126,7 @@ public interface Collector extends AutoCloseable {
 
         @Override
         public void collectBadRelationship(
-                Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue) {
+                Object startId, Group startIdGroup, Object type, Object endId, Group endIdGroup, Object specificValue) {
             throw new IllegalStateException(format(
                     "Bad relationship (%s:%s)-[%s]->(%s:%s) %s",
                     startId, startIdGroup, type, endId, endIdGroup, specificValue));
