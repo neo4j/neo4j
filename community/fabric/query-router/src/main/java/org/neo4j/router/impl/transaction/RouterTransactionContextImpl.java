@@ -21,6 +21,7 @@ package org.neo4j.router.impl.transaction;
 
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.QueryPreParsedInfoService;
@@ -55,8 +56,8 @@ public record RouterTransactionContextImpl(
     }
 
     @Override
-    public DatabaseTransaction transactionFor(Location location) {
-        return routerTransaction.transactionFor(location);
+    public DatabaseTransaction transactionFor(Location location, TransactionMode mode) {
+        return routerTransaction.transactionFor(location, mode);
     }
 
     @Override

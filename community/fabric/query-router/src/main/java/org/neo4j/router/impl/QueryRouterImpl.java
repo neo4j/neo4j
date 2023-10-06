@@ -19,8 +19,12 @@
  */
 package org.neo4j.router.impl;
 
+import static org.neo4j.fabric.executor.FabricExecutor.WRITING_IN_READ_NOT_ALLOWED_MSG;
+
 import java.util.function.Function;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.configuration.Config;
+import org.neo4j.cypher.internal.options.CypherExecutionMode;
 import org.neo4j.fabric.bookmark.BookmarkFormat;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
@@ -28,14 +32,18 @@ import org.neo4j.fabric.bookmark.TransactionBookmarkManagerImpl;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
+import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.router.QueryRouter;
+import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.CompositeQueryPreParsedInfoService;
 import org.neo4j.router.impl.query.StandardQueryPreParsedInfoService;
+import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.impl.transaction.QueryRouterTransactionMonitor;
 import org.neo4j.router.impl.transaction.RouterTransactionContextImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionImpl;
@@ -155,19 +163,47 @@ public class QueryRouterImpl implements QueryRouter {
                 context.transactionInfo().statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
         statementLifecycle.startProcessing();
         try {
-            var preparsedInfo = queryPreParsedInfoParser.parseQuery(query);
-            context.verifyStatementType(preparsedInfo.statementType());
-            var target = context.preParsedInfo().target(preparsedInfo);
+            var preParsedInfo = queryPreParsedInfoParser.parseQuery(query);
+            StatementType statementType = preParsedInfo.statementType();
+            CypherExecutionMode executionMode = preParsedInfo.cypherExecutionMode();
+            AccessMode accessMode = context.transactionInfo().accessMode();
+            context.verifyStatementType(statementType);
+            var target = context.preParsedInfo().target(preParsedInfo);
             var location = context.locationService().locationOf(target);
+            verifyAccessModeWithStatementType(executionMode, accessMode, statementType, location);
             updateQueryRouterMetric(location);
-            var databaseTransaction = context.transactionFor(location);
+            var databaseTransaction =
+                    context.transactionFor(location, transactionMode(accessMode, statementType, executionMode));
             statementLifecycle.doneRouterProcessing(
-                    preparsedInfo.obfuscationMetadata().get(), target.isComposite());
+                    preParsedInfo.obfuscationMetadata().get(), target.isComposite());
             return databaseTransaction.executeQuery(query, subscriber, statementLifecycle);
         } catch (RuntimeException e) {
             statementLifecycle.endFailure(e);
 
             throw e;
+        }
+    }
+
+    private TransactionMode transactionMode(
+            AccessMode accessMode, StatementType statementType, CypherExecutionMode executionMode) {
+        if (accessMode == AccessMode.READ) {
+            return TransactionMode.DEFINITELY_READ;
+        } else if (statementType.isReadQuery() || executionMode.isExplain()) {
+            return TransactionMode.MAYBE_WRITE;
+        } else {
+            return TransactionMode.DEFINITELY_WRITE;
+        }
+    }
+
+    private void verifyAccessModeWithStatementType(
+            CypherExecutionMode executionMode, AccessMode accessMode, StatementType statementType, Location location) {
+        if (!(executionMode.isExplain())
+                && accessMode == AccessMode.READ
+                && statementType == StatementType.WRITE_QUERY) {
+            throw new QueryRouterException(
+                    Status.Statement.AccessMode,
+                    WRITING_IN_READ_NOT_ALLOWED_MSG + ". Attempted write to %s",
+                    location.getDatabaseName());
         }
     }
 

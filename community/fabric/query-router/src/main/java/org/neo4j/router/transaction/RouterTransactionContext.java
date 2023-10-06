@@ -21,6 +21,7 @@ package org.neo4j.router.transaction;
 
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.QueryPreParsedInfoService;
@@ -39,7 +40,7 @@ public interface RouterTransactionContext {
     /**
      * Begins a new, or reuses an existing, database transaction for the given location
      */
-    DatabaseTransaction transactionFor(Location location);
+    DatabaseTransaction transactionFor(Location location, TransactionMode mode);
 
     TransactionBookmarkManager txBookmarkManager();
 

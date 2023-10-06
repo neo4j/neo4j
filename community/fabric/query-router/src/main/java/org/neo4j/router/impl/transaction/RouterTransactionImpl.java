@@ -113,12 +113,7 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
     }
 
     @Override
-    public DatabaseTransaction transactionFor(Location location) {
-        var mode =
-                switch (transactionInfo.accessMode()) {
-                    case WRITE -> TransactionMode.MAYBE_WRITE;
-                    case READ -> TransactionMode.DEFINITELY_READ;
-                };
+    public DatabaseTransaction transactionFor(Location location, TransactionMode mode) {
         return databaseTransactions.computeIfAbsent(
                 location.databaseReference().id(),
                 ref -> registerNewChildTransaction(location, mode, () -> createTransactionFor(location)));

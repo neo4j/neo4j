@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.compiler.CypherParsing;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
+import org.neo4j.cypher.internal.options.CypherQueryOptions;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
@@ -85,7 +86,7 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
         var parsedQuery = parse(query, queryTracer, preParsedQuery);
-        return preParsedInfo(parsedQuery);
+        return preParsedInfo(parsedQuery, preParsedQuery.options().queryOptions());
     }
 
     private BaseState parse(
@@ -101,7 +102,7 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
                 cancellationChecker);
     }
 
-    private PreParsedInfo preParsedInfo(BaseState parsedQuery) {
+    private PreParsedInfo preParsedInfo(BaseState parsedQuery, CypherQueryOptions cypherQueryOptions) {
         var statement = parsedQuery.statement();
         Optional<ObfuscationMetadata> obfuscationMetadata = toJava(parsedQuery.maybeObfuscationMetadata());
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
@@ -110,11 +111,16 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
             return new PreParsedInfo(
                     new SingleQueryCatalogInfo(Optional.of(SYSTEM_DATABASE_CATALOG_NAME)),
                     obfuscationMetadata,
-                    StatementType.of(statement, resolver));
+                    StatementType.of(statement, resolver),
+                    cypherQueryOptions.executionMode());
         } else {
             var graphSelections = staticUseEvaluation.evaluateStaticTopQueriesGraphSelections(statement);
             var catalogInfo = toCatalogInfo(graphSelections);
-            return new PreParsedInfo(catalogInfo, obfuscationMetadata, StatementType.of(statement, resolver));
+            return new PreParsedInfo(
+                    catalogInfo,
+                    obfuscationMetadata,
+                    StatementType.of(statement, resolver),
+                    cypherQueryOptions.executionMode());
         }
     }
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.ast.CatalogName;
+import org.neo4j.cypher.internal.options.CypherExecutionMode;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.router.impl.query.StatementType;
 
@@ -36,7 +37,10 @@ import org.neo4j.router.impl.query.StatementType;
 public interface QueryPreParsedInfoParser {
 
     record PreParsedInfo(
-            CatalogInfo catalogInfo, Optional<ObfuscationMetadata> obfuscationMetadata, StatementType statementType) {}
+            CatalogInfo catalogInfo,
+            Optional<ObfuscationMetadata> obfuscationMetadata,
+            StatementType statementType,
+            CypherExecutionMode cypherExecutionMode) {}
 
     sealed interface CatalogInfo permits SingleQueryCatalogInfo, UnionQueryCatalogInfo {}
 
