@@ -52,12 +52,16 @@ public class DiscoveryResponseHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         FullHttpMessage httpMessage = (FullHttpMessage) msg;
         if (!isWebsocketUpgrade(httpMessage.headers())) {
-            var discoveryResponse = new DefaultFullHttpResponse(
-                    httpMessage.protocolVersion(),
-                    HttpResponseStatus.OK,
-                    Unpooled.copiedBuffer(authConfigProvider.getRepresentationAsBytes()));
-            addHeaders(discoveryResponse);
-            ctx.writeAndFlush(discoveryResponse).addListener(ChannelFutureListener.CLOSE);
+            try {
+                var discoveryResponse = new DefaultFullHttpResponse(
+                        httpMessage.protocolVersion(),
+                        HttpResponseStatus.OK,
+                        Unpooled.copiedBuffer(authConfigProvider.getRepresentationAsBytes()));
+                addHeaders(discoveryResponse);
+                ctx.writeAndFlush(discoveryResponse).addListener(ChannelFutureListener.CLOSE);
+            } finally {
+                httpMessage.release();
+            }
         } else {
             ctx.pipeline().remove(this);
             ctx.fireChannelRead(msg);
