@@ -20,6 +20,7 @@
 package org.neo4j.router.impl.transaction.database;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -51,7 +52,10 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
 
     @Override
     public DatabaseTransaction beginTransaction(
-            Location.Local location, TransactionInfo transactionInfo, TransactionBookmarkManager bookmarkManager) {
+            Location.Local location,
+            TransactionInfo transactionInfo,
+            TransactionBookmarkManager bookmarkManager,
+            Consumer<Status> terminationCallback) {
         var databaseContext = databaseContextProvider
                 .getDatabaseContext(location.databaseReference().databaseId())
                 .orElseThrow(databaseNotFound(location.getDatabaseName()));
@@ -69,7 +73,8 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
                 .getBookmarkForLocal(location)
                 .ifPresent(bookmark -> transactionIdTracker.awaitGraphUpToDate(location, bookmark.transactionId()));
 
-        InternalTransaction internalTransaction = beginInternalTransaction(databaseApi, transactionInfo);
+        InternalTransaction internalTransaction =
+                beginInternalTransaction(databaseApi, transactionInfo, terminationCallback);
 
         return new LocalDatabaseTransaction(
                 location,
@@ -82,7 +87,7 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
     }
 
     private InternalTransaction beginInternalTransaction(
-            GraphDatabaseAPI databaseApi, TransactionInfo transactionInfo) {
+            GraphDatabaseAPI databaseApi, TransactionInfo transactionInfo, Consumer<Status> terminationCallback) {
 
         InternalTransaction internalTransaction = databaseApi.beginTransaction(
                 transactionInfo.type(),
@@ -90,7 +95,7 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
                 transactionInfo.clientInfo(),
                 transactionInfo.txTimeout().toMillis(),
                 TimeUnit.MILLISECONDS,
-                status -> {},
+                terminationCallback::accept,
                 this::transformTerminalOperationError);
 
         internalTransaction.setMetaData(transactionInfo.txMetadata());

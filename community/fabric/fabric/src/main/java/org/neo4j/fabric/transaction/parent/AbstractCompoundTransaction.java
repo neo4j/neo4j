@@ -282,6 +282,15 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
         return true;
     }
 
+    @Override
+    public void childTransactionTerminated(Status reason) {
+        if (!isOpen()) {
+            return;
+        }
+
+        markForTermination(reason);
+    }
+
     private void terminateChildren(Status reason) {
         var allFailures = new ArrayList<ErrorRecord>();
         try {

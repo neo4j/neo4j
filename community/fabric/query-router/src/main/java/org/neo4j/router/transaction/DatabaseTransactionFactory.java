@@ -19,8 +19,10 @@
  */
 package org.neo4j.router.transaction;
 
+import java.util.function.Consumer;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A factory for starting database transactions at given locations
@@ -28,5 +30,8 @@ import org.neo4j.fabric.executor.Location;
 public interface DatabaseTransactionFactory<LOC extends Location> {
 
     DatabaseTransaction beginTransaction(
-            LOC location, TransactionInfo transactionInfo, TransactionBookmarkManager bookmarkManager);
+            LOC location,
+            TransactionInfo transactionInfo,
+            TransactionBookmarkManager bookmarkManager,
+            Consumer<Status> terminationCallback);
 }

@@ -35,9 +35,9 @@ import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.QueryStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.StatementResult;
-import org.neo4j.fabric.transaction.FabricCompoundTransaction;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.fabric.transaction.parent.CompoundTransaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -62,7 +62,7 @@ public class FabricLocalExecutor {
     }
 
     public LocalTransactionContext startTransactionContext(
-            FabricCompoundTransaction parentTransaction,
+            CompoundTransaction<SingleDbTransaction> parentTransaction,
             FabricTransactionInfo transactionInfo,
             TransactionBookmarkManager bookmarkManager) {
         return new LocalTransactionContext(parentTransaction, transactionInfo, bookmarkManager);
@@ -72,12 +72,12 @@ public class FabricLocalExecutor {
         private final Map<UUID, KernelTxWrapper> kernelTransactions = new ConcurrentHashMap<>();
         private final Set<InternalTransaction> internalTransactions = ConcurrentHashMap.newKeySet();
 
-        private final FabricCompoundTransaction parentTransaction;
+        private final CompoundTransaction<SingleDbTransaction> parentTransaction;
         private final FabricTransactionInfo transactionInfo;
         private final TransactionBookmarkManager bookmarkManager;
 
         private LocalTransactionContext(
-                FabricCompoundTransaction parentTransaction,
+                CompoundTransaction<SingleDbTransaction> parentTransaction,
                 FabricTransactionInfo transactionInfo,
                 TransactionBookmarkManager bookmarkManager) {
             this.parentTransaction = parentTransaction;

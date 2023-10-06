@@ -76,10 +76,11 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
 
     private DatabaseTransaction createTransactionFor(Location location) {
         if (location instanceof Location.Local local) {
-            return localDatabaseTransactionFactory.beginTransaction(local, transactionInfo, transactionBookmarkManager);
+            return localDatabaseTransactionFactory.beginTransaction(
+                    local, transactionInfo, transactionBookmarkManager, this::childTransactionTerminated);
         } else if (location instanceof Location.Remote remote) {
             return remoteDatabaseTransactionFactory.beginTransaction(
-                    remote, transactionInfo, transactionBookmarkManager);
+                    remote, transactionInfo, transactionBookmarkManager, this::childTransactionTerminated);
         } else {
             throw new IllegalArgumentException("Unexpected Location type: " + location);
         }

@@ -50,7 +50,7 @@ import org.neo4j.time.SystemNanoClock;
 import reactor.core.publisher.Mono;
 
 public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbTransaction>
-        implements FabricCompoundTransaction, FabricTransaction, FabricTransaction.FabricExecutionContext {
+        implements FabricTransaction, FabricTransaction.FabricExecutionContext {
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
     private final Catalog catalogSnapshot;
@@ -251,15 +251,6 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
     @Override
     public Procedures contextlessProcedures() {
         return contextlessProcedures;
-    }
-
-    @Override
-    public void childTransactionTerminated(Status reason) {
-        if (!isOpen()) {
-            return;
-        }
-
-        markForTermination(reason);
     }
 
     @Override

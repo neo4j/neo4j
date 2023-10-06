@@ -57,4 +57,10 @@ public interface CompoundTransaction<Child extends ChildTransaction> {
      * of this parent transaction, if possible.
      */
     <Tx extends Child> void upgradeToWritingTransaction(Tx childTransaction) throws FabricException;
+
+    /**
+     * A callback invoked when a child transaction is terminated.
+     * It is a best effort as it works only for local child transactions.
+     */
+    void childTransactionTerminated(Status reason);
 }
