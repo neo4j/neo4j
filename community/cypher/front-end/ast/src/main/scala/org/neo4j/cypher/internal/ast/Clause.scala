@@ -67,6 +67,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -458,8 +459,10 @@ case class Match(
     allLabels.contains(labelOrRelType) || allRelTypes.contains(labelOrRelType)
   }
 
-  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.findAllByClass[LogicalVariable].toSet
-}
+  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.treeFold(Set.empty[LogicalVariable]) {
+    case _: ScopeExpression => acc => SkipChildren(acc)
+    case logicalVar: LogicalVariable => acc => TraverseChildren(acc ++ Set(logicalVar))
+  }}
 
 sealed trait CommandClause extends Clause with SemanticAnalysisTooling {
   def unfilteredColumns: DefaultOrAllShowColumns
