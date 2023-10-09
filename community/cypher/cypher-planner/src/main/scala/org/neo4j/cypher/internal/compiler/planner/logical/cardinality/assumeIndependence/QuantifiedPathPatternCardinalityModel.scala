@@ -58,7 +58,7 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
         labelInfo = predicates.allLabelInfo,
         extraRelTypeInfo = quantifiedPathPattern.patternRelationships.collect {
           case PatternRelationship(name, _, _, Seq(relType), _) => name -> relType
-        }.toSeq.toMap,
+        }.toMap,
         predicates = predicates.otherPredicates
       )
 

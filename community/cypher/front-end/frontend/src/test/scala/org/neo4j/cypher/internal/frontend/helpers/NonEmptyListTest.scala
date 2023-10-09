@@ -141,12 +141,12 @@ class NonEmptyListTest extends CypherFunSuite {
   }
 
   test("Should support filtering a NonEmptyList") {
-    NonEmptyList(1).filter(_ == 0) should equal(None)
-    NonEmptyList(1).filter(_ == 1) should equal(Some(NonEmptyList(1)))
+    NonEmptyList(1).filter(_ == 0) should equal(Seq.empty)
+    NonEmptyList(1).filter(_ == 1) should equal(Seq(1))
 
-    NonEmptyList(1, 2).filter(_ == 0) should equal(None)
-    NonEmptyList(1, 3).filter(_ <= 2) should equal(Some(NonEmptyList(1)))
-    NonEmptyList(1, 2).filter(_ >= 0) should equal(Some(NonEmptyList(1, 2)))
+    NonEmptyList(1, 2).filter(_ == 0) should equal(Seq.empty)
+    NonEmptyList(1, 3).filter(_ <= 2) should equal(Seq(1))
+    NonEmptyList(1, 2).filter(_ >= 0) should equal(Seq(1, 2))
   }
 
   test("Should map NonEmptyList") {
@@ -155,10 +155,10 @@ class NonEmptyListTest extends CypherFunSuite {
   }
 
   test("Should collect from a NonEmptyList") {
-    NonEmptyList(1).collect { case x if x == 1 => "Apa" } should equal(Some(NonEmptyList("Apa")))
-    NonEmptyList(1, 2).collect { case x if x == 1 => "Apa" } should equal(Some(NonEmptyList("Apa")))
-    NonEmptyList(1).collect { case x if x != 1 => "Apa" } should equal(None)
-    NonEmptyList(1, 2).collect { case x if x != 1 => "Apa" } should equal(Some(NonEmptyList("Apa")))
+    NonEmptyList(1).collect { case x if x == 1 => "Apa" } should equal(Seq("Apa"))
+    NonEmptyList(1, 2).collect { case x if x == 1 => "Apa" } should equal(Seq("Apa"))
+    NonEmptyList(1).collect { case x if x != 1 => "Apa" } should equal(Seq.empty)
+    NonEmptyList(1, 2).collect { case x if x != 1 => "Apa" } should equal(Seq("Apa"))
   }
 
   test("Should reverseFlatMap a NonEmptyList") {

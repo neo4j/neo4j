@@ -53,7 +53,8 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
 
   private case class InlinedRelationship(rel: PatternRelationship, inlinedPredicate: Option[Predicate])
 
-  private def tryToInline(typePredicates: Map[String, (Predicate, Seq[RelTypeName])])(rel: PatternRelationship) =
+  private def tryToInline(typePredicates: Map[String, (Predicate, Seq[RelTypeName])])(rel: PatternRelationship)
+    : InlinedRelationship =
     // if there are types we could inline on that relationship
     typePredicates.get(rel.name)
       // and that relationship does not have any relationship types yet

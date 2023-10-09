@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.NonEmptyList.IteratorConverter
-import org.neo4j.cypher.internal.util.NonEmptyList.newBuilder
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -190,11 +189,10 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
     case Fby(elem, tail) => f(elem); tail.foreach(f)
   }
 
-  final def filter[X >: T](f: X => Boolean): Option[NonEmptyList[T]] =
-    foldLeft[Option[NonEmptyList[T]]](None) {
-      case (None, elem)            => if (f(elem)) Some(Last(elem)) else None
-      case (acc @ Some(nel), elem) => if (f(elem)) Some(Fby(elem, nel)) else acc
-    }.map(_.reverse)
+  final def filter[X >: T](f: X => Boolean): Seq[T] =
+    foldLeft[Seq[T]](Seq.empty) {
+      case (acc, elem) => if (f(elem)) acc :+ elem else acc
+    }
 
   final def forall[X >: T](predicate: X => Boolean): Boolean =
     !exists(x => !predicate(x))
@@ -214,8 +212,8 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
     case Last(elem)      => Last(f(elem))
   }
 
-  final def collect[S](pf: PartialFunction[T, S]): Option[NonEmptyList[S]] =
-    foldLeft(newBuilder[S]) { (builder, elem) =>
+  final def collect[S](pf: PartialFunction[T, S]): Seq[S] =
+    foldLeft(Vector.newBuilder[S]) { (builder, elem) =>
       if (pf.isDefinedAt(elem)) builder += pf(elem) else builder
     }.result()
 
