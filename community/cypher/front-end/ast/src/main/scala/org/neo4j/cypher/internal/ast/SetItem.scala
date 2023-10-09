@@ -21,10 +21,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
-import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
@@ -33,7 +31,7 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
-sealed trait SetItem extends ASTNode with SemanticCheckable with HasMappableExpressions[SetItem]
+sealed trait SetItem extends ASTNode with SemanticCheckable
 
 case class SetLabelItem(variable: Variable, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
 
@@ -41,9 +39,6 @@ case class SetLabelItem(variable: Variable, labels: Seq[LabelName])(val position
     SemanticExpressionCheck.simple(variable) chain
       SemanticPatternCheck.checkValidLabels(labels, position) chain
       SemanticExpressionCheck.expectType(CTNode.covariant, variable)
-
-  override def mapExpressions(f: Expression => Expression): SetItem =
-    copy(f(variable).asInstanceOf[Variable])(this.position)
 }
 
 sealed trait SetProperty extends SetItem with SemanticAnalysisTooling
@@ -57,18 +52,6 @@ case class SetPropertyItem(property: LogicalProperty, expression: Expression)(va
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTNode.covariant | CTRelationship.covariant, property.map)
 
-  override def mapExpressions(f: Expression => Expression): SetItem = {
-    property match {
-      case Property(map, propertyKey) =>
-        copy(
-          Property(f(map), propertyKey)(property.position),
-          f(expression)
-        )(this.position)
-      case _ => throw new IllegalStateException(
-          s"We don't expect this to be called on any other logical properties. Got: $property"
-        )
-    }
-  }
 }
 
 case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition)
@@ -85,13 +68,6 @@ case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expres
       SemanticExpressionCheck.simple(expressions) chain
       expectType(CTNode.covariant | CTRelationship.covariant, map)
   }
-
-  override def mapExpressions(f: Expression => Expression): SetItem = copy(
-    f(map),
-    items.map {
-      case (name, expression) => (name, f(expression))
-    }
-  )(this.position)
 }
 
 case class SetExactPropertiesFromMapItem(variable: Variable, expression: Expression)(val position: InputPosition)
@@ -102,11 +78,6 @@ case class SetExactPropertiesFromMapItem(variable: Variable, expression: Express
       expectType(CTNode.covariant | CTRelationship.covariant, variable) chain
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTMap.covariant, expression)
-
-  override def mapExpressions(f: Expression => Expression): SetItem = copy(
-    f(variable).asInstanceOf[Variable],
-    f(expression)
-  )(this.position)
 }
 
 case class SetIncludingPropertiesFromMapItem(variable: Variable, expression: Expression)(val position: InputPosition)
@@ -117,9 +88,4 @@ case class SetIncludingPropertiesFromMapItem(variable: Variable, expression: Exp
       expectType(CTNode.covariant | CTRelationship.covariant, variable) chain
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTMap.covariant, expression)
-
-  override def mapExpressions(f: Expression => Expression): SetItem = copy(
-    f(variable).asInstanceOf[Variable],
-    f(expression)
-  )(this.position)
 }

@@ -18,18 +18,11 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends Expression
-    with HasMappableExpressions[MapExpression] {
+case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends Expression {
 
   override def asCanonicalStringVal: String = items.map {
     case (key, value) => s"${key.asCanonicalStringVal}: ${value.asCanonicalStringVal}"
   }.mkString("{", ", ", "}")
 
   override def isConstantForQuery: Boolean = items.forall(kv => kv._2.isConstantForQuery)
-
-  override def mapExpressions(f: Expression => Expression): MapExpression = copy(
-    items.map {
-      case (name, expression) => (name, f(expression))
-    }
-  )(position)
 }

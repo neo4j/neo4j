@@ -19,17 +19,14 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 
-sealed trait RemoveItem extends ASTNode with SemanticCheckable with HasMappableExpressions[RemoveItem]
+sealed trait RemoveItem extends ASTNode with SemanticCheckable
 
 case class RemoveLabelItem(variable: LogicalVariable, labels: Seq[LabelName])(val position: InputPosition)
     extends RemoveItem {
@@ -38,10 +35,6 @@ case class RemoveLabelItem(variable: LogicalVariable, labels: Seq[LabelName])(va
     SemanticExpressionCheck.simple(variable) chain
       SemanticPatternCheck.checkValidLabels(labels, position) chain
       SemanticExpressionCheck.expectType(CTNode.covariant, variable)
-
-  override def mapExpressions(f: Expression => Expression): RemoveItem = copy(
-    f(variable).asInstanceOf[LogicalVariable]
-  )(this.position)
 }
 
 case class RemovePropertyItem(property: LogicalProperty) extends RemoveItem {
@@ -49,13 +42,4 @@ case class RemovePropertyItem(property: LogicalProperty) extends RemoveItem {
 
   def semanticCheck = SemanticExpressionCheck.simple(property) chain
     SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey))
-
-  override def mapExpressions(f: Expression => Expression): RemoveItem =
-    property match {
-      case Property(map, propertyKey) =>
-        copy(Property(f(map), propertyKey)(property.position))
-      case _ => throw new IllegalStateException(
-          s"We don't expect this to be called on any other logical properties. Got: $property"
-        )
-    }
 }

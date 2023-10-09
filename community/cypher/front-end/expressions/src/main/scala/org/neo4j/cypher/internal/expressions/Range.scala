@@ -21,10 +21,4 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(
   val position: InputPosition
-) extends ASTNode with HasMappableExpressions[Range] {
-
-  override def mapExpressions(f: Expression => Expression): Range = copy(
-    lower.map(f).asInstanceOf[Option[UnsignedIntegerLiteral]],
-    upper.map(f).asInstanceOf[Option[UnsignedIntegerLiteral]]
-  )(this.position)
-}
+) extends ASTNode

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
@@ -33,13 +32,11 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import scala.collection.immutable.ListSet
 
 case class Where(expression: Expression)(val position: InputPosition)
-    extends ASTNode with SemanticCheckable with HasMappableExpressions[Where] {
+    extends ASTNode with SemanticCheckable {
 
   def dependencies: Set[LogicalVariable] = expression.dependencies
 
   def semanticCheck: SemanticCheck = Where.checkExpression(expression)
-
-  override def mapExpressions(f: Expression => Expression): Where = copy(f(expression))(this.position)
 }
 
 object Where {

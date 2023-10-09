@@ -19,20 +19,16 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
-sealed trait GraphPatternQuantifier extends ASTNode with HasMappableExpressions[GraphPatternQuantifier] {
+sealed trait GraphPatternQuantifier extends ASTNode {
   def canBeEmpty: Boolean
 }
 
 case class PlusQuantifier()(val position: InputPosition) extends GraphPatternQuantifier {
   override def canBeEmpty: Boolean = false
-
-  override def mapExpressions(f: Expression => Expression): GraphPatternQuantifier = this
 }
 
 case class StarQuantifier()(val position: InputPosition) extends GraphPatternQuantifier {
   override def canBeEmpty: Boolean = true
-
-  override def mapExpressions(f: Expression => Expression): GraphPatternQuantifier = this
 }
 
 /**
@@ -42,11 +38,6 @@ case class IntervalQuantifier(lower: Option[UnsignedIntegerLiteral], upper: Opti
   val position: InputPosition
 ) extends GraphPatternQuantifier {
   override def canBeEmpty: Boolean = lower.map(_.value.longValue()).getOrElse(0L) == 0
-
-  override def mapExpressions(f: Expression => Expression): GraphPatternQuantifier = copy(
-    lower.map(f).asInstanceOf[Option[UnsignedIntegerLiteral]],
-    upper.map(f).asInstanceOf[Option[UnsignedIntegerLiteral]]
-  )(this.position)
 }
 
 /**
@@ -54,7 +45,4 @@ case class IntervalQuantifier(lower: Option[UnsignedIntegerLiteral], upper: Opti
  */
 case class FixedQuantifier(value: UnsignedIntegerLiteral)(val position: InputPosition) extends GraphPatternQuantifier {
   override def canBeEmpty: Boolean = value.value == 0
-
-  override def mapExpressions(f: Expression => Expression): GraphPatternQuantifier =
-    copy(f(value).asInstanceOf[UnsignedIntegerLiteral])(this.position)
 }
