@@ -119,7 +119,7 @@ class Neo4jAdminCommandTest {
                             execute("server", "report", "--to-path", home.toString(), "--verbose", "--expand-commands"))
                     .isEqualTo(EXIT_CODE_OK))) {
                 assertThat(out.toString()).containsSubsequence("Writing report to", "100%");
-                assertThat(err.toString()).isEmpty();
+                assertThat(err.toString()).contains("WARNING: Using incubator modules: jdk.incubator.vector");
             }
         }
 

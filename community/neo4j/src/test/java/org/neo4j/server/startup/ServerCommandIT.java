@@ -98,7 +98,7 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
     @Test
     void shouldBeAbleToStartAndStopRealServerOnNonWindows() {
         shouldBeAbleToStartAndStopRealServer();
-        assertThat(err.toString()).isEmpty();
+        assertThat(err.toString()).contains("WARNING: Using incubator modules: jdk.incubator.vector");
     }
 
     @EnabledOnOs(OS.WINDOWS)
