@@ -67,6 +67,7 @@ import org.neo4j.router.impl.bolt.QueryRouterBoltSpi;
 import org.neo4j.router.impl.query.DefaultDatabaseReferenceResolver;
 import org.neo4j.router.impl.query.parsing.PreParsedInfoCache;
 import org.neo4j.router.impl.query.parsing.StandardQueryPreParser;
+import org.neo4j.router.impl.transaction.QueryRouterTransactionMonitor;
 import org.neo4j.router.impl.transaction.database.LocalDatabaseTransactionFactory;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
@@ -174,7 +175,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                         systemNanoClock,
                         transactionIdTracker,
                         statementLifecycles,
-                        monitors.newMonitor(QueryRoutingMonitor.class)),
+                        monitors.newMonitor(QueryRoutingMonitor.class),
+                        new QueryRouterTransactionMonitor(config, systemNanoClock, this.logService)),
                 databaseReferenceResolver,
                 getCompositeDatabaseStack());
     }

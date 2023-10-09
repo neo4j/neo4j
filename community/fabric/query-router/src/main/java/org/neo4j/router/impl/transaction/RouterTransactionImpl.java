@@ -29,6 +29,8 @@ import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.fabric.transaction.parent.AbstractCompoundTransaction;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.transaction.DatabaseTransaction;
@@ -45,7 +47,9 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
     private final DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory;
     private final TransactionBookmarkManager transactionBookmarkManager;
     private final ConcurrentHashMap<UUID, DatabaseTransaction> databaseTransactions;
-    private StatementType statementType = null;
+    private final TransactionInitializationTrace initializationTrace;
+    private final QueryRouterTransactionMonitor routerTransactionMonitor;
+    private volatile StatementType statementType = null;
 
     public RouterTransactionImpl(
             TransactionInfo transactionInfo,
@@ -53,12 +57,16 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
             DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory,
             ErrorReporter errorReporter,
             SystemNanoClock clock,
-            TransactionBookmarkManager transactionBookmarkManager) {
+            TransactionBookmarkManager transactionBookmarkManager,
+            TraceProvider traceProvider,
+            QueryRouterTransactionMonitor transactionMonitor) {
         super(errorReporter, clock);
         this.transactionInfo = transactionInfo;
         this.localDatabaseTransactionFactory = localDatabaseTransactionFactory;
         this.remoteDatabaseTransactionFactory = remoteDatabaseTransactionFactory;
         this.transactionBookmarkManager = transactionBookmarkManager;
+        this.initializationTrace = traceProvider.getTraceInfo();
+        this.routerTransactionMonitor = transactionMonitor;
         this.databaseTransactions = new ConcurrentHashMap<>();
     }
 
@@ -94,6 +102,7 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
     @Override
     protected void closeContextsAndRemoveTransaction() {
         databaseTransactions.values().forEach(DatabaseTransaction::close);
+        routerTransactionMonitor.stopMonitoringTransaction(this);
     }
 
     @Override
@@ -142,5 +151,18 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
                 }
             }
         }
+    }
+
+    boolean isSchemaTransaction() {
+        var type = statementType;
+        return type != null && type.isSchemaCommand();
+    }
+
+    TransactionInfo transactionInfo() {
+        return transactionInfo;
+    }
+
+    TransactionInitializationTrace initializationTrace() {
+        return initializationTrace;
     }
 }
