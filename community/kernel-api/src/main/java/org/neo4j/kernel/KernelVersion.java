@@ -56,6 +56,7 @@ public enum KernelVersion {
     V5_11((byte) 10), // 5.11. Introduces specific add/remove commands, and the VECTOR index type.
     V5_12((byte) 11), // 5.12. Introduces user metadata for CDC
     V5_13((byte) 12), // 5.13.
+    V5_14((byte) 13), // 5.14.
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -65,7 +66,7 @@ public enum KernelVersion {
     public static final KernelVersion EARLIEST = V4_2;
     // The latest version should be kept private to be able to override it from tests.
     // getLatestVersion should be used when the latest version is required.
-    private static final KernelVersion LATEST = V5_13;
+    private static final KernelVersion LATEST = V5_14;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
     public static final KernelVersion VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED = V5_7;
