@@ -2023,10 +2023,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetNodeProperty") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH (n) SET n.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN n
@@ -2062,10 +2058,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetNodePropertiesFromMap") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH (n) SET n = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN n
@@ -2102,10 +2094,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetRelationshipProperty") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH ()-[r]->() SET r.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN r
@@ -2141,10 +2129,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetRelationshipPropertiesFromMap") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH ()-[r]->() SET r = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN r
@@ -2181,10 +2165,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetProperty") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |SET $param.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
