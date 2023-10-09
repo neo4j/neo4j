@@ -552,7 +552,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
           contextForRhsLeaves.plannerState.config.leafPlanners.candidates(
             rhsQgWithLhsArguments,
             interestingOrderConfig = componentInterestingOrderConfig,
-            context = context
+            context = contextForRhsLeaves
           )
         }
         val rhsPlans =
