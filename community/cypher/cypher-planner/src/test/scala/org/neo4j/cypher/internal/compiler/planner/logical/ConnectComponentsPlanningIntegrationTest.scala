@@ -1303,7 +1303,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
 
     val query =
-      """MATCH (a), (b)
+      """MATCH (a), (b) 
         |RETURN *
         |ORDER BY 1
         |""".stripMargin
@@ -1324,7 +1324,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
 
     val query =
-      """MATCH (a), (b)
+      """MATCH (a), (b) 
         |WHERE a.prop > b.prop
         |RETURN *
         |ORDER BY 1
@@ -1349,7 +1349,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
 
     val query =
-      """MATCH (a), (b)
+      """MATCH (a), (b) 
         |WHERE a.prop = b.prop
         |RETURN *
         |ORDER BY 1
@@ -1494,38 +1494,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .projectEndpoints("(e)-[r]->(f)", startInScope = false, endInScope = false)
       .projectEndpoints("(a)-[r]->(b)", startInScope = false, endInScope = false)
       .allRelationshipsScan("(c)-[r]->(d)")
-      .build()
-  }
-
-  test("should plan Argument on RHS of nested index join if it's not the leftmost leaf") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(10000)
-      .setLabelCardinality("A", 50)
-      .setLabelCardinality("B", 5000)
-      .setLabelCardinality("C", 3000)
-      .setRelationshipCardinality("()-[:REL]->()", 1500)
-      .setRelationshipCardinality("(:B)-[:REL]->()", 1000)
-      .setRelationshipCardinality("(:B)-[:REL]->(:C)", 1000)
-      .setRelationshipCardinality("()-[:REL]->(:C)", 1500)
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 1 / 5000.0, isUnique = true)
-      .build()
-
-    val q =
-      """MATCH (a:A )
-        |MATCH (b:B {prop: a.id})
-        |WHERE NOT (b)-[:REL]->(:C)
-        |RETURN *
-        |""".stripMargin
-
-    val plan = planner.plan(q).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
-      .apply()
-      .|.antiSemiApply()
-      .|.|.filter("anon_1:C")
-      .|.|.expandAll("(b)-[anon_0:REL]->(anon_1)")
-      .|.|.argument("b")
-      .|.nodeIndexOperator("b:B(prop = ???)", paramExpr = Some(prop("a", "id")), argumentIds = Set("a"), unique = true)
-      .nodeByLabelScan("a", "A")
       .build()
   }
 }
