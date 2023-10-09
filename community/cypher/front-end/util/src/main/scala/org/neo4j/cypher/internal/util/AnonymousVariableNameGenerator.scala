@@ -19,17 +19,12 @@ package org.neo4j.cypher.internal.util
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator.prefix
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
 
-/**
- * @param negativeNumbers if false, the numbers to use for variable names start with 0 and increase.
- *                        if true, the numbers to use for variable names start with -1 and decrease.
- */
-class AnonymousVariableNameGenerator(negativeNumbers: Boolean = false) {
-  private var counter = if (negativeNumbers) -1 else 0
-  private val inc = if (negativeNumbers) -1 else 1
+class AnonymousVariableNameGenerator() {
+  private var counter = 0
 
   def nextName: String = {
     val result = s"$prefix$counter"
-    counter += inc
+    counter += 1
     result
   }
 }

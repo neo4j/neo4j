@@ -25,7 +25,7 @@ import scala.util.matching.Regex
 object NameDeduplicator {
 
   def nameGeneratorRegex(generatorName: String): Regex =
-    s""" {2}($generatorName)(-?\\d+)""".r
+    s""" {2}($generatorName)(\\d+)""".r
 
   val UNNAMED_PATTERN: Regex = {
     nameGeneratorRegex(AnonymousVariableNameGenerator.generatorName)
