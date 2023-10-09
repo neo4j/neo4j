@@ -2229,4 +2229,36 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .allNodeScan("a")
       .build()
   }
+
+  test("should plan pattern predicate with dependency on a variable from previous MATCH inside Trail") {
+    val query = s"MATCH (z) MATCH (a) ((n)-[r]->(m) WHERE EXISTS { (m)-[mzRel]-(z) })+ (b) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+    plan shouldEqual planner.subPlanBuilder()
+      .apply()
+      .|.trail(trailParameters)
+      .|.|.filterExpression(isRepeatTrailUnique("r"))
+      .|.|.semiApply()
+      .|.|.|.expandInto("(m)-[mzRel]-(z)")
+      .|.|.|.argument("m", "z")
+      .|.|.expandAll("(n)-[r]->(m)")
+      .|.|.argument("n", "z")
+      .|.allNodeScan("a", "z")
+      .allNodeScan("z")
+      .build()
+  }
 }
