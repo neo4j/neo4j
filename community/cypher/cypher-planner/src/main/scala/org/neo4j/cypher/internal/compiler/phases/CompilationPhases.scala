@@ -51,7 +51,6 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
-import org.neo4j.cypher.internal.frontend.phases.IsolateSubqueriesInMutatingPatterns
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
@@ -179,8 +178,8 @@ object CompilationPhases {
       SemanticTypeCheck andThen
       AmbiguousAggregationAnalysis(config.semanticFeatures: _*) andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures) andThen
-      IsolateSubqueriesInMutatingPatterns andThen
-      SemanticAnalysis(warn = false, config.semanticFeatures: _*) andThen
+//      IsolateSubqueriesInMutatingPatterns andThen
+//      SemanticAnalysis(warn = false, config.semanticFeatures: _*) andThen
       ObfuscationMetadataCollection
   }
 

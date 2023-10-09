@@ -68,7 +68,6 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
@@ -1770,12 +1769,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .create(createNodeWithProperties("n", Seq(), "{foo: anon_0}"))
-      .eager(ListSet(EagernessReason.Unknown))
-      .projection("reduce(sum = 0, x IN anon_3 | sum + x) AS anon_0")
-      .rollUpApply("anon_3", "anon_1")
-      .|.projection("b.age AS anon_1")
-      .|.allRelationshipsScan("(a)-[anon_2]->(b)")
+      .create(createNodeWithProperties("n", Seq(), "{foo: reduce(sum = 0, x IN anon_2 | sum + x)}"))
+      .rollUpApply("anon_2", "anon_0")
+      .|.projection("b.age AS anon_0")
+      .|.allRelationshipsScan("(a)-[anon_1]->(b)")
       .argument()
       .build())
   }
@@ -1887,15 +1884,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_1")
-      .allRelationshipsScan("(a)-[anon_2]->(b)")
+      .projection("b.age AS anon_0")
+      .allRelationshipsScan("(a)-[anon_1]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_1"),
-        """COLLECT { MATCH (a)-[`anon_2`]->(b)
-          |RETURN b.age AS `anon_1` }""".stripMargin
+        varFor("anon_0"),
+        """COLLECT { MATCH (a)-[`anon_1`]->(b)
+          |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -1909,12 +1906,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
-      .deleteNode("anon_0")
+      .deleteNode(expr)
       .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("nodes"),
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection(Map("anon_0" -> expr))
       .projection("[n] AS nodes")
       .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
       .allNodeScan("n")
@@ -1934,15 +1931,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_1")
-      .allRelationshipsScan("(a)-[anon_4]->(b)")
+      .projection("b.age AS anon_0")
+      .allRelationshipsScan("(a)-[anon_3]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_1"),
-        """COLLECT { MATCH (a)-[`anon_4`]->(b)
-          |RETURN b.age AS `anon_1` }""".stripMargin
+        varFor("anon_0"),
+        """COLLECT { MATCH (a)-[`anon_3`]->(b)
+          |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -1956,18 +1953,18 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
-      .deleteRelationship("anon_0")
+      .deleteRelationship(expr)
       .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("rels"),
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection(Map("anon_0" -> expr))
       .projection("[r] AS rels")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_2"),
-        EagernessReason.ReadDeleteConflict("anon_3")
+        EagernessReason.ReadDeleteConflict("anon_1"),
+        EagernessReason.ReadDeleteConflict("anon_2")
       ))
-      .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
+      .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
   }
 
@@ -1984,15 +1981,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_1")
-      .allRelationshipsScan("(a)-[anon_4]->(b)")
+      .projection("b.age AS anon_0")
+      .allRelationshipsScan("(a)-[anon_3]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_1"),
-        """COLLECT { MATCH (a)-[`anon_4`]->(b)
-          |RETURN b.age AS `anon_1` }""".stripMargin
+        varFor("anon_0"),
+        """COLLECT { MATCH (a)-[`anon_3`]->(b)
+          |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -2007,18 +2004,18 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
-      .deleteExpression("anon_0")
+      .deleteExpression(expr)
       .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("rels"),
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection(Map("anon_0" -> expr))
       .projection("{rel: r} AS rels")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_2"),
-        EagernessReason.ReadDeleteConflict("anon_3")
+        EagernessReason.ReadDeleteConflict("anon_1"),
+        EagernessReason.ReadDeleteConflict("anon_2")
       ))
-      .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
+      .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
   }
 
@@ -2034,29 +2031,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val plan = planner.plan(q).stripProduceResults
 
-    val expectedNestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_1]->(b)")
-      .build()
-    val npExpression =
-      NestedPlanCollectExpression(
-        expectedNestedPlan,
-        varFor("anon_0"),
-        s"""COLLECT { MATCH (a)-[`anon_1`]->(b)
-           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
-
-    val reduceExpression = reduce(
-      varFor("sum"),
-      literalInt(0),
-      varFor("x"),
-      npExpression,
-      add(varFor("sum"), varFor("x"))
-    )
-
     plan should equal(planner.subPlanBuilder()
       .eager(ListSet(EagernessReason.Unknown))
-      .setNodeProperty("n", "foo", reduceExpression)
+      .setNodeProperty("n", "foo", "reduce(sum = 0, x IN anon_2 | sum + x)")
+      .rollUpApply("anon_2", "anon_0")
+      .|.projection("b.age AS anon_0")
+      .|.allRelationshipsScan("(a)-[anon_1]->(b)")
       .allNodeScan("n")
       .build())
   }
@@ -2073,30 +2053,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val plan = planner.plan(q).stripProduceResults
 
-    val expectedNestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_1]->(b)")
-      .build()
-    val npExpression =
-      NestedPlanCollectExpression(
-        expectedNestedPlan,
-        varFor("anon_0"),
-        s"""COLLECT { MATCH (a)-[`anon_1`]->(b)
-           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
-
-    val reduceExpression = reduce(
-      varFor("sum"),
-      literalInt(0),
-      varFor("x"),
-      npExpression,
-      add(varFor("sum"), varFor("x"))
-    )
-    val mapExpression = mapOf("foo" -> reduceExpression)
-
     plan should equal(planner.subPlanBuilder()
       .eager(ListSet(EagernessReason.Unknown))
-      .setNodePropertiesFromMap("n", mapExpression, removeOtherProps = true)
+      .setNodePropertiesFromMap("n", "{foo: reduce(sum = 0, x IN anon_2 | sum + x)}", removeOtherProps = true)
+      .rollUpApply("anon_2", "anon_0")
+      .|.projection("b.age AS anon_0")
+      .|.allRelationshipsScan("(a)-[anon_1]->(b)")
       .allNodeScan("n")
       .build())
   }
@@ -2113,29 +2075,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val plan = planner.plan(q).stripProduceResults
 
-    val expectedNestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_3]->(b)")
-      .build()
-    val npExpression =
-      NestedPlanCollectExpression(
-        expectedNestedPlan,
-        varFor("anon_0"),
-        s"""COLLECT { MATCH (a)-[`anon_3`]->(b)
-           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
-
-    val reduceExpression = reduce(
-      varFor("sum"),
-      literalInt(0),
-      varFor("x"),
-      npExpression,
-      add(varFor("sum"), varFor("x"))
-    )
-
     plan should equal(planner.subPlanBuilder()
       .eager(ListSet(EagernessReason.Unknown))
-      .setRelationshipProperty("r", "foo", reduceExpression)
+      .setRelationshipProperty("r", "foo", "reduce(sum = 0, x IN anon_4 | sum + x)")
+      .rollUpApply("anon_4", "anon_0")
+      .|.projection("b.age AS anon_0")
+      .|.allRelationshipsScan("(a)-[anon_3]->(b)")
       .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
   }
@@ -2152,30 +2097,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val plan = planner.plan(q).stripProduceResults
 
-    val expectedNestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_3]->(b)")
-      .build()
-    val npExpression =
-      NestedPlanCollectExpression(
-        expectedNestedPlan,
-        varFor("anon_0"),
-        s"""COLLECT { MATCH (a)-[`anon_3`]->(b)
-           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
-
-    val reduceExpression = reduce(
-      varFor("sum"),
-      literalInt(0),
-      varFor("x"),
-      npExpression,
-      add(varFor("sum"), varFor("x"))
-    )
-    val mapExpression = mapOf("foo" -> reduceExpression)
-
     plan should equal(planner.subPlanBuilder()
       .eager(ListSet(EagernessReason.Unknown))
-      .setRelationshipPropertiesFromMap("r", mapExpression, removeOtherProps = true)
+      .setRelationshipPropertiesFromMap("r", "{foo: reduce(sum = 0, x IN anon_4 | sum + x)}", true)
+      .rollUpApply("anon_4", "anon_0")
+      .|.projection("b.age AS anon_0")
+      .|.allRelationshipsScan("(a)-[anon_3]->(b)")
       .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
   }
@@ -2192,29 +2119,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val plan = planner.plan(q).stripProduceResults
 
-    val expectedNestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_1]->(b)")
-      .build()
-    val npExpression =
-      NestedPlanCollectExpression(
-        expectedNestedPlan,
-        varFor("anon_0"),
-        s"""COLLECT { MATCH (a)-[`anon_1`]->(b)
-           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
-
-    val reduceExpression = reduce(
-      varFor("sum"),
-      literalInt(0),
-      varFor("x"),
-      npExpression,
-      add(varFor("sum"), varFor("x"))
-    )
-
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
-      .setProperty(parameter("param", CTAny), "foo", reduceExpression)
+      .setProperty("$param", "foo", "reduce(sum = 0, x IN anon_2 | sum + x)")
+      .rollUpApply("anon_2", "anon_0")
+      .|.projection("b.age AS anon_0")
+      .|.allRelationshipsScan("(a)-[anon_1]->(b)")
       .argument()
       .build())
   }
@@ -3781,9 +3691,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults()
         .emptyResult()
-        .setProperty("anon_0", "prop", "NULL")
-        .eager(ListSet(EagernessReason.Unknown))
-        .projection(Map("anon_0" -> indexExpression))
+        .setProperty(indexExpression, "prop", nullLiteral)
         .sort("`n.p` ASC")
         .projection("n.p AS `n.p`")
         .allNodeScan("n")
