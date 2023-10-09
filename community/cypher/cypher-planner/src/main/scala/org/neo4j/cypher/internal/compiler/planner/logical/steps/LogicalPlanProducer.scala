@@ -2802,7 +2802,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2825,7 +2825,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2843,7 +2843,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2866,7 +2866,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2889,7 +2889,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2907,7 +2907,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2930,7 +2930,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2949,7 +2949,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)
@@ -2972,7 +2972,7 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
 
-    // SET has currently row-by-row visibility. This could change in a major release.
+    // SET has currently row-by-row visibility. This could change in a mayor release.
     // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
     val rewriter = irExpressionRewriter(inner, context)
     val rewrittenPattern = pattern.endoRewrite(rewriter)

@@ -68,7 +68,7 @@ case class PatternComprehension(
   val position: InputPosition,
   override val computedIntroducedVariables: Option[Set[LogicalVariable]],
   override val computedScopeDependencies: Option[Set[LogicalVariable]]
-) extends SubqueryExpression {
+) extends ScopeExpression with ExpressionWithComputedDependencies with SubqueryExpression {
 
   self =>
 

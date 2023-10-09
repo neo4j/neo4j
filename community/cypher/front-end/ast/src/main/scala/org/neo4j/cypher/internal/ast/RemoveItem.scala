@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
@@ -35,7 +34,7 @@ sealed trait RemoveItem extends ASTNode with SemanticCheckable with HasMappableE
 case class RemoveLabelItem(variable: LogicalVariable, labels: Seq[LabelName])(val position: InputPosition)
     extends RemoveItem {
 
-  override def semanticCheck: SemanticCheck =
+  def semanticCheck =
     SemanticExpressionCheck.simple(variable) chain
       SemanticPatternCheck.checkValidLabels(labels, position) chain
       SemanticExpressionCheck.expectType(CTNode.covariant, variable)
@@ -46,9 +45,9 @@ case class RemoveLabelItem(variable: LogicalVariable, labels: Seq[LabelName])(va
 }
 
 case class RemovePropertyItem(property: LogicalProperty) extends RemoveItem {
-  override def position: InputPosition = property.position
+  def position = property.position
 
-  override def semanticCheck: SemanticCheck = SemanticExpressionCheck.simple(property) chain
+  def semanticCheck = SemanticExpressionCheck.simple(property) chain
     SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey))
 
   override def mapExpressions(f: Expression => Expression): RemoveItem =

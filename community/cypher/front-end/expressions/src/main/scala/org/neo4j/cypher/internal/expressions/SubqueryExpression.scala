@@ -17,6 +17,6 @@
 package org.neo4j.cypher.internal.expressions
 
 /**
- * Marker trait for all expressions that evaluate subqueries.
+ * Marker trait for all expressions that evaluate subqueies.
  */
 trait SubqueryExpression extends ScopeExpression with ExpressionWithComputedDependencies
