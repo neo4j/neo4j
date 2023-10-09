@@ -114,6 +114,8 @@ case class FabricFrontEnd(
       cancellationChecker
     )
 
+    private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
+
     private val semanticFeatures = Seq(
       MultipleGraphs,
       UseAsMultipleGraphsSelector
@@ -133,12 +135,6 @@ case class FabricFrontEnd(
 
     object parseAndPrepare {
 
-      // We need to make sure that names generated in `parseAndPrepare` cannot ever clash with names
-      // generated elsewhere. The reason is that a query fragment that gets sent to a remote only undergoes
-      // parseAndPrepare. On the remote, a new anonymousVariableNameGenerator will be used and that must never
-      // clash with this one.
-      private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(negativeNumbers = true)
-
       private val transformer =
         CompilationPhases.fabricParsing(parsingConfig, signatures)
 
@@ -150,8 +146,6 @@ case class FabricFrontEnd(
     }
 
     object checkAndFinalize {
-
-      private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(negativeNumbers = false)
 
       private val transformer =
         CompilationPhases.fabricFinalize(parsingConfig)
