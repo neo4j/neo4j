@@ -16,13 +16,15 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
+import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 
 /**
  * Trait for all expressions that evaluate full subqueries.
  * E.g Count, Collect and Exists.
  */
-trait FullSubqueryExpression extends SubqueryExpression {
+trait FullSubqueryExpression extends ScopeExpression with SubqueryExpression with ExpressionWithComputedDependencies {
   def query: Query
 
   def withQuery(query: Query): FullSubqueryExpression
