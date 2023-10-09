@@ -52,30 +52,6 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  test("Rewrites subquery expression in CREATE that has a dependency on the previous clause") {
-    assertRewritten(
-      """MATCH (b)
-        |CREATE (a {p: COUNT { MATCH (b) }})""".stripMargin,
-      """MATCH (b)
-        |WITH b, COUNT { MATCH (b) } AS `  UNNAMED0`
-        |CREATE (a {p: `  UNNAMED0`})""".stripMargin
-    )
-  }
-
-  test("Rewrites subquery expression in CREATE that has a dependency on a previous clause") {
-    assertRewritten(
-      """MATCH (b)
-        |WITH b
-        |CREATE (c)
-        |CREATE (a {p: COUNT { MATCH (b) }})""".stripMargin,
-      """MATCH (b)
-        |WITH b
-        |CREATE (c)
-        |WITH b, c, COUNT { MATCH (b) } AS `  UNNAMED0`
-        |CREATE (a {p: `  UNNAMED0`})""".stripMargin
-    )
-  }
-
   test("Does not rewrite CREATE wih cross-references") {
     // These are deprecated, but we cannot rewrite these and keep the same semantics.
     // The queries are going to be non-deterministic, until we forbid them in 6.0

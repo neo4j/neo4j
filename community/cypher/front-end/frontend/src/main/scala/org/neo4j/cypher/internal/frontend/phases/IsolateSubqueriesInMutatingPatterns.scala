@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.Merge
@@ -35,14 +34,12 @@ import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.ListLiteral
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
-import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -107,16 +104,16 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
         case (foreach: Foreach, _) => Seq(foreach)
 
         case (uc: UpdateClause, clauseIndex) =>
-          val previousClause = Option.when(clauseIndex > 0)(clauses(clauseIndex - 1))
+          val isFirstClause = clauseIndex == 0
           case class RewrittenExpression(introducedVariable: String, replacedExpression: Expression)
           var rewrittenExpressions = Seq.empty[RewrittenExpression]
 
           val rewrittenUc = uc.mapExpressions { exp =>
+
             val state = exp.folder.treeFold[State](NothingFound) {
               case _: CaseExpression =>
                 state => TraverseChildren(state.foundSubquery)
-              case se: SubqueryExpression
-                if doesSubqueryExpressionDependOnUpdateClause(semanticTable, uc, se, previousClause) =>
+              case se: SubqueryExpression if doesSubqueryExpressionDependOnUpdateClause(semanticTable, uc, se) =>
                 state => SkipChildren(state.foundCrossReference)
               case _: SubqueryExpression =>
                 state => SkipChildren(state.foundSubquery)
@@ -139,7 +136,7 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
             // Nothing to do
             Seq(uc)
           } else {
-            val uselessUnwind = if (inSubqueryContext && previousClause.isEmpty) {
+            val uselessUnwind = if (inSubqueryContext && isFirstClause) {
               // For example
               // WITH COUNT { MATCH (b) } AS `  UNNAMED1`
               // cannot be the first WITH inside CALL - it does not qualify as an importing WITH.
@@ -185,51 +182,32 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
     })
   }
 
-  private def doesSubqueryExpressionDependOnUpdateClause(
-    semanticTable: => SemanticTable,
-    updateClause: UpdateClause,
-    subqueryExpression: SubqueryExpression,
-    maybePreviousClause: Option[Clause]
-  ): Boolean = {
+  private def doesSubqueryExpressionDependOnUpdateClause(semanticTable: => SemanticTable, updateClause: UpdateClause, subqueryExpression: SubqueryExpression): Boolean = {
     updateClause match {
       // For CREATE, filter out subqueries that have dependencies on entities created in the same clause.
       // Those are deprecated and rewriting them here would change the semantics of the query.
       case Create(pattern) =>
-        def getDefinedSymbols(previousClause: ASTNode): Set[LogicalVariable] =
-          semanticTable
-            .recordedScopes(previousClause)
-            .symbolDefinitions
-            .map(_.use.value)
-
-        // What was defined before the current CREATE clause?
-        val previouslyDefinedSymbols = maybePreviousClause
-          .map(getDefinedSymbols)
-          .getOrElse(Set.empty)
-        // ... and what is defined now?
-        val allDefinedSymbols = getDefinedSymbols(pattern)
-        // The difference is what is introduced in this CREATE.
-        val newlyIntroducedSymbols = allDefinedSymbols -- previouslyDefinedSymbols
-        newlyIntroducedSymbols.intersect(subqueryExpression.scopeDependencies).nonEmpty
+        val allSymbolDefinitions = semanticTable
+          .recordedScopes(pattern)
+          .symbolDefinitions
+          .map(_.use.value)
+        allSymbolDefinitions.intersect(subqueryExpression.scopeDependencies).nonEmpty
 
       case _ => false
     }
   }
 
-  /**
-   * Constructs to keep track of whether we found subqueries in the CREATEs but no cross-references in them.
-   * This should be removed in 6.0, once we cannot have cross-references, and be replaced by a simple boolean.
-   */
-  private trait State {
+  trait State {
     def foundSubquery: State = SubqueryFound
 
     def foundCrossReference: State = CrossReferenceFound
   }
 
-  private case object NothingFound extends State
+  case object NothingFound extends State
 
-  private case object SubqueryFound extends State
+  case object SubqueryFound extends State
 
-  private case object CrossReferenceFound extends State {
+  case object CrossReferenceFound extends State {
     override def foundSubquery: State = CrossReferenceFound
   }
 }
