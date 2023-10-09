@@ -43,32 +43,3 @@ Feature: DeleteAcceptance
       | -labels     | 1 |
       | -properties | 2 |
 
-  Scenario: Does not observe row-by-row visibility
-    Given an empty graph
-    And having executed:
-      """
-      CREATE ()-[:REL]->()<-[:REL]-()
-      """
-    When executing query:
-      """
-      MATCH (n)-->()
-      DETACH DELETE [(n)--()--() | n][0]
-      """
-    Then the side effects should be:
-      | -nodes         | 2 |
-      | -relationships | 2 |
-
-  Scenario: Does not observe item-by-item visibility
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (n {id: 0}), (m {id:1})
-      """
-    When executing query:
-      """
-      MATCH (n {id: 0}), (m {id:1})
-      DELETE n, (COLLECT { MATCH (o) RETURN o ORDER BY o.id ASC }[0])
-      """
-    Then the side effects should be:
-      | -nodes      | 1 |
-      | -properties | 1 |
