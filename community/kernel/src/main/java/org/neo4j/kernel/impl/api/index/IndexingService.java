@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -60,6 +61,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.helpers.Format;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -98,6 +100,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
+import org.neo4j.time.Stopwatch;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -223,6 +226,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         try (var cursorContext = contextFactory.create(INIT_TAG)) {
             indexMapRef.modify(indexMap -> {
+                var stopwatch = Stopwatch.start();
                 Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>(InternalIndexState.class);
                 for (IndexDescriptor descriptor : indexDescriptors) {
                     IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
@@ -255,7 +259,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                             };
                     indexMap.putIndexProxy(indexProxy);
                 }
-                logIndexStateSummary("init", indexStates);
+                logIndexStateSummary("init", indexStates, indexMap.size(), stopwatch.elapsed());
                 return indexMap;
             });
         }
@@ -279,6 +283,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         final MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors = new LongObjectHashMap<>();
         indexMapRef.modify(indexMap -> {
+            var stopwatch = Stopwatch.start();
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>(InternalIndexState.class);
 
             // Find all indexes that are not already online, do not require rebuilding, and create them
@@ -298,7 +303,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     default -> throw new IllegalStateException("Unknown state: " + state);
                 }
             });
-            logIndexStateSummary("start", indexStates);
+            logIndexStateSummary("start", indexStates, indexMap.size(), stopwatch.elapsed());
 
             dontRebuildIndexesInReadOnlyMode(rebuildingDescriptors);
             // Drop placeholder proxies for indexes that need to be rebuilt
@@ -762,7 +767,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 tag, descriptor.getId(), descriptor.schema().userDescription(tokenNameLookup), state.name());
     }
 
-    private void logIndexStateSummary(String method, Map<InternalIndexState, List<IndexLogRecord>> indexStates) {
+    private void logIndexStateSummary(
+            String method,
+            Map<InternalIndexState, List<IndexLogRecord>> indexStates,
+            int totalIndexes,
+            Duration elapsed) {
         if (indexStates.isEmpty()) {
             return;
         }
@@ -783,7 +792,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             }
         }
         internalLog.info(format(
-                "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState));
+                "IndexingService.%s: indexes not specifically mentioned above are %s. Total %d indexes. Processed in %s",
+                method,
+                mostPopularState,
+                totalIndexes,
+                Format.duration(elapsed.toMillis(), TimeUnit.HOURS, TimeUnit.MILLISECONDS)));
     }
 
     @VisibleForTesting
