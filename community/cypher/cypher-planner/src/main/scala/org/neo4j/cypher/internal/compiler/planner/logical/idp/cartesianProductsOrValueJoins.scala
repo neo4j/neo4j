@@ -401,7 +401,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
               QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexSeekPlansFor(rightSymbol, leftSymbols))
             ))
 
-          contextForRhsLeaves.config.leafPlanners.candidates(rhsQgWithLhsArguments, interestingOrderConfig = interestingOrderConfig, context = context)
+          contextForRhsLeaves.config.leafPlanners.candidates(rhsQgWithLhsArguments, interestingOrderConfig = interestingOrderConfig, context = contextForRhsLeaves)
         }
 
         val rhsPlans = try {
