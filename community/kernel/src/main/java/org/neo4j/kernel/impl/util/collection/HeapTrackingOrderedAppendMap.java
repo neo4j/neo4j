@@ -147,7 +147,7 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable {
         while (chunk != null) {
             // Value is at odd indicies (1, 3, 5, ...)
             for (int i = 1; i < chunk.cursor; i += 2) {
-                p.accept((V) chunk.elements[i]);
+                p.value((V) chunk.elements[i]);
             }
             chunk = chunk.next;
         }
