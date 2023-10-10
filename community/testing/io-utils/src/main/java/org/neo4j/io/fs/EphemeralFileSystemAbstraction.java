@@ -258,25 +258,29 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public void deleteRecursively(Path directory) throws IOException {
-        if (isDirectory(directory)) {
-            // Delete all files in directory and sub-directory
-            directory = canonicalFile(directory);
-            for (Map.Entry<Path, EphemeralFileData> file : files.entrySet()) {
-                Path fileName = file.getKey();
-                if (fileName.startsWith(directory) && !fileName.equals(directory)) {
-                    deleteFile(fileName);
-                }
+        if (!fileExists(directory)) {
+            return;
+        }
+        if (!isDirectory(directory)) {
+            throw new NotDirectoryException(directory.toString());
+        }
+        // Delete all files in directory and sub-directory
+        directory = canonicalFile(directory);
+        for (Map.Entry<Path, EphemeralFileData> file : files.entrySet()) {
+            Path fileName = file.getKey();
+            if (fileName.startsWith(directory) && !fileName.equals(directory)) {
+                deleteFile(fileName);
             }
+        }
 
-            // Delete all sub-directories
-            Path finalDirectory = directory;
-            List<Path> subDirectories = directories.stream()
-                    .filter(p -> p.startsWith(finalDirectory) && !p.equals(finalDirectory))
-                    .sorted(Comparator.reverseOrder())
-                    .toList();
-            for (Path subDirectory : subDirectories) {
-                deleteFile(subDirectory);
-            }
+        // Delete all sub-directories
+        Path finalDirectory = directory;
+        List<Path> subDirectories = directories.stream()
+                .filter(p -> p.startsWith(finalDirectory) && !p.equals(finalDirectory))
+                .sorted(Comparator.reverseOrder())
+                .toList();
+        for (Path subDirectory : subDirectories) {
+            deleteFile(subDirectory);
         }
         deleteFile(directory);
     }

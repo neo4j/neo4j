@@ -38,6 +38,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
@@ -259,6 +260,17 @@ public abstract class FileSystemAbstractionTest {
         assertTrue(fsa.fileExists(b));
         assertTrue(fsa.fileExists(bb));
         assertTrue(fsa.fileExists(c));
+        assertTrue(fsa.fileExists(path));
+    }
+
+    @Test
+    void deleteRecursivelyShouldThrowNotADirectory() throws IOException {
+        fsa.mkdirs(path);
+        Path a = path.resolve("a");
+        fsa.write(a).close();
+        assertThrows(NotDirectoryException.class, () -> fsa.deleteRecursively(a));
+
+        assertTrue(fsa.fileExists(a));
         assertTrue(fsa.fileExists(path));
     }
 
