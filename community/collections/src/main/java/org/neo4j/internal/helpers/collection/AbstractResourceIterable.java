@@ -20,10 +20,10 @@
 package org.neo4j.internal.helpers.collection;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
@@ -31,7 +31,7 @@ public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
     // start with 2 as most cases will only generate a single iterator but gives a little leeway to save on expansions
     private TrackingResourceIterator<?>[] trackedIterators = new TrackingResourceIterator<?>[2];
 
-    private BitSet trackedIteratorsInUse = new BitSet();
+    private long trackedIteratorsInUse;
 
     private boolean closed;
 
@@ -64,37 +64,39 @@ public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
      */
     protected void onClosed() {}
 
-    private void register(TrackingResourceIterator<?> iterator) {
-        if (trackedIteratorsInUse.cardinality() == trackedIterators.length) {
+    private int register(TrackingResourceIterator<?> iterator) {
+        assert Long.bitCount(trackedIteratorsInUse) < Long.SIZE;
+        if (Long.bitCount(trackedIteratorsInUse) == trackedIterators.length) {
             trackedIterators = Arrays.copyOf(trackedIterators, trackedIterators.length << 1);
         }
 
-        final var freeIndex = trackedIteratorsInUse.nextClearBit(0);
-        trackedIterators[freeIndex] = iterator;
-        trackedIteratorsInUse.set(freeIndex);
+        int index = Long.numberOfTrailingZeros(~trackedIteratorsInUse);
+        trackedIterators[index] = iterator;
+        trackedIteratorsInUse |= trackBit(index);
+        return index;
     }
 
     private void unregister(TrackingResourceIterator<?> iterator) {
-        final var lastSetBit = trackedIteratorsInUse.previousSetBit(trackedIterators.length);
-        for (int i = 0; i <= lastSetBit; i++) {
-            if (trackedIterators[i] == iterator) {
-                trackedIterators[i] = null;
-                trackedIteratorsInUse.clear(i);
-                break;
-            }
-        }
+        assert (trackedIteratorsInUse & trackBit(iterator.registerIndex)) != 0;
+        trackedIterators[iterator.registerIndex] = null;
+        untrack(iterator.registerIndex);
+    }
+
+    private static long trackBit(int index) {
+        return 1L << index;
+    }
+
+    private void untrack(int index) {
+        trackedIteratorsInUse ^= trackBit(index);
     }
 
     private void internalClose() {
         ResourceIteratorCloseFailedException closeThrowable = null;
-        final var lastSetBit = trackedIteratorsInUse.previousSetBit(trackedIterators.length);
-        for (int i = 0; i <= lastSetBit; i++) {
-            if (trackedIterators[i] == null) {
-                continue;
-            }
 
+        while (trackedIteratorsInUse != 0) {
+            int index = Long.numberOfTrailingZeros(trackedIteratorsInUse);
             try {
-                trackedIterators[i].internalClose();
+                trackedIterators[index].internalClose();
             } catch (Exception e) {
                 if (closeThrowable == null) {
                     closeThrowable =
@@ -103,10 +105,10 @@ public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
                     closeThrowable.addSuppressed(e);
                 }
             }
+            untrack(index);
         }
 
         trackedIterators = null;
-        trackedIteratorsInUse = null;
 
         if (closeThrowable != null) {
             throw closeThrowable;
@@ -115,20 +117,20 @@ public abstract class AbstractResourceIterable<T> implements ResourceIterable<T>
 
     private static final class TrackingResourceIterator<T> implements ResourceIterator<T> {
         private final ResourceIterator<T> delegate;
-        private final Consumer<TrackingResourceIterator<?>> registerCallback;
+        private final ToIntFunction<TrackingResourceIterator<?>> registerCallback;
         private final Consumer<TrackingResourceIterator<?>> unregisterCallback;
+        private final int registerIndex;
 
         private boolean closed;
 
         private TrackingResourceIterator(
                 ResourceIterator<T> delegate,
-                Consumer<TrackingResourceIterator<?>> registerCallback,
+                ToIntFunction<TrackingResourceIterator<?>> registerCallback,
                 Consumer<TrackingResourceIterator<?>> unregisterCallback) {
             this.delegate = delegate;
             this.registerCallback = registerCallback;
             this.unregisterCallback = unregisterCallback;
-
-            registerCallback.accept(this);
+            this.registerIndex = registerCallback.applyAsInt(this);
         }
 
         @Override

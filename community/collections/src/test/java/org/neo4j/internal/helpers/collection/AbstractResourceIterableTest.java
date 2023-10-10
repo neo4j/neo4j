@@ -309,26 +309,4 @@ public class AbstractResourceIterableTest {
         assertThat(iterableClosed.isTrue()).isTrue();
         assertThat(iteratorClosed.isTrue()).isTrue();
     }
-
-    @Test
-    void streamShouldCloseMultipleOnCompleted() {
-        // Given
-        final var closed = new MutableInt();
-        Resource resource = closed::incrementAndGet;
-        final var resourceIterator = newResourceIterator(iterator(new Integer[] {1, 2, 3}), resource, resource);
-
-        final var iterable = new AbstractResourceIterable<Integer>() {
-            @Override
-            protected ResourceIterator<Integer> newIterator() {
-                return resourceIterator;
-            }
-        };
-
-        // When
-        final var result = iterable.stream().toList();
-
-        // Then
-        assertThat(result).isEqualTo(asList(1, 2, 3));
-        assertThat(closed.intValue()).isEqualTo(2);
-    }
 }
