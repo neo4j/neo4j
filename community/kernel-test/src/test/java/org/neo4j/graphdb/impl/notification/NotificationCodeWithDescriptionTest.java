@@ -52,6 +52,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingParameterForExplain;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingPropertyName;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingRelType;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.noDatabasesReallocated;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.procedureWarning;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedRelationshipReference;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
@@ -848,6 +849,20 @@ class NotificationCodeWithDescriptionTest {
                 null);
     }
 
+    @Test
+    void shouldConstructNotificationsFor_NO_DATABASES_REALLOCATED() {
+        NotificationImplementation notification = noDatabasesReallocated(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "`REALLOCATE DATABASES` had no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Cluster.NoDatabasesReallocated",
+                "No databases were reallocated. No better allocation is currently possible.",
+                NotificationCategory.TOPOLOGY,
+                null);
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -903,8 +918,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -68, -45, 119, -108, 79, 88, 47, -109, 78, 123, 119, -18, 51, -96, 55, 22, -39, -108, -44, -125, -67, 82,
-            -20, -20, 7, -106, 31, 18, -114, -50, -51, -35
+            101, -75, 76, 118, 106, -68, 108, -11, 90, -66, 54, -8, -31, 79, 91, -93, -14, -10, -11, 3, -30, 70, 49, 81,
+            -87, -79, 51, -34, -123, -78, -56, -114
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

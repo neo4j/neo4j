@@ -246,7 +246,11 @@ public enum NotificationCodeWithDescription {
             "Server `%s` is already enabled. Verify that this is the intended server."),
     SERVER_ALREADY_CORDONED(
             Status.Cluster.ServerAlreadyCordoned,
-            "Server `%s` is already cordoned. Verify that this is the intended server.");
+            "Server `%s` is already cordoned. Verify that this is the intended server."),
+
+    NO_DATABASES_REALLOCATED(
+            Status.Cluster.NoDatabasesReallocated,
+            "No databases were reallocated. No better allocation is currently possible.");
 
     private final Status status;
     private final String description;
@@ -497,6 +501,10 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation serverAlreadyCordoned(InputPosition position, String server) {
         return SERVER_ALREADY_CORDONED.notification(position, server);
+    }
+
+    public static NotificationImplementation noDatabasesReallocated(InputPosition position) {
+        return NO_DATABASES_REALLOCATED.notification(position);
     }
 
     private NotificationImplementation notification(InputPosition position, String... details) {

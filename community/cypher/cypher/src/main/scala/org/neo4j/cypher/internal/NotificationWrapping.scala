@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.ImpossibleRevokeCommandWarning
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.NoDatabasesReallocated
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
 import org.neo4j.cypher.internal.util.RevokePrivilegeCommandHasNoEffectNotification
@@ -336,6 +337,11 @@ object NotificationWrapping {
       NotificationCodeWithDescription.serverAlreadyCordoned(
         graphdb.InputPosition.empty,
         server
+      )
+
+    case NoDatabasesReallocated() =>
+      NotificationCodeWithDescription.noDatabasesReallocated(
+        graphdb.InputPosition.empty
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

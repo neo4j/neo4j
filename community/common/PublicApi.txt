@@ -17,6 +17,7 @@ org.neo4j.kernel.api.exceptions.Status.Classification::rollbackTransaction() boo
 org.neo4j.kernel.api.exceptions.Status.Classification::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Classification public static
 org.neo4j.kernel.api.exceptions.Status.Classification::values() org.neo4j.kernel.api.exceptions.Status.Classification[] public static
 org.neo4j.kernel.api.exceptions.Status.Cluster public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Cluster> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Cluster::NoDatabasesReallocated org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::NotALeader org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::ReplicationFailure org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::Routing org.neo4j.kernel.api.exceptions.Status.Cluster public static final

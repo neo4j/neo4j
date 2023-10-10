@@ -669,6 +669,12 @@ public interface Status {
                 ClientNotification,
                 "`CORDON SERVER` has no effect.",
                 SeverityLevel.INFORMATION,
+                NotificationCategory.TOPOLOGY),
+
+        NoDatabasesReallocated(
+                ClientNotification,
+                "`REALLOCATE DATABASES` had no effect.",
+                SeverityLevel.INFORMATION,
                 NotificationCategory.TOPOLOGY);
 
         private final Code code;
@@ -864,14 +870,20 @@ public interface Status {
     }
 
     enum Classification {
-        /** The Client sent a bad request - changing the request might yield a successful outcome. */
+        /**
+         * The Client sent a bad request - changing the request might yield a successful outcome.
+         */
         ClientError(
                 TransactionEffect.ROLLBACK,
                 "The Client sent a bad request - changing the request might yield a successful outcome."),
-        /** There are notifications about the request sent by the client.*/
+        /**
+         * There are notifications about the request sent by the client.
+         */
         ClientNotification(TransactionEffect.NONE, "There are notifications about the request sent by the client."),
 
-        /** The database cannot service the request right now, retrying later might yield a successful outcome. */
+        /**
+         * The database cannot service the request right now, retrying later might yield a successful outcome.
+         */
         TransientError(
                 TransactionEffect.ROLLBACK,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
@@ -880,7 +892,9 @@ public interface Status {
         // that something is *seriously* wrong, and will prompt the user to send
         // an error report back to us. Only use this if the code path you are
         // at would truly indicate the database is in a broken or bug-induced state.
-        /** The database failed to service the request. */
+        /**
+         * The database failed to service the request.
+         */
         DatabaseError(TransactionEffect.ROLLBACK, "The database failed to service the request. ");
 
         private enum TransactionEffect {
