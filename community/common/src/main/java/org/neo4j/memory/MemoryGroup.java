@@ -24,6 +24,7 @@ public enum MemoryGroup {
     BOLT("Bolt"),
     HTTP("HTTP"),
     HTTP_TRANSACTION("HTTP Transaction"),
+    ARROW("Arrow"),
     PAGE_CACHE("Page Cache"),
     OTHER("Other"),
     RECENT_QUERY_BUFFER("Recent Query Buffer"),
