@@ -35,7 +35,8 @@ import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<DefaultRelationshipTraversalCursor>
         implements RelationshipTraversalCursor {
     private final StorageRelationshipTraversalCursor storeCursor;
-    private final DefaultNodeCursor nodeCursor;
+    private final InternalCursorFactory internalCursors;
+    private DefaultNodeCursor securityNodeCursor;
     private LongIterator addedRelationships;
     private long originNodeReference;
     private RelationshipSelection selection;
@@ -45,10 +46,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
     DefaultRelationshipTraversalCursor(
             CursorPool<DefaultRelationshipTraversalCursor> pool,
             StorageRelationshipTraversalCursor storeCursor,
-            DefaultNodeCursor nodeCursor) {
+            InternalCursorFactory internalCursors) {
         super(storeCursor, pool);
         this.storeCursor = storeCursor;
-        this.nodeCursor = nodeCursor;
+        this.internalCursors = internalCursors;
     }
 
     /**
@@ -197,8 +198,11 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         if (mode.allowsTraverseAllLabels()) {
             return true;
         }
-        read.singleNode(storeCursor.neighbourNodeReference(), nodeCursor);
-        return nodeCursor.next();
+        if (securityNodeCursor == null) {
+            securityNodeCursor = internalCursors.allocateNodeCursor();
+        }
+        read.singleNode(storeCursor.neighbourNodeReference(), securityNodeCursor);
+        return securityNodeCursor.next();
     }
 
     @Override
@@ -228,9 +232,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         if (storeCursor != null) {
             storeCursor.close();
         }
-        if (nodeCursor != null) {
-            nodeCursor.close();
-            nodeCursor.release();
+        if (securityNodeCursor != null) {
+            securityNodeCursor.close();
+            securityNodeCursor.release();
+            securityNodeCursor = null;
         }
     }
 

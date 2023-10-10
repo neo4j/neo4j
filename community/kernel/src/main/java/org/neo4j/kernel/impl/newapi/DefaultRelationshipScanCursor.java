@@ -34,15 +34,16 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     private boolean isSingle;
     private LongIterator addedRelationships;
     private final StorageRelationshipScanCursor storeCursor;
-    private final DefaultNodeCursor securityNodeCursor;
+    private final InternalCursorFactory internalCursors;
+    private DefaultNodeCursor securityNodeCursor;
 
     DefaultRelationshipScanCursor(
             CursorPool<DefaultRelationshipScanCursor> pool,
             StorageRelationshipScanCursor storeCursor,
-            DefaultNodeCursor securityNodeCursor) {
+            InternalCursorFactory internalCursors) {
         super(storeCursor, pool);
         this.storeCursor = storeCursor;
-        this.securityNodeCursor = securityNodeCursor;
+        this.internalCursors = internalCursors;
     }
 
     void scan(Read read) {
@@ -125,6 +126,9 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         if (mode.allowsTraverseAllLabels()) {
             return true;
         }
+        if (securityNodeCursor == null) {
+            securityNodeCursor = internalCursors.allocateNodeCursor();
+        }
         read.singleNode(storeCursor.sourceNodeReference(), securityNodeCursor);
         if (securityNodeCursor.next()) {
             read.singleNode(storeCursor.targetNodeReference(), securityNodeCursor);
@@ -178,6 +182,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         if (securityNodeCursor != null) {
             securityNodeCursor.close();
             securityNodeCursor.release();
+            securityNodeCursor = null;
         }
     }
 }

@@ -32,11 +32,12 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 
 class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultNodeLabelIndexCursor>
         implements NodeLabelIndexCursor {
-    private final DefaultNodeCursor securityNodeCursor;
+    private DefaultNodeCursor securityNodeCursor;
+    private final InternalCursorFactory internalCursors;
 
-    DefaultNodeLabelIndexCursor(CursorPool<DefaultNodeLabelIndexCursor> pool, DefaultNodeCursor securityNodeCursor) {
+    DefaultNodeLabelIndexCursor(CursorPool<DefaultNodeLabelIndexCursor> pool, InternalCursorFactory internalCursors) {
         super(pool);
-        this.securityNodeCursor = securityNodeCursor;
+        this.internalCursors = internalCursors;
     }
 
     @Override
@@ -76,6 +77,9 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
         if (accessMode.allowsTraverseAllLabels()) {
             return true;
         }
+        if (securityNodeCursor == null) {
+            securityNodeCursor = internalCursors.allocateNodeCursor();
+        }
         read.singleNode(entityReference, securityNodeCursor);
         return securityNodeCursor.next();
     }
@@ -109,6 +113,7 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
         if (securityNodeCursor != null) {
             securityNodeCursor.close();
             securityNodeCursor.release();
+            securityNodeCursor = null;
         }
     }
 }

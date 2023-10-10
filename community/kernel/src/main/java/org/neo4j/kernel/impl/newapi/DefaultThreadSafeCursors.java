@@ -57,22 +57,20 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public DefaultNodeCursor allocateNodeCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultNodeCursor(
-                defaultNodeCursor -> {
-                    defaultNodeCursor.release();
+                cursor -> {
+                    cursor.release();
                     storeCursors.close();
                 },
                 storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
-                () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
     }
 
     @Override
     public FullAccessNodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new FullAccessNodeCursor(
-                defaultNodeCursor -> {
-                    defaultNodeCursor.release();
+                cursor -> {
+                    cursor.release();
                     storeCursors.close();
                 },
                 storageReader.allocateNodeCursor(cursorContext, storeCursors)));
@@ -83,20 +81,20 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultRelationshipScanCursor(
-                defaultRelationshipScanCursor -> {
-                    defaultRelationshipScanCursor.release();
+                cursor -> {
+                    cursor.release();
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
-                allocateNodeCursor(cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
     }
 
     @Override
     public FullAccessRelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new FullAccessRelationshipScanCursor(
-                defaultRelationshipScanCursor -> {
-                    defaultRelationshipScanCursor.release();
+                cursor -> {
+                    cursor.release();
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors)));
@@ -107,12 +105,12 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultRelationshipTraversalCursor(
-                defaultRelationshipTraversalCursor -> {
-                    defaultRelationshipTraversalCursor.release();
+                cursor -> {
+                    cursor.release();
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
-                allocateNodeCursor(cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
     }
 
     @Override
@@ -120,8 +118,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
             CursorContext cursorContext) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new FullAccessRelationshipTraversalCursor(
-                defaultRelationshipTraversalCursor -> {
-                    defaultRelationshipTraversalCursor.release();
+                cursor -> {
+                    cursor.release();
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors)));
@@ -131,14 +129,12 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public DefaultPropertyCursor allocatePropertyCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultPropertyCursor(
-                defaultPropertyCursor -> {
-                    defaultPropertyCursor.release();
+                cursor -> {
+                    cursor.release();
                     storeCursors.close();
                 },
                 storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
-                () -> storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
-                allocateFullAccessNodeCursor(cursorContext),
-                allocateFullAccessRelationshipScanCursor(cursorContext)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
     }
 
     @Override
@@ -154,23 +150,30 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
 
     @Override
     public NodeValueIndexCursor allocateNodeValueIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
+        var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultNodeValueIndexCursor(
-                DefaultNodeValueIndexCursor::release,
-                allocateNodeCursor(cursorContext, memoryTracker),
-                allocatePropertyCursor(cursorContext, memoryTracker),
-                memoryTracker));
+                cursor -> {
+                    cursor.release();
+                    storeCursors.close();
+                },
+                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
     }
 
     @Override
     public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
-        return trace(new FullAccessNodeValueIndexCursor(DefaultNodeValueIndexCursor::release, memoryTracker));
+        return trace(new FullAccessNodeValueIndexCursor(DefaultNodeValueIndexCursor::release));
     }
 
     @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
+        var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultNodeLabelIndexCursor(
-                DefaultNodeLabelIndexCursor::release, allocateNodeCursor(cursorContext, memoryTracker)));
+                cursor -> {
+                    cursor.release();
+                    storeCursors.close();
+                },
+                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
     }
 
     @Override
@@ -181,18 +184,20 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     @Override
     public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
+        var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultRelationshipValueIndexCursor(
-                DefaultRelationshipValueIndexCursor::release,
+                cursor -> {
+                    cursor.release();
+                    storeCursors.close();
+                },
                 allocateRelationshipScanCursor(cursorContext, memoryTracker),
-                allocatePropertyCursor(cursorContext, memoryTracker),
-                memoryTracker));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
     }
 
     @Override
     public RelationshipValueIndexCursor allocateFullAccessRelationshipValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
-        return trace(new FullAccessRelationshipValueIndexCursor(
-                DefaultRelationshipValueIndexCursor::release, memoryTracker));
+        return trace(new FullAccessRelationshipValueIndexCursor(DefaultRelationshipValueIndexCursor::release));
     }
 
     @Override
@@ -227,5 +232,10 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public void close() {
         assertClosed();
         storageReader.close();
+    }
+
+    private InternalCursorFactory newInternalCursors(
+            StoreCursors storeCursors, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        return new InternalCursorFactory(storageReader, storeCursors, cursorContext, memoryTracker);
     }
 }

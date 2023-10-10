@@ -31,23 +31,18 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 
 class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultNodeValueIndexCursor>
         implements NodeValueIndexCursor {
-    private final DefaultNodeCursor securityNodeCursor;
-    private final DefaultPropertyCursor propertyCursor;
+    private final InternalCursorFactory internalCursors;
+    private DefaultNodeCursor securityNodeCursor;
+    private DefaultPropertyCursor securityPropertyCursor;
     private int[] propertyIds;
 
-    DefaultNodeValueIndexCursor(
-            CursorPool<DefaultNodeValueIndexCursor> pool,
-            DefaultNodeCursor securityNodeCursor,
-            DefaultPropertyCursor propertyCursor,
-            MemoryTracker memoryTracker) {
-        super(pool, memoryTracker);
-        this.securityNodeCursor = securityNodeCursor;
-        this.propertyCursor = propertyCursor;
+    DefaultNodeValueIndexCursor(CursorPool<DefaultNodeValueIndexCursor> pool, InternalCursorFactory internalCursors) {
+        super(pool);
+        this.internalCursors = internalCursors;
     }
 
     /**
@@ -109,6 +104,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
 
     @Override
     protected boolean allowed(long reference, AccessMode accessMode) {
+        ensureSecurityNodeCursor();
         readEntity(read -> read.singleNode(reference, securityNodeCursor));
         if (!securityNodeCursor.next()) {
             // This node is not visible to this security context
@@ -118,8 +114,9 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
         long[] labels = securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
 
         if (accessMode.hasPropertyReadRules(propertyIds)) {
-            securityNodeCursor.properties(propertyCursor, PropertySelection.selection(propertyIds));
-            return propertyCursor.allowed(propertyIds, labels);
+            ensureSecurityPropertyCursor();
+            securityNodeCursor.properties(securityPropertyCursor, PropertySelection.selection(propertyIds));
+            return securityPropertyCursor.allowed(propertyIds, labels);
         } else {
             return accessMode.allowsReadNodeProperties(() -> Labels.from(labels), propertyIds);
         }
@@ -145,21 +142,37 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
         if (securityNodeCursor != null) {
             securityNodeCursor.close();
             securityNodeCursor.release();
+            securityNodeCursor = null;
         }
-        if (propertyCursor != null) {
-            propertyCursor.close();
-            propertyCursor.release();
+        if (securityPropertyCursor != null) {
+            securityPropertyCursor.close();
+            securityPropertyCursor.release();
+            securityPropertyCursor = null;
         }
     }
 
     @Override
     protected boolean doStoreValuePassesQueryFilter(
             long reference, PropertySelection propertySelection, PropertyIndexQuery[] query) {
+        ensureSecurityNodeCursor();
         read.singleNode(reference, securityNodeCursor);
         if (securityNodeCursor.next()) {
-            securityNodeCursor.properties(propertyCursor, propertySelection);
-            return CursorPredicates.propertiesMatch(propertyCursor, query);
+            ensureSecurityPropertyCursor();
+            securityNodeCursor.properties(securityPropertyCursor, propertySelection);
+            return CursorPredicates.propertiesMatch(securityPropertyCursor, query);
         }
         return false;
+    }
+
+    private void ensureSecurityNodeCursor() {
+        if (securityNodeCursor == null) {
+            securityNodeCursor = internalCursors.allocateNodeCursor();
+        }
+    }
+
+    private void ensureSecurityPropertyCursor() {
+        if (securityPropertyCursor == null) {
+            securityPropertyCursor = internalCursors.allocatePropertyCursor();
+        }
     }
 }

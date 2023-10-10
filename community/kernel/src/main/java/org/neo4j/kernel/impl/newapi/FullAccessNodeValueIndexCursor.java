@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.memory.MemoryTracker;
-
 class FullAccessNodeValueIndexCursor extends DefaultNodeValueIndexCursor {
-    FullAccessNodeValueIndexCursor(CursorPool<DefaultNodeValueIndexCursor> pool, MemoryTracker memoryTracker) {
-        super(pool, null, null, memoryTracker);
+    FullAccessNodeValueIndexCursor(CursorPool<DefaultNodeValueIndexCursor> pool) {
+        super(pool, null);
     }
 
     @Override

@@ -47,10 +47,10 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     private static final int NODE = -2;
     private Read read;
     private final StoragePropertyCursor storeCursor;
+    private final InternalCursorFactory internalCursors;
     private StoragePropertyCursor securityPropertyCursor;
-    private final Supplier<StoragePropertyCursor> securityPropertyCursorSupplier;
-    private final FullAccessNodeCursor securityNodeCursor;
-    private final FullAccessRelationshipScanCursor securityRelCursor;
+    private FullAccessNodeCursor securityNodeCursor;
+    private FullAccessRelationshipScanCursor securityRelCursor;
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
@@ -66,14 +66,10 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     DefaultPropertyCursor(
             CursorPool<DefaultPropertyCursor> pool,
             StoragePropertyCursor storeCursor,
-            Supplier<StoragePropertyCursor> securityPropertyCursorSupplier,
-            FullAccessNodeCursor securityNodeCursor,
-            FullAccessRelationshipScanCursor securityRelCursor) {
+            InternalCursorFactory internalCursors) {
         super(pool);
         this.storeCursor = storeCursor;
-        this.securityPropertyCursorSupplier = securityPropertyCursorSupplier;
-        this.securityNodeCursor = securityNodeCursor;
-        this.securityRelCursor = securityRelCursor;
+        this.internalCursors = internalCursors;
     }
 
     void initNode(long nodeReference, Reference reference, PropertySelection selection, Read read) {
@@ -111,7 +107,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
     void initSecurityPropertyProvision(BiConsumer<StoragePropertyCursor, PropertySelection> initNodeProperties) {
         securityPropertyProvider = null;
-        if (securityPropertyCursorSupplier == null || !accessMode.hasPropertyReadRules()) {
+        if (internalCursors == null || !accessMode.hasPropertyReadRules()) {
             return;
         }
         // We have property read rules
@@ -128,7 +124,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
     private StoragePropertyCursor lazyInitAndGetSecurityPropertyCursor() {
         if (securityPropertyCursor == null) {
-            securityPropertyCursor = securityPropertyCursorSupplier.get();
+            securityPropertyCursor = internalCursors.allocateStoragePropertyCursor();
         }
         return securityPropertyCursor;
     }
@@ -321,6 +317,9 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         assert isNode();
 
         if (labels == null) {
+            if (securityNodeCursor == null) {
+                securityNodeCursor = internalCursors.allocateFullAccessNodeCursor();
+            }
             read.singleNode(entityReference, securityNodeCursor);
             securityNodeCursor.next();
             labels = securityNodeCursor.labelsIgnoringTxStateSetRemove();
@@ -336,6 +335,9 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         assert isRelationship();
 
         if (type < 0) {
+            if (securityRelCursor == null) {
+                securityRelCursor = internalCursors.allocateFullAccessRelationshipScanCursor();
+            }
             read.singleRelationship(entityReference, securityRelCursor);
             securityRelCursor.next();
             this.type = securityRelCursor.type();
@@ -355,14 +357,17 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         }
         if (securityPropertyCursor != null) {
             securityPropertyCursor.close();
+            securityPropertyCursor = null;
         }
         if (securityNodeCursor != null) {
             securityNodeCursor.close();
             securityNodeCursor.release();
+            securityNodeCursor = null;
         }
         if (securityRelCursor != null) {
             securityRelCursor.close();
             securityRelCursor.release();
+            securityRelCursor = null;
         }
     }
 

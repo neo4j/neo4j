@@ -31,24 +31,23 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
 class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultRelationshipValueIndexCursor>
         implements RelationshipValueIndexCursor {
-    private final DefaultRelationshipScanCursor relationshipScanCursor;
-    private final DefaultPropertyCursor propertyCursor;
+    private final InternalCursorFactory internalCursors;
+    private DefaultRelationshipScanCursor relationshipScanCursor;
+    private DefaultPropertyCursor securityPropertyCursor;
     private int[] propertyIds;
 
     DefaultRelationshipValueIndexCursor(
             CursorPool<DefaultRelationshipValueIndexCursor> pool,
             DefaultRelationshipScanCursor relationshipScanCursor,
-            DefaultPropertyCursor propertyCursor,
-            MemoryTracker memoryTracker) {
-        super(pool, memoryTracker);
+            InternalCursorFactory internalCursors) {
+        super(pool);
         this.relationshipScanCursor = relationshipScanCursor;
-        this.propertyCursor = propertyCursor;
+        this.internalCursors = internalCursors;
     }
 
     @Override
@@ -120,8 +119,11 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
             long reference, PropertySelection propertySelection, PropertyIndexQuery[] query) {
         read.singleRelationship(reference, relationshipScanCursor);
         if (relationshipScanCursor.next()) {
-            relationshipScanCursor.properties(propertyCursor, propertySelection);
-            return CursorPredicates.propertiesMatch(propertyCursor, query);
+            if (securityPropertyCursor == null) {
+                securityPropertyCursor = internalCursors.allocatePropertyCursor();
+            }
+            relationshipScanCursor.properties(securityPropertyCursor, propertySelection);
+            return CursorPredicates.propertiesMatch(securityPropertyCursor, query);
         }
         return false;
     }
@@ -196,9 +198,10 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
             relationshipScanCursor.close();
             relationshipScanCursor.release();
         }
-        if (propertyCursor != null) {
-            propertyCursor.close();
-            propertyCursor.release();
+        if (securityPropertyCursor != null) {
+            securityPropertyCursor.close();
+            securityPropertyCursor.release();
+            securityPropertyCursor = null;
         }
     }
 }

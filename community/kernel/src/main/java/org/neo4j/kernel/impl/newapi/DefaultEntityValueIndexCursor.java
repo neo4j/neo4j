@@ -57,7 +57,6 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -75,16 +74,14 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     private ImmutableLongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
     private IndexOrder indexOrder;
-    private final MemoryTracker memoryTracker;
     private final SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
     private AccessMode accessMode;
     private boolean shortcutSecurity;
     private boolean needStoreFilter;
     private PropertySelection propertySelection;
 
-    DefaultEntityValueIndexCursor(CursorPool<CURSOR> pool, MemoryTracker memoryTracker) {
+    DefaultEntityValueIndexCursor(CursorPool<CURSOR> pool) {
         super(pool);
-        this.memoryTracker = memoryTracker;
         entity = NO_ID;
         score = Float.NaN;
         indexOrder = IndexOrder.NONE;

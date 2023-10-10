@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 
-import java.util.function.Supplier;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
@@ -57,26 +56,20 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     private LongIterator addedNodes;
     private boolean singleIsAddedInTx;
     final StorageNodeCursor storeCursor;
-    private final StorageNodeCursor securityStoreNodeCursor;
-    private final StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
+    private final InternalCursorFactory internalCursors;
+    private StorageNodeCursor securityStoreNodeCursor;
+    private StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
     private StoragePropertyCursor securityPropertyCursor;
-    private final Supplier<StoragePropertyCursor> securityPropertyCursorSupplier;
     private long currentAddedInTx = NO_ID;
     private long single;
     private boolean isSingle;
     private AccessMode accessMode;
 
     DefaultNodeCursor(
-            CursorPool<DefaultNodeCursor> pool,
-            StorageNodeCursor storeCursor,
-            StorageNodeCursor securityStoreNodeCursor,
-            StorageRelationshipTraversalCursor securityStoreRelationshipCursor,
-            Supplier<StoragePropertyCursor> securityPropertyCursorSupplier) {
+            CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, InternalCursorFactory internalCursors) {
         super(pool);
         this.storeCursor = storeCursor;
-        this.securityStoreNodeCursor = securityStoreNodeCursor;
-        this.securityStoreRelationshipCursor = securityStoreRelationshipCursor;
-        this.securityPropertyCursorSupplier = securityPropertyCursorSupplier;
+        this.internalCursors = internalCursors;
     }
 
     void scan(Read read) {
@@ -311,6 +304,9 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     private void readRestrictedDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
         // When we read degrees limited by security we need to traverse all relationships and check the "other side" if
         // we can add it
+        if (securityStoreRelationshipCursor == null) {
+            securityStoreRelationshipCursor = internalCursors.allocateStorageRelationshipTraversalCursor();
+        }
         storeCursor.relationships(securityStoreRelationshipCursor, selection);
         while (securityStoreRelationshipCursor.next()) {
             int type = securityStoreRelationshipCursor.type();
@@ -322,6 +318,9 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
                 boolean incoming = !loop && !outgoing;
                 if (!loop) { // No need to check labels for loops. We already know we are allowed since we have the node
                     // loaded in this cursor
+                    if (securityStoreNodeCursor == null) {
+                        securityStoreNodeCursor = internalCursors.allocateStorageNodeCursor();
+                    }
                     securityStoreNodeCursor.single(outgoing ? target : source);
                     if (!securityStoreNodeCursor.next() || !allowsTraverse(securityStoreNodeCursor)) {
                         continue;
@@ -352,7 +351,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     private StoragePropertyCursor lazyInitAndGetSecurityPropertyCursor() {
         if (securityPropertyCursor == null) {
-            securityPropertyCursor = securityPropertyCursorSupplier.get();
+            securityPropertyCursor = internalCursors.allocateStoragePropertyCursor();
         }
         return securityPropertyCursor;
     }
@@ -477,11 +476,17 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     @Override
     public void release() {
         final var localSecurityPropertyCursor = securityPropertyCursor;
+        final var localSecurityRelationshipCursor = securityStoreRelationshipCursor;
+        final var localSecurityNodeCursor = securityStoreNodeCursor;
         try (localSecurityPropertyCursor;
-                securityStoreRelationshipCursor;
-                securityStoreNodeCursor;
+                localSecurityRelationshipCursor;
+                localSecurityNodeCursor;
                 storeCursor) {
             // A concise and low-cost way of closing all these cursors w/o the overhead of, say IOUtils.closeAll
+        } finally {
+            securityPropertyCursor = null;
+            securityStoreRelationshipCursor = null;
+            securityStoreNodeCursor = null;
         }
     }
 }

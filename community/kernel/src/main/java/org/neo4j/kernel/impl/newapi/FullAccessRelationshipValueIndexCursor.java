@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.memory.MemoryTracker;
-
 class FullAccessRelationshipValueIndexCursor extends DefaultRelationshipValueIndexCursor {
-    FullAccessRelationshipValueIndexCursor(
-            CursorPool<DefaultRelationshipValueIndexCursor> pool, MemoryTracker memoryTracker) {
-        super(pool, null, null, memoryTracker);
+    FullAccessRelationshipValueIndexCursor(CursorPool<DefaultRelationshipValueIndexCursor> pool) {
+        super(pool, null, null);
     }
 
     @Override
