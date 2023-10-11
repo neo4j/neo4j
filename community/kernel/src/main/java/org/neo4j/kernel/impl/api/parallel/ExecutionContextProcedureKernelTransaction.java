@@ -55,12 +55,14 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class ExecutionContextProcedureKernelTransaction implements KernelTransaction {
+public class ExecutionContextProcedureKernelTransaction implements KernelTransaction, TxStateHolder {
     private final KernelTransaction ktx;
     private final ExecutionContext ctx;
     private final long transactionSequenceNumberWhenCreated;
@@ -393,5 +395,15 @@ public class ExecutionContextProcedureKernelTransaction implements KernelTransac
         return new UnsupportedOperationException(
                 "`transaction." + op
                         + "' is not supported in procedures when called from parallel runtime. Please retry using another runtime.");
+    }
+
+    @Override
+    public TransactionState txState() {
+        throw new UnsupportedOperationException("Accessing transaction state is not allowed during parallel execution");
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges() {
+        return false;
     }
 }

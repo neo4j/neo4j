@@ -51,7 +51,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -228,7 +228,7 @@ public class VectorIndexProcedures {
         // held by the index populator. Also, if the index was created in this transaction, then we will never see it
         // come online in this transaction anyway.
         // Indexes don't come online until the transaction that creates them has committed.
-        final var ktx = (KernelTransactionImplementation) this.ktx;
+        final var ktx = (TxStateHolder) this.ktx;
         if (!ktx.hasTxStateWithChanges()
                 || !ktx.txState().indexDiffSetsBySchema(index.schema()).isAdded(index)) {
             // If the index was not created in this transaction, then wait for it to come online before querying.
