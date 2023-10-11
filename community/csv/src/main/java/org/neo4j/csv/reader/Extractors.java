@@ -97,14 +97,14 @@ public class Extractors {
     private final BooleanExtractor boolean_;
     private final FloatExtractor float_;
     private final DoubleExtractor double_;
-    private final Extractor<String[]> stringArray;
-    private final Extractor<boolean[]> booleanArray;
-    private final Extractor<byte[]> byteArray;
-    private final Extractor<short[]> shortArray;
-    private final Extractor<int[]> intArray;
-    private final Extractor<long[]> longArray;
-    private final Extractor<float[]> floatArray;
-    private final Extractor<double[]> doubleArray;
+    private final StringArrayExtractor stringArray;
+    private final BooleanArrayExtractor booleanArray;
+    private final ByteArrayExtractor byteArray;
+    private final ShortArrayExtractor shortArray;
+    private final IntArrayExtractor intArray;
+    private final LongArrayExtractor longArray;
+    private final FloatArrayExtractor floatArray;
+    private final DoubleArrayExtractor doubleArray;
     private final PointExtractor point;
     private final PointArrayExtractor pointArray;
     private final DateExtractor date;
@@ -166,12 +166,12 @@ public class Extractors {
             add(float_ = new FloatExtractor(double_));
             add(stringArray = new StringArrayExtractor(arrayDelimiter, trimStrings));
             add(booleanArray = new BooleanArrayExtractor(arrayDelimiter));
-            add(byteArray = new ByteArrayExtractor(arrayDelimiter));
-            add(shortArray = new ShortArrayExtractor(arrayDelimiter));
-            add(intArray = new IntArrayExtractor(arrayDelimiter));
             add(longArray = new LongArrayExtractor(arrayDelimiter));
-            add(floatArray = new FloatArrayExtractor(arrayDelimiter));
+            add(byteArray = new ByteArrayExtractor(arrayDelimiter, longArray));
+            add(shortArray = new ShortArrayExtractor(arrayDelimiter, longArray));
+            add(intArray = new IntArrayExtractor(arrayDelimiter, longArray));
             add(doubleArray = new DoubleArrayExtractor(arrayDelimiter));
+            add(floatArray = new FloatArrayExtractor(arrayDelimiter, doubleArray));
             add(point = new PointExtractor());
             add(pointArray = new PointArrayExtractor(arrayDelimiter));
             add(date = new DateExtractor());
@@ -520,7 +520,11 @@ public class Extractors {
         protected final char arrayDelimiter;
 
         ArrayExtractor(char arrayDelimiter, String componentTypeName) {
-            super(componentTypeName + "[]");
+            this(arrayDelimiter, componentTypeName, null);
+        }
+
+        ArrayExtractor(char arrayDelimiter, String componentTypeName, Extractor<?> normalizedExtractor) {
+            super(componentTypeName + "[]", normalizedExtractor);
             this.arrayDelimiter = arrayDelimiter;
         }
 
@@ -585,8 +589,8 @@ public class Extractors {
     }
 
     private static class ByteArrayExtractor extends ArrayExtractor<byte[]> {
-        ByteArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, Byte.TYPE.getSimpleName());
+        ByteArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
+            super(arrayDelimiter, Byte.TYPE.getSimpleName(), longArrayExtractor);
         }
 
         @Override
@@ -604,8 +608,8 @@ public class Extractors {
     }
 
     private static class ShortArrayExtractor extends ArrayExtractor<short[]> {
-        ShortArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, Short.TYPE.getSimpleName());
+        ShortArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
+            super(arrayDelimiter, Short.TYPE.getSimpleName(), longArrayExtractor);
         }
 
         @Override
@@ -623,8 +627,8 @@ public class Extractors {
     }
 
     private static class IntArrayExtractor extends ArrayExtractor<int[]> {
-        IntArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, Integer.TYPE.getSimpleName());
+        IntArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
+            super(arrayDelimiter, Integer.TYPE.getSimpleName(), longArrayExtractor);
         }
 
         @Override
@@ -661,8 +665,8 @@ public class Extractors {
     }
 
     private static class FloatArrayExtractor extends ArrayExtractor<float[]> {
-        FloatArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, Float.TYPE.getSimpleName());
+        FloatArrayExtractor(char arrayDelimiter, DoubleArrayExtractor doubleArrayExtractor) {
+            super(arrayDelimiter, Float.TYPE.getSimpleName(), doubleArrayExtractor);
         }
 
         @Override

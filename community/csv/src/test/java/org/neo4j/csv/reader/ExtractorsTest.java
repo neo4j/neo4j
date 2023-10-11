@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Named.named;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 import java.time.Duration;
@@ -267,13 +267,21 @@ class ExtractorsTest {
         assertArrayEquals(new String[] {"ab", "cd ", " ef", " gh "}, extractedValue);
     }
 
-    @Test
-    void shouldNormalizeNumberTypes() {
-        Extractors extractors = new Extractors();
-        assertSame(extractors.long_(), extractors.byte_().normalize());
-        assertSame(extractors.long_(), extractors.short_().normalize());
-        assertSame(extractors.long_(), extractors.int_().normalize());
-        assertSame(extractors.double_(), extractors.float_().normalize());
+    @MethodSource("extractorTypes")
+    @ParameterizedTest(name = "{0}")
+    <T> void shouldNormalizeTypes(
+            Function<Extractors, Extractor<T>> extractorSelector,
+            Function<Extractors, Extractor<T>> normalizedSelector) {
+        // given
+        var extractors = new Extractors();
+        var extractor = extractorSelector.apply(extractors);
+        var expectedNormalizedExtractor = normalizedSelector.apply(extractors);
+
+        // when
+        var normalizedExtractor = extractor.normalize();
+
+        // then
+        assertThat(normalizedExtractor).isSameAs(expectedNormalizedExtractor);
     }
 
     @Test
@@ -397,7 +405,7 @@ class ExtractorsTest {
     }
 
     @MethodSource("extractorTypes")
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     <T> void shouldExtractEmptyField(Function<Extractors, Extractor<T>> extractorSelector) {
         // given
         var extractors = new Extractors();
@@ -412,43 +420,50 @@ class ExtractorsTest {
 
     public static Stream<Arguments> extractorTypes() {
         List<Arguments> types = new ArrayList<>();
-        types.add(extractorType(Extractors::boolean_));
-        types.add(extractorType(Extractors::booleanArray));
-        types.add(extractorType(Extractors::byte_));
-        types.add(extractorType(Extractors::byteArray));
-        types.add(extractorType(Extractors::short_));
-        types.add(extractorType(Extractors::shortArray));
-        types.add(extractorType(Extractors::int_));
-        types.add(extractorType(Extractors::intArray));
-        types.add(extractorType(Extractors::long_));
-        types.add(extractorType(Extractors::longArray));
-        types.add(extractorType(Extractors::float_));
-        types.add(extractorType(Extractors::floatArray));
-        types.add(extractorType(Extractors::double_));
-        types.add(extractorType(Extractors::doubleArray));
-        types.add(extractorType(Extractors::char_));
-        types.add(extractorType(Extractors::string));
-        types.add(extractorType(Extractors::stringArray));
-        types.add(extractorType(Extractors::textValue));
-        types.add(extractorType(Extractors::date));
-        types.add(extractorType(Extractors::dateArray));
-        types.add(extractorType(Extractors::time));
-        types.add(extractorType(Extractors::timeArray));
-        types.add(extractorType(Extractors::dateTime));
-        types.add(extractorType(Extractors::dateTimeArray));
-        types.add(extractorType(Extractors::localDateTime));
-        types.add(extractorType(Extractors::localDateTimeArray));
-        types.add(extractorType(Extractors::localTime));
-        types.add(extractorType(Extractors::localTimeArray));
-        types.add(extractorType(Extractors::point));
-        types.add(extractorType(Extractors::pointArray));
-        types.add(extractorType(Extractors::duration));
-        types.add(extractorType(Extractors::durationArray));
+        types.add(extractorType("Boolean Extractor", Extractors::boolean_));
+        types.add(extractorType("Boolean Array Extractor", Extractors::booleanArray));
+        types.add(extractorType("Byte Extractor", Extractors::byte_, Extractors::long_));
+        types.add(extractorType("Byte Array Extractor", Extractors::byteArray, Extractors::longArray));
+        types.add(extractorType("Short Extractor", Extractors::short_, Extractors::long_));
+        types.add(extractorType("Short Array Extractor", Extractors::shortArray, Extractors::longArray));
+        types.add(extractorType("Int Extractor", Extractors::int_, Extractors::long_));
+        types.add(extractorType("Int Array Extractor", Extractors::intArray, Extractors::longArray));
+        types.add(extractorType("Long Extractor", Extractors::long_));
+        types.add(extractorType("Long Array Extractor", Extractors::longArray));
+        types.add(extractorType("Float Extractor", Extractors::float_, Extractors::double_));
+        types.add(extractorType("Float Array Extractor", Extractors::floatArray, Extractors::doubleArray));
+        types.add(extractorType("Double Extractor", Extractors::double_));
+        types.add(extractorType("Double Array Extractor", Extractors::doubleArray));
+        types.add(extractorType("Char Extractor", Extractors::char_, Extractors::string));
+        types.add(extractorType("String Extractor", Extractors::string));
+        types.add(extractorType("String Array Extractor", Extractors::stringArray));
+        types.add(extractorType("TextValue Extractor", Extractors::textValue));
+        types.add(extractorType("Date Extractor", Extractors::date));
+        types.add(extractorType("Date Array Extractor", Extractors::dateArray));
+        types.add(extractorType("Time Extractor", Extractors::time));
+        types.add(extractorType("Time Array Extractor", Extractors::timeArray));
+        types.add(extractorType("DateTime Extractor", Extractors::dateTime));
+        types.add(extractorType("DateTime Array Extractor", Extractors::dateTimeArray));
+        types.add(extractorType("LocalDateTime Extractor", Extractors::localDateTime));
+        types.add(extractorType("LocalDateTime Array Extractor", Extractors::localDateTimeArray));
+        types.add(extractorType("LocalTime Extractor", Extractors::localTime));
+        types.add(extractorType("LocalTime Array Extractor", Extractors::localTimeArray));
+        types.add(extractorType("Point Extractor", Extractors::point));
+        types.add(extractorType("Point Array Extractor", Extractors::pointArray));
+        types.add(extractorType("Duration Extractor", Extractors::duration));
+        types.add(extractorType("Duration Array Extractor", Extractors::durationArray));
         return types.stream();
     }
 
-    private static Arguments extractorType(Function<Extractors, Extractor<?>> selector) {
-        return Arguments.of(selector);
+    private static Arguments extractorType(String name, Function<Extractors, Extractor<?>> selector) {
+        return extractorType(name, selector, selector);
+    }
+
+    private static Arguments extractorType(
+            String name,
+            Function<Extractors, Extractor<?>> selector,
+            Function<Extractors, Extractor<?>> normalizedSelector) {
+        return Arguments.of(named(name, selector), normalizedSelector);
     }
 
     private static String toString(long[] values, char delimiter) {
