@@ -84,7 +84,7 @@ import org.neo4j.values.storable.Values;
  *
  * Custom {@link Extractor extractors} can also be implemented and used, as need arises
  * and {@link Extractors#add(Extractor) added} to an {@link Extractors} instance, where its
- * {@link Extractor#toString() toString} value is used as key for lookup in {@link #valueOf(String)}.
+ * {@link Extractor#name() name} value is used as key for lookup in {@link #valueOf(String)}.
  */
 public class Extractors {
     private final Map<String, Extractor<?>> instances = new HashMap<>();
@@ -729,7 +729,7 @@ public class Extractors {
 
         @Override
         public boolean isEmpty(Object value) {
-            return super.isEmpty(value) || ((ArrayValue) value).length() == 0;
+            return super.isEmpty(value) || ((ArrayValue) value).isEmpty();
         }
     }
 
