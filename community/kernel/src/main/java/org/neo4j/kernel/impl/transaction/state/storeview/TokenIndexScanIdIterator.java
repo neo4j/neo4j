@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import java.util.NoSuchElementException;
@@ -77,7 +76,7 @@ public class TokenIndexScanIdIterator implements EntityIdIterator {
         return new CompositeTokenScanValueIterator(
                 stream(tokenIds)
                         .mapToObj(token -> new QueryResultIterator(range, token))
-                        .collect(toList()),
+                        .toList(),
                 false);
     }
 

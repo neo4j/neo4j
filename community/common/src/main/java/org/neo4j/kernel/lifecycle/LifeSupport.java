@@ -20,7 +20,6 @@
 package org.neo4j.kernel.lifecycle;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -231,7 +230,7 @@ public class LifeSupport implements Lifecycle, LifecycleStatusProvider {
     }
 
     public List<Lifecycle> getLifecycleInstances() {
-        return instances.stream().map(l -> l.instance).collect(toList());
+        return instances.stream().map(l -> l.instance).toList();
     }
 
     /**

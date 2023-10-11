@@ -22,7 +22,6 @@ package org.neo4j.net;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -357,7 +356,7 @@ class ConnectionTrackingIT {
         try (Transaction transaction = db.beginTx()) {
             Result result = transaction.execute("CALL dbms.listConnections()");
             assertEquals(LIST_CONNECTIONS_PROCEDURE_COLUMNS, result.columns());
-            List<Map<String, Object>> records = result.stream().collect(toList());
+            List<Map<String, Object>> records = result.stream().toList();
 
             for (Map<String, Object> record : records) {
                 String actualConnector = record.get("connector").toString();
@@ -386,7 +385,7 @@ class ConnectionTrackingIT {
     private List<TrackedNetworkConnection> authenticatedConnectionsFromConnectionTracker() {
         return acceptedConnectionsFromConnectionTracker().stream()
                 .filter(connection -> connection.username() != null)
-                .collect(toList());
+                .toList();
     }
 
     private List<TrackedNetworkConnection> acceptedConnectionsFromConnectionTracker() {

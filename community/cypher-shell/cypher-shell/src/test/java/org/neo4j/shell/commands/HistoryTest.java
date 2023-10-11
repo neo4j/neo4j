@@ -20,7 +20,6 @@
 package org.neo4j.shell.commands;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -100,7 +99,7 @@ class HistoryTest {
     @Test
     void shouldLimitHistory() throws CommandException {
         when(historian.getHistory())
-                .thenReturn(IntStream.range(1, 21).mapToObj(Integer::toString).collect(toList()));
+                .thenReturn(IntStream.range(1, 21).mapToObj(Integer::toString).toList());
 
         cmd.execute(List.of());
 

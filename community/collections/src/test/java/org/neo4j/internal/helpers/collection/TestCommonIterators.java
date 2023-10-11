@@ -21,7 +21,6 @@ package org.neo4j.internal.helpers.collection;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -202,7 +201,7 @@ class TestCommonIterators {
 
         Iterator<Object> iterator = list.iterator();
 
-        assertEquals(list, Iterators.stream(iterator).collect(toList()));
+        assertEquals(list, Iterators.stream(iterator).toList());
     }
 
     @Test
@@ -213,7 +212,7 @@ class TestCommonIterators {
         ResourceIterator<Object> iterator = Iterators.resourceIterator(list.iterator(), resource);
 
         try (Stream<Object> stream = Iterators.stream(iterator)) {
-            assertEquals(list, stream.collect(toList()));
+            assertEquals(list, stream.toList());
         }
         verify(resource).close();
     }
@@ -237,7 +236,7 @@ class TestCommonIterators {
     void iterablesStream() {
         List<Object> list = asList(1, 2, "3", '4', null, "abc", "56789");
 
-        assertEquals(list, Iterables.stream(list).collect(toList()));
+        assertEquals(list, Iterables.stream(list).toList());
     }
 
     @Test
@@ -258,7 +257,7 @@ class TestCommonIterators {
         };
 
         try (Stream<Object> stream = Iterables.stream(iterable)) {
-            assertEquals(list, stream.collect(toList()));
+            assertEquals(list, stream.toList());
         }
         verify(resource).close();
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -123,7 +122,7 @@ abstract class CompositeRandomizedIndexAccessorCompatibility extends IndexAccess
                     updates = generateUpdatesFromValues(generateValuesFromType(types, uniqueValues, 20_000), nextId);
                     sortedValues.addAll(updates.stream()
                             .map(u -> new ValueAndId(ValueTuple.of(u.values()), u.getEntityId()))
-                            .collect(toList()));
+                            .toList());
                 } else {
                     // Then do all sorts of updates
                     for (int j = 0; j < 1_000; j++) {
@@ -203,7 +202,7 @@ abstract class CompositeRandomizedIndexAccessorCompatibility extends IndexAccess
                     .stream()
                     .map(v -> v.id)
                     .sorted(Long::compare)
-                    .collect(toList());
+                    .toList();
         }
 
         private List<ValueTuple> generateValuesFromType(

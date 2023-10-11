@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.terminal;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
 import java.io.IOException;
@@ -136,7 +135,7 @@ public class JlineTerminal implements CypherShellTerminal {
             loadHistory();
             return stream(jLineReader.getHistory().spliterator(), false)
                     .map(History.Entry::line)
-                    .collect(toList());
+                    .toList();
         }
 
         @Override

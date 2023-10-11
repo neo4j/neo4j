@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -295,7 +294,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         return Arrays.stream(StoreType.STORE_TYPES)
                 .map(t -> databaseLayout.file(t.getDatabaseFile()))
                 .filter(fileSystem::fileExists)
-                .collect(toList());
+                .toList();
     }
 
     @Override
@@ -682,7 +681,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         boolean allStoreFilesExist = storeFiles.stream().allMatch(fs::fileExists);
         if (!allStoreFilesExist) {
             return StorageFilesState.unrecoverableState(
-                    storeFiles.stream().filter(file -> !fs.fileExists(file)).collect(toList()));
+                    storeFiles.stream().filter(file -> !fs.fileExists(file)).toList());
         }
 
         boolean allIdFilesExist = recordLayout.idFiles().stream().allMatch(fs::fileExists);

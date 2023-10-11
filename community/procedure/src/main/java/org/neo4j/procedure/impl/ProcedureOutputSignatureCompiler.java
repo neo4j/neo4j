@@ -22,7 +22,6 @@ package org.neo4j.procedure.impl;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -154,7 +153,7 @@ class ProcedureOutputSignatureCompiler {
                         userClass, not(ProcedureOutputSignatureCompiler::isJavaLangClass), Class::getSuperclass)
                 .flatMap(c -> Arrays.stream(c.getDeclaredFields()))
                 .filter(f -> !isStatic(f.getModifiers()) && !f.isSynthetic())
-                .collect(toList());
+                .toList();
     }
 
     private static boolean isJavaLangClass(Class<?> cls) {

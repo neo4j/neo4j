@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import static java.lang.Integer.max;
 import static java.lang.Math.toIntExact;
-import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,7 +49,7 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document> {
     public Iterator<Document> iterator() {
         Iterator<Iterator<Document>> iterators = partitionReaders.stream()
                 .map(LucenePartitionAllDocumentsReader::iterator)
-                .collect(toList())
+                .toList()
                 .iterator();
 
         return Iterators.concat(iterators);

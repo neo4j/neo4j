@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.extension;
 
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 
 import java.lang.reflect.ParameterizedType;
@@ -51,7 +50,7 @@ public abstract class AbstractExtensions implements DependencyResolver, Lifecycl
         this.extensionFailureStrategy = extensionFailureStrategy;
         this.extensionFactories = stream(extensionFactories)
                 .filter(e -> e.getExtensionType() == extensionType)
-                .collect(toList());
+                .toList();
         this.dependencies = dependencies;
     }
 
@@ -99,7 +98,7 @@ public abstract class AbstractExtensions implements DependencyResolver, Lifecycl
         return life.getLifecycleInstances().stream()
                 .filter(type::isInstance)
                 .map(type::cast)
-                .collect(toList());
+                .toList();
     }
 
     @Override

@@ -20,7 +20,6 @@
 package org.neo4j.io.layout;
 
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -138,7 +137,7 @@ public final class Neo4jLayout {
             return list.filter(Files::isDirectory)
                     .map(directory ->
                             DatabaseLayout.of(this, directory.getFileName().toString()))
-                    .collect(toList());
+                    .toList();
         } catch (NoSuchFileException e) {
             return emptyList();
         } catch (IOException e) {

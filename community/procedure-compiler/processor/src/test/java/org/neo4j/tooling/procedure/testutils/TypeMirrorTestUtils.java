@@ -20,10 +20,8 @@
 package org.neo4j.tooling.procedure.testutils;
 
 import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
 
 import com.google.testing.compile.CompilationRule;
-import java.util.stream.Stream;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -64,7 +62,6 @@ public class TypeMirrorTestUtils {
     }
 
     private TypeMirror[] typesOf(Class<?>... parameterTypes) {
-        Stream<TypeMirror> mirrorStream = stream(parameterTypes).map(this::typeOf);
-        return mirrorStream.collect(toList()).toArray(new TypeMirror[parameterTypes.length]);
+        return stream(parameterTypes).map(this::typeOf).toArray(TypeMirror[]::new);
     }
 }

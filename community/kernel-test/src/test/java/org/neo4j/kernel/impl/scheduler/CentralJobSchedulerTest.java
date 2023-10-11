@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.scheduler;
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
@@ -415,14 +415,14 @@ class CentralJobSchedulerTest {
     @Test
     void shouldListActiveGroups() {
         life.start();
-        assertEquals(List.of(), scheduler.activeGroups().map(ag -> ag.group()).collect(toList()));
+        assertEquals(List.of(), scheduler.activeGroups().map(ActiveGroup::group).toList());
 
         BinaryLatch firstLatch = new BinaryLatch();
         scheduler.schedule(Group.CHECKPOINT, NOT_MONITORED, firstLatch::release);
         firstLatch.await();
         assertEquals(
                 List.of(Group.CHECKPOINT),
-                scheduler.activeGroups().map(ag -> ag.group()).collect(toList()));
+                scheduler.activeGroups().map(ActiveGroup::group).toList());
     }
 
     @Test

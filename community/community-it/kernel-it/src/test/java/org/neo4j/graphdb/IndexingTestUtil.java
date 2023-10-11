@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.alwaysTrue;
@@ -51,11 +50,9 @@ public class IndexingTestUtil {
         try (var tx = db.beginTx()) {
             var lookupIndexes = stream(tx.schema().getIndexes().spliterator(), false)
                     .filter(idx -> idx.getIndexType() == LOOKUP)
-                    .collect(toList());
-            assertThat(lookupIndexes.stream().anyMatch(IndexDefinition::isNodeIndex))
-                    .isTrue();
-            assertThat(lookupIndexes.stream().anyMatch(IndexDefinition::isRelationshipIndex))
-                    .isTrue();
+                    .toList();
+            assertThat(lookupIndexes).anyMatch(IndexDefinition::isNodeIndex);
+            assertThat(lookupIndexes).anyMatch(IndexDefinition::isRelationshipIndex);
         }
     }
 

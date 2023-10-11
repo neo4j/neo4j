@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import static java.util.stream.Collectors.toList;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -194,7 +192,7 @@ public class PartitionedIndexStorage {
                 .filter(f -> fileSystem.isDirectory(f)
                         && StringUtils.isNumeric(f.getFileName().toString()))
                 .sorted(FILE_COMPARATOR)
-                .collect(toList());
+                .toList();
     }
 
     /**

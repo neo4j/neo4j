@@ -26,7 +26,6 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static javax.tools.Diagnostic.Kind.NOTE;
@@ -365,7 +364,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor {
 
     private String getGetBounds(TypeParameterElement typeParameter) {
         List<String> bounds =
-                typeParameter.getBounds().stream().map(this::encodeType).collect(toList());
+                typeParameter.getBounds().stream().map(this::encodeType).toList();
         if (bounds.isEmpty()) {
             return typeParameter.toString();
         }

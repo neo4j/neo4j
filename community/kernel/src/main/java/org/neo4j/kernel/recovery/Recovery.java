@@ -22,7 +22,6 @@ package org.neo4j.kernel.recovery;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
@@ -890,7 +889,7 @@ public final class Recovery {
             CursorContextFactory contextFactory) {
         List<ExtensionFactory<?>> recoveryExtensions = stream(extensionFactories)
                 .filter(extension -> extension.getClass().isAnnotationPresent(RecoveryExtension.class))
-                .collect(toList());
+                .toList();
 
         NonListenableMonitors nonListenableMonitors =
                 new NonListenableMonitors(monitors, logService.getInternalLogProvider());

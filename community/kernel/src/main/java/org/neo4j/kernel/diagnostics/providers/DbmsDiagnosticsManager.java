@@ -22,7 +22,6 @@ package org.neo4j.kernel.diagnostics.providers;
 import static java.lang.String.format;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 import java.util.ArrayList;
@@ -112,11 +111,11 @@ public class DbmsDiagnosticsManager {
         var startedDbs = databaseContexts.stream()
                 .flatMap(ctx -> ctx.optionalDatabase().stream())
                 .filter(Database::isStarted)
-                .collect(toList());
+                .toList();
         var stoppedDbs = databaseContexts.stream()
                 .flatMap(ctx -> ctx.optionalDatabase().stream())
                 .filter(not(Database::isStarted))
-                .collect(toList());
+                .toList();
 
         dumpAsSingleMessage(log, diagnosticsLogger -> {
             logDatabasesState(diagnosticsLogger, startedDbs, "Started");

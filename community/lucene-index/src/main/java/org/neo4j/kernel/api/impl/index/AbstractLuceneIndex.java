@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static java.util.stream.Collectors.toList;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -239,7 +237,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
 
             List<LucenePartitionAllDocumentsReader> partitionReaders = searchers.stream()
                     .map(LucenePartitionAllDocumentsReader::new)
-                    .collect(toList());
+                    .toList();
 
             return new LuceneAllDocumentsReader(partitionReaders);
         } catch (IOException e) {

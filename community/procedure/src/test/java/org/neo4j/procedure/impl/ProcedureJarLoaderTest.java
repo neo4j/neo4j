@@ -20,7 +20,6 @@
 package org.neo4j.procedure.impl;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -115,7 +114,7 @@ public class ProcedureJarLoaderTest {
 
         // Then
         List<ProcedureSignature> signatures =
-                procedures.stream().map(CallableProcedure::signature).collect(toList());
+                procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
                         .out("someNumber", NTInteger)
@@ -138,7 +137,7 @@ public class ProcedureJarLoaderTest {
 
         // Then
         List<ProcedureSignature> signatures =
-                procedures.stream().map(CallableProcedure::signature).collect(toList());
+                procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
                         .out("someNumber", NTInteger)
@@ -159,7 +158,7 @@ public class ProcedureJarLoaderTest {
 
         // Then
         List<ProcedureSignature> signatures =
-                procedures.stream().map(CallableProcedure::signature).collect(toList());
+                procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
                         .in("value", NTInteger)
@@ -184,7 +183,7 @@ public class ProcedureJarLoaderTest {
 
         // Then
         List<ProcedureSignature> signatures =
-                procedures.stream().map(CallableProcedure::signature).collect(toList());
+                procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .contains(
                         procedureSignature("org", "neo4j", "procedure", "impl", "myOtherProcedure")
@@ -224,7 +223,7 @@ public class ProcedureJarLoaderTest {
 
         // Then
         List<ProcedureSignature> signatures =
-                procedures.stream().map(CallableProcedure::signature).collect(toList());
+                procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .contains(
                         procedureSignature("org", "neo4j", "procedure", "impl", "myOtherProcedure")
@@ -244,7 +243,7 @@ public class ProcedureJarLoaderTest {
         List<CallableProcedure> procedures =
                 jarloader.loadProceduresFromDir(parentDir(jar)).procedures();
         List<ProcedureSignature> signatures =
-                procedures.stream().map(CallableProcedure::signature).collect(toList());
+                procedures.stream().map(CallableProcedure::signature).toList();
 
         // then
         assertThat(signatures)
@@ -266,7 +265,7 @@ public class ProcedureJarLoaderTest {
         List<CallableProcedure> procedures =
                 jarloader.loadProceduresFromDir(parentDir(jar)).procedures();
         List<ProcedureSignature> signatures =
-                procedures.stream().map(CallableProcedure::signature).collect(toList());
+                procedures.stream().map(CallableProcedure::signature).toList();
 
         // then
         assertThat(signatures)

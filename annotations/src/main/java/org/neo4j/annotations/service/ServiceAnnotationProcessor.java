@@ -20,7 +20,6 @@
 package org.neo4j.annotations.service;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static javax.tools.Diagnostic.Kind.NOTE;
@@ -113,7 +112,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor {
                 .map(TypeElement.class::cast)
                 .collect(toSet());
         info("Processing service providers: "
-                + elements.stream().map(Object::toString).sorted().collect(toList()));
+                + elements.stream().map(Object::toString).sorted().toList());
         for (TypeElement serviceProvider : elements) {
             getImplementedService(serviceProvider).ifPresent(service -> {
                 info(format("Service %s provided by %s", service, serviceProvider));
@@ -124,7 +123,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor {
 
     private Optional<TypeElement> getImplementedService(TypeElement serviceProvider) {
         final Set<TypeMirror> types = getTypeWithSupertypes(serviceProvider.asType());
-        final List<TypeMirror> services = types.stream().filter(this::isService).collect(toList());
+        final List<TypeMirror> services = types.stream().filter(this::isService).toList();
 
         if (services.isEmpty()) {
             error(

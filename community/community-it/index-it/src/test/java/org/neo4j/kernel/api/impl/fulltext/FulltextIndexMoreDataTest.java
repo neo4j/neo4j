@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -80,7 +79,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, ZEBRAS * 2);
             }
             tx.commit();
@@ -89,7 +88,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // top hit
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, 0);
             }
             tx.commit();
@@ -100,7 +99,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
             var limit = random.nextInt(1, ZEBRAS);
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, limit - 1);
             }
             tx.commit();
@@ -115,7 +114,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, ZEBRAS);
             }
             tx.commit();
@@ -124,7 +123,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // top hit
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, 0);
             }
             tx.commit();
@@ -135,7 +134,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
             var limit = random.nextInt(1, ZEBRAS);
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, limit - 1);
             }
             tx.commit();
@@ -150,7 +149,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, ZEBRAS);
             }
             tx.commit();
@@ -159,7 +158,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // top hit
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, 0);
             }
             tx.commit();
@@ -170,7 +169,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
             var limit = random.nextInt(1, ZEBRAS);
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().collect(toList());
+                var list = iterator.stream().toList();
                 assertSearchResults(list, limit - 1);
             }
             tx.commit();

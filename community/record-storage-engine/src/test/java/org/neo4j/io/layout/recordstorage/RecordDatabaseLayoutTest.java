@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.layout.recordstorage;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -197,7 +196,7 @@ class RecordDatabaseLayoutTest {
     @Test
     void allFilesContainsStoreFiles() {
         RecordDatabaseFile nodeStore = RecordDatabaseFile.NODE_STORE;
-        List<Path> allNodeStoreFile = layout.allFiles(nodeStore).collect(toList());
+        List<Path> allNodeStoreFile = layout.allFiles(nodeStore).toList();
         Path nodeStoreStoreFile = layout.file(nodeStore);
         assertThat(allNodeStoreFile).contains(nodeStoreStoreFile);
     }
@@ -205,7 +204,7 @@ class RecordDatabaseLayoutTest {
     @Test
     void allFilesContainsIdFileIfPresent() {
         RecordDatabaseFile nodeStore = RecordDatabaseFile.NODE_STORE;
-        List<Path> allNodeStoreFile = layout.allFiles(nodeStore).collect(toList());
+        List<Path> allNodeStoreFile = layout.allFiles(nodeStore).toList();
         Path nodeStoreIdFile = layout.idFile(nodeStore).orElseThrow();
         assertThat(allNodeStoreFile).contains(nodeStoreIdFile);
     }

@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.dbms;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.stream.Collectors.toList;
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -128,10 +127,8 @@ class AuthorizationFilterTest {
         verify(servletResponse).setStatus(401);
         verify(servletResponse).addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"");
         verify(servletResponse).addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        assertThat(outputStream.toString(UTF_8.name()))
-                .contains("\"code\" : \"Neo" + ".ClientError.Security.Unauthorized\"");
-        assertThat(outputStream.toString(UTF_8.name()))
-                .contains("\"message\" : \"No authentication header supplied.\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"code\" : \"Neo" + ".ClientError.Security.Unauthorized\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"message\" : \"No authentication header supplied.\"");
     }
 
     @Test
@@ -149,9 +146,8 @@ class AuthorizationFilterTest {
         verifyNoMoreInteractions(filterChain);
         verify(servletResponse).setStatus(400);
         verify(servletResponse).addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        assertThat(outputStream.toString(UTF_8.name()))
-                .contains("\"code\" : \"Neo.ClientError.Request.InvalidFormat\"");
-        assertThat(outputStream.toString(UTF_8.name())).contains("\"message\" : \"Invalid authentication header.\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"code\" : \"Neo.ClientError.Request.InvalidFormat\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"message\" : \"Invalid authentication header.\"");
     }
 
     @Test
@@ -185,9 +181,8 @@ class AuthorizationFilterTest {
                 .containsMessages("Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address");
         verify(servletResponse).setStatus(401);
         verify(servletResponse).addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        assertThat(outputStream.toString(UTF_8.name()))
-                .contains("\"code\" : \"Neo.ClientError.Security.Unauthorized\"");
-        assertThat(outputStream.toString(UTF_8.name())).contains("\"message\" : \"Invalid username or password.\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"code\" : \"Neo.ClientError.Security.Unauthorized\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"message\" : \"Invalid username or password.\"");
     }
 
     @Test
@@ -247,9 +242,9 @@ class AuthorizationFilterTest {
         verifyNoMoreInteractions(filterChain);
         verify(servletResponse).setStatus(429);
         verify(servletResponse).addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        assertThat(outputStream.toString(UTF_8.name()))
+        assertThat(outputStream.toString(UTF_8))
                 .contains("\"code\" : \"Neo.ClientError.Security.AuthenticationRateLimit\"");
-        assertThat(outputStream.toString(UTF_8.name()))
+        assertThat(outputStream.toString(UTF_8))
                 .contains("\"message\" : \"Too many failed authentication requests. "
                         + "Please wait 5 seconds and try again.\"");
     }
@@ -299,26 +294,18 @@ class AuthorizationFilterTest {
         verify(servletResponse).setStatus(401);
         verify(servletResponse).addHeader(HttpHeaders.WWW_AUTHENTICATE, "None");
         verify(servletResponse).addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        assertThat(outputStream.toString(UTF_8.name()))
-                .contains("\"code\" : \"Neo.ClientError.Security.Unauthorized\"");
-        assertThat(outputStream.toString(UTF_8.name()))
-                .contains("\"message\" : \"No authentication header supplied.\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"code\" : \"Neo.ClientError.Security.Unauthorized\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"message\" : \"No authentication header supplied.\"");
     }
 
     private AuthorizationEnabledFilter newFilter(String... uriWhitelist) {
         var uriWhitelistPatterns =
-                Arrays.stream(uriWhitelist).map(Pattern::compile).collect(toList());
+                Arrays.stream(uriWhitelist).map(Pattern::compile).toList();
 
         return new AuthorizationEnabledFilter(() -> authManager, logProvider, uriWhitelistPatterns);
     }
 
-    private static class AuthTokenMatcher implements ArgumentMatcher<Map<String, Object>> {
-        private final Map<String, Object> expectedMap;
-
-        AuthTokenMatcher(Map<String, Object> expectedMap) {
-            this.expectedMap = expectedMap;
-        }
-
+    private record AuthTokenMatcher(Map<String, Object> expectedMap) implements ArgumentMatcher<Map<String, Object>> {
         @Override
         public boolean matches(Map<String, Object> map) {
             return AuthTokenUtil.matches(expectedMap, map);

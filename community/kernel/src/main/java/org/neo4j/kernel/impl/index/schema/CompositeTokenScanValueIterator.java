@@ -37,7 +37,7 @@ public class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIt
         implements PrimitiveLongResourceIterator {
     private final PriorityQueue<IdAndSource> sortedIterators = new PriorityQueue<>();
     private final int atLeastNumberOfTokens;
-    private final List<PrimitiveLongResourceIterator> toClose;
+    private final List<? extends PrimitiveLongResourceIterator> toClose;
     private long last = -1;
 
     /**
@@ -46,7 +46,8 @@ public class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIt
      * @param iterators {@link LongIterator iterators} to merge.
      * @param trueForAll if {@code true} using {@code AND} merging, otherwise {@code OR} merging.
      */
-    public CompositeTokenScanValueIterator(List<PrimitiveLongResourceIterator> iterators, boolean trueForAll) {
+    public CompositeTokenScanValueIterator(
+            List<? extends PrimitiveLongResourceIterator> iterators, boolean trueForAll) {
         this.toClose = iterators;
         this.atLeastNumberOfTokens = trueForAll ? iterators.size() : 1;
         for (LongIterator iterator : iterators) {
@@ -87,7 +88,6 @@ public class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIt
     public void close() {
         ResourceUtils.closeAll(toClose);
         sortedIterators.clear();
-        toClose.clear();
     }
 
     private static final class IdAndSource implements Comparable<IdAndSource> {

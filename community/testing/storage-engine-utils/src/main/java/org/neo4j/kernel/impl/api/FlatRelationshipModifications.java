@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -119,14 +118,14 @@ public class FlatRelationshipModifications implements RelationshipModifications 
                 public RelationshipBatch creations() {
                     return new FlatRelationshipBatch(nodeData.creations.values().stream()
                             .flatMap(Collection::stream)
-                            .collect(toList()));
+                            .toList());
                 }
 
                 @Override
                 public RelationshipBatch deletions() {
                     return new FlatRelationshipBatch(nodeData.deletions.values().stream()
                             .flatMap(Collection::stream)
-                            .collect(toList()));
+                            .toList());
                 }
 
                 @Override
@@ -283,21 +282,21 @@ public class FlatRelationshipModifications implements RelationshipModifications 
         public RelationshipBatch out() {
             return new FlatRelationshipBatch(relationships.stream()
                     .filter(r -> r.direction(nodeId) == OUTGOING)
-                    .collect(toList()));
+                    .toList());
         }
 
         @Override
         public RelationshipBatch in() {
             return new FlatRelationshipBatch(relationships.stream()
                     .filter(r -> r.direction(nodeId) == INCOMING)
-                    .collect(toList()));
+                    .toList());
         }
 
         @Override
         public RelationshipBatch loop() {
             return new FlatRelationshipBatch(relationships.stream()
                     .filter(r -> r.direction(nodeId) == LOOP)
-                    .collect(toList()));
+                    .toList());
         }
     }
 }
