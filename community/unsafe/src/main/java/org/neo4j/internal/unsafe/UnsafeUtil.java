@@ -61,6 +61,8 @@ public final class UnsafeUtil {
     private static final boolean DIRTY_MEMORY = flag(UnsafeUtil.class, "DIRTY_MEMORY", false);
 
     private static final boolean CHECK_NATIVE_ACCESS = flag(UnsafeUtil.class, "CHECK_NATIVE_ACCESS", false);
+    private static final int NERFED_BUFFER_MARK = -2;
+
     // this allows us to temporarily disable the checking, for performance:
     private static boolean nativeAccessCheckEnabled = true;
 
@@ -659,7 +661,7 @@ public final class UnsafeUtil {
 
     private static void nerfBuffer(ByteBuffer byteBuffer) {
         assertUnsafeByteBufferAccess();
-        BYTE_BUFFER_MARK.set(byteBuffer, -1);
+        BYTE_BUFFER_MARK.set(byteBuffer, NERFED_BUFFER_MARK);
         BYTE_BUFFER_POSITION.set(byteBuffer, 0);
         BYTE_BUFFER_LIMIT.set(byteBuffer, 0);
         BYTE_BUFFER_CAPACITY.set(byteBuffer, 0);
@@ -735,8 +737,11 @@ public final class UnsafeUtil {
     }
 
     private static void freeHeapByteBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
-        int capacity = byteBuffer.capacity();
+        if ((int) BYTE_BUFFER_MARK.get(byteBuffer) == NERFED_BUFFER_MARK) {
+            return;
+        }
         // nerf buffer to break any future access
+        int capacity = byteBuffer.capacity();
         nerfBuffer(byteBuffer);
         memoryTracker.releaseHeap(capacity);
     }
