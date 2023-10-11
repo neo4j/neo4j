@@ -36,6 +36,7 @@ import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Help.Visibility.NEVER;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
@@ -50,10 +51,14 @@ import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
 import org.neo4j.cli.AbstractAdminCommand;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.ByteUnitConverter;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.Converters.MaxOffHeapMemoryConverter;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.cli.ExitCode;
+import org.neo4j.commandline.dbms.CannotWriteException;
+import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.Configuration;
@@ -63,6 +68,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
@@ -377,58 +383,78 @@ public class ImportCommand {
             return Optional.of("database-import");
         }
 
+        @FunctionalInterface
+        protected interface MaybeLocker {
+            Closeable maybeCheckLock(DatabaseLayout databaseLayout) throws CannotWriteException, IOException;
+        }
+
         protected void doExecute(
-                boolean incremental, CsvImporter.IncrementalStage mode, String format, boolean overwriteDestination) {
+                boolean incremental,
+                CsvImporter.IncrementalStage mode,
+                String format,
+                boolean overwriteDestination,
+                Base.MaybeLocker maybeLockChecker) {
             try {
                 final var databaseConfig = loadNeo4jConfig(format);
                 Neo4jLayout neo4jLayout = Neo4jLayout.of(databaseConfig);
                 final var databaseLayout = RecordDatabaseLayout.of(
                         neo4jLayout, database.name()); // Right now we only support Record storage for import command
-                final var csvConfig = csvConfiguration();
-                final var importConfig = importConfiguration();
 
-                final var importerBuilder = CsvImporter.builder()
-                        .withDatabaseLayout(databaseLayout)
-                        .withDatabaseConfig(databaseConfig)
-                        .withFileSystem(ctx.fs())
-                        .withStdOut(ctx.out())
-                        .withStdErr(ctx.err())
-                        .withCsvConfig(csvConfig)
-                        .withImportConfig(importConfig)
-                        .withIdType(idType)
-                        .withInputEncoding(inputEncoding)
-                        .withReportFile(reportFile.toAbsolutePath())
-                        .withIgnoreExtraColumns(ignoreExtraColumns)
-                        .withBadTolerance(badTolerance)
-                        .withSkipBadRelationships(skipBadRelationships)
-                        .withSkipDuplicateNodes(skipDuplicateNodes)
-                        .withSkipBadEntriesLogging(skipBadEntriesLogging)
-                        .withSkipBadRelationships(skipBadRelationships)
-                        .withNormalizeTypes(normalizeTypes)
-                        .withVerbose(verbose)
-                        .withAutoSkipHeaders(autoSkipHeaders)
-                        .withForce(overwriteDestination)
-                        .withIncremental(incremental);
-                CursorContextFactory cursorContextFactory;
-                if (incremental) {
-                    importerBuilder.withIncrementalStage(mode);
-                    cursorContextFactory = new CursorContextFactory(
-                            PageCacheTracer.NULL,
-                            new FixedVersionContextSupplier(getLogTail(databaseLayout, databaseConfig)
-                                    .getLastCommittedTransaction()
-                                    .transactionId()));
-                } else {
-                    cursorContextFactory =
-                            new CursorContextFactory(PageCacheTracer.NULL, new FixedVersionContextSupplier(BASE_TX_ID));
+                try (Closeable maybeLock = maybeLockChecker.maybeCheckLock(databaseLayout)) {
+                    final var csvConfig = csvConfiguration();
+                    final var importConfig = importConfiguration();
+
+                    final var importerBuilder = CsvImporter.builder()
+                            .withDatabaseLayout(databaseLayout)
+                            .withDatabaseConfig(databaseConfig)
+                            .withFileSystem(ctx.fs())
+                            .withStdOut(ctx.out())
+                            .withStdErr(ctx.err())
+                            .withCsvConfig(csvConfig)
+                            .withImportConfig(importConfig)
+                            .withIdType(idType)
+                            .withInputEncoding(inputEncoding)
+                            .withReportFile(reportFile.toAbsolutePath())
+                            .withIgnoreExtraColumns(ignoreExtraColumns)
+                            .withBadTolerance(badTolerance)
+                            .withSkipBadRelationships(skipBadRelationships)
+                            .withSkipDuplicateNodes(skipDuplicateNodes)
+                            .withSkipBadEntriesLogging(skipBadEntriesLogging)
+                            .withSkipBadRelationships(skipBadRelationships)
+                            .withNormalizeTypes(normalizeTypes)
+                            .withVerbose(verbose)
+                            .withAutoSkipHeaders(autoSkipHeaders)
+                            .withForce(overwriteDestination)
+                            .withIncremental(incremental);
+                    CursorContextFactory cursorContextFactory;
+                    if (incremental) {
+                        importerBuilder.withIncrementalStage(mode);
+                        cursorContextFactory = new CursorContextFactory(
+                                PageCacheTracer.NULL,
+                                new FixedVersionContextSupplier(getLogTail(databaseLayout, databaseConfig)
+                                        .getLastCommittedTransaction()
+                                        .transactionId()));
+                    } else {
+                        cursorContextFactory = new CursorContextFactory(
+                                PageCacheTracer.NULL, new FixedVersionContextSupplier(BASE_TX_ID));
+                    }
+                    importerBuilder.withCursorContextFactory(cursorContextFactory);
+
+                    nodes.forEach(n -> importerBuilder.addNodeFiles(n.key, n.files));
+
+                    relationships.forEach(n -> importerBuilder.addRelationshipFiles(n.key, n.files));
+
+                    final var importer = importerBuilder.build();
+                    importer.doImport();
+                } catch (FileLockException e) {
+                    throw new CommandFailedException(
+                            "The database is in use. Stop database '%s' and try again."
+                                    .formatted(databaseLayout.getDatabaseName()),
+                            e,
+                            ExitCode.FAIL);
+                } catch (CannotWriteException e) {
+                    throw new CommandFailedException("You do not have permission to import.", e, ExitCode.NOPERM);
                 }
-                importerBuilder.withCursorContextFactory(cursorContextFactory);
-
-                nodes.forEach(n -> importerBuilder.addNodeFiles(n.key, n.files));
-
-                relationships.forEach(n -> importerBuilder.addRelationshipFiles(n.key, n.files));
-
-                final var importer = importerBuilder.build();
-                importer.doImport();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -587,7 +613,11 @@ public class ImportCommand {
 
         @Override
         public void execute() throws Exception {
-            doExecute(false, null, format, overwriteDestination);
+            doExecute(false, null, format, overwriteDestination, databaseLayout -> {
+                // Create the db folder if it doesn't exist, to be able to create and lock the lockfile.
+                ctx.fs().mkdirs(databaseLayout.databaseDirectory());
+                return LockChecker.checkDatabaseLock(databaseLayout);
+            });
         }
     }
 
@@ -618,7 +648,7 @@ public class ImportCommand {
                         "ERROR: Incremental import needs to be used with care. Please confirm by specifying --force.");
                 throw new IllegalArgumentException("Missing force");
             }
-            doExecute(true, stage, null, false);
+            doExecute(true, stage, null, false, (layout) -> () -> {} /* locking handled in the specific steps */);
         }
 
         static class StageConverter implements CommandLine.ITypeConverter<CsvImporter.IncrementalStage> {

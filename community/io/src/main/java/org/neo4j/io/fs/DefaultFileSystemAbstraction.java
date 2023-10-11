@@ -42,6 +42,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
@@ -132,6 +133,11 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     @Override
     public void deleteRecursively(Path directory) throws IOException {
         FileUtils.deleteDirectory(directory);
+    }
+
+    @Override
+    public void deleteRecursively(Path directory, Predicate<Path> removeFilePredicate) throws IOException {
+        FileUtils.deleteDirectory(directory, removeFilePredicate);
     }
 
     @Override

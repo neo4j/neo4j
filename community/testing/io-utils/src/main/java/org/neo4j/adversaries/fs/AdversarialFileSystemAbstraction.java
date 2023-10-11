@@ -31,6 +31,7 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -190,6 +191,12 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction {
     public void deleteRecursively(Path directory) throws IOException {
         adversary.injectFailure(SecurityException.class, NullPointerException.class, IOException.class);
         delegate.deleteRecursively(directory);
+    }
+
+    @Override
+    public void deleteRecursively(Path directory, Predicate<Path> removeFilePredicate) throws IOException {
+        adversary.injectFailure(SecurityException.class, NullPointerException.class, IOException.class);
+        delegate.deleteRecursively(directory, removeFilePredicate);
     }
 
     @Override

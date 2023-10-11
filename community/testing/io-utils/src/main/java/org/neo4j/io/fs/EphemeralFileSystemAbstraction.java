@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.CombiningIterator;
@@ -283,6 +284,43 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
             deleteFile(subDirectory);
         }
         deleteFile(directory);
+    }
+
+    @Override
+    public void deleteRecursively(Path directory, Predicate<Path> removeFilePredicate) throws IOException {
+        if (!fileExists(directory)) {
+            return;
+        }
+        if (!isDirectory(directory)) {
+            throw new NotDirectoryException(directory.toString());
+        }
+        // Delete all files matching the predicate in directory and sub-directory
+        directory = canonicalFile(directory);
+        for (Map.Entry<Path, EphemeralFileData> file : files.entrySet()) {
+            Path fileName = file.getKey();
+            if (fileName.startsWith(directory) && !fileName.equals(directory) && removeFilePredicate.test(fileName)) {
+                deleteFile(fileName);
+            }
+        }
+
+        // Delete all matching sub-directories
+        Path finalDirectory = directory;
+        List<Path> subDirectories = directories.stream()
+                .filter(p -> p.startsWith(finalDirectory) && !p.equals(finalDirectory) && removeFilePredicate.test(p))
+                .sorted(Comparator.reverseOrder())
+                .toList();
+        for (Path subDirectory : subDirectories) {
+            tryDeleteDirectoryIgnoreNotEmpty(subDirectory);
+        }
+        tryDeleteDirectoryIgnoreNotEmpty(directory);
+    }
+
+    private void tryDeleteDirectoryIgnoreNotEmpty(Path directory) throws IOException {
+        try {
+            deleteFile(directory);
+        } catch (DirectoryNotEmptyException ignore) {
+            // Some files were filtered out, the directory should stay
+        }
     }
 
     @Override

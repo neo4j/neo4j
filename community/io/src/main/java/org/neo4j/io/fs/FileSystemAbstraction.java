@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
@@ -206,16 +207,29 @@ public interface FileSystemAbstraction extends Closeable {
     void deleteFile(Path fileName) throws IOException;
 
     /**
-     * Deletes the directory denoted by {@code fileName}, if it exists.
-     * If {@code fileName} denotes a file a {@link NotDirectoryException} is thrown.
+     * Deletes the directory denoted by {@code directory}, if it exists.
+     * If {@code directory} denotes a file a {@link NotDirectoryException} is thrown.
      * This operation is not atomic in that if mid-operation a file or directory can't be deleted or an {@link IOException} is thrown,
      * some files and directories may have been deleted and some may not.
      *
      * @param directory directory to delete.
-     * @throws NotDirectoryException if {@code fileName} denotes a file.
+     * @throws NotDirectoryException if {@code directory} denotes a file.
      * @throws IOException on I/O error or if some file or directory couldn't be deleted.
      */
     void deleteRecursively(Path directory) throws IOException;
+
+    /**
+     * Deletes the directory denoted by {@code directory}, if it exists, recursively with a filter.
+     * If {@code directory} denotes a file a {@link NotDirectoryException} is thrown.
+     * This operation is not atomic in that if mid-operation a file or directory can't be deleted or an {@link IOException} is thrown,
+     * some files and directories may have been deleted and some may not.
+     *
+     * @param directory directory to traverse.
+     * @param removeFilePredicate filter for files to remove.
+     * @throws NotDirectoryException if {@code directory} denotes a file.
+     * @throws IOException if an I/O error occurs.
+     */
+    void deleteRecursively(Path directory, Predicate<Path> removeFilePredicate) throws IOException;
 
     /**
      * Renames/moves a file or directory. Renaming a file or directory to/from the same file storage is typically an atomic operation,

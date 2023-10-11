@@ -155,7 +155,8 @@ class CsvImporter implements Importer {
     @Override
     public void doImport() throws IOException {
         if (force) {
-            fileSystem.deleteRecursively(databaseLayout.databaseDirectory());
+            fileSystem.deleteRecursively(
+                    databaseLayout.databaseDirectory(), path -> !path.equals(databaseLayout.databaseLockFile()));
             fileSystem.deleteRecursively(databaseLayout.getTransactionLogsDirectory());
         }
 
@@ -617,7 +618,9 @@ class CsvImporter implements Importer {
 
         CsvImporter build() {
             Preconditions.checkState(
-                    !(force && incremental), "--force doesn't work with incremental import", incrementalStage);
+                    !(force && incremental),
+                    "--overwrite-destination doesn't work with incremental import",
+                    incrementalStage);
             return new CsvImporter(this);
         }
     }

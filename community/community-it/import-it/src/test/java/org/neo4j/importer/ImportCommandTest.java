@@ -90,6 +90,7 @@ import org.eclipse.collections.api.factory.Maps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.CommandTestUtils;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
@@ -116,6 +117,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.RandomSupport;
@@ -180,6 +182,33 @@ class ImportCommandTest {
         assertTrue(ctx.outAsString().contains("IMPORT DONE"));
         assertTokenIndexesCreated();
         verifyData();
+    }
+
+    @Test
+    void shouldNotBeAllowedToImportToOnlineDb() throws Exception {
+        List<String> nodeIds = nodeIds();
+        Path dbConfig = defaultConfig();
+
+        // Started neo4j db
+        getDatabaseApi();
+
+        var ctx = capturingCtx();
+        assertThatThrownBy(() -> runImport(
+                        ctx,
+                        "--additional-config",
+                        dbConfig.toAbsolutePath().toString(),
+                        "--nodes",
+                        nodeData(true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
+                        "--high-parallel-io",
+                        "off",
+                        "--relationships",
+                        relationshipData(true, COMMAS, nodeIds, TRUE, true)
+                                .toAbsolutePath()
+                                .toString(),
+                        "--overwrite-destination" // Overwrite to not get complaint that it contains data
+                        ))
+                .isInstanceOf(CommandFailedException.class)
+                .hasCauseInstanceOf(FileLockException.class);
     }
 
     @Test
