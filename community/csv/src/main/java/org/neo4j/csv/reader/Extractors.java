@@ -22,10 +22,13 @@ package org.neo4j.csv.reader;
 import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.time.ZoneOffset.UTC;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BOOLEAN_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_DOUBLE_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_FLOAT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_SHORT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToByte;
@@ -601,8 +604,6 @@ public class Extractors {
     }
 
     private static class ShortArrayExtractor extends ArrayExtractor<short[]> {
-        private static final short[] EMPTY = new short[0];
-
         ShortArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Short.TYPE.getSimpleName());
         }
@@ -611,7 +612,7 @@ public class Extractors {
         public short[] extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             int numberOfValues = numberOfValues(data, offset, length);
-            short[] value = numberOfValues > 0 ? new short[numberOfValues] : EMPTY;
+            short[] value = numberOfValues > 0 ? new short[numberOfValues] : EMPTY_SHORT_ARRAY;
             for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
                 int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
                 value[arrayIndex] = safeCastLongToShort(extractLong(data, offset + charIndex, numberOfChars));
@@ -660,8 +661,6 @@ public class Extractors {
     }
 
     private static class FloatArrayExtractor extends ArrayExtractor<float[]> {
-        private static final float[] EMPTY = new float[0];
-
         FloatArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Float.TYPE.getSimpleName());
         }
@@ -670,7 +669,7 @@ public class Extractors {
         public float[] extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             int numberOfValues = numberOfValues(data, offset, length);
-            float[] value = numberOfValues > 0 ? new float[numberOfValues] : EMPTY;
+            float[] value = numberOfValues > 0 ? new float[numberOfValues] : EMPTY_FLOAT_ARRAY;
             for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
                 int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
                 // TODO Figure out a way to do this conversion without round tripping to String
@@ -705,8 +704,6 @@ public class Extractors {
     }
 
     private static class BooleanArrayExtractor extends ArrayExtractor<boolean[]> {
-        private static final boolean[] EMPTY = new boolean[0];
-
         BooleanArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Boolean.TYPE.getSimpleName());
         }
@@ -715,7 +712,7 @@ public class Extractors {
         public boolean[] extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             int numberOfValues = numberOfValues(data, offset, length);
-            boolean[] value = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY;
+            boolean[] value = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY_BOOLEAN_ARRAY;
             for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
                 int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
                 value[arrayIndex] = extractBoolean(data, offset + charIndex, numberOfChars);
