@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.coreapi.DataLookup;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.internal.CursorIterator;
+import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.ElementIdMapper;
 
@@ -160,10 +161,9 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
         throw new UnsupportedOperationException("Acquiring locks is unsupported during parallel execution.");
     }
 
-    // Schema operations could be easily supported, but the investment does not make sense since DDL is richer API.
     @Override
     public Schema schema() {
-        throw new UnsupportedOperationException("Working with schema is unsupported during parallel execution.");
+        return new SchemaImpl(kernelTransaction());
     }
 
     @Override

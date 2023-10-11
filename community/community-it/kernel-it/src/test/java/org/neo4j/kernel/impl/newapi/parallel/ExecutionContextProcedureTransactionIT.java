@@ -20,16 +20,22 @@
 package org.neo4j.kernel.impl.newapi.parallel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.internal.helpers.collection.Iterables.filter;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureKernelTransaction;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -163,6 +169,76 @@ class ExecutionContextProcedureTransactionIT {
 
         try (var tx = db.beginTx()) {
             assertThat(executionContextTransaction(tx).getAllPropertyKeys()).containsExactlyInAnyOrder(key1, key2);
+        }
+    }
+
+    @Test
+    void shouldReadIndexesAndConstraints() {
+        try (var tx = db.beginTx()) {
+            tx.schema()
+                    .indexFor(Label.label("L"))
+                    .on("prop")
+                    .withName("MyIndex")
+                    .create();
+            tx.schema()
+                    .constraintFor(Label.label("M"))
+                    .withName("MyConstraint")
+                    .assertPropertyIsUnique("prop")
+                    .create();
+            tx.commit();
+        }
+        try (var tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, TimeUnit.MINUTES);
+            tx.commit();
+        }
+
+        try (var tx = db.beginTx()) {
+            Schema schema = executionContextTransaction(tx).schema();
+            assertThat(count(filter((i) -> i.getName().equals("MyIndex"), schema.getIndexes())))
+                    .isEqualTo(1L);
+            assertThat(single(schema.getIndexByName("MyIndex").getPropertyKeys()))
+                    .isEqualTo("prop");
+            assertThat(single(schema.getIndexes(Label.label("L"))).getName()).isEqualTo("MyIndex");
+            assertThat(count(filter((i) -> i.getName().equals("MyConstraint"), schema.getConstraints())))
+                    .isEqualTo(1L);
+            assertThat(single(schema.getConstraintByName("MyConstraint").getPropertyKeys()))
+                    .isEqualTo("prop");
+            assertThat(single(schema.getConstraints(Label.label("M"))).getName())
+                    .isEqualTo("MyConstraint");
+        }
+    }
+
+    @Test
+    void shouldAwaitIndexesToComeOnline() {
+        try (var tx = db.beginTx()) {
+            tx.schema()
+                    .indexFor(Label.label("L"))
+                    .on("prop")
+                    .withName("MyIndex")
+                    .create();
+            tx.commit();
+        }
+        try (var tx = db.beginTx()) {
+            Schema schema = executionContextTransaction(tx).schema();
+            schema.awaitIndexesOnline(1, TimeUnit.MINUTES);
+            tx.commit();
+        }
+
+        try (var tx = db.beginTx()) {
+            var schema = tx.schema();
+            assertThat(single(schema.getIndexByName("MyIndex").getPropertyKeys()))
+                    .isEqualTo("prop");
+        }
+    }
+
+    @Test
+    void shouldNotBeAbleToCreateNewIndexes() {
+        try (var tx = db.beginTx()) {
+            Schema schema = executionContextTransaction(tx).schema();
+            assertThatThrownBy(
+                            () -> schema.indexFor(Label.label("L")).on("prop").create())
+                    .isInstanceOf(UnsupportedOperationException.class);
+            tx.commit();
         }
     }
 
