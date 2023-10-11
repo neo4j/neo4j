@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
@@ -69,6 +70,17 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with DefaultPostC
   val instance: Rewriter = bottomUp(
     Rewriter.lift {
       case m @ Match(_, _, pattern, _, where) =>
+        val newOuterExp = extractPredicatesAndMergeWhereExpressions(pattern, where.map(_.expression), m.position)
+
+        val newWhere = newOuterExp.map {
+          Where(_)(where.fold(m.position)(_.position))
+        }
+
+        m.copy(
+          pattern = replaceParenthesizedPaths(pattern),
+          where = newWhere
+        )(m.position)
+      case m @ Merge(pattern, _, where) =>
         val newOuterExp = extractPredicatesAndMergeWhereExpressions(pattern, where.map(_.expression), m.position)
 
         val newWhere = newOuterExp.map {
