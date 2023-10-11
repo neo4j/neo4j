@@ -72,7 +72,7 @@ public sealed interface InternalNodeBehaviour<KEY> extends SharedNodeBehaviour<K
 
     int totalSpaceOfKeyChild(KEY key);
 
-    void defragment(PageCursor cursor);
+    void defragment(PageCursor cursor, int keyCount);
 
     void doSplit(
             PageCursor leftCursor,

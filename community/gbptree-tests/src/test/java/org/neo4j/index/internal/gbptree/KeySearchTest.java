@@ -420,7 +420,7 @@ class KeySearchTest {
         while (true) {
             MutableLong expectedKey = layout.newKey();
             key.setValue(currentKey);
-            if (leaf.overflow(cursor, keyCount, key, dummyValue) != NO) {
+            if (leaf.overflow(cursor, keyCount, key, dummyValue, NULL_CONTEXT) != NO) {
                 break;
             }
             layout.copyKey(key, expectedKey);

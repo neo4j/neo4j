@@ -209,7 +209,7 @@ final class InternalNodeFixedSize<KEY> implements InternalNodeBehaviour<KEY> {
     }
 
     @Override
-    public void defragment(PageCursor cursor) {
+    public void defragment(PageCursor cursor, int keyCount) {
         // no-op
     }
 

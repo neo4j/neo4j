@@ -522,7 +522,7 @@ class InternalTreeLogic<KEY, VALUE> {
         }
 
         if (overflow == NO_NEED_DEFRAG) {
-            internalNode.defragment(cursor);
+            internalNode.defragment(cursor, keyCount);
         }
 
         // No overflow
@@ -832,7 +832,7 @@ class InternalTreeLogic<KEY, VALUE> {
             long unstableGeneration,
             CursorContext cursorContext)
             throws IOException {
-        Overflow overflow = leafNode.overflow(cursor, keyCount, key, value);
+        Overflow overflow = leafNode.overflow(cursor, keyCount, key, value, cursorContext);
         if (overflow == YES) {
             // Overflow, split leaf
             if (!splitLeaf(
@@ -850,7 +850,12 @@ class InternalTreeLogic<KEY, VALUE> {
         }
 
         if (overflow == NO_NEED_DEFRAG) {
-            leafNode.defragment(cursor);
+            int keyCountAfterDeframent = leafNode.defragment(cursor, keyCount, cursorContext);
+            if (keyCountAfterDeframent != keyCount) {
+                keyCount = keyCountAfterDeframent;
+                // need to find new insert position
+                pos = positionOf(KeySearch.search(cursor, leafNode, key, readKey, keyCount, cursorContext));
+            }
         }
 
         // No overflow, insert key and value
@@ -1563,7 +1568,8 @@ class InternalTreeLogic<KEY, VALUE> {
                 rightSiblingKeyCount,
                 stableGeneration,
                 unstableGeneration,
-                linkedCursorCreator);
+                linkedCursorCreator,
+                cursorContext);
 
         // Propagate change
         // mid child has been merged into right child
@@ -1603,7 +1609,8 @@ class InternalTreeLogic<KEY, VALUE> {
                 keyCount,
                 stableGeneration,
                 unstableGeneration,
-                linkedCursorCreator);
+                linkedCursorCreator,
+                cursorContext);
 
         // Propagate change
         // left child has been merged into mid child
@@ -1621,10 +1628,11 @@ class InternalTreeLogic<KEY, VALUE> {
             int rightSiblingKeyCount,
             long stableGeneration,
             long unstableGeneration,
-            CursorCreator linkedCursorCreator)
+            CursorCreator linkedCursorCreator,
+            CursorContext cursorContext)
             throws IOException {
         leafNode.copyKeyValuesFromLeftToRight(
-                leftSiblingCursor, leftSiblingKeyCount, rightSiblingCursor, rightSiblingKeyCount);
+                leftSiblingCursor, leftSiblingKeyCount, rightSiblingCursor, rightSiblingKeyCount, cursorContext);
 
         // Update successor of left sibling to be right sibling
         TreeNodeUtil.setSuccessor(
@@ -1644,9 +1652,10 @@ class InternalTreeLogic<KEY, VALUE> {
             int rightKeyCount,
             int numberOfKeysToMove,
             StructurePropagation<KEY> structurePropagation,
-            CursorContext cursorContext) {
+            CursorContext cursorContext)
+            throws IOException {
         leafNode.moveKeyValuesFromLeftToRight(
-                leftCursor, leftKeyCount, rightCursor, rightKeyCount, leftKeyCount - numberOfKeysToMove);
+                leftCursor, leftKeyCount, rightCursor, rightKeyCount, leftKeyCount - numberOfKeysToMove, cursorContext);
 
         // Propagate change
         structurePropagation.hasLeftKeyReplace = true;

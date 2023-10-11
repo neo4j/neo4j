@@ -60,6 +60,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.TreeNodeLayoutFactory;
+import org.neo4j.index.internal.gbptree.ValueHolder;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
@@ -810,9 +811,9 @@ public class IndexedIdGenerator implements IdGenerator {
                     tree.visit(
                             new GBPTreeVisitor.Adaptor<>() {
                                 @Override
-                                public void value(IdRange value) {
+                                public void value(ValueHolder<IdRange> value) {
                                     for (int i = 0; i < header.idsPerEntry; i++) {
-                                        IdRange.IdState state = value.getState(i);
+                                        IdRange.IdState state = value.value.getState(i);
                                         if (state == IdRange.IdState.FREE) {
                                             numDeletedAndFreed.increment();
                                         } else if (state == IdRange.IdState.DELETED) {
@@ -842,12 +843,12 @@ public class IndexedIdGenerator implements IdGenerator {
                                 }
 
                                 @Override
-                                public void value(IdRange value) {
+                                public void value(ValueHolder<IdRange> value) {
                                     long rangeIndex = key.getIdRangeIdx();
                                     int idsPerEntry = layout.idsPerEntry();
                                     System.out.printf(
                                             "%s [rangeIndex: %d, i.e. IDs:%d-%d]%n",
-                                            value,
+                                            value.value,
                                             rangeIndex,
                                             rangeIndex * idsPerEntry,
                                             (rangeIndex + 1) * idsPerEntry - 1);

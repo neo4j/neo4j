@@ -95,9 +95,10 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes
     }
 
     @Override
-    protected void defragmentLeaf(LeafNodeBehaviour<RawBytes, RawBytes> leaf, PageAwareByteArrayCursor cursor) {
+    protected void defragmentLeaf(LeafNodeBehaviour<RawBytes, RawBytes> leaf, PageAwareByteArrayCursor cursor)
+            throws IOException {
         var allocOffsetBefore = DynamicSizeUtil.getAllocOffset(cursor);
-        leaf.defragment(cursor);
+        leaf.defragment(cursor, TreeNodeUtil.keyCount(cursor), NULL_CONTEXT);
         var allocOffsetAfter = DynamicSizeUtil.getAllocOffset(cursor);
         assertThat(allocOffsetAfter).isGreaterThan(allocOffsetBefore);
         var deadSpaceAfter = DynamicSizeUtil.getDeadSpace(cursor);

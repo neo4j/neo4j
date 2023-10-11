@@ -185,6 +185,11 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     }
 
     @Override
+    public long sizeInBytes() {
+        return index.sizeInBytes();
+    }
+
+    @Override
     public void drop() {
         index.setDeleteOnClose(true);
         closeResources();

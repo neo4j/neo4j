@@ -397,8 +397,9 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         assertEquals(123, successor(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
     }
 
-    protected void defragmentLeaf(LeafNodeBehaviour<KEY, VALUE> leaf, PageAwareByteArrayCursor cursor) {
-        leaf.defragment(cursor);
+    protected void defragmentLeaf(LeafNodeBehaviour<KEY, VALUE> leaf, PageAwareByteArrayCursor cursor)
+            throws IOException {
+        leaf.defragment(cursor, TreeNodeUtil.keyCount(cursor), NULL_CONTEXT);
     }
 
     @Test
@@ -568,9 +569,9 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
                 } while (contains(expectedKeys, newKey, layout));
                 VALUE newValue = value(random.nextLong());
 
-                Overflow overflow = leaf.overflow(cursor, expectedKeyCount, newKey, newValue);
+                Overflow overflow = leaf.overflow(cursor, expectedKeyCount, newKey, newValue, NULL_CONTEXT);
                 if (overflow == NO_NEED_DEFRAG) {
-                    leaf.defragment(cursor);
+                    leaf.defragment(cursor, expectedKeyCount, NULL_CONTEXT);
                     assertContent(expectedKeys, expectedValues, expectedKeyCount);
                 }
                 if (overflow != YES) { // there's room

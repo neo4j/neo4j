@@ -162,7 +162,7 @@ public final class GBPTreeCorruption {
             var newCount = leafNode.removeKeyValueAt(
                     cursor, higherKeyPos, keyCount, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
             TreeNodeUtil.setKeyCount(cursor, newCount);
-            leafNode.defragment(cursor);
+            leafNode.defragment(cursor, newCount, NULL_CONTEXT);
 
             // Insert key and value in lower position
             long stableGeneration = treeState.stableGeneration();
@@ -195,7 +195,7 @@ public final class GBPTreeCorruption {
             internalNode.removeKeyAndRightChildAt(
                     cursor, higherKeyPos, keyCount, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
             TreeNodeUtil.setKeyCount(cursor, keyCount - 1);
-            internalNode.defragment(cursor);
+            internalNode.defragment(cursor, keyCount - 1);
 
             // Insert key and right child in lower position
             long stableGeneration = treeState.stableGeneration();
@@ -257,7 +257,7 @@ public final class GBPTreeCorruption {
             long unstableGeneration1 = treeState.unstableGeneration();
             leafNode.removeKeyValueAt(cursor, keyPos, keyCount, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
             TreeNodeUtil.setKeyCount(cursor, keyCount - 1);
-            leafNode.defragment(cursor);
+            leafNode.defragment(cursor, keyCount - 1, NULL_CONTEXT);
 
             // Insert new key and value
             long stableGeneration = treeState.stableGeneration();
@@ -281,7 +281,7 @@ public final class GBPTreeCorruption {
             internalNode.removeKeyAndRightChildAt(
                     cursor, keyPos, keyCount, stableGeneration1, unstableGeneration1, NULL_CONTEXT);
             TreeNodeUtil.setKeyCount(cursor, keyCount - 1);
-            internalNode.defragment(cursor);
+            internalNode.defragment(cursor, keyCount - 1);
 
             // Insert key and right child
             long stableGeneration = treeState.stableGeneration();

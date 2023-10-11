@@ -88,9 +88,9 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
     }
 
     @Override
-    public void value(VALUE value) {
+    public void value(ValueHolder<VALUE> value) {
         if (printValues) {
-            out.print("=" + value);
+            out.print("=" + value.value + (value.defined ? "[D]" : "[U]"));
         }
         out.print(" ");
     }

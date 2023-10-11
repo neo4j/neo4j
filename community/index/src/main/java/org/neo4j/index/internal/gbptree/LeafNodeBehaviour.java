@@ -79,13 +79,17 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
 
     int maxKeyCount();
 
-    Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue);
+    Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue, CursorContext cursorContext)
+            throws IOException;
 
     int availableSpace(PageCursor cursor, int currentKeyCount);
 
     int underflowThreshold();
 
-    void defragment(PageCursor cursor);
+    /**
+     * returns new key count after defragment
+     */
+    int defragment(PageCursor cursor, int keyCount, CursorContext cursorContext) throws IOException;
 
     boolean underflow(PageCursor cursor, int keyCount);
 
@@ -119,10 +123,21 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
             throws IOException;
 
     void moveKeyValuesFromLeftToRight(
-            PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int fromPosInLeftNode);
+            PageCursor leftCursor,
+            int leftKeyCount,
+            PageCursor rightCursor,
+            int rightKeyCount,
+            int fromPosInLeftNode,
+            CursorContext cursorContext)
+            throws IOException;
 
     void copyKeyValuesFromLeftToRight(
-            PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount);
+            PageCursor leftCursor,
+            int leftKeyCount,
+            PageCursor rightCursor,
+            int rightKeyCount,
+            CursorContext cursorContext)
+            throws IOException;
 
     int totalSpaceOfKeyValue(KEY key, VALUE value);
 

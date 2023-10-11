@@ -954,7 +954,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(firstSeed + keyCount);
         VALUE value = value(firstSeed + keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == Overflow.NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == Overflow.NO) {
             leaf.insertKeyValueAt(
                     cursor, key, value, keyCount, keyCount, stableGeneration, unstableGeneration, NULL_CONTEXT);
             expectedSeeds.add(firstSeed + keyCount);
@@ -2361,7 +2361,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         int keyCount = TreeNodeUtil.keyCount(cursor);
         KEY key = key(k);
         VALUE value = value(k);
-        Overflow overflow = leaf.overflow(cursor, keyCount, key, value);
+        Overflow overflow = leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT);
         if (overflow != Overflow.NO) {
             throw new IllegalStateException("Can not insert another key in current node");
         }

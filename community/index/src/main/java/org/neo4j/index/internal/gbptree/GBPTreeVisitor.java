@@ -40,7 +40,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
 
     void key(DATA_KEY key, boolean isLeaf, long offloadId);
 
-    void value(DATA_VALUE value);
+    void value(ValueHolder<DATA_VALUE> value);
 
     void child(long child);
 
@@ -84,7 +84,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
         public void key(DATA_KEY key, boolean isLeaf, long offloadId) {}
 
         @Override
-        public void value(DATA_VALUE value) {}
+        public void value(ValueHolder<DATA_VALUE> value) {}
 
         @Override
         public void child(long child) {}

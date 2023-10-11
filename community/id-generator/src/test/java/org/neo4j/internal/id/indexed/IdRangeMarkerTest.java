@@ -50,6 +50,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.index.internal.gbptree.ValueHolder;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.id.IdValidator;
@@ -354,9 +355,9 @@ class IdRangeMarkerTest {
                     }
 
                     @Override
-                    public void value(IdRange idRange) {
+                    public void value(ValueHolder<IdRange> idRange) {
                         for (int i = 0; i < idsPerEntry; i++) {
-                            if (idRange.getState(i) == state) {
+                            if (idRange.value.getState(i) == state) {
                                 deletedIdsInTree.add(idRangeKey.getIdRangeIdx() * idsPerEntry + i);
                             }
                         }

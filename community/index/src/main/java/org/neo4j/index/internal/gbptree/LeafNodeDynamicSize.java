@@ -370,7 +370,9 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue) {
+    public Overflow overflow(
+            PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue, CursorContext cursorContext)
+            throws IOException {
         int neededSpace = totalSpaceOfKeyValue(newKey, newValue);
         int deadSpace = getDeadSpace(cursor);
         int allocSpace = getAllocSpace(cursor, keyPosOffsetLeaf(currentKeyCount));
@@ -391,8 +393,9 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public void defragment(PageCursor cursor) {
-        doDefragment(cursor, TreeNodeUtil.keyCount(cursor));
+    public int defragment(PageCursor cursor, int keyCount, CursorContext cursorContext) throws IOException {
+        doDefragment(cursor, keyCount);
+        return keyCount;
     }
 
     private void doDefragment(PageCursor cursor, int keyCount) {
@@ -561,7 +564,12 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
 
     @Override
     public void moveKeyValuesFromLeftToRight(
-            PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int fromPosInLeftNode) {
+            PageCursor leftCursor,
+            int leftKeyCount,
+            PageCursor rightCursor,
+            int rightKeyCount,
+            int fromPosInLeftNode,
+            CursorContext cursorContext) {
         doDefragment(rightCursor, rightKeyCount);
         int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
 
@@ -626,7 +634,11 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
 
     @Override
     public void copyKeyValuesFromLeftToRight(
-            PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount) {
+            PageCursor leftCursor,
+            int leftKeyCount,
+            PageCursor rightCursor,
+            int rightKeyCount,
+            CursorContext cursorContext) {
         doDefragment(rightCursor, rightKeyCount);
 
         // Push keys and values in right sibling to the right

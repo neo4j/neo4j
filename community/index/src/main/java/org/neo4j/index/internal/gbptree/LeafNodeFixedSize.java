@@ -57,9 +57,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * @param <VALUE> type of value
  */
 class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
-    private final int maxKeyCount;
-    private final int keySize;
-    private final int valueSize;
+    protected final int maxKeyCount;
+    protected final int keySize;
+    protected final int valueSize;
     private final int halfSpace;
 
     protected final Layout<KEY, VALUE> layout;
@@ -249,7 +249,7 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         insertSlotsAt(cursor, pos, numberOfSlots, keyCount, valueOffset(0), valueSize);
     }
 
-    private int keyOffset(int pos) {
+    protected int keyOffset(int pos) {
         return BASE_HEADER_LENGTH + pos * keySize;
     }
 
@@ -258,7 +258,9 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue) {
+    public Overflow overflow(
+            PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue, CursorContext cursorContext)
+            throws IOException {
         return currentKeyCount + 1 > maxKeyCount ? Overflow.YES : Overflow.NO;
     }
 
@@ -292,7 +294,8 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     }
 
     @Override
-    public void defragment(PageCursor cursor) { // no-op
+    public int defragment(PageCursor cursor, int keyCount, CursorContext cursorContext) throws IOException {
+        return keyCount;
     }
 
     @Override
@@ -401,7 +404,14 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
 
     @Override
     public void moveKeyValuesFromLeftToRight(
-            PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int fromPosInLeftNode) {
+            PageCursor leftCursor,
+            int leftKeyCount,
+            PageCursor rightCursor,
+            int rightKeyCount,
+            int fromPosInLeftNode,
+            CursorContext cursorContext)
+            throws IOException {
+        rightKeyCount = defragment(rightCursor, rightKeyCount, cursorContext);
         int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
 
         // Push keys and values in right sibling to the right
@@ -416,7 +426,14 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
 
     @Override
     public void copyKeyValuesFromLeftToRight(
-            PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount) {
+            PageCursor leftCursor,
+            int leftKeyCount,
+            PageCursor rightCursor,
+            int rightKeyCount,
+            CursorContext cursorContext)
+            throws IOException {
+        rightKeyCount = defragment(rightCursor, rightKeyCount, cursorContext);
+
         // Push keys and values in right sibling to the right
         insertKeyValueSlots(rightCursor, leftKeyCount, rightKeyCount);
 

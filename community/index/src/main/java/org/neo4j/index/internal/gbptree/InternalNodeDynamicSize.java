@@ -322,8 +322,8 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
     }
 
     @Override
-    public void defragment(PageCursor cursor) {
-        doDefragment(cursor, TreeNodeUtil.keyCount(cursor));
+    public void defragment(PageCursor cursor, int keyCount) {
+        doDefragment(cursor, keyCount);
     }
 
     private void doDefragment(PageCursor cursor, int keyCount) {

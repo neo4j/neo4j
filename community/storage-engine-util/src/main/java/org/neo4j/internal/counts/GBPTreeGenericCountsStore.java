@@ -56,6 +56,7 @@ import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.index.internal.gbptree.ValueHolder;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.counts.CountsHeader.Reader;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -606,8 +607,8 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
                             }
 
                             @Override
-                            public void value(CountsValue value) {
-                                out.printf("%s = %d%n", keyToString.apply(key), value.count);
+                            public void value(ValueHolder<CountsValue> value) {
+                                out.printf("%s = %d%n", keyToString.apply(key), value.value.count);
                             }
                         },
                         cursorContext);

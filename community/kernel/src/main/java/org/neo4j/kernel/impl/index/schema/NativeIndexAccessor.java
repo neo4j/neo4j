@@ -297,6 +297,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     }
 
     @Override
+    public long sizeInBytes() {
+        return tree.sizeInBytes();
+    }
+
+    @Override
     public IndexEntriesReader[] newAllEntriesValueReader(int partitions, CursorContext cursorContext) {
         KEY lowest = layout.newKey();
         lowest.initialize(Long.MIN_VALUE);

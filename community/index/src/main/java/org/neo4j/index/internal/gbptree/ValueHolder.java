@@ -29,8 +29,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * @param <VALUE>
  */
 public final class ValueHolder<VALUE> {
-    VALUE value;
-    boolean defined;
+    public VALUE value;
+    public boolean defined;
 
     public ValueHolder(VALUE value) {
         this(value, false);

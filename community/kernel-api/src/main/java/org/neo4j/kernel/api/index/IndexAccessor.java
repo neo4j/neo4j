@@ -198,6 +198,10 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      */
     long estimateNumberOfEntries(CursorContext cursorContext);
 
+    default long sizeInBytes() {
+        return 0L;
+    }
+
     /**
      * Inserts contents from another index. Any violations will be reported via the {@code conflictHandler}.
      *

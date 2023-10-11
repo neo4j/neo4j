@@ -174,7 +174,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY newKey = key(someHighSeed);
         VALUE newValue = value(someHighSeed);
-        while (leaf.overflow(cursor, keyCount, newKey, newValue) == NO) {
+        while (leaf.overflow(cursor, keyCount, newKey, newValue, NULL_CONTEXT) == NO) {
             insert(newKey, newValue);
 
             // then
@@ -198,7 +198,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(keyCount);
         VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             // when
             insert(key, value);
 
@@ -225,7 +225,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         long middleValue = keyCount % 2 == 0 ? keyCount / 2 : someHighSeed - keyCount / 2;
         KEY key = key(middleValue);
         VALUE value = value(middleValue);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             // then
@@ -250,7 +250,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int middle = keyCount % 2 == 0 ? keyCount : someMiddleSeed - keyCount;
         KEY key = key(middle);
         VALUE value = value(middle);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             keyCount++;
@@ -276,7 +276,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(keyCount);
         VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
             assertThat(structurePropagation.hasRightKeyInsert).isFalse();
 
@@ -303,7 +303,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int someHighSeed = 1000;
         KEY key = key(someHighSeed - keyCount);
         VALUE value = value(someHighSeed - keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
             assertThat(structurePropagation.hasRightKeyInsert).isFalse();
 
@@ -330,7 +330,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(someLargeSeed - keyCount);
         VALUE value = value(someLargeSeed - keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             keyCount++;
@@ -383,7 +383,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(random.nextLong());
         VALUE value = value(random.nextLong());
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
             assertThat(structurePropagation.hasRightKeyInsert).isFalse();
 
@@ -407,7 +407,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         KEY rightmostKeyInLeftChild = keyAt(child0, leftKeyCount - 1, false);
         VALUE rightmostValueInLeftChild = valueAt(child0, leftKeyCount - 1);
         goTo(readCursor, child1);
-        assertThat(leaf.overflow(readCursor, rightKeyCount, rightmostKeyInLeftChild, rightmostValueInLeftChild))
+        assertThat(leaf.overflow(
+                        readCursor, rightKeyCount, rightmostKeyInLeftChild, rightmostValueInLeftChild, NULL_CONTEXT))
                 .isEqualTo(YES);
     }
 
@@ -421,7 +422,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(random.nextLong());
         VALUE value = value(random.nextLong());
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
             assertThat(structurePropagation.hasRightKeyInsert).isFalse();
 
@@ -444,7 +445,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         KEY leftmostKeyInRightChild = keyAt(child1, 0, false);
         VALUE leftmostValueInRightChild = valueAt(child1, 0);
         goTo(readCursor, child0);
-        assertThat(leaf.overflow(readCursor, leftKeyCount, leftmostKeyInRightChild, leftmostValueInRightChild))
+        assertThat(leaf.overflow(
+                        readCursor, leftKeyCount, leftmostKeyInRightChild, leftmostValueInRightChild, NULL_CONTEXT))
                 .isEqualTo(YES);
     }
 
@@ -481,7 +483,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -512,7 +514,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -545,7 +547,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -637,7 +639,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -1458,7 +1460,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(keyCount);
         VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
             keyCount++;
             key = key(keyCount);
@@ -1476,7 +1478,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         long rightChild = childAt(readCursor, 1, stableGeneration, unstableGeneration);
         goTo(readCursor, rightChild);
         int rightChildKeyCount = TreeNodeUtil.keyCount(readCursor);
-        while (leaf.overflow(readCursor, rightChildKeyCount, key, value) == NO) {
+        while (leaf.overflow(readCursor, rightChildKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
             keyCount++;
             rightChildKeyCount++;
@@ -1757,7 +1759,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(keyCount);
         VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             keyCount++;
@@ -1784,7 +1786,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -1812,7 +1814,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -1839,7 +1841,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -1892,7 +1894,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(keyCount);
         VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             keyCount++;
@@ -1919,7 +1921,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -1949,7 +1951,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
@@ -1977,7 +1979,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int keyCount = 0;
         KEY key = key(keyCount);
         VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             keyCount++;
@@ -2010,7 +2012,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         int maxKeyCount = 0;
         KEY key = key(maxKeyCount);
         VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value) == NO) {
+        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
             insert(key, value);
 
             maxKeyCount++;
