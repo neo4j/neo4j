@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.internal.helpers.MathUtil.roundUp;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.activeFilesBuilder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.builder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -92,9 +92,9 @@ class LogFilesBuilderTest {
 
         assertEquals(fileSystem, context.getFileSystem());
         assertNotNull(context.getCommandReaderFactory());
-        int segmentBlockSize = context.getEnvelopeSegmentBlockSize();
+        int segmentBlockSize = context.getEnvelopeSegmentBlockSizeBytes();
         assertEquals(
-                MathUtil.roundUp(Long.MAX_VALUE - segmentBlockSize, segmentBlockSize),
+                roundUp(Long.MAX_VALUE - segmentBlockSize, segmentBlockSize),
                 context.getRotationThreshold().get());
         assertEquals(
                 TransactionIdStore.BASE_TX_ID,
@@ -125,7 +125,7 @@ class LogFilesBuilderTest {
         assertEquals(fileSystem, context.getFileSystem());
         assertNotNull(context.getCommandReaderFactory());
         assertEquals(
-                MathUtil.roundUp(ByteUnit.mebiBytes(256), context.getEnvelopeSegmentBlockSize()),
+                roundUp(ByteUnit.mebiBytes(256), context.getEnvelopeSegmentBlockSizeBytes()),
                 context.getRotationThreshold().get());
         assertEquals(1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(null));
         assertEquals(
@@ -143,7 +143,7 @@ class LogFilesBuilderTest {
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
-                .withBufferSize((int) ByteUnit.mebiBytes(1))
+                .withBufferSizeBytes((int) ByteUnit.mebiBytes(1))
                 .buildContext();
         assertEquals(fileSystem, context.getFileSystem());
         assertNotNull(context.getCommandReaderFactory());
@@ -172,7 +172,7 @@ class LogFilesBuilderTest {
         assertEquals(fileSystem, context.getFileSystem());
         assertNotNull(context.getCommandReaderFactory());
         assertEquals(
-                MathUtil.roundUp(ByteUnit.mebiBytes(256), context.getEnvelopeSegmentBlockSize()),
+                roundUp(ByteUnit.mebiBytes(256), context.getEnvelopeSegmentBlockSizeBytes()),
                 context.getRotationThreshold().get());
         assertEquals(databaseHealth, context.getDatabaseHealth());
         assertEquals(1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(null));

@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -103,8 +102,8 @@ public class LogFilesBuilder {
     private NativeAccess nativeAccess;
     private KernelVersionProvider kernelVersionProvider = KernelVersionProvider.THROWING_PROVIDER;
     private LogTailMetadata externalLogTail;
-    private int envelopeSegmentBlockSize = LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
-    private int bufferSize;
+    private int envelopeSegmentBlockSizeBytes = LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
+    private int bufferSizeBytes;
     private boolean readOnlyLogs;
 
     private LogFilesBuilder() {}
@@ -285,13 +284,13 @@ public class LogFilesBuilder {
         return this;
     }
 
-    public LogFilesBuilder withEnvelopeSegmentBlockSize(int envelopeSegmentBlockSize) {
-        this.envelopeSegmentBlockSize = envelopeSegmentBlockSize;
+    public LogFilesBuilder withEnvelopeSegmentBlockSizeBytes(int envelopeSegmentBlockSizeBytes) {
+        this.envelopeSegmentBlockSizeBytes = envelopeSegmentBlockSizeBytes;
         return this;
     }
 
-    public LogFilesBuilder withBufferSize(int overrideBufferSize) {
-        this.bufferSize = overrideBufferSize;
+    public LogFilesBuilder withBufferSizeBytes(int overrideBufferSizeBytes) {
+        this.bufferSizeBytes = overrideBufferSizeBytes;
         return this;
     }
 
@@ -356,8 +355,8 @@ public class LogFilesBuilder {
                 externalLogTail,
                 new BinarySupportedKernelVersions(config),
                 readOnlyLogs,
-                envelopeSegmentBlockSize,
-                getBufferSize());
+                envelopeSegmentBlockSizeBytes,
+                getBufferSizeBytes());
     }
 
     private CommandReaderFactory commandReaderFactory() {
@@ -412,25 +411,26 @@ public class LogFilesBuilder {
         return NativeAccessProvider.getNativeAccess();
     }
 
-    private int getBufferSize() {
-        if (bufferSize == 0) {
-            return (int) roundUp(config.get(transaction_log_buffer_size), envelopeSegmentBlockSize);
+    private int getBufferSizeBytes() {
+        if (bufferSizeBytes == 0) {
+            return (int) roundUp(config.get(transaction_log_buffer_size), envelopeSegmentBlockSizeBytes);
         }
-        return (int) roundUp(bufferSize, envelopeSegmentBlockSize);
+        return (int) roundUp(bufferSizeBytes, envelopeSegmentBlockSizeBytes);
     }
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates() {
         if (rotationThreshold != null) {
-            return new AtomicLong(MathUtil.roundUp(rotationThreshold, envelopeSegmentBlockSize));
+            return new AtomicLong(roundUp(rotationThreshold, envelopeSegmentBlockSizeBytes));
         }
         if (readOnlyStores) {
-            return new AtomicLong(roundUp(Long.MAX_VALUE - envelopeSegmentBlockSize, envelopeSegmentBlockSize));
+            return new AtomicLong(
+                    roundUp(Long.MAX_VALUE - envelopeSegmentBlockSizeBytes, envelopeSegmentBlockSizeBytes));
         }
         AtomicLong configThreshold =
-                new AtomicLong(roundUp(config.get(logical_log_rotation_threshold), envelopeSegmentBlockSize));
+                new AtomicLong(roundUp(config.get(logical_log_rotation_threshold), envelopeSegmentBlockSizeBytes));
         config.addListener(
                 logical_log_rotation_threshold,
-                (prev, update) -> configThreshold.set(roundUp(update, envelopeSegmentBlockSize)));
+                (prev, update) -> configThreshold.set(roundUp(update, envelopeSegmentBlockSizeBytes)));
         return configThreshold;
     }
 

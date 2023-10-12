@@ -104,9 +104,9 @@ class CorruptedLogsTruncatorTest {
         transactionIdStore = new SimpleTransactionIdStore();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseDirectory, fs)
-                .withBufferSize(ROTATION_THRESHOLD)
+                .withBufferSizeBytes(ROTATION_THRESHOLD)
                 .withRotationThreshold(ROTATION_THRESHOLD)
-                .withEnvelopeSegmentBlockSize(ROTATION_THRESHOLD / 4)
+                .withEnvelopeSegmentBlockSizeBytes(ROTATION_THRESHOLD / 4)
                 .withKernelVersionProvider(LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)

@@ -63,8 +63,8 @@ public class TransactionLogFilesContext {
     private final LogTailMetadata externalTailInfo;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final boolean readOnly;
-    private final int envelopeSegmentBlockSize;
-    private final int bufferSize;
+    private final int envelopeSegmentBlockSizeBytes;
+    private final int bufferSizeBytes;
 
     public TransactionLogFilesContext(
             AtomicLong rotationThreshold,
@@ -91,8 +91,8 @@ public class TransactionLogFilesContext {
             LogTailMetadata externalTailInfo,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
             boolean readOnly,
-            int envelopeSegmentBlockSize,
-            int bufferSize) {
+            int envelopeSegmentBlockSizeBytes,
+            int bufferSizeBytes) {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
@@ -117,8 +117,8 @@ public class TransactionLogFilesContext {
         this.externalTailInfo = externalTailInfo;
         this.binarySupportedKernelVersions = binarySupportedKernelVersions;
         this.readOnly = readOnly;
-        this.envelopeSegmentBlockSize = envelopeSegmentBlockSize;
-        this.bufferSize = bufferSize;
+        this.envelopeSegmentBlockSizeBytes = envelopeSegmentBlockSizeBytes;
+        this.bufferSizeBytes = bufferSizeBytes;
     }
 
     AtomicLong getRotationThreshold() {
@@ -217,11 +217,11 @@ public class TransactionLogFilesContext {
         return readOnly;
     }
 
-    public int getEnvelopeSegmentBlockSize() {
-        return envelopeSegmentBlockSize;
+    public int getEnvelopeSegmentBlockSizeBytes() {
+        return envelopeSegmentBlockSizeBytes;
     }
 
-    public int getBufferSize() {
-        return bufferSize;
+    public int getBufferSizeBytes() {
+        return bufferSizeBytes;
     }
 }
