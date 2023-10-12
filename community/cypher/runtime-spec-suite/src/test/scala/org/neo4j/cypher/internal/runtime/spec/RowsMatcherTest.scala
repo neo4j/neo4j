@@ -21,11 +21,14 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Random
 
 class RowsMatcherTest extends CypherFunSuite with TestName {
@@ -84,6 +87,23 @@ class RowsMatcherTest extends CypherFunSuite with TestName {
     EqualInAnyOrder(rows).matchesRaw(Array("X", "Y", "Z"), rows.tail :+ rows.head) should be(true)
     EqualInAnyOrder(rows).matchesRaw(Array("X", "Y", "Z"), rows.reverse) should be(true)
     EqualInAnyOrder(rows).matchesRaw(Array("X", "Y", "Z"), rows :+ rows.head) should be(false)
+  }
+
+  test("EqualInAnyOrder list in any order") {
+    val rowsA = Array(
+      row(Seq(1, 2, 3).asJava),
+      row(Seq(1, 2, 30).asJava),
+      row(Seq(1, 2, 300).asJava)
+    )
+    val rowsB = Array(
+      row(Seq(2, 1, 3).asJava),
+      row(Seq(1, 30, 2).asJava),
+      row(Seq(1, 300, 2).asJava)
+    )
+    EqualInAnyOrder(rowsA, listInAnyOrder = true)
+      .matchesRaw(IndexedSeq("x", "y", "z"), rowsB) shouldBe true
+    EqualInAnyOrder(rowsA, listInAnyOrder = false)
+      .matchesRaw(IndexedSeq("x", "y", "z"), rowsB) shouldBe false
   }
 
   test("EqualInOrder") {
@@ -251,6 +271,25 @@ class RowsMatcherTest extends CypherFunSuite with TestName {
     )
 
     EqualInPartialOrder(multiRowGroups).matchesRaw(Array("X", "Y", "Z"), rowsMovedWithinGroupBoundaries) should be(true)
+  }
+
+  test("EqualInPartialOrder list in any order") {
+    val rowsA = IndexedSeq(
+      IndexedSeq(
+        row(Seq(1, 2, 3).asJava),
+        row(Seq(1, 2, 30).asJava),
+        row(Seq(1, 2, 300).asJava)
+      )
+    )
+    val rowsB = Array(
+      row(Seq(2, 1, 3).asJava),
+      row(Seq(1, 30, 2).asJava),
+      row(Seq(1, 300, 2).asJava)
+    )
+    EqualInPartialOrder(rowsA, listInAnyOrder = true)
+      .matchesRaw(Array("x", "y", "z"), rowsB) shouldBe true
+    EqualInPartialOrder(rowsA, listInAnyOrder = false)
+      .matchesRaw(Array("x", "y", "z"), rowsB) shouldBe false
   }
 
   test("EqualInPartialOrder.matches") {
@@ -579,5 +618,5 @@ class RowsMatcherTest extends CypherFunSuite with TestName {
   }
 
   private def row(values: Any*): Array[AnyValue] =
-    values.map(Values.of).toArray
+    values.map(ValueUtils.asAnyValue).toArray
 }

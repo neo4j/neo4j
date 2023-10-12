@@ -38,6 +38,7 @@ import org.neo4j.values.storable.TimeValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -121,24 +122,10 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
   }
 
   protected def matchSorted(
-    expRowsRaw: IndexedSeq[ListValue],
-    gotRowsRaw: IndexedSeq[ListValue],
+    expRows: IndexedSeq[ListValue],
+    gotRows: IndexedSeq[ListValue],
     diffString: RowDiffStringBuilder
   ): RowMatchResult = {
-
-    def mapRow(mapper: ValueMapper[AnyValue])(row: ListValue): ListValue = {
-      val array = new Array[AnyValue](row.length())
-      for (i <- 0 until row.length()) {
-        array(i) = row.value(i).map(mapper)
-      }
-      VirtualValues.list(array: _*)
-    }
-
-    val (expRows, gotRows) =
-      if (listInAnyOrder) {
-        (expRowsRaw.map(mapRow(SortListValueMapper)), gotRowsRaw.map(mapRow(SortListValueMapper)))
-      } else
-        (expRowsRaw, gotRowsRaw)
 
     var expI = 0
     var gotI = 0
@@ -194,16 +181,30 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
       )
     }
   }
+
+  protected def sortIfNeeded(sortRows: Boolean)(rows: IndexedSeq[Array[AnyValue]]): IndexedSeq[ListValue] = {
+    val rowsWithSortedLists = rows
+      .map {
+        if (listInAnyOrder) row => row.map(_.map(SortListValueMapper))
+        else row => row
+      }
+      .map(row => VirtualValues.list(row:_*))
+    if (sortRows) {
+      rowsWithSortedLists.sorted(Rows.ANY_VALUE_ORDERING)
+    } else {
+      rowsWithSortedLists
+    }
+  }
 }
 
 case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false)
     extends EqualRowsMatcher(listInAnyOrder) {
   override def toString: String = formatRows(expected) + " in any order"
 
+  private def sort = sortIfNeeded(sortRows = true)(_)
+
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
-    val sortedExpected = expected.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
-    val sortedRows = rows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
-    matchSorted(sortedExpected, sortedRows)
+    matchSorted(sort(expected), sort(rows))
   }
 
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String =
@@ -215,6 +216,8 @@ case class EqualInPartialOrder(expecteds: IndexedSeq[IndexedSeq[Array[AnyValue]]
 
   override def toString: String =
     expecteds.map(formatRows).mkString(RowDiffStringBuilder.PARTIALLY_ORDERED_GROUP_SEPARATOR) + " in partial order"
+
+  private def sort = sortIfNeeded(sortRows = true)(_)
 
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
     val diffString = new RowDiffStringBuilder()
@@ -230,8 +233,8 @@ case class EqualInPartialOrder(expecteds: IndexedSeq[IndexedSeq[Array[AnyValue]]
       val endOffset = rowsOffset + expectedRows.length
       val actualRows = rows.slice(rowsOffset, endOffset)
       rowsOffset = endOffset
-      val sortedExpected = expectedRows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
-      val sortedRows = actualRows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+      val sortedExpected = sort(expectedRows)
+      val sortedRows = sort(actualRows)
       matchSorted(sortedExpected, sortedRows, diffString) match {
         case RowsMatch =>
         case RowsDontMatch(_) =>
@@ -243,7 +246,7 @@ case class EqualInPartialOrder(expecteds: IndexedSeq[IndexedSeq[Array[AnyValue]]
     if (rowsOffset < rows.length) {
       val endOffset = rows.length
       val actualRows = rows.slice(rowsOffset, endOffset)
-      val sortedRows = actualRows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+      val sortedRows = sort(actualRows)
       matchSorted(IndexedSeq.empty, sortedRows, diffString) match {
         case RowsMatch =>
         case RowsDontMatch(_) =>
@@ -266,10 +269,10 @@ case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: B
     extends EqualRowsMatcher(listInAnyOrder) {
   override def toString: String = formatRows(expected) + " in order"
 
+  private def sort = sortIfNeeded(sortRows = false)(_)
+
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
-    val sortedExpected = expected.map(row => VirtualValues.list(row: _*))
-    val sortedRows = rows.map(row => VirtualValues.list(row: _*))
-    matchSorted(sortedExpected, sortedRows)
+    matchSorted(sort(expected), sort(rows))
   }
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
@@ -522,7 +525,11 @@ object SortListValueMapper extends ValueMapper[AnyValue] {
   override def mapPath(value: VirtualPathValue): AnyValue = value
   override def mapNode(value: VirtualNodeValue): AnyValue = value
   override def mapRelationship(value: VirtualRelationshipValue): AnyValue = value
-  override def mapMap(value: MapValue): AnyValue = value
+  override def mapMap(value: MapValue): AnyValue = {
+    val newMap = new MapValueBuilder()
+    value.foreach((key, value) => newMap.add(key, value.map(this)))
+    newMap.build()
+  }
   override def mapNoValue(): AnyValue = Values.NO_VALUE
 
   override def mapSequence(seq: SequenceValue): AnyValue = {
