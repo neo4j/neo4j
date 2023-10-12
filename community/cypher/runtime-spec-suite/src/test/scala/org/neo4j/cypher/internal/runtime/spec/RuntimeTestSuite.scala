@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.configuration.GraphDatabaseSettings.cypher_worker_limit
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.LogicalQuery
@@ -121,6 +122,15 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   def debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = RuntimeTestSuite.isParallel(runtime)
+
+  val isParallelWithOneWorker = if (isParallel) {
+    edition.getSetting(cypher_worker_limit) match {
+      case Some(workerLimit) if workerLimit == 1 => true
+      case _                                     => false
+    }
+  } else
+    false
+
   val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
 
   protected var edition: Edition[CONTEXT] = baseEdition

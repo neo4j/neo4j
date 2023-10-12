@@ -161,8 +161,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint + 1
-      case Parallel                          => sizeHint
+      case Interpreted | Slotted | Pipelined   => sizeHint + 1
+      case Parallel if isParallelWithOneWorker => sizeHint + 1
+      case Parallel                            => sizeHint
     }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe expectedDbHits // all nodes scan
@@ -812,8 +813,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     val expectedFilterDbHits = sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)
     val expectedAllNodesScanDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint + 1
-      case Parallel                          => sizeHint
+      case Interpreted | Slotted | Pipelined   => sizeHint + 1
+      case Parallel if isParallelWithOneWorker => sizeHint + 1
+      case Parallel                            => sizeHint
     }
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -846,8 +848,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedAllNodeScanDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint + 1
-      case Parallel                          => sizeHint
+      case Interpreted | Slotted | Pipelined   => sizeHint + 1
+      case Parallel if isParallelWithOneWorker => sizeHint + 1
+      case Parallel                            => sizeHint
     }
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -1061,8 +1064,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedAllNodeScanDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint + 1
-      case Parallel                          => sizeHint
+      case Interpreted | Slotted | Pipelined   => sizeHint + 1
+      case Parallel if isParallelWithOneWorker => sizeHint + 1
+      case Parallel                            => sizeHint
     }
     val propCost = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -1359,9 +1363,10 @@ trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expectedAllNodeScanDbHits = runtimeUsed match {
-      case Pipelined if canFuseOverPipelines => sizeHint
-      case Interpreted | Slotted | Pipelined => sizeHint + 1
-      case Parallel                          => sizeHint
+      case Pipelined if canFuseOverPipelines   => sizeHint
+      case Interpreted | Slotted | Pipelined   => sizeHint + 1
+      case Parallel if isParallelWithOneWorker => sizeHint + 1
+      case Parallel                            => sizeHint
     }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe OperatorProfile.NO_DATA // procedure call
