@@ -18,7 +18,7 @@
     <properties>
         <moduleName>org.neo4j.shell.it</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-        <testcontainers.version>1.19.0</testcontainers.version>
+        <testcontainers.version>1.19.1</testcontainers.version>
     </properties>
 
     <scm>
@@ -86,7 +86,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.7</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

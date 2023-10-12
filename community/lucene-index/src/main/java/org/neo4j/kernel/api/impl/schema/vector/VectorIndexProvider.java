@@ -99,17 +99,17 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
+        final var indexConfig = descriptor.getIndexConfig();
         var luceneIndex = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(VECTOR, config))
+                .withWriterConfig(() -> IndexWriterConfigs.population(VECTOR, config, indexConfig))
                 .build();
 
         if (luceneIndex.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
 
-        final var indexConfig = descriptor.getIndexConfig();
         final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, similarityFunction);

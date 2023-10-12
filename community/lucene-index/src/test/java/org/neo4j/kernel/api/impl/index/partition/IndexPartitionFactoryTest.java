@@ -31,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -62,7 +63,7 @@ class IndexPartitionFactoryTest {
     @Test
     void createWritablePartition() throws Exception {
         try (AbstractIndexPartition indexPartition = new WritableIndexPartitionFactory(
-                        () -> IndexWriterConfigs.standard(TEST, Config.defaults()))
+                        () -> IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()))
                 .createPartition(testDirectory.homePath(), directory)) {
 
             try (IndexWriter indexWriter = indexPartition.getIndexWriter()) {
@@ -82,7 +83,7 @@ class IndexPartitionFactoryTest {
     private void prepareIndex() throws IOException {
         Path location = testDirectory.homePath();
         try (AbstractIndexPartition ignored = new WritableIndexPartitionFactory(
-                        () -> IndexWriterConfigs.standard(TEST, Config.defaults()))
+                        () -> IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()))
                 .createPartition(location, DirectoryFactory.PERSISTENT.open(location))) {
             // empty
         }

@@ -89,7 +89,7 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(TEXT, config))
+                .withWriterConfig(() -> IndexWriterConfigs.population(TEXT, config, descriptor.getIndexConfig()))
                 .build();
 
         if (index.isReadOnly()) {

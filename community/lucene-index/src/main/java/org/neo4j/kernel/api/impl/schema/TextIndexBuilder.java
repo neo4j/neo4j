@@ -56,7 +56,7 @@ public class TextIndexBuilder extends AbstractLuceneIndexBuilder<TextIndexBuilde
         this.descriptor = descriptor;
         this.config = config;
         this.samplingConfig = new IndexSamplingConfig(config);
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(TEXT, config);
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard(TEXT, config, descriptor.getIndexConfig());
     }
 
     /**

@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 
 public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshotFileIteratorTest {
@@ -43,7 +44,7 @@ public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshot
 
     @Override
     protected ResourceIterator<Path> makeSnapshot() throws IOException {
-        indexWriter = new IndexWriter(dir, IndexWriterConfigs.standard(TEST, Config.defaults()));
+        indexWriter = new IndexWriter(dir, IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()));
         return LuceneIndexSnapshots.forIndex(indexDir, indexWriter);
     }
 }

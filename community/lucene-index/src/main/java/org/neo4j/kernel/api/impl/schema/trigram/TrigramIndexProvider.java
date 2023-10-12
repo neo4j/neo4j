@@ -90,7 +90,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         final var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(TRIGRAM, config))
+                .withWriterConfig(() -> IndexWriterConfigs.population(TRIGRAM, config, descriptor.getIndexConfig()))
                 .build();
 
         if (luceneIndex.isReadOnly()) {

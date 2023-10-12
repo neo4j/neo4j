@@ -56,6 +56,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -211,7 +212,7 @@ class DatabaseIndexIntegrationTest {
                     new TestLuceneIndex(
                             indexStorage,
                             new WritableIndexPartitionFactory(
-                                    () -> IndexWriterConfigs.standard(TEST, Config.defaults()))),
+                                    () -> IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()))),
                     writable(),
                     false);
         }

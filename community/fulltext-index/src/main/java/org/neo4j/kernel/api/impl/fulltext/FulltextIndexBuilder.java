@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -77,8 +78,8 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     }
 
     /**
-     * Whether to create the index in a {@link IndexWriterConfigs#population(LuceneIndexType,Config) populating}
-     * mode, if {@code true}, or in a {@link IndexWriterConfigs#standard(LuceneIndexType,Config) standard} mode, if
+     * Whether to create the index in a {@link IndexWriterConfigs#population(LuceneIndexType,Config, IndexConfig) populating}
+     * mode, if {@code true}, or in a {@link IndexWriterConfigs#standard(LuceneIndexType,Config, IndexConfig) standard} mode, if
      * {@code false}.
      *
      * @param isPopulating {@code true} if the index should be created in a populating mode.
@@ -102,9 +103,11 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     public DatabaseIndex<FulltextIndexReader> build() {
         Supplier<IndexWriterConfig> writerConfigFactory;
         if (populating) {
-            writerConfigFactory = () -> IndexWriterConfigs.population(FULLTEXT, config, analyzer);
+            writerConfigFactory =
+                    () -> IndexWriterConfigs.population(FULLTEXT, config, analyzer, descriptor.getIndexConfig());
         } else {
-            writerConfigFactory = () -> IndexWriterConfigs.standard(FULLTEXT, config, analyzer);
+            writerConfigFactory =
+                    () -> IndexWriterConfigs.standard(FULLTEXT, config, analyzer, descriptor.getIndexConfig());
         }
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory(writerConfigFactory);
         FulltextIndex fulltextIndex = new FulltextIndex(

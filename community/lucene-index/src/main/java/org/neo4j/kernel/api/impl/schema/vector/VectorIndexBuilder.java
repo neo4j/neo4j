@@ -44,7 +44,7 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
         super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(VECTOR, config);
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard(VECTOR, config, descriptor.getIndexConfig());
     }
 
     /**

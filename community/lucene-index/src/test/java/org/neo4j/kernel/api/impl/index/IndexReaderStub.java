@@ -50,7 +50,7 @@ import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.util.Bits;
 import org.neo4j.internal.helpers.collection.MapUtil;
 
@@ -147,12 +147,12 @@ public class IndexReaderStub extends LeafReader {
     }
 
     @Override
-    public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs, int visitedLimit) {
-        return null;
+    public void searchNearestVectors(String s, float[] floats, KnnCollector knnCollector, Bits bits) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public TopDocs searchNearestVectors(String s, byte[] bytes, int i, Bits bits, int i1) {
+    public void searchNearestVectors(String s, byte[] bytes, KnnCollector knnCollector, Bits bits) {
         throw new UnsupportedOperationException();
     }
 

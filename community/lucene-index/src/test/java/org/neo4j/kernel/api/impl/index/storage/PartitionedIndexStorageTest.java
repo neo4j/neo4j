@@ -45,6 +45,7 @@ import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -207,7 +208,8 @@ class PartitionedIndexStorageTest {
     private Directory createRandomLuceneDir(Path rootFolder) throws IOException {
         Path folder = createRandomFolder(rootFolder);
         Directory directory = directoryFactory.open(folder);
-        try (IndexWriter writer = new IndexWriter(directory, IndexWriterConfigs.standard(TEST, Config.defaults()))) {
+        try (IndexWriter writer =
+                new IndexWriter(directory, IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()))) {
             writer.addDocument(randomDocument());
             writer.commit();
         }

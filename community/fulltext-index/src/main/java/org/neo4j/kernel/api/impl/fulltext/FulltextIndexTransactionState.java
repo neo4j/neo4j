@@ -66,7 +66,7 @@ class FulltextIndexTransactionState implements Closeable {
     FulltextIndexTransactionState(
             IndexDescriptor descriptor, Config config, Analyzer analyzer, String[] propertyNames) {
         toCloseLater = new ArrayList<>();
-        writer = new TransactionStateLuceneIndexWriter(config, analyzer);
+        writer = new TransactionStateLuceneIndexWriter(config, analyzer, descriptor.getIndexConfig());
         modifiedEntityIdsInThisTransaction = new LongHashSet();
         visitingNodes = descriptor.schema().entityType() == EntityType.NODE;
         txStateVisitor = new FulltextIndexTransactionStateVisitor(

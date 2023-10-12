@@ -45,7 +45,7 @@ public class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndex
         super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(TRIGRAM, config);
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard(TRIGRAM, config, descriptor.getIndexConfig());
     }
 
     /**

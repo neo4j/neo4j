@@ -22,12 +22,10 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.apache.lucene.document.Field.Store.NO;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.VectorEncoding;
 import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorDocumentStructure {
@@ -48,44 +46,10 @@ class VectorDocumentStructure {
         final var document = new Document();
         final var idField = new StringField(ENTITY_ID_KEY, Long.toString(id), NO);
         final var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, id);
+        final var valueField = new KnnFloatVectorField(VECTOR_VALUE_KEY, vector, similarityFunction.toLucene());
         document.add(idField);
         document.add(idValueField);
-        final var fieldType = new VectorFieldType(vector.length, similarityFunction);
-        final var valueField = new KnnFloatVectorField(VECTOR_VALUE_KEY, vector, fieldType);
         document.add(valueField);
         return document;
-    }
-
-    /** Lucene's {@link FieldType#setVectorAttributes} enforces a max dimensionality,
-     * but otherwise just sets {@link FieldType#vectorDimension}, {@link FieldType#vectorSimilarityFunction}, and
-     * {@link FieldType#vectorEncoding}.
-     * <p>
-     * We can just extend {@link FieldType} with our own implementation that supplies
-     * those values without any such max dimensionality check to circumvent that.
-     */
-    private static class VectorFieldType extends FieldType {
-        private final int vectorDimension;
-        private final VectorSimilarityFunction similarityFunction;
-
-        private VectorFieldType(int dimension, VectorSimilarityFunction similarityFunction) {
-            this.vectorDimension = dimension;
-            this.similarityFunction = similarityFunction;
-            freeze();
-        }
-
-        @Override
-        public int vectorDimension() {
-            return vectorDimension;
-        }
-
-        @Override
-        public org.apache.lucene.index.VectorSimilarityFunction vectorSimilarityFunction() {
-            return similarityFunction.toLucene();
-        }
-
-        @Override
-        public VectorEncoding vectorEncoding() {
-            return VectorEncoding.FLOAT32;
-        }
     }
 }

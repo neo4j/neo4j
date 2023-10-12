@@ -29,6 +29,7 @@ import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_writer_max_b
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.vector_merge_factor;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.vector_population_ram_buffer_size;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.VECTOR;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
@@ -37,7 +38,9 @@ import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexType;
+import org.neo4j.kernel.api.impl.schema.vector.codec.VectorV1Codec;
 
 /**
  * Helper factory for standard lucene index writer configuration.
@@ -49,11 +52,12 @@ public final class IndexWriterConfigs {
         throw new AssertionError("Not for instantiation!");
     }
 
-    public static IndexWriterConfig standard(LuceneIndexType index, Config config) {
-        return standard(index, config, KEYWORD_ANALYZER);
+    public static IndexWriterConfig standard(LuceneIndexType index, Config config, IndexConfig indexConfig) {
+        return standard(index, config, KEYWORD_ANALYZER, indexConfig);
     }
 
-    public static IndexWriterConfig standard(LuceneIndexType index, Config config, Analyzer analyzer) {
+    public static IndexWriterConfig standard(
+            LuceneIndexType index, Config config, Analyzer analyzer, IndexConfig indexConfig) {
         final var writerConfig = new IndexWriterConfig(analyzer);
 
         writerConfig.setMaxBufferedDocs(config.get(lucene_writer_max_buffered_docs));
@@ -61,6 +65,9 @@ public final class IndexWriterConfigs {
         writerConfig.setUseCompoundFile(true);
         writerConfig.setMaxFullFlushMergeWaitMillis(0);
         writerConfig.setRAMBufferSizeMB(config.get(lucene_standard_ram_buffer_size));
+        if (index == VECTOR) {
+            writerConfig.setCodec(new VectorV1Codec(vectorDimensionsFrom(indexConfig)));
+        }
 
         final var mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio(config.get(lucene_nocfs_ratio));
@@ -71,12 +78,13 @@ public final class IndexWriterConfigs {
         return writerConfig;
     }
 
-    public static IndexWriterConfig population(LuceneIndexType index, Config config) {
-        return population(index, config, KEYWORD_ANALYZER);
+    public static IndexWriterConfig population(LuceneIndexType index, Config config, IndexConfig indexConfig) {
+        return population(index, config, KEYWORD_ANALYZER, indexConfig);
     }
 
-    public static IndexWriterConfig population(LuceneIndexType index, Config config, Analyzer analyzer) {
-        final var writerConfig = standard(index, config, analyzer);
+    public static IndexWriterConfig population(
+            LuceneIndexType index, Config config, Analyzer analyzer, IndexConfig indexConfig) {
+        final var writerConfig = standard(index, config, analyzer, indexConfig);
         writerConfig.setMaxBufferedDocs(config.get(lucene_population_max_buffered_docs));
         writerConfig.setRAMBufferSizeMB(
                 config.get(index == VECTOR ? vector_population_ram_buffer_size : lucene_population_ram_buffer_size));
@@ -91,8 +99,9 @@ public final class IndexWriterConfigs {
         return writerConfig;
     }
 
-    public static IndexWriterConfig transactionState(LuceneIndexType index, Config config, Analyzer analyzer) {
-        final var writerConfig = standard(index, config, analyzer);
+    public static IndexWriterConfig transactionState(
+            LuceneIndexType index, Config config, Analyzer analyzer, IndexConfig indexConfig) {
+        final var writerConfig = standard(index, config, analyzer, indexConfig);
         // Index transaction state is never directly persisted, so never commit it on close.
         writerConfig.setCommitOnClose(false);
         return writerConfig;

@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -86,7 +87,8 @@ public class ReadOnlyIndexSnapshotFileIteratorTest {
     }
 
     private void prepareIndex() throws IOException {
-        try (IndexWriter writer = new IndexWriter(dir, IndexWriterConfigs.standard(TEST, Config.defaults()))) {
+        try (IndexWriter writer =
+                new IndexWriter(dir, IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()))) {
             insertRandomDocuments(writer);
         }
     }
