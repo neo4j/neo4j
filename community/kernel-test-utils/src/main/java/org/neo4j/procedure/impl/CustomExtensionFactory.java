@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup;
+package org.neo4j.procedure.impl;
 
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -29,17 +29,13 @@ import org.neo4j.logging.internal.LogService;
 class CustomExtensionFactory extends ExtensionFactory<CustomExtensionFactory.Dependencies> {
 
     public CustomExtensionFactory() {
-        super(ExtensionType.DATABASE, "NAUGHTY");
+        super(ExtensionType.DATABASE, "CustomExtension");
     }
 
     @Override
     public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
-
-        var lifecycle = new CustomExtension(dependencies.log().getUserLog(this.getClass()));
-        dependencies
-                .globalProceduresRegistry()
-                .registerComponent((Class<CustomExtension>) lifecycle.getClass(), ctx -> lifecycle, true);
-        return lifecycle;
+        return new CustomExtension(
+                dependencies.globalProceduresRegistry(), dependencies.log().getUserLog(CustomExtension.class));
     }
 
     public interface Dependencies {

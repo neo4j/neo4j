@@ -72,14 +72,6 @@ public final class ProcessUtils {
         return Arrays.asList(getClassPath().split(File.pathSeparator));
     }
 
-    public static void setClassPath(String classPath) {
-        System.setProperty("java.class.path", classPath);
-    }
-
-    public static void amendClassPath(String entry) {
-        System.setProperty("java.class.path", getClassPath() + File.pathSeparator + entry);
-    }
-
     /**
      * Get the classpath as a single string of all the classpath file entries, separated by the path separator.
      * <p>
@@ -130,6 +122,23 @@ public final class ProcessUtils {
      */
     public static Process start(Consumer<ProcessBuilder> configurator, String... arguments) throws IOException {
         ArrayList<String> args = javaExecutableCommandWith(arguments);
+        ProcessBuilder processBuilder = new ProcessBuilder(args);
+        configurator.accept(processBuilder);
+        return processBuilder.start();
+    }
+
+    /**
+     * Start java process with java that is defined in {@code java.home}, with classpath that is defined by {@code java.class.path} and
+     * with additional module options defined by {@code jdk.custom.options} system property and with provided additional arguments.
+     *
+     * @param classpath The classpath to use for the call.
+     * @param configurator process builder additional configurator.
+     * @param arguments additional arguments that should be passed to new process.
+     * @return newly started java process.
+     */
+    public static Process start(String classpath, Consumer<ProcessBuilder> configurator, String... arguments)
+            throws IOException {
+        ArrayList<String> args = javaExecutableCommandWith(classpath, arguments);
         ProcessBuilder processBuilder = new ProcessBuilder(args);
         configurator.accept(processBuilder);
         return processBuilder.start();
@@ -247,6 +256,11 @@ public final class ProcessUtils {
      * @throws IOException on failure to allocate argument file.
      */
     private static ArrayList<String> javaExecutableCommandWith(String[] arguments) throws IOException {
+        return javaExecutableCommandWith(getClassPath(), arguments);
+    }
+
+    private static ArrayList<String> javaExecutableCommandWith(String classpath, String[] arguments)
+            throws IOException {
         var args = new ArrayList<String>();
         args.add(getJavaExecutable().toString());
         var moduleOptions = getModuleOptions();
@@ -257,7 +271,7 @@ public final class ProcessUtils {
         // Classpath can get very long and that can upset Windows, so write it to a file
         Path p = Files.createTempFile("jvm", ".args");
         p.toFile().deleteOnExit();
-        Files.writeString(p, systemProperties() + "-cp " + wrapSpaces(getClassPath()), StandardCharsets.UTF_8);
+        Files.writeString(p, systemProperties() + "-cp " + wrapSpaces(classpath), StandardCharsets.UTF_8);
 
         args.add("@" + p.normalize());
         args.addAll(Arrays.asList(arguments));

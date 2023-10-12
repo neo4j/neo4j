@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup;
+package org.neo4j.procedure.impl;
 
 import java.util.stream.Stream;
 import org.neo4j.procedure.Context;
@@ -25,7 +25,7 @@ import org.neo4j.procedure.Procedure;
 
 public class CustomProcedures {
 
-    public static final String PROCEDURE_NAME = "org.neo4j.server.startup.extension.CustomProcedure";
+    public static final String PROCEDURE_NAME = "my.custom.namespace.CustomProcedure";
 
     @Context
     public CustomExtension custom;

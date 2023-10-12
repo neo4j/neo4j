@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup;
+package org.neo4j.procedure.impl;
 
 import org.neo4j.annotations.service.Service;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 
@@ -27,14 +28,22 @@ import org.neo4j.logging.InternalLog;
 public class CustomExtension extends LifecycleAdapter {
 
     public static final String MESSAGE = "Oh my...";
+
+    private final GlobalProcedures globalProcedures;
     private final InternalLog log;
 
-    CustomExtension(InternalLog log) {
+    CustomExtension(GlobalProcedures globalProcedures, InternalLog log) {
+        this.globalProcedures = globalProcedures;
         this.log = log;
     }
 
     @Override
     public void start() {
         log.error(MESSAGE);
+    }
+
+    @Override
+    public void init() {
+        globalProcedures.registerComponent((Class<CustomExtension>) getClass(), ctx -> this, true);
     }
 }
