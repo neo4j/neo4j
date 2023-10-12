@@ -19,7 +19,12 @@
  */
 package org.neo4j.importer;
 
+import java.io.Closeable;
 import org.eclipse.collections.api.tuple.Pair;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.commandline.dbms.CannotWriteException;
+import org.neo4j.commandline.dbms.LockChecker;
+import org.neo4j.kernel.internal.locker.FileLockException;
 import picocli.CommandLine;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
@@ -231,41 +236,55 @@ public class ImportCommand extends AbstractCommand
             final var databaseConfig = loadNeo4jConfig();
             Neo4jLayout neo4jLayout = Neo4jLayout.of( databaseConfig );
             final var databaseLayout = RecordDatabaseLayout.of( neo4jLayout, database.name() ); //Right now we only support Record storage for import command
-            final var csvConfig = csvConfiguration();
-            final var importConfig = importConfiguration( databaseLayout );
+            // Create the db folder if it doesn't exist, to be able to create and lock the lockfile.
+            ctx.fs().mkdirs( databaseLayout.databaseDirectory() );
+            try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
+            {
+                final var csvConfig = csvConfiguration();
+                final var importConfig = importConfiguration( databaseLayout );
 
-            final var importerBuilder = CsvImporter.builder()
-                    .withDatabaseLayout( databaseLayout )
-                    .withDatabaseConfig( databaseConfig )
-                    .withFileSystem( ctx.fs() )
-                    .withStdOut( ctx.out() )
-                    .withStdErr( ctx.err() )
-                    .withCsvConfig( csvConfig )
-                    .withImportConfig( importConfig )
-                    .withIdType( idType )
-                    .withInputEncoding( inputEncoding )
-                    .withReportFile( reportFile.toAbsolutePath() )
-                    .withIgnoreExtraColumns( ignoreExtraColumns )
-                    .withBadTolerance( badTolerance )
-                    .withSkipBadRelationships( skipBadRelationships )
-                    .withSkipDuplicateNodes( skipDuplicateNodes )
-                    .withSkipBadEntriesLogging( skipBadEntriesLogging )
-                    .withSkipBadRelationships( skipBadRelationships )
-                    .withNormalizeTypes( normalizeTypes )
-                    .withVerbose( verbose )
-                    .withAutoSkipHeaders( autoSkipHeaders )
-                    .withForce( force );
+                final var importerBuilder = CsvImporter.builder()
+                        .withDatabaseLayout( databaseLayout )
+                        .withDatabaseConfig( databaseConfig )
+                        .withFileSystem( ctx.fs() )
+                        .withStdOut( ctx.out() )
+                        .withStdErr( ctx.err() )
+                        .withCsvConfig( csvConfig )
+                        .withImportConfig( importConfig )
+                        .withIdType( idType )
+                        .withInputEncoding( inputEncoding )
+                        .withReportFile( reportFile.toAbsolutePath() )
+                        .withIgnoreExtraColumns( ignoreExtraColumns )
+                        .withBadTolerance( badTolerance )
+                        .withSkipBadRelationships( skipBadRelationships )
+                        .withSkipDuplicateNodes( skipDuplicateNodes )
+                        .withSkipBadEntriesLogging( skipBadEntriesLogging )
+                        .withSkipBadRelationships( skipBadRelationships )
+                        .withNormalizeTypes( normalizeTypes )
+                        .withVerbose( verbose )
+                        .withAutoSkipHeaders( autoSkipHeaders )
+                        .withForce( force );
 
-            nodes.forEach( n -> {
-                importerBuilder.addNodeFiles( n.key, n.files );
-            } );
+                nodes.forEach( n -> {
+                    importerBuilder.addNodeFiles( n.key, n.files );
+                } );
 
-            relationships.forEach( n -> {
-                importerBuilder.addRelationshipFiles( n.key, n.files );
-            } );
+                relationships.forEach( n -> {
+                    importerBuilder.addRelationshipFiles( n.key, n.files );
+                } );
 
-            final var importer = importerBuilder.build();
-            importer.doImport();
+                final var importer = importerBuilder.build();
+                importer.doImport();
+            }
+            catch ( FileLockException e )
+            {
+                throw new CommandFailedException( "The database is in use. Stop database '" +
+                        databaseLayout.getDatabaseName() + "' and try again.", e );
+            }
+            catch ( CannotWriteException e )
+            {
+                throw new CommandFailedException( "You do not have permission to check database consistency.", e );
+            }
         }
         catch ( IOException e )
         {

@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.kernel.internal.locker.FileLockException;
 import picocli.CommandLine;
 import picocli.CommandLine.MissingParameterException;
 import picocli.CommandLine.ParameterException;
@@ -179,6 +181,33 @@ class ImportCommandTest
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
         assertTokenIndexesCreated();
         verifyData();
+    }
+
+    @Test
+    void shouldNotBeAllowedToImportToOnlineDb() throws Exception
+    {
+        List<String> nodeIds = nodeIds();
+        Path dbConfig = defaultConfig();
+
+        // Started neo4j db
+        getDatabaseApi();
+
+        assertThatThrownBy(
+                () -> runImport(
+                "--additional-config",
+                dbConfig.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData( true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
+                "--high-io",
+                "false",
+                "--relationships",
+                relationshipData( true, COMMAS, nodeIds, TRUE, true )
+                        .toAbsolutePath()
+                        .toString(),
+                "--force" // Overwrite to not get complaint that it contains data
+        ))
+                .isInstanceOf( CommandFailedException.class )
+                .hasCauseInstanceOf( FileLockException.class );
     }
 
     @Test

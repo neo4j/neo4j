@@ -150,7 +150,8 @@ class CsvImporter implements Importer
     {
         if ( force )
         {
-            fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
+            fileSystem.deleteRecursively( databaseLayout.databaseDirectory(),
+                    path -> !path.equals( databaseLayout.databaseLockFile() ) );
             fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
         }
 

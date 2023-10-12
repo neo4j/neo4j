@@ -30,6 +30,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
@@ -143,6 +144,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     public void deleteRecursively( Path directory ) throws IOException
     {
         chooseFileSystem( directory ).deleteRecursively( directory );
+    }
+
+    @Override
+    public void deleteRecursively( Path directory, Predicate<Path> removeFilePredicate ) throws IOException
+    {
+        chooseFileSystem( directory ).deleteRecursively( directory, removeFilePredicate );
     }
 
     @Override

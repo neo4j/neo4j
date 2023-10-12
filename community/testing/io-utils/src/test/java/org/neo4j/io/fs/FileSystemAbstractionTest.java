@@ -279,6 +279,48 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
+    void deleteRecursivelyWithFilterMustRespectFilter() throws IOException
+    {
+        fsa.mkdirs( path );
+        Path a = path.resolve( "a" );
+        fsa.mkdirs( a );
+        Path aa = a.resolve( "a" );
+        fsa.write( aa ).close();
+        Path b = path.resolve( "b" );
+        fsa.mkdirs( b );
+        Path bc = b.resolve( "c" );
+        fsa.write( bc ).close();
+        Path c = path.resolve( "c" );
+        fsa.write( c ).close();
+
+        fsa.deleteRecursively( path, name -> !name.getFileName().toString().equals( "c" ) );
+
+        assertFalse( fsa.fileExists( a ) );
+        assertFalse( fsa.fileExists( aa ) );
+        assertTrue( fsa.fileExists( b ) );
+        assertTrue( fsa.fileExists( c ) );
+        assertTrue( fsa.fileExists( bc ) );
+        assertTrue( fsa.fileExists( path ) );
+    }
+
+    @Test
+    void deleteRecursivelyWithFilterShouldRemoveTheDirectoryIfItBecameEmpty() throws IOException
+    {
+        fsa.mkdirs( path );
+        Path a = path.resolve( "a" );
+        fsa.mkdirs( a );
+        Path aa = a.resolve( "a" );
+        fsa.write( aa ).close();
+
+        fsa.deleteRecursively( path, name -> !name.getFileName().toString().equals( "c" ) );
+
+        assertFalse( fsa.fileExists( a ) );
+        assertFalse( fsa.fileExists( aa ) );
+        assertFalse( fsa.fileExists( path ) );
+        assertThrows( NoSuchFileException.class, () -> fsa.listFiles( path ) );
+    }
+
+    @Test
     void fileWatcherCreation() throws IOException
     {
         try ( FileWatcher fileWatcher = fsa.fileWatcher() )
