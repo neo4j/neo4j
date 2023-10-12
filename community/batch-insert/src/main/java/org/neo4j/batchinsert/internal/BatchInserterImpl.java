@@ -859,13 +859,13 @@ public class BatchInserterImpl implements BatchInserter
               groupDegreesStore;
               storeCursors )
         {
-            rebuildCounts( pageCacheTracer, memoryTracker );
             repopulateAllIndexes();
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( cursorContext );
             groupDegreesStore.checkpoint( cursorContext );
             recordAccess.close();
             createEmptyTransactionLog();
+            rebuildCounts( pageCacheTracer, memoryTracker );
         }
         catch ( IOException e )
         {

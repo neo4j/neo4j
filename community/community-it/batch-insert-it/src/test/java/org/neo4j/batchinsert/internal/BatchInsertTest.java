@@ -1063,6 +1063,7 @@ class BatchInsertTest
             }
 
             // then
+            final int round = 1 + r;
             try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fs, RecoveryCleanupWorkCollector.immediate(),
                     new CountsBuilder()
                     {
@@ -1075,7 +1076,7 @@ class BatchInsertTest
                         @Override
                         public long lastCommittedTxId()
                         {
-                            return TransactionIdStore.BASE_TX_ID;
+                            return TransactionIdStore.BASE_TX_ID + round;
                         }
                     }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1000,
                     NullLogProvider.getInstance() ) )
