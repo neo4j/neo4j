@@ -156,7 +156,19 @@ class ClosingExecutionResult private (
   override def cancel(): Unit =
     try {
       inner.cancel()
-      monitor.endSuccess(query)
+      if (errorDeliveredToSubscriber == null) {
+        monitor.endSuccess(query)
+      } else {
+        monitor.endFailure(query)
+      }
+    } catch {
+      case NonFatalCypherError(e) => closeAndCallOnError(e)
+    }
+
+  override def cancelAfterFailure(): Unit =
+    try {
+      inner.cancelAfterFailure()
+      monitor.endFailure(query)
     } catch {
       case NonFatalCypherError(e) => closeAndCallOnError(e)
     }

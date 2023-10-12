@@ -188,7 +188,15 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
 
     @Override
     public void close() {
-        execution.cancel();
+        internalClose(true);
+    }
+
+    private void internalClose(boolean success) {
+        if (success) {
+            execution.cancel();
+        } else {
+            execution.cancelAfterFailure();
+        }
         try {
             // We wait since cancelling could be asynchronous on some runtimes, and the caller
             // could experience failures if proceeding to commit the transaction before it is finished.
@@ -349,7 +357,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
         if (error != null) {
             if (NonFatalCypherError.isNonFatal(error)) {
                 try {
-                    close();
+                    internalClose(false);
                 } catch (Throwable suppressed) {
                     error.addSuppressed(suppressed);
                 }
