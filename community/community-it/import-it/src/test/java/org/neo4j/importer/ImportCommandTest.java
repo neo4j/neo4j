@@ -530,15 +530,8 @@ class ImportCommandTest {
                     String result = "";
                     String expected = iExpected;
                     switch (key) {
-                        case "s" -> result = Arrays.toString((short[]) things);
-                        case "b" -> result = Arrays.toString((byte[]) things);
-                        case "i" -> result = Arrays.toString((int[]) things);
-                        case "l" -> result = Arrays.toString((long[]) things);
-                        case "f" -> {
-                            result = Arrays.toString((float[]) things);
-                            expected = fExpected;
-                        }
-                        case "d" -> {
+                        case "s", "b", "i", "l" -> result = Arrays.toString((long[]) things);
+                        case "f", "d" -> {
                             result = Arrays.toString((double[]) things);
                             expected = fExpected;
                         }
@@ -587,8 +580,7 @@ class ImportCommandTest {
                     Object things = node.getProperty(key);
                     String result =
                             switch (key) {
-                                case "f" -> Arrays.toString((float[]) things);
-                                case "d" -> Arrays.toString((double[]) things);
+                                case "f", "d" -> Arrays.toString((double[]) things);
                                 default -> "";
                             };
 
@@ -1965,6 +1957,70 @@ class ImportCommandTest {
             Relationship relationship2 = single(node1.getRelationships(Direction.INCOMING));
             assertEquals(9999999999L, relationship2.getProperty("prop1"));
             assertEquals(123456789L, relationship2.getProperty("prop2"));
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldNormalizeArrayTypes() throws Exception {
+        // GIVEN
+        Path dbConfig = prepareDefaultConfigFile();
+
+        // WHEN
+        Path nodeData = createAndWriteFile("nodes.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID,prop1:short[],prop2:float[]");
+            writer.println("1,123,456.789");
+            writer.println("2,1000000,24850457689578965796.458348570"); // <-- short too big, float too big
+        });
+        Path relationshipData = createAndWriteFile("relationships.csv", Charset.defaultCharset(), writer -> {
+            writer.println(":START_ID,:END_ID,:TYPE,prop1:int[],prop2:byte[]");
+            writer.println("1,2,DC,123,12");
+            writer.println("2,1,DC,9999999999,123456789");
+        });
+        var ctx = capturingCtx();
+        runImport(
+                ctx,
+                "--additional-config",
+                dbConfig.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData.toAbsolutePath().toString(),
+                "--relationships",
+                relationshipData.toAbsolutePath().toString());
+
+        // THEN
+        var out = ctx.outAsString();
+        assertTrue(out.contains("IMPORT DONE"));
+        assertTrue(out.contains(format(
+                "Property type of 'prop1' normalized from 'short[]' --> 'long[]' in %s", nodeData.toAbsolutePath())));
+        assertTrue(out.contains(format(
+                "Property type of 'prop2' normalized from 'float[]' --> 'double[]' in %s", nodeData.toAbsolutePath())));
+        assertTrue(out.contains(format(
+                "Property type of 'prop1' normalized from 'int[]' --> 'long[]' in %s",
+                relationshipData.toAbsolutePath())));
+        assertTrue(out.contains(format(
+                "Property type of 'prop2' normalized from 'byte[]' --> 'long[]' in %s",
+                relationshipData.toAbsolutePath())));
+        // The properties should have been normalized, let's verify that
+        GraphDatabaseService db = getDatabaseApi();
+        try (Transaction tx = db.beginTx()) {
+            Map<String, Node> nodes = new HashMap<>();
+            try (ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+                allNodes.forEach(node -> nodes.put(node.getProperty("id").toString(), node));
+            }
+            Node node1 = nodes.get("1");
+            assertThat(node1.getProperty("prop1")).isEqualTo(new long[] {123L});
+            assertThat(node1.getProperty("prop2")).isEqualTo(new double[] {456.789D});
+            Node node2 = nodes.get("2");
+            assertThat(node2.getProperty("prop1")).isEqualTo(new long[] {1000000L});
+            assertThat(node2.getProperty("prop2")).isEqualTo(new double[] {24850457689578965796.458348570D});
+
+            Relationship relationship1 = single(node1.getRelationships(Direction.OUTGOING));
+            assertThat(relationship1.getProperty("prop1")).isEqualTo(new long[] {123L});
+            assertThat(relationship1.getProperty("prop2")).isEqualTo(new long[] {12L});
+            Relationship relationship2 = single(node1.getRelationships(Direction.INCOMING));
+            assertThat(relationship2.getProperty("prop1")).isEqualTo(new long[] {9999999999L});
+            assertThat(relationship2.getProperty("prop2")).isEqualTo(new long[] {123456789L});
 
             tx.commit();
         }
