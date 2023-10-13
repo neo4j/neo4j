@@ -358,6 +358,32 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   self: AntiConditionalApplyTestBase[CONTEXT] =>
 
+  test("anti conditional apply on the RHS of an apply should keep row order") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+      nodeGraph(sizeHint, "RHS")
+    }
+    val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.antiConditionalApply("x")
+      .|.|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .|.filter("x = '42' OR x IS NULL")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expected = Array[Any]("42", null) +: nodes.map(Array[Any](null, _))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
+  }
+
   test("anti conditional apply should not run rhs if lhs is empty - with leveraged order") {
     // given
     val lhsRows = inputValues()

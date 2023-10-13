@@ -1158,11 +1158,11 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     }
     exception.getMessage should include("/ by zero")
     val prettyTrace = ExceptionUtils.getStackTrace(exception)
-    withClue(s"\nException was not caused by ConditionalSink.put:\n$prettyTrace\n") {
+    withClue(s"\nException was not caused by ConditionalApplyBuffer.put:\n$prettyTrace\n") {
       // The following assertion is here to make sure we fail in a buffer put,
       // if the assertion fails we should find another plan that fails in put to keep coverage
       assert(exception.getCause.getStackTrace.exists { e =>
-        e.getClassName.endsWith("ConditionalSink") && e.getMethodName.equals("put")
+        e.getClassName.endsWith("ConditionalApplyBuffer") && e.getMethodName.equals("put")
       })
     }
   }
