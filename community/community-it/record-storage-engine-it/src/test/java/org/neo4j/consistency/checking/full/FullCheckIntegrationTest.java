@@ -30,7 +30,9 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.CACHE_LINE_SIZE_BY
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.nodePropertyExistenceConstraintRule;
+import static org.neo4j.consistency.checking.full.SchemaRuleUtil.nodePropertyTypeConstraintRule;
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.relPropertyExistenceConstraintRule;
+import static org.neo4j.consistency.checking.full.SchemaRuleUtil.relPropertyTypeConstraintRule;
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.uniquenessConstraintRule;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -127,6 +129,8 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -2579,6 +2583,58 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
+    void shouldReportNothingForNodeIndexBackedAndTypeConstraintOnSameLabelAndProperty() throws Exception {
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+
+        createNodePropertyTypeConstraint(labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId);
+
+        ConsistencySummaryStatistics stats = check();
+
+        assertTrue(stats.isConsistent());
+    }
+
+    @Test
+    void shouldReportNothingForNodePropertyExistenceAndTypeConstraintOnSameLabelAndProperty() throws Exception {
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+
+        createNodePropertyTypeConstraint(labelId, propertyKeyId);
+        createNodePropertyExistenceConstraint(labelId, propertyKeyId);
+
+        ConsistencySummaryStatistics stats = check();
+
+        assertTrue(stats.isConsistent());
+    }
+
+    @Test
+    void shouldReportNothingForRelationshipPropertyExistenceAndTypeConstraintOnSameTypeAndProperty() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+
+        createRelationshipPropertyTypeConstraint(relTypeId, propertyKeyId);
+        createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId);
+
+        ConsistencySummaryStatistics stats = check();
+
+        assertTrue(stats.isConsistent());
+    }
+
+    @Test
+    void shouldReportForTwoRelationshipPropertyTypeConstraintOnSameTypeAndProperty() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+
+        createRelationshipPropertyTypeConstraint(relTypeId, propertyKeyId, SchemaValueType.DATE);
+        createRelationshipPropertyTypeConstraint(relTypeId, propertyKeyId, SchemaValueType.STRING);
+
+        ConsistencySummaryStatistics stats = check();
+
+        on(stats).verify(RecordType.SCHEMA, 1).andThatsAllFolks();
+    }
+
+    @Test
     void shouldManageUnusedRecordsWithWeirdDataIn() throws Exception {
         // Given
         final AtomicLong id = new AtomicLong();
@@ -3355,6 +3411,29 @@ public class FullCheckIntegrationTest {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         long ruleId = schemaStore.getIdGenerator().nextId(NULL_CONTEXT);
         ConstraintDescriptor rule = nodePropertyExistenceConstraintRule(ruleId, labelId, propertyKeyId)
+                .withName("constraint_" + ruleId);
+        writeToSchemaStore(schemaStore, rule);
+    }
+
+    private void createNodePropertyTypeConstraint(int labelId, int propertyKeyId) throws KernelException {
+        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
+        long ruleId = schemaStore.getIdGenerator().nextId(NULL_CONTEXT);
+        ConstraintDescriptor rule = nodePropertyTypeConstraintRule(
+                        ruleId, labelId, propertyKeyId, PropertyTypeSet.of(SchemaValueType.INTEGER))
+                .withName("constraint_" + ruleId);
+        writeToSchemaStore(schemaStore, rule);
+    }
+
+    private void createRelationshipPropertyTypeConstraint(int typeId, int propertyKeyId) throws KernelException {
+        createRelationshipPropertyTypeConstraint(typeId, propertyKeyId, SchemaValueType.INTEGER);
+    }
+
+    private void createRelationshipPropertyTypeConstraint(
+            int typeId, int propertyKeyId, SchemaValueType schemaValueType) throws KernelException {
+        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
+        long ruleId = schemaStore.getIdGenerator().nextId(NULL_CONTEXT);
+        ConstraintDescriptor rule = relPropertyTypeConstraintRule(
+                        ruleId, typeId, propertyKeyId, PropertyTypeSet.of(schemaValueType))
                 .withName("constraint_" + ruleId);
         writeToSchemaStore(schemaStore, rule);
     }

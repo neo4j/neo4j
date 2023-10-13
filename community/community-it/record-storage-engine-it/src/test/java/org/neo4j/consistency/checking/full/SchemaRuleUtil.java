@@ -26,7 +26,9 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 public final class SchemaRuleUtil {
     private SchemaRuleUtil() {}
@@ -47,6 +49,22 @@ public final class SchemaRuleUtil {
 
     public static ConstraintDescriptor relPropertyExistenceConstraintRule(long ruleId, int relTypeId, int propertyId) {
         return ConstraintDescriptorFactory.existsForRelType(relTypeId, propertyId)
+                .withId(ruleId)
+                .withName("constraint_" + ruleId);
+    }
+
+    public static ConstraintDescriptor nodePropertyTypeConstraintRule(
+            long ruleId, int labelId, int propertyId, PropertyTypeSet propertyTypeSet) {
+        return ConstraintDescriptorFactory.typeForSchema(
+                        SchemaDescriptors.forLabel(labelId, propertyId), propertyTypeSet)
+                .withId(ruleId)
+                .withName("constraint_" + ruleId);
+    }
+
+    public static ConstraintDescriptor relPropertyTypeConstraintRule(
+            long ruleId, int relTypeId, int propertyId, PropertyTypeSet propertyTypeSet) {
+        return ConstraintDescriptorFactory.typeForSchema(
+                        SchemaDescriptors.forRelType(relTypeId, propertyId), propertyTypeSet)
                 .withId(ruleId)
                 .withName("constraint_" + ruleId);
     }

@@ -30,12 +30,17 @@ public abstract class SchemaRuleKey {
     private final boolean isUnique;
     private final SchemaDescriptor schema;
     private final IndexType indexType;
+    private final boolean isExistenceConstraint;
 
-    protected SchemaRuleKey(SchemaDescriptor schema, boolean isUnique, IndexType indexType) {
+    protected SchemaRuleKey(
+            SchemaDescriptor schema, boolean isUnique, IndexType indexType, boolean isExistenceConstraint) {
         this.isUnique = isUnique;
         this.schema = schema;
         // For non-index-backed constraints indexType will be null.
         this.indexType = indexType;
+        // Non-index backed constraints of different types should not block each-other.
+        // We only have two types right now, so this is enough
+        this.isExistenceConstraint = isExistenceConstraint;
     }
 
     public static SchemaRuleKey from(SchemaRule rule) {
@@ -46,7 +51,7 @@ public abstract class SchemaRuleKey {
 
     static class IndexKey extends SchemaRuleKey {
         IndexKey(IndexDescriptor index) {
-            super(index.schema(), index.isUnique(), index.getIndexType());
+            super(index.schema(), index.isUnique(), index.getIndexType(), false);
         }
     }
 
@@ -57,7 +62,8 @@ public abstract class SchemaRuleKey {
                     constraint.enforcesUniqueness(),
                     constraint.isIndexBackedConstraint()
                             ? constraint.asIndexBackedConstraint().indexType()
-                            : null);
+                            : null,
+                    constraint.isPropertyExistenceConstraint());
         }
     }
 
@@ -70,11 +76,14 @@ public abstract class SchemaRuleKey {
             return false;
         }
         SchemaRuleKey that = (SchemaRuleKey) o;
-        return isUnique == that.isUnique && schema.equals(that.schema) && indexType == that.indexType;
+        return isUnique == that.isUnique
+                && schema.equals(that.schema)
+                && indexType == that.indexType
+                && isExistenceConstraint == that.isExistenceConstraint;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(indexType, isUnique ? 1 : 0, schema.hashCode());
+        return Objects.hash(indexType, isUnique ? 1 : 0, schema.hashCode(), isExistenceConstraint);
     }
 }
