@@ -328,7 +328,7 @@ public class DatabaseManagementServiceFactory {
             InternalLog internalLog = logService.getInternalLog(GlobalProcedures.class);
             Log proceduresLog = logService.getUserLog(GlobalProcedures.class);
 
-            ProcedureConfig procedureConfig = new ProcedureConfig(globalConfig);
+            ProcedureConfig procedureConfig = editionModule.getProcedureConfig(globalConfig);
             Edition neo4jEdition = globalModule.getDbmsInfo().edition;
             SpecialBuiltInProcedures builtInProcedures =
                     SpecialBuiltInProcedures.from(Version.getNeo4jVersion(), neo4jEdition.toString());

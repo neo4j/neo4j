@@ -241,4 +241,6 @@ public abstract class AbstractEditionModule {
                     .databaseFacade();
         };
     }
+
+    public abstract ProcedureConfig getProcedureConfig(Config config);
 }

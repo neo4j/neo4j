@@ -19,24 +19,19 @@
  */
 package org.neo4j.procedure.impl;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.function.Predicate;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.zip.ZipException;
-import java.util.zip.ZipFile;
-import org.neo4j.collection.AbstractPrefetchingRawIterator;
-import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -48,14 +43,20 @@ import org.neo4j.string.Globbing;
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
  * instances.
  */
-class ProcedureJarLoader {
+class ProcedureJarLoader implements AutoCloseable {
 
     private final ProcedureCompiler compiler;
     private final InternalLog log;
 
-    ProcedureJarLoader(ProcedureCompiler compiler, InternalLog log) {
+    private final boolean reloadProceduresFromDisk;
+
+    private final Set<Closeable> closeables =
+            Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
+
+    ProcedureJarLoader(ProcedureCompiler compiler, InternalLog log, boolean reloadProceduresFromDisk) {
         this.compiler = compiler;
         this.log = log;
+        this.reloadProceduresFromDisk = reloadProceduresFromDisk;
     }
 
     Callables loadProceduresFromDir(Path root) throws IOException, KernelException {
@@ -68,123 +69,55 @@ class ProcedureJarLoader {
         }
 
         List<Path> jarFiles = new ArrayList<>();
-        List<String> failedJarFiles = new ArrayList<>();
         try (DirectoryStream<Path> list = Files.newDirectoryStream(root, "*.jar")) {
-            for (Path path : list) {
-                if (isInvalidJarFile(path)) {
-                    failedJarFiles.add(path.getFileName().toString());
-                }
-                jarFiles.add(path);
+            for (var pth : list) {
+                jarFiles.add(pth);
             }
         }
 
-        if (!failedJarFiles.isEmpty()) {
-            throw new ZipException(String.format(
-                    "Some jar procedure files (%s) are invalid, see log for details.",
-                    String.join(", ", failedJarFiles)));
-        }
-
-        if (jarFiles.size() == 0) {
+        if (jarFiles.isEmpty()) {
             return Callables.empty();
         }
 
-        URL[] jarFilesURLs = jarFiles.stream().map(this::toURL).toArray(URL[]::new);
-        URLClassLoader loader = new URLClassLoader(jarFilesURLs, this.getClass().getClassLoader());
+        var result = ProcedureClassLoader.setup(jarFiles, log, reloadProceduresFromDisk);
+
+        // On Windows, it is not possible to modify files when they are used by a process.
+        // To support our test infrastructure, we want to ensure that we properly close
+        // all open file handles for procedures when we shutdown. To do this, we keep
+        // a weak reference to the classloader, and tidy up in a close-method.
+        ProcedureClassLoader loader = result.loader();
+        closeables.add(loader);
 
         Callables out = new Callables();
-        for (Path jarFile : jarFiles) {
-            loadProcedures(jarFile, loader, out, methodNameFilter);
+        for (var entry : result.loadedClasses()) {
+            try {
+                final var procedures = compiler.compileProcedure(entry.cls(), false, loader, methodNameFilter);
+                final var functions = compiler.compileFunction(entry.cls(), false, loader, methodNameFilter);
+                final var aggregations = compiler.compileAggregationFunction(entry.cls(), loader, methodNameFilter);
+
+                // Add after compilation, to not taint `target` with a partial success.
+                out.addAllProcedures(procedures);
+                out.addAllFunctions(functions);
+                out.addAllAggregationFunctions(aggregations);
+            } catch (IllegalNamingException exc) {
+                log.error(
+                        "Failed to load procedures from class %s in %s/%s: %s",
+                        entry.cls().getSimpleName(),
+                        entry.jar().getParent().getFileName(),
+                        entry.jar().getFileName(),
+                        exc.getMessage());
+            }
         }
         return out;
     }
 
-    private boolean isInvalidJarFile(Path jarFile) {
+    @Override
+    public void close() throws Exception {
         try {
-            new JarFile(jarFile.toFile(), true, ZipFile.OPEN_READ, JarFile.runtimeVersion()).close();
-            return false;
-        } catch (IOException e) {
-            log.error(String.format("Plugin jar file: %s corrupted.", jarFile));
-            return true;
+            IOUtils.closeAll(closeables);
+        } finally {
+            closeables.clear();
         }
-    }
-
-    private void loadProcedures(Path jar, ClassLoader loader, Callables target, Predicate<String> methodNameFilter)
-            throws IOException, KernelException {
-
-        // Load all classes from JAR into classloader, to attempt to ensure that we
-        // load as many dependencies as we can.
-        RawIterator<Class<?>, IOException> classes = listClassesIn(jar, loader);
-
-        while (classes.hasNext()) {
-            Class<?> next = classes.next();
-            try {
-                final var procedures = compiler.compileProcedure(next, false, loader, methodNameFilter);
-                final var functions = compiler.compileFunction(next, false, loader, methodNameFilter);
-                final var aggregations = compiler.compileAggregationFunction(next, loader, methodNameFilter);
-
-                // Add after compilation, to not taint `target` with a partial success.
-                target.addAllProcedures(procedures);
-                target.addAllFunctions(functions);
-                target.addAllAggregationFunctions(aggregations);
-            } catch (IllegalNamingException exc) {
-                log.error(
-                        "Failed to load procedures from class %s in %s/%s: %s",
-                        next.getSimpleName(), jar.getParent().getFileName(), jar.getFileName(), exc.getMessage());
-            }
-        }
-    }
-
-    private URL toURL(Path f) {
-        try {
-            return f.toUri().toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @SuppressWarnings("ReturnValueIgnored")
-    private RawIterator<Class<?>, IOException> listClassesIn(Path jar, ClassLoader loader) throws IOException {
-        JarFile jarFile = new JarFile(jar.toFile(), true, ZipFile.OPEN_READ, JarFile.runtimeVersion());
-        Iterator<JarEntry> jarEntries = jarFile.versionedStream().iterator();
-
-        return new AbstractPrefetchingRawIterator<>() {
-            @Override
-            protected Class<?> fetchNextOrNull() throws IOException {
-                try {
-                    while (jarEntries.hasNext()) {
-                        JarEntry nextEntry = jarEntries.next();
-
-                        String name = nextEntry.getName();
-                        if (name.endsWith(".class")) {
-                            String className = name.substring(0, name.length() - ".class".length())
-                                    .replace('/', '.');
-
-                            try {
-                                Class<?> aClass = loader.loadClass(className);
-                                // We do getDeclaredMethods and getDeclaredFields to trigger NoClassDefErrors, which
-                                // loadClass above does
-                                // not do.
-                                // This way, even if some of the classes in a jar cannot be loaded, we still check
-                                // the others.
-                                aClass.getDeclaredMethods();
-                                aClass.getDeclaredFields();
-                                return aClass;
-                            } catch (LinkageError | Exception e) {
-                                log.warn(
-                                        "Failed to load `%s` from plugin jar `%s`: %s: %s",
-                                        className, jar, e.getClass().getName(), e.getMessage());
-                            }
-                        }
-                    }
-
-                    jarFile.close();
-                    return null;
-                } catch (IOException | RuntimeException e) {
-                    jarFile.close();
-                    throw e;
-                }
-            }
-        };
     }
 
     public static class Callables {

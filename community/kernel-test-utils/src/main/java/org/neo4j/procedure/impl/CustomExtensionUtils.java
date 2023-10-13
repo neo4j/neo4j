@@ -39,12 +39,19 @@ public final class CustomExtensionUtils {
         return CustomExtension.MESSAGE;
     }
 
+    public static void createProcedureJar(Path path) throws IOException {
+        Files.createDirectories(path.getParent());
+        try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(path))) {
+            writeClass(jarOut, redefineToPublic(CustomProcedures.class));
+        }
+    }
+
     public static void createExtensionJar(Path path) throws IOException {
         Files.createDirectories(path.getParent());
         try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(path))) {
             var redefinedExtension = redefineToPublic(CustomExtensionFactory.class);
             writeClass(jarOut, redefinedExtension);
-            writeClass(jarOut, CustomProcedures.class);
+            writeClass(jarOut, redefineToPublic(CustomProcedures.class));
             addService(
                     jarOut,
                     ExtensionFactory.class.getCanonicalName(),

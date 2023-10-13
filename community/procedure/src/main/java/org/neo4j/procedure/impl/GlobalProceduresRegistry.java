@@ -55,11 +55,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     private final ProcedureCompiler compiler;
     private final Supplier<List<CallableProcedure>> builtin;
     private final Path proceduresDirectory;
-    private final InternalLog log;
-
     private final RegistrationUpdater updater = new RegistrationUpdater();
 
-    private final List<String> reservedProcedureNamespace;
+    private final ProcedureJarLoader loader;
 
     private static final AtomicLong SIGNATURE_VERSION_GENERATOR = new AtomicLong(0);
     private final AtomicReference<ProcedureView> currentProcedureView =
@@ -77,10 +75,15 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
             ProcedureConfig config) {
         this.builtin = builtin;
         this.proceduresDirectory = proceduresDirectory;
-        this.log = log;
         this.typeCheckers = new TypeCheckers();
         this.compiler = new ProcedureCompiler(typeCheckers, safeComponents, allComponents, log, config);
-        this.reservedProcedureNamespace = config.reservedProcedureNamespaces();
+
+        // We must not allow external sources to register procedures in the reserved namespaces.
+        // Thus, we restrict the allowed namespaces when loading from disk. The built-in procedure
+        // classes will be able to register in any namespace with the unrestricted compiler.
+        var restrictedCompiler = compiler.withAdditionalProcedureRestrictions(
+                NamingRestrictions.rejectReservedNamespace(config.reservedProcedureNamespaces()));
+        this.loader = new ProcedureJarLoader(restrictedCompiler, log, config.procedureReloadEnabled());
     }
 
     /**
@@ -192,12 +195,6 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     @Override
     public void start() throws Exception {
         try (var ignored = updater.acquire()) {
-            // We must not allow external sources to register procedures in the reserved namespaces.
-            // Thus, we restrict the allowed namespaces when loading from disk. The built-in procedure
-            // classes will be able to register in any namespace with the unrestricted compiler.
-            var restrictedCompiler = compiler.withAdditionalProcedureRestrictions(
-                    NamingRestrictions.rejectReservedNamespace(reservedProcedureNamespace));
-            ProcedureJarLoader loader = new ProcedureJarLoader(restrictedCompiler, log);
             ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir(proceduresDirectory);
             for (CallableProcedure procedure : callables.procedures()) {
                 registry.register(procedure);
@@ -216,6 +213,11 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
                 registry.register(procedure);
             }
         }
+    }
+
+    @Override
+    public void stop() throws Exception {
+        loader.close();
     }
 
     @VisibleForTesting
