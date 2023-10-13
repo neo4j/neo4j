@@ -67,6 +67,11 @@ sealed trait NodeConnection {
   def pathVariables: Seq[PathVariable]
 
   /**
+   * All variables along the path of this node connection including relationships except boundary nodes, from left to right.
+   */
+  def nonBoundaryPathVariables: Seq[PathVariable]
+
+  /**
    * Same as [[pathVariables]], but as a Set and without PathVariable wrapper class
    */
   final lazy val coveredIds: Set[String] = pathVariables.map(_.variable).toSet
@@ -124,6 +129,9 @@ final case class PatternRelationship(
 
   override def pathVariables: Seq[PathVariable] =
     Seq(NodePathVariable(left), RelationshipPathVariable(name), NodePathVariable(right))
+
+  override def nonBoundaryPathVariables: Seq[PathVariable] =
+    Seq(RelationshipPathVariable(name))
 
   override val left: String = boundaryNodes._1
   override val right: String = boundaryNodes._2
@@ -269,16 +277,18 @@ final case class QuantifiedPathPattern(
 
   override def withRight(right: String): QuantifiedPathPattern = copy(rightBinding = rightBinding.copy(outer = right))
 
-  override def pathVariables: Seq[PathVariable] = {
-    val rightTail: Seq[PathVariable] =
-      singletonToGroup(nodeVariableGroupings, patternRelationships.last.right).map(NodePathVariable) ++:
-        Seq(NodePathVariable(right))
+  override def pathVariables: Seq[PathVariable] =
+    Seq(NodePathVariable(left)) ++ nonBoundaryPathVariables ++ Seq(NodePathVariable(right))
 
-    NodePathVariable(left) +: patternRelationships.iterator.foldRight(rightTail) {
+  override def nonBoundaryPathVariables: Seq[PathVariable] = {
+    val rightTail: Seq[PathVariable] =
+      singletonToGroup(nodeVariableGroupings, rightBinding.inner).map(NodePathVariable).toSeq
+
+    patternRelationships.foldRight(rightTail) {
       case (rel, acc) =>
-        singletonToGroup(nodeVariableGroupings, rel.left).map(NodePathVariable) ++:
-          singletonToGroup(relationshipVariableGroupings, rel.name).map(RelationshipPathVariable) ++:
-          acc
+        (singletonToGroup(nodeVariableGroupings, rel.left).map(NodePathVariable) ++
+          singletonToGroup(relationshipVariableGroupings, rel.name).map(RelationshipPathVariable) ++
+          acc).toSeq
     }
   }
 
@@ -422,6 +432,9 @@ final case class SelectivePathPattern(
     pathPattern.connections.foldLeft(Seq[PathVariable](NodePathVariable(left))) {
       case (acc, nc) => acc ++ nc.pathVariables.tail
     }
+
+  override def nonBoundaryPathVariables: Seq[PathVariable] =
+    pathPattern.connections.iterator.flatMap(_.nonBoundaryPathVariables).toSeq
 
   val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies)
 

@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.NodePathVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -50,12 +52,11 @@ import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.Trail
-import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.immutable.ListSet
+import scala.collection.mutable
 
 case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
     extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
@@ -359,11 +360,11 @@ object expandSolverStep {
     val endNode = if (fromLeft) spp.right else spp.left
 
     // Check unsupported cases
-    val strictInteriorVariables = spp.pathVariables.init.tail.map(_.variable)
+    val strictInteriorVariables = spp.nonBoundaryPathVariables.map(_.variable)
     val overlap = (availableSymbols + endNode).intersect(strictInteriorVariables.toSet)
     if (overlap.nonEmpty) {
       throw new InternalException(
-        s"The selective path pattern overlaps in interior variables with previously bound symbols or end node: $overlap"
+        s"The selective path pattern overlaps with a quantified path patterns interior variables and previously bound symbols or previously bound relationship: $overlap"
       )
     }
     val duplicateVariables = strictInteriorVariables
@@ -372,10 +373,67 @@ object expandSolverStep {
       .keys
     if (duplicateVariables.nonEmpty) {
       throw new InternalException(
-        s"Repeating variables $duplicateVariables inside a selective path pattern is currently not supported."
+        s"Repeating quantified variables $duplicateVariables inside a selective path pattern is currently not supported."
       )
     }
 
+    val orderedConnections = if (fromLeft) spp.pathPattern.connections else spp.pathPattern.connections.reverse
+    // Nodes already encountered while traversing the pattern, and its aliases if encountered more than once
+    // Starts with all available symbols marked as encountered once, thus with no aliases
+    val seenNodes = mutable.Map.from(availableSymbols.view.map(_ -> mutable.ArrayBuffer.empty[String]))
+    // Potentially updated end node of the last visited connection to be used as the starting node of the next connection
+    var lastEndNode: String = startNode
+    // Updated connections
+    val rewrittenConnectionsBuilder = NonEmptyList.newBuilder[ExhaustiveNodeConnection]
+    orderedConnections.foreach { connection =>
+      val currentEndNode = if (fromLeft) connection.right else connection.left
+      val newEndNode =
+        seenNodes.get(currentEndNode) match {
+          // In case we've already encountered this node
+          case Some(aliases) =>
+            // Generate a new name for it
+            val newName = context.staticComponents.anonymousVariableNameGenerator.nextName
+            // Save it as a known alias
+            aliases.addOne(newName)
+            // Use it as the new end node
+            newName
+
+          // In case we haven't
+          case None =>
+            // Mark the node as encountered, with no aliases
+            seenNodes.addOne(currentEndNode -> mutable.ArrayBuffer.empty)
+            // Keep its original name as end node
+            currentEndNode
+        }
+      val (left, right) = if (fromLeft) (lastEndNode, newEndNode) else (newEndNode, lastEndNode)
+      val rewrittenConnection = connection.withLeft(left).withRight(right)
+      rewrittenConnectionsBuilder.addOne(rewrittenConnection)
+      // Keep track of the new end node for the next iteration
+      lastEndNode = newEndNode
+    }
+
+    // The resulting non empty list needs to be reversed again if we traversed from right to left
+    val rewritten =
+      if (fromLeft)
+        rewrittenConnectionsBuilder.result().get
+      else
+        rewrittenConnectionsBuilder.result().get.reverse
+
+    // Build a list of equality predicates for all the aliases
+    val joins = List.newBuilder[Expression]
+    seenNodes.foreach { case (node, aliases) =>
+      // Note that `aliases` would be empty in case the node was only encountered once
+      aliases.foreach { alias =>
+        joins.addOne(equalsPredicate(node, alias))
+      }
+    }
+
+    val newSpp = spp.copy(
+      pathPattern = ExhaustivePathPattern.NodeConnections(rewritten),
+      selections = spp.selections ++ Selections.from(joins.result())
+    )
+
+    val newEndNode = if (fromLeft) newSpp.right else newSpp.left
     val unsolvedPredicatesOnEndNode = queryGraphSelections
       .predicatesGiven(availableSymbols + endNode)
       .filterNot(predicate =>
@@ -385,47 +443,19 @@ object expandSolverStep {
           .exists(_.queryGraph.selections.contains(predicate))
       )
 
-    if (availableSymbols.contains(endNode)) {
-      // If both the start and the end are already bound, we need to plan an extra filter to verify that we expanded to the right end nodes.
-      val newEndNode = context.staticComponents.anonymousVariableNameGenerator.nextName
-      val hiddenFilter = equalsPredicate(newEndNode, endNode)
-      val rewriter = topDown(Rewriter.lift {
-        case v @ Variable(`endNode`) => Variable(newEndNode)(v.position)
-      })
-
-      val newSpp = (if (fromLeft) spp.withRight(newEndNode) else spp.withLeft(newEndNode)).copy(
-        selections = Selections.from(spp.selections.flatPredicatesSet.endoRewrite(rewriter))
-      )
-      val newUnsolvedPredicatesOnEndNode = unsolvedPredicatesOnEndNode.endoRewrite(rewriter)
-
-      convertToNFAAndPlan(
-        newSpp,
-        sourcePlan,
-        startNode,
-        fromLeft,
-        newEndNode,
-        availableSymbols + newEndNode,
-        spp,
-        newUnsolvedPredicatesOnEndNode,
-        Some(hiddenFilter),
-        context,
-        reverseGroupVariableProjections = !fromLeft
-      )
-    } else {
-      convertToNFAAndPlan(
-        spp,
-        sourcePlan,
-        startNode,
-        fromLeft,
-        endNode,
-        availableSymbols,
-        spp,
-        unsolvedPredicatesOnEndNode,
-        None,
-        context,
-        reverseGroupVariableProjections = !fromLeft
-      )
-    }
+    convertToNFAAndPlan(
+      newSpp,
+      sourcePlan,
+      startNode,
+      fromLeft,
+      newEndNode,
+      availableSymbols,
+      spp,
+      unsolvedPredicatesOnEndNode,
+      None,
+      context,
+      reverseGroupVariableProjections = !fromLeft
+    )
   }
 
   private def convertToNFAAndPlan(

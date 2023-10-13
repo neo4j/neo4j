@@ -361,6 +361,7 @@ object ConvertToNFA {
             val targetOuterState = builder.addAndGetState(varFor(targetOuterName))
             val predicatesOnTargetOuter =
               selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols + targetOuterName)
+                .filter(_.dependencies.exists(_.name == targetOuterName))
             val variablePredicateOnTargetOuter = toVariablePredicates(targetOuterName, predicatesOnTargetOuter)
             exitableTargetInnerStates.foreach { targetInnerState =>
               builder.addTransition(
