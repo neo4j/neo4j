@@ -188,7 +188,7 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
         if (listInAnyOrder) row => row.map(_.map(SortListValueMapper))
         else row => row
       }
-      .map(row => VirtualValues.list(row:_*))
+      .map(row => VirtualValues.list(row: _*))
     if (sortRows) {
       rowsWithSortedLists.sorted(Rows.ANY_VALUE_ORDERING)
     } else {
@@ -525,6 +525,7 @@ object SortListValueMapper extends ValueMapper[AnyValue] {
   override def mapPath(value: VirtualPathValue): AnyValue = value
   override def mapNode(value: VirtualNodeValue): AnyValue = value
   override def mapRelationship(value: VirtualRelationshipValue): AnyValue = value
+
   override def mapMap(value: MapValue): AnyValue = {
     val newMap = new MapValueBuilder()
     value.foreach((key, value) => newMap.add(key, value.map(this)))
