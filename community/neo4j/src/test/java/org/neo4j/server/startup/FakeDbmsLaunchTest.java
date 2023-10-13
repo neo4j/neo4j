@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.startup;
 
+import static java.lang.System.lineSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -614,7 +615,13 @@ class FakeDbmsLaunchTest {
             createPluginJar(plugins.resolve("MyPlugin.jar"));
             Files.writeString(confFile, MyPluginSetting.oldSetting + "=bar");
             assertThat(execute("migrate-configuration")).isEqualTo(EXIT_CODE_OK);
-            assertThat(Files.readString(confFile)).isEqualToIgnoringNewLines(MyPluginSetting.setting.name() + "=bar");
+            String jvmSetting = BootloaderSettings.additional_jvm.name();
+            String expected = MyPluginSetting.setting.name() + "=bar" + lineSeparator()
+                    + jvmSetting + "=--add-opens=java.base/java.nio=ALL-UNNAMED" + lineSeparator()
+                    + jvmSetting + "=--add-opens=java.base/java.io=ALL-UNNAMED" + lineSeparator()
+                    + jvmSetting + "=--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" + lineSeparator()
+                    + jvmSetting + "=-Dlog4j2.disable.jmx=true";
+            assertThat(Files.readString(confFile)).isEqualToIgnoringNewLines(expected);
         }
     }
 

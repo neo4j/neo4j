@@ -33,6 +33,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +49,7 @@ import org.apache.commons.configuration2.PropertiesConfigurationLayout;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.eclipse.collections.impl.factory.Maps;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingMigrator;
@@ -192,7 +194,7 @@ public class ConfigFileMigrator {
             // We remove and re-add every key/value anyway to preserve order
             // First, remember comment & free lines in case we need it
             String originalComment = layout.getComment(originalKey);
-            int originalFreeLines = layout.getBlancLinesBefore(originalKey);
+            int originalFreeLines = layout.getBlankLinesBefore(originalKey);
             config.clearProperty(originalKey);
 
             if (!comment.isEmpty()) {
@@ -246,9 +248,7 @@ public class ConfigFileMigrator {
 
                 for (String value : values) {
                     String originalValue = migratedSetting.originalValues.get(value);
-                    boolean unchanged = values.size() == 1
-                            && Objects.equals(originalKey, key)
-                            && Objects.equals(originalValue, value);
+                    boolean unchanged = Objects.equals(originalKey, key) && Objects.equals(originalValue, value);
                     if (unchanged) {
                         out.printf("%s=%s UNCHANGED%n", originalKey, originalValue);
                     } else {
@@ -256,17 +256,40 @@ public class ConfigFileMigrator {
                     }
                 }
 
-                layout.setBlancLinesBefore(key, leadingEmptyLines);
+                layout.setBlankLinesBefore(key, leadingEmptyLines);
                 layout.setComment(key, defaultIfBlank(comment.toString(), null));
                 // Consumed the preserved data, reset it
                 comment.setLength(0);
                 leadingEmptyLines = 0;
             }
         }
+        String jvmArgKey = BootloaderSettings.additional_jvm.name();
+        List<String> jvmAdditionals = new ArrayList<>(config.getList(String.class, jvmArgKey, List.of()));
+        boolean addedRecommendation = false;
+        for (JvmArg suggested : recommendedJvmAdditionals()) {
+            if (!alreadyContainsJvmArg(jvmAdditionals, suggested)) {
+                out.printf("%s=%s RECOMMENDED%n", jvmArgKey, suggested.arg());
+                jvmAdditionals.add(suggested.arg());
+                addedRecommendation = true;
+            }
+        }
+        if (addedRecommendation) {
+            config.setProperty(jvmArgKey, jvmAdditionals);
+        }
+
         if (isNotEmpty(comment)) {
             layout.setFooterComment(
                     join(COMMENT_LINE_SEPARATOR.repeat(leadingEmptyLines), comment, layout.getFooterComment()));
         }
+    }
+
+    private static boolean alreadyContainsJvmArg(List<String> existingArgs, JvmArg recommended) {
+        String arg = recommended.arg().trim();
+        if (!recommended.multipleDeclarations() && arg.contains("=")) {
+            String withoutValue = arg.split("=")[0];
+            return existingArgs.stream().anyMatch(s -> s.trim().startsWith(withoutValue));
+        }
+        return existingArgs.stream().anyMatch(s -> s.trim().equals(arg));
     }
 
     private void appendCommentedOutSetting(StringBuilder commentBuilder, String key, String value, String reason) {
@@ -370,4 +393,14 @@ public class ConfigFileMigrator {
     }
 
     private record MigratedSetting(String key, List<String> values, Map<String, String> originalValues) {}
+
+    static Collection<JvmArg> recommendedJvmAdditionals() {
+        return List.of(
+                new JvmArg("--add-opens=java.base/java.nio=ALL-UNNAMED", true),
+                new JvmArg("--add-opens=java.base/java.io=ALL-UNNAMED", true),
+                new JvmArg("--add-opens=java.base/sun.nio.ch=ALL-UNNAMED", true),
+                new JvmArg("-Dlog4j2.disable.jmx=true", false));
+    }
+
+    record JvmArg(String arg, boolean multipleDeclarations) {}
 }

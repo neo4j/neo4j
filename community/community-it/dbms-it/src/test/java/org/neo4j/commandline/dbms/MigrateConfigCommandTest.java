@@ -19,9 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static java.lang.System.lineSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 
@@ -33,13 +35,19 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarOutputStream;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingMigrator;
 import org.neo4j.configuration.SettingMigrators;
 import org.neo4j.configuration.SettingsDeclaration;
@@ -218,7 +226,7 @@ class MigrateConfigCommandTest {
         var configFile = createConfigFileInDefaultLocation(OLD_CONFIG);
         var result = runConfigMigrationCommand();
         assertEquals(0, result.exitCode);
-        assertThat(Files.readString(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG));
+        assertThat(readFileIgnoreJvmRecommendations(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG));
         assertFalse(Files.exists(configFile.resolve("apoc.conf"))); // No apoc conf since there were no apoc settings.
     }
 
@@ -255,7 +263,8 @@ class MigrateConfigCommandTest {
         var newApocConf = configFile.resolveSibling("apoc.conf");
         var result = runConfigMigrationCommand();
         assertEquals(0, result.exitCode);
-        assertThat(Files.readString(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
+        assertThat(readFileIgnoreJvmRecommendations(configFile))
+                .isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
         assertThat(Files.readString(newApocConf)).isEqualTo(maybeChangeLineSeparators(NEW_CONFIG_APOC));
 
         assertThat(result.err).contains("setting.that.does.not.exist=true REMOVED UNKNOWN");
@@ -278,7 +287,8 @@ class MigrateConfigCommandTest {
 
         var result = runConfigMigrationCommand();
         assertEquals(0, result.exitCode);
-        assertThat(Files.readString(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
+        assertThat(readFileIgnoreJvmRecommendations(configFile))
+                .isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
         assertThat(Files.readString(apocConf)).isEqualTo(maybeChangeLineSeparators(NEW_CONFIG_APOC));
         Path oldApocConf = apocConf.resolveSibling(apocConf.getFileName() + ".old");
         assertThat(oldApocConf).exists();
@@ -295,7 +305,8 @@ class MigrateConfigCommandTest {
         var configFile = createConfigFileInDefaultLocation("dbms.tx_log.rotation.size=1G");
         var result = runConfigMigrationCommand();
         assertEquals(0, result.exitCode);
-        assertThat(Files.readString(configFile)).isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
+        assertThat(readFileIgnoreJvmRecommendations(configFile))
+                .isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
         var originalConfigFile = configFile.getParent().resolve("neo4j.conf.old");
         assertThat(Files.readString(originalConfigFile)).isEqualTo("dbms.tx_log.rotation.size=1G");
     }
@@ -346,7 +357,8 @@ class MigrateConfigCommandTest {
                 "--from-path", originalConfigFile.getParent().toString());
         assertEquals(0, result.exitCode);
         var migratedConfigFile = targetDir.resolve("neo4j.conf");
-        assertThat(Files.readString(migratedConfigFile)).isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
+        assertThat(readFileIgnoreJvmRecommendations(migratedConfigFile))
+                .isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
         assertThat(Files.readString(originalConfigFile)).isEqualTo("dbms.tx_log.rotation.size=1G");
     }
 
@@ -358,7 +370,8 @@ class MigrateConfigCommandTest {
         var result = runConfigMigrationCommand("--to-path", targetDir.toString());
         assertEquals(0, result.exitCode);
         var migratedConfigFile = targetDir.resolve("neo4j.conf");
-        assertThat(Files.readString(migratedConfigFile)).isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
+        assertThat(readFileIgnoreJvmRecommendations(migratedConfigFile))
+                .isEqualToIgnoringNewLines("db.tx_log.rotation.size=1G");
         assertThat(Files.readString(originalConfigFile)).isEqualTo("dbms.tx_log.rotation.size=1G");
     }
 
@@ -367,7 +380,104 @@ class MigrateConfigCommandTest {
         var cfgFile = createConfigFileInDefaultLocation(MyPlugin.oldSetting + "=bar");
         var result = runConfigMigrationCommand(createPluginClassLoader());
         assertEquals(0, result.exitCode);
-        assertThat(Files.readString(cfgFile)).isEqualToIgnoringNewLines(MyPlugin.setting.name() + "=bar");
+        assertThat(readFileIgnoreJvmRecommendations(cfgFile))
+                .isEqualToIgnoringNewLines(MyPlugin.setting.name() + "=bar");
+    }
+
+    @Test
+    void suggestedJvmAdditionalsShouldMatchTemplate() {
+        // This is a test to notice when we change JVM arguments in the config template and decide if we want to add it
+        // to migrated configs
+        Path root = Path.of("").toAbsolutePath();
+        while (!root.getFileName().toString().equals("public")) {
+            root = root.getParent();
+        }
+        // Not the most robust way to get hold of the template but I guess it works
+        Path confTemplate = root.resolve(
+                "packaging/standalone/standalone-community/src/main/distribution/text/community/conf/neo4j.conf");
+
+        assertThat(confTemplate).exists();
+        String jvmAdditionals =
+                Config.newBuilder().fromFile(confTemplate).build().get(additional_jvm);
+
+        Set<String> templateSettings =
+                Arrays.stream(jvmAdditionals.split(lineSeparator())).collect(Collectors.toSet());
+        List<String> ignoredFromTemplate = List.of(
+                "-XX:+UseG1GC",
+                "-XX:-OmitStackTraceInFastThrow",
+                "-XX:+AlwaysPreTouch",
+                "-XX:+UnlockExperimentalVMOptions",
+                "-XX:+TrustFinalNonStaticFields",
+                "-XX:+DisableExplicitGC",
+                "-Djdk.nio.maxCachedBufferSize=1024",
+                "-Dio.netty.tryReflectionSetAccessible=true",
+                "-Djdk.tls.ephemeralDHKeySize=2048",
+                "-Djdk.tls.rejectClientInitiatedRenegotiation=true",
+                "-XX:FlightRecorderOptions=stackdepth=256",
+                "-XX:+UnlockDiagnosticVMOptions",
+                "-XX:+DebugNonSafepoints");
+        templateSettings.removeAll(ignoredFromTemplate);
+        Collection<String> jvmArgs = ConfigFileMigrator.recommendedJvmAdditionals().stream()
+                .map(ConfigFileMigrator.JvmArg::arg)
+                .collect(Collectors.toList());
+        assertThat(templateSettings).containsExactlyInAnyOrderElementsOf(jvmArgs);
+    }
+
+    @Test
+    void shouldSuggestMissingJvmAdditionalsWhenNoExists() throws IOException {
+        var cfgFileWithoutAnyJvmAdditional =
+                createConfigFileInDefaultLocation(GraphDatabaseSettings.filewatcher_enabled.name() + "=false");
+        var result = runConfigMigrationCommand(createPluginClassLoader());
+        assertEquals(0, result.exitCode);
+
+        assertThat(Files.readString(cfgFileWithoutAnyJvmAdditional))
+                .isEqualToIgnoringNewLines(
+                        GraphDatabaseSettings.filewatcher_enabled.name() + "=false" + jvmRecommendations());
+
+        assertThat(result.out)
+                .contains(additional_jvm.name() + "=--add-opens=java.base/java.nio=ALL-UNNAMED RECOMMENDED")
+                .contains(additional_jvm.name() + "=--add-opens=java.base/java.io=ALL-UNNAMED RECOMMENDED")
+                .contains(additional_jvm.name() + "=--add-opens=java.base/sun.nio.ch=ALL-UNNAMED RECOMMENDED")
+                .contains(additional_jvm.name() + "=-Dlog4j2.disable.jmx=true RECOMMENDED");
+    }
+
+    @Test
+    void shouldSuggestMissingJvmAdditionalsWhenSomeExists() throws IOException {
+        String jvmSetting = additional_jvm.name();
+        String gcJvm = String.format("%s=%s%n", jvmSetting, "-XX:+UseG1GC");
+        String log4jJvm = String.format("%s=%s%n", jvmSetting, "-Dlog4j2.disable.jmx=false");
+        String log4jJvmWithTrailingSpaceAndMismatchingValue =
+                String.format("%s=%s%n", jvmSetting, "-Dlog4j2.disable.jmx=false ");
+        var cfgFileWithSomeJvmAdditional =
+                createConfigFileInDefaultLocation(gcJvm + log4jJvmWithTrailingSpaceAndMismatchingValue);
+        var result = runConfigMigrationCommand(createPluginClassLoader());
+        assertEquals(0, result.exitCode);
+
+        String filteredRec = jvmRecommendations("-Dlog4j2.disable.jmx");
+        assertThat(Files.readString(cfgFileWithSomeJvmAdditional))
+                .isEqualToIgnoringNewLines(gcJvm + log4jJvm + filteredRec);
+
+        assertThat(result.out)
+                .contains(jvmSetting + "=-XX:+UseG1GC UNCHANGED")
+                .contains(jvmSetting + "=-Dlog4j2.disable.jmx=false UNCHANGED")
+                .contains(jvmSetting + "=--add-opens=java.base/java.nio=ALL-UNNAMED RECOMMENDED")
+                .contains(jvmSetting + "=--add-opens=java.base/java.io=ALL-UNNAMED RECOMMENDED")
+                .contains(jvmSetting + "=--add-opens=java.base/sun.nio.ch=ALL-UNNAMED RECOMMENDED")
+                .doesNotContain("-Dlog4j2.disable.jmx=true");
+    }
+
+    private String readFileIgnoreJvmRecommendations(Path configFile) throws IOException {
+        String cfg = Files.readString(configFile);
+        return cfg.replace(jvmRecommendations(), "");
+    }
+
+    private String jvmRecommendations(String... without) {
+        Collection<String> jvmRecommendations = ConfigFileMigrator.recommendedJvmAdditionals().stream()
+                .filter(jvmArg ->
+                        Arrays.stream(without).noneMatch(s -> jvmArg.arg().contains(s)))
+                .map(s -> additional_jvm.name() + "=" + s.arg())
+                .toList();
+        return String.join(lineSeparator(), jvmRecommendations) + lineSeparator();
     }
 
     private ClassLoader createPluginClassLoader() throws IOException {
