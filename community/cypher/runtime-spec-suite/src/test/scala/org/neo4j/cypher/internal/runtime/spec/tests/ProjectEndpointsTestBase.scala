@@ -1547,4 +1547,22 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "y", "r").withNoRows()
   }
+
+  test("should not project empty rows when incoming relationship is optionally empty") {
+    given {
+      nodeGraph(2, "Label")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n0", "n4", "r3", "n5", "n2")
+      .projectEndpoints("(n4)-[r3]->(n5)", startInScope = false, endInScope = false)
+      .optionalExpandAll("(n0)<-[r3:AB|BA]-(n2)")
+      .allNodeScan("n0")
+      .build()
+
+    val result = execute(query, runtime)
+
+    result should beColumns("n0", "n4", "r3", "n5", "n2").withNoRows()
+  }
+
 }

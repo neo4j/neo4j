@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.Read.NO_ID
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.util.CalledFromGeneratedCode
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
@@ -423,6 +424,53 @@ case object ProjectEndpoints {
           EndNodes(start2, end2)
         )
     }
+  }
+
+  @CalledFromGeneratedCode
+  def validateRelOrNull(
+    relId: Long,
+    direction: SemanticDirection,
+    startIfInScope: Option[Long],
+    endIfInScope: Option[Long],
+    dbAccess: DbAccess,
+    scanCursor: RelationshipScanCursor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): EndNodes = {
+    validateRel(relId, direction, startIfInScope, endIfInScope, dbAccess, scanCursor, typeCheck).orNull
+  }
+
+  @CalledFromGeneratedCode
+  def validateRelOrNull(
+    relId: Long,
+    direction: SemanticDirection,
+    startIfInScope: Option[Long],
+    endIfInScope: Option[Long],
+    scanCursor: RelationshipDataAccessor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): EndNodes = {
+    if (relId == NO_ID) null
+    else validateRel(direction, startIfInScope, endIfInScope, scanCursor, typeCheck).orNull
+  }
+
+  @CalledFromGeneratedCode
+  def validateRelsOrNull(
+    rels: ListValue,
+    direction: SemanticDirection,
+    startIfInScope: Option[Long],
+    endIfInScope: Option[Long],
+    dbAccess: DbAccess,
+    scanCursor: RelationshipScanCursor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): EndNodes = {
+    validateRels(
+      rels,
+      direction,
+      startIfInScope,
+      endIfInScope,
+      dbAccess,
+      scanCursor,
+      typeCheck
+    ).orNull
   }
 
   case class EndNodes(left: Long, right: Long)
