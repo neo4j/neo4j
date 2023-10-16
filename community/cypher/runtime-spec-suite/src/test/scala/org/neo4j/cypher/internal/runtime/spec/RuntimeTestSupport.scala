@@ -82,7 +82,6 @@ import org.neo4j.values.virtual.VirtualValues
 import java.io.PrintStream
 import java.util.Collections
 import java.util.concurrent.ConcurrentLinkedQueue
-
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -330,7 +329,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
   ): ExecutionPlan = {
-    val queryContext = newQueryContext(_txContext, logicalQuery.readOnly)
+    val queryContext = newQueryContext(_txContext)
     try {
       compileWithTx(
         logicalQuery,
@@ -347,7 +346,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT]
   ): (ExecutionPlan, CONTEXT) = {
-    val queryContext = newQueryContext(_txContext, logicalQuery.readOnly)
+    val queryContext = newQueryContext(_txContext)
     compileWithTx(logicalQuery, runtime, queryContext)
   }
 
@@ -597,7 +596,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       VirtualValues.EMPTY_MAP,
       QueryExecutionConfiguration.DEFAULT_CONFIG
     )
-    val queryContext = newQueryContext(txContext, logicalQuery.readOnly)
+    val queryContext = newQueryContext(txContext)
     try {
       val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
       runWithTx(
@@ -634,7 +633,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       VirtualValues.EMPTY_MAP,
       QueryExecutionConfiguration.DEFAULT_CONFIG
     )
-    val queryContext = newQueryContext(txContext, logicalQuery.readOnly)
+    val queryContext = newQueryContext(txContext)
     try {
       val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
       runWithTx(
@@ -688,7 +687,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       executableQuery.runtimeName.name,
       Collections.emptyList()
     ))
-    val queryContext = newQueryContext(txContext, readOnly, executableQuery.threadSafeExecutionResources())
+    val queryContext = newQueryContext(txContext, executableQuery.threadSafeExecutionResources())
     val runtimeContext = newRuntimeContext(queryContext)
 
     val executionMode = if (profile) ProfileMode else NormalMode
@@ -768,7 +767,6 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
 
   private def newQueryContext(
     txContext: TransactionalContext,
-    readOnly: Boolean,
     maybeExecutionResources: Option[ResourceManagerFactory] = None
   ): QueryContext = {
     val resourceManager = maybeExecutionResources match {

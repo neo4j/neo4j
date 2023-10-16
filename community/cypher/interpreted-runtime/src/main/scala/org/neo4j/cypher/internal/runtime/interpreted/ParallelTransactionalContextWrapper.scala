@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.io.pagecache.context.CursorContext
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.KernelTransaction
@@ -120,7 +121,12 @@ class ParallelTransactionalContextWrapper(
   }
 
   override def kernelStatisticProvider: KernelStatisticProvider =
-    ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
+    new KernelStatisticProvider {
+      private val tracer: PageCursorTracer = _kernelExecutionContext.cursorContext().getCursorTracer
+
+      override def getPageCacheHits: Long = tracer.hits()
+      override def getPageCacheMisses: Long = tracer.faults();
+    }
 
   override def dbmsInfo: DbmsInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DbmsInfo])
 

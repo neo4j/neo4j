@@ -33,6 +33,8 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.kernel.api.KernelTransaction
 import org.scalatest.funsuite.AnyFunSuiteLike
 
+import java.util.Locale
+
 abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   canFuseOverPipelines: Boolean,
   edition: Edition[CONTEXT],
@@ -259,8 +261,15 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
       val totalHits = runtimeResult.pageCacheHits
       val totalMisses = runtimeResult.pageCacheMisses
 
-      accHits should be(totalHits)
-      accMisses should be(totalMisses)
+      if (runtime.name.toLowerCase(Locale.ROOT) == "parallel") {
+        //when using parallel scans atm we don't account the
+        //page hits/misses happening in nextTask for partitioned scans
+        accHits should be <= totalHits
+        accMisses should be <= totalMisses
+      } else {
+        accHits should be(totalHits)
+        accMisses should be(totalMisses)
+      }
     }
   }
 }
