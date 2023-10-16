@@ -363,6 +363,10 @@ class PageList implements PageReferenceTranslator {
         return UnsafeUtil.getAndSetLong(null, offPageHorizon(pageRef), UNKNOWN_CHAIN_MODIFIER);
     }
 
+    static long getPageHorizon(long pageRef) {
+        return UnsafeUtil.getLongVolatile(offPageHorizon(pageRef));
+    }
+
     static void setPageHorizon(long pageRef, long modifierTxId) {
         UnsafeUtil.compareAndSetMaxLong(null, offPageHorizon(pageRef), modifierTxId);
     }
@@ -497,6 +501,7 @@ class PageList implements PageReferenceTranslator {
     }
 
     static void clearBinding(long pageRef) {
+        PageList.getAndResetPageHorizon(pageRef);
         UnsafeUtil.putLong(offPageBinding(pageRef), UNBOUND_PAGE_BINDING);
     }
 }

@@ -23,6 +23,7 @@ import static java.time.Duration.ofMillis;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -66,7 +67,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
@@ -175,7 +175,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                         pageCache,
                         file("a"),
                         pageCache.pageSize(),
-                        Sets.immutable.of(PageCacheOpenOptions.MULTI_VERSIONED))) {
+                        immutable.of(PageCacheOpenOptions.MULTI_VERSIONED))) {
             assertEquals(reservedBytes, pageFile.pageReservedBytes());
             assertEquals(PAGE_SIZE, pageFile.pageSize());
             assertEquals(PAGE_SIZE - reservedBytes, pageFile.payloadSize());
@@ -1906,6 +1906,65 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     }
 
     @Test
+    void pageHorizonIsZeroAfterFlushOrEviction() throws IOException {
+        int maxPages = 40;
+        final AtomicReference<PageList> pagesReferenceHolder = new AtomicReference<>();
+        var pageCacheTracer = new PageHorizonSettingPageCacheTracer(pagesReferenceHolder);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
+        try (MuninnPageCache pageCache = createPageCache(fs, maxPages, pageCacheTracer);
+                PagedFile pagedFile = map(
+                        pageCache, file("a"), 8 + reservedBytes, immutable.of(PageCacheOpenOptions.MULTI_VERSIONED))) {
+
+            pagesReferenceHolder.set(pageCache.pages);
+
+            try (PageCursor cursor = pagedFile.io(
+                    0, PF_SHARED_WRITE_LOCK, contextFactory.create("pageHorizonIsZeroAfterFlushOrEviction"))) {
+                for (int i = 0; i < maxPages * 3; i++) {
+                    assertTrue(cursor.next());
+                    cursor.putLong(1);
+                }
+            }
+            pagedFile.flushAndForce(FileFlushEvent.NULL);
+
+            checkAllPagesForZeroHorizon(maxPages, pageCache);
+
+            try (PageCursor cursor = pagedFile.io(
+                    0, PF_SHARED_READ_LOCK, contextFactory.create("pageHorizonIsZeroAfterFlushOrEviction"))) {
+                for (int i = 0; i < maxPages * 3; i++) {
+                    assertTrue(cursor.next());
+                    assertEquals(1, cursor.getLong());
+                }
+            }
+
+            checkAllPagesForZeroHorizon(maxPages, pageCache);
+        }
+    }
+
+    @Test
+    void pageHorizonIsZeroAfterFileTruncate() throws IOException {
+        int maxPages = 40;
+        final AtomicReference<PageList> pagesReferenceHolder = new AtomicReference<>();
+        var pageCacheTracer = new PageHorizonSettingPageCacheTracer(pagesReferenceHolder);
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
+        try (MuninnPageCache pageCache = createPageCache(fs, maxPages, pageCacheTracer);
+                PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
+
+            pagesReferenceHolder.set(pageCache.pages);
+
+            try (PageCursor cursor = pagedFile.io(
+                    0, PF_SHARED_WRITE_LOCK, contextFactory.create("pageHorizonIsZeroAfterFileTruncate"))) {
+                for (int i = 0; i < maxPages * 3; i++) {
+                    assertTrue(cursor.next());
+                    cursor.putLong(1);
+                }
+            }
+            pagedFile.truncate(5, FileTruncateEvent.NULL);
+
+            checkAllPagesForZeroHorizon(maxPages, pageCache);
+        }
+    }
+
+    @Test
     void shouldDealWithOutOfBoundsWithRetries() throws IOException {
         try (var pageCache = createPageCache(fs, 1024, new DefaultPageCacheTracer())) {
             Path file = existingFile("a");
@@ -2362,6 +2421,52 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
     }
 
+    private static class PageHorizonSettingPageCacheTracer extends DefaultPageCacheTracer {
+        private final AtomicReference<PageList> pagesHolder;
+
+        public PageHorizonSettingPageCacheTracer(AtomicReference<PageList> pagesHolder) {
+            this.pagesHolder = pagesHolder;
+        }
+
+        @Override
+        public PageCursorTracer createPageCursorTracer(String tag) {
+            return new DefaultPageCursorTracer(this, tag) {
+                @Override
+                public PinEvent beginPin(boolean writeLock, long filePageId, PageSwapper swapper) {
+                    return new HorizonPinEvent();
+                }
+            };
+        }
+
+        private class HorizonPinEvent implements PinEvent {
+            @Override
+            public void setCachePageId(long cachePageId) {
+                PageList pageList = pagesHolder.get();
+                long pageRef = pageList.deref((int) cachePageId);
+                if (PageList.isWriteLocked(pageRef)) {
+                    PageList.setPageHorizon(pageRef, 42);
+                }
+            }
+
+            @Override
+            public PinPageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper) {
+                return PinPageFaultEvent.NULL;
+            }
+
+            @Override
+            public void hit() {}
+
+            @Override
+            public void noFault() {}
+
+            @Override
+            public void close() {}
+
+            @Override
+            public void snapshotsLoaded(int oldSnapshotsLoaded) {}
+        }
+    }
+
     private class MultiChunkSwapperFilePageSwapperFactory extends SingleFilePageSwapperFactory {
         MultiChunkSwapperFilePageSwapperFactory(PageCacheTracer pageCacheTracer) {
             super(MuninnPageCacheTest.this.fs, pageCacheTracer, EmptyMemoryTracker.INSTANCE);
@@ -2727,6 +2832,16 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         var maxCachedPages = (int) pageCache.maxCachedPages();
         pageCache.evictPages(pageCache.tryGetNumberOfPagesToEvict(maxCachedPages), 0, EvictionRunEvent.NULL);
         assertThat(pageCache.tryGetNumberOfPagesToEvict(maxCachedPages)).isEqualTo(-1);
+    }
+
+    private static void checkAllPagesForZeroHorizon(int maxPages, MuninnPageCache pageCache) throws IOException {
+        var pageRefs = LongLists.mutable.withInitialCapacity(maxPages);
+        for (int i = 0; i < maxPages; i++) {
+            long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
+            assertEquals(0, PageList.getPageHorizon(pageRef));
+            pageRefs.add(pageRef);
+        }
+        pageRefs.forEach(pageRef -> pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL));
     }
 
     private void generateFile(Path file, int numberOfPages) throws IOException {

@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -1288,6 +1289,16 @@ public class AbstractPageListTest {
         assertTrue(PageList.validateReadLock(pageRef, readStamp));
         PageList.unlockFlush(pageRef, flushStamp, true);
         assertTrue(PageList.validateReadLock(pageRef, readStamp));
+    }
+
+    @ParameterizedTest(name = "pageRef = {0}")
+    @MethodSource("argumentsProvider")
+    void clearBindingResetPageHorizon(int pageId) {
+        init(pageId);
+        PageList.setPageHorizon(pageRef, 42);
+
+        PageList.clearBinding(pageRef);
+        assertEquals(0, PageList.getPageHorizon(pageRef));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")

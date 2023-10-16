@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
+import static org.neo4j.io.pagecache.impl.muninn.PageList.getPageHorizon;
 import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 import static org.neo4j.util.FeatureToggles.flag;
@@ -1142,6 +1143,7 @@ public class MuninnPageCache implements PageCache {
 
     void addFreePageToFreelist(long pageRef, EvictionRunEvent evictions) {
         Object current;
+        assert getPageHorizon(pageRef) == 0;
         FreePage freePage = new FreePage(pageRef);
         int pageCount = pages.getPageCount();
         do {
