@@ -36,7 +36,7 @@ import org.scalatest.funsuite.AnyFunSuiteLike
 import java.util.Locale
 
 abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
-  canFuseOverPipelines: Boolean,
+  canFuse: Boolean,
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT]
 ) extends RuntimeTestSuite[CONTEXT](
@@ -75,9 +75,15 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
-      if (canFuseOverPipelines) {
+      if (canFuse && !isParallel) {
         Map(
           0 -> NoEntryInPageCacheStat, // ProduceResults is part of a fused pipeline
+          1 -> NoEntryInPageCacheStat, // Projection is part of a fused pipeline
+          2 -> NoEntryInPageCacheStat
+        ) // Filer is part of a fused pipeline
+      } else if (canFuse) {
+        Map(
+          0 -> PageCacheIsNotUsed, // ProduceResults is not part of a fused pipeline
           1 -> NoEntryInPageCacheStat, // Projection is part of a fused pipeline
           2 -> NoEntryInPageCacheStat
         ) // Filer is part of a fused pipeline
@@ -112,7 +118,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
-      if (canFuseOverPipelines) {
+      if (canFuse) {
         Map(
           1 -> NoEntryInPageCacheStat, // Aggregation is part of a fused pipeline
           2 -> NoEntryInPageCacheStat, // Projection is part of a fused pipeline
@@ -154,7 +160,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
-      if (canFuseOverPipelines) {
+      if (canFuse) {
         Map(
           2 -> PageCacheIsNotUsed, // A join should not access store
           3 -> PageCacheIsNotUsed, // Apply does not do anything
@@ -200,7 +206,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
-      if (canFuseOverPipelines) {
+      if (canFuse) {
         Map(
           0 -> PageCacheIsNotUsed, // Produce result should not access store
           1 -> PageCacheIsNotUsed // Apply does not do anything
@@ -262,8 +268,8 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
       val totalMisses = runtimeResult.pageCacheMisses
 
       if (runtime.name.toLowerCase(Locale.ROOT) == "parallel") {
-        //when using parallel scans atm we don't account the
-        //page hits/misses happening in nextTask for partitioned scans
+        // when using parallel scans atm we don't account the
+        // page hits/misses happening in nextTask for partitioned scans
         accHits should be <= totalHits
         accMisses should be <= totalMisses
       } else {
@@ -272,6 +278,8 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
       }
     }
   }
+
+  // private def isParallel: Boolean = runtime.name.toLowerCase(Locale.ROOT) == "parallel"
 }
 
 trait UpdatingProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext] {
