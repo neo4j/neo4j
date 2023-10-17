@@ -30,7 +30,7 @@ public interface IndexMonitor
 
     void populationCompleteOn( IndexDescriptor descriptor );
 
-    void indexPopulationScanStarting();
+    void indexPopulationScanStarting( IndexDescriptor[] indexDescriptors );
 
     void indexPopulationScanComplete();
 
@@ -57,7 +57,7 @@ public interface IndexMonitor
         }
 
         @Override
-        public void indexPopulationScanStarting()
+        public void indexPopulationScanStarting( IndexDescriptor[] indexDescriptors )
         {   // Do nothing
         }
 

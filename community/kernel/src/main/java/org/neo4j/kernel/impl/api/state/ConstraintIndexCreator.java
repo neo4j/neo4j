@@ -176,14 +176,42 @@ public class ConstraintIndexCreator
         {
             if ( !success )
             {
-                if ( !reacquiredLabelLock )
+                try
                 {
-                    locks.acquireExclusive( transaction.lockTracer(), keyType, lockingKeys );
-                }
+                    // A terminating transaction will have released its locks and can't take any new.
+                    // It can't even check if the index exist since that require the tx to still be open
+                    // Do all checks in a new transaction for this case
+                    if ( transaction.isTerminated() )
+                    {
+                        try ( KernelTransaction dropTransaction =
+                                     kernelSupplier.get().beginTransaction( Type.IMPLICIT, AUTH_DISABLED ) )
+                        {
+                            if ( indexStillExists( dropTransaction.schemaRead(), index ) )
+                            {
+                                // Need to take exclusive for drop since it has been released
+                                dropTransaction.schemaWrite().indexDrop( index );
+                            }
+                            dropTransaction.commit();
+                        }
+                    }
+                    else
+                    {
+                        if ( !reacquiredLabelLock )
+                        {
+                            locks.acquireExclusive( transaction.lockTracer(), keyType, lockingKeys );
+                        }
 
-                if ( indexStillExists( schemaRead, index ) )
+                        if ( indexStillExists( schemaRead, index ) )
+                        {
+                            dropUniquenessConstraintIndex( index );
+                        }
+                    }
+
+                }
+                catch ( Exception e )
                 {
-                    dropUniquenessConstraintIndex( index );
+                    log.error( "Error while removing index created for failed constraint creation '" + index.getName()
+                            + "'. " + e );
                 }
             }
         }

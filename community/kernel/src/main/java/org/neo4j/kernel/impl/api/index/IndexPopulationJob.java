@@ -135,7 +135,7 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.create( cursorContext );
                 multiPopulator.resetIndexCounts( cursorContext );
 
-                monitor.indexPopulationScanStarting();
+                monitor.indexPopulationScanStarting( multiPopulator.indexDescriptors() );
                 indexAllEntities( pageCacheTracer );
                 monitor.indexPopulationScanComplete();
                 if ( stopped )

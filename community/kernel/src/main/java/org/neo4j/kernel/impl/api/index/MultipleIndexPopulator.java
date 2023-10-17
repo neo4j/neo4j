@@ -43,6 +43,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
@@ -526,6 +527,13 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
         return "MultipleIndexPopulator{activeTasks=" + activeTasks + ", " +
                 "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
+    }
+
+    IndexDescriptor[] indexDescriptors()
+    {
+        return populations.stream()
+                .map( p -> p.indexProxyStrategy.getIndexDescriptor() )
+                .toArray( IndexDescriptor[]::new );
     }
 
     public static class MultipleIndexUpdater implements IndexUpdater

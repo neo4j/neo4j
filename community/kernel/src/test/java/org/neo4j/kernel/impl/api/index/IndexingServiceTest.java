@@ -284,7 +284,7 @@ class IndexingServiceTest
         IndexMonitor monitor = new IndexMonitor.MonitorAdapter()
         {
             @Override
-            public void indexPopulationScanStarting()
+            public void indexPopulationScanStarting( IndexDescriptor[] indexDescriptors )
             {
                 populationStartBarrier.reached();
             }
@@ -1356,7 +1356,7 @@ class IndexingServiceTest
             }
 
             @Override
-            public void indexPopulationScanStarting()
+            public void indexPopulationScanStarting( IndexDescriptor[] indexDescriptors )
             {
                 populationStarted.set( true );
             }
