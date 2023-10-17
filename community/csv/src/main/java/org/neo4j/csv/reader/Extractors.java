@@ -47,6 +47,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CSVHeaderInformation;
@@ -501,7 +502,11 @@ public final class Extractors {
         }
     }
 
-    private abstract static class ArrayExtractor<T> extends AbstractExtractor<T> {
+    /**
+     * Base class for ArrayExtractors that produces a final type T while parsing individual elements into an
+     * intermediary type E.
+     */
+    private abstract static class ArrayExtractor<E, T> extends AbstractExtractor<T> {
         protected final char arrayDelimiter;
 
         ArrayExtractor(char arrayDelimiter, String componentTypeName) {
@@ -513,7 +518,34 @@ public final class Extractors {
             this.arrayDelimiter = arrayDelimiter;
         }
 
-        protected int charsToNextDelimiter(char[] data, int offset, int length) {
+        @Override
+        public final T extract(
+                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            int numberOfValues = numberOfValues(data, offset, length);
+            if (numberOfValues <= 0) {
+                return emptyElement();
+            }
+
+            E[] values = createInternalArray(numberOfValues);
+            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
+                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
+                values[arrayIndex] = parseElement(data, offset, charIndex, numberOfChars, optionalData);
+                charIndex += numberOfChars;
+            }
+
+            return convertListToArrayValue(values);
+        }
+
+        protected abstract T emptyElement();
+
+        protected abstract E[] createInternalArray(int size);
+
+        protected abstract E parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData);
+
+        protected abstract T convertListToArrayValue(E[] values);
+
+        private int charsToNextDelimiter(char[] data, int offset, int length) {
             for (int i = 0; i < length; i++) {
                 if (data[offset + i] == arrayDelimiter) {
                     return i;
@@ -522,7 +554,7 @@ public final class Extractors {
             return length;
         }
 
-        protected int numberOfValues(char[] data, int offset, int length) {
+        private int numberOfValues(char[] data, int offset, int length) {
             int count = length > 0 ? 1 : 0;
             for (int i = 0; i < length; i++) {
                 if (data[offset + i] == arrayDelimiter) {
@@ -548,7 +580,7 @@ public final class Extractors {
         }
     }
 
-    private static class StringArrayExtractor extends ArrayExtractor<String[]> {
+    private static class StringArrayExtractor extends ArrayExtractor<String, String[]> {
         private final boolean trimStrings;
 
         StringArrayExtractor(char arrayDelimiter, boolean trimStrings) {
@@ -557,161 +589,226 @@ public final class Extractors {
         }
 
         @Override
-        public String[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            String[] value = numberOfValues > 0 ? new String[numberOfValues] : EMPTY_STRING_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                value[arrayIndex] = new String(data, offset + charIndex, numberOfChars);
-                if (trimStrings) {
-                    value[arrayIndex] = value[arrayIndex].trim();
-                }
-                charIndex += numberOfChars;
+        protected String[] emptyElement() {
+            return EMPTY_STRING_ARRAY;
+        }
+
+        @Override
+        protected String[] createInternalArray(int size) {
+            return new String[size];
+        }
+
+        @Override
+        protected String parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            String value = new String(data, offset + charIndex, numberOfChars);
+            if (trimStrings) {
+                return value.trim();
             }
             return value;
         }
+
+        @Override
+        protected String[] convertListToArrayValue(String[] values) {
+            return values;
+        }
     }
 
-    private static class ByteArrayExtractor extends ArrayExtractor<byte[]> {
+    private static class ByteArrayExtractor extends ArrayExtractor<Byte, byte[]> {
         ByteArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
             super(arrayDelimiter, Byte.TYPE.getSimpleName(), longArrayExtractor);
         }
 
         @Override
-        public byte[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            byte[] value = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY_BYTE_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                value[arrayIndex] = safeCastLongToByte(extractLong(data, offset + charIndex, numberOfChars));
-                charIndex += numberOfChars;
-            }
-            return value;
+        protected byte[] emptyElement() {
+            return EMPTY_BYTE_ARRAY;
+        }
+
+        @Override
+        protected Byte[] createInternalArray(int size) {
+            return new Byte[size];
+        }
+
+        @Override
+        protected Byte parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return safeCastLongToByte(extractLong(data, offset + charIndex, numberOfChars));
+        }
+
+        @Override
+        protected byte[] convertListToArrayValue(Byte[] values) {
+            return ArrayUtils.toPrimitive(values);
         }
     }
 
-    private static class ShortArrayExtractor extends ArrayExtractor<short[]> {
+    private static class ShortArrayExtractor extends ArrayExtractor<Short, short[]> {
         ShortArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
             super(arrayDelimiter, Short.TYPE.getSimpleName(), longArrayExtractor);
         }
 
         @Override
-        public short[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            short[] value = numberOfValues > 0 ? new short[numberOfValues] : EMPTY_SHORT_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                value[arrayIndex] = safeCastLongToShort(extractLong(data, offset + charIndex, numberOfChars));
-                charIndex += numberOfChars;
-            }
-            return value;
+        protected short[] emptyElement() {
+            return EMPTY_SHORT_ARRAY;
+        }
+
+        @Override
+        protected Short[] createInternalArray(int size) {
+            return new Short[size];
+        }
+
+        @Override
+        protected Short parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return safeCastLongToShort(extractLong(data, offset + charIndex, numberOfChars));
+        }
+
+        @Override
+        protected short[] convertListToArrayValue(Short[] values) {
+            return ArrayUtils.toPrimitive(values);
         }
     }
 
-    private static class IntArrayExtractor extends ArrayExtractor<int[]> {
+    private static class IntArrayExtractor extends ArrayExtractor<Integer, int[]> {
         IntArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
             super(arrayDelimiter, Integer.TYPE.getSimpleName(), longArrayExtractor);
         }
 
         @Override
-        public int[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            int[] value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY_INT_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                value[arrayIndex] = safeCastLongToInt(extractLong(data, offset + charIndex, numberOfChars));
-                charIndex += numberOfChars;
-            }
-            return value;
+        protected int[] emptyElement() {
+            return EMPTY_INT_ARRAY;
+        }
+
+        @Override
+        protected Integer[] createInternalArray(int size) {
+            return new Integer[size];
+        }
+
+        @Override
+        protected Integer parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return safeCastLongToInt(extractLong(data, offset + charIndex, numberOfChars));
+        }
+
+        @Override
+        protected int[] convertListToArrayValue(Integer[] values) {
+            return ArrayUtils.toPrimitive(values);
         }
     }
 
-    private static class LongArrayExtractor extends ArrayExtractor<long[]> {
+    private static class LongArrayExtractor extends ArrayExtractor<Long, long[]> {
         LongArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Long.TYPE.getSimpleName());
         }
 
         @Override
-        public long[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            long[] value = numberOfValues > 0 ? new long[numberOfValues] : EMPTY_LONG_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                value[arrayIndex] = extractLong(data, offset + charIndex, numberOfChars);
-                charIndex += numberOfChars;
-            }
-            return value;
+        protected long[] emptyElement() {
+            return EMPTY_LONG_ARRAY;
+        }
+
+        @Override
+        protected Long[] createInternalArray(int size) {
+            return new Long[size];
+        }
+
+        @Override
+        protected Long parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return extractLong(data, offset + charIndex, numberOfChars);
+        }
+
+        @Override
+        protected long[] convertListToArrayValue(Long[] values) {
+            return ArrayUtils.toPrimitive(values);
         }
     }
 
-    private static class FloatArrayExtractor extends ArrayExtractor<float[]> {
+    private static class FloatArrayExtractor extends ArrayExtractor<Float, float[]> {
         FloatArrayExtractor(char arrayDelimiter, DoubleArrayExtractor doubleArrayExtractor) {
             super(arrayDelimiter, Float.TYPE.getSimpleName(), doubleArrayExtractor);
         }
 
         @Override
-        public float[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            float[] value = numberOfValues > 0 ? new float[numberOfValues] : EMPTY_FLOAT_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                // TODO Figure out a way to do this conversion without round tripping to String
-                // parseFloat automatically handles leading/trailing whitespace so no need for us to do it
-                value[arrayIndex] = Float.parseFloat(String.valueOf(data, offset + charIndex, numberOfChars));
-                charIndex += numberOfChars;
-            }
-            return value;
+        protected float[] emptyElement() {
+            return EMPTY_FLOAT_ARRAY;
+        }
+
+        @Override
+        protected Float[] createInternalArray(int size) {
+            return new Float[size];
+        }
+
+        @Override
+        protected Float parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            // TODO Figure out a way to do this conversion without round tripping to String
+            // parseFloat automatically handles leading/trailing whitespace so no need for us to do it
+            return Float.parseFloat(String.valueOf(data, offset + charIndex, numberOfChars));
+        }
+
+        @Override
+        protected float[] convertListToArrayValue(Float[] values) {
+            return ArrayUtils.toPrimitive(values);
         }
     }
 
-    private static class DoubleArrayExtractor extends ArrayExtractor<double[]> {
+    private static class DoubleArrayExtractor extends ArrayExtractor<Double, double[]> {
 
         DoubleArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Double.TYPE.getSimpleName());
         }
 
         @Override
-        public double[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            double[] value = numberOfValues > 0 ? new double[numberOfValues] : EMPTY_DOUBLE_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                // TODO Figure out a way to do this conversion without round tripping to String
-                // parseDouble automatically handles leading/trailing whitespace so no need for us to do it
-                value[arrayIndex] = Double.parseDouble(String.valueOf(data, offset + charIndex, numberOfChars));
-                charIndex += numberOfChars;
-            }
-            return value;
+        protected double[] emptyElement() {
+            return EMPTY_DOUBLE_ARRAY;
+        }
+
+        @Override
+        protected Double[] createInternalArray(int size) {
+            return new Double[size];
+        }
+
+        @Override
+        protected Double parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            // TODO Figure out a way to do this conversion without round tripping to String
+            // parseFloat automatically handles leading/trailing whitespace so no need for us to do it
+            return Double.parseDouble(String.valueOf(data, offset + charIndex, numberOfChars));
+        }
+
+        @Override
+        protected double[] convertListToArrayValue(Double[] values) {
+            return ArrayUtils.toPrimitive(values);
         }
     }
 
-    private static class BooleanArrayExtractor extends ArrayExtractor<boolean[]> {
+    private static class BooleanArrayExtractor extends ArrayExtractor<Boolean, boolean[]> {
         BooleanArrayExtractor(char arrayDelimiter) {
             super(arrayDelimiter, Boolean.TYPE.getSimpleName());
         }
 
         @Override
-        public boolean[] extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            boolean[] value = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY_BOOLEAN_ARRAY;
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                value[arrayIndex] = extractBoolean(data, offset + charIndex, numberOfChars);
-                charIndex += numberOfChars;
-            }
-            return value;
+        protected boolean[] emptyElement() {
+            return EMPTY_BOOLEAN_ARRAY;
+        }
+
+        @Override
+        protected Boolean[] createInternalArray(int size) {
+            return new Boolean[size];
+        }
+
+        @Override
+        protected Boolean parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return extractBoolean(data, offset + charIndex, numberOfChars);
+        }
+
+        @Override
+        protected boolean[] convertListToArrayValue(Boolean[] values) {
+            return ArrayUtils.toPrimitive(values);
         }
     }
 
-    private abstract static class ArrayAnyValueExtractor<T extends ArrayValue> extends ArrayExtractor<T> {
+    private abstract static class ArrayAnyValueExtractor<E, T extends ArrayValue> extends ArrayExtractor<E, T> {
         ArrayAnyValueExtractor(char arrayDelimiter, String componentTypeName) {
             super(arrayDelimiter, componentTypeName);
         }
@@ -739,7 +836,7 @@ public final class Extractors {
         }
     }
 
-    public static class PointArrayExtractor extends ArrayAnyValueExtractor<PointArray> {
+    public static class PointArrayExtractor extends ArrayAnyValueExtractor<PointValue, PointArray> {
         private static final PointArray EMPTY = Values.pointArray(new Point[0]);
 
         PointArrayExtractor(char arrayDelimiter) {
@@ -747,20 +844,24 @@ public final class Extractors {
         }
 
         @Override
-        public PointArray extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            if (numberOfValues <= 0) {
-                return EMPTY;
-            }
-            var localValue = new PointValue[numberOfValues];
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                localValue[arrayIndex] =
-                        PointValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars), optionalData);
-                charIndex += numberOfChars;
-            }
-            return Values.pointArray(localValue);
+        protected PointArray emptyElement() {
+            return EMPTY;
+        }
+
+        @Override
+        protected PointValue[] createInternalArray(int size) {
+            return new PointValue[size];
+        }
+
+        @Override
+        protected PointValue parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return PointValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars), optionalData);
+        }
+
+        @Override
+        protected PointArray convertListToArrayValue(PointValue[] values) {
+            return Values.pointArray(values);
         }
     }
 
@@ -781,7 +882,7 @@ public final class Extractors {
         }
     }
 
-    public static class DateArrayExtractor extends ArrayAnyValueExtractor<DateArray> {
+    public static class DateArrayExtractor extends ArrayAnyValueExtractor<LocalDate, DateArray> {
         private static final DateArray EMPTY = Values.dateArray(new LocalDate[0]);
 
         DateArrayExtractor(char arrayDelimiter) {
@@ -789,21 +890,25 @@ public final class Extractors {
         }
 
         @Override
-        public DateArray extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            if (numberOfValues <= 0) {
-                return EMPTY;
-            }
+        protected DateArray emptyElement() {
+            return EMPTY;
+        }
 
-            var localValue = new LocalDate[numberOfValues];
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                localValue[arrayIndex] = DateValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars))
-                        .asObjectCopy();
-                charIndex += numberOfChars;
-            }
-            return Values.dateArray(localValue);
+        @Override
+        protected LocalDate[] createInternalArray(int size) {
+            return new LocalDate[size];
+        }
+
+        @Override
+        protected LocalDate parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return DateValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars))
+                    .asObjectCopy();
+        }
+
+        @Override
+        protected DateArray convertListToArrayValue(LocalDate[] values) {
+            return Values.dateArray(values);
         }
     }
 
@@ -827,7 +932,7 @@ public final class Extractors {
         }
     }
 
-    public static class TimeArrayExtractor extends ArrayAnyValueExtractor<TimeArray> {
+    public static class TimeArrayExtractor extends ArrayAnyValueExtractor<OffsetTime, TimeArray> {
         private static final TimeArray EMPTY = Values.timeArray(new OffsetTime[0]);
 
         private final Supplier<ZoneId> defaultTimeZone;
@@ -838,22 +943,26 @@ public final class Extractors {
         }
 
         @Override
-        public TimeArray extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            if (numberOfValues <= 0) {
-                return EMPTY;
-            }
+        protected TimeArray emptyElement() {
+            return EMPTY;
+        }
 
-            var localValue = new OffsetTime[numberOfValues];
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                localValue[arrayIndex] = TimeValue.parse(
-                                CharBuffer.wrap(data, offset + charIndex, numberOfChars), defaultTimeZone, optionalData)
-                        .asObjectCopy();
-                charIndex += numberOfChars;
-            }
-            return Values.timeArray(localValue);
+        @Override
+        protected OffsetTime[] createInternalArray(int size) {
+            return new OffsetTime[size];
+        }
+
+        @Override
+        protected OffsetTime parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return TimeValue.parse(
+                            CharBuffer.wrap(data, offset + charIndex, numberOfChars), defaultTimeZone, optionalData)
+                    .asObjectCopy();
+        }
+
+        @Override
+        protected TimeArray convertListToArrayValue(OffsetTime[] values) {
+            return Values.timeArray(values);
         }
     }
 
@@ -877,7 +986,7 @@ public final class Extractors {
         }
     }
 
-    public static class DateTimeArrayExtractor extends ArrayAnyValueExtractor<DateTimeArray> {
+    public static class DateTimeArrayExtractor extends ArrayAnyValueExtractor<ZonedDateTime, DateTimeArray> {
         private static final DateTimeArray EMPTY = Values.dateTimeArray(new ZonedDateTime[0]);
 
         private final Supplier<ZoneId> defaultTimeZone;
@@ -888,22 +997,26 @@ public final class Extractors {
         }
 
         @Override
-        public DateTimeArray extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            if (numberOfValues <= 0) {
-                return EMPTY;
-            }
+        protected DateTimeArray emptyElement() {
+            return EMPTY;
+        }
 
-            var localValue = new ZonedDateTime[numberOfValues];
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                localValue[arrayIndex] = DateTimeValue.parse(
-                                CharBuffer.wrap(data, offset + charIndex, numberOfChars), defaultTimeZone, optionalData)
-                        .asObjectCopy();
-                charIndex += numberOfChars;
-            }
-            return Values.dateTimeArray(localValue);
+        @Override
+        protected ZonedDateTime[] createInternalArray(int size) {
+            return new ZonedDateTime[size];
+        }
+
+        @Override
+        protected ZonedDateTime parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return DateTimeValue.parse(
+                            CharBuffer.wrap(data, offset + charIndex, numberOfChars), defaultTimeZone, optionalData)
+                    .asObjectCopy();
+        }
+
+        @Override
+        protected DateTimeArray convertListToArrayValue(ZonedDateTime[] values) {
+            return Values.dateTimeArray(values);
         }
     }
 
@@ -924,7 +1037,7 @@ public final class Extractors {
         }
     }
 
-    public static class LocalTimeArrayExtractor extends ArrayAnyValueExtractor<LocalTimeArray> {
+    public static class LocalTimeArrayExtractor extends ArrayAnyValueExtractor<LocalTime, LocalTimeArray> {
         private static final LocalTimeArray EMPTY = Values.localTimeArray(new LocalTime[0]);
 
         LocalTimeArrayExtractor(char arrayDelimiter) {
@@ -932,21 +1045,25 @@ public final class Extractors {
         }
 
         @Override
-        public LocalTimeArray extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            if (numberOfValues <= 0) {
-                return EMPTY;
-            }
+        protected LocalTimeArray emptyElement() {
+            return EMPTY;
+        }
 
-            var localValue = new LocalTime[numberOfValues];
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                localValue[arrayIndex] = LocalTimeValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars))
-                        .asObjectCopy();
-                charIndex += numberOfChars;
-            }
-            return Values.localTimeArray(localValue);
+        @Override
+        protected LocalTime[] createInternalArray(int size) {
+            return new LocalTime[size];
+        }
+
+        @Override
+        protected LocalTime parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return LocalTimeValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars))
+                    .asObjectCopy();
+        }
+
+        @Override
+        protected LocalTimeArray convertListToArrayValue(LocalTime[] values) {
+            return Values.localTimeArray(values);
         }
     }
 
@@ -967,7 +1084,7 @@ public final class Extractors {
         }
     }
 
-    public static class LocalDateTimeArrayExtractor extends ArrayAnyValueExtractor<LocalDateTimeArray> {
+    public static class LocalDateTimeArrayExtractor extends ArrayAnyValueExtractor<LocalDateTime, LocalDateTimeArray> {
         private static final LocalDateTimeArray EMPTY = Values.localDateTimeArray(new LocalDateTime[0]);
 
         LocalDateTimeArrayExtractor(char arrayDelimiter) {
@@ -975,22 +1092,25 @@ public final class Extractors {
         }
 
         @Override
-        public LocalDateTimeArray extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            if (numberOfValues <= 0) {
-                return EMPTY;
-            }
+        protected LocalDateTimeArray emptyElement() {
+            return EMPTY;
+        }
 
-            var localValue = new LocalDateTime[numberOfValues];
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                localValue[arrayIndex] = LocalDateTimeValue.parse(
-                                CharBuffer.wrap(data, offset + charIndex, numberOfChars))
-                        .asObjectCopy();
-                charIndex += numberOfChars;
-            }
-            return Values.localDateTimeArray(localValue);
+        @Override
+        protected LocalDateTime[] createInternalArray(int size) {
+            return new LocalDateTime[size];
+        }
+
+        @Override
+        protected LocalDateTime parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return LocalDateTimeValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars))
+                    .asObjectCopy();
+        }
+
+        @Override
+        protected LocalDateTimeArray convertListToArrayValue(LocalDateTime[] values) {
+            return Values.localDateTimeArray(values);
         }
     }
 
@@ -1031,7 +1151,7 @@ public final class Extractors {
         }
     }
 
-    public static class DurationArrayExtractor extends ArrayAnyValueExtractor<DurationArray> {
+    public static class DurationArrayExtractor extends ArrayAnyValueExtractor<DurationValue, DurationArray> {
         private static final DurationArray EMPTY = Values.durationArray(new DurationValue[0]);
 
         DurationArrayExtractor(char arrayDelimiter) {
@@ -1039,20 +1159,24 @@ public final class Extractors {
         }
 
         @Override
-        public DurationArray extract(
-                char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
-            int numberOfValues = numberOfValues(data, offset, length);
-            if (numberOfValues <= 0) {
-                return EMPTY;
-            }
+        protected DurationArray emptyElement() {
+            return EMPTY;
+        }
 
-            var localValue = new DurationValue[numberOfValues];
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
-                localValue[arrayIndex] = DurationValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars));
-                charIndex += numberOfChars;
-            }
-            return Values.durationArray(localValue);
+        @Override
+        protected DurationValue[] createInternalArray(int size) {
+            return new DurationValue[size];
+        }
+
+        @Override
+        protected DurationValue parseElement(
+                char[] data, int offset, int charIndex, int numberOfChars, CSVHeaderInformation optionalData) {
+            return DurationValue.parse(CharBuffer.wrap(data, offset + charIndex, numberOfChars));
+        }
+
+        @Override
+        protected DurationArray convertListToArrayValue(DurationValue[] values) {
+            return Values.durationArray(values);
         }
     }
 
