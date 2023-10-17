@@ -20,7 +20,6 @@
 package org.neo4j.csv.reader;
 
 import static java.lang.Character.isWhitespace;
-import static java.lang.reflect.Modifier.isStatic;
 import static java.time.ZoneOffset.UTC;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BOOLEAN_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
@@ -36,7 +35,6 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToShort;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.nio.CharBuffer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -86,7 +84,7 @@ import org.neo4j.values.storable.Values;
  * and {@link Extractors#add(Extractor) added} to an {@link Extractors} instance, where its
  * {@link Extractor#name() name} value is used as key for lookup in {@link #valueOf(String)}.
  */
-public class Extractors {
+public final class Extractors {
     private final Map<String, Extractor<?>> instances = new HashMap<>();
     private final StringExtractor string;
     private final LongExtractor long_;
@@ -145,51 +143,38 @@ public class Extractors {
      */
     public Extractors(
             char arrayDelimiter, boolean emptyStringsAsNull, boolean trimStrings, Supplier<ZoneId> defaultTimeZone) {
-        try {
-            for (Field field : getClass().getDeclaredFields()) {
-                if (isStatic(field.getModifiers())) {
-                    Object value = field.get(null);
-                    if (value instanceof Extractor) {
-                        instances.put(field.getName(), (Extractor<?>) value);
-                    }
-                }
-            }
-
-            add(string = new StringExtractor(emptyStringsAsNull));
-            add(long_ = new LongExtractor());
-            add(int_ = new IntExtractor(long_));
-            add(char_ = new CharExtractor(string));
-            add(short_ = new ShortExtractor(long_));
-            add(byte_ = new ByteExtractor(long_));
-            add(boolean_ = new BooleanExtractor());
-            add(double_ = new DoubleExtractor());
-            add(float_ = new FloatExtractor(double_));
-            add(stringArray = new StringArrayExtractor(arrayDelimiter, trimStrings));
-            add(booleanArray = new BooleanArrayExtractor(arrayDelimiter));
-            add(longArray = new LongArrayExtractor(arrayDelimiter));
-            add(byteArray = new ByteArrayExtractor(arrayDelimiter, longArray));
-            add(shortArray = new ShortArrayExtractor(arrayDelimiter, longArray));
-            add(intArray = new IntArrayExtractor(arrayDelimiter, longArray));
-            add(doubleArray = new DoubleArrayExtractor(arrayDelimiter));
-            add(floatArray = new FloatArrayExtractor(arrayDelimiter, doubleArray));
-            add(point = new PointExtractor());
-            add(pointArray = new PointArrayExtractor(arrayDelimiter));
-            add(date = new DateExtractor());
-            add(dateArray = new DateArrayExtractor(arrayDelimiter));
-            add(time = new TimeExtractor(defaultTimeZone));
-            add(timeArray = new TimeArrayExtractor(arrayDelimiter, defaultTimeZone));
-            add(dateTime = new DateTimeExtractor(defaultTimeZone));
-            add(dateTimeArray = new DateTimeArrayExtractor(arrayDelimiter, defaultTimeZone));
-            add(localTime = new LocalTimeExtractor());
-            add(localTimeArray = new LocalTimeArrayExtractor(arrayDelimiter));
-            add(localDateTime = new LocalDateTimeExtractor());
-            add(localDateTimeArray = new LocalDateTimeArrayExtractor(arrayDelimiter));
-            add(duration = new DurationExtractor());
-            add(textValue = new TextValueExtractor(emptyStringsAsNull));
-            add(durationArray = new DurationArrayExtractor(arrayDelimiter));
-        } catch (IllegalAccessException e) {
-            throw new Error("Bug in reflection code gathering all extractors");
-        }
+        add(string = new StringExtractor(emptyStringsAsNull));
+        add(long_ = new LongExtractor());
+        add(int_ = new IntExtractor(long_));
+        add(char_ = new CharExtractor(string));
+        add(short_ = new ShortExtractor(long_));
+        add(byte_ = new ByteExtractor(long_));
+        add(boolean_ = new BooleanExtractor());
+        add(double_ = new DoubleExtractor());
+        add(float_ = new FloatExtractor(double_));
+        add(stringArray = new StringArrayExtractor(arrayDelimiter, trimStrings));
+        add(booleanArray = new BooleanArrayExtractor(arrayDelimiter));
+        add(longArray = new LongArrayExtractor(arrayDelimiter));
+        add(byteArray = new ByteArrayExtractor(arrayDelimiter, longArray));
+        add(shortArray = new ShortArrayExtractor(arrayDelimiter, longArray));
+        add(intArray = new IntArrayExtractor(arrayDelimiter, longArray));
+        add(doubleArray = new DoubleArrayExtractor(arrayDelimiter));
+        add(floatArray = new FloatArrayExtractor(arrayDelimiter, doubleArray));
+        add(point = new PointExtractor());
+        add(pointArray = new PointArrayExtractor(arrayDelimiter));
+        add(date = new DateExtractor());
+        add(dateArray = new DateArrayExtractor(arrayDelimiter));
+        add(time = new TimeExtractor(defaultTimeZone));
+        add(timeArray = new TimeArrayExtractor(arrayDelimiter, defaultTimeZone));
+        add(dateTime = new DateTimeExtractor(defaultTimeZone));
+        add(dateTimeArray = new DateTimeArrayExtractor(arrayDelimiter, defaultTimeZone));
+        add(localTime = new LocalTimeExtractor());
+        add(localTimeArray = new LocalTimeArrayExtractor(arrayDelimiter));
+        add(localDateTime = new LocalDateTimeExtractor());
+        add(localDateTimeArray = new LocalDateTimeArrayExtractor(arrayDelimiter));
+        add(duration = new DurationExtractor());
+        add(textValue = new TextValueExtractor(emptyStringsAsNull));
+        add(durationArray = new DurationArrayExtractor(arrayDelimiter));
     }
 
     public void add(Extractor<?> extractor) {
