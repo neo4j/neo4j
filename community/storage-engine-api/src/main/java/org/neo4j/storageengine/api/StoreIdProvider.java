@@ -26,4 +26,6 @@ public interface StoreIdProvider
     StoreId getStoreId();
 
     Optional<ExternalStoreId> getExternalStoreId();
+
+    String getStoreFormat();
 }

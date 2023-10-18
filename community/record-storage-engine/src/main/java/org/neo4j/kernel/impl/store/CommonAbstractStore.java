@@ -534,6 +534,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         idGenerator.setHighId( highId );
     }
 
+    public String getStoreFormat()
+    {
+        return storeVersion;
+    }
+
     /**
      * Sets the store state to started, which is a state which either means that:
      * <ul>

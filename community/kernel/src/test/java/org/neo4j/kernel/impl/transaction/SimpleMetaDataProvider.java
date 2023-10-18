@@ -97,6 +97,12 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
+    public String getStoreFormat()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long nextCommittingTransactionId()
     {
         return transactionIdStore.nextCommittingTransactionId();

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.format.aligned;
 
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersion;
 
 public class PageAligned
 {
@@ -28,6 +29,7 @@ public class PageAligned
     {
     }
 
+    public static final String LATEST_STORE_VERSION = StoreVersion.ALIGNED_V4_3.versionString();
     public static final RecordFormats LATEST_RECORD_FORMATS = PageAlignedV4_3.RECORD_FORMATS;
     public static final String LATEST_NAME = FormatFamily.aligned.name();
 }
