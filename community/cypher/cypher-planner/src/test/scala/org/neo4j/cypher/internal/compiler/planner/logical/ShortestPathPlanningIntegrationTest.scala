@@ -1303,4 +1303,144 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .plan(query).stripProduceResults should equal(planRL)
   }
 
+  test("Should handle sub-path assignment with pre-filter predicates for shortest path") {
+    val query = "MATCH ANY SHORTEST (p = (a) ((b)-[r]->(c))+ (d) ((e)<-[s]-(f))+ (g) WHERE length(p) > 3) RETURN p"
+    val plan = planner.plan(query).stripProduceResults
+
+    val path = PathExpression(NodePathStep(
+      varFor("a"),
+      RepeatPathStep(
+        List(NodeRelPair(varFor("b"), varFor("r"))),
+        varFor("d"),
+        RepeatPathStep(
+          List(NodeRelPair(varFor("e"), varFor("s"))),
+          varFor("g"),
+          NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(pos))(pos)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(Map("p" -> path))
+      .statefulShortestPathExpr(
+        "a",
+        "g",
+        s"SHORTEST 1 ((a) ((b)-[r]->(c)){1, } (d) ((e)<-[s]-(f)){1, } (g) WHERE disjoint(`r`, `s`) AND length((a) ((b)-[r]-())* (d) ((e)-[s]-())* (g)) > 3 AND unique(`r`) AND unique(`s`))",
+        Some(greaterThan(length(path), literalInt(3))),
+        Set(("b", "b"), ("e", "e")),
+        Set(("r", "r"), ("s", "s")),
+        Set("d", "g"),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "a")
+          .addTransition(0, 1, "(a) (b)")
+          .addTransition(1, 2, "(b)-[r]->(c)")
+          .addTransition(2, 1, "(c) (b)")
+          .addTransition(2, 3, "(c) (d)")
+          .addTransition(3, 4, "(d) (e)")
+          .addTransition(4, 5, "(e)<-[s]-(f)")
+          .addTransition(5, 4, "(f) (e)")
+          .addTransition(5, 6, "(f) (g)")
+          .addFinalState(6)
+          .build(),
+        reverseGroupVariableProjections = false
+      )
+      .allNodeScan("a")
+      .build()
+  }
+
+  // There was a subtlety in unwrapParenthesizedPath leading to issues for sub-paths with no predicates
+  test("Should handle sub-path assignment with no predicates for shortest path") {
+    val query = "MATCH ANY SHORTEST (p = (a) ((b)-[r]->(c))+ (d) ((e)<-[s]-(f))+ (g)) RETURN p"
+    val plan = planner.plan(query).stripProduceResults
+
+    val path = PathExpression(NodePathStep(
+      varFor("a"),
+      RepeatPathStep(
+        List(NodeRelPair(varFor("b"), varFor("r"))),
+        varFor("d"),
+        RepeatPathStep(
+          List(NodeRelPair(varFor("e"), varFor("s"))),
+          varFor("g"),
+          NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(pos))(pos)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(Map("p" -> path))
+      .statefulShortestPathExpr(
+        "a",
+        "g",
+        s"SHORTEST 1 ((a) ((b)-[r]->(c)){1, } (d) ((e)<-[s]-(f)){1, } (g) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+        None,
+        Set(("b", "b"), ("e", "e")),
+        Set(("r", "r"), ("s", "s")),
+        Set("d", "g"),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "a")
+          .addTransition(0, 1, "(a) (b)")
+          .addTransition(1, 2, "(b)-[r]->(c)")
+          .addTransition(2, 1, "(c) (b)")
+          .addTransition(2, 3, "(c) (d)")
+          .addTransition(3, 4, "(d) (e)")
+          .addTransition(4, 5, "(e)<-[s]-(f)")
+          .addTransition(5, 4, "(f) (e)")
+          .addTransition(5, 6, "(f) (g)")
+          .addFinalState(6)
+          .build(),
+        reverseGroupVariableProjections = false
+      )
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("Should handle both path and sub-path assignment") {
+    val query =
+      "MATCH p = ANY SHORTEST (q = (a) ((b)-[r]->(c))+ (d) ((e)<-[s]-(f))+ (g) WHERE length(q) > 3) RETURN p, q"
+    val plan = planner.plan(query).stripProduceResults
+
+    val path = PathExpression(NodePathStep(
+      varFor("a"),
+      RepeatPathStep(
+        List(NodeRelPair(varFor("b"), varFor("r"))),
+        varFor("d"),
+        RepeatPathStep(
+          List(NodeRelPair(varFor("e"), varFor("s"))),
+          varFor("g"),
+          NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(pos))(pos)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(Map("p" -> path, "q" -> path))
+      .statefulShortestPathExpr(
+        "a",
+        "g",
+        s"SHORTEST 1 ((a) ((b)-[r]->(c)){1, } (d) ((e)<-[s]-(f)){1, } (g) WHERE disjoint(`r`, `s`) AND length((a) ((b)-[r]-())* (d) ((e)-[s]-())* (g)) > 3 AND unique(`r`) AND unique(`s`))",
+        Some(greaterThan(length(path), literalInt(3))),
+        Set(("b", "b"), ("e", "e")),
+        Set(("r", "r"), ("s", "s")),
+        Set("d", "g"),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "a")
+          .addTransition(0, 1, "(a) (b)")
+          .addTransition(1, 2, "(b)-[r]->(c)")
+          .addTransition(2, 1, "(c) (b)")
+          .addTransition(2, 3, "(c) (d)")
+          .addTransition(3, 4, "(d) (e)")
+          .addTransition(4, 5, "(e)<-[s]-(f)")
+          .addTransition(5, 4, "(f) (e)")
+          .addTransition(5, 6, "(f) (g)")
+          .addFinalState(6)
+          .build(),
+        reverseGroupVariableProjections = false
+      )
+      .allNodeScan("a")
+      .build()
+  }
+
 }

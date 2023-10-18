@@ -206,4 +206,25 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
       )
     }
   }
+
+  test(s"MATCH ALL (path = (a)-[r]->+(b)<-[s]-+(c) WHERE length(path) > 3) RETURN path") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe Seq(
+      "Sub-path assignment is currently not supported."
+    )
+  }
+
+  test(s"MATCH p = (q = (a)-[r]->+(b)<-[s]-+(c) WHERE length(q) > 3) RETURN p, q") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe Seq(
+      "Sub-path assignment is currently not supported."
+    )
+  }
+
+  allSelectiveSelectors.foreach { selector =>
+    test(s"MATCH $selector (path = (a)-[r]->+(b)<-[s]-+(c) WHERE length(path) > 3) RETURN path") {
+      val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+      result.errorMessages shouldBe empty
+    }
+  }
 }

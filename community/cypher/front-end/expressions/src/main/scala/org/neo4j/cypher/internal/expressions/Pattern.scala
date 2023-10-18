@@ -103,10 +103,10 @@ case class PatternPartWithSelector(selector: Selector, part: NonPrefixedPatternP
 
   def isSelective: Boolean = selector.isBounded
 
-  def replaceElement(newElement: PatternElement): PatternPartWithSelector = {
+  def modifyElement(f: PatternElement => PatternElement): PatternPartWithSelector = {
     def replaceInAnonymous(app: AnonymousPatternPart): AnonymousPatternPart = app match {
-      case p: PathPatternPart          => p.copy(element = newElement)
-      case s: ShortestPathsPatternPart => s.copy(element = newElement)(s.position)
+      case p: PathPatternPart          => p.copy(element = f(p.element))
+      case s: ShortestPathsPatternPart => s.copy(element = f(s.element))(s.position)
     }
 
     def replaceInNonPrefixed(npp: NonPrefixedPatternPart): NonPrefixedPatternPart = npp match {
@@ -116,6 +116,9 @@ case class PatternPartWithSelector(selector: Selector, part: NonPrefixedPatternP
 
     copy(part = replaceInNonPrefixed(part))
   }
+
+  def replaceElement(newElement: PatternElement): PatternPartWithSelector =
+    modifyElement(_ => newElement)
 }
 
 case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)

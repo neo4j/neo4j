@@ -89,7 +89,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
     runSemanticAnalysis().errorMessages shouldEqual Seq(
       "Assigning a path in a quantified path pattern is not yet supported.",
       "Type mismatch: p defined with conflicting type List<T> (expected Path)",
-      "Sub-path assignment is currently not supported outside quantified path patterns."
+      "Sub-path assignment is currently not supported."
     )
   }
 
@@ -386,7 +386,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
 
   test("MATCH (p = (a)-->(b)) ((x)-->(y))* RETURN x") {
     runSemanticAnalysis().errorMessages shouldBe Seq(
-      "Sub-path assignment is currently not supported outside quantified path patterns."
+      "Sub-path assignment is currently not supported."
     )
   }
 

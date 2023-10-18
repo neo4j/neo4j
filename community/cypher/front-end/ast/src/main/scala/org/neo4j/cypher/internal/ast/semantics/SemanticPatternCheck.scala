@@ -126,14 +126,28 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def check(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
       case x: PatternPartWithSelector =>
-        check(ctx)(x.part) chain
-          when(x.isSelective) {
-            checkContext(ctx, s"Path selectors such as `${x.selector.prettified}`", x.selector.position) chain
+        val normalised = x.modifyElement {
+          // sub-path assignment is fair game in selective path patterns, we can check it as if it was anonymous
+          case parenthesizedPath @ ParenthesizedPath(NamedPatternPart(_, patternPart), optionalWhereClause)
+            if x.isSelective =>
+            ParenthesizedPath(patternPart, optionalWhereClause)(parenthesizedPath.position)
+          case element => element
+        }
+        check(ctx)(normalised.part) chain
+          when(normalised.isSelective) {
+            checkContext(
+              ctx,
+              s"Path selectors such as `${normalised.selector.prettified}`",
+              normalised.selector.position
+            ) chain
               whenState(!_.features.contains(SemanticFeature.GpmShortestPath)) {
-                error(s"Path selectors such as `${x.selector.prettified}` are not supported yet", x.selector.position)
+                error(
+                  s"Path selectors such as `${normalised.selector.prettified}` are not supported yet",
+                  normalised.selector.position
+                )
               }
           } chain
-          check(x.selector)
+          check(normalised.selector)
 
       case x: NamedPatternPart =>
         check(ctx)(x.patternPart)
@@ -333,7 +347,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           }
 
       case ParenthesizedPath(NamedPatternPart(variable, _), _) =>
-        error("Sub-path assignment is currently not supported outside quantified path patterns.", variable.position)
+        error("Sub-path assignment is currently not supported.", variable.position)
       case ParenthesizedPath(patternPart, where) =>
         def checkContainedPatterns: SemanticCheck =
           // patternPart at this point is known to be an AnonymousPatternPart, as we have matched NamedPatternPart above
@@ -482,6 +496,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         ))
       }
     }
+
     def checkLabelExpressions(ctx: SemanticContext, labelExpression: Option[LabelExpression]): SemanticCheck =
       labelExpression.foldSemanticCheck { labelExpression =>
         when(

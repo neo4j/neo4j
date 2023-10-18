@@ -86,4 +86,8 @@ class unwrapParenthesizedPathTest extends CypherFunSuite with RewriteTest {
       "MATCH ALL SHORTEST (a:A)-[r:R]->+(b) RETURN *"
     )
   }
+
+  test("Does not unwrap parenthesized path with sub-path assignment") {
+    assertIsNotRewritten("MATCH ANY SHORTEST (p = (a:A)-[r:R]->+(b)) RETURN *")
+  }
 }

@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
@@ -132,7 +133,7 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with DefaultPostC
   private def replaceParenthesizedPaths[T <: AnyRef](pattern: T): T = pattern.endoRewrite(
     inSequence(
       replaceParenthesizedPathsInPatternsWithNoSelector,
-      replaceParenthesizedPathsWithNoPredicates
+      replaceParenthesizedAnonymousPathsWithNoPredicates
     )
   )
 
@@ -146,9 +147,11 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with DefaultPostC
     }
   )
 
-  private def replaceParenthesizedPathsWithNoPredicates: Rewriter = bottomUp(
+  private def replaceParenthesizedAnonymousPathsWithNoPredicates: Rewriter = bottomUp(
     Rewriter.lift {
-      case ParenthesizedPath(part, None) => part.element
+      case ParenthesizedPath(part: AnonymousPatternPart, None) =>
+        // Removing the parenthesized path is not sound if the nested pattern is a sub-path assignment in which case we would lose the sub-path variable
+        part.element
     }
   )
 }
