@@ -194,35 +194,35 @@ public final class Extractors {
         return string;
     }
 
-    public LongExtractor long_() {
+    public Extractor<Long> long_() {
         return long_;
     }
 
-    public IntExtractor int_() {
+    public Extractor<Integer> int_() {
         return int_;
     }
 
-    public CharExtractor char_() {
+    public Extractor<Character> char_() {
         return char_;
     }
 
-    public ShortExtractor short_() {
+    public Extractor<Short> short_() {
         return short_;
     }
 
-    public ByteExtractor byte_() {
+    public Extractor<Byte> byte_() {
         return byte_;
     }
 
-    public BooleanExtractor boolean_() {
+    public Extractor<Boolean> boolean_() {
         return boolean_;
     }
 
-    public FloatExtractor float_() {
+    public Extractor<Float> float_() {
         return float_;
     }
 
-    public DoubleExtractor double_() {
+    public Extractor<Double> double_() {
         return double_;
     }
 
@@ -258,77 +258,79 @@ public final class Extractors {
         return doubleArray;
     }
 
-    public PointExtractor point() {
+    public Extractor<PointValue> point() {
         return point;
     }
 
-    public PointArrayExtractor pointArray() {
+    public Extractor<PointArray> pointArray() {
         return pointArray;
     }
 
-    public DateExtractor date() {
+    public Extractor<DateValue> date() {
         return date;
     }
 
-    public DateArrayExtractor dateArray() {
+    public Extractor<DateArray> dateArray() {
         return dateArray;
     }
 
-    public TimeExtractor time() {
+    public Extractor<TimeValue> time() {
         return time;
     }
 
-    public TimeArrayExtractor timeArray() {
+    public Extractor<TimeArray> timeArray() {
         return timeArray;
     }
 
-    public DateTimeExtractor dateTime() {
+    public Extractor<DateTimeValue> dateTime() {
         return dateTime;
     }
 
-    public DateTimeArrayExtractor dateTimeArray() {
+    public Extractor<DateTimeArray> dateTimeArray() {
         return dateTimeArray;
     }
 
-    public LocalTimeExtractor localTime() {
+    public Extractor<LocalTimeValue> localTime() {
         return localTime;
     }
 
-    public LocalTimeArrayExtractor localTimeArray() {
+    public Extractor<LocalTimeArray> localTimeArray() {
         return localTimeArray;
     }
 
-    public LocalDateTimeExtractor localDateTime() {
+    public Extractor<LocalDateTimeValue> localDateTime() {
         return localDateTime;
     }
 
-    public LocalDateTimeArrayExtractor localDateTimeArray() {
+    public Extractor<LocalDateTimeArray> localDateTimeArray() {
         return localDateTimeArray;
     }
 
-    public DurationExtractor duration() {
+    public Extractor<DurationValue> duration() {
         return duration;
     }
 
-    public TextValueExtractor textValue() {
+    public Extractor<Value> textValue() {
         return textValue;
     }
 
-    public DurationArrayExtractor durationArray() {
+    public Extractor<DurationArray> durationArray() {
         return durationArray;
     }
 
     private abstract static class AbstractExtractor<T> implements Extractor<T> {
         private final String name;
         private final Extractor<?> normalizedExtractor;
+        private final Class<T> cls;
 
-        AbstractExtractor(String name) {
-            this(name, null);
+        AbstractExtractor(String name, Class<T> cls) {
+            this(name, cls, null);
         }
 
-        AbstractExtractor(String name, Extractor<?> normalizedExtractor) {
+        AbstractExtractor(String name, Class<T> cls, Extractor<?> normalizedExtractor) {
             this.name = name;
             this.normalizedExtractor = normalizedExtractor;
+            this.cls = cls;
         }
 
         @Override
@@ -360,13 +362,18 @@ public final class Extractors {
         public int hashCode() {
             return Objects.hash(getClass());
         }
+
+        @Override
+        public boolean producesType(Class<?> type) {
+            return cls.isAssignableFrom(type);
+        }
     }
 
-    public static class StringExtractor extends AbstractExtractor<String> {
+    private static final class StringExtractor extends AbstractExtractor<String> {
         private final boolean emptyStringsAsNull;
 
         public StringExtractor(boolean emptyStringsAsNull) {
-            super(String.class.getSimpleName());
+            super(String.class.getSimpleName(), String.class);
             this.emptyStringsAsNull = emptyStringsAsNull;
         }
 
@@ -380,9 +387,9 @@ public final class Extractors {
         }
     }
 
-    public static class LongExtractor extends AbstractExtractor<Long> {
+    private static final class LongExtractor extends AbstractExtractor<Long> {
         LongExtractor() {
-            super(Long.TYPE.getSimpleName());
+            super(Long.TYPE.getSimpleName(), Long.class);
         }
 
         @Override
@@ -391,9 +398,9 @@ public final class Extractors {
         }
     }
 
-    public static class IntExtractor extends AbstractExtractor<Integer> {
+    private static final class IntExtractor extends AbstractExtractor<Integer> {
         IntExtractor(LongExtractor longExtractor) {
-            super(Integer.TYPE.toString(), longExtractor);
+            super(Integer.TYPE.toString(), Integer.class, longExtractor);
         }
 
         @Override
@@ -403,9 +410,9 @@ public final class Extractors {
         }
     }
 
-    public static class ShortExtractor extends AbstractExtractor<Short> {
+    private static final class ShortExtractor extends AbstractExtractor<Short> {
         ShortExtractor(LongExtractor longExtractor) {
-            super(Short.TYPE.getSimpleName(), longExtractor);
+            super(Short.TYPE.getSimpleName(), Short.class, longExtractor);
         }
 
         @Override
@@ -415,9 +422,9 @@ public final class Extractors {
         }
     }
 
-    public static class ByteExtractor extends AbstractExtractor<Byte> {
+    private static final class ByteExtractor extends AbstractExtractor<Byte> {
         ByteExtractor(LongExtractor longExtractor) {
-            super(Byte.TYPE.getSimpleName(), longExtractor);
+            super(Byte.TYPE.getSimpleName(), Byte.class, longExtractor);
         }
 
         @Override
@@ -433,9 +440,9 @@ public final class Extractors {
         Boolean.TRUE.toString().getChars(0, BOOLEAN_MATCH.length, BOOLEAN_MATCH, 0);
     }
 
-    public static class BooleanExtractor extends AbstractExtractor<Boolean> {
+    private static final class BooleanExtractor extends AbstractExtractor<Boolean> {
         BooleanExtractor() {
-            super(Boolean.TYPE.getSimpleName());
+            super(Boolean.TYPE.getSimpleName(), Boolean.class);
         }
 
         @Override
@@ -445,9 +452,9 @@ public final class Extractors {
         }
     }
 
-    public static class CharExtractor extends AbstractExtractor<Character> {
+    private static final class CharExtractor extends AbstractExtractor<Character> {
         CharExtractor(StringExtractor stringExtractor) {
-            super(Character.TYPE.getSimpleName(), stringExtractor);
+            super(Character.TYPE.getSimpleName(), Character.class, stringExtractor);
         }
 
         @Override
@@ -460,9 +467,9 @@ public final class Extractors {
         }
     }
 
-    public static class FloatExtractor extends AbstractExtractor<Float> {
+    private static final class FloatExtractor extends AbstractExtractor<Float> {
         FloatExtractor(DoubleExtractor doubleExtractor) {
-            super(Float.TYPE.getSimpleName(), doubleExtractor);
+            super(Float.TYPE.getSimpleName(), Float.class, doubleExtractor);
         }
 
         @Override
@@ -481,9 +488,9 @@ public final class Extractors {
         }
     }
 
-    public static class DoubleExtractor extends AbstractExtractor<Double> {
+    private static final class DoubleExtractor extends AbstractExtractor<Double> {
         DoubleExtractor() {
-            super(Double.TYPE.getSimpleName());
+            super(Double.TYPE.getSimpleName(), Double.class);
         }
 
         @Override
@@ -509,12 +516,12 @@ public final class Extractors {
     private abstract static class ArrayExtractor<E, T> extends AbstractExtractor<T> {
         protected final char arrayDelimiter;
 
-        ArrayExtractor(char arrayDelimiter, String componentTypeName) {
-            this(arrayDelimiter, componentTypeName, null);
+        ArrayExtractor(char arrayDelimiter, String componentTypeName, Class<T> cls) {
+            this(arrayDelimiter, componentTypeName, cls, null);
         }
 
-        ArrayExtractor(char arrayDelimiter, String componentTypeName, Extractor<?> normalizedExtractor) {
-            super(componentTypeName + "[]", normalizedExtractor);
+        ArrayExtractor(char arrayDelimiter, String componentTypeName, Class<T> cls, Extractor<?> normalizedExtractor) {
+            super(componentTypeName + "[]", cls, normalizedExtractor);
             this.arrayDelimiter = arrayDelimiter;
         }
 
@@ -580,11 +587,11 @@ public final class Extractors {
         }
     }
 
-    private static class StringArrayExtractor extends ArrayExtractor<String, String[]> {
+    private static final class StringArrayExtractor extends ArrayExtractor<String, String[]> {
         private final boolean trimStrings;
 
         StringArrayExtractor(char arrayDelimiter, boolean trimStrings) {
-            super(arrayDelimiter, String.class.getSimpleName());
+            super(arrayDelimiter, String.class.getSimpleName(), String[].class);
             this.trimStrings = trimStrings;
         }
 
@@ -614,9 +621,9 @@ public final class Extractors {
         }
     }
 
-    private static class ByteArrayExtractor extends ArrayExtractor<Byte, byte[]> {
+    private static final class ByteArrayExtractor extends ArrayExtractor<Byte, byte[]> {
         ByteArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
-            super(arrayDelimiter, Byte.TYPE.getSimpleName(), longArrayExtractor);
+            super(arrayDelimiter, Byte.TYPE.getSimpleName(), byte[].class, longArrayExtractor);
         }
 
         @Override
@@ -641,9 +648,9 @@ public final class Extractors {
         }
     }
 
-    private static class ShortArrayExtractor extends ArrayExtractor<Short, short[]> {
+    private static final class ShortArrayExtractor extends ArrayExtractor<Short, short[]> {
         ShortArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
-            super(arrayDelimiter, Short.TYPE.getSimpleName(), longArrayExtractor);
+            super(arrayDelimiter, Short.TYPE.getSimpleName(), short[].class, longArrayExtractor);
         }
 
         @Override
@@ -668,9 +675,9 @@ public final class Extractors {
         }
     }
 
-    private static class IntArrayExtractor extends ArrayExtractor<Integer, int[]> {
+    private static final class IntArrayExtractor extends ArrayExtractor<Integer, int[]> {
         IntArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
-            super(arrayDelimiter, Integer.TYPE.getSimpleName(), longArrayExtractor);
+            super(arrayDelimiter, Integer.TYPE.getSimpleName(), int[].class, longArrayExtractor);
         }
 
         @Override
@@ -695,9 +702,9 @@ public final class Extractors {
         }
     }
 
-    private static class LongArrayExtractor extends ArrayExtractor<Long, long[]> {
+    private static final class LongArrayExtractor extends ArrayExtractor<Long, long[]> {
         LongArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, Long.TYPE.getSimpleName());
+            super(arrayDelimiter, Long.TYPE.getSimpleName(), long[].class);
         }
 
         @Override
@@ -722,9 +729,9 @@ public final class Extractors {
         }
     }
 
-    private static class FloatArrayExtractor extends ArrayExtractor<Float, float[]> {
+    private static final class FloatArrayExtractor extends ArrayExtractor<Float, float[]> {
         FloatArrayExtractor(char arrayDelimiter, DoubleArrayExtractor doubleArrayExtractor) {
-            super(arrayDelimiter, Float.TYPE.getSimpleName(), doubleArrayExtractor);
+            super(arrayDelimiter, Float.TYPE.getSimpleName(), float[].class, doubleArrayExtractor);
         }
 
         @Override
@@ -751,10 +758,10 @@ public final class Extractors {
         }
     }
 
-    private static class DoubleArrayExtractor extends ArrayExtractor<Double, double[]> {
+    private static final class DoubleArrayExtractor extends ArrayExtractor<Double, double[]> {
 
         DoubleArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, Double.TYPE.getSimpleName());
+            super(arrayDelimiter, Double.TYPE.getSimpleName(), double[].class);
         }
 
         @Override
@@ -781,9 +788,9 @@ public final class Extractors {
         }
     }
 
-    private static class BooleanArrayExtractor extends ArrayExtractor<Boolean, boolean[]> {
+    private static final class BooleanArrayExtractor extends ArrayExtractor<Boolean, boolean[]> {
         BooleanArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, Boolean.TYPE.getSimpleName());
+            super(arrayDelimiter, Boolean.TYPE.getSimpleName(), boolean[].class);
         }
 
         @Override
@@ -809,8 +816,8 @@ public final class Extractors {
     }
 
     private abstract static class ArrayAnyValueExtractor<E, T extends ArrayValue> extends ArrayExtractor<E, T> {
-        ArrayAnyValueExtractor(char arrayDelimiter, String componentTypeName) {
-            super(arrayDelimiter, componentTypeName);
+        ArrayAnyValueExtractor(char arrayDelimiter, String componentTypeName, Class<T> cls) {
+            super(arrayDelimiter, componentTypeName, cls);
         }
 
         @Override
@@ -819,11 +826,11 @@ public final class Extractors {
         }
     }
 
-    public static class PointExtractor extends AbstractExtractor<PointValue> {
+    private static final class PointExtractor extends AbstractExtractor<PointValue> {
         public static final String NAME = "Point";
 
         PointExtractor() {
-            super(NAME);
+            super(NAME, PointValue.class);
         }
 
         @Override
@@ -836,11 +843,11 @@ public final class Extractors {
         }
     }
 
-    public static class PointArrayExtractor extends ArrayAnyValueExtractor<PointValue, PointArray> {
+    private static final class PointArrayExtractor extends ArrayAnyValueExtractor<PointValue, PointArray> {
         private static final PointArray EMPTY = Values.pointArray(new Point[0]);
 
         PointArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, PointExtractor.NAME);
+            super(arrayDelimiter, PointExtractor.NAME, PointArray.class);
         }
 
         @Override
@@ -865,11 +872,11 @@ public final class Extractors {
         }
     }
 
-    public static class DateExtractor extends AbstractExtractor<DateValue> {
+    private static final class DateExtractor extends AbstractExtractor<DateValue> {
         public static final String NAME = "Date";
 
         DateExtractor() {
-            super(NAME);
+            super(NAME, DateValue.class);
         }
 
         @Override
@@ -882,11 +889,11 @@ public final class Extractors {
         }
     }
 
-    public static class DateArrayExtractor extends ArrayAnyValueExtractor<LocalDate, DateArray> {
+    private static final class DateArrayExtractor extends ArrayAnyValueExtractor<LocalDate, DateArray> {
         private static final DateArray EMPTY = Values.dateArray(new LocalDate[0]);
 
         DateArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, DateExtractor.NAME);
+            super(arrayDelimiter, DateExtractor.NAME, DateArray.class);
         }
 
         @Override
@@ -912,13 +919,13 @@ public final class Extractors {
         }
     }
 
-    public static class TimeExtractor extends AbstractExtractor<TimeValue> {
+    private static final class TimeExtractor extends AbstractExtractor<TimeValue> {
         public static final String NAME = "Time";
 
         private final Supplier<ZoneId> defaultTimeZone;
 
         TimeExtractor(Supplier<ZoneId> defaultTimeZone) {
-            super(NAME);
+            super(NAME, TimeValue.class);
             this.defaultTimeZone = defaultTimeZone;
         }
 
@@ -932,13 +939,13 @@ public final class Extractors {
         }
     }
 
-    public static class TimeArrayExtractor extends ArrayAnyValueExtractor<OffsetTime, TimeArray> {
+    private static final class TimeArrayExtractor extends ArrayAnyValueExtractor<OffsetTime, TimeArray> {
         private static final TimeArray EMPTY = Values.timeArray(new OffsetTime[0]);
 
         private final Supplier<ZoneId> defaultTimeZone;
 
         TimeArrayExtractor(char arrayDelimiter, Supplier<ZoneId> defaultTimeZone) {
-            super(arrayDelimiter, TimeExtractor.NAME);
+            super(arrayDelimiter, TimeExtractor.NAME, TimeArray.class);
             this.defaultTimeZone = defaultTimeZone;
         }
 
@@ -966,13 +973,13 @@ public final class Extractors {
         }
     }
 
-    public static class DateTimeExtractor extends AbstractExtractor<DateTimeValue> {
+    private static final class DateTimeExtractor extends AbstractExtractor<DateTimeValue> {
         public static final String NAME = "DateTime";
 
         private final Supplier<ZoneId> defaultTimeZone;
 
         DateTimeExtractor(Supplier<ZoneId> defaultTimeZone) {
-            super(NAME);
+            super(NAME, DateTimeValue.class);
             this.defaultTimeZone = defaultTimeZone;
         }
 
@@ -986,13 +993,13 @@ public final class Extractors {
         }
     }
 
-    public static class DateTimeArrayExtractor extends ArrayAnyValueExtractor<ZonedDateTime, DateTimeArray> {
+    private static final class DateTimeArrayExtractor extends ArrayAnyValueExtractor<ZonedDateTime, DateTimeArray> {
         private static final DateTimeArray EMPTY = Values.dateTimeArray(new ZonedDateTime[0]);
 
         private final Supplier<ZoneId> defaultTimeZone;
 
         DateTimeArrayExtractor(char arrayDelimiter, Supplier<ZoneId> defaultTimeZone) {
-            super(arrayDelimiter, DateTimeExtractor.NAME);
+            super(arrayDelimiter, DateTimeExtractor.NAME, DateTimeArray.class);
             this.defaultTimeZone = defaultTimeZone;
         }
 
@@ -1020,11 +1027,11 @@ public final class Extractors {
         }
     }
 
-    public static class LocalTimeExtractor extends AbstractExtractor<LocalTimeValue> {
+    private static final class LocalTimeExtractor extends AbstractExtractor<LocalTimeValue> {
         public static final String NAME = "LocalTime";
 
         LocalTimeExtractor() {
-            super(NAME);
+            super(NAME, LocalTimeValue.class);
         }
 
         @Override
@@ -1037,11 +1044,11 @@ public final class Extractors {
         }
     }
 
-    public static class LocalTimeArrayExtractor extends ArrayAnyValueExtractor<LocalTime, LocalTimeArray> {
+    private static final class LocalTimeArrayExtractor extends ArrayAnyValueExtractor<LocalTime, LocalTimeArray> {
         private static final LocalTimeArray EMPTY = Values.localTimeArray(new LocalTime[0]);
 
         LocalTimeArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, LocalTimeExtractor.NAME);
+            super(arrayDelimiter, LocalTimeExtractor.NAME, LocalTimeArray.class);
         }
 
         @Override
@@ -1067,11 +1074,11 @@ public final class Extractors {
         }
     }
 
-    public static class LocalDateTimeExtractor extends AbstractExtractor<LocalDateTimeValue> {
+    private static final class LocalDateTimeExtractor extends AbstractExtractor<LocalDateTimeValue> {
         public static final String NAME = "LocalDateTime";
 
         LocalDateTimeExtractor() {
-            super(NAME);
+            super(NAME, LocalDateTimeValue.class);
         }
 
         @Override
@@ -1084,11 +1091,12 @@ public final class Extractors {
         }
     }
 
-    public static class LocalDateTimeArrayExtractor extends ArrayAnyValueExtractor<LocalDateTime, LocalDateTimeArray> {
+    private static final class LocalDateTimeArrayExtractor
+            extends ArrayAnyValueExtractor<LocalDateTime, LocalDateTimeArray> {
         private static final LocalDateTimeArray EMPTY = Values.localDateTimeArray(new LocalDateTime[0]);
 
         LocalDateTimeArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, LocalDateTimeExtractor.NAME);
+            super(arrayDelimiter, LocalDateTimeExtractor.NAME, LocalDateTimeArray.class);
         }
 
         @Override
@@ -1114,11 +1122,11 @@ public final class Extractors {
         }
     }
 
-    public static class DurationExtractor extends AbstractExtractor<DurationValue> {
+    private static final class DurationExtractor extends AbstractExtractor<DurationValue> {
         public static final String NAME = "Duration";
 
         DurationExtractor() {
-            super(NAME);
+            super(NAME, DurationValue.class);
         }
 
         @Override
@@ -1131,13 +1139,13 @@ public final class Extractors {
         }
     }
 
-    public static class TextValueExtractor extends AbstractExtractor<Value> {
+    private static final class TextValueExtractor extends AbstractExtractor<Value> {
         public static final String NAME = "TextValue";
 
         private final boolean emptyStringsAsNull;
 
         TextValueExtractor(boolean emptyStringsAsNull) {
-            super(NAME);
+            super(NAME, Value.class);
             this.emptyStringsAsNull = emptyStringsAsNull;
         }
 
@@ -1151,11 +1159,11 @@ public final class Extractors {
         }
     }
 
-    public static class DurationArrayExtractor extends ArrayAnyValueExtractor<DurationValue, DurationArray> {
+    private static final class DurationArrayExtractor extends ArrayAnyValueExtractor<DurationValue, DurationArray> {
         private static final DurationArray EMPTY = Values.durationArray(new DurationValue[0]);
 
         DurationArrayExtractor(char arrayDelimiter) {
-            super(arrayDelimiter, DurationExtractor.NAME);
+            super(arrayDelimiter, DurationExtractor.NAME, DurationArray.class);
         }
 
         @Override

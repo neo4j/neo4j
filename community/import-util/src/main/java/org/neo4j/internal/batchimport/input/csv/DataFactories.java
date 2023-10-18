@@ -55,8 +55,13 @@ import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CSVHeaderInformation;
+import org.neo4j.values.storable.DateTimeArray;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
+import org.neo4j.values.storable.TimeArray;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -464,12 +469,12 @@ public class DataFactories {
 
     private static CSVHeaderInformation parseOptionalParameter(Extractor<?> extractor, Map<String, String> options) {
         if (!options.isEmpty()) {
-            if (extractor instanceof Extractors.PointExtractor || extractor instanceof Extractors.PointArrayExtractor) {
+            if (extractor.producesType(PointValue.class) || extractor.producesType(PointArray.class)) {
                 return PointValue.parseHeaderInformation(options);
-            } else if (extractor instanceof Extractors.TimeExtractor
-                    || extractor instanceof Extractors.DateTimeExtractor
-                    || extractor instanceof Extractors.TimeArrayExtractor
-                    || extractor instanceof Extractors.DateTimeArrayExtractor) {
+            } else if (extractor.producesType(TimeValue.class)
+                    || extractor.producesType(DateTimeValue.class)
+                    || extractor.producesType(TimeArray.class)
+                    || extractor.producesType(DateTimeArray.class)) {
                 return TemporalValue.parseHeaderInformation(options);
             }
         }
