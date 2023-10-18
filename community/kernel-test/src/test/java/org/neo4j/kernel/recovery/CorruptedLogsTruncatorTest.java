@@ -39,14 +39,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
@@ -161,7 +163,7 @@ class CorruptedLogsTruncatorTest {
         LogPosition endOfLogsPosition = new LogPosition(highestLogVersion, fileSizeBeforeAppend);
 
         try (OutputStream outputStream = fs.openAsOutputStream(logFile.getHighestLogFile(), true)) {
-            int zeroes = RandomUtils.nextInt(100, 10240);
+            int zeroes = ThreadLocalRandom.current().nextInt(100, 10240);
             outputStream.write(new byte[zeroes]);
         }
 
@@ -189,12 +191,12 @@ class CorruptedLogsTruncatorTest {
 
         FlushableLogPositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
-        for (int i = 0; i < RandomUtils.nextInt(100, 10240); i++) {
+        for (int i = 0; i < ThreadLocalRandom.current().nextInt(100, 10240); i++) {
             channel.putLong(0);
         }
         // corruption byte
         channel.put((byte) 7);
-        for (int i = 0; i < RandomUtils.nextInt(10, 1024); i++) {
+        for (int i = 0; i < ThreadLocalRandom.current().nextInt(10, 1024); i++) {
             channel.putLong(0);
         }
         channel.prepareForFlush().flush();
@@ -215,6 +217,7 @@ class CorruptedLogsTruncatorTest {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS) // based on pre-allocated files, which does not work on windows
     void pruneAndArchiveLastLog() throws IOException {
         life.start();
         generateTransactionLogFiles(logFiles);
