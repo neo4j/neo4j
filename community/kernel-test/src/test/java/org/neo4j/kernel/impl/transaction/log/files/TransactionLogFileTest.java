@@ -77,7 +77,7 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogVersionLocator;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -157,11 +157,10 @@ class TransactionLogFileTest {
                 .close();
         transactionIdStore.transactionCommitted(5L, 5, 5L, 6L);
 
-        PhysicalLogicalTransactionStore.LogVersionLocator versionLocator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator(4L);
+        TransactionLogVersionLocator versionLocator = new TransactionLogVersionLocator(4L);
         logFiles.getLogFile().accept(versionLocator);
 
-        LogPosition logPosition = versionLocator.getLogPosition();
+        LogPosition logPosition = versionLocator.getLogPositionOrThrow();
         assertEquals(1, logPosition.getLogVersion());
     }
 

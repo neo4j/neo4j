@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.OptionalLong;
 import java.util.concurrent.locks.Lock;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogVersionLocator;
 import org.neo4j.kernel.impl.transaction.log.TransactionOrEndPositionLocator;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -121,18 +121,14 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         var lastHeaderPosition =
                 logFile.extractHeader(logFile.getHighestLogVersion()).getStartPosition();
 
-        var startPosition = new MutableObject<>(lastHeaderPosition);
-        logFile.accept((header, position, start, end) -> {
-            if (txId >= start && txId <= end) {
-                startPosition.setValue(position);
-                return false;
-            }
-            return true;
-        });
+        var versionLocator = new TransactionLogVersionLocator(txId);
+        logFile.accept(versionLocator);
 
         var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
         var transactionPositionLocator = new TransactionOrEndPositionLocator(txId, logEntryReader);
-        logFile.accept(transactionPositionLocator, startPosition.getValue());
+        logFile.accept(
+                transactionPositionLocator,
+                versionLocator.getOptionalLogPosition().orElse(lastHeaderPosition));
         var position = transactionPositionLocator.getLogPosition();
 
         log.info(

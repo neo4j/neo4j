@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogVersionLocator;
 
 class LogVersionLocatorTest {
     private static final long firstTxIdInLog = 3;
@@ -38,8 +38,7 @@ class LogVersionLocatorTest {
         // given
         final long txId = 42L;
 
-        final PhysicalLogicalTransactionStore.LogVersionLocator locator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator(txId);
+        final TransactionLogVersionLocator locator = new TransactionLogVersionLocator(txId);
 
         final LogPosition position = new LogPosition(1, 128);
 
@@ -48,7 +47,7 @@ class LogVersionLocatorTest {
 
         // then
         assertFalse(result);
-        assertEquals(position, locator.getLogPosition());
+        assertEquals(position, locator.getLogPositionOrThrow());
     }
 
     @Test
@@ -56,8 +55,7 @@ class LogVersionLocatorTest {
         // given
         final long txId = 1L;
 
-        final PhysicalLogicalTransactionStore.LogVersionLocator locator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator(txId);
+        final TransactionLogVersionLocator locator = new TransactionLogVersionLocator(txId);
 
         final LogPosition position = new LogPosition(1, 128);
 
@@ -67,7 +65,7 @@ class LogVersionLocatorTest {
         // then
         assertTrue(result);
 
-        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPosition);
+        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPositionOrThrow);
         assertEquals(
                 "Unable to find transaction " + txId + " in any of my logical logs: "
                         + "Couldn't find any log containing " + txId,
@@ -79,10 +77,9 @@ class LogVersionLocatorTest {
         // given
         final long txId = 1L;
 
-        final PhysicalLogicalTransactionStore.LogVersionLocator locator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator(txId);
+        final TransactionLogVersionLocator locator = new TransactionLogVersionLocator(txId);
 
-        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPosition);
+        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPositionOrThrow);
         assertEquals(
                 "Unable to find transaction " + txId + " in any of my logical logs: "
                         + "Couldn't find any log containing " + txId,
