@@ -123,7 +123,10 @@ AS:
    A S;
 
 ASC:
-   A S C (E N D I N G)?;
+   A S C;
+
+ASCENDING:
+   A S C E N D I N G;
 
 ASSERT:
    A S S E R T;
@@ -261,7 +264,10 @@ DENY:
    D E N Y;
 
 DESC:
-   D E S C (E N D I N G)?;
+   D E S C;
+
+DESCENDING:
+   D E S C E N D I N G;
 
 DESTROY:
    D E S T R O Y;

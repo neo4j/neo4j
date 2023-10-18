@@ -30,6 +30,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ANY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ARRAY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASCENDING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AT;
@@ -72,6 +73,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFINED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DELETE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DENY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESC;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESCENDING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESTROY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DETACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DIFFERENT;
@@ -282,6 +284,7 @@ public class IdentifierTokens {
             ARRAY,
             AS,
             ASC,
+            ASCENDING,
             ASSERT,
             ASSIGN,
             AT,
@@ -324,6 +327,7 @@ public class IdentifierTokens {
             DELETE,
             DENY,
             DESC,
+            DESCENDING,
             DESTROY,
             DETACH,
             DIFFERENT,

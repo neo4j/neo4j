@@ -404,7 +404,8 @@ TOKEN [IGNORE_CASE] :
     | < ANY: "ANY" >
     | < ARRAY: "ARRAY" >
     | < AS: "AS" >
-    | < ASC: "ASC" ("ENDING")? >
+    | < ASC: "ASC" >
+    | < ASCENDING: "ASCENDING" >
     | < ASSERT: "ASSERT" >
     | < ASSIGN: "ASSIGN" >
     | < AT: "AT" >
@@ -450,7 +451,8 @@ TOKEN [IGNORE_CASE] :
     | < DEFINED: "DEFINED">
     | < DELETE: "DELETE" >
     | < DENY: "DENY" >
-    | < DESC: "DESC" ("ENDING")? >
+    | < DESC: "DESC" >
+    | < DESCENDING: "DESCENDING" >
     | < DESTROY: "DESTROY">
     | < DETACH: "DETACH" >
     | < DOLLAR: "$">
@@ -1811,8 +1813,8 @@ ORDER_ITEM OrderItem() throws Exception:
     {t = token;}
     e=Expression()
     (
-        <DESC> { return astFactory.orderDesc( pos( t.next ), e ); }
-        | ( <ASC> )? { return astFactory.orderAsc( pos( t.next ), e ); }
+        (<DESC> | <DESCENDING>) { return astFactory.orderDesc( pos( t.next ), e ); }
+        | ( <ASC> | <ASCENDING> )? { return astFactory.orderAsc( pos( t.next ), e ); }
     )
 }
 
@@ -6903,6 +6905,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<ARRAY>
         | t=<AS>
         | t=<ASC>
+        | t=<ASCENDING>
         | t=<ASSERT>
         | t=<ASSIGN>
         | t=<AT>
@@ -6945,6 +6948,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<DELETE>
         | t=<DENY>
         | t=<DESC>
+        | t=<DESCENDING>
         | t=<DESTROY>
         | t=<DETACH>
         | t=<DIFFERENT>

@@ -411,4 +411,43 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     failsToParse
   }
 
+  test("SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'AST': expected
+        |  "!="
+        |  "%"
+        |  "*"
+        |  "+"
+        |  ","
+        |  "-"
+        |  "/"
+        |  "::"
+        |  "<"
+        |  "<="
+        |  "<>"
+        |  "="
+        |  "=~"
+        |  ">"
+        |  ">="
+        |  "AND"
+        |  "ASC"
+        |  "ASCENDING"
+        |  "CONTAINS"
+        |  "DESC"
+        |  "DESCENDING"
+        |  "ENDS"
+        |  "IN"
+        |  "IS"
+        |  "LIMIT"
+        |  "OR"
+        |  "RETURN"
+        |  "SKIP"
+        |  "STARTS"
+        |  "WHERE"
+        |  "XOR"
+        |  "^"
+        |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
+    )
+  }
 }
