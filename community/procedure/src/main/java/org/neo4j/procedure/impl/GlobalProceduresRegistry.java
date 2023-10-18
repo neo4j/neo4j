@@ -19,27 +19,35 @@
  */
 package org.neo4j.procedure.impl;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.procedure.ProcedureView;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
+import org.neo4j.string.Globbing;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -48,16 +56,17 @@ import org.neo4j.util.VisibleForTesting;
  * invoking procedures.
  */
 public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures {
-    private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeCheckers typeCheckers;
-    private final ComponentRegistry safeComponents = new ComponentRegistry();
-    private final ComponentRegistry allComponents = new ComponentRegistry();
+    private ProcedureRegistry registry = new ProcedureRegistry(); // Synchronized by updater
+    private final ComponentRegistry safeComponents = new ComponentRegistry(); // Synchronized by updater
+    private final ComponentRegistry allComponents = new ComponentRegistry(); // Synchronized by updater
     private final ProcedureCompiler compiler;
     private final Supplier<List<CallableProcedure>> builtin;
     private final Path proceduresDirectory;
     private final RegistrationUpdater updater = new RegistrationUpdater();
 
     private final ProcedureJarLoader loader;
+    private final Predicate<String> isReservedNamespace;
 
     private static final AtomicLong SIGNATURE_VERSION_GENERATOR = new AtomicLong(0);
     private final AtomicReference<ProcedureView> currentProcedureView =
@@ -84,6 +93,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         var restrictedCompiler = compiler.withAdditionalProcedureRestrictions(
                 NamingRestrictions.rejectReservedNamespace(config.reservedProcedureNamespaces()));
         this.loader = new ProcedureJarLoader(restrictedCompiler, log, config.procedureReloadEnabled());
+        this.isReservedNamespace = Globbing.compose(config.reservedProcedureNamespaces(), List.of());
     }
 
     /**
@@ -195,24 +205,52 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     @Override
     public void start() throws Exception {
         try (var ignored = updater.acquire()) {
-            ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir(proceduresDirectory);
-            for (CallableProcedure procedure : callables.procedures()) {
-                registry.register(procedure);
-            }
-
-            for (CallableUserFunction function : callables.functions()) {
-                registry.register(function);
-            }
-
-            for (CallableUserAggregationFunction function : callables.aggregationFunctions()) {
-                registry.register(function);
-            }
-
-            // And register built-in procedures
+            unguardedLoadFromDisk(registry, (name) -> true);
             for (var procedure : builtin.get()) {
                 registry.register(procedure);
             }
         }
+    }
+
+    @Override
+    public LoadInformation reloadProceduresFromDisk(Transaction tx, Predicate<String> shouldLoadNamespace)
+            throws IOException, KernelException {
+        try (var ignored = updater.acquireFromTransaction((InternalTransaction) tx)) {
+            Predicate<QualifiedName> shouldTombstone = (name) -> {
+                var str = name.toString();
+                return shouldLoadNamespace.test(str) && !isReservedNamespace.test(str);
+            };
+
+            // To avoid tainting the state in case of failure, we create an intermediate.
+            var culled = ProcedureRegistry.tombstone(registry, shouldTombstone);
+            var out = unguardedLoadFromDisk(culled, shouldLoadNamespace);
+            registry = culled;
+
+            return out;
+        }
+    }
+
+    private LoadInformation unguardedLoadFromDisk(ProcedureRegistry registry, Predicate<String> shouldLoadNamespaces)
+            throws IOException, KernelException {
+        // We must not allow external sources to register procedures in the reserved namespaces.
+        // Thus, we restrict the allowed namespaces when loading from disk. The built-in procedure
+        // classes will be able to register in any namespace with the unrestricted compiler.
+        ProcedureJarLoader.Callables callables =
+                loader.loadProceduresFromDir(proceduresDirectory, shouldLoadNamespaces);
+        for (var procedure : callables.procedures()) {
+            registry.register(procedure);
+        }
+        for (var function : callables.functions()) {
+            registry.register(function);
+        }
+        for (var aggregation : callables.aggregationFunctions()) {
+            registry.register(aggregation);
+        }
+
+        return new LoadInformation(
+                callables.procedures().size(),
+                callables.functions().size(),
+                callables.aggregationFunctions().size());
     }
 
     @Override
@@ -338,6 +376,13 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
             return currentProcedureView.getAcquire();
         }
 
+        @SuppressWarnings("RedundantThrows")
+        @Override
+        public LoadInformation reloadProceduresFromDisk(Transaction tx, Predicate<String> namespaceFilter)
+                throws KernelException, IOException {
+            throw new UnsupportedOperationException("bulk registration does not support loading from disk");
+        }
+
         @Override
         public void close() {
             onClose.close();
@@ -360,6 +405,33 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
 
         Resource acquire() {
             lock.lock();
+            return () -> {
+                try {
+                    currentProcedureView.setRelease(makeSnapshot(registry, safeComponents, allComponents));
+                } finally {
+                    lock.unlock();
+                }
+            };
+        }
+
+        Resource acquireFromTransaction(InternalTransaction tx) {
+            // When we reload procedures from disk, we want to verify that nothing has happened in-between
+            // the transaction started, and the lock was claimed. Furthermore, we should not wait for the lock,
+            // but rather fail with a transient error to avoid blocking a transaction.
+            if (!lock.tryLock()) {
+                throw new TransientTransactionFailureException(
+                        Status.Procedure.ProcedureCallFailed,
+                        "The procedure registry is busy. You may retry this operation.");
+            }
+
+            if (tx.kernelTransaction().procedures().signatureVersion()
+                    != getCurrentView().signatureVersion()) {
+                lock.unlock();
+                throw new TransientTransactionFailureException(
+                        Status.Procedure.ProcedureCallFailed,
+                        "The procedure registry was modified by another transaction. You may retry this operation.");
+            }
+
             return () -> {
                 try {
                     currentProcedureView.setRelease(makeSnapshot(registry, safeComponents, allComponents));

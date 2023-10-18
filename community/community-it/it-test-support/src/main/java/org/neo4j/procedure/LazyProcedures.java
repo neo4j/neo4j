@@ -21,13 +21,16 @@ package org.neo4j.procedure;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -145,6 +148,13 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         }
 
         return globalProcedures.getCurrentView();
+    }
+
+    @Override
+    public LoadInformation reloadProceduresFromDisk(Transaction tx, Predicate<String> namespaceFilter)
+            throws KernelException, IOException {
+        init();
+        return globalProcedures.reloadProceduresFromDisk(tx, namespaceFilter);
     }
 
     private class LazyProcedureView implements ProcedureView {

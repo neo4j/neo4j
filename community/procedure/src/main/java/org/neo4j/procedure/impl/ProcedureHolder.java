@@ -26,8 +26,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
@@ -45,7 +47,12 @@ class ProcedureHolder<T> {
     private final Map<QualifiedName, Integer> caseInsensitiveName2Id;
     private final List<Object> store;
 
-    private static final Object TOMBSTONE = new Object();
+    private static final Object TOMBSTONE = new Object() {
+        @Override
+        public String toString() {
+            return "TOMBSTONE";
+        }
+    };
 
     public ProcedureHolder() {
         this(new HashMap<>(), new HashMap<>(), new ArrayList<>());
@@ -106,28 +113,33 @@ class ProcedureHolder<T> {
     }
 
     /**
-     * Create a tombstoned copy of the ProcedureHolder.
+     * Create a tombstone:d copy of the ProcedureHolder.
      *
      * @param src The source ProcedureHolder from which the copy is made.
-     * @param preserve The ids that should be preserved, if any.
+     * @param which The ids that should be preserved, if any.
      *
      * @return A new ProcedureHolder
      */
-    public static <T> ProcedureHolder<T> tombstone(ProcedureHolder<T> src, Set<Integer> preserve) {
-        requireNonNull(preserve);
+    public static <T> ProcedureHolder<T> tombstone(ProcedureHolder<T> src, Predicate<QualifiedName> which) {
+        requireNonNull(which);
 
         var ret = new ProcedureHolder<T>();
 
+        Set<Integer> matches = src.nameToId.entrySet().stream()
+                .filter(entry -> which.test(entry.getKey()))
+                .map(Entry::getValue)
+                .collect(Collectors.toSet());
+
         for (int i = 0; i < src.store.size(); i++) {
-            if (preserve.contains(i)) {
-                ret.store.add(src.store.get(i));
-            } else {
+            if (matches.contains(i)) {
                 ret.store.add(TOMBSTONE);
+            } else {
+                ret.store.add(src.store.get(i));
             }
         }
 
-        src.caseInsensitiveName2Id.forEach((k, v) -> ret.caseInsensitiveName2Id.put(k, v));
-        src.nameToId.forEach((k, v) -> ret.nameToId.put(k, v));
+        ret.caseInsensitiveName2Id.putAll(src.caseInsensitiveName2Id);
+        ret.nameToId.putAll(src.nameToId);
 
         return ret;
     }

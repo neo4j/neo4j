@@ -336,4 +336,19 @@ public class ProcedureRegistry {
                 ProcedureHolder.copyOf(ref.functions),
                 ProcedureHolder.copyOf(ref.aggregationFunctions));
     }
+
+    /**
+     * Create an tomestoned copy of the ProcedureRegistry
+     *
+     * @param ref The source {@link ProcedureRegistry} to tombstone and copy.
+     * @param which Which QualifiedNames should be filtered.
+     *
+     * @return a tombstoned copy.
+     **/
+    public static ProcedureRegistry tombstone(ProcedureRegistry ref, Predicate<QualifiedName> which) {
+        return new ProcedureRegistry(
+                ProcedureHolder.tombstone(ref.procedures, which),
+                ProcedureHolder.tombstone(ref.functions, which),
+                ProcedureHolder.tombstone(ref.aggregationFunctions, which));
+    }
 }

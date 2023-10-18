@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.api.procedure;
 
+import java.io.IOException;
+import java.util.function.Predicate;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -44,7 +48,12 @@ public interface GlobalProcedures {
 
     ProcedureView getCurrentView();
 
+    LoadInformation reloadProceduresFromDisk(Transaction tx, Predicate<String> namespaceFilter)
+            throws KernelException, IOException;
+
     @VisibleForTesting
     // Allow tests to unregister some procedures so far intended only for tests usages
     void unregister(QualifiedName name);
+
+    record LoadInformation(int numProcedures, int numFunctions, int numAggregations) {}
 }

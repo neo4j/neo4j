@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.NoSuchElementException;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
@@ -119,7 +118,7 @@ class ProcedureHolderTest {
         int id = procHolder.put(qn, item, true);
 
         // when
-        var renewed = ProcedureHolder.tombstone(procHolder, Set.of(id));
+        var renewed = ProcedureHolder.tombstone(procHolder, (ignored) -> false);
 
         // then
         assertThat(renewed.get(qn)).isEqualTo(item);
@@ -136,7 +135,7 @@ class ProcedureHolderTest {
         int id = procHolder.put(qn, item, true);
 
         // when
-        var renewed = ProcedureHolder.tombstone(procHolder, Set.of());
+        var renewed = ProcedureHolder.tombstone(procHolder, (ignored) -> true);
 
         // then
         assertNull(renewed.get(qn));
@@ -154,7 +153,7 @@ class ProcedureHolderTest {
         int removedId = procHolder.put(qn, item, true), keptId = procHolder.put(qn2, item, true);
 
         // when
-        var renewed = ProcedureHolder.tombstone(procHolder, Set.of(keptId));
+        var renewed = ProcedureHolder.tombstone(procHolder, (qual) -> qual.equals(qn2));
         renewed.put(qn, item, true);
         renewed.put(qn2, item, true);
 
