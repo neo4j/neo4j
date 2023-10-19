@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,7 +34,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
+import static org.neo4j.storageengine.api.txstate.validation.TransactionValidationResource.EMPTY_VALIDATION_RESOURCE;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -106,6 +107,8 @@ import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -127,6 +130,7 @@ class KernelTransactionTestBase {
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock(Pool.class);
     protected final LockManager.Client locksClient = mock(LockManager.Client.class);
+    protected final TransactionValidator transactionValidator = mock(TransactionValidator.class);
     protected CollectionsFactory collectionsFactory;
 
     private final ProcedureView procedureView = mock(ProcedureView.class);
@@ -154,6 +158,8 @@ class KernelTransactionTestBase {
                 .thenReturn(List.of(new TestCommand()));
 
         when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
+        when(transactionValidator.validate(any(), anyLong(), any(), any(), any()))
+                .thenReturn(EMPTY_VALIDATION_RESOURCE);
     }
 
     public KernelTransactionImplementation newTransaction(long transactionTimeoutMillis) {
@@ -224,6 +230,8 @@ class KernelTransactionTestBase {
         var readOnlyChecker = new DefaultReadOnlyDatabases(readOnlyLookup);
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         DefaultVersionStorageTracer versionStorageTracer = new DefaultVersionStorageTracer(pageCacheTracer);
+        var validatorFactory = mock(TransactionValidatorFactory.class);
+        when(validatorFactory.createTransactionValidator(any())).thenReturn(transactionValidator);
         return new KernelTransactionImplementation(
                 config,
                 mock(DatabaseTransactionEventListeners.class),
@@ -263,7 +271,7 @@ class KernelTransactionTestBase {
                 enrichmentStrategy,
                 mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
-                EMPTY_VALIDATOR_FACTORY,
+                validatorFactory,
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
     }
 

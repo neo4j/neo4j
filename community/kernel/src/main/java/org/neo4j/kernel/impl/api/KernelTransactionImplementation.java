@@ -1003,6 +1003,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     private long commitTransaction() throws KernelException {
+        Throwable exception = null;
         boolean success = false;
         long txId = READ_ONLY_ID;
         TransactionListenersState listenersState = null;
@@ -1041,19 +1042,30 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 commitTime = timeCommitted;
             }
             success = true;
-            return txId;
         } catch (ConstraintValidationException | CreateConstraintFailureException e) {
-            throw new ConstraintViolationTransactionFailureException(e.getUserMessage(tokenRead()), e);
+            exception = new ConstraintViolationTransactionFailureException(e.getUserMessage(tokenRead()), e);
+        } catch (Throwable e) {
+            exception = e;
         } finally {
-            if (!success) {
-                rollback(listenersState);
-            } else {
-                transactionId = txId;
-                afterCommit(listenersState);
+            try {
+                if (!success) {
+                    rollback(listenersState);
+                } else {
+                    transactionId = txId;
+                    afterCommit(listenersState);
+                }
+                transactionMonitor.addHeapTransactionSize(transactionMemoryPool.usedHeap());
+                transactionMonitor.addNativeTransactionSize(transactionMemoryPool.usedNative());
+            } catch (RuntimeException | Error e) {
+                exception = Exceptions.chain(exception, e);
             }
-            transactionMonitor.addHeapTransactionSize(transactionMemoryPool.usedHeap());
-            transactionMonitor.addNativeTransactionSize(transactionMemoryPool.usedNative());
         }
+        if (exception == null) {
+            return txId;
+        }
+        Exceptions.throwIfInstanceOf(exception, TransactionFailureException.class);
+        Exceptions.throwIfUnchecked(exception);
+        throw new TransactionFailureException(Status.General.UnknownError, exception);
     }
 
     public List<StorageCommand> extractCommands(MemoryTracker commandsTracker) throws KernelException {
