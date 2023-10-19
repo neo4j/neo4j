@@ -123,17 +123,17 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   def debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = RuntimeTestSuite.isParallel(runtime)
 
-  val isParallelWithOneWorker = if (isParallel) {
+  val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
+
+  protected var edition: Edition[CONTEXT] = baseEdition
+
+  def isParallelWithOneWorker: Boolean = if (isParallel) {
     edition.getSetting(cypher_worker_limit) match {
       case Some(workerLimit) if workerLimit == 1 => true
       case _                                     => false
     }
   } else
     false
-
-  val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
-
-  protected var edition: Edition[CONTEXT] = baseEdition
 
   def setAdditionalConfigs(configs: Array[(Setting[_], Object)]): Unit = {
     require(managementService == null)
