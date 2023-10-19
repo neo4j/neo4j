@@ -61,11 +61,13 @@ import org.neo4j.util.concurrent.Futures;
 class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> {
     private static final int BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT =
             16 /*obj.overhead*/ + 16 /*obj.fields*/ + 16 /*inner root instance*/ + 8 /* cache references*/;
+    private static final long NULL_ROOT_ID = -1;
+    private static final long NOT_FOUND_ROOT_ID = 0;
+    private static final Root NULL_ROOT = new Root(NULL_ROOT_ID, -1);
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
     private final LeafNodeBehaviour<ROOT_KEY, RootMappingValue> rootLeafNode;
     private final InternalNodeBehaviour<ROOT_KEY> rootInternalNode;
     private final LfuCache<ROOT_KEY, DataTreeRoot<ROOT_KEY>> rootMappingCache;
-    private static final Root ROOT_UNDER_CREATION = new Root(-1, -1);
     private final ValueMerger<ROOT_KEY, RootMappingValue> DONT_ALLOW_CREATE_EXISTING_ROOT =
             (existingKey, newKey, existingValue, newValue) -> {
                 throw new DataTreeAlreadyExistsException(existingKey);
@@ -127,7 +129,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     void create(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
-        var rootUnderCreation = new DataTreeRoot<ROOT_KEY>(null, ROOT_UNDER_CREATION);
+        var rootUnderCreation = new DataTreeRoot<ROOT_KEY>(null, NULL_ROOT);
         rootMappingCache.putIfAbsent(dataRootKey, rootUnderCreation);
         try {
             var cursorCreator = bind(support, PF_SHARED_WRITE_LOCK, cursorContext);
@@ -183,12 +185,12 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 while (true) {
                     rootMappingMerger.reset();
                     rootMappingWriter.mergeIfExists(
-                            dataRootKey, new RootMappingValue().initialize(new Root(-1, -1)), rootMappingMerger);
+                            dataRootKey, new RootMappingValue().initialize(NULL_ROOT), rootMappingMerger);
                     var rootId = rootMappingMerger.rootIdToRelease;
-                    if (rootId == 0) {
+                    if (rootId == NOT_FOUND_ROOT_ID) {
                         throw new DataTreeNotFoundException(dataRootKey);
                     }
-                    if (rootId != -1) {
+                    if (rootId != NULL_ROOT_ID) {
                         long generation = support.generation();
                         var unstableGeneration = unstableGeneration(generation);
                         support.structureWriteLog().deleteRoot(unstableGeneration, rootId);
@@ -479,8 +481,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         @Override
         public Root getRoot(CursorContext context) {
             var dataRoot = rootMappingCache.computeIfAbsent(dataRootKey, key -> getFromTree(key, context));
-            if (dataRoot.root() == ROOT_UNDER_CREATION) {
-                // Lets read from the tree to see if there is something here and not just a stale cache value!
+            if (dataRoot.root() == NULL_ROOT) {
+                // Let's read from the tree to see if there is something here and not just a stale cache value!
                 return getFromTree(dataRootKey, context).root();
             }
             return dataRoot.root();
@@ -614,7 +616,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             if (!rootLatch.tryAcquireWrite()) {
                 // Someone else is just now writing to the contents of this data tree.
                 // Back out and try again
-                rootIdToRelease = -1;
+                rootIdToRelease = NULL_ROOT_ID;
                 return MergeResult.UNCHANGED;
             }
             hasWriteLatch = true;
@@ -632,7 +634,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         @Override
         public void reset() {
-            rootIdToRelease = 0;
+            rootIdToRelease = NOT_FOUND_ROOT_ID;
             closeLatch();
         }
 
