@@ -82,7 +82,10 @@ class FreeIdScanner {
     private volatile Long ongoingScanRangeIndex;
 
     private final AtomicLong numBufferedIds = new AtomicLong();
-    private final AtomicBoolean allocationEnabled;
+    /**
+     * Keeps the state of {@link IdGenerator#allocationEnabled()}. It lives in here because this is the class that mutates it under lock.
+     */
+    private volatile boolean allocationEnabled;
 
     FreeIdScanner(
             int idsPerEntry,
@@ -94,7 +97,7 @@ class FreeIdScanner {
             long generation,
             boolean strictlyPrioritizeFreelistOverHighId,
             IndexedIdGenerator.Monitor monitor,
-            AtomicBoolean allocationEnabled) {
+            boolean allocationEnabled) {
         this.idsPerEntry = idsPerEntry;
         this.tree = tree;
         this.layout = layout;
@@ -114,7 +117,7 @@ class FreeIdScanner {
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      */
     void tryLoadFreeIdsIntoCache(boolean blocking, boolean maintenance, CursorContext cursorContext) {
-        if (!hasMoreFreeIds(maintenance)) {
+        if (!allocationEnabled || !hasMoreFreeIds(maintenance)) {
             // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't
             // do it.
             return;
@@ -122,7 +125,7 @@ class FreeIdScanner {
 
         if (scanLock(blocking)) {
             try {
-                if (!allocationEnabled.get()) {
+                if (!allocationEnabled) {
                     return;
                 }
                 handleQueuedIds(cursorContext);
@@ -210,7 +213,6 @@ class FreeIdScanner {
         lock.lock();
         try {
             // Restart scan from the beginning after cache is cleared
-            var allocationEnabled = this.allocationEnabled.get();
             ongoingScanRangeIndex = null;
 
             if (allocationEnabled) {
@@ -223,7 +225,7 @@ class FreeIdScanner {
             } else {
                 cache.drain((id, size) -> {});
             }
-            this.allocationEnabled.set(allocationWillBeEnabled);
+            allocationEnabled = allocationWillBeEnabled;
         } finally {
             lock.unlock();
         }
@@ -297,6 +299,10 @@ class FreeIdScanner {
         assert layout.idRangeIndex(id) == layout.idRangeIndex(id + numberOfIds - 1);
         pendingIdQueue.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
         return availableSpaceById.addAndGet(-numberOfIds) > 0;
+    }
+
+    boolean allocationEnabled() {
+        return allocationEnabled;
     }
 
     private interface QueueConsumer {

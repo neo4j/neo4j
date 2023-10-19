@@ -728,16 +728,7 @@ class FreeIdScannerTest {
         this.atLeastOneFreeId = new AtomicBoolean();
         this.recordingMonitor = new RecordingMonitor();
         return new FreeIdScanner(
-                idsPerEntry,
-                tree,
-                layout,
-                cache,
-                atLeastOneFreeId,
-                reuser,
-                generation,
-                strict,
-                recordingMonitor,
-                new AtomicBoolean(true));
+                idsPerEntry, tree, layout, cache, atLeastOneFreeId, reuser, generation, strict, recordingMonitor, true);
     }
 
     private void assertCacheHasIdsNonExhaustive(Range... ranges) {

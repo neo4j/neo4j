@@ -308,7 +308,6 @@ public class IndexedIdGenerator implements IdGenerator {
     private final int biggestSlotSize;
 
     private final Set<Long> lockedPageRanges;
-    private final AtomicBoolean allocationEnabled;
 
     public IndexedIdGenerator(
             PageCache pageCache,
@@ -393,7 +392,6 @@ public class IndexedIdGenerator implements IdGenerator {
 
         this.strictlyPrioritizeFreelist = config.get(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist);
         this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
-        this.allocationEnabled = new AtomicBoolean(allocationEnabled);
         this.scanner = new FreeIdScanner(
                 idsPerEntry,
                 tree,
@@ -404,7 +402,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 generation,
                 strictlyPrioritizeFreelist,
                 monitor,
-                this.allocationEnabled);
+                allocationEnabled);
     }
 
     private GBPTree<IdRangeKey, IdRange> instantiateTree(
@@ -445,7 +443,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public long nextId(CursorContext cursorContext) {
-        assert allocationEnabled.get();
+        assert scanner.allocationEnabled();
         do {
             // If strictly prioritizing the freelist then the method below will block on the current scan,
             // if there's any ongoing, otherwise it will not block.
@@ -477,7 +475,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
-        assert allocationEnabled.get();
+        assert scanner.allocationEnabled();
         checkRefillCache(cursorContext);
         long[] reusedIds = cache.drainRange(idsPerPage);
         if (reusedIds.length > 0) {
@@ -592,7 +590,7 @@ public class IndexedIdGenerator implements IdGenerator {
             return NOOP_MARKER;
         }
 
-        return lockAndInstantiateMarker(true, !allocationEnabled.get(), cursorContext);
+        return lockAndInstantiateMarker(true, !scanner.allocationEnabled(), cursorContext);
     }
 
     @Override
@@ -726,7 +724,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public void maintenance(CursorContext cursorContext) {
-        if (started && !cache.isFull() && !readOnly && allocationEnabled.get()) {
+        if (started && !cache.isFull() && !readOnly) {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache(true, true, cursorContext);
         }
@@ -751,7 +749,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public boolean allocationEnabled() {
-        return allocationEnabled.get();
+        return scanner.allocationEnabled();
     }
 
     @Override
