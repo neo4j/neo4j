@@ -42,7 +42,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
-import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenReadSession;
@@ -50,7 +49,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -59,7 +57,6 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.index.schema.TokenScan;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -310,24 +307,6 @@ abstract class Read
     }
 
     @Override
-    public final Scan<NodeLabelIndexCursor> nodeLabelScan(int label) {
-        performCheckBeforeOperation();
-
-        TokenScan tokenScan;
-        try {
-            var index = index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), IndexType.LOOKUP);
-            if (index == IndexDescriptor.NO_INDEX) {
-                throw new IndexNotFoundKernelException("There is no index that can back a node label scan.");
-            }
-            DefaultTokenReadSession session = (DefaultTokenReadSession) tokenReadSession(index);
-            tokenScan = session.reader.entityTokenScan(label, cursorContext());
-        } catch (IndexNotFoundKernelException e) {
-            throw new RuntimeException(e);
-        }
-        return new NodeLabelIndexCursorScan(this, label, tokenScan);
-    }
-
-    @Override
     public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws IndexNotApplicableKernelException {
@@ -395,12 +374,6 @@ abstract class Read
     }
 
     @Override
-    public final Scan<NodeCursor> allNodesScan() {
-        performCheckBeforeOperation();
-        return new NodeCursorScan(storageReader.allNodeScan(), this);
-    }
-
-    @Override
     public final void singleNode(long reference, NodeCursor cursor) {
         performCheckBeforeOperation();
         ((DefaultNodeCursor) cursor).single(reference, this);
@@ -444,12 +417,6 @@ abstract class Read
     public final void allRelationshipsScan(RelationshipScanCursor cursor) {
         performCheckBeforeOperation();
         ((DefaultRelationshipScanCursor) cursor).scan(this);
-    }
-
-    @Override
-    public final Scan<RelationshipScanCursor> allRelationshipsScan() {
-        performCheckBeforeOperation();
-        return new RelationshipCursorScan(storageReader.allRelationshipScan(), this);
     }
 
     @Override

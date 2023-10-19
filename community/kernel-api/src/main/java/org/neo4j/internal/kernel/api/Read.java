@@ -193,12 +193,6 @@ public interface Read {
             IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) throws KernelException;
 
     /**
-     * @deprecated use {@link #nodeLabelScan(TokenReadSession, int, CursorContext, TokenPredicate)}
-     */
-    @Deprecated(forRemoval = true)
-    Scan<NodeLabelIndexCursor> nodeLabelScan(int label);
-
-    /**
      * Scan node label index in partitions.
      * NOTE! This is not thread-safe for transaction state.
      *
@@ -264,12 +258,6 @@ public interface Read {
      * @param cursor Cursor to initialize for scanning.
      */
     void allNodesScan(NodeCursor cursor);
-
-    /**
-     * @deprecated use {{@link #allNodesScan(int, CursorContext)}}
-     */
-    @Deprecated(forRemoval = true)
-    Scan<NodeCursor> allNodesScan();
 
     /**
      * Scan all nodes in partitions.
@@ -465,12 +453,6 @@ public interface Read {
     boolean relationshipExists(long reference);
 
     void allRelationshipsScan(RelationshipScanCursor cursor);
-
-    /**
-     * @deprecated use {@link #allRelationshipsScan(int, CursorContext)}
-     */
-    @Deprecated(forRemoval = true)
-    Scan<RelationshipScanCursor> allRelationshipsScan();
 
     /**
      * Scan all relationships in partitions.

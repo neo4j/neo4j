@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
 import org.eclipse.collections.api.list.primitive.LongList;
@@ -37,9 +36,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
-import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -90,29 +86,6 @@ public final class TestUtils {
     }
 
     static <T extends Cursor> Callable<LongList> singleBatchWorker(
-            Scan<T> scan, WorkerContext<T> workerContext, ToLongFunction<T> producer, int sizeHint) {
-        return () -> {
-            try {
-                LongArrayList result = new LongArrayList();
-                T cursor = workerContext.getCursor();
-                var executionContext = workerContext.getContext();
-                while (scan.reserveBatch(
-                        cursor,
-                        sizeHint,
-                        executionContext.cursorContext(),
-                        executionContext.securityContext().mode())) {
-                    while (cursor.next()) {
-                        result.add(producer.applyAsLong(cursor));
-                    }
-                }
-                return result;
-            } finally {
-                workerContext.complete();
-            }
-        };
-    }
-
-    static <T extends Cursor> Callable<LongList> singleBatchWorker(
             PartitionedScan<T> scan, WorkerContext<T> workerContext, ToLongFunction<T> producer) {
         return () -> {
             try {
@@ -130,41 +103,6 @@ public final class TestUtils {
         };
     }
 
-    static <T extends Cursor> Callable<LongList> singleBatchWorker(
-            Scan<T> scan,
-            T cursor,
-            CursorContext cursorContext,
-            AccessMode accessMode,
-            ToLongFunction<T> producer,
-            int sizeHint) {
-        return () -> {
-            try {
-                LongArrayList result = new LongArrayList();
-                while (scan.reserveBatch(cursor, sizeHint, cursorContext, accessMode)) {
-                    while (cursor.next()) {
-                        result.add(producer.applyAsLong(cursor));
-                    }
-                }
-                return result;
-            } finally {
-                IOUtils.closeAll(cursor, cursorContext);
-            }
-        };
-    }
-
-    static <T extends Cursor> List<Callable<LongList>> createWorkers(
-            int sizeHint,
-            Scan<T> scan,
-            int numberOfWorkers,
-            List<WorkerContext<T>> workerContexts,
-            ToLongFunction<T> toLongFunction) {
-        ArrayList<Callable<LongList>> workers = new ArrayList<>(workerContexts.size());
-        for (int i = 0; i < numberOfWorkers; i++) {
-            workers.add(singleBatchWorker(scan, workerContexts.get(i), toLongFunction, sizeHint));
-        }
-        return workers;
-    }
-
     static <T extends Cursor> List<Callable<LongList>> createWorkers(
             PartitionedScan<T> scan, List<WorkerContext<T>> workerContexts, ToLongFunction<T> toLongFunction) {
         ArrayList<Callable<LongList>> workers = new ArrayList<>(workerContexts.size());
@@ -174,70 +112,10 @@ public final class TestUtils {
         return workers;
     }
 
-    static <T extends Cursor> List<Callable<LongList>> createRandomWorkers(
-            Scan<T> scan,
-            int numberOfWorkers,
-            List<WorkerContext<T>> workerContexts,
-            ToLongFunction<T> toLongFunction) {
-        ArrayList<Callable<LongList>> workers = new ArrayList<>(workerContexts.size());
-        for (int i = 0; i < numberOfWorkers; i++) {
-            workers.add(randomBatchWorker(scan, workerContexts.get(i), toLongFunction));
-        }
-        return workers;
-    }
-
-    static <T extends Cursor> Callable<LongList> randomBatchWorker(
-            Scan<T> scan, WorkerContext<T> workerContext, ToLongFunction<T> producer) {
-        return () -> {
-            try {
-                ThreadLocalRandom random = ThreadLocalRandom.current();
-                T cursor = workerContext.getCursor();
-                int sizeHint = random.nextInt(1, 5);
-                LongArrayList batch = new LongArrayList();
-                var executionContext = workerContext.getContext();
-                while (scan.reserveBatch(
-                        cursor,
-                        sizeHint,
-                        executionContext.cursorContext(),
-                        executionContext.securityContext().mode())) {
-                    while (cursor.next()) {
-                        batch.add(producer.applyAsLong(cursor));
-                    }
-                }
-                return batch;
-            } finally {
-                workerContext.complete();
-            }
-        };
-    }
-
-    static <T extends Cursor> Callable<LongList> randomBatchWorker(
-            Scan<T> scan, T cursor, CursorContext cursorContext, AccessMode accessMode, ToLongFunction<T> producer) {
-        return () -> {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-            int sizeHint = random.nextInt(1, 5);
-            LongArrayList batch = new LongArrayList();
-            while (scan.reserveBatch(cursor, sizeHint, cursorContext, accessMode)) {
-                while (cursor.next()) {
-                    batch.add(producer.applyAsLong(cursor));
-                }
-            }
-            return batch;
-        };
-    }
-
     static <T extends AutoCloseable> void closeWorkContexts(List<WorkerContext<T>> workers) {
         for (WorkerContext<T> worker : workers) {
             worker.close();
         }
-    }
-
-    static int count(Cursor cursor) {
-        int count = 0;
-        while (cursor.next()) {
-            count++;
-        }
-        return count;
     }
 
     enum PartitionedScanAPI {

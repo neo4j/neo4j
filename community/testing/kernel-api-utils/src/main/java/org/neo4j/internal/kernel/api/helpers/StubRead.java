@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
-import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -132,11 +131,6 @@ public class StubRead implements Read {
     }
 
     @Override
-    public Scan<NodeLabelIndexCursor> nodeLabelScan(int label) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
             TokenReadSession session,
             int desiredNumberOfPartitions,
@@ -174,11 +168,6 @@ public class StubRead implements Read {
     @Override
     public void allNodesScan(NodeCursor cursor) {
         ((StubNodeCursor) cursor).scan();
-    }
-
-    @Override
-    public Scan<NodeCursor> allNodesScan() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -254,11 +243,6 @@ public class StubRead implements Read {
 
     @Override
     public void allRelationshipsScan(RelationshipScanCursor cursor) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Scan<RelationshipScanCursor> allRelationshipsScan() {
         throw new UnsupportedOperationException();
     }
 
