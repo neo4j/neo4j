@@ -25,6 +25,7 @@ import java.io.PrintStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +60,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.block.BlockDatabaseExistMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -517,11 +519,27 @@ public interface StorageEngineFactory {
         // - Is there a specific name of a store format to look for? -> get the storage engine that recognizes it
         // (except for system that should use default)
         // - Use the default one
-        return selectStorageEngine(fs, databaseLayout)
-                .orElseGet(() -> configuration == null
-                                || GraphDatabaseSettings.SYSTEM_DATABASE_NAME.equals(databaseLayout.getDatabaseName())
-                        ? defaultStorageEngine()
-                        : findEngineForFormatOrThrow(configuration));
+        return selectStorageEngine(fs, databaseLayout).orElseGet(() -> {
+            validateNotKnownFormat(fs, databaseLayout);
+            return configuration == null
+                            || GraphDatabaseSettings.SYSTEM_DATABASE_NAME.equals(databaseLayout.getDatabaseName())
+                    ? defaultStorageEngine()
+                    : findEngineForFormatOrThrow(configuration);
+        });
+    }
+
+    private static void validateNotKnownFormat(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
+        if (fs.isDirectory(databaseLayout.databaseDirectory())) {
+            try {
+                assert selectStorageEngine(fs, databaseLayout).isEmpty();
+                Path[] files = fs.listFiles(databaseLayout.databaseDirectory());
+                if (Arrays.stream(files).anyMatch(path -> path.endsWith(BlockDatabaseExistMarker.NAME))) {
+                    throw new IllegalArgumentException("Block format detected for database "
+                            + databaseLayout.getDatabaseName() + " but unavailable in this edition.");
+                }
+            } catch (IOException ignored) {
+            }
+        }
     }
 
     /**
