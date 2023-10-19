@@ -56,6 +56,10 @@ public class SslPolicyConfig implements GroupSetting {
             + " Enabling this is not recommended and the trusted directory will be ignored.")
     public final Setting<Boolean> trust_all;
 
+    @Description("Makes this policy trust expired certificates."
+            + " Enabling will also allow the instance to use an expired certificate itself.")
+    public final Setting<Boolean> trust_expired;
+
     @Description("Client authentication stance.")
     public final Setting<ClientAuth> client_auth;
 
@@ -105,6 +109,7 @@ public class SslPolicyConfig implements GroupSetting {
                 .setDependency(base_directory)
                 .build();
         trust_all = getBuilder("trust_all", BOOL, false).build();
+        trust_expired = getBuilder("trust_expired", BOOL, true).build();
         client_auth = getBuilder("client_auth", ofEnum(ClientAuth.class), scope.authDefault)
                 .build();
         tls_versions =

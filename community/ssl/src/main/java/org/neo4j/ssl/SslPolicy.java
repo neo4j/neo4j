@@ -52,6 +52,7 @@ public class SslPolicy {
     private final SslProvider sslProvider;
 
     private final boolean verifyHostname;
+    private final boolean verifyExpiration;
     private final InternalLog log;
 
     public SslPolicy(
@@ -63,6 +64,7 @@ public class SslPolicy {
             TrustManagerFactory trustManagerFactory,
             SslProvider sslProvider,
             boolean verifyHostname,
+            boolean verifyExpiration,
             InternalLogProvider logProvider) {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;
@@ -72,6 +74,7 @@ public class SslPolicy {
         this.trustManagerFactory = trustManagerFactory;
         this.sslProvider = sslProvider;
         this.verifyHostname = verifyHostname;
+        this.verifyExpiration = verifyExpiration;
         this.log = logProvider.getLog(SslPolicy.class);
     }
 
@@ -165,6 +168,10 @@ public class SslPolicy {
 
     public boolean isVerifyHostname() {
         return verifyHostname;
+    }
+
+    public boolean shouldVerifyExpiration() {
+        return verifyExpiration;
     }
 
     @Override

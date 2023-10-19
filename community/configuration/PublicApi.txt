@@ -273,6 +273,7 @@ org.neo4j.configuration.ssl.SslPolicyConfig::public_certificate org.neo4j.graphd
 org.neo4j.configuration.ssl.SslPolicyConfig::revoked_dir org.neo4j.graphdb.config.Setting<java.nio.file.Path> public final
 org.neo4j.configuration.ssl.SslPolicyConfig::tls_versions org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public final
 org.neo4j.configuration.ssl.SslPolicyConfig::trust_all org.neo4j.graphdb.config.Setting<java.lang.Boolean> public final
+org.neo4j.configuration.ssl.SslPolicyConfig::trust_expired org.neo4j.graphdb.config.Setting<java.lang.Boolean> public final
 org.neo4j.configuration.ssl.SslPolicyConfig::trusted_dir org.neo4j.graphdb.config.Setting<java.nio.file.Path> public final
 org.neo4j.configuration.ssl.SslPolicyConfig::verify_hostname org.neo4j.graphdb.config.Setting<java.lang.Boolean> public final
 org.neo4j.configuration.ssl.SslPolicyScope public final enum extends java.lang.Enum<org.neo4j.configuration.ssl.SslPolicyScope>

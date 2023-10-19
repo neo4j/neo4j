@@ -36,6 +36,8 @@ import java.security.cert.CRLException;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CRL;
@@ -171,6 +173,7 @@ public class SslPolicyLoader {
         }
 
         boolean verifyHostname = config.get(policyConfig.verify_hostname);
+        boolean verifyExpiration = !config.get(policyConfig.trust_expired);
         ClientAuth clientAuth = config.get(policyConfig.client_auth);
         List<String> tlsVersions = config.get(policyConfig.tls_versions);
         List<String> ciphers = config.get(policyConfig.ciphers);
@@ -184,6 +187,7 @@ public class SslPolicyLoader {
                 trustManagerFactory,
                 sslProvider,
                 verifyHostname,
+                verifyExpiration,
                 logProvider);
     }
 
@@ -211,6 +215,17 @@ public class SslPolicyLoader {
 
         privateKey = loadPrivateKey(fileSystem, privateKeyFile, privateKeyPassword);
         keyCertChain = loadCertificateChain(fileSystem, keyCertChainFile);
+        if (!config.get(policyConfig.trust_expired)) {
+            for (var cert : keyCertChain) {
+                if (cert instanceof X509Certificate) {
+                    try {
+                        cert.checkValidity();
+                    } catch (CertificateExpiredException | CertificateNotYetValidException e) {
+                        throw new RuntimeException("Expired certificate", e);
+                    }
+                }
+            }
+        }
 
         return new KeyAndChain(privateKey, keyCertChain, trustStore);
     }
