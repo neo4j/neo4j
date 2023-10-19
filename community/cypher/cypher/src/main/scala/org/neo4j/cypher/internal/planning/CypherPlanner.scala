@@ -221,7 +221,7 @@ case class CypherPlanner(
 
     val key = AstCache.key(preParsedQuery, params, config.useParameterSizeHint())
     val maybeValue = caches.astCache.get(key)
-    maybeValue.getOrElse {
+    val value = maybeValue.getOrElse {
       val parsedQuery = planner.parseQuery(
         preParsedQuery.statement,
         preParsedQuery.rawStatement,
@@ -232,9 +232,12 @@ case class CypherPlanner(
         params,
         cancellationChecker
       )
-      if (!config.planSystemCommands) caches.astCache.put(key, parsedQuery)
-      parsedQuery
+      val value = AstCache.AstCacheValue(parsedQuery, notificationLogger.notifications)
+      if (!config.planSystemCommands) caches.astCache.put(key, value)
+      value
     }
+    value.notifications.foreach(notificationLogger.log)
+    value.parsedQuery
   }
 
   /**

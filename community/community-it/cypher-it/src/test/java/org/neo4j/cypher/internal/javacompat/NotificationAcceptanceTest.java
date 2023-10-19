@@ -475,4 +475,12 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 (position, param) -> NotificationCodeWithDescription.deprecatedRuntimeOption(
                         position, param, "runtime=interpreted", "runtime=slotted"));
     }
+
+    @Test
+    void shouldPreserveDeprecationNotificationsWhenHittingAstCache() {
+        db.executeTransactionally("MATCH (a)-[:A|:B]-() RETURN a");
+        assertNotifications(
+                "CYPHER replan=force EXPLAIN MATCH (a)-[:A|:B]-() RETURN a",
+                contains(deprecatedRelationshipTypeSeparator));
+    }
 }

@@ -216,6 +216,14 @@ public class NotificationTestSupport {
             SeverityLevel.INFORMATION,
             NotificationCategory.PERFORMANCE);
 
+    Condition<Notification> deprecatedRelationshipTypeSeparator = notification(
+            "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+            Conditions.contains(
+                    "The semantics of using colon in the separation of alternative relationship types will change in a future version"),
+            instanceOf(InputPosition.class),
+            SeverityLevel.WARNING,
+            NotificationCategory.DEPRECATION);
+
     public static class ChangedResults {
         @Deprecated
         public final String oldField = "deprecated";
