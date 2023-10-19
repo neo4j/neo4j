@@ -119,6 +119,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -1751,6 +1752,8 @@ class IndexingServiceTest {
         return newIndexingServiceWithMockedDependencies(populator, accessor, data, monitor, life.add(scheduler), rules);
     }
 
+    private static final IndexCapability MOCK_INDEX_CAPABILITY = mock(IndexCapability.class);
+
     private IndexingService newIndexingServiceWithMockedDependencies(
             IndexPopulator populator,
             IndexAccessor accessor,
@@ -1783,6 +1786,13 @@ class IndexingServiceTest {
         when(indexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
+        when(indexProvider.completeConfiguration(any(IndexDescriptor.class), any()))
+                .then(invocation -> {
+                    final var descriptor = invocation.getArgument(0, IndexDescriptor.class);
+                    return descriptor.getCapability().equals(IndexCapability.NO_CAPABILITY)
+                            ? descriptor.withIndexCapability(MOCK_INDEX_CAPABILITY)
+                            : descriptor;
+                });
 
         MockIndexProviderMap providerMap = life.add(new MockIndexProviderMap(indexProvider));
         var config = Config.defaults();

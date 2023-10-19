@@ -29,7 +29,7 @@ import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
-class VectorIndexCapability implements IndexCapability {
+public class VectorIndexCapability implements IndexCapability {
     private final int dimensions;
     private final VectorSimilarityFunction similarityFunction;
 

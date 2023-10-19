@@ -811,17 +811,19 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     // This index already has a proxy. No need to build another.
                     continue;
                 }
-                boolean flipToTentative = descriptor.isUnique();
+
+                final var completeDescriptor = completeConfiguration(descriptor);
+                boolean flipToTentative = completeDescriptor.isUnique();
                 if (state == State.RUNNING) {
                     var populationJob = populationJobs.computeIfAbsent(
-                            new IndexPopulationCategory(descriptor, storageEngineIndexingBehaviour),
-                            category ->
-                                    newIndexPopulationJob(descriptor.schema().entityType(), subject));
+                            new IndexPopulationCategory(completeDescriptor, storageEngineIndexingBehaviour),
+                            category -> newIndexPopulationJob(
+                                    completeDescriptor.schema().entityType(), subject));
                     index = indexProxyCreator.createPopulatingIndexProxy(
-                            descriptor, flipToTentative, monitor, populationJob);
+                            completeDescriptor, flipToTentative, monitor, populationJob);
                     index.start();
                 } else {
-                    index = indexProxyCreator.createRecoveringIndexProxy(descriptor);
+                    index = indexProxyCreator.createRecoveringIndexProxy(completeDescriptor);
                 }
 
                 indexMap.putIndexProxy(index);
