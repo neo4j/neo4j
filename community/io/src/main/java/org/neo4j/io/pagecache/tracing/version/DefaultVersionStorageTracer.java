@@ -47,4 +47,7 @@ public class DefaultVersionStorageTracer implements VersionStorageTracer {
     public FileFlushEvent beginFileFlush() {
         return pageCacheTracer.beginFileFlush();
     }
+
+    @Override
+    public void skipPageFlush(long pageRef) {}
 }

@@ -427,6 +427,12 @@ public abstract class PageCursor implements AutoCloseable {
     public abstract boolean isWriteLocked();
 
     /**
+     * Mark current page with provided horizon.
+     * @param horizon MVCC page horizon.
+     */
+    public abstract void setPageHorizon(long horizon);
+
+    /**
      * Unpins cursor releasing any locks that it was holding on the page that the cursor is currently positioned at.
      * It clears the page reference making all access to the cursor be out of bounds until the next call to {@link #next()} or {@link #next(long)}
      * This method doesn't affect where subsequent call to {@link #next()} will position the cursor.

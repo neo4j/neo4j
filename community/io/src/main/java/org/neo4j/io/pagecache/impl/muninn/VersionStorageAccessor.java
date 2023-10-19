@@ -31,7 +31,12 @@ public interface VersionStorageAccessor {
         }
 
         @Override
-        public PageCursor io(long reference, int flags) {
+        public PageCursor reader(long reference) {
+            throw new UnsupportedOperationException("Empty accessor");
+        }
+
+        @Override
+        public PageCursor writer(long reference, long horizon) {
             throw new UnsupportedOperationException("Empty accessor");
         }
 
@@ -42,7 +47,7 @@ public interface VersionStorageAccessor {
     };
 
     /**
-     * Returns reference that can be used to open cursor via {@link #io(long, int)}
+     * Returns reference that can be used to open cursor via {@link #reader(long)} or {@link #writer(long, long)}
      * @param visibilityBoundary - referenced area can be reused once there is no observers that see transaction id below this one
      * @param requestedSize - size of the area to allocate
      * @return reference
@@ -50,9 +55,14 @@ public interface VersionStorageAccessor {
     long allocate(long visibilityBoundary, int requestedSize) throws IOException;
 
     /**
-     * Returns ready-to-use cursor pointed to the page and offset specified by reference
+     * Returns ready-to-use read cursor pointed to the page and offset specified by reference
      */
-    PageCursor io(long reference, int flags) throws IOException;
+    PageCursor reader(long reference) throws IOException;
+
+    /**
+     * Returns ready-to-use write cursor pointed to the page and offset specified by reference
+     */
+    PageCursor writer(long reference, long horizon) throws IOException;
 
     /**
      * @return maximum area size that can be allocated

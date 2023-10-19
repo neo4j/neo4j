@@ -264,6 +264,11 @@ public class DelegatingPageCursor extends PageCursor {
     }
 
     @Override
+    public void setPageHorizon(long horizon) {
+        delegate.setPageHorizon(horizon);
+    }
+
+    @Override
     public void unpin() {
         delegate.unpin();
     }

@@ -210,4 +210,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     public void zapPage() {
         throw new IllegalStateException("Cannot write to read-locked page");
     }
+
+    @Override
+    public void setPageHorizon(long horizon) {
+        throw new IllegalStateException("Cannot mark read only page");
+    }
 }

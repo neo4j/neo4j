@@ -89,4 +89,8 @@ public class DelegatingPageCache implements PageCache {
     public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
         delegate.flushAndForce(flushEvent);
     }
+
+    public PageCache getDelegate() {
+        return delegate;
+    }
 }

@@ -30,10 +30,10 @@ import java.util.Objects;
 import java.util.Optional;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -47,12 +47,11 @@ import org.neo4j.util.VisibleForTesting;
  * or {@link IOException} like {@link NoSuchFileException}.
  */
 @SuppressWarnings("unchecked")
-public class AdversarialPageCache implements PageCache {
-    private final PageCache delegate;
+public class AdversarialPageCache extends DelegatingPageCache {
     private final Adversary adversary;
 
     public AdversarialPageCache(PageCache delegate, Adversary adversary) {
-        this.delegate = Objects.requireNonNull(delegate);
+        super(delegate);
         this.adversary = Objects.requireNonNull(adversary);
     }
 
@@ -71,22 +70,22 @@ public class AdversarialPageCache implements PageCache {
         } else {
             adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
         }
-        PagedFile pagedFile =
-                delegate.map(path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
+        PagedFile pagedFile = getDelegate()
+                .map(path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
         return new AdversarialPagedFile(pagedFile, adversary);
     }
 
     @Override
     public Optional<PagedFile> getExistingMapping(Path path) throws IOException {
         adversary.injectFailure(IOException.class, SecurityException.class);
-        final Optional<PagedFile> optional = delegate.getExistingMapping(path);
+        final Optional<PagedFile> optional = getDelegate().getExistingMapping(path);
         return optional.map(pagedFile -> new AdversarialPagedFile(pagedFile, adversary));
     }
 
     @Override
     public List<PagedFile> listExistingMappings() throws IOException {
         adversary.injectFailure(IOException.class, SecurityException.class);
-        return delegate.listExistingMappings().stream()
+        return getDelegate().listExistingMappings().stream()
                 .map(file -> new AdversarialPagedFile(file, adversary))
                 .map(PagedFile.class::cast)
                 .toList();
@@ -95,33 +94,13 @@ public class AdversarialPageCache implements PageCache {
     @Override
     public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
         adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
-        delegate.flushAndForce(flushEvent);
+        getDelegate().flushAndForce(flushEvent);
     }
 
     @Override
     public void close() {
         adversary.injectFailure(IllegalStateException.class);
-        delegate.close();
-    }
-
-    @Override
-    public int pageSize() {
-        return delegate.pageSize();
-    }
-
-    @Override
-    public int pageReservedBytes(ImmutableSet<OpenOption> openOptions) {
-        return delegate.pageReservedBytes(openOptions);
-    }
-
-    @Override
-    public long maxCachedPages() {
-        return delegate.maxCachedPages();
-    }
-
-    @Override
-    public IOBufferFactory getBufferFactory() {
-        return delegate.getBufferFactory();
+        getDelegate().close();
     }
 
     @VisibleForTesting

@@ -345,6 +345,11 @@ public class ByteArrayPageCursor extends PageCursor {
     }
 
     @Override
+    public void setPageHorizon(long horizon) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void unpin() {}
 
     @Override

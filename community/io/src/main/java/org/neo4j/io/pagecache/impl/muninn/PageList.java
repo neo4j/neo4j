@@ -367,8 +367,8 @@ class PageList implements PageReferenceTranslator {
         return UnsafeUtil.getLongVolatile(offPageHorizon(pageRef));
     }
 
-    static void setPageHorizon(long pageRef, long modifierTxId) {
-        UnsafeUtil.compareAndSetMaxLong(null, offPageHorizon(pageRef), modifierTxId);
+    static void setPageHorizon(long pageRef, long horizon) {
+        UnsafeUtil.putLong(offPageHorizon(pageRef), horizon);
     }
 
     static int getSwapperId(long pageRef) {

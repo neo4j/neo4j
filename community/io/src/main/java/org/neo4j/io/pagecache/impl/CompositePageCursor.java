@@ -472,6 +472,11 @@ public final class CompositePageCursor extends PageCursor {
     }
 
     @Override
+    public void setPageHorizon(long horizon) {
+        throw new UnsupportedOperationException("Composite cursor does not support setPageHorizon functionality.");
+    }
+
+    @Override
     public void unpin() {
         first.unpin();
         second.unpin();

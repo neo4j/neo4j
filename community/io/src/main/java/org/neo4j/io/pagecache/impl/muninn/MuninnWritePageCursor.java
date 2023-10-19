@@ -226,6 +226,13 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
     }
 
     @Override
+    public void setPageHorizon(long horizon) {
+        if (multiVersioned && pinnedPageRef != 0) {
+            PageList.setPageHorizon(pinnedPageRef, horizon);
+        }
+    }
+
+    @Override
     public boolean shouldRetry() {
         // We take exclusive locks, so there's never a need to retry.
         return false;

@@ -37,6 +37,9 @@ public interface VersionStorageTracer {
         public FileFlushEvent beginFileFlush() {
             return FileFlushEvent.NULL;
         }
+
+        @Override
+        public void skipPageFlush(long pageRef) {}
     };
 
     RegionCollectionEvent beginRegionCollection();
@@ -44,4 +47,6 @@ public interface VersionStorageTracer {
     RegionSwitchEvent regionSwitch();
 
     FileFlushEvent beginFileFlush();
+
+    void skipPageFlush(long pageRef);
 }

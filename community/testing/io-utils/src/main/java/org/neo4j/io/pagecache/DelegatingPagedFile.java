@@ -127,4 +127,8 @@ public class DelegatingPagedFile implements PagedFile {
     public void preAllocate(long newFileSizeInPages) throws IOException {
         delegate.preAllocate(newFileSizeInPages);
     }
+
+    public PagedFile getDelegate() {
+        return delegate;
+    }
 }

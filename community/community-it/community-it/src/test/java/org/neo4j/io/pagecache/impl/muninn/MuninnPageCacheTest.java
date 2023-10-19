@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -45,6 +46,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
+import static org.neo4j.io.pagecache.impl.muninn.PageList.getPageHorizon;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -86,7 +88,6 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageSwapper;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -171,11 +172,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                         cacheTracer,
                         jobScheduler,
                         DISABLED_BUFFER_FACTORY);
-                var pageFile = map(
-                        pageCache,
-                        file("a"),
-                        pageCache.pageSize(),
-                        immutable.of(PageCacheOpenOptions.MULTI_VERSIONED))) {
+                var pageFile = map(pageCache, file("a"), pageCache.pageSize(), immutable.of(MULTI_VERSIONED))) {
             assertEquals(reservedBytes, pageFile.pageReservedBytes());
             assertEquals(PAGE_SIZE, pageFile.pageSize());
             assertEquals(PAGE_SIZE - reservedBytes, pageFile.payloadSize());
@@ -1579,6 +1576,45 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     }
 
     @Test
+    void failToSetHorizonOnReadOnlyCursor() throws IOException {
+        try (MuninnPageCache pageCache = createPageCache(fs, 4, NULL);
+                PagedFile pagedFile = map(pageCache, file("a"), (int) ByteUnit.kibiBytes(8))) {
+            try (PageCursor cursor = pagedFile.io(1, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertThrows(IllegalStateException.class, () -> cursor.setPageHorizon(17));
+            }
+        }
+    }
+
+    @Test
+    void setHorizonOnMultiversionWriteCursor() throws IOException {
+        try (MuninnPageCache pageCache = createPageCache(fs, 4, NULL);
+                PagedFile pagedFile =
+                        map(pageCache, file("a"), (int) ByteUnit.kibiBytes(8), immutable.of(MULTI_VERSIONED))) {
+            try (PageCursor cursor = pagedFile.io(1, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(cursor.next());
+                assertEquals(0, getPageHorizon(((MuninnPageCursor) cursor).pinnedPageRef));
+                cursor.setPageHorizon(42);
+                assertEquals(42, getPageHorizon(((MuninnPageCursor) cursor).pinnedPageRef));
+            }
+        }
+    }
+
+    @Test
+    void setHorizonOnPlainWriteCursorHasNoEffect() throws IOException {
+        assumeFalse(getOpenOptions().contains(MULTI_VERSIONED));
+
+        try (MuninnPageCache pageCache = createPageCache(fs, 4, NULL);
+                PagedFile pagedFile = map(pageCache, file("a"), (int) ByteUnit.kibiBytes(8))) {
+            try (PageCursor cursor = pagedFile.io(1, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(cursor.next());
+                assertEquals(0, getPageHorizon(((MuninnPageCursor) cursor).pinnedPageRef));
+                cursor.setPageHorizon(42);
+                assertEquals(0, getPageHorizon(((MuninnPageCursor) cursor).pinnedPageRef));
+            }
+        }
+    }
+
+    @Test
     void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException {
         TestVersionContext versionContext = new TestVersionContext(() -> 23);
         var contextFactory =
@@ -1912,8 +1948,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         var pageCacheTracer = new PageHorizonSettingPageCacheTracer(pagesReferenceHolder);
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         try (MuninnPageCache pageCache = createPageCache(fs, maxPages, pageCacheTracer);
-                PagedFile pagedFile = map(
-                        pageCache, file("a"), 8 + reservedBytes, immutable.of(PageCacheOpenOptions.MULTI_VERSIONED))) {
+                PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes, immutable.of(MULTI_VERSIONED))) {
 
             pagesReferenceHolder.set(pageCache.pages);
 
@@ -2838,7 +2873,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         var pageRefs = LongLists.mutable.withInitialCapacity(maxPages);
         for (int i = 0; i < maxPages; i++) {
             long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
-            assertEquals(0, PageList.getPageHorizon(pageRef));
+            assertEquals(0, getPageHorizon(pageRef));
             pageRefs.add(pageRef);
         }
         pageRefs.forEach(pageRef -> pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL));

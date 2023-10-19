@@ -448,6 +448,9 @@ public class StubPageCursor extends PageCursor {
     }
 
     @Override
+    public void setPageHorizon(long horizon) {}
+
+    @Override
     public void unpin() {}
 
     @Override
