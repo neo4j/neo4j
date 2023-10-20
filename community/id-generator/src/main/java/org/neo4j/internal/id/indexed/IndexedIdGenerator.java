@@ -31,6 +31,7 @@ import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -784,7 +785,8 @@ public class IndexedIdGenerator implements IdGenerator {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             boolean onlySummary,
-            ImmutableSet<OpenOption> openOptions)
+            ImmutableSet<OpenOption> openOptions,
+            PrintStream out)
             throws IOException {
         HeaderReader header = readHeader(fileSystem, path, openOptions)
                 .orElseThrow(() -> new NoSuchFileException(path.toAbsolutePath().toString()));
@@ -803,11 +805,11 @@ public class IndexedIdGenerator implements IdGenerator {
                 "Indexed ID generator",
                 contextFactory,
                 pageCacheTracer)) {
-            System.out.println(header);
+            out.println(header);
             if (onlySummary) {
                 MutableLong numDeletedNotFreed = new MutableLong();
                 MutableLong numDeletedAndFreed = new MutableLong();
-                System.out.println("Calculating summary...");
+                out.println("Calculating summary...");
                 try (var cursorContext = contextFactory.create("IndexDump")) {
                     tree.visit(
                             new GBPTreeVisitor.Adaptor<>() {
@@ -826,10 +828,10 @@ public class IndexedIdGenerator implements IdGenerator {
                             cursorContext);
                 }
 
-                System.out.println();
-                System.out.println("Number of IDs deleted and available for reuse: " + numDeletedAndFreed);
-                System.out.println("Number of IDs deleted, but not yet available for reuse: " + numDeletedNotFreed);
-                System.out.printf(
+                out.println();
+                out.println("Number of IDs deleted and available for reuse: " + numDeletedAndFreed);
+                out.println("Number of IDs deleted, but not yet available for reuse: " + numDeletedNotFreed);
+                out.printf(
                         "NOTE: A deleted ID not yet available for reuse is buffered until all transactions that were open%n"
                                 + "at the time of its deletion have been closed, or the database is restarted%n");
             } else {
@@ -847,7 +849,7 @@ public class IndexedIdGenerator implements IdGenerator {
                                 public void value(ValueHolder<IdRange> value) {
                                     long rangeIndex = key.getIdRangeIdx();
                                     int idsPerEntry = layout.idsPerEntry();
-                                    System.out.printf(
+                                    out.printf(
                                             "%s [rangeIndex: %d, i.e. IDs:%d-%d]%n",
                                             value.value,
                                             rangeIndex,
@@ -858,7 +860,7 @@ public class IndexedIdGenerator implements IdGenerator {
                             cursorContext);
                 }
             }
-            System.out.println(header);
+            out.println(header);
         }
     }
 
