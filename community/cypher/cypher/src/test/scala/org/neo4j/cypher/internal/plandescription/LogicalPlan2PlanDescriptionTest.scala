@@ -6799,6 +6799,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       readOnly,
       effectiveCardinalities,
       withRawCardinalities = false,
+      withDistinctness = false,
       providedOrders = providedOrders,
       StubExecutionPlan().operatorMetadata
     )

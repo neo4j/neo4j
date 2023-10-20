@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
+import org.neo4j.cypher.internal.plandescription.Arguments.Distinctness
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
@@ -43,9 +44,13 @@ object renderAsTreeTable {
   private val SEPARATOR = ","
   private val MERGE_COLUMN_PADDING = ' '
 
-  def apply(plan: InternalPlanDescription, withRawCardinalities: Boolean = false): String = {
+  def apply(
+    plan: InternalPlanDescription,
+    withRawCardinalities: Boolean = false,
+    withDistinctness: Boolean = false
+  ): String = {
 
-    val table = TreeTableBuilder.buildTable(plan, withRawCardinalities)
+    val table = TreeTableBuilder.buildTable(plan, withRawCardinalities, withDistinctness)
     val headers = Header.ALL.filter(table.columnLengths.contains)
 
     def width(header: String) = {
@@ -171,8 +176,11 @@ private object Header {
   val PAGE_CACHE = "Page Cache Hits/Misses"
   val TIME = "Time (ms)"
   val ORDER = "Ordered by"
+  val DISTINCTNESS = "Distinctness"
   val PIPELINE = "Pipeline"
-  val ALL = Seq(OPERATOR, ID, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE, TIME, ORDER, PIPELINE)
+
+  val ALL: Seq[String] =
+    Seq(OPERATOR, ID, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE, TIME, ORDER, DISTINCTNESS, PIPELINE)
 }
 
 /**
@@ -260,9 +268,15 @@ private object TreeTableBuilder {
     new MergeEqualValues(Header.ORDER)
   )
 
-  def buildTable(rootPlan: InternalPlanDescription, withRawCardinalities: Boolean): Table = {
+  def buildTable(
+    rootPlan: InternalPlanDescription,
+    withRawCardinalities: Boolean,
+    withDistinctness: Boolean
+  ): Table = {
     inferMissingPipelineInfo(compactAndCollectPlans(rootPlan))
-      .foldLeft(new TreeTableBuilder(withRawCardinalities)) { case (builder, plan) => builder.add(plan) }
+      .foldLeft(new TreeTableBuilder(withRawCardinalities, withDistinctness)) { case (builder, plan) =>
+        builder.add(plan)
+      }
       .result()
   }
 
@@ -329,7 +343,10 @@ private object TreeTableBuilder {
     }
 }
 
-private class TreeTableBuilder private (private val withRawCardinalities: Boolean) {
+private class TreeTableBuilder private (
+  private val withRawCardinalities: Boolean,
+  private val withDistinctness: Boolean
+) {
   private val rows = mutable.Buffer.empty[TableRow]
   private var unmergedRow: Option[BuildingRow] = None
   private val lengths = mutable.Map.empty[String, Int]
@@ -377,6 +394,8 @@ private class TreeTableBuilder private (private val withRawCardinalities: Boolea
         Header.PAGE_CACHE -> Cell.right(s"$hits/${misses.getOrElse(0)}")
       case Time(nanos)          => Header.TIME -> Cell.right("%.3f".format(nanos / 1000000.0))
       case Order(providedOrder) => Header.ORDER -> Cell.left(providedOrder.prettifiedString)
+      case Distinctness(distinctness) if withDistinctness =>
+        Header.DISTINCTNESS -> Cell.left(distinctness.prettifiedString)
       case Details(detailsList) =>
         Header.DETAILS -> Cell.left(splitDetails(detailsList.map(_.prettifiedString).toList): _*)
       case pipeline: PipelineInfo => Header.PIPELINE -> Cell.left(serialize(pipeline).toString)

@@ -408,6 +408,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
   case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
   case object rawCardinalities extends CypherDebugOption("rawcardinalities")
+  case object renderDistinctness extends CypherDebugOption("renderdistinctness")
   case object warnOnCompilationErrors extends CypherDebugOption("warnoncompilationerrors")
   case object disableExistsSubqueryCaching extends CypherDebugOption("disableexistssubquerycaching")
   case object verboseEagernessReasons extends CypherDebugOption("verboseeagernessreasons")
@@ -429,6 +430,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     fabricLogRecords,
     logicalPlanBuilder,
     rawCardinalities,
+    renderDistinctness,
     warnOnCompilationErrors,
     disableExistsSubqueryCaching,
     verboseEagernessReasons
@@ -479,6 +481,7 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val fabricLogRecordsEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogRecords)
   val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
   val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
+  val renderDistinctnessEnabled: Boolean = isEnabled(CypherDebugOption.renderDistinctness)
   val warnOnCompilationErrors: Boolean = isEnabled(CypherDebugOption.warnOnCompilationErrors)
   val disableExistsSubqueryCaching: Boolean = isEnabled(CypherDebugOption.disableExistsSubqueryCaching)
   val verboseEagernessReasons: Boolean = isEnabled(CypherDebugOption.verboseEagernessReasons)

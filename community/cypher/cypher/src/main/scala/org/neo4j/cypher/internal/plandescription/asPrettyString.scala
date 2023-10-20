@@ -24,6 +24,11 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.AtMostOneRow
+import org.neo4j.cypher.internal.logical.plans.DistinctColumns
+import org.neo4j.cypher.internal.logical.plans.NotDistinct
+import org.neo4j.cypher.internal.plandescription.Arguments.Distinctness
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.util.helpers.LineBreakRemover.removeLineBreaks
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParams
@@ -84,6 +89,19 @@ object asPrettyString {
       val direction = if (col.isAscending) "ASC" else "DESC"
       s"${apply(col.expression)} $direction"
     }).mkString(", ")
+  }
+
+  def distinctness(distinctness: plans.Distinctness): Distinctness =
+    Distinctness(PrettyString(serializeDistinctness(distinctness)))
+
+  private def serializeDistinctness(distinctness: plans.Distinctness): String = {
+    distinctness match {
+      case DistinctColumns(columns) => columns.map(col => {
+          s"${apply(col)}"
+        }).mkString(", ")
+      case AtMostOneRow => "At most 1 row"
+      case NotDistinct  => ""
+    }
   }
 
   private def makePretty(s: String): String =

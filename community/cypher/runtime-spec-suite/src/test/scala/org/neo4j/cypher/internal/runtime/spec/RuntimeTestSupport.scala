@@ -549,6 +549,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
           logicalQuery.readOnly,
           logicalQuery.effectiveCardinalities,
           debugOptions.rawCardinalitiesEnabled,
+          debugOptions.renderDistinctnessEnabled,
           logicalQuery.providedOrders,
           executionPlan,
           renderPlanDescription = false

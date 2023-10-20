@@ -225,7 +225,8 @@ final case class PlanDescriptionImpl(
   children: Children,
   arguments: Seq[Argument],
   variables: Set[PrettyString],
-  withRawCardinalities: Boolean = false
+  withRawCardinalities: Boolean = false,
+  withDistinctness: Boolean = false
 ) extends InternalPlanDescription {
 
   checkOnlyWhenAssertionsAreEnabled(arguments.count(_.isInstanceOf[Details]) < 2)
@@ -245,9 +246,9 @@ final case class PlanDescriptionImpl(
 
   def toIndexedSeq: Seq[InternalPlanDescription] = this +: children.toIndexedSeq
 
-  val NL = System.lineSeparator()
+  val NL: String = System.lineSeparator()
 
-  override def toString = {
+  override def toString: String = {
     val version = arguments.collectFirst {
       case Version(v) => s"Compiler $v$NL"
     }
@@ -268,7 +269,7 @@ final case class PlanDescriptionImpl(
     }
 
     val prefix = version ++ planner ++ runtime ++ runtimeVersion ++ batchSize
-    s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this, withRawCardinalities)}$NL${renderSummary(this)}$renderSources"
+    s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this, withRawCardinalities, withDistinctness)}$NL${renderSummary(this)}$renderSources"
   }
 
   private def renderSources = {

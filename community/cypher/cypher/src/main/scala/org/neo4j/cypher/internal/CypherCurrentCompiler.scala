@@ -160,6 +160,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       queryType == READ_ONLY || queryType == DBMS_READ,
       cachedExecutionPlan.effectiveCardinalities,
       logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
+      logicalPlanResult.plannerContext.debugOptions.renderDistinctnessEnabled,
       cachedExecutionPlan.providedOrders,
       cachedExecutionPlan.executionPlan,
       logicalPlanResult.notifications ++ query.notifications,
@@ -313,6 +314,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     readOnly: Boolean,
     effectiveCardinalities: EffectiveCardinalities,
     rawCardinalitiesInPlanDescription: Boolean,
+    distinctnessInPlanDescription: Boolean,
     providedOrders: ProvidedOrders,
     executionPlan: ExecutionPlan,
     planningNotifications: IndexedSeq[InternalNotification],
@@ -342,6 +344,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         readOnly,
         effectiveCardinalities,
         rawCardinalitiesInPlanDescription,
+        distinctnessInPlanDescription,
         providedOrders,
         executionPlan,
         renderPlanDescription

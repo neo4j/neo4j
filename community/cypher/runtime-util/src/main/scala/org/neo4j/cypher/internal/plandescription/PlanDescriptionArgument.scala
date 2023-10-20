@@ -69,6 +69,8 @@ object Arguments {
 
   case class Order(order: PrettyString) extends Argument
 
+  case class Distinctness(distinctness: PrettyString) extends Argument
+
   case class PageCacheHits(value: Long) extends Argument
 
   case class PageCacheMisses(value: Long) extends Argument

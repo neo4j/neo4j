@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSup
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.DistinctColumns
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
+import org.neo4j.cypher.internal.plandescription.asPrettyString.distinctness
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -436,6 +438,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       readOnly = true,
       new EffectiveCardinalities,
       withRawCardinalities = false,
+      withDistinctness = false,
       providedOrders,
       StubExecutionPlan().operatorMetadata
     )
@@ -552,6 +555,72 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |+------------------+----+---------+------------------+
         || +NodeByLabelScan | -1 | n:Foo   | 1.0 (1.23456789) |
         |+------------------+----+---------+------------------+
+        |""".stripMargin
+    )
+  }
+
+  test("Render distinctness if requested") {
+    val pD = planDescription(
+      id,
+      "NodeByLabelScan",
+      NoChildren,
+      Seq(
+        details("n:Foo"),
+        distinctness(DistinctColumns("n"))
+      ),
+      Set.empty
+    )
+
+    renderAsTreeTable(pD, withDistinctness = true) should equal(
+      """+------------------+----+---------+--------------+
+        || Operator         | Id | Details | Distinctness |
+        |+------------------+----+---------+--------------+
+        || +NodeByLabelScan | -1 | n:Foo   | n            |
+        |+------------------+----+---------+--------------+
+        |""".stripMargin
+    )
+  }
+
+  test("Do not render distinctness if not available") {
+    val pD = planDescription(
+      id,
+      "NodeByLabelScan",
+      NoChildren,
+      Seq(
+        details("n:Foo")
+      ),
+      Set.empty
+    )
+
+    renderAsTreeTable(pD, withDistinctness = true) should equal(
+      """+------------------+----+---------+
+        || Operator         | Id | Details |
+        |+------------------+----+---------+
+        || +NodeByLabelScan | -1 | n:Foo   |
+        |+------------------+----+---------+
+        |""".stripMargin
+    )
+  }
+
+  test("Do not render distinctness if not requested") {
+    val pD = planDescription(
+      id,
+      "NodeByLabelScan",
+      NoChildren,
+      Seq(
+        details("n:Foo"),
+        distinctness(DistinctColumns("n"))
+      ),
+      Set.empty
+    )
+
+    // noinspection RedundantDefaultArgument
+    renderAsTreeTable(pD, withDistinctness = false) should equal(
+      """+------------------+----+---------+
+        || Operator         | Id | Details |
+        |+------------------+----+---------+
+        || +NodeByLabelScan | -1 | n:Foo   |
+        |+------------------+----+---------+
         |""".stripMargin
     )
   }
@@ -1046,6 +1115,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       readOnly = true,
       effectiveCardinalities,
       withRawCardinalities = false,
+      withDistinctness = false,
       new ProvidedOrders,
       StubExecutionPlan().operatorMetadata
     )

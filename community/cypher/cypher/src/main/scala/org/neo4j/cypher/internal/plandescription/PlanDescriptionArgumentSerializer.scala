@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
+import org.neo4j.cypher.internal.plandescription.Arguments.Distinctness
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.IdArg
@@ -59,6 +60,7 @@ object PlanDescriptionArgumentSerializer {
       case Time(value)                            => Long.box(value)
       case EstimatedRows(effectiveCardinality, _) => Double.box(effectiveCardinality)
       case Order(providedOrder)                   => providedOrder.prettifiedString
+      case Distinctness(distinctness)             => distinctness.prettifiedString
       case Version(version)                       => version
       case Planner(planner)                       => planner
       case PlannerImpl(plannerName)               => plannerName

@@ -43,6 +43,7 @@ object PlanDescriptionBuilder {
     readOnly: Boolean,
     effectiveCardinalities: EffectiveCardinalities,
     withRawCardinalities: Boolean,
+    withDistinctness: Boolean,
     providedOrders: ProvidedOrders,
     executionPlan: ExecutionPlan,
     renderPlanDescription: Boolean
@@ -57,10 +58,11 @@ object PlanDescriptionBuilder {
     new PlanDescriptionBuilder(
       logicalPlan: LogicalPlan,
       plannerName: PlannerName,
-      readOnly: Boolean,
-      effectiveCardinalities: EffectiveCardinalities,
-      withRawCardinalities: Boolean,
-      providedOrders: ProvidedOrders,
+      readOnly,
+      effectiveCardinalities,
+      withRawCardinalities,
+      withDistinctness,
+      providedOrders,
       runtimeName,
       runtimeMetadata,
       runtimeOperatorMetadata,
@@ -77,6 +79,7 @@ class PlanDescriptionBuilder(
   readOnly: Boolean,
   effectiveCardinalities: EffectiveCardinalities,
   withRawCardinalities: Boolean,
+  withDistinctness: Boolean,
   providedOrders: ProvidedOrders,
   runtimeName: RuntimeName,
   runtimeMetadata: Seq[Argument],
@@ -95,6 +98,7 @@ class PlanDescriptionBuilder(
           readOnly,
           effectiveCardinalities,
           withRawCardinalities,
+          withDistinctness,
           providedOrders,
           runtimeOperatorMetadata
         )
