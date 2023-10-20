@@ -131,9 +131,11 @@ class FromPathsIT {
 
         Exception e3 = assertThrows(IllegalArgumentException.class, () -> assertValid(concatenateSubPath("a*", "b")));
         assertThat(e3.getMessage()).contains("Asterisks and question marks should be placed in the last subpath");
+    }
 
-        Exception e4 = assertThrows(IllegalArgumentException.class, () -> assertValid(concatenateSubPath("a", "b->")));
-        assertThat(e4.getMessage()).contains("is in illegal format.");
+    @Test
+    void shouldNotValidatePathAsDatabaseName() {
+        assertValid(concatenateSubPath("a", "b->"));
     }
 
     @Test

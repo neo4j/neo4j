@@ -78,6 +78,11 @@ public class DatabaseNameValidator {
                     + MAXIMUM_DATABASE_NAME_LENGTH + " characters.");
         }
 
+        validateDatabaseNameCharacters(name);
+        return name;
+    }
+
+    public static String validateDatabaseNameCharacters(String name) {
         if (!DATABASE_NAME_GLOBBING_PATTERN.matcher(name).matches()) {
             throw new IllegalArgumentException("Database name '" + name
                     + "' contains illegal characters. Use simple ascii characters, numbers, dots,"

@@ -74,7 +74,7 @@ public class FromPaths {
 
     private Set<Path> getAndFilterPaths(File file) throws IOException {
         final var parent = file.getParent(); // not null, protect by validateParentPath
-        final var pattern = new DatabaseNamePattern(file.getName());
+        final var pattern = new FilenamePattern(file.getName());
         if (!pattern.containsPattern()) {
             return Set.of(Path.of(file.toString()));
         }
@@ -106,13 +106,6 @@ public class FromPaths {
         if (file.getParent() == null || Path.of(file.getParent()).getNameCount() == 0) {
             throw new IllegalArgumentException("From path with value=" + file.getAbsolutePath()
                     + " should not point to the root of the file system");
-        }
-
-        final var lastSubPath = file.getName();
-        try {
-            new DatabaseNamePattern(lastSubPath);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Last path of " + file.getAbsolutePath() + " is in illegal format.", ex);
         }
     }
 
