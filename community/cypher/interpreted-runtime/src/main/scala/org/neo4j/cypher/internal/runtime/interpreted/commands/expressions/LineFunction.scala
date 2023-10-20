@@ -27,6 +27,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 import java.net.URLDecoder
+import java.nio.charset.StandardCharsets.UTF_8
 
 case class Linenumber() extends Expression {
 
@@ -64,7 +65,7 @@ object File {
 
   def compute(row: ReadableRow): AnyValue = row.getLinenumber match {
     case Some(ResourceLinenumber(name, _, _)) =>
-      Values.utf8Value(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
+      Values.utf8Value(URLDecoder.decode(name, UTF_8)) // decode to make %20 from urls into spaces etc
     case _ => Values.NO_VALUE
   }
 }

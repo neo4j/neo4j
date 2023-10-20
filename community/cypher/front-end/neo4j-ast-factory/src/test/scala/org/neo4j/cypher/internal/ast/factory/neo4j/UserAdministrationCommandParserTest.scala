@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 
+import java.nio.charset.StandardCharsets.UTF_8
 import java.util
 
 class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -1637,7 +1638,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   test("ALTER CURRENT USER command finds password literal at correct offset") {
     parsing("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'new'").shouldVerify { statement =>
       val passwords = statement.folder.findAllByClass[SensitiveStringLiteral].map(l =>
-        (new String(l.value, "utf-8"), l.position.offset)
+        (new String(l.value, UTF_8), l.position.offset)
       )
       passwords.toSet should equal(Set("current" -> 37, "new" -> 50))
     }

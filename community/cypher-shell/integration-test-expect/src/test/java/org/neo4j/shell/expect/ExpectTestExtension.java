@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.shell.expect.ExpectTestExtension.CYPHER_SHELL_PATH;
 import static org.neo4j.shell.expect.InteractionAssertion.assertEqualInteraction;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -102,14 +103,19 @@ public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback 
 
     public static Stream<Path> findAllExpectResources() throws IOException {
         final var directoryPath = Path.of("expect/tests");
-        final var stream = ExpectTestExtension.class.getClassLoader().getResourceAsStream(directoryPath.toString());
-        final var files = IOUtils.readLines(stream, "UTF-8").stream()
-                .filter(f -> f.endsWith(".expect") && !f.equals("common.expect"))
-                .toList();
-        if (files.size() < 2) {
-            throw new RuntimeException("Could not find test cases in " + directoryPath);
+        try (final var stream =
+                ExpectTestExtension.class.getClassLoader().getResourceAsStream(directoryPath.toString())) {
+            if (stream == null) {
+                throw new FileNotFoundException("Resource `" + directoryPath + "` not found");
+            }
+            final var files = IOUtils.readLines(stream, UTF_8).stream()
+                    .filter(f -> f.endsWith(".expect") && !f.equals("common.expect"))
+                    .toList();
+            if (files.size() < 2) {
+                throw new RuntimeException("Could not find test cases in " + directoryPath);
+            }
+            return files.stream().map(directoryPath::resolve);
         }
-        return files.stream().map(directoryPath::resolve);
     }
 
     private void createAndStartContainers() throws IOException {
