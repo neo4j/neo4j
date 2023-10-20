@@ -222,7 +222,7 @@ class TestAStar extends Neo4jAlgoTestCase {
             graph.makeEdge(transaction, "A", "C", "length", 10d);
 
             final Map<Node, Double> seenBranchStates = new HashMap<>();
-            PathExpander<Double> expander = new PathExpander<Double>() {
+            PathExpander<Double> expander = new PathExpander<>() {
                 @Override
                 public ResourceIterable<Relationship> expand(Path path, BranchState<Double> state) {
                     double newState = state.getState();

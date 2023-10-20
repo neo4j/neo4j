@@ -104,7 +104,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
 
     @Test
     void testIndexScan() throws Exception {
-        List<Long> ids = LongStream.rangeClosed(1L, 10L).boxed().collect(Collectors.toUnmodifiableList());
+        List<Long> ids = LongStream.rangeClosed(1L, 10L).boxed().toList();
         Supplier<Value> randomValue = () -> random.randomValues().nextValueOfTypes(testSuite.supportedValueTypes());
 
         updateAndCommit(ids.stream()

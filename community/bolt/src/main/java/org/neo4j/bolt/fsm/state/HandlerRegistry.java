@@ -33,7 +33,7 @@ final class HandlerRegistry<I, H> implements Iterable<H> {
     }
 
     public static <I, H> Factory<I, H> builder() {
-        return new Factory<I, H>();
+        return new Factory<>();
     }
 
     public H find(Class<? extends I> type) {
@@ -50,7 +50,7 @@ final class HandlerRegistry<I, H> implements Iterable<H> {
 
         var candidateKey = this.handlerMap.keySet().stream()
                 .filter(candidate -> candidate.isAssignableFrom(type))
-                .sorted((a, b) -> {
+                .min((a, b) -> {
                     if (a.isAssignableFrom(b)) {
                         return 1;
                     }
@@ -60,7 +60,6 @@ final class HandlerRegistry<I, H> implements Iterable<H> {
 
                     return 0;
                 })
-                .findFirst()
                 .orElse(null);
 
         if (candidateKey == null) {

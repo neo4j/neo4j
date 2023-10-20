@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 
@@ -27,13 +28,13 @@ import org.neo4j.kernel.api.index.IndexProvider;
  * Adapts an {@link IndexProvider.Monitor index monitor} to behave like a {@link GBPTree.Monitor gbptree monitor}
  * by relaying the calls together with index information and also duplicate call to delegate {@link GBPTree.Monitor}.
  */
-class IndexMonitorAdaptor extends GBPTree.Monitor.Delegate {
+class IndexMonitorAdaptor extends MultiRootGBPTree.Monitor.Delegate {
     private final IndexProvider.Monitor indexMonitor;
     private final IndexFiles indexFiles;
     private final IndexDescriptor descriptor;
 
     IndexMonitorAdaptor(
-            GBPTree.Monitor treeMonitor,
+            MultiRootGBPTree.Monitor treeMonitor,
             IndexProvider.Monitor indexMonitor,
             IndexFiles indexFiles,
             IndexDescriptor descriptor) {

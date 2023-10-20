@@ -124,7 +124,7 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
                     streamClassName));
         }
 
-        var hints = hintInvalidStreamType(method, returnType).collect(Collectors.toList());
+        var hints = hintInvalidStreamType(method, returnType).toList();
         if (!hints.isEmpty()) {
             return hints.stream();
         }

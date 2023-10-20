@@ -35,6 +35,7 @@ import java.util.function.Function;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -129,8 +130,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
                     fileSystem,
                     path,
                     layout,
-                    GBPTree.NO_MONITOR,
-                    GBPTree.NO_HEADER_READER,
+                    MultiRootGBPTree.NO_MONITOR,
+                    MultiRootGBPTree.NO_HEADER_READER,
                     recoveryCleanupWorkCollector,
                     readOnly,
                     openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),

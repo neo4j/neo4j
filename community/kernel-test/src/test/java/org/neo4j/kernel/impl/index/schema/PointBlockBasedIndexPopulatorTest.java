@@ -125,7 +125,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
             final var updates = UNSUPPORTED_TYPES.stream()
                     .map(randomValues::nextValueOfType)
                     .map(value -> IndexEntryUpdate.add(idGen.getAsLong(), INDEX_DESCRIPTOR, value))
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
 
             populator.add(updates, CursorContext.NULL_CONTEXT);
             populator.scanCompleted(PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);

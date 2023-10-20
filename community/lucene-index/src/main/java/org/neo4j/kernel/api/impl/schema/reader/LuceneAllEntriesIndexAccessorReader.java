@@ -50,7 +50,7 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
     @Override
     public Iterator<Long> iterator() {
         Iterator<Document> iterator = documents.iterator();
-        return new PrefetchingIterator<Long>() {
+        return new PrefetchingIterator<>() {
             @Override
             protected Long fetchNextOrNull() {
                 do {

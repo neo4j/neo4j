@@ -165,13 +165,13 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
 
         var databaseIdRepo = new MapCachingDatabaseIdRepository();
         var databaseRepository = new DatabaseRepository<StandaloneDatabaseContext>(databaseIdRepo);
-        var rootDatabaseIdRepository = CommunityEditionModule.tryResolveOrCreate(
+        var rootDatabaseIdRepository = AbstractEditionModule.tryResolveOrCreate(
                 DatabaseIdRepository.class,
                 globalModule.getExternalDependencyResolver(),
                 () -> new SystemGraphDatabaseIdRepository(
                         () -> databaseRepository.getDatabaseContext(DatabaseId.SYSTEM_DATABASE_ID),
                         globalModule.getLogService().getInternalLogProvider()));
-        var rootDatabaseReferenceRepository = CommunityEditionModule.tryResolveOrCreate(
+        var rootDatabaseReferenceRepository = AbstractEditionModule.tryResolveOrCreate(
                 DatabaseReferenceRepository.class,
                 globalModule.getExternalDependencyResolver(),
                 () -> new SystemGraphDatabaseReferenceRepository(databaseRepository::getSystemDatabaseContext));
@@ -305,8 +305,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
 
     private void registerSystemGraphInitializer(GlobalModule globalModule) {
         Supplier<GraphDatabaseService> systemSupplier =
-                CommunityEditionModule.systemSupplier(globalModule.getGlobalDependencies());
-        SystemGraphInitializer initializer = CommunityEditionModule.tryResolveOrCreate(
+                AbstractEditionModule.systemSupplier(globalModule.getGlobalDependencies());
+        SystemGraphInitializer initializer = AbstractEditionModule.tryResolveOrCreate(
                 SystemGraphInitializer.class,
                 globalModule.getExternalDependencyResolver(),
                 () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));

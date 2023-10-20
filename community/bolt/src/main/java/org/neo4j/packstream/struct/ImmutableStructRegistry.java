@@ -58,8 +58,7 @@ public class ImmutableStructRegistry<CTX, S> extends AbstractStructRegistry<CTX,
 
         @Override
         public ImmutableStructRegistry<CTX, S> build() {
-            return new ImmutableStructRegistry<CTX, S>(
-                    Map.copyOf(this.tagToReaderMap), Map.copyOf(this.typeToWriterMap));
+            return new ImmutableStructRegistry<>(Map.copyOf(this.tagToReaderMap), Map.copyOf(this.typeToWriterMap));
         }
     }
 }

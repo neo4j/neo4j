@@ -36,7 +36,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,7 +80,7 @@ class ConcurrentCreateDropIndexIT {
         try (Transaction tx = db.beginTx()) {
             List<IndexDefinition> indexes = IntStream.range(0, threads)
                     .mapToObj(i -> single(tx.schema().getIndexes(label(i))))
-                    .collect(Collectors.toList());
+                    .toList();
             Set<String> labels = new HashSet<>();
             for (IndexDefinition index : indexes) {
                 assertTrue(labels.add(single(index.getLabels()).name()));
@@ -146,7 +145,7 @@ class ConcurrentCreateDropIndexIT {
         try (Transaction tx = db.beginTx()) {
             List<IndexDefinition> indexes = IntStream.range(drops, drops + creates)
                     .mapToObj(i -> single(tx.schema().getIndexes(label(i))))
-                    .collect(Collectors.toList());
+                    .toList();
             for (IndexDefinition index : indexes) {
                 assertTrue(
                         expectedIndexedLabels.remove(single(index.getLabels()).name()));

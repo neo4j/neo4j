@@ -85,7 +85,7 @@ class MainTest {
         testWithMocks()
                 .run()
                 .assertFailure("bla")
-                .assertThatOutput(new Condition<String>(s -> s.isEmpty(), "String is empty"));
+                .assertThatOutput(new Condition<>(String::isEmpty, "String is empty"));
 
         verify(mockShell, times(1)).connect(any());
     }

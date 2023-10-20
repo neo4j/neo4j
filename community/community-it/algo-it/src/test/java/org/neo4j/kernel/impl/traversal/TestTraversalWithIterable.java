@@ -73,7 +73,7 @@ class TestTraversalWithIterable extends TraversalTestBase {
                     .evaluator(Evaluators.toDepth(1));
             final Iterable<Path> firstResult = firstTraverser.traverse(getNodeWithName(tx, "a"));
 
-            Iterable<Node> startNodesForNestedTraversal = new IterableWrapper<Node, Path>(firstResult) {
+            Iterable<Node> startNodesForNestedTraversal = new IterableWrapper<>(firstResult) {
                 @Override
                 protected Node underlyingObjectToObject(Path path) {
                     return path.endNode();

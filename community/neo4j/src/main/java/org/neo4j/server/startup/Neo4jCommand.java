@@ -37,7 +37,7 @@ public class Neo4jCommand extends Neo4jAdminCommand {
 
     public static void main(String[] args) {
         var environment = Environment.SYSTEM;
-        int exitCode = Neo4jCommand.asCommandLine(new Neo4jCommand(environment), environment)
+        int exitCode = Neo4jAdminCommand.asCommandLine(new Neo4jCommand(environment), environment)
                 .execute(args);
         System.exit(exitCode);
     }

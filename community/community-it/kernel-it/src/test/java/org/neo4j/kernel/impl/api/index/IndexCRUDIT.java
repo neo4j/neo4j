@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -168,6 +169,7 @@ class IndexCRUDIT {
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
         when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class), any()))
                 .then(inv -> inv.getArgument(0));
+        when(mockedIndexProvider.getIndexType()).thenReturn(LOOKUP);
 
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem(fs)

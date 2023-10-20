@@ -60,7 +60,7 @@ public class JmxDump implements AutoCloseable {
     private final JMXConnector connector;
     private final MBeanServerConnection mBeanServer;
     private Properties systemProperties;
-    public static String THREAD_DUMP_FAILURE = "ERROR: Unable to produce any thread dump";
+    public static final String THREAD_DUMP_FAILURE = "ERROR: Unable to produce any thread dump";
 
     private JmxDump(JMXConnector connector, MBeanServerConnection mBeanServer) {
         this.connector = connector;

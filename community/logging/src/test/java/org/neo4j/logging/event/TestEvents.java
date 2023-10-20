@@ -24,7 +24,7 @@ public enum TestEvents implements EventType {
     END("Test ended", Type.Warn),
     WITH_PARAMS("With Params", Type.Info);
 
-    public static ComponentNamespace TEST_COMPONENT_NAMESPACE = new ComponentNamespace("TestComponent");
+    public static final ComponentNamespace TEST_COMPONENT_NAMESPACE = new ComponentNamespace("TestComponent");
 
     private final String message;
     private final Type level;

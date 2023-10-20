@@ -64,7 +64,7 @@ public interface StateTransition<R extends RequestMessage> {
             return this;
         }
         if (transitions.length == 1) {
-            return new SequentialStateTransition<R>(this.requestType(), true, this, transitions[0]);
+            return new SequentialStateTransition<>(this.requestType(), true, this, transitions[0]);
         }
 
         @SuppressWarnings("unchecked")
@@ -72,7 +72,7 @@ public interface StateTransition<R extends RequestMessage> {
         chain[0] = this;
         System.arraycopy(transitions, 0, chain, 1, transitions.length);
 
-        return new SequentialStateTransition<R>(this.requestType(), true, chain);
+        return new SequentialStateTransition<>(this.requestType(), true, chain);
     }
 
     /**
@@ -88,7 +88,7 @@ public interface StateTransition<R extends RequestMessage> {
             return this;
         }
         if (transitions.length == 1) {
-            return new SequentialStateTransition<R>(this.requestType(), false, this, transitions[0]);
+            return new SequentialStateTransition<>(this.requestType(), false, this, transitions[0]);
         }
 
         @SuppressWarnings("unchecked")
@@ -96,6 +96,6 @@ public interface StateTransition<R extends RequestMessage> {
         chain[0] = this;
         System.arraycopy(transitions, 0, chain, 1, transitions.length);
 
-        return new SequentialStateTransition<R>(this.requestType(), false, chain);
+        return new SequentialStateTransition<>(this.requestType(), false, chain);
     }
 }

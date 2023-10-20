@@ -38,6 +38,7 @@ public final class BeginMessageDecoderV50 extends DefaultBeginMessageDecoder {
         return null;
     }
 
+    @Override
     public short getTag() {
         return BeginMessage.SIGNATURE;
     }

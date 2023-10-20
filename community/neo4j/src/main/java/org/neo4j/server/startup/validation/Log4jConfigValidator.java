@@ -20,6 +20,7 @@
 package org.neo4j.server.startup.validation;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,7 +30,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Reconfigurable;
 import org.apache.logging.log4j.core.config.xml.XmlConfiguration;
-import org.apache.logging.log4j.core.util.NullOutputStream;
 import org.apache.logging.log4j.status.StatusData;
 import org.apache.logging.log4j.status.StatusListener;
 import org.apache.logging.log4j.status.StatusLogger;
@@ -66,8 +66,8 @@ public class Log4jConfigValidator implements ConfigValidator {
         var statusListener = createIssueCollectingStatusListener(issues);
 
         try {
-            System.setOut(new PrintStream(NullOutputStream.nullOutputStream()));
-            System.setErr(new PrintStream(NullOutputStream.nullOutputStream()));
+            System.setOut(new PrintStream(OutputStream.nullOutputStream()));
+            System.setErr(new PrintStream(OutputStream.nullOutputStream()));
             logger.registerListener(statusListener);
             AbstractLookup.setLookupContext(new LookupContext(null, null, config::configStringLookup));
             loadConfig(path);

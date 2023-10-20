@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -43,7 +43,7 @@ public final class TokenIndexes {
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader(FAILED);
-        GBPTree.readHeader(pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions);
+        MultiRootGBPTree.readHeader(pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions);
         return switch (headerReader.state) {
             case FAILED -> InternalIndexState.FAILED;
             case ONLINE -> InternalIndexState.ONLINE;
@@ -60,7 +60,7 @@ public final class TokenIndexes {
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader(FAILED);
-        GBPTree.readHeader(pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions);
+        MultiRootGBPTree.readHeader(pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions);
         return headerReader.failureMessage;
     }
 }

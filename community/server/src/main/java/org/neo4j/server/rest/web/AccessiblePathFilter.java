@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import static java.util.stream.Collectors.toUnmodifiableList;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -37,7 +35,7 @@ public class AccessiblePathFilter extends AbstractFilter {
     private final InternalLog log;
 
     public AccessiblePathFilter(InternalLogProvider logProvider, List<String> blacklist) {
-        this.blacklist = blacklist.stream().map(Pattern::compile).collect(toUnmodifiableList());
+        this.blacklist = blacklist.stream().map(Pattern::compile).toList();
         this.log = logProvider.getLog(getClass());
     }
 

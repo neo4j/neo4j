@@ -36,7 +36,7 @@ public class Globbing {
     private static final String escapedSpecialCharacters = specialCharacters.replaceAll(".", "\\\\$0");
 
     private static final Pattern specialCharacterPattern = Pattern.compile("[" + escapedSpecialCharacters + "]");
-    public static Predicate<String> MATCH_ALL = (s) -> true;
+    public static final Predicate<String> MATCH_ALL = (s) -> true;
 
     public static Predicate<String> globPredicate(String globbing) {
         Matcher m = specialCharacterPattern.matcher(globbing);

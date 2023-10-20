@@ -97,7 +97,7 @@ class ImportCommandTest {
         final var command = new ImportCommand.Full(getExecutionContext());
         final var help = getUsageHelp(command);
         final var options = getOptions(help);
-        var expectedOptions = new ArrayList<String>(List.of(sharedOptions));
+        var expectedOptions = new ArrayList<>(List.of(sharedOptions));
         expectedOptions.addAll(List.of("--overwrite-destination", "--format"));
         final var positionals = getPositionals(help);
         final var expectedPositionals = List.of(sharedPositionals);
@@ -111,7 +111,7 @@ class ImportCommandTest {
         final var command = new ImportCommand.Incremental(getExecutionContext());
         final var help = getUsageHelp(command);
         final var options = getOptions(help);
-        var expectedOptions = new ArrayList<String>(List.of(sharedOptions));
+        var expectedOptions = new ArrayList<>(List.of(sharedOptions));
         expectedOptions.addAll(List.of("--stage", "--force"));
         final var positionals = getPositionals(help);
         final var expectedPositionals = List.of(sharedPositionals);
@@ -132,7 +132,7 @@ class ImportCommandTest {
     private void assertIdTypeAliases(List<String> requiredArgs, List<String> aliases, IdType idType) {
         for (var alias : aliases) {
             var command = new ImportCommand.Full(getExecutionContext());
-            var args = Stream.concat(List.of("--id-type", alias).stream(), requiredArgs.stream());
+            var args = Stream.concat(Stream.of("--id-type", alias), requiredArgs.stream());
             new CommandLine(command).parseArgs(args.toArray(String[]::new));
             assertThat(command.idType).isEqualTo(idType);
         }
@@ -153,7 +153,7 @@ class ImportCommandTest {
             List<String> requiredArgs, List<String> aliases, CsvImporter.IncrementalStage stage) {
         for (var alias : aliases) {
             var command = new ImportCommand.Incremental(getExecutionContext());
-            var args = Stream.concat(List.of("--stage", alias).stream(), requiredArgs.stream());
+            var args = Stream.concat(Stream.of("--stage", alias), requiredArgs.stream());
             new CommandLine(command).parseArgs(args.toArray(String[]::new));
             assertThat(command.stage).isEqualTo(stage);
         }

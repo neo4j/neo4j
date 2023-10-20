@@ -23,7 +23,7 @@ import static org.neo4j.kernel.api.impl.schema.trigram.TrigramDocumentStructure.
 
 import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -78,7 +78,7 @@ class TrigramQueryFactory {
         var codePointBuffer = TrigramTokenStream.getCodePoints(searchString);
 
         if (codePointBuffer.codePointCount() < 3) {
-            String searchTerm = QueryParser.escape(searchString);
+            String searchTerm = QueryParserBase.escape(searchString);
             Term term = new Term(TRIGRAM_VALUE_KEY, "*" + searchTerm + "*");
             return new WildcardQuery(term);
         }

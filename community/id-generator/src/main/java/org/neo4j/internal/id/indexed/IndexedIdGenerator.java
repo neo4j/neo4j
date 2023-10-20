@@ -56,6 +56,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
@@ -423,7 +424,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     fileSystem,
                     path,
                     layout,
-                    GBPTree.NO_MONITOR,
+                    MultiRootGBPTree.NO_MONITOR,
                     headerReader,
                     recoveryCleanupWorkCollector,
                     readOnly,
@@ -766,7 +767,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private static Optional<HeaderReader> readHeader(
             FileSystemAbstraction fileSystem, Path path, ImmutableSet<OpenOption> openOptions) {
         HeaderReader headerReader = new HeaderReader();
-        return GBPTree.readHeader(fileSystem, path, headerReader, openOptions);
+        return MultiRootGBPTree.readHeader(fileSystem, path, headerReader, openOptions);
     }
 
     /**
@@ -793,7 +794,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 fileSystem,
                 path,
                 layout,
-                GBPTree.NO_MONITOR,
+                MultiRootGBPTree.NO_MONITOR,
                 NO_HEADER_READER,
                 immediate(),
                 true,

@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -764,8 +763,8 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
         try (KernelTransaction tx = beginTransaction()) {
             List<PointValue[]> arraysOfPoints =
-                    generateArraysOfPoints(4, 10_000).collect(Collectors.toUnmodifiableList());
-            List<PointValue> points = generateBox(500_000).collect(Collectors.toUnmodifiableList());
+                    generateArraysOfPoints(4, 10_000).toList();
+            List<PointValue> points = generateBox(500_000).toList();
 
             int length = Math.min(arraysOfPoints.size(), points.size());
             for (int i = 0; i < length; i++) {
@@ -975,7 +974,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
         try (KernelTransaction tx = beginTransaction()) {
             expected.add(entityWithTwoProps(tx, new String[] {"a"}, new String[] {"b"}));
 
-            List<PointValue> firstPoints = generateBox(500_000).collect(Collectors.toUnmodifiableList());
+            List<PointValue> firstPoints = generateBox(500_000).toList();
             int i = 0;
             for (; i < firstPoints.size() - 1; i++) {
                 expected.add(entityWithTwoProps(tx, firstPoints.get(i), "a"));
@@ -1021,7 +1020,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                     tx, new PointValue[] {PointValue.MIN_VALUE}, new PointValue[] {PointValue.MIN_VALUE}));
 
             List<PointValue[]> firstArraysOfPoints =
-                    generateArraysOfPoints(4, 10_000).collect(Collectors.toUnmodifiableList());
+                    generateArraysOfPoints(4, 10_000).toList();
             int i = 0;
             for (; i < firstArraysOfPoints.size() - 1; i++) {
                 expected.add(entityWithTwoProps(tx, firstArraysOfPoints.get(i), "a"));
@@ -1065,8 +1064,8 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
         try (KernelTransaction tx = beginTransaction()) {
             List<PointValue[]> arraysOfPoints =
-                    generateArraysOfPoints(4, 10_000).collect(Collectors.toUnmodifiableList());
-            List<PointValue> points = generateBox(500_000).collect(Collectors.toUnmodifiableList());
+                    generateArraysOfPoints(4, 10_000).toList();
+            List<PointValue> points = generateBox(500_000).toList();
 
             int length = Math.min(arraysOfPoints.size(), points.size());
             for (int i = 0; i < length; i++) {

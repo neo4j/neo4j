@@ -66,7 +66,6 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
@@ -793,7 +792,7 @@ public abstract class DataLookup {
     }
 
     private static boolean invalidTokens(int... tokens) {
-        return stream(tokens).anyMatch(token -> token == Token.NO_TOKEN);
+        return stream(tokens).anyMatch(token -> token == TokenRead.NO_TOKEN);
     }
 
     private static PropertyIndexQuery getIndexQuery(String value, StringSearchMode searchMode, int propertyId) {

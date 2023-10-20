@@ -172,7 +172,7 @@ public class IndexBackupIT {
 
     private void updateOldNodes(LongStream idRange) {
         try (Transaction transaction = database.beginTx()) {
-            List<Node> nodes = idRange.mapToObj(transaction::getNodeById).collect(Collectors.toList());
+            List<Node> nodes = idRange.mapToObj(transaction::getNodeById).toList();
             for (int i = 0; i < NUMBER_OF_INDEXES; i++) {
                 String propertyName = PROPERTY_PREFIX + i;
                 nodes.forEach(node -> node.setProperty(propertyName, random.nextString()));

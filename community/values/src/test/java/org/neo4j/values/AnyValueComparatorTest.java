@@ -55,7 +55,6 @@ import static org.neo4j.values.virtual.VirtualValues.relationship;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
@@ -162,7 +161,7 @@ class AnyValueComparatorTest {
     @Test
     void shouldOrderValuesCorrectly() {
         List<AnyValue> values =
-                Arrays.stream(objs).map(VirtualValueTestUtil::toAnyValue).collect(Collectors.toList());
+                Arrays.stream(objs).map(VirtualValueTestUtil::toAnyValue).toList();
 
         for (int i = 0; i < values.size(); i++) {
             for (int j = 0; j < values.size(); j++) {

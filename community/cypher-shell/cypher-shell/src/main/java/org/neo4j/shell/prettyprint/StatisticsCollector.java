@@ -21,7 +21,6 @@ package org.neo4j.shell.prettyprint;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.SummaryCounters;
 import org.neo4j.shell.cli.Format;
@@ -80,6 +79,6 @@ public class StatisticsCollector {
         if (counters.constraintsRemoved() != 0) {
             statistics.add(String.format("Removed %d constraints", counters.constraintsRemoved()));
         }
-        return statistics.stream().collect(Collectors.joining(", "));
+        return String.join(", ", statistics);
     }
 }

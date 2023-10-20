@@ -48,7 +48,7 @@ public final class Format {
     private static final DateTimeFormatter SHORT_DATE_FORMATTER =
             DateTimeFormatter.ofPattern(SHORT_DATE_FORMAT).withZone(DEFAULT_TIME_ZONE);
     private static final DateTimeFormatter LOCAL_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern(DATE_FORMAT).withZone(ZoneOffset.systemDefault());
+            DateTimeFormatter.ofPattern(DATE_FORMAT).withZone(ZoneId.systemDefault());
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern(TIME_FORMAT).withZone(DEFAULT_TIME_ZONE);
     private static final HexFormat HEX_FORMAT = HexFormat.of().withUpperCase();

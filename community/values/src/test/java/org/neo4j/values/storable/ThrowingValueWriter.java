@@ -30,7 +30,7 @@ public abstract class ThrowingValueWriter<E extends Exception> implements ValueW
     protected abstract E exception(String method);
 
     static <E extends Exception> ValueWriter<E> throwing(Supplier<E> exception) {
-        return new ThrowingValueWriter<E>() {
+        return new ThrowingValueWriter<>() {
             @Override
             protected E exception(String method) {
                 return exception.get();

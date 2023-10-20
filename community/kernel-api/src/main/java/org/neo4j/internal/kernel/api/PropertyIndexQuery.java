@@ -31,6 +31,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.token.api.TokenConstants;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -71,7 +72,7 @@ public abstract class PropertyIndexQuery implements IndexQuery {
      */
     public static ExactPredicate exact(int propertyKeyId, Object value) {
         var exactValue = value instanceof Value ? (Value) value : Values.of(value);
-        if (Value.isNaN(exactValue)) {
+        if (AnyValue.isNaN(exactValue)) {
             return new IncomparableExactPredicate(propertyKeyId, exactValue);
         }
         return new ExactPredicate(propertyKeyId, exactValue);
@@ -115,7 +116,7 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         ValueGroup valueGroup = requireNonNullElse(from, to).valueGroup();
         return switch (valueGroup) {
-            case NUMBER -> Value.hasNaNOperand(from, to)
+            case NUMBER -> AnyValue.hasNaNOperand(from, to)
                     // When the range bounds are explicitly set to NaN, we don't want to find anything
                     // because any comparison with NaN is false.
                     ? new IncomparableRangePredicate<>(

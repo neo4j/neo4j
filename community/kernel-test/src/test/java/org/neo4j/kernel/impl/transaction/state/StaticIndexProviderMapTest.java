@@ -45,13 +45,13 @@ class StaticIndexProviderMapTest {
 
     @Test
     void testGetters() throws Exception {
-        var tokenIndexProvider = mockProvider(TokenIndexProvider.class);
-        var textIndexProvider = mockProvider(TextIndexProvider.class);
-        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class);
-        var rangeIndexProvider = mockProvider(RangeIndexProvider.class);
-        var pointIndexProvider = mockProvider(PointIndexProvider.class);
-        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class);
-        var vectorIndexProvdider = mockProvider(VectorIndexProvider.class);
+        var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP);
+        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
+        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
+        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
+        var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT);
+        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
+        var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
@@ -59,7 +59,7 @@ class StaticIndexProviderMapTest {
                 rangeIndexProvider,
                 pointIndexProvider,
                 trigramIndexProvider,
-                vectorIndexProvdider,
+                vectorIndexProvider,
                 new Dependencies());
         map.init();
 
@@ -72,13 +72,13 @@ class StaticIndexProviderMapTest {
 
     @Test
     void testLookup() throws Exception {
-        var tokenIndexProvider = mockProvider(TokenIndexProvider.class);
-        var textIndexProvider = mockProvider(TextIndexProvider.class);
-        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class);
-        var rangeIndexProvider = mockProvider(RangeIndexProvider.class);
-        var pointIndexProvider = mockProvider(PointIndexProvider.class);
-        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class);
-        var vectorIndexProvdider = mockProvider(VectorIndexProvider.class);
+        var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP);
+        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
+        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
+        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
+        var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT);
+        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
+        var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
@@ -86,7 +86,7 @@ class StaticIndexProviderMapTest {
                 rangeIndexProvider,
                 pointIndexProvider,
                 trigramIndexProvider,
-                vectorIndexProvdider,
+                vectorIndexProvider,
                 new Dependencies());
         map.init();
 
@@ -99,13 +99,13 @@ class StaticIndexProviderMapTest {
 
     @Test
     void testAccept() throws Exception {
-        var tokenIndexProvider = mockProvider(TokenIndexProvider.class);
-        var textIndexProvider = mockProvider(TextIndexProvider.class);
-        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class);
-        var rangeIndexProvider = mockProvider(RangeIndexProvider.class);
-        var pointIndexProvider = mockProvider(PointIndexProvider.class);
-        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class);
-        var vectorIndexProvdider = mockProvider(VectorIndexProvider.class);
+        var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP);
+        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
+        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
+        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
+        var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT);
+        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
+        var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
@@ -113,7 +113,7 @@ class StaticIndexProviderMapTest {
                 rangeIndexProvider,
                 pointIndexProvider,
                 trigramIndexProvider,
-                vectorIndexProvdider,
+                vectorIndexProvider,
                 new Dependencies());
         map.init();
 
@@ -128,7 +128,7 @@ class StaticIndexProviderMapTest {
                         rangeIndexProvider,
                         trigramIndexProvider,
                         pointIndexProvider,
-                        vectorIndexProvdider);
+                        vectorIndexProvider);
     }
 
     @Test
@@ -162,7 +162,7 @@ class StaticIndexProviderMapTest {
                 mockProvider(TextIndexProvider.class, IndexType.TEXT),
                 mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 rangeIndexProvider,
-                mockProvider(PointIndexProvider.class), // <- No type
+                mockProvider(PointIndexProvider.class, IndexType.TEXT), // <- Not point
                 mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
                 mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
                 new Dependencies());

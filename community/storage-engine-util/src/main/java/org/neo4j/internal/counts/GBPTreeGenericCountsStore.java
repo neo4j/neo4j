@@ -53,6 +53,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
@@ -213,7 +214,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
                     fileSystem,
                     file,
                     layout,
-                    GBPTree.NO_MONITOR,
+                    MultiRootGBPTree.NO_MONITOR,
                     headerReader,
                     recoveryCollector,
                     readOnly,
@@ -577,7 +578,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         // throw if not found
         CountsHeader.Reader headerReader = CountsHeader.reader();
         try (var cursorContext = contextFactory.create("dump")) {
-            GBPTree.readHeader(pageCache, file, headerReader, databaseName, cursorContext, openOptions);
+            MultiRootGBPTree.readHeader(pageCache, file, headerReader, databaseName, cursorContext, openOptions);
         }
 
         // Now open it and dump its contents
@@ -586,7 +587,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
                 fileSystem,
                 file,
                 new CountsLayout(),
-                GBPTree.NO_MONITOR,
+                MultiRootGBPTree.NO_MONITOR,
                 headerReader,
                 RecoveryCleanupWorkCollector.ignore(),
                 true,

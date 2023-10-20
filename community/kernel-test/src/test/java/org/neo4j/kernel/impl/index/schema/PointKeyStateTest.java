@@ -26,7 +26,6 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRA
 
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -168,7 +167,7 @@ public class PointKeyStateTest {
         } while (key1.compareValueTo(key2) == 0);
 
         List<PointKey> keys =
-                Stream.of(key1, key2).sorted(PointKey::compareValueTo).collect(Collectors.toList());
+                Stream.of(key1, key2).sorted(PointKey::compareValueTo).toList();
 
         PointKey splitter = newKeyState();
         newLayout().minimalSplitter(keys.get(0), keys.get(1), splitter);
@@ -216,7 +215,7 @@ public class PointKeyStateTest {
         } while (key1.compareValueTo(key2) == 0);
 
         List<PointKey> keys =
-                Stream.of(key1, key2).sorted(PointKey::compareValueTo).collect(Collectors.toList());
+                Stream.of(key1, key2).sorted(PointKey::compareValueTo).toList();
 
         PointKey splitter = newKeyState();
         newLayout().minimalSplitter(keys.get(0), keys.get(1), splitter);

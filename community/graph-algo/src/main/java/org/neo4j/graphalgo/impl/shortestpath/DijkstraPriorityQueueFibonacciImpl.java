@@ -83,8 +83,7 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements DijkstraPri
         }
     }
 
-    Map<Node, FibonacciHeap<HeapObject>.FibonacciHeapNode> heapNodes =
-            new HashMap<Node, FibonacciHeap<HeapObject>.FibonacciHeapNode>();
+    Map<Node, FibonacciHeap<HeapObject>.FibonacciHeapNode> heapNodes = new HashMap<>();
     FibonacciHeap<HeapObject> heap;
 
     public DijkstraPriorityQueueFibonacciImpl(final Comparator<CostType> costComparator) {

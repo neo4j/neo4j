@@ -109,7 +109,7 @@ public class Config implements Configuration {
             Services.loadAll(SettingMigrator.class);
 
     public static final class Builder {
-        public static String ENV_CONFIG_FILE_CHARSET = "NEO4J_CONFIG_FILE_CHARSET";
+        public static final String ENV_CONFIG_FILE_CHARSET = "NEO4J_CONFIG_FILE_CHARSET";
 
         // We use tree sets with comparators for setting classes and migrators to have
         // some defined order in which settings classes are processed and migrators are applied

@@ -27,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.lock.LockTracer;
@@ -71,7 +70,7 @@ abstract class DeadlockCompatibility extends LockCompatibilityTestSupport {
 
     private static void assertDetectsDeadlock(LockCommand... commands) {
         List<Future<Void>> calls =
-                Arrays.stream(commands).map(LockCommand::call).collect(Collectors.toList());
+                Arrays.stream(commands).map(LockCommand::call).toList();
 
         long timeout = System.currentTimeMillis() + (1000 * 10);
         while (System.currentTimeMillis() < timeout) {

@@ -34,6 +34,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -125,6 +126,7 @@ class IndexRecoveryIT {
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
         when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class), any()))
                 .then(inv -> inv.getArgument(0));
+        when(mockedIndexProvider.getIndexType()).thenReturn(LOOKUP);
     }
 
     @AfterEach

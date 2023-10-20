@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -52,7 +51,7 @@ public class AuthProceduresTest {
 
     @Test
     void shouldReturnSecurityContext() {
-        List<UserResult> infoList = procedures.showCurrentUser().collect(Collectors.toList());
+        List<UserResult> infoList = procedures.showCurrentUser().toList();
         assertThat(infoList.size()).isEqualTo(1);
 
         UserResult row = infoList.get(0);

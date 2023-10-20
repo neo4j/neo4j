@@ -82,7 +82,7 @@ class PackstreamConversionsTest {
     Stream<DynamicTest> asLongShouldAcceptBoxedLongValues() {
         return LongStream.rangeClosed(0, 16)
                 .map(value -> value * 128 + value % 2)
-                .mapToObj(value -> value)
+                .boxed()
                 .map(value -> DynamicTest.dynamicTest(value.toString(), () -> {
                     var result = PackstreamConversions.asLong("someField", value);
 
@@ -111,7 +111,7 @@ class PackstreamConversionsTest {
     Stream<DynamicTest> asNullableLongShouldAcceptBoxedLongValues() {
         return LongStream.rangeClosed(0, 16)
                 .map(value -> value * 128 + value % 2)
-                .mapToObj(value -> value)
+                .boxed()
                 .map(value -> DynamicTest.dynamicTest(value.toString(), () -> {
                     var result = PackstreamConversions.asNullableLong("someField", value);
 
