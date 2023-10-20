@@ -34,6 +34,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.device.DeviceMapperService;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -56,7 +57,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     public void init(FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory) {
         this.fs = fs;
         this.config = config;
-        this.databaseLayout = DatabaseLayout.ofFlat(storeDirectory.resolve(defaultDatabaseName));
+        this.databaseLayout = DatabaseLayout.of(Neo4jLayout.of(config), defaultDatabaseName);
     }
 
     @Override
@@ -178,7 +179,8 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void getTransactionLogFiles(List<DiagnosticsReportSource> sources) {
         try {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.databaseDirectory(), fs)
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(
+                            databaseLayout.getTransactionLogsDirectory(), fs)
                     .build();
             for (Path file : logFiles.logFiles()) {
                 sources.add(DiagnosticsReportSources.newDiagnosticsFile("tx/" + file.getFileName(), fs, file));
