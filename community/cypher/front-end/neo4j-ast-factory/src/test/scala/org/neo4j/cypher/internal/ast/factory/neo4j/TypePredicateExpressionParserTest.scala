@@ -55,72 +55,106 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
   private val allNonListTypes = Seq(
     ("NOTHING", NothingType()(pos)),
     ("NOTHING NOT NULL", NothingType()(pos)),
+    ("NOTHING!", NothingType()(pos)),
     ("NULL", NullType()(pos)),
     ("NULL NOT NULL", NothingType()(pos)),
+    ("NULL!", NothingType()(pos)),
     ("BOOL", BooleanType(isNullable = true)(pos)),
     ("BOOL NOT NULL", BooleanType(isNullable = false)(pos)),
+    ("BOOL!", BooleanType(isNullable = false)(pos)),
     ("BOOLEAN", BooleanType(isNullable = true)(pos)),
     ("BOOLEAN NOT NULL", BooleanType(isNullable = false)(pos)),
+    ("BOOLEAN!", BooleanType(isNullable = false)(pos)),
     ("VARCHAR", StringType(isNullable = true)(pos)),
     ("VARCHAR NOT NULL", StringType(isNullable = false)(pos)),
+    ("VARCHAR!", StringType(isNullable = false)(pos)),
     ("STRING", StringType(isNullable = true)(pos)),
     ("STRING NOT NULL", StringType(isNullable = false)(pos)),
+    ("STRING!", StringType(isNullable = false)(pos)),
     ("INTEGER", IntegerType(isNullable = true)(pos)),
     ("INTEGER NOT NULL", IntegerType(isNullable = false)(pos)),
+    ("INTEGER!", IntegerType(isNullable = false)(pos)),
     ("INT", IntegerType(isNullable = true)(pos)),
     ("INT NOT NULL", IntegerType(isNullable = false)(pos)),
+    ("INT!", IntegerType(isNullable = false)(pos)),
     ("SIGNED INTEGER", IntegerType(isNullable = true)(pos)),
     ("SIGNED INTEGER NOT NULL", IntegerType(isNullable = false)(pos)),
+    ("SIGNED INTEGER!", IntegerType(isNullable = false)(pos)),
     ("FLOAT", FloatType(isNullable = true)(pos)),
     ("FLOAT NOT NULL", FloatType(isNullable = false)(pos)),
+    ("FLOAT!", FloatType(isNullable = false)(pos)),
     ("DATE", DateType(isNullable = true)(pos)),
     ("DATE NOT NULL", DateType(isNullable = false)(pos)),
+    ("DATE!", DateType(isNullable = false)(pos)),
     ("LOCAL TIME", LocalTimeType(isNullable = true)(pos)),
     ("LOCAL TIME NOT NULL", LocalTimeType(isNullable = false)(pos)),
+    ("LOCAL TIME!", LocalTimeType(isNullable = false)(pos)),
     ("TIME WITHOUT TIMEZONE", LocalTimeType(isNullable = true)(pos)),
     ("TIME WITHOUT TIMEZONE NOT NULL", LocalTimeType(isNullable = false)(pos)),
+    ("TIME WITHOUT TIMEZONE!", LocalTimeType(isNullable = false)(pos)),
     ("ZONED TIME", ZonedTimeType(isNullable = true)(pos)),
     ("ZONED TIME NOT NULL", ZonedTimeType(isNullable = false)(pos)),
+    ("ZONED TIME!", ZonedTimeType(isNullable = false)(pos)),
     ("TIME WITH TIMEZONE", ZonedTimeType(isNullable = true)(pos)),
     ("TIME WITH TIMEZONE NOT NULL", ZonedTimeType(isNullable = false)(pos)),
+    ("TIME WITH TIMEZONE!", ZonedTimeType(isNullable = false)(pos)),
     ("LOCAL DATETIME", LocalDateTimeType(isNullable = true)(pos)),
     ("LOCAL DATETIME NOT NULL", LocalDateTimeType(isNullable = false)(pos)),
+    ("LOCAL DATETIME!", LocalDateTimeType(isNullable = false)(pos)),
     ("TIMESTAMP WITHOUT TIMEZONE", LocalDateTimeType(isNullable = true)(pos)),
     ("TIMESTAMP WITHOUT TIMEZONE NOT NULL", LocalDateTimeType(isNullable = false)(pos)),
+    ("TIMESTAMP WITHOUT TIMEZONE!", LocalDateTimeType(isNullable = false)(pos)),
     ("ZONED DATETIME", ZonedDateTimeType(isNullable = true)(pos)),
     ("ZONED DATETIME NOT NULL", ZonedDateTimeType(isNullable = false)(pos)),
+    ("ZONED DATETIME!", ZonedDateTimeType(isNullable = false)(pos)),
     ("TIMESTAMP WITH TIMEZONE", ZonedDateTimeType(isNullable = true)(pos)),
     ("TIMESTAMP WITH TIMEZONE NOT NULL", ZonedDateTimeType(isNullable = false)(pos)),
+    ("TIMESTAMP WITH TIMEZONE!", ZonedDateTimeType(isNullable = false)(pos)),
     ("DURATION", DurationType(isNullable = true)(pos)),
     ("DURATION NOT NULL", DurationType(isNullable = false)(pos)),
+    ("DURATION!", DurationType(isNullable = false)(pos)),
     ("POINT", PointType(isNullable = true)(pos)),
     ("POINT NOT NULL", PointType(isNullable = false)(pos)),
+    ("POINT!", PointType(isNullable = false)(pos)),
     ("NODE", NodeType(isNullable = true)(pos)),
     ("NODE NOT NULL", NodeType(isNullable = false)(pos)),
+    ("NODE!", NodeType(isNullable = false)(pos)),
     ("ANY NODE", NodeType(isNullable = true)(pos)),
     ("ANY NODE NOT NULL", NodeType(isNullable = false)(pos)),
+    ("ANY NODE!", NodeType(isNullable = false)(pos)),
     ("VERTEX", NodeType(isNullable = true)(pos)),
     ("VERTEX NOT NULL", NodeType(isNullable = false)(pos)),
+    ("VERTEX!", NodeType(isNullable = false)(pos)),
     ("ANY VERTEX", NodeType(isNullable = true)(pos)),
     ("ANY VERTEX NOT NULL", NodeType(isNullable = false)(pos)),
+    ("ANY VERTEX!", NodeType(isNullable = false)(pos)),
     ("RELATIONSHIP", RelationshipType(isNullable = true)(pos)),
     ("RELATIONSHIP NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("RELATIONSHIP!", RelationshipType(isNullable = false)(pos)),
     ("ANY RELATIONSHIP", RelationshipType(isNullable = true)(pos)),
     ("ANY RELATIONSHIP NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("ANY RELATIONSHIP!", RelationshipType(isNullable = false)(pos)),
     ("EDGE", RelationshipType(isNullable = true)(pos)),
     ("EDGE NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("EDGE!", RelationshipType(isNullable = false)(pos)),
     ("ANY EDGE", RelationshipType(isNullable = true)(pos)),
     ("ANY EDGE NOT NULL", RelationshipType(isNullable = false)(pos)),
+    ("ANY EDGE!", RelationshipType(isNullable = false)(pos)),
     ("MAP", MapType(isNullable = true)(pos)),
     ("MAP NOT NULL", MapType(isNullable = false)(pos)),
+    ("MAP!", MapType(isNullable = false)(pos)),
     ("ANY MAP", MapType(isNullable = true)(pos)),
     ("ANY MAP NOT NULL", MapType(isNullable = false)(pos)),
+    ("ANY MAP!", MapType(isNullable = false)(pos)),
     ("PATH", PathType(isNullable = true)(pos)),
     ("PATH NOT NULL", PathType(isNullable = false)(pos)),
+    ("PATH!", PathType(isNullable = false)(pos)),
     ("ANY PROPERTY VALUE", PropertyValueType(isNullable = true)(pos)),
     ("ANY PROPERTY VALUE NOT NULL", PropertyValueType(isNullable = false)(pos)),
+    ("ANY PROPERTY VALUE!", PropertyValueType(isNullable = false)(pos)),
     ("PROPERTY VALUE", PropertyValueType(isNullable = true)(pos)),
-    ("PROPERTY VALUE NOT NULL", PropertyValueType(isNullable = false)(pos))
+    ("PROPERTY VALUE NOT NULL", PropertyValueType(isNullable = false)(pos)),
+    ("PROPERTY VALUE!", PropertyValueType(isNullable = false)(pos))
   )
 
   private val superTypes = Seq(
@@ -136,12 +170,16 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
         // LIST<type>
         (s"LIST<$innerTypeString>", ListType(innerTypeExpr, isNullable = true)(pos)),
         (s"LIST<$innerTypeString> NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
+        (s"LIST<$innerTypeString>!", ListType(innerTypeExpr, isNullable = false)(pos)),
         (s"ARRAY<$innerTypeString>", ListType(innerTypeExpr, isNullable = true)(pos)),
         (s"ARRAY<$innerTypeString> NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
+        (s"ARRAY<$innerTypeString>!", ListType(innerTypeExpr, isNullable = false)(pos)),
         (s"$innerTypeString LIST", ListType(innerTypeExpr, isNullable = true)(pos)),
         (s"$innerTypeString LIST NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
+        (s"$innerTypeString LIST!", ListType(innerTypeExpr, isNullable = false)(pos)),
         (s"$innerTypeString ARRAY", ListType(innerTypeExpr, isNullable = true)(pos)),
         (s"$innerTypeString ARRAY NOT NULL", ListType(innerTypeExpr, isNullable = false)(pos)),
+        (s"$innerTypeString ARRAY!", ListType(innerTypeExpr, isNullable = false)(pos)),
         // LIST<LIST<type>>
         (
           s"LIST<LIST<$innerTypeString>>",
@@ -152,11 +190,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"LIST<LIST<$innerTypeString>>!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"LIST<LIST<$innerTypeString> NOT NULL>",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"LIST<LIST<$innerTypeString>!>",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"LIST<LIST<$innerTypeString> NOT NULL> NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"LIST<LIST<$innerTypeString>!>!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
@@ -168,11 +218,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"LIST<ARRAY<$innerTypeString>>!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"LIST<ARRAY<$innerTypeString> NOT NULL>",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"LIST<ARRAY<$innerTypeString>!>",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"LIST<ARRAY<$innerTypeString> NOT NULL> NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"LIST<ARRAY<$innerTypeString>!>!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
@@ -184,11 +246,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"LIST<$innerTypeString LIST>!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"LIST<$innerTypeString LIST NOT NULL>",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"LIST<$innerTypeString LIST!>",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"LIST<$innerTypeString LIST NOT NULL> NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"LIST<$innerTypeString LIST!>!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
@@ -200,11 +274,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"LIST<$innerTypeString ARRAY>!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"LIST<$innerTypeString ARRAY NOT NULL>",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"LIST<$innerTypeString ARRAY!>",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"LIST<$innerTypeString ARRAY NOT NULL> NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"LIST<$innerTypeString ARRAY!>!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
@@ -216,11 +302,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"LIST<$innerTypeString> LIST!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"LIST<$innerTypeString> NOT NULL LIST",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"LIST<$innerTypeString>! LIST",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"LIST<$innerTypeString> NOT NULL LIST NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"LIST<$innerTypeString>! LIST!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
@@ -232,11 +330,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"ARRAY<$innerTypeString> LIST!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"ARRAY<$innerTypeString> NOT NULL LIST",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"ARRAY<$innerTypeString>! LIST",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"ARRAY<$innerTypeString> NOT NULL LIST NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"ARRAY<$innerTypeString>! LIST!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
@@ -248,11 +358,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"$innerTypeString LIST LIST!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"$innerTypeString LIST NOT NULL LIST",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"$innerTypeString LIST! LIST",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"$innerTypeString LIST NOT NULL LIST NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"$innerTypeString LIST! LIST!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         (
@@ -264,11 +386,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
           ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
         ),
         (
+          s"$innerTypeString ARRAY LIST!",
+          ListType(ListType(innerTypeExpr, isNullable = true)(pos), isNullable = false)(pos)
+        ),
+        (
           s"$innerTypeString ARRAY NOT NULL LIST",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
         ),
         (
+          s"$innerTypeString ARRAY! LIST",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = true)(pos)
+        ),
+        (
           s"$innerTypeString ARRAY NOT NULL LIST NOT NULL",
+          ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
+        ),
+        (
+          s"$innerTypeString ARRAY! LIST!",
           ListType(ListType(innerTypeExpr, isNullable = false)(pos), isNullable = false)(pos)
         ),
         // even more nesting lists
@@ -336,6 +470,14 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
     ),
     (
       "NODE NOT NULL | RELATIONSHIP NOT NULL | PATH NOT NULL",
+      ClosedDynamicUnionType(Set(
+        NodeType(isNullable = false)(pos),
+        RelationshipType(isNullable = false)(pos),
+        PathType(isNullable = false)(pos)
+      ))(pos)
+    ),
+    (
+      "NODE! | RELATIONSHIP! | PATH!",
       ClosedDynamicUnionType(Set(
         NodeType(isNullable = false)(pos),
         RelationshipType(isNullable = false)(pos),
@@ -411,11 +553,47 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
     failsToParse
   }
 
+  test("x :: BOOLEAN! NOT NULL") {
+    failsToParse
+  }
+
+  test("x :: BOOLEAN NOT NULL!") {
+    failsToParse
+  }
+
+  test("x :: BOOLEAN!!") {
+    failsToParse
+  }
+
   test("x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
     failsToParse
   }
 
+  test("x :: LIST<BOOLEAN>! NOT NULL") {
+    failsToParse
+  }
+
+  test("x :: LIST<BOOLEAN> NOT NULL!") {
+    failsToParse
+  }
+
+  test("x :: LIST<BOOLEAN>!!") {
+    failsToParse
+  }
+
   test("x :: BOOLEAN LIST NOT NULL NOT NULL") {
+    failsToParse
+  }
+
+  test("x :: BOOLEAN LIST! NOT NULL") {
+    failsToParse
+  }
+
+  test("x :: BOOLEAN LIST NOT NULL !") {
+    failsToParse
+  }
+
+  test("x :: BOOLEAN LIST!!") {
     failsToParse
   }
 
@@ -428,7 +606,23 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
     )
   }
 
+  test("x :: ANY<BOOLEAN>!") {
+    assertFailsWithMessage(
+      testName,
+      "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
+      failsOnlyJavaCC = true
+    )
+  }
+
   test("x :: ANY VALUE<BOOLEAN> NOT NULL") {
+    assertFailsWithMessage(
+      testName,
+      "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
+      failsOnlyJavaCC = true
+    )
+  }
+
+  test("x :: ANY VALUE<BOOLEAN>!") {
     assertFailsWithMessage(
       testName,
       "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",

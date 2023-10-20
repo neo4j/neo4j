@@ -3327,6 +3327,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessageStart(
       testName,
       """Invalid input 'UNIQUE': expected
+        |  "!"
         |  "ARRAY"
         |  "LIST"
         |  "NOT"
@@ -3339,6 +3340,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessageStart(
       testName,
       """Invalid input 'EAN': expected
+        |  "!"
         |  "ARRAY"
         |  "LIST"
         |  "NOT"

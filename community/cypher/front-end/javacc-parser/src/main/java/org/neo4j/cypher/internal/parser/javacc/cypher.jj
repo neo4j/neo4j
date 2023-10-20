@@ -4836,8 +4836,8 @@ ParserCypherTypeName cypherTypeNamePart() throws Exception:
                 | LOOKAHEAD(2) (<VALUE>)? <LT> unionTypeList=cypherTypeNameList() <GT> { typeName = ParserCypherTypeName.closedDynamicUnionOf(unionTypeList); }
                 | (<VALUE>)? { typeName = ParserCypherTypeName.ANY; }
             )
-        ) ( <NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); } )?
-        ((<LIST> | <ARRAY>) { typeName = ParserCypherTypeName.listOf(typeName); } (<NOT> <NULL> { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); })? )*
+        ) ( (<NOT> <NULL> | <EXCLAMATION_MARK>) { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); } )?
+        ((<LIST> | <ARRAY>) { typeName = ParserCypherTypeName.listOf(typeName); } ((<NOT> <NULL> | <EXCLAMATION_MARK>) { typeName =  ParserCypherTypeName.getNotNullTypeName(typeName); })? )*
     } catch (IllegalArgumentException e) {
         // This is thrown if the getNotNullTypeName errors, it will error on Open Dynamic Union Types.
         t = t.next;
