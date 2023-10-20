@@ -252,127 +252,145 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     batchSize: SelectedBatchSize,
     propertyAccess: Set[PropertyAccess],
     statistics: GraphStatistics
-  ): Cost = plan match {
-    case _: CartesianProduct =>
-      val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
+  ): Cost = {
 
-      // Batched: The RHS is executed for each batch of LHS rows
-      // Volcano: The RHS is executed for each LHS row
-      val rhsExecutions = batchSize.numBatchesFor(lhsCardinality)
-      lhsCost + rhsExecutions * rhsCost
-
-    case t: Trail =>
-      val lhsCardinality = effectiveCardinalities.lhs
-      val rhsCardinality = effectiveCardinalities.rhs
-
-      val qppRange = RepetitionCardinalityModel.quantifiedPathPatternRepetitionAsRange(t.repetition)
-
-      // For iteration 1 the RHS executes with LHS cardinality.
-      val iteration1Cost =
-        if (qppRange.start == 0 && qppRange.end == 0) Cost(0)
-        else lhsCardinality * rhsCost
-
-      // Starting from iteration 2 the RHS executes with the cardinality of the previous RHS iteration.
-      // We don't have separate estimations for the RHS iterations, so we simply use
-      // lhsCardinality * rhsCardinality, assuming each iteration returns the same amount of rows.
-      // In the future, if there are more alternatives that can solve a QPP, we should improve this.
-      // In NodeConnectionMultiplierCalculator we estimate the separate iterations, so we could extract that logic
-      // to be used here as well.
-
-      // We also disregard a supplied min, since we need to execute iterations up to min, even if their result
-      // is not yielded.
-      val iterationsNCost = {
-        val from2Range = 2 to qppRange.end
-        val rhsInvocations = from2Range.length * lhsCardinality * rhsCardinality
-        rhsInvocations * rhsCost
+    /**
+     * For the cost comparisons of AllRelationshipScan/RelationshipTypeScan vs AllNodesScan + Expand
+     * we apply special logic the match below. This logic is even valid if there are any number of
+     * cardinality preserving unary plans between the AllNodesScan and the Expand, thus this extractor object.
+     */
+    object AllNodesScanIsh {
+      def unapply(v: LogicalPlan): Boolean = v match {
+        case _: AllNodesScan                                                                                   => true
+        case lup @ LogicalUnaryPlan(ans @ AllNodesScanIsh()) if cardinalities(lup.id) == cardinalities(ans.id) => true
+        case _                                                                                                 => false
       }
+    }
 
-      lhsCost + iteration1Cost + iterationsNCost
+    plan match {
+      case _: CartesianProduct =>
+        val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
 
-    case _: ApplyPlan =>
-      val lhsCardinality = effectiveCardinalities.lhs
-      // The RHS is executed for each LHS row
-      lhsCost + lhsCardinality * rhsCost
+        // Batched: The RHS is executed for each batch of LHS rows
+        // Volcano: The RHS is executed for each LHS row
+        val rhsExecutions = batchSize.numBatchesFor(lhsCardinality)
+        lhsCost + rhsExecutions * rhsCost
 
-    case HashJoin() =>
-      lhsCost + rhsCost +
-        effectiveCardinalities.lhs * PROBE_BUILD_COST +
-        effectiveCardinalities.rhs * PROBE_SEARCH_COST
+      case t: Trail =>
+        val lhsCardinality = effectiveCardinalities.lhs
+        val rhsCardinality = effectiveCardinalities.rhs
 
-    case _: Union | _: OrderedUnion =>
-      val inCardinality = effectiveCardinalities.lhs + effectiveCardinalities.rhs
-      val rowCost = costPerRow(plan, inCardinality, semanticTable, propertyAccess)
-      val costForThisPlan = inCardinality * rowCost
-      costForThisPlan + lhsCost + rhsCost
+        val qppRange = RepetitionCardinalityModel.quantifiedPathPatternRepetitionAsRange(t.repetition)
 
-    // NOTE: Expand generally gets underestimated since they are treated as a middle operator
-    // like Selection which doesn't reflect that for each row it creates it will read data from
-    // the relationship store. This particular special case is just for making it more likely to plan
-    // AllRelationshipsScan since we know they are always faster than doing AllNodes + Expand
-    case Expand(_: AllNodesScan, _, _, types, _, _, ExpandAll) if types.isEmpty =>
-      // AllNodes + Expand is more expensive than scanning the relationship directly
-      val rowCost = CostPerRow(ALL_SCAN_COST_PER_ROW * 1.1)
-      // Note: we use the outputCardinality to compute the cost
-      val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
-      costForThisPlan + lhsCost + rhsCost
+        // For iteration 1 the RHS executes with LHS cardinality.
+        val iteration1Cost =
+          if (qppRange.start == 0 && qppRange.end == 0) Cost(0)
+          else lhsCardinality * rhsCost
 
-    // Always consider AllNodesScan + Expand more expensive than RelationshipTypeScan
-    case exp @ Expand(_: AllNodesScan, _, _, types, _, _, ExpandAll) if types.size == 1 =>
-      val rowCost =
-        CostPerRow(1.1 * hackyRelTypeScanCost(propertyAccess, exp.relName.name, exp.dir != SemanticDirection.BOTH))
-      val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
-      costForThisPlan + lhsCost + rhsCost
+        // Starting from iteration 2 the RHS executes with the cardinality of the previous RHS iteration.
+        // We don't have separate estimations for the RHS iterations, so we simply use
+        // lhsCardinality * rhsCardinality, assuming each iteration returns the same amount of rows.
+        // In the future, if there are more alternatives that can solve a QPP, we should improve this.
+        // In NodeConnectionMultiplierCalculator we estimate the separate iterations, so we could extract that logic
+        // to be used here as well.
 
-    case IntersectionNodeByLabelsScan(_, labels, _, _) =>
-      /*
-      At runtime, intersection scan works by creating cursors for each label and advancing them
-      until they all point to the same node id (match found) or one of them is exhausted and no
-      more matches can be found.
-      The worst-case scenario is when the lowest node id has all the labels and all cursors must
-      be exhausted completely:
-      +------+------+------+
-      |  A   |  B   |  C   |
-      +------+------+------+
-      | -> 1 |      |      |
-      |    2 |      | -> 2 |
-      |      | -> 3 |    3 |
-      |  ... |  ... |  ... |
-      |  123 |  123 |  123 |
-      +------+------+------+
-      All it takes for this scenario is a single CREATE (:A:B:C), as the newest node is likely to
-      get the highest id.
+        // We also disregard a supplied min, since we need to execute iterations up to min, even if their result
+        // is not yielded.
+        val iterationsNCost = {
+          val from2Range = 2 to qppRange.end
+          val rhsInvocations = from2Range.length * lhsCardinality * rhsCardinality
+          rhsInvocations * rhsCost
+        }
 
-      Assuming the worst-case, the cost of scanning through all cursors is then INDEX_SCAN_COST_PER_ROW * sum(labelCardinalities).
-      Or:
-        INDEX_SCAN_COST_PER_ROW * minLabelCardinality +
-          INDEX_SCAN_COST_PER_ROW * sum(labelCardinalitiesSansMin)
+        lhsCost + iteration1Cost + iterationsNCost
 
-      Comparing it to NodeByLabelScan+Filter:
-        INDEX_SCAN_COST_PER_ROW * minLabelCardinality +
-          Cost(Filter(HasLabel(...))) * minLabelCardinality
+      case _: ApplyPlan =>
+        val lhsCardinality = effectiveCardinalities.lhs
+        // The RHS is executed for each LHS row
+        lhsCost + lhsCardinality * rhsCost
 
-      In both cases we have to scan minLabelCardinality rows, but then we do filtering differently.
-      Currently we assign the same INDEX_SCAN_COST_PER_ROW for both scanning and HasLabel filter,
-      however benchmarking shows that scanning is actually about 5x faster. We'll give the filtering
-      part of intersection scan a discount, to get a fairer comparison.
+      case HashJoin() =>
+        lhsCost + rhsCost +
+          effectiveCardinalities.lhs * PROBE_BUILD_COST +
+          effectiveCardinalities.rhs * PROBE_SEARCH_COST
 
-      In the case of two labels, this means we'll prefer intersection scan when cardinality of label
-      with fewer rows is >20% of cardinality of the other label.
-       */
+      case _: Union | _: OrderedUnion =>
+        val inCardinality = effectiveCardinalities.lhs + effectiveCardinalities.rhs
+        val rowCost = costPerRow(plan, inCardinality, semanticTable, propertyAccess)
+        val costForThisPlan = inCardinality * rowCost
+        costForThisPlan + lhsCost + rhsCost
 
-      val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
-      val labelCardinalities = labels.map(l => statistics.nodesWithLabelCardinality(semanticTable.id(l)))
-      val minLabelCardinality = labelCardinalities.min
-      val otherLabelsCardinality = labelCardinalities.sum(Cardinality.NumericCardinality) - minLabelCardinality
-      val scanToFilterCostRatio = 1.0 / 5.0
+      // NOTE: Expand generally gets underestimated since they are treated as a middle operator
+      // like Selection which doesn't reflect that for each row it creates it will read data from
+      // the relationship store. This particular special case is just for making it more likely to plan
+      // AllRelationshipsScan since we know they are always faster than doing AllNodes + Expand
+      case Expand(AllNodesScanIsh(), _, _, types, _, _, ExpandAll) if types.isEmpty =>
+        // AllNodes + Expand is more expensive than scanning the relationship directly
+        val rowCost = CostPerRow(ALL_SCAN_COST_PER_ROW * 1.1)
+        // Note: we use the outputCardinality to compute the cost
+        val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
+        costForThisPlan + lhsCost + rhsCost
 
-      minLabelCardinality * rowCost +
-        otherLabelsCardinality * rowCost * scanToFilterCostRatio
+      // Always consider AllNodesScan + Expand more expensive than RelationshipTypeScan
+      case exp @ Expand(AllNodesScanIsh(), _, _, types, _, _, ExpandAll) if types.size == 1 =>
+        val rowCost =
+          CostPerRow(1.1 * hackyRelTypeScanCost(propertyAccess, exp.relName.name, exp.dir != SemanticDirection.BOTH))
+        // Note: we use the outputCardinality to compute the cost
+        val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
+        costForThisPlan + lhsCost + rhsCost
 
-    case _ =>
-      val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
-      val costForThisPlan = effectiveCardinalities.inputCardinality * rowCost
-      costForThisPlan + lhsCost + rhsCost
+      case IntersectionNodeByLabelsScan(_, labels, _, _) =>
+        /*
+        At runtime, intersection scan works by creating cursors for each label and advancing them
+        until they all point to the same node id (match found) or one of them is exhausted and no
+        more matches can be found.
+        The worst-case scenario is when the lowest node id has all the labels and all cursors must
+        be exhausted completely:
+        +------+------+------+
+        |  A   |  B   |  C   |
+        +------+------+------+
+        | -> 1 |      |      |
+        |    2 |      | -> 2 |
+        |      | -> 3 |    3 |
+        |  ... |  ... |  ... |
+        |  123 |  123 |  123 |
+        +------+------+------+
+        All it takes for this scenario is a single CREATE (:A:B:C), as the newest node is likely to
+        get the highest id.
+
+        Assuming the worst-case, the cost of scanning through all cursors is then INDEX_SCAN_COST_PER_ROW * sum(labelCardinalities).
+        Or:
+          INDEX_SCAN_COST_PER_ROW * minLabelCardinality +
+            INDEX_SCAN_COST_PER_ROW * sum(labelCardinalitiesSansMin)
+
+        Comparing it to NodeByLabelScan+Filter:
+          INDEX_SCAN_COST_PER_ROW * minLabelCardinality +
+            Cost(Filter(HasLabel(...))) * minLabelCardinality
+
+        In both cases we have to scan minLabelCardinality rows, but then we do filtering differently.
+        Currently we assign the same INDEX_SCAN_COST_PER_ROW for both scanning and HasLabel filter,
+        however benchmarking shows that scanning is actually about 5x faster. We'll give the filtering
+        part of intersection scan a discount, to get a fairer comparison.
+
+        In the case of two labels, this means we'll prefer intersection scan when cardinality of label
+        with fewer rows is >20% of cardinality of the other label.
+         */
+
+        val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
+        val labelCardinalities = labels.map(l => statistics.nodesWithLabelCardinality(semanticTable.id(l)))
+        val minLabelCardinality = labelCardinalities.min
+        val otherLabelsCardinality = labelCardinalities.sum(Cardinality.NumericCardinality) - minLabelCardinality
+        val scanToFilterCostRatio = 1.0 / 5.0
+
+        minLabelCardinality * rowCost +
+          otherLabelsCardinality * rowCost * scanToFilterCostRatio
+
+      case _ =>
+        val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
+        // Note: By default we use the inputCardinality to compute the cost
+        val costForThisPlan = effectiveCardinalities.inputCardinality * rowCost
+        costForThisPlan + lhsCost + rhsCost
+    }
   }
 }
 

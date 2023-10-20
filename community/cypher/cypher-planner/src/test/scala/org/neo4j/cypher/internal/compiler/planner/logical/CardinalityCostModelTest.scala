@@ -968,4 +968,184 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
         ansCardinality * SHORTEST_ALL_PRODUCT_GRAPH_COST
     ))
   }
+
+  test("should prefer relationship type scan over all nodes scan + expand") {
+    val ansExpandCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .expandAll("(a)-[r:REL]->(b)").withCardinality(1000)
+        .allNodeScan("a").withCardinality(100)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    val relTypeScanCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .relationshipTypeScan("(a)-[r:REL]->(b)").withCardinality(1000)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    ansExpandCost should be > relTypeScanCost
+  }
+
+  test("should prefer all relationship scan over all nodes scan + expand") {
+    val ansExpandCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .expandAll("(a)-[r]->(b)").withCardinality(1000)
+        .allNodeScan("a").withCardinality(100)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    val allRelScanCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .allRelationshipsScan("(a)-[r]->(b)").withCardinality(1000)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    ansExpandCost should be > allRelScanCost
+  }
+
+  test("should prefer relationship type scan over all nodes scan + projection + sort + expand") {
+    val ansExpandCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .expandAll("(a)-[r:REL]->(b)").withCardinality(1000)
+        .sort("p ASC").withCardinality(100)
+        .projection("a.prop AS p").withCardinality(100)
+        .allNodeScan("a").withCardinality(100)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    val relTypeScanCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .relationshipTypeScan("(a)-[r:REL]->(b)").withCardinality(1000)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    ansExpandCost should be > relTypeScanCost
+  }
+
+  test("should prefer all relationship scan over all nodes scan + projection + sort + expand") {
+    val ansExpandCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .expandAll("(a)-[r]->(b)").withCardinality(1000)
+        .sort("p ASC").withCardinality(100)
+        .projection("a.prop AS p").withCardinality(100)
+        .allNodeScan("a").withCardinality(100)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    val allRelScanCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .allRelationshipsScan("(a)-[r]->(b)").withCardinality(1000)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    ansExpandCost should be > allRelScanCost
+  }
+
+  test("should not prefer relationship type scan over all nodes scan + filter + expand") {
+    val ansExpandCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .expandAll("(a)-[r:REL]->(b)").withCardinality(1000)
+        .filter("a.prop = 0").withCardinality(10)
+        .allNodeScan("a").withCardinality(100)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    val relTypeScanCost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .relationshipTypeScan("(a)-[r:REL]->(b)").withCardinality(1000)
+        .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    ansExpandCost should be < relTypeScanCost
+  }
 }

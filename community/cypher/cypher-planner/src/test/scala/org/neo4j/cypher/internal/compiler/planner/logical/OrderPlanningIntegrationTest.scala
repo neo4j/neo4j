@@ -780,6 +780,18 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("Should plan sort before first expand when sorting on node") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(14)
+      .setLabelCardinality("Person", 12)
+      .setLabelCardinality("Book", 2)
+      .setRelationshipCardinality("()-[:FRIEND]->()", 50)
+      .setRelationshipCardinality("()-[:FRIEND]->(:Person)", 50)
+      .setRelationshipCardinality("()-[:READ]->()", 50)
+      .setRelationshipCardinality("(:Person)-[:READ]->(:Book)", 50)
+      .setRelationshipCardinality("(:Person)-[:READ]->()", 50)
+      .setRelationshipCardinality("()-[:READ]->(:Book)", 50)
+      .build()
+
     // Not having a label on u, otherwise we can take the order from the label scan and don't need to sort at all,
     // which would make this test useless.
     val query =
@@ -787,36 +799,18 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name, b.title
         |ORDER BY u""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._1
 
-    plan should beLike {
-      case Projection(
-          Selection(
-            _,
-            Expand(
-              Selection(
-                _,
-                Expand(
-                  Sort(_, Seq(Ascending(LogicalVariable("u")))),
-                  _,
-                  _,
-                  _,
-                  _,
-                  _,
-                  _
-                )
-              ),
-              _,
-              _,
-              _,
-              _,
-              _,
-              _
-            )
-          ),
-          _
-        ) => ()
-    }
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("cacheN[u.name] AS `u.name`", "b.title AS `b.title`")
+      .filter("b:Book")
+      .expandAll("(p)-[r:READ]->(b)")
+      .filter("p:Person")
+      .expandAll("(u)-[f:FRIEND]->(p)")
+      .sort("u ASC")
+      .filter("cacheNFromStore[u.name] STARTS WITH 'Joe'")
+      .allNodeScan("u")
+      .build()
   }
 
   test("Should plan sort before first expand when sorting on renamed property") {

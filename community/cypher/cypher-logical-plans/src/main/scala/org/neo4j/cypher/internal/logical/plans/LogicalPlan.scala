@@ -347,6 +347,14 @@ sealed abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen)
   def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan
 }
 
+object LogicalUnaryPlan {
+
+  def unapply(v: LogicalPlan): Option[LogicalPlan] = v match {
+    case lup: LogicalUnaryPlan => Some(lup.source)
+    case _                     => None
+  }
+}
+
 sealed abstract class LogicalUnaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   final def lhs: Option[LogicalPlan] = Some(source)
   final def rhs: Option[LogicalPlan] = None

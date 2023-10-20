@@ -744,4 +744,53 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       case Expand(_, _, _, _, _, _, ExpandInto) =>
     }
   }
+
+  test("should prefer relationship type scan over AllNodeScan + Expand, also wit interesting order") {
+    val query =
+      """
+        |MATCH (x)-[:HAS_ATTRIBUTE]->(y)
+        |WITH x, y.prop / 2 as division
+        |RETURN *
+        |ORDER BY division DESC
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(415)
+      .setAllRelationshipsCardinality(1434)
+      .setRelationshipCardinality("()-[:HAS_ATTRIBUTE]->()", 1099)
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("division", "x")
+        .sort("division DESC")
+        .projection("y.prop / 2 AS division")
+        .relationshipTypeScan("(x)-[anon_0:HAS_ATTRIBUTE]->(y)")
+        .build()
+    )
+  }
+
+  test("should prefer all relationship scan over AllNodeScan + Expand, also wit interesting order") {
+    val query =
+      """
+        |MATCH (x)-->(y)
+        |WITH x, y.prop / 2 as division
+        |RETURN *
+        |ORDER BY division DESC
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(800)
+      .setAllRelationshipsCardinality(1434)
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("division", "x")
+        .sort("division DESC")
+        .projection("y.prop / 2 AS division")
+        .allRelationshipsScan("(x)-[anon_0]->(y)")
+        .build()
+    )
+  }
 }
