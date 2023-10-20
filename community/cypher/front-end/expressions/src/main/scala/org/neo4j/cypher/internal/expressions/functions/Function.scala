@@ -83,6 +83,7 @@ object Function {
     Max,
     Min,
     Nodes,
+    NullIf,
     Pi,
     PercentileCont,
     PercentileDisc,
