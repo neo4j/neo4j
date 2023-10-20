@@ -52,12 +52,11 @@ public abstract class TransactionMonitor<T extends TransactionMonitor.MonitoredT
 
     @Override
     public void run() {
-        var activeTransactions = getActiveTransactions();
-        checkActiveTransactions(activeTransactions, clock.nanos());
-        updateActiveTransactionBoundaries(activeTransactions);
+        checkActiveTransactions(getActiveTransactions(), clock.nanos());
+        updateTransactionBoundaries();
     }
 
-    protected void updateActiveTransactionBoundaries(Set<T> activeTransactions) {}
+    protected void updateTransactionBoundaries() {}
 
     protected abstract Set<T> getActiveTransactions();
 

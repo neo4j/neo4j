@@ -85,14 +85,14 @@ class KernelTransactionMonitorTest {
         when(txHandle.timeout()).thenReturn(new TransactionTimeout(Duration.ofMinutes(1), TransactionTimedOut));
         when(txHandle.getTransactionHorizon()).thenReturn(5L);
         when(txHandle.getLastClosedTxId()).thenReturn(15L);
-        when(kernelTransactions.activeTransactions()).thenReturn(Iterators.asSet(txHandle));
+        when(kernelTransactions.executingTransactions()).thenReturn(Iterators.asSet(txHandle));
 
         // one active transaction - new boundaries
         transactionMonitor.run();
         assertEquals(15, transactionMonitor.oldestVisibleClosedTransactionId());
         assertEquals(5, transactionMonitor.oldestObservableHorizon());
 
-        when(kernelTransactions.activeTransactions()).thenReturn(emptySet());
+        when(kernelTransactions.executingTransactions()).thenReturn(emptySet());
 
         // no active transaction again - no changes in boundaries
         transactionMonitor.run();

@@ -48,14 +48,16 @@ public class KernelTransactionMonitor extends TransactionMonitor<KernelTransacti
         this.kernelTransactions = kernelTransactions;
     }
 
-    protected void updateActiveTransactionBoundaries(Set<MonitoredKernelTransaction> activeTransactions) {
+    @Override
+    protected void updateTransactionBoundaries() {
+        var executingTransactions = kernelTransactions.executingTransactions();
         long oldestTxId = Long.MAX_VALUE;
         long oldestHorizon = Long.MAX_VALUE;
 
-        for (var monitoredTx : activeTransactions) {
-            if (monitoredTx.terminationMark().isEmpty()) {
-                oldestTxId = Math.min(oldestTxId, monitoredTx.kernelTransaction.getLastClosedTxId());
-                oldestHorizon = Math.min(oldestHorizon, monitoredTx.kernelTransaction.getTransactionHorizon());
+        for (var txHandle : executingTransactions) {
+            if (txHandle.terminationMark().isEmpty()) {
+                oldestTxId = Math.min(oldestTxId, txHandle.getLastClosedTxId());
+                oldestHorizon = Math.min(oldestHorizon, txHandle.getTransactionHorizon());
             }
         }
         if (oldestTxId != Long.MAX_VALUE) {
