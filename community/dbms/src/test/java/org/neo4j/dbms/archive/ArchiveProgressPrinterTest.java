@@ -34,6 +34,7 @@ import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
@@ -90,6 +91,22 @@ class ArchiveProgressPrinterTest {
         }
     }
 
+    @Test
+    void percentageConditionShouldBeReachedEveryPercent() {
+        long maxBytes = 12345;
+        var condition = new ArchiveProgressPrinter.PercentageCondition(maxBytes);
+
+        long progressSize = condition.bucket;
+        long partialProgress = progressSize / 2;
+        long progress = 1; // Start on offset so that we are never on an exact multiple of condition.bucket
+        while (progress < maxBytes) {
+            progress += partialProgress;
+            assertThat(condition.updateAndCheckIfReached(progress)).isFalse();
+            progress += (progressSize - partialProgress);
+            assertThat(condition.updateAndCheckIfReached(progress)).isTrue();
+        }
+    }
+
     private static List<String> executeSomeWork(OutputProgressPrinter outputPrinter) {
         List<String> expected = new ArrayList<>();
         var clock = Clocks.fakeClock();
@@ -115,6 +132,8 @@ class ArchiveProgressPrinterTest {
         progressPrinter.printProgress();
 
         expected.add(line(1, 10, 0.5)); // endFile
+        expected.add(line(2, 10, 5.5)); // percentage
+        expected.add(line(2, 10, 10.5)); // percentage
         expected.add(line(2, 10, 20.5)); // printOnNextUpdate
         expected.add(line(2, 10, 20.5)); // endFile
         expected.add(line(3, 10, 30.5)); // printOnNextUpdate

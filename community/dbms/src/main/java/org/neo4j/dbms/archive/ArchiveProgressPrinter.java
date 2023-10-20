@@ -96,14 +96,14 @@ class ArchiveProgressPrinter {
 
         var when = timeSource.get();
         var deadlineReached = (deadline != null && deadline.reached(when));
-        var percentageReached = (percentage != null && percentage.reached(currentBytes));
+        var percentageReached = (percentage != null && percentage.updateAndCheckIfReached(currentBytes));
 
         if (force || deadlineReached || percentageReached) {
             printProgress();
 
             // If we manage to print, for whatever reason, move the deadline into the future.
             if (deadline != null) {
-                deadline.next();
+                deadline.next(when);
             }
             force = false;
         }
@@ -144,8 +144,8 @@ class ArchiveProgressPrinter {
             return when.isAfter(target);
         }
 
-        void next() {
-            target = increment(target, interval);
+        void next(Instant now) {
+            target = increment(now, interval);
         }
 
         private static Instant increment(Instant target, Duration duration) {
@@ -155,14 +155,22 @@ class ArchiveProgressPrinter {
 
     static class PercentageCondition {
         final long bucket;
+        long current;
 
         PercentageCondition(long maxBytes) {
             bucket = maxBytes / 100;
+            current = 0;
         }
 
-        boolean reached(long currentBytes) {
+        boolean updateAndCheckIfReached(long currentBytes) {
             // If we have less than 100 bytes, disable the check
-            return (bucket > 0 && currentBytes % bucket == 0);
+            if (bucket == 0) {
+                return false;
+            }
+
+            long previous = current;
+            current = currentBytes / bucket;
+            return current > previous;
         }
     }
 }
