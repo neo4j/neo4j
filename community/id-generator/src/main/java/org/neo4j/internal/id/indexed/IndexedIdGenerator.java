@@ -301,6 +301,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private final boolean readOnly;
     private final IdSlotDistribution slotDistribution;
     private final PageCacheTracer pageCacheTracer;
+    private final boolean useDirectToCache;
     private final CursorContextFactory contextFactory;
 
     private final Monitor monitor;
@@ -326,13 +327,15 @@ public class IndexedIdGenerator implements IdGenerator {
             ImmutableSet<OpenOption> openOptions,
             IdSlotDistribution slotDistribution,
             PageCacheTracer tracer,
-            boolean allocationEnabled) {
+            boolean allocationEnabled,
+            boolean useDirectToCache) {
         this.fileSystem = fileSystem;
         this.path = path;
         this.readOnly = readOnly;
         this.contextFactory = contextFactory;
         this.slotDistribution = slotDistribution;
         this.pageCacheTracer = tracer;
+        this.useDirectToCache = useDirectToCache;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         IdSlotDistribution.Slot[] slots = slotDistribution.slots(cacheCapacity);
@@ -402,7 +405,8 @@ public class IndexedIdGenerator implements IdGenerator {
                 generation,
                 strictlyPrioritizeFreelist,
                 monitor,
-                allocationEnabled);
+                allocationEnabled,
+                useDirectToCache);
     }
 
     private GBPTree<IdRangeKey, IdRange> instantiateTree(
@@ -590,7 +594,7 @@ public class IndexedIdGenerator implements IdGenerator {
             return NOOP_MARKER;
         }
 
-        return lockAndInstantiateMarker(true, !scanner.allocationEnabled(), cursorContext);
+        return lockAndInstantiateMarker(true, useDirectToCache && !scanner.allocationEnabled(), cursorContext);
     }
 
     @Override
@@ -606,6 +610,9 @@ public class IndexedIdGenerator implements IdGenerator {
         }
 
         var realMarker = instantiateMarker(null, true, false, cursorContext);
+        if (!useDirectToCache) {
+            return realMarker;
+        }
         return new ContextualMarker.Delegate(realMarker) {
             @Override
             public void markFree(long id, int numberOfIds) {

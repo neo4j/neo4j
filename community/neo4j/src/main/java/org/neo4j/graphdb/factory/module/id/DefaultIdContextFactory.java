@@ -19,7 +19,10 @@
  */
 package org.neo4j.graphdb.factory.module.id;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
+
 import java.util.function.Function;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.internal.id.AbstractBufferingIdGeneratorFactory;
 import org.neo4j.internal.id.BufferedIdController;
@@ -93,5 +96,9 @@ public class DefaultIdContextFactory implements IdContextFactory {
             String databaseName,
             LogService logService) {
         return new BufferedIdController(idGeneratorFactory, scheduler, contextFactory, databaseName, logService);
+    }
+
+    protected static boolean isMultiVersion(Config databaseConfig) {
+        return "multiversion".equals(databaseConfig.get(db_format));
     }
 }

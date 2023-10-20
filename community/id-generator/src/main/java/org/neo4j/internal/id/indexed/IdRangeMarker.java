@@ -189,6 +189,16 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     }
 
     @Override
+    public void markUnreserved(long id, int numberOfIds) {
+        if (!hasReservedIdInRange(id, id + numberOfIds)) {
+            prepareRange(id, false);
+            value.setBits(BITSET_RESERVED, idOffset(id), numberOfIds);
+            writer.merge(key, value, merger);
+            monitor.markedAsUnreserved(id, numberOfIds);
+        }
+    }
+
+    @Override
     public void markUncached(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
             // Mark free:1, reserved:0

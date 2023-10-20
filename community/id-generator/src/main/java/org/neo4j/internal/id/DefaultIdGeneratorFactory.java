@@ -47,6 +47,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     protected final boolean allowLargeIdCaches;
     private final String databaseName;
     private final boolean allocationInitiallyEnabled;
+    private final boolean useDirectToCache;
     private final PageCacheTracer pageCacheTracer;
 
     /**
@@ -60,19 +61,20 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             PageCacheTracer pageCacheTracer,
             String databaseName) {
-        this(fs, recoveryCleanupWorkCollector, false, pageCacheTracer, databaseName, true);
+        this(fs, recoveryCleanupWorkCollector, false, pageCacheTracer, databaseName, true, true);
     }
 
     /**
-     * @param fs {@link FileSystemAbstraction} to back the id generators.
+     * @param fs                           {@link FileSystemAbstraction} to back the id generators.
      * @param recoveryCleanupWorkCollector {@link RecoveryCleanupWorkCollector} for cleanup on starting the id generators.
-     * @param allowLargeIdCaches override the "activity" setting from {@link IdType} to always use low activity. This is useful for databases
-     * that generally see very low activity so that the id generators won't benefit from having large ID caches and instead use small ID caches.
-     * Functionally this makes no difference, it only affects performance (and memory usage which is the main driver for forcing low activity).
-     * @param databaseName name of the database this id generator belongs to
-     * @param allocationInitiallyEnabled whether to let ID generators start off with allocation enabled. E.g. in a clustered setup
-     * followers should not have activated caches whereas the leader should. In a single-instance setup allocation
-     * should be initially enabled. This state can be changed at runtime using {@link IdGenerator#clearCache(boolean, CursorContext)}.
+     * @param allowLargeIdCaches           override the "activity" setting from {@link IdType} to always use low activity. This is useful for databases
+     *                                     that generally see very low activity so that the id generators won't benefit from having large ID caches and instead use small ID caches.
+     *                                     Functionally this makes no difference, it only affects performance (and memory usage which is the main driver for forcing low activity).
+     * @param databaseName                 name of the database this id generator belongs to
+     * @param allocationInitiallyEnabled   whether to let ID generators start off with allocation enabled. E.g. in a clustered setup
+     *                                     followers should not have activated caches whereas the leader should. In a single-instance setup allocation
+     *                                     should be initially enabled. This state can be changed at runtime using {@link IdGenerator#clearCache(boolean, CursorContext)}.
+     * @param useDirectToCache             whether to cache deleted and free IDs directly instead of going through the persistence write/read.
      */
     public DefaultIdGeneratorFactory(
             FileSystemAbstraction fs,
@@ -80,13 +82,15 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             boolean allowLargeIdCaches,
             PageCacheTracer pageCacheTracer,
             String databaseName,
-            boolean allocationInitiallyEnabled) {
+            boolean allocationInitiallyEnabled,
+            boolean useDirectToCache) {
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.allowLargeIdCaches = allowLargeIdCaches;
         this.pageCacheTracer = pageCacheTracer;
         this.databaseName = databaseName;
         this.allocationInitiallyEnabled = allocationInitiallyEnabled;
+        this.useDirectToCache = useDirectToCache;
     }
 
     @Override
@@ -152,7 +156,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,
-                allocationInitiallyEnabled);
+                allocationInitiallyEnabled,
+                useDirectToCache);
     }
 
     @Override
@@ -197,7 +202,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,
-                allocationInitiallyEnabled);
+                allocationInitiallyEnabled,
+                useDirectToCache);
         generators.put(idType, generator);
         return generator;
     }

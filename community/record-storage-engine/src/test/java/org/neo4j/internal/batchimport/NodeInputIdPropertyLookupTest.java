@@ -73,7 +73,8 @@ class NodeInputIdPropertyLookupTest {
         store = new StoreFactory(
                         layout,
                         Config.defaults(),
-                        new DefaultIdGeneratorFactory(fs, immediate(), false, NULL, layout.getDatabaseName(), true),
+                        new DefaultIdGeneratorFactory(
+                                fs, immediate(), false, NULL, layout.getDatabaseName(), true, true),
                         pageCache,
                         NULL,
                         fs,

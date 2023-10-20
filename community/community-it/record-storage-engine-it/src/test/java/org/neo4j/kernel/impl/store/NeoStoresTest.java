@@ -740,6 +740,7 @@ class NeoStoresTest {
                         openOptions,
                         slotDistribution,
                         PageCacheTracer.NULL,
+                        true,
                         true) {
                     @Override
                     public synchronized void close() {

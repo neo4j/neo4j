@@ -165,6 +165,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 slotDistribution,
                 PageCacheTracer.NULL,
+                true,
                 true);
     }
 
@@ -662,6 +663,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true);
 
         // then
@@ -698,6 +700,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true);
 
         // then
@@ -728,6 +731,7 @@ class IndexedIdGeneratorTest {
                         getOpenOptions(),
                         SINGLE_IDS,
                         PageCacheTracer.NULL,
+                        true,
                         true));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
     }
@@ -752,6 +756,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
@@ -775,6 +780,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         }
@@ -1029,6 +1035,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             prepareIndexWithoutRebuild.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
@@ -1049,6 +1056,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             var pageCacheTracer = new DefaultPageCacheTracer();
             try (var cursorContext = CONTEXT_FACTORY.create(
@@ -1291,6 +1299,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
@@ -1314,6 +1323,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             assertDoesNotThrow(() -> operation.apply(readOnlyGenerator));
@@ -1531,6 +1541,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
@@ -1554,6 +1565,7 @@ class IndexedIdGeneratorTest {
                 getOpenOptions(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             var e = assertThrows(Exception.class, operation.apply(readOnlyGenerator));

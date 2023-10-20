@@ -87,6 +87,8 @@ class FreeIdScanner {
      */
     private volatile boolean allocationEnabled;
 
+    private final boolean useDirectToCache;
+
     FreeIdScanner(
             int idsPerEntry,
             GBPTree<IdRangeKey, IdRange> tree,
@@ -97,7 +99,8 @@ class FreeIdScanner {
             long generation,
             boolean strictlyPrioritizeFreelistOverHighId,
             IndexedIdGenerator.Monitor monitor,
-            boolean allocationEnabled) {
+            boolean allocationEnabled,
+            boolean useDirectToCache) {
         this.idsPerEntry = idsPerEntry;
         this.tree = tree;
         this.layout = layout;
@@ -110,6 +113,7 @@ class FreeIdScanner {
                 : ScanLock.lockFreeAndOptimistic();
         this.monitor = monitor;
         this.allocationEnabled = allocationEnabled;
+        this.useDirectToCache = useDirectToCache;
     }
 
     /**
@@ -254,7 +258,13 @@ class FreeIdScanner {
                 marker.markReserved(id, numberOfIds);
                 var accepted = cache.offer(id, numberOfIds, monitor);
                 if (accepted < numberOfIds) {
-                    marker.markUncached(id + accepted, numberOfIds - accepted);
+                    long idToUndo = id + accepted;
+                    int numberOfIdsToUndo = numberOfIds - accepted;
+                    if (useDirectToCache) {
+                        marker.markUncached(idToUndo, numberOfIdsToUndo);
+                    } else {
+                        marker.markUnreserved(idToUndo, numberOfIdsToUndo);
+                    }
                 }
             }
         }

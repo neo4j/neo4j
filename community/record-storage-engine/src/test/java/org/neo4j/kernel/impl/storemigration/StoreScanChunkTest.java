@@ -59,7 +59,7 @@ class StoreScanChunkTest {
     void differentChunksHaveDifferentCursors() {
         var layout = RecordDatabaseLayout.ofFlat(directory.homePath());
         var idGeneratorFactory =
-                new DefaultIdGeneratorFactory(fs, immediate(), false, NULL, layout.getDatabaseName(), true);
+                new DefaultIdGeneratorFactory(fs, immediate(), false, NULL, layout.getDatabaseName(), true, true);
         try (var neoStores = new StoreFactory(
                         layout,
                         Config.defaults(),

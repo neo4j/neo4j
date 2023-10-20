@@ -728,7 +728,17 @@ class FreeIdScannerTest {
         this.atLeastOneFreeId = new AtomicBoolean();
         this.recordingMonitor = new RecordingMonitor();
         return new FreeIdScanner(
-                idsPerEntry, tree, layout, cache, atLeastOneFreeId, reuser, generation, strict, recordingMonitor, true);
+                idsPerEntry,
+                tree,
+                layout,
+                cache,
+                atLeastOneFreeId,
+                reuser,
+                generation,
+                strict,
+                recordingMonitor,
+                true,
+                true);
     }
 
     private void assertCacheHasIdsNonExhaustive(Range... ranges) {
@@ -807,6 +817,11 @@ class FreeIdScannerTest {
                     for (int i = 0; i < numberOfIds; i++) {
                         reservedIds.add(id + i);
                     }
+                }
+
+                @Override
+                public void markUnreserved(long id, int numberOfIds) {
+                    markUncached(id, numberOfIds);
                 }
 
                 @Override

@@ -261,7 +261,13 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
             markReserved(id, 1);
         }
 
+        default void markUnreserved(long id) {
+            markUnreserved(id, 1);
+        }
+
         void markReserved(long id, int numberOfIds);
+
+        void markUnreserved(long id, int numberOfIds);
 
         void markUncached(long id, int numberOfIds);
 
@@ -283,6 +289,11 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
             @Override
             public void markReserved(long id, int numberOfIds) {
                 actual.markReserved(id, numberOfIds);
+            }
+
+            @Override
+            public void markUnreserved(long id, int numberOfIds) {
+                actual.markUnreserved(id, numberOfIds);
             }
 
             @Override
@@ -440,6 +451,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         @Override
         public void markUnallocated(long id, int numberOfIds) {}
+
+        @Override
+        public void markUnreserved(long id, int numberOfIds) {}
 
         @Override
         public void markReserved(long id, int numberOfIds) {}

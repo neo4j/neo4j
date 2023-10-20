@@ -97,6 +97,7 @@ class LargeFreelistCreationDeletionIT {
                     Sets.immutable.empty(),
                     SINGLE_IDS,
                     cacheTracer,
+                    true,
                     true)) {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
                 freelist.maintenance(NULL_CONTEXT);

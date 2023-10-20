@@ -98,8 +98,15 @@ public final class IdContextFactoryBuilder {
             // caches.
             boolean allowLargeIdCaches =
                     !config.get(GraphDatabaseInternalSettings.force_small_id_cache) && !databaseId.isSystemDatabase();
+            boolean isMultiVersion = DefaultIdContextFactory.isMultiVersion(config);
             return new DefaultIdGeneratorFactory(
-                    fs, immediate(), allowLargeIdCaches, pageCacheTracer, databaseId.name(), allocationEnabled);
+                    fs,
+                    immediate(),
+                    allowLargeIdCaches,
+                    pageCacheTracer,
+                    databaseId.name(),
+                    allocationEnabled,
+                    !isMultiVersion);
         };
     }
 }

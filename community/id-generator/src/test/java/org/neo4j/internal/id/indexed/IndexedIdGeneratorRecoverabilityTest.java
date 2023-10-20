@@ -259,6 +259,7 @@ class IndexedIdGeneratorRecoverabilityTest {
                 Sets.immutable.empty(),
                 SINGLE_IDS,
                 PageCacheTracer.NULL,
+                true,
                 true);
     }
 
