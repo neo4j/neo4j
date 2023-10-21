@@ -1016,6 +1016,21 @@
       </properties>
     </profile>
     <profile>
+      <id>test-lighthouse</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>NEO4J_PARALLEL_DISCOVERY</name>
+          <value>ORIGINAL_SHADOW</value>
+        </property>
+      </activation>
+      <properties>
+        <test.runner.jvm.settings.db.format>
+          -DNEO4J_PARALLEL_DISCOVERY=ORIGINAL_SHADOW
+        </test.runner.jvm.settings.db.format>
+      </properties>
+    </profile>
+    <profile>
       <id>zinc</id>
       <properties>
         <scala.plugin.recompileMode>incremental</scala.plugin.recompileMode>
