@@ -77,9 +77,4 @@ public interface Extractor<T> extends Cloneable {
      * @return whether the value is empty.
      */
     boolean isEmpty(Object value);
-
-    /**
-     * @return true if the type extracted by this extractor is of `type`.
-     */
-    boolean producesType(Class<?> type);
 }

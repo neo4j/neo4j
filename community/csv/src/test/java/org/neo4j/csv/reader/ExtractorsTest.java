@@ -203,97 +203,129 @@ class ExtractorsTest {
         assertThat(extractor.isEmpty(value)).as("empty input").isTrue();
     }
 
+    @MethodSource("extractorTypes")
+    @ParameterizedTest(name = "{0}")
+    void shouldHaveCorrectExtractorName(ExtractorTypeTestCase testCase) {
+        // given
+        var extractors = new Extractors();
+        var extractor = testCase.extractorSelector.apply(extractors);
+
+        // then
+        assertThat(extractor.name()).as("Extractor name as expected").isEqualTo(testCase.expectedExtractorName);
+    }
+
     public static Stream<Arguments> extractorTypes() {
         List<Arguments> types = new ArrayList<>();
 
-        types.add(new ExtractorTypeTestCaseBuilder("Boolean Extractor", Extractors::boolean_, "true", true).build());
+        types.add(new ExtractorTypeTestCaseBuilder("Boolean Extractor", Extractors::boolean_, "true", true, "boolean")
+                .build());
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Boolean Array Extractor", Extractors::booleanArray, "true;false;true", new boolean[] {
-                            true, false, true
-                        })
+                        "Boolean Array Extractor",
+                        Extractors::booleanArray,
+                        "true;false;true",
+                        new boolean[] {true, false, true},
+                        "boolean[]")
                 .build());
 
-        types.add(new ExtractorTypeTestCaseBuilder("Byte Extractor", Extractors::byte_, "55", (byte) 55)
+        types.add(new ExtractorTypeTestCaseBuilder("Byte Extractor", Extractors::byte_, "55", (byte) 55, "byte")
                 .withNormalization(Extractors::long_, 55L)
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Byte Array Extractor", Extractors::byteArray, "-33; 0; 55", new byte[] {-33, 0, 55})
+                        "Byte Array Extractor", Extractors::byteArray, "-33; 0; 55", new byte[] {-33, 0, 55}, "byte[]")
                 .withNormalization(Extractors::longArray, new long[] {-33, 0, 55})
                 .build());
 
-        types.add(new ExtractorTypeTestCaseBuilder("Short Extractor", Extractors::short_, "20000", (short) 20000)
-                .withNormalization(Extractors::long_, 20000L)
-                .build());
+        types.add(
+                new ExtractorTypeTestCaseBuilder("Short Extractor", Extractors::short_, "20000", (short) 20000, "short")
+                        .withNormalization(Extractors::long_, 20000L)
+                        .build());
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Short Array Extractor", Extractors::shortArray, "-10000; 0; 20000", new short[] {
-                            -10000, 0, 20000
-                        })
+                        "Short Array Extractor",
+                        Extractors::shortArray,
+                        "-10000; 0; 20000",
+                        new short[] {-10000, 0, 20000},
+                        "short[]")
                 .withNormalization(Extractors::longArray, new long[] {-10000, 0, 20000})
                 .build());
 
-        types.add(new ExtractorTypeTestCaseBuilder("Int Extractor", Extractors::int_, "2000000", 2000000)
+        types.add(new ExtractorTypeTestCaseBuilder("Int Extractor", Extractors::int_, "2000000", 2000000, "int")
                 .withNormalization(Extractors::long_, 2000000L)
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Int Array Extractor", Extractors::intArray, "-1000000; 0; 2000000", new int[] {
-                            -1000000, 0, 2000000
-                        })
+                        "Int Array Extractor",
+                        Extractors::intArray,
+                        "-1000000; 0; 2000000",
+                        new int[] {-1000000, 0, 2000000},
+                        "int[]")
                 .withNormalization(Extractors::longArray, new long[] {-1000000, 0, 2000000})
                 .build());
 
-        types.add(new ExtractorTypeTestCaseBuilder("Long Extractor", Extractors::long_, "4000000000", 4000000000L)
-                .build());
+        types.add(
+                new ExtractorTypeTestCaseBuilder("Long Extractor", Extractors::long_, "4000000000", 4000000000L, "long")
+                        .build());
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Long Array Extractor", Extractors::longArray, "-3000000000; 0; 4000000000", new long[] {
-                            -3000000000L, 0L, 4000000000L
-                        })
+                        "Long Array Extractor",
+                        Extractors::longArray,
+                        "-3000000000; 0; 4000000000",
+                        new long[] {-3000000000L, 0L, 4000000000L},
+                        "long[]")
                 .build());
 
-        types.add(new ExtractorTypeTestCaseBuilder("Float Extractor", Extractors::float_, "1.0", 1.0F)
+        types.add(new ExtractorTypeTestCaseBuilder("Float Extractor", Extractors::float_, "1.0", 1.0F, "float")
                 .withNormalization(Extractors::double_, 1.0D)
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Float Array Extractor", Extractors::floatArray, "-1.0; 0.0; 1.0", new float[] {-1.0F, 0F, 1.0F
-                        })
+                        "Float Array Extractor",
+                        Extractors::floatArray,
+                        "-1.0; 0.0; 1.0",
+                        new float[] {-1.0F, 0F, 1.0F},
+                        "float[]")
                 .withNormalization(Extractors::doubleArray, new double[] {-1.0D, 0D, 1.0D})
                 .build());
 
-        types.add(new ExtractorTypeTestCaseBuilder("Double Extractor", Extractors::double_, "1.0", 1.0D).build());
+        types.add(new ExtractorTypeTestCaseBuilder("Double Extractor", Extractors::double_, "1.0", 1.0D, "double")
+                .build());
         types.add(new ExtractorTypeTestCaseBuilder(
                         "Double Array Extractor",
                         Extractors::doubleArray,
                         "123.123; 4567.4567; 987654321.0987",
-                        new double[] {123.123D, 4567.4567D, 987654321.0987D})
+                        new double[] {123.123D, 4567.4567D, 987654321.0987D},
+                        "double[]")
                 .build());
 
-        types.add(new ExtractorTypeTestCaseBuilder("Char Extractor", Extractors::char_, "a", 'a')
+        types.add(new ExtractorTypeTestCaseBuilder("Char Extractor", Extractors::char_, "a", 'a', "char")
                 .withNormalization(Extractors::string, "a")
                 .build());
-        types.add(new ExtractorTypeTestCaseBuilder("String Extractor", Extractors::string, "abcde", "abcde").build());
-        types.add(new ExtractorTypeTestCaseBuilder(
-                        "String Array Extractor", Extractors::stringArray, "abcde; fghijkl;mnopq", new String[] {
-                            "abcde", " fghijkl", "mnopq"
-                        })
+        types.add(new ExtractorTypeTestCaseBuilder("String Extractor", Extractors::string, "abcde", "abcde", "String")
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "TextValue Extractor", Extractors::textValue, "abcde", Values.utf8Value("abcde"))
+                        "String Array Extractor",
+                        Extractors::stringArray,
+                        "abcde; fghijkl;mnopq",
+                        new String[] {"abcde", " fghijkl", "mnopq"},
+                        "String[]")
+                .build());
+        types.add(new ExtractorTypeTestCaseBuilder(
+                        "TextValue Extractor", Extractors::textValue, "abcde", Values.utf8Value("abcde"), "TextValue")
                 .build());
 
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Date Extractor", Extractors::date, "1985-4-20", DateValue.date(1985, 4, 20))
+                        "Date Extractor", Extractors::date, "1985-4-20", DateValue.date(1985, 4, 20), "Date")
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
                         "Date Array Extractor",
                         Extractors::dateArray,
                         "1985-4-20;2030-12-12",
-                        Values.dateArray(array(LocalDate.of(1985, 4, 20), LocalDate.of(2030, 12, 12))))
+                        Values.dateArray(array(LocalDate.of(1985, 4, 20), LocalDate.of(2030, 12, 12))),
+                        "Date[]")
                 .build());
 
         types.add(new ExtractorTypeTestCaseBuilder(
                         "Time Extractor",
                         Extractors::time,
                         "2:41:34",
-                        TimeValue.time(2, 41, 34, 0, ZoneOffset.ofHours(10)))
+                        TimeValue.time(2, 41, 34, 0, ZoneOffset.ofHours(10)),
+                        "Time")
                 .withCSVHeaders(TimeValue.parseHeaderInformation("{timezone:+10:00}"))
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
@@ -302,7 +334,8 @@ class ExtractorsTest {
                         "2:41:34;18:3:51",
                         Values.timeArray(array(
                                 OffsetTime.of(2, 41, 34, 0, ZoneOffset.ofHours(10)),
-                                OffsetTime.of(18, 3, 51, 0, ZoneOffset.ofHours(10)))))
+                                OffsetTime.of(18, 3, 51, 0, ZoneOffset.ofHours(10)))),
+                        "Time[]")
                 .withCSVHeaders(TimeValue.parseHeaderInformation("{timezone:+10:00}"))
                 .build());
 
@@ -310,7 +343,8 @@ class ExtractorsTest {
                         "DateTime Extractor",
                         Extractors::dateTime,
                         "1985-4-20T2:41:34",
-                        DateTimeValue.datetime(1985, 4, 20, 2, 41, 34, 0, ZoneOffset.ofHours(10)))
+                        DateTimeValue.datetime(1985, 4, 20, 2, 41, 34, 0, ZoneOffset.ofHours(10)),
+                        "DateTime")
                 .withCSVHeaders(TimeValue.parseHeaderInformation("{timezone:+10:00}"))
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
@@ -319,7 +353,8 @@ class ExtractorsTest {
                         "1985-4-20T2:41:34;2030-12-12T18:3:51",
                         Values.dateTimeArray(array(
                                 ZonedDateTime.of(1985, 4, 20, 2, 41, 34, 0, ZoneOffset.ofHours(10)),
-                                ZonedDateTime.of(2030, 12, 12, 18, 3, 51, 0, ZoneOffset.ofHours(10)))))
+                                ZonedDateTime.of(2030, 12, 12, 18, 3, 51, 0, ZoneOffset.ofHours(10)))),
+                        "DateTime[]")
                 .withCSVHeaders(TimeValue.parseHeaderInformation("{timezone:+10:00}"))
                 .build());
 
@@ -327,7 +362,8 @@ class ExtractorsTest {
                         "LocalDateTime Extractor",
                         Extractors::localDateTime,
                         "1985-4-20T2:41:34",
-                        LocalDateTimeValue.localDateTime(1985, 4, 20, 2, 41, 34, 0))
+                        LocalDateTimeValue.localDateTime(1985, 4, 20, 2, 41, 34, 0),
+                        "LocalDateTime")
                 .withCSVHeaders(TimeValue.parseHeaderInformation("{timezone:+10:00}"))
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
@@ -336,25 +372,32 @@ class ExtractorsTest {
                         "1985-4-20T2:41:34;2030-12-12T18:3:51",
                         Values.localDateTimeArray(array(
                                 LocalDateTime.of(1985, 4, 20, 2, 41, 34, 0),
-                                LocalDateTime.of(2030, 12, 12, 18, 3, 51, 0))))
+                                LocalDateTime.of(2030, 12, 12, 18, 3, 51, 0))),
+                        "LocalDateTime[]")
                 .withCSVHeaders(TimeValue.parseHeaderInformation("{timezone:+10:00}"))
                 .build());
 
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "LocalTime Extractor", Extractors::localTime, "2:41:34", LocalTimeValue.localTime(2, 41, 34, 0))
+                        "LocalTime Extractor",
+                        Extractors::localTime,
+                        "2:41:34",
+                        LocalTimeValue.localTime(2, 41, 34, 0),
+                        "LocalTime")
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
                         "LocalTime Array Extractor",
                         Extractors::localTimeArray,
                         "2:41:34;18:3:51",
-                        Values.localTimeArray(array(LocalTime.of(2, 41, 34, 0), LocalTime.of(18, 3, 51, 0))))
+                        Values.localTimeArray(array(LocalTime.of(2, 41, 34, 0), LocalTime.of(18, 3, 51, 0))),
+                        "LocalTime[]")
                 .build());
 
         types.add(new ExtractorTypeTestCaseBuilder(
                         "Point Extractor",
                         Extractors::point,
                         "Point{latitude: 56.7, longitude: 13.2}",
-                        Values.pointValue(CoordinateReferenceSystem.WGS_84, 13.2, 56.7))
+                        Values.pointValue(CoordinateReferenceSystem.WGS_84, 13.2, 56.7),
+                        "Point")
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
                         "Point Array Extractor",
@@ -362,18 +405,24 @@ class ExtractorsTest {
                         "{latitude: 56.7, longitude: 13.2};{latitude: 0.7, longitude: 0.25}",
                         Values.pointArray(array(
                                 Values.pointValue(CoordinateReferenceSystem.WGS_84, 13.2, 56.7),
-                                Values.pointValue(CoordinateReferenceSystem.WGS_84, 0.25, 0.7))))
+                                Values.pointValue(CoordinateReferenceSystem.WGS_84, 0.25, 0.7))),
+                        "Point[]")
                 .build());
 
         types.add(new ExtractorTypeTestCaseBuilder(
-                        "Duration Extractor", Extractors::duration, "PT60S", DurationValue.duration(0, 0, 60, 0))
+                        "Duration Extractor",
+                        Extractors::duration,
+                        "PT60S",
+                        DurationValue.duration(0, 0, 60, 0),
+                        "Duration")
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
                         "Duration Array Extractor",
                         Extractors::durationArray,
                         "PT60S;PT2H",
                         Values.durationArray(
-                                array(Duration.of(60, ChronoUnit.SECONDS), Duration.of(2, ChronoUnit.HOURS))))
+                                array(Duration.of(60, ChronoUnit.SECONDS), Duration.of(2, ChronoUnit.HOURS))),
+                        "Duration[]")
                 .build());
         return types.stream();
     }
@@ -382,6 +431,7 @@ class ExtractorsTest {
             Function<Extractors, Extractor<?>> extractorSelector,
             char[] input,
             Object expectedOutput,
+            String expectedExtractorName,
             Function<Extractors, Extractor<?>> normalizedSelector,
             Object expectedNormalizedOutput,
             CSVHeaderInformation optionalCSVHeaders) {}
@@ -391,6 +441,7 @@ class ExtractorsTest {
         private final Function<Extractors, Extractor<?>> selector;
         private final String input;
         private final Object expectedOutput;
+        private final String expectedExtractorName;
 
         private Function<Extractors, Extractor<?>> normalizedSelector;
         private Object expectedNormalizedOutput;
@@ -398,11 +449,16 @@ class ExtractorsTest {
         private CSVHeaderInformation optionalCSVHeaders;
 
         private ExtractorTypeTestCaseBuilder(
-                String name, Function<Extractors, Extractor<?>> selector, String input, Object expectedOutput) {
+                String name,
+                Function<Extractors, Extractor<?>> selector,
+                String input,
+                Object expectedOutput,
+                String expectedExtractorName) {
             this.name = name;
             this.selector = selector;
             this.input = input;
             this.expectedOutput = expectedOutput;
+            this.expectedExtractorName = expectedExtractorName;
 
             normalizedSelector = selector;
             expectedNormalizedOutput = expectedOutput;
@@ -428,6 +484,7 @@ class ExtractorsTest {
                             selector,
                             input.toCharArray(),
                             expectedOutput,
+                            expectedExtractorName,
                             normalizedSelector,
                             expectedNormalizedOutput,
                             optionalCSVHeaders)));

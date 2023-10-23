@@ -33,9 +33,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
@@ -55,13 +57,8 @@ import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CSVHeaderInformation;
-import org.neo4j.values.storable.DateTimeArray;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
-import org.neo4j.values.storable.TimeArray;
-import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -69,6 +66,10 @@ import org.neo4j.values.storable.Value;
  */
 public class DataFactories {
     private static final Supplier<ZoneId> DEFAULT_TIME_ZONE = () -> UTC;
+
+    private static final Set<String> POINT_VALUE_CSV_HEADER_TYPES = new HashSet<>(Arrays.asList("Point", "Point[]"));
+    private static final Set<String> TEMPORAL_VALUE_CSV_HEADER_TYPES =
+            new HashSet<>(Arrays.asList("Time", "Time[]", "DateTime", "DateTime[]"));
 
     private DataFactories() {}
 
@@ -469,12 +470,9 @@ public class DataFactories {
 
     private static CSVHeaderInformation parseOptionalParameter(Extractor<?> extractor, Map<String, String> options) {
         if (!options.isEmpty()) {
-            if (extractor.producesType(PointValue.class) || extractor.producesType(PointArray.class)) {
+            if (POINT_VALUE_CSV_HEADER_TYPES.contains(extractor.name())) {
                 return PointValue.parseHeaderInformation(options);
-            } else if (extractor.producesType(TimeValue.class)
-                    || extractor.producesType(DateTimeValue.class)
-                    || extractor.producesType(TimeArray.class)
-                    || extractor.producesType(DateTimeArray.class)) {
+            } else if (TEMPORAL_VALUE_CSV_HEADER_TYPES.contains(extractor.name())) {
                 return TemporalValue.parseHeaderInformation(options);
             }
         }
