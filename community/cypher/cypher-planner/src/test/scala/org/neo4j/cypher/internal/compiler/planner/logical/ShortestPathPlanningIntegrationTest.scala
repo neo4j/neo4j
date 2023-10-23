@@ -291,6 +291,44 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("should allow planning of shortest with already bound end nodes") {
+    val query =
+      "MATCH (d:User), (a:User) WITH * SKIP 0 MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d) RETURN *"
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (b)")
+        .addTransition(0, 3, "(a) (anon_6 WHERE d = anon_6)")
+        .addTransition(1, 2, "(b)-[r]->(c)")
+        .addTransition(2, 1, "(c) (b)")
+        .addTransition(2, 3, "(c) (anon_6 WHERE d = anon_6)")
+        .addFinalState(3)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "anon_6",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_6) WHERE d = `anon_6` AND unique(`r`))",
+          None,
+          Set(("b", "b"), ("c", "c")),
+          Set(("r", "r")),
+          Set("anon_6"),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          reverseGroupVariableProjections = false
+        )
+        .skip(0)
+        .cartesianProduct()
+        .|.nodeByLabelScan("a", "User")
+        .nodeByLabelScan("d", "User")
+        .build()
+    )
+  }
+
   test("should allow planning of shortest with already bound interior node with predicate on interior node") {
     val query =
       "MATCH (d:User) MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d {prop: 5}) ((e)-[s]->(f))* (g) RETURN *"

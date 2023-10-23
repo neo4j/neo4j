@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.util
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator.prefix
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
 
+import scala.collection.mutable
+
 /**
  * @param negativeNumbers if false, the numbers to use for variable names start with 0 and increase.
  *                        if true, the numbers to use for variable names start with -1 and decrease.
@@ -26,11 +28,23 @@ import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
 class AnonymousVariableNameGenerator(negativeNumbers: Boolean = false) {
   private var counter = if (negativeNumbers) -1 else 0
   private val inc = if (negativeNumbers) -1 else 1
+  private val aliases = mutable.Map.empty[String, Seq[String]]
 
   def nextName: String = {
     val result = s"$prefix$counter"
     counter += inc
     result
+  }
+
+  def getAlias(name: String, index: Int): String = {
+    val aliasesForName = aliases.getOrElseUpdate(name, Seq(nextName))
+    if (aliasesForName.size <= index) {
+      val newAliases = aliasesForName ++ Seq.fill(index - aliasesForName.size + 1)(nextName)
+      aliases.update(name, newAliases)
+      newAliases(index)
+    } else {
+      aliasesForName(index)
+    }
   }
 }
 
