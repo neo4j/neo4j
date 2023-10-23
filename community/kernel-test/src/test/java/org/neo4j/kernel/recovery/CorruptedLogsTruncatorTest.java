@@ -47,7 +47,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -217,7 +217,7 @@ class CorruptedLogsTruncatorTest {
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS) // based on pre-allocated files, which does not work on windows
+    @EnabledOnOs(OS.LINUX) // based on pre-allocated files, which does not work on windows
     void pruneAndArchiveLastLog() throws IOException {
         life.start();
         generateTransactionLogFiles(logFiles);
