@@ -24,6 +24,8 @@ import static org.neo4j.collection.factory.OnHeapCollectionsFactory.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,6 +78,21 @@ class NodeStateImplTest {
             state.removeRelationship(r.id, r.type, r.direction);
         });
         assertThat(state.hasAddedRelationships()).isFalse();
+    }
+
+    @Test
+    void shouldNotSayPropertiesChangesOnUndoAdded() {
+        // given
+        var state = newNodeState();
+        var key = 2;
+        state.addProperty(key, intValue(2));
+        state.changeProperty(key, stringValue("abc"));
+
+        // when
+        state.removeProperty(key);
+
+        // then
+        assertThat(state.hasPropertyChanges()).isFalse();
     }
 
     private List<AddedRelationship> generateRandomRelationships() {

@@ -140,7 +140,9 @@ class EntityStateImpl implements EntityState {
 
     @Override
     public boolean hasPropertyChanges() {
-        return addedProperties != null || removedProperties != null || changedProperties != null;
+        return (addedProperties != null && !addedProperties.isEmpty())
+                || (removedProperties != null && !removedProperties.isEmpty())
+                || (changedProperties != null && !changedProperties.isEmpty());
     }
 
     @Override
