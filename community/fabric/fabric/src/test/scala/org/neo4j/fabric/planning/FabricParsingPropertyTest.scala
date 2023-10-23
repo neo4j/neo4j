@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.defaultSemanticFeatures
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.frontend.phases
@@ -80,7 +83,9 @@ class FabricParsingPropertyTest extends CypherFunSuite
     }
   }
 
-  private val fabricParsing = CompilationPhases.fabricParsing(ParsingConfig(), resolver)
+  private val fabricParsingConfig =
+    ParsingConfig(semanticFeatures = defaultSemanticFeatures ++ Seq(MultipleGraphs, UseAsMultipleGraphsSelector))
+  private val fabricParsing = CompilationPhases.fabricParsing(fabricParsingConfig, resolver)
 
   private val prettifier: Prettifier =
     Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
@@ -97,6 +102,8 @@ class FabricParsingPropertyTest extends CypherFunSuite
   // This string must not contain any anonymous variable names, otherwise newly generated anonymous variable names
   // on the remote instance can clash with the existing anonymous variable names.
   test("fabricParsing should not introduce anonymous variable names.") {
+    // To reproduce test failures, enable the following line with the seed from the TC build
+    // setScalaCheckInitialSeed(seed)
     forAll(astGenerator._statement) { statement =>
       val queryString = prettifier.asString(statement)
       withClue(s"Original queryString: $queryString\n") {
