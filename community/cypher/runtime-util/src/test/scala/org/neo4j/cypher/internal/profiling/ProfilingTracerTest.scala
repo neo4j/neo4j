@@ -26,6 +26,7 @@ import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.io.pagecache.PageSwapper
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 
 class ProfilingTracerTest extends CypherFunSuite {
 
@@ -181,10 +182,16 @@ class ProfilingTracerTest extends CypherFunSuite {
     information.pageCacheMisses() should equal(17)
   }
 
-  class DelegatingKernelStatisticProvider(tracer: DefaultPageCursorTracer) extends KernelStatisticProvider {
+  class DelegatingKernelStatisticProvider(tracer: DefaultPageCursorTracer) extends StatisticProvider {
 
     override def getPageCacheHits: Long = tracer.hits()
 
     override def getPageCacheMisses: Long = tracer.faults()
+  }
+
+  object NoKernelStatisticProvider extends StatisticProvider {
+    override def getPageCacheHits: Long = OperatorProfile.NO_DATA
+
+    override def getPageCacheMisses: Long = OperatorProfile.NO_DATA
   }
 }

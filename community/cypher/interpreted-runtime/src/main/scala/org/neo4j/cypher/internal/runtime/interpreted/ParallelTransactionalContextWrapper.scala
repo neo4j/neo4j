@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.graphdb.Entity
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.ValueMapper
@@ -64,6 +64,14 @@ class ParallelTransactionalContextWrapper(
     val ktx = tc.kernelTransaction()
     ktx.assertOpen()
     ktx.createExecutionContext()
+  }
+
+  private[this] val _statisticsProvider = new StatisticProvider {
+    private val tracer: PageCursorTracer = _kernelExecutionContext.cursorContext().getCursorTracer
+
+    override def getPageCacheHits: Long = tracer.hits()
+
+    override def getPageCacheMisses: Long = tracer.faults();
   }
 
   override def kernelExecutionContext: ExecutionContext = _kernelExecutionContext
@@ -120,14 +128,7 @@ class ParallelTransactionalContextWrapper(
     _kernelExecutionContext.close()
   }
 
-  override def kernelStatisticProvider: KernelStatisticProvider =
-    new KernelStatisticProvider {
-      private val tracer: PageCursorTracer = _kernelExecutionContext.cursorContext().getCursorTracer
-
-      override def getPageCacheHits: Long = tracer.hits()
-      override def getPageCacheMisses: Long = tracer.faults();
-    }
-
+  override def kernelStatisticProvider: StatisticProvider = _statisticsProvider
   override def dbmsInfo: DbmsInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DbmsInfo])
 
   override def databaseId: NamedDatabaseId = tc.databaseId()

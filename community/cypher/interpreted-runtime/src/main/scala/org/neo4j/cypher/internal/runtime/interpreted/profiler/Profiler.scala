@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.neo4j.common.Edition
-import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.profiling.OperatorProfileEvent
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
@@ -54,6 +53,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.storageengine.api.PropertySelection
 import org.neo4j.storageengine.api.Reference
 import org.neo4j.storageengine.api.RelationshipVisitor
@@ -64,14 +64,14 @@ import scala.collection.mutable
 class Profiler(dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) extends PipeDecorator {
   outerProfiler =>
 
-  private case class StackEntry(planId: Id, transactionBoundStatisticProvider: KernelStatisticProvider)
+  private case class StackEntry(planId: Id, transactionBoundStatisticProvider: StatisticProvider)
 
   private var planIdStack: List[StackEntry] = Nil
 
   private val lastObservedStats =
-    mutable.Map[KernelStatisticProvider, PageCacheStats]().withDefaultValue(PageCacheStats(0, 0))
+    mutable.Map[StatisticProvider, PageCacheStats]().withDefaultValue(PageCacheStats(0, 0))
 
-  private def startAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, planId: Id): Unit = {
+  private def startAccountingPageCacheStatsFor(statisticProvider: StatisticProvider, planId: Id): Unit = {
     // The current top of the stack hands over control to the plan with the provided planId.
     // Account any statistic updates that happened until now towards the previousId.
     planIdStack.headOption.foreach {
@@ -87,7 +87,7 @@ class Profiler(dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) extends
     lastObservedStats.update(statisticProvider, currentStats)
   }
 
-  private def stopAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, planId: Id): Unit = {
+  private def stopAccountingPageCacheStatsFor(statisticProvider: StatisticProvider, planId: Id): Unit = {
     val head :: rest = planIdStack
     require(
       head.planId == planId,

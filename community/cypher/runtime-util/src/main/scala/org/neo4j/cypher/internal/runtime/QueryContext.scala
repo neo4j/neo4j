@@ -26,7 +26,6 @@ import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
-import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
@@ -74,6 +73,7 @@ import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.PropertySelection
@@ -772,7 +772,7 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def markForTermination(reason: Status): Unit
 
-  def kernelStatisticProvider: KernelStatisticProvider
+  def kernelStatisticProvider: StatisticProvider
 
   def dbmsInfo: DbmsInfo
 

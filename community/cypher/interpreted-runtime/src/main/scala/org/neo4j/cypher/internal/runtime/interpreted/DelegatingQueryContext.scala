@@ -25,7 +25,6 @@ import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
@@ -87,6 +86,7 @@ import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
@@ -746,7 +746,7 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def close(): Unit = inner.close()
 
-  override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
+  override def kernelStatisticProvider: StatisticProvider = inner.kernelStatisticProvider
 
   override def dbmsInfo: DbmsInfo = inner.dbmsInfo
 

@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.cypher.internal.util.attribution.Id;
 import org.neo4j.cypher.result.OperatorProfile;
 import org.neo4j.cypher.result.QueryProfile;
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
 public class ProfilingTracer implements QueryProfiler, QueryProfile {
     public interface Clock {
@@ -33,14 +34,14 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile {
     }
 
     private final Clock clock;
-    private final KernelStatisticProvider statisticProvider;
+    private final StatisticProvider statisticProvider;
     private final Map<Integer, ProfilingTracerData> data = new HashMap<>();
 
-    public ProfilingTracer(KernelStatisticProvider statisticProvider) {
+    public ProfilingTracer(StatisticProvider statisticProvider) {
         this(Clock.SYSTEM_TIMER, statisticProvider);
     }
 
-    ProfilingTracer(Clock clock, KernelStatisticProvider statisticProvider) {
+    ProfilingTracer(Clock clock, StatisticProvider statisticProvider) {
         this.clock = clock;
         this.statisticProvider = statisticProvider;
     }
@@ -99,12 +100,12 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile {
 
     private static class ExecutionEvent extends OperatorProfileEvent {
         final ProfilingTracerData data;
-        final KernelStatisticProvider statisticProvider;
+        final StatisticProvider statisticProvider;
         long hitCount;
         long rowCount;
         int planId;
 
-        ExecutionEvent(KernelStatisticProvider statisticProvider, ProfilingTracerData data, int planId) {
+        ExecutionEvent(StatisticProvider statisticProvider, ProfilingTracerData data, int planId) {
             this.statisticProvider = statisticProvider;
             this.data = data;
             this.planId = planId;
@@ -155,8 +156,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile {
         private long pageCountHitsStart;
         private long pageCountMissesStart;
 
-        TrackingExecutionEvent(
-                Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data, int planId) {
+        TrackingExecutionEvent(Clock clock, StatisticProvider statisticProvider, ProfilingTracerData data, int planId) {
             super(statisticProvider, data, planId);
             this.clock = clock;
             this.start = clock.nanoTime();

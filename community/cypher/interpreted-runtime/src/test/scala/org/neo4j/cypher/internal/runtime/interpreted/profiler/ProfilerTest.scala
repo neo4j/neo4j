@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
-import org.neo4j.cypher.internal.profiling.NoKernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -44,6 +42,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.values.storable.Values.NO_VALUE
 
 class ProfilerTest extends CypherFunSuite {
@@ -309,7 +308,7 @@ class ProfilerTest extends CypherFunSuite {
     profiled2.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
   }
 
-  private def prepareQueryContext(statisticProvider: KernelStatisticProvider = NoKernelStatisticProvider) = {
+  private def prepareQueryContext(statisticProvider: StatisticProvider = NoKernelStatisticProvider) = {
     val queryContext = mock[QueryContext]
     val transactionalContext = mock[QueryTransactionalContext]
     when(queryContext.transactionalContext).thenReturn(transactionalContext)
@@ -362,7 +361,7 @@ case class ProfilerTestPipe(
   }
 }
 
-class ConfiguredKernelStatisticProvider extends KernelStatisticProvider {
+class ConfiguredKernelStatisticProvider extends StatisticProvider {
 
   var hits: Long = 0
   var misses: Long = 0
@@ -370,4 +369,10 @@ class ConfiguredKernelStatisticProvider extends KernelStatisticProvider {
   override def getPageCacheHits: Long = hits
 
   override def getPageCacheMisses: Long = misses
+}
+
+object NoKernelStatisticProvider extends StatisticProvider {
+  override def getPageCacheHits: Long = OperatorProfile.NO_DATA
+
+  override def getPageCacheMisses: Long = OperatorProfile.NO_DATA
 }

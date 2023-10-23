@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.TransactionId
@@ -49,6 +48,7 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
@@ -135,8 +135,7 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
     tc.close()
   }
 
-  override def kernelStatisticProvider: KernelStatisticProvider =
-    ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
+  override def kernelStatisticProvider: StatisticProvider = tc.kernelStatisticProvider()
 
   override def dbmsInfo: DbmsInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DbmsInfo])
 
