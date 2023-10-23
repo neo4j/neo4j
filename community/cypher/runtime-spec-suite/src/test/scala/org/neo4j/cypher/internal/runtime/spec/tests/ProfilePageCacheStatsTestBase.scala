@@ -36,7 +36,6 @@ import org.scalatest.funsuite.AnyFunSuiteLike
 import java.util.Locale
 
 abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
-  canFuse: Boolean,
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT]
 ) extends RuntimeTestSuite[CONTEXT](
@@ -267,7 +266,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
       val totalHits = runtimeResult.pageCacheHits
       val totalMisses = runtimeResult.pageCacheMisses
 
-      if (runtime.name.toLowerCase(Locale.ROOT) == "parallel") {
+      if (isParallel) {
         // when using parallel scans atm we don't account the
         // page hits/misses happening in nextTask for partitioned scans
         accHits should be <= totalHits

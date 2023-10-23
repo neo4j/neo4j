@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherOperatorEngine
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_worker_limit
 import org.neo4j.cypher.internal.CypherRuntime
@@ -122,6 +124,17 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   def debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = RuntimeTestSuite.isParallel(runtime)
+
+  def canFuse: Boolean = {
+    val runtimeUsed = runtime.name.toLowerCase(Locale.ROOT)
+    val fuseablePipeline = runtimeUsed == "pipelined" || runtimeUsed == "parallel"
+
+    fuseablePipeline && !edition
+      .getSetting(GraphDatabaseInternalSettings.cypher_operator_engine)
+      .contains(GraphDatabaseInternalSettings.CypherOperatorEngine.INTERPRETED)
+  }
+
+  def canFuseOverPipelines: Boolean = canFuse && !isParallel
 
   val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
 
