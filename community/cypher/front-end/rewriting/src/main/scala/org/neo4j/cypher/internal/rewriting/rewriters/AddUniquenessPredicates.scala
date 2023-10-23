@@ -69,11 +69,15 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates[NodeConnec
     case m @ Match(_, matchMode, pattern: Pattern, _, where) if matchMode.requiresDifferentRelationships =>
       val nodeConnections = collectNodeConnections(pattern)
       val newWhere = withPredicates(m, nodeConnections, where)
-      m.copy(where = newWhere)(m.position)
+      val newPattern = pattern.endoRewrite(patternRewriter)
+      m.copy(pattern = newPattern, where = newWhere)(m.position)
     case m @ Merge(pattern: PatternPart, _, where) =>
       val nodeConnections = collectNodeConnections(pattern)
       val newWhere = withPredicates(m, nodeConnections, where)
       m.copy(where = newWhere)(m.position)
+  })
+
+  private val patternRewriter: Rewriter = bottomUp(Rewriter.lift {
     case part @ PatternPartWithSelector(_: SelectiveSelector, _) =>
       rewriteSelectivePatternPart(part)
     case qpp @ QuantifiedPath(patternPart, _, where, _) =>
