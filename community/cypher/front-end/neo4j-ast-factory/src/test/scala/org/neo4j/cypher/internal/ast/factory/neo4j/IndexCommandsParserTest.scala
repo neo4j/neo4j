@@ -1878,6 +1878,36 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsToParse
   }
 
+  test("CREATE INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")" or an identifier""")
+  }
+
+  test("CREATE INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")"""")
+  }
+
+  test("CREATE INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input ')': expected ":"""")
+  }
+
+  test("CREATE INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
+  test("CREATE INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input '-': expected "ON"""")
+  }
+
+  test("CREATE INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
   test("CREATE TEXT INDEX FOR n1:Person ON (n2.name)") {
     failsToParse
   }
@@ -1911,6 +1941,36 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsToParse
   }
 
+  test("CREATE TEXT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")" or an identifier""")
+  }
+
+  test("CREATE TEXT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")"""")
+  }
+
+  test("CREATE TEXT INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input ')': expected ":"""")
+  }
+
+  test("CREATE TEXT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
+  test("CREATE TEXT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input '-': expected "ON"""")
+  }
+
+  test("CREATE TEXT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
   test("CREATE POINT INDEX FOR n1:Person ON (n2.name)") {
     failsToParse
   }
@@ -1942,6 +2002,36 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR [r1:R] ON (r2.name)") {
     failsToParse
+  }
+
+  test("CREATE POINT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")" or an identifier""")
+  }
+
+  test("CREATE POINT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")"""")
+  }
+
+  test("CREATE POINT INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input ')': expected ":"""")
+  }
+
+  test("CREATE POINT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
+  test("CREATE POINT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input '-': expected "ON"""")
+  }
+
+  test("CREATE POINT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
   }
 
   test("CREATE LOOKUP INDEX FOR n1 ON EACH labels(n2)") {
@@ -2043,6 +2133,36 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R S]-() ON EACH [n2.x]") {
     failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (:A)-[n1:R]-() ON EACH [n2.name]") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")" or an identifier""")
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(:A) ON EACH [n2.name]") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")"""")
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n2)-[n1:R]-() ON EACH [n2.name]") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input ')': expected ":"""")
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2) ON EACH [n2.name]") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n2:A)-[n1:R]-() ON EACH [n2.name]") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input '-': expected "ON"""")
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2:A) ON EACH [n2.name]") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
   }
 
   // Drop index

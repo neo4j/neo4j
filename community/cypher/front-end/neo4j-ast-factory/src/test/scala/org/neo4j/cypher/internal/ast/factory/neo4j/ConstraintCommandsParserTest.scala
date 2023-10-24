@@ -3063,6 +3063,36 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
   // Negative tests
 
+  test("CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")" or an identifier""")
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[n1:R]-(:A) REQUIRE (n2.name) IS UNIQUE") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")"""")
+  }
+
+  test("CREATE CONSTRAINT FOR (n2)-[n1:R]-() REQUIRE (n2.name) IS NOT NULL") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input ')': expected ":"""")
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[n1:R]-(n2) REQUIRE (n2.name) IS :: STRING") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
+  test("CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input '-': expected "ASSERT" or "REQUIRE"""")
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL") {
     failsToParse
   }

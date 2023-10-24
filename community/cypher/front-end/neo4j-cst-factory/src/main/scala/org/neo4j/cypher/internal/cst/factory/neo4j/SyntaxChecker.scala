@@ -227,7 +227,7 @@ class SyntaxChecker extends CypherParserBaseListener {
       _.KEY() != null
     )
 
-    if (ctx.propertyList().property().size() > 1) {
+    if (ctx.propertyList() != null && ctx.propertyList().property().size() > 1) {
       val secondProperty = ctx.propertyList().property(1).start
 
       if (ctx.NULL() != null) {
