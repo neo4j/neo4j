@@ -23,16 +23,17 @@ import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
+import org.neo4j.kernel.impl.query.CacheMetrics
 
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] {
+abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] with CacheMetrics {
   val monitorTag: String
-  val cacheKind: String
 
   private val hits = new AtomicLong
   private val misses = new AtomicLong
   private val compiled = new AtomicLong
+  private val compiledWithExpressionCodeGen = new AtomicLong
   private val discards = new AtomicLong
   private val staleEntries = new AtomicLong
   private val cacheFlushes = new AtomicLong
@@ -44,7 +45,10 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] {
 
   override def discard(key: KEY, metaData: String): Unit = discards.incrementAndGet()
 
-  override def computeWithExpressionCodeGen(key: KEY, metaData: String): Unit = compiled.incrementAndGet()
+  override def computeWithExpressionCodeGen(key: KEY, metaData: String): Unit = {
+    compiled.incrementAndGet()
+    compiledWithExpressionCodeGen.incrementAndGet()
+  }
 
   override def cacheStale(key: KEY, secondsSinceCompute: Int, metaData: String, maybeReason: Option[String]): Unit =
     staleEntries.incrementAndGet()
@@ -54,12 +58,13 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] {
     cacheFlushes.incrementAndGet()
   }
 
-  def getHits: Long = hits.get()
-  def getMisses: Long = misses.get()
-  def getCompiled: Long = compiled.get()
-  def getDiscards: Long = discards.get()
-  def getStaleEntries: Long = staleEntries.get()
-  def getCacheFlushes: Long = cacheFlushes.get()
+  override def getHits: Long = hits.get()
+  override def getMisses: Long = misses.get()
+  override def getCompiled: Long = compiled.get()
+  override def getCompiledWithExpressionCodeGen(): Long = compiledWithExpressionCodeGen.get()
+  override def getDiscards: Long = discards.get()
+  override def getStaleEntries: Long = staleEntries.get()
+  override def getCacheFlushes: Long = cacheFlushes.get()
 }
 
 class PreParserCacheMetricsMonitor(extraTag: String) extends CacheMetricsMonitor[CypherQueryCaches.PreParserCache.Key] {

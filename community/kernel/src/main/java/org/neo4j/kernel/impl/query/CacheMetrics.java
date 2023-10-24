@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.helpers
+package org.neo4j.kernel.impl.query;
 
-import scala.collection.immutable
+public interface CacheMetrics {
+    String cacheKind();
 
-object MapSupport {
+    long getHits();
 
-  implicit class PowerMap[A, B](m: immutable.Map[A, B]) {
+    long getMisses();
 
-    def fuse(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
-      other.foldLeft(m) {
-        case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
-        case (acc, entry)                     => acc + entry
-      }
-    }
-  }
+    long getCompiled();
 
+    long getCompiledWithExpressionCodeGen();
+
+    long getDiscards();
+
+    long getStaleEntries();
+
+    long getCacheFlushes();
 }

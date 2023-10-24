@@ -24,7 +24,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.ExecutionEngineTestSupport
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.util.CountingCacheTracer
+import org.neo4j.cypher.util.CacheCountsTestSupport
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.kernel.api.ResourceMonitor
@@ -32,7 +32,8 @@ import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.values.AnyValue
 
-class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
+class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
+    with CacheCountsTestSupport {
 
   test("can get up to date statistics on cache entries") {
 
@@ -178,11 +179,6 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
   }
 
   test("should evict executable query after procedures signature change") {
-    val tracer = CypherQueryCaches.ExecutableQueryCache.addMonitorListener(
-      kernelMonitors,
-      new CountingCacheTracer[CypherQueryCaches.ExecutableQueryCache.Key]
-    )
-
     val originalProcedure = registerProcedure("my.proc") { builder =>
       builder
         .in("a", Neo4jTypes.NTAny)
@@ -201,11 +197,11 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
 
     val originalQuery = "CALL my.proc(123)"
     execute(originalQuery)
-    tracer.counts.evicted shouldBe 0
+    cacheCountsFor(CypherQueryCaches.ExecutableQueryCache).evicted shouldBe 0
 
     globalProcedures.unregister(originalProcedure.signature().name())
     an[Exception] should be thrownBy execute(originalQuery)
-    tracer.counts.evicted shouldBe 1
+    cacheCountsFor(CypherQueryCaches.ExecutableQueryCache).evicted shouldBe 1
   }
 
 }

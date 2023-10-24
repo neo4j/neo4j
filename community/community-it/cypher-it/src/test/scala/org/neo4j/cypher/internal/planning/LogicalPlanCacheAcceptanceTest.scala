@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.CypherCurrentCompiler
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.MasterCompiler
 import org.neo4j.cypher.internal.PreParsedQuery
-import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.LFUCache
@@ -49,8 +48,8 @@ import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WI
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.util.CountingCacheTracer
-import org.neo4j.cypher.util.CountingCacheTracer.CacheCounts
+import org.neo4j.cypher.util.CacheCountsTestSupport
+import org.neo4j.cypher.util.CacheCountsTestSupport.CacheCounts
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider
@@ -64,7 +63,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 
-class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
+class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport with CacheCountsTestSupport {
 
   private val cacheFactory = TestExecutorCaffeineCacheFactory
 
@@ -123,14 +122,15 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
   override def databaseConfig(): Map[Setting[_], Object] =
     super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
-  private var counter: CountingCacheTracer[CacheKey[AnyRef]] = _
   private var compiler: CypherCurrentCompiler[RuntimeContext] = _
+
+  private def logicalPlanCacheCounts: CacheCounts = {
+    cacheCountsFor(CypherQueryCaches.LogicalPlanCache, compiler.queryCaches.statistics())
+  }
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig())
-    kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
   }
 
   private def runQuery(
@@ -165,14 +165,14 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
   test("should monitor cache misses") {
     runQuery("return 42")
 
-    counter.counts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should monitor cache hits") {
     runQuery("return 42")
     runQuery("return 42")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("Constant values in query should use same plan") {
@@ -180,7 +180,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery("return 53 AS a")
     runQuery("return 76 AS a")
 
-    counter.counts should equal(CacheCounts(hits = 2, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 2, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("Query with generated names (pattern expression) should use same plan") {
@@ -188,7 +188,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     // Different whitespace so the String->AST cache does not hit
     runQuery("MATCH (a)  WHERE (a)-[:REL]->(:L) RETURN a")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("Query with generated names (pattern comprehension) should use same plan") {
@@ -196,7 +196,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     // Different whitespace so the String->AST cache does not hit
     runQuery("MATCH (a)  RETURN [(a)-[:REL]->(:L) WHERE a.prop = 0 | a.foo]")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("Query with generated names (unnamed elements in pattern) should use same plan") {
@@ -204,7 +204,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     // Different whitespace so the String->AST cache does not hit
     runQuery("MATCH  (a)-[:REL]->(:L) RETURN a")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should fold to constants and use the same plan") {
@@ -214,7 +214,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery("return 7 / 6 AS a")
     runQuery("return 7 * 6 AS a")
 
-    counter.counts should equal(CacheCounts(hits = 4, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 4, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should keep different cache entries for different literal types") {
@@ -231,56 +231,56 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
       "WITH [1,2,3] as x RETURN x"
     ) // hit (list of size 2 and list of size 3 both fall into the same bucket of size 10)
 
-    counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }
 
   test("should not care about white spaces") {
     runQuery("return 42")
     runQuery("\treturn          42")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should cache easily parametrized queries") {
     runQuery("return 42 as result")
     runQuery("return 43 as result")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should cache auto-parameterized lists") {
     runQuery("return [1, 2, 3] as result")
     runQuery("return [2, 3, 4] as result")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should cache auto-parameterized strings") {
     runQuery("return 'straw' as result")
     runQuery("return 'warts' as result")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should keep different cache entries for lists where inner type is not string and where inner type is string") {
     runQuery("MATCH (n:Label) WHERE n.prop IN ['1', '2', '3'] RETURN *")
     runQuery("MATCH (n:Label) WHERE n.prop IN ['1', 2, 3] RETURN *")
 
-    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
+    logicalPlanCacheCounts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
   }
 
   test("should keep one entry for all lists where inner type is not string") {
     runQuery("MATCH (n:Label) WHERE n.prop IN ['1', 2, 3] RETURN *")
     runQuery("MATCH (n:Label) WHERE n.prop IN [1, 2, 3] RETURN *")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should keep one entry for all lists where inner type is string") {
     runQuery("MATCH (n:Label) WHERE n.prop IN ['1', '2', '3'] RETURN *")
     runQuery("MATCH (n:Label) WHERE n.prop IN ['2', '3', '4'] RETURN *")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test(
@@ -289,14 +289,14 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", "2", "3")))
     runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", 2, "3")))
 
-    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
+    logicalPlanCacheCounts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
   }
 
   test("should keep one entry for all explicitly parametrized lists where inner type is string") {
     runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", "2", "3")))
     runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("2", "3", "4")))
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should recompile for auto-parameterized lists with different bucket size") {
@@ -314,7 +314,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery(s"return $listBucketSize10 as result")
     runQuery(s"return $listBucketSize1 as result")
 
-    counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }
 
   test("should recompile for auto-parameterized strings with different bucket size") {
@@ -332,7 +332,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery(s"return '$stringBucketSize10' as result")
     runQuery(s"return '$stringBucketSize1' as result")
 
-    counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }
 
   test("should monitor cache flushes") {
@@ -340,15 +340,13 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     graph.createNodeUniquenessConstraint("Person", "id")
     runQuery("return 42")
 
-    counter.counts should equal(CacheCounts(misses = 2, flushes = 2, compilations = 2))
+    logicalPlanCacheCounts should equal(CacheCounts(misses = 2, flushes = 2, compilations = 2, discards = 1))
   }
 
   test("should monitor cache remove") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
-    compiler.kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
@@ -360,7 +358,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1, compilations = 2))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1, compilations = 2))
   }
 
   // This test is only added to communicate that we're aware of this behaviour and consider it
@@ -370,9 +368,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
   test("it's ok to evict query because of total nodes change") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
-    compiler.kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
     val query: String = "MATCH (n:Person) RETURN n"
     (0 until MIN_NODES_ALL).foreach { _ => createNode() }
     createLabeledNode("Person")
@@ -381,7 +377,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
 
     // when
     // we create enough nodes for NodesAllCardinality to trigger a replan
@@ -389,15 +385,13 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1, compilations = 2))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1, compilations = 2))
   }
 
   test("should not evict query because of unrelated statistics change") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
-    compiler.kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
     val query: String = "MATCH (n:Person) RETURN n"
     (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Person") }
 
@@ -405,7 +399,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
 
     // when
     // we create enough nodes for NodesLabelCardinality("Dog") to trigger a replan
@@ -414,7 +408,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should log on cache remove") {
@@ -446,7 +440,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery("CYPHER debug=logicalplan RETURN 42")
     runQuery("CYPHER debug=logicalplan RETURN 42")
 
-    counter.counts.hits should equal(0)
+    logicalPlanCacheCounts.hits should equal(0)
   }
 
   test("should not find query in cache with different parameter types") {
@@ -455,7 +449,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
-    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
+    logicalPlanCacheCounts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
   }
 
   test("should find query in cache with same parameter types") {
@@ -464,7 +458,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should find query in cache with same parameter types, ignoring unused parameters") {
@@ -474,11 +468,11 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+    logicalPlanCacheCounts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should clear all compiler library caches") {
-    val compilerLibrary = createCompilerLibrary()
+    val (compilerLibrary, queryCaches) = createCompilerLibrary()
     val compilers = CypherRuntimeOption.values.map { runtime =>
       compilerLibrary.selectCompiler(
         CypherPlannerOption.default,
@@ -498,15 +492,17 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
       runQuery("return 42", cypherCompiler = compiler) // Misses
     }
 
-    counter.counts should equal(CacheCounts(
+    val counts = cacheCountsFor(CypherQueryCaches.LogicalPlanCache, queryCaches.statistics())
+    counts should equal(CacheCounts(
       hits = compilers.size,
       misses = 2 * compilers.size,
       flushes = 2 * compilers.size,
-      compilations = 2 * compilers.size
+      compilations = 2 * compilers.size,
+      discards = compilers.size
     ))
   }
 
-  private def createCompilerLibrary(): CompilerLibrary = {
+  private def createCompilerLibrary(): (CompilerLibrary, CypherQueryCaches) = {
     val resolver = graph.getDependencyResolver
     val monitors = kernelMonitors
     val nullLogProvider = NullLogProvider.getInstance
@@ -529,6 +525,6 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
         CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig),
         queryCaches
       )
-    new CompilerLibrary(compilerFactory, () => null)
+    (new CompilerLibrary(compilerFactory, () => null), queryCaches)
   }
 }

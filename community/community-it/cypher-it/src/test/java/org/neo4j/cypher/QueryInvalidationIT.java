@@ -28,23 +28,18 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.cypher.internal.QueryCache.CacheKey;
-import org.neo4j.cypher.internal.QueryCacheTracer;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.query.QueryCacheStatistics;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import scala.Option;
 
 @ImpermanentDbmsExtension(configurationCallback = "configure")
 public class QueryInvalidationIT {
@@ -54,24 +49,20 @@ public class QueryInvalidationIT {
     @Inject
     private GraphDatabaseAPI db;
 
-    @Inject
-    private Monitors monitors;
-
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
         builder.setConfig(query_statistics_divergence_threshold, 0.1)
                 .setConfig(cypher_min_replan_interval, Duration.ofSeconds(1));
     }
 
-    void addMonitorListener(TestMonitor monitor) {
-        monitors.addMonitorListener(monitor, CypherQueryCaches.ExecutableQueryCache$.MODULE$.monitorTag());
+    private ExecutableQueryCacheMetricsMonitor getMonitor() {
+        var statistics = db.getDependencyResolver().resolveDependency(QueryCacheStatistics.class);
+        var cacheMetrics = statistics.metricsPerCacheKind().get(CypherQueryCaches.ExecutableQueryCache$.MODULE$.kind());
+        return (ExecutableQueryCacheMetricsMonitor) cacheMetrics;
     }
 
     @Test
     void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception {
-        // GIVEN
-        TestMonitor monitor = new TestMonitor();
-        addMonitorListener(monitor);
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
@@ -88,15 +79,18 @@ public class QueryInvalidationIT {
         }
 
         // WHEN
-        monitor.reset();
+        var monitor = getMonitor();
+        var replansBefore = monitor.numberOfReplans();
+        var waitTimeBefore = monitor.replanWaitTime();
+
         // - execute the query again -
         executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN
-        assertThat(monitor.discards.get())
+        assertThat(monitor.numberOfReplans() - replansBefore)
                 .as("Query should have been replanned.")
                 .isEqualTo(1);
-        assertThat(monitor.waitTime.get())
+        assertThat(monitor.replanWaitTime() - waitTimeBefore)
                 .as("Replan should have occurred after TTL")
                 .isGreaterThanOrEqualTo(1L);
     }
@@ -104,8 +98,6 @@ public class QueryInvalidationIT {
     @Test
     void shouldScheduleRePlansWithForceAndSkip() throws Exception {
         // GIVEN
-        TestMonitor monitor = new TestMonitor();
-        addMonitorListener(monitor);
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
@@ -122,38 +114,39 @@ public class QueryInvalidationIT {
         }
 
         // WHEN
-        monitor.reset();
+        var monitor = getMonitor();
+
+        var compiledBefore = monitor.getCompiled();
+        var replansBefore = monitor.numberOfReplans();
+
         // - execute the query again, with replan=skip -
         executeDistantFriendsCountQuery(USERS, "skip");
 
         // THEN
-        assertThat(monitor.compilations.get())
+        assertThat(monitor.getCompiled() - compiledBefore)
                 .as("Query should not have been compiled.")
                 .isEqualTo(0);
-        assertThat(monitor.discards.get())
+        assertThat(monitor.numberOfReplans() - replansBefore)
                 .as("Query should not have been discarded.")
                 .isEqualTo(0);
 
-        // AND WHEN
-        monitor.reset();
         // - execute the query again, with replan=force -
         executeDistantFriendsCountQuery(USERS, "force");
 
         // THEN
-        assertThat(monitor.compilations.get())
+        assertThat(monitor.getCompiled() - compiledBefore)
                 .as("Query should have been replanned.")
                 .isEqualTo(1);
 
-        // WHEN
-        monitor.reset();
+        compiledBefore = monitor.getCompiled();
         // - execute the query again, with replan=default -
         executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN should use the entry cached with "replan=force" instead of replanning again
-        assertThat(monitor.compilations.get())
+        assertThat(monitor.getCompiled() - compiledBefore)
                 .as("Query should not have been compiled.")
                 .isEqualTo(0);
-        assertThat(monitor.discards.get())
+        assertThat(monitor.numberOfReplans() - replansBefore)
                 .as("Query should not have been discarded.")
                 .isEqualTo(0);
     }
@@ -165,8 +158,6 @@ public class QueryInvalidationIT {
         double divergenceThreshold = config.get(query_statistics_divergence_threshold);
         long replanInterval = config.get(cypher_min_replan_interval).toMillis();
 
-        TestMonitor monitor = new TestMonitor();
-        addMonitorListener(monitor);
         // - setup schema -
         createIndex();
         // create some data
@@ -193,15 +184,18 @@ public class QueryInvalidationIT {
         }
 
         // WHEN
-        monitor.reset();
+        var monitor = getMonitor();
+        var replansBefore = monitor.numberOfReplans();
+        var waitTimeBefore = monitor.replanWaitTime();
+
         // - execute the query again -
         executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN
-        assertThat(monitor.discards.get())
+        assertThat(monitor.numberOfReplans() - replansBefore)
                 .as("Query should have been replanned.")
                 .isEqualTo(1);
-        assertThat(monitor.waitTime.get())
+        assertThat(monitor.replanWaitTime() - waitTimeBefore)
                 .as("Replan should have occurred after TTL")
                 .isGreaterThanOrEqualTo(replanInterval / 1000);
     }
@@ -260,55 +254,5 @@ public class QueryInvalidationIT {
 
     private static int randomInt(int max) {
         return ThreadLocalRandom.current().nextInt(max);
-    }
-
-    private static class TestMonitor implements QueryCacheTracer<String> {
-        private final AtomicInteger hits = new AtomicInteger();
-        private final AtomicInteger misses = new AtomicInteger();
-        private final AtomicInteger discards = new AtomicInteger();
-        private final AtomicInteger compilations = new AtomicInteger();
-        private final AtomicLong waitTime = new AtomicLong();
-
-        @Override
-        public void cacheHit(CacheKey<String> key, String metaData) {
-            hits.incrementAndGet();
-        }
-
-        @Override
-        public void cacheMiss(CacheKey<String> key, String metaData) {
-            misses.incrementAndGet();
-        }
-
-        @Override
-        public void compute(CacheKey<String> stringCacheKey, String metaData) {
-            compilations.incrementAndGet();
-        }
-
-        @Override
-        public void computeWithExpressionCodeGen(CacheKey<String> stringCacheKey, String metaData) {
-            compilations.incrementAndGet();
-        }
-
-        @Override
-        public void cacheStale(
-                CacheKey<String> stringCacheKey, int secondsSincePlan, String metaData, Option<String> maybeReason) {
-            discards.incrementAndGet();
-            waitTime.addAndGet(secondsSincePlan);
-        }
-
-        @Override
-        public String toString() {
-            return String.format(
-                    "TestMonitor{hits=%s, misses=%s, discards=%s, compilations=%s, waitTime=%s}",
-                    hits, misses, discards, compilations, waitTime);
-        }
-
-        public void reset() {
-            hits.set(0);
-            misses.set(0);
-            discards.set(0);
-            compilations.set(0);
-            waitTime.set(0);
-        }
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.util.Map;
+
 public interface QueryCacheStatistics {
     Long preParserCacheEntries();
 
@@ -29,4 +31,6 @@ public interface QueryCacheStatistics {
     Long executionPlanCacheEntries();
 
     Long executableQueryCacheEntries();
+
+    Map<String, CacheMetrics> metricsPerCacheKind();
 }

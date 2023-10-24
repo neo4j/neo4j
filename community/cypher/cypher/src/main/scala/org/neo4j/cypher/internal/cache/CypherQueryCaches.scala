@@ -19,6 +19,11 @@
  */
 package org.neo4j.cypher.internal.cache
 
+import org.neo4j.cypher.ASTCacheMetricsMonitor
+import org.neo4j.cypher.ExecutableQueryCacheMetricsMonitor
+import org.neo4j.cypher.ExecutionPlanCacheMetricsMonitor
+import org.neo4j.cypher.LogicalPlanCacheMetricsMonitor
+import org.neo4j.cypher.PreParserCacheMetricsMonitor
 import org.neo4j.cypher.internal.CacheabilityInfo
 import org.neo4j.cypher.internal.DefaultPlanStalenessCaller
 import org.neo4j.cypher.internal.ExecutableQuery
@@ -55,6 +60,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.function.Observable
 import org.neo4j.kernel.api.query.ExecutingQuery
+import org.neo4j.kernel.impl.query.CacheMetrics
 import org.neo4j.kernel.impl.query.QueryCacheStatistics
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
@@ -65,6 +71,7 @@ import java.time.Clock
 import java.util.concurrent.CopyOnWriteArrayList
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 /**
  * Defines types for all query caches
@@ -284,21 +291,20 @@ object CypherQueryCaches {
 
   // --- Logging ----------------------------------------------------
 
-  class QueryCacheStaleLogger[Key](itemType: String, doLog: String => Unit) extends CacheTracer[Key] {
+  trait QueryCacheStaleLogger[Key] extends CacheTracer[Key] {
 
-    override def cacheStale(
-      key: Key,
-      secondsSinceReplan: Int,
-      queryId: String,
-      maybeReason: Option[String]
-    ): Unit =
+    protected val itemType: String
+    protected val doLog: String => Unit
+
+    override def cacheStale(key: Key, secondsSinceReplan: Int, queryId: String, maybeReason: Option[String]): Unit = {
+      super.cacheStale(key, secondsSinceReplan, queryId, maybeReason)
       doLog(
         (Seq(s"Discarded stale $itemType from the $itemType cache after $secondsSinceReplan seconds.") ++
           maybeReason.map(r => s"Reason: $r.").toSeq ++
           Seq(s"Query id: $queryId.")).mkString(" ")
       )
+    }
   }
-
 }
 
 /**
@@ -324,6 +330,25 @@ class CypherQueryCaches(
 
   private val allCaches = new CopyOnWriteArrayList[CacheCommon]()
 
+  private object cacheTracers {
+
+    val preParser: PreParserCacheMetricsMonitor = new PreParserCacheMetricsMonitor("")
+    val ast: ASTCacheMetricsMonitor = new ASTCacheMetricsMonitor("")
+    val executionPlan: ExecutionPlanCacheMetricsMonitor = new ExecutionPlanCacheMetricsMonitor("")
+
+    val logicalPlan: LogicalPlanCacheMetricsMonitor =
+      new LogicalPlanCacheMetricsMonitor("") with QueryCacheStaleLogger[CypherQueryCaches.LogicalPlanCache.Key] {
+        override protected val itemType: String = "plan"
+        override protected val doLog: String => Unit = log.debug
+      }
+
+    val executablePlan: ExecutableQueryCacheMetricsMonitor =
+      new ExecutableQueryCacheMetricsMonitor("") with QueryCacheStaleLogger[ExecutableQueryCache.Key] {
+        override protected val itemType: String = "query"
+        override protected val doLog: String => Unit = log.info
+      }
+  }
+
   /**
    * Caches pre-parsing
    */
@@ -331,7 +356,7 @@ class CypherQueryCaches(
     registerCache(new PreParserCache.Cache(
       cacheFactory,
       config.cacheSize,
-      PreParserCache.newMonitor(kernelMonitors)
+      cacheTracers.preParser
     ))
 
   /**
@@ -345,7 +370,7 @@ class CypherQueryCaches(
     val astCache: AstCache.Cache = registerCache(new AstCache.Cache(
       cacheFactory,
       config.cacheSize,
-      AstCache.newMonitor(kernelMonitors)
+      cacheTracers.ast
     ))
 
     /**
@@ -363,7 +388,7 @@ class CypherQueryCaches(
             (state, _) => state.reusability,
             log
           ),
-          tracer = LogicalPlanCache.newMonitor(kernelMonitors)
+          tracer = cacheTracers.logicalPlan
         )
       )
   }
@@ -377,7 +402,7 @@ class CypherQueryCaches(
 
     private val tracer: CacheTracer[ExecutionPlanCache.Key] =
       if (config.enableExecutionPlanCacheTracing) {
-        ExecutionPlanCache.newMonitor(kernelMonitors)
+        cacheTracers.executionPlan
       } else {
         new CacheTracer[ExecutionPlanCache.Key] {}
       }
@@ -430,20 +455,9 @@ class CypherQueryCaches(
           reusabilityInfo = (eq, ctx) => eq.reusabilityState(lastCommittedTxIdProvider, ctx),
           log = log
         ),
-        tracer = ExecutableQueryCache.newMonitor(kernelMonitors)
+        tracer = cacheTracers.executablePlan
       )
     )
-
-  // Register monitor listeners that do logging
-  LogicalPlanCache.addMonitorListener(
-    kernelMonitors,
-    new QueryCacheStaleLogger[LogicalPlanCache.Key]("plan", log.debug)
-  )
-
-  ExecutableQueryCache.addMonitorListener(
-    kernelMonitors,
-    new QueryCacheStaleLogger[ExecutableQueryCache.Key]("query", log.info)
-  )
 
   private def registerCache[T <: CacheCommon](cache: T): T = {
     allCaches.add(cache)
@@ -470,6 +484,19 @@ class CypherQueryCaches(
 
     override def executableQueryCacheEntries(): lang.Long =
       executableQueryCache.estimatedSize()
+
+    override def metricsPerCacheKind(): java.util.Map[String, CacheMetrics] = {
+      Seq[CacheMetrics](
+        cacheTracers.logicalPlan,
+        cacheTracers.preParser,
+        cacheTracers.ast,
+        cacheTracers.executablePlan,
+        cacheTracers.executionPlan
+      )
+        .map(t => t.cacheKind() -> t)
+        .toMap
+        .asJava
+    }
   }
 
   def statistics(): QueryCacheStatistics = stats
