@@ -33,4 +33,36 @@ public interface QueryCacheStatistics {
     Long executableQueryCacheEntries();
 
     Map<String, CacheMetrics> metricsPerCacheKind();
+
+    QueryCacheStatistics EMPTY = new QueryCacheStatistics() {
+        @Override
+        public Long preParserCacheEntries() {
+            return 0L;
+        }
+
+        @Override
+        public Long astCacheEntries() {
+            return 0L;
+        }
+
+        @Override
+        public Long logicalPlanCacheEntries() {
+            return 0L;
+        }
+
+        @Override
+        public Long executionPlanCacheEntries() {
+            return 0L;
+        }
+
+        @Override
+        public Long executableQueryCacheEntries() {
+            return 0L;
+        }
+
+        @Override
+        public Map<String, CacheMetrics> metricsPerCacheKind() {
+            return Map.of();
+        }
+    };
 }
