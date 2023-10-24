@@ -2080,7 +2080,7 @@ case class LeftOuterHashJoin(
 /**
  * Like LetSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will be set to true without
  * executing right.
- *
+ *{{{
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
  *     leftRow('idName') = true
@@ -2091,6 +2091,7 @@ case class LeftOuterHashJoin(
  *     produce leftRow
  *   }
  * }
+ *}}}
  */
 case class LetSelectOrSemiApply(
   override val left: LogicalPlan,
@@ -2106,7 +2107,7 @@ case class LetSelectOrSemiApply(
 /**
  * Like LetAntiSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will be set to true without
  * executing right.
- *
+ *{{{
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
  *     leftRow('idName') = true
@@ -2117,6 +2118,7 @@ case class LetSelectOrSemiApply(
  *     produce leftRow
  *   }
  * }
+ * }}}
  */
 case class LetSelectOrAntiSemiApply(
   override val left: LogicalPlan,
@@ -2132,12 +2134,13 @@ case class LetSelectOrAntiSemiApply(
 /**
  * For every row in left, set that row as the argument, and apply to right. Produce left row, and set 'idName' =
  * true if right contains at least one row.
- *
+ *{{{
  * for ( leftRow <- left ) {
  *   right.setArgument( leftRow )
  *   leftRow('idName') = right.nonEmpty
  *   produce leftRow
  * }
+ * }}}
  */
 case class LetSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: LogicalVariable)(
   implicit idGen: IdGen
@@ -2149,12 +2152,13 @@ case class LetSemiApply(override val left: LogicalPlan, override val right: Logi
 /**
  * For every row in left, set that row as the argument, and apply to right. Produce left row, and set 'idName' =
  * true if right contains no rows.
- *
+ *{{{
  * for ( leftRow <- left ) {
  *   right.setArgument( leftRow )
  *   leftRow('idName') = right.isEmpty
  *   produce leftRow
  * }
+ * }}}
  */
 case class LetAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: LogicalVariable)(
   implicit idGen: IdGen
