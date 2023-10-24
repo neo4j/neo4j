@@ -35,7 +35,7 @@ import java.util.concurrent.FutureTask;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.cypher.internal.QueryCacheTracer;
+import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -48,6 +48,8 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
+import org.neo4j.kernel.impl.query.CacheMetrics;
+import org.neo4j.kernel.impl.query.QueryCacheStatistics;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
@@ -239,7 +241,9 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
             transaction.commit();
         }
 
-        ReplanMonitor monitor = replanMonitor();
+        var cacheMetrics = preParserCacheMetricsMonitor();
+        var flushesBefore = cacheMetrics.getCacheFlushes();
+        var discardsBefore = cacheMetrics.getDiscards();
 
         // When
         try (org.neo4j.graphdb.Transaction transaction = db.beginTx()) {
@@ -248,13 +252,14 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         }
 
         // Then, the initial query and the procedure call should now have been cleared
-        assertThat(monitor.numberOfFlushedItems()).isEqualTo(2L);
+        assertThat(cacheMetrics.getCacheFlushes() - flushesBefore).isEqualTo(1L);
+        assertThat(cacheMetrics.getDiscards() - discardsBefore).isEqualTo(2L);
     }
 
     @Test
     void prepareForReplanningShouldTriggerIndexesSampling() {
         // Given
-        ReplanMonitor monitor = replanMonitor();
+        IndexSamplingMonitor monitor = indexSamplingMonitor();
 
         // When
         try (org.neo4j.graphdb.Transaction transaction = db.beginTx()) {
@@ -268,30 +273,25 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         assertThat(mode.millisToWaitForCompletion()).isGreaterThan(0L);
     }
 
-    private ReplanMonitor replanMonitor() {
+    private IndexSamplingMonitor indexSamplingMonitor() {
         Monitors monitors = dependencyResolver.resolveDependency(Monitors.class);
 
-        ReplanMonitor monitorListener = new ReplanMonitor();
+        IndexSamplingMonitor monitorListener = new IndexSamplingMonitor();
         monitors.addMonitorListener(monitorListener);
         return monitorListener;
     }
 
-    private static class ReplanMonitor extends IndexMonitor.MonitorAdapter implements QueryCacheTracer<String> {
-        private long numberOfFlushedItems = -1L;
-        private IndexSamplingMode samplingMode;
+    private CacheMetrics preParserCacheMetricsMonitor() {
+        var statistics = dependencyResolver.resolveDependency(QueryCacheStatistics.class);
+        return statistics.metricsPerCacheKind().get(CypherQueryCaches.PreParserCache$.MODULE$.kind());
+    }
 
-        @Override
-        public void cacheFlush(long sizeOfCacheBeforeFlush) {
-            numberOfFlushedItems = sizeOfCacheBeforeFlush;
-        }
+    private static class IndexSamplingMonitor extends IndexMonitor.MonitorAdapter {
+        private IndexSamplingMode samplingMode;
 
         @Override
         public void indexSamplingTriggered(IndexSamplingMode mode) {
             samplingMode = mode;
-        }
-
-        long numberOfFlushedItems() {
-            return numberOfFlushedItems;
         }
 
         IndexSamplingMode samplingMode() {
