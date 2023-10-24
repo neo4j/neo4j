@@ -76,6 +76,7 @@ public class DataGeneratorInput implements Input {
     private final DataDistribution dataDistribution;
     private final IdType idType;
     private final long seed;
+    private final RandomValues.Configuration randomConfig;
     private final Header nodeHeader;
     private final Header relationshipHeader;
     private final Groups groups;
@@ -87,9 +88,28 @@ public class DataGeneratorInput implements Input {
             Header nodeHeader,
             Header relationshipHeader,
             Groups groups) {
+        this(
+                dataDistribution,
+                idType,
+                seed,
+                RandomValues.DEFAULT_CONFIGURATION,
+                nodeHeader,
+                relationshipHeader,
+                groups);
+    }
+
+    public DataGeneratorInput(
+            DataDistribution dataDistribution,
+            IdType idType,
+            long seed,
+            RandomValues.Configuration randomConfig,
+            Header nodeHeader,
+            Header relationshipHeader,
+            Groups groups) {
         this.dataDistribution = dataDistribution;
         this.idType = idType;
         this.seed = seed;
+        this.randomConfig = randomConfig;
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
         this.groups = groups;
@@ -111,14 +131,14 @@ public class DataGeneratorInput implements Input {
 
     @Override
     public InputIterable nodes(Collector badCollector) {
-        return () ->
-                new RandomEntityDataGenerator(dataDistribution, dataDistribution.nodeCount, 10_000, seed, nodeHeader);
+        return () -> new RandomEntityDataGenerator(
+                dataDistribution, dataDistribution.nodeCount, 10_000, seed, randomConfig, nodeHeader);
     }
 
     @Override
     public InputIterable relationships(Collector badCollector) {
         return () -> new RandomEntityDataGenerator(
-                dataDistribution, dataDistribution.relationshipCount, 10_000, seed, relationshipHeader);
+                dataDistribution, dataDistribution.relationshipCount, 10_000, seed, randomConfig, relationshipHeader);
     }
 
     @Override
@@ -496,8 +516,20 @@ public class DataGeneratorInput implements Input {
                             ? String.format("%s_%s", string, nextId.getAndIncrement())
                             : string.stringValue();
                 }
-                case "long" -> random.nextInt(Integer.MAX_VALUE);
-                case "int" -> random.nextInt(20);
+                case "boolean" -> random.nextBooleanValue().asObjectCopy();
+                case "boolean[]" -> random.nextBooleanArray().asObjectCopy();
+                case "byte" -> random.nextByteValue().asObjectCopy();
+                case "byte[]" -> random.nextByteArray().asObjectCopy();
+                case "short" -> random.nextShortValue().asObjectCopy();
+                case "short[]" -> random.nextShortArray().asObjectCopy();
+                case "int" -> random.nextIntValue().asObjectCopy();
+                case "int[]" -> random.nextIntArray().asObjectCopy();
+                case "long" -> random.nextLongValue().asObjectCopy();
+                case "long[]" -> random.nextLongArray().asObjectCopy();
+                case "float" -> random.nextFloatValue().asObjectCopy();
+                case "float[]" -> random.nextFloatArray().asObjectCopy();
+                case "double" -> random.nextDoubleValue().asObjectCopy();
+                case "double[]" -> random.nextDoubleArray().asObjectCopy();
                 default -> throw new IllegalArgumentException("" + entry);
             };
         }

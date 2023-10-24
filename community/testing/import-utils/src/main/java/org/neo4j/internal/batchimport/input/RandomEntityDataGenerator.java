@@ -35,11 +35,16 @@ import org.neo4j.values.storable.RandomValues;
  */
 public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomValues> {
     public RandomEntityDataGenerator(
-            DataDistribution dataDistribution, long count, int batchSize, long seed, Header header) {
+            DataDistribution dataDistribution,
+            long count,
+            int batchSize,
+            long seed,
+            RandomValues.Configuration randomConfig,
+            Header header) {
         super(
                 count,
                 batchSize,
-                new RandomsStates(seed),
+                new RandomsStates(seed, randomConfig),
                 (randoms, visitor, id) -> {
                     for (Entry entry : header.entries()) {
                         switch (entry.type()) {

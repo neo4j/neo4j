@@ -98,6 +98,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.values.storable.RandomValues;
 
 @Neo4jLayoutExtension
 @ExtendWith(RandomExtension.class)
@@ -361,7 +362,12 @@ class CsvInputEstimateCalculationIT {
                 .withMaxStringLength(5);
         try (PrintWriter out = new PrintWriter(Files.newBufferedWriter(file));
                 RandomEntityDataGenerator generator = new RandomEntityDataGenerator(
-                        dataDistribution, count, toIntExact(count), random.seed(), header);
+                        dataDistribution,
+                        count,
+                        toIntExact(count),
+                        random.seed(),
+                        RandomValues.DEFAULT_CONFIGURATION,
+                        header);
                 InputChunk chunk = generator.newChunk();
                 InputEntity entity = new InputEntity()) {
             out.println(headerString);

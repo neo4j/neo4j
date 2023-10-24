@@ -29,13 +29,19 @@ import org.neo4j.values.storable.RandomValues;
  */
 public class RandomsStates implements LongFunction<RandomValues> {
     private final long initialSeed;
+    private final RandomValues.Configuration randomConfiguration;
 
     public RandomsStates(long initialSeed) {
+        this(initialSeed, RandomValues.DEFAULT_CONFIGURATION);
+    }
+
+    public RandomsStates(long initialSeed, RandomValues.Configuration randomConfiguration) {
         this.initialSeed = initialSeed;
+        this.randomConfiguration = randomConfiguration;
     }
 
     @Override
     public RandomValues apply(long batch) {
-        return RandomValues.create(new Random(initialSeed + batch));
+        return RandomValues.create(new Random(initialSeed + batch), randomConfiguration);
     }
 }
