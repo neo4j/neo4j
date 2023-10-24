@@ -773,7 +773,7 @@ public final class Recovery {
             MemoryTracker memoryTracker,
             KernelVersionProvider emptyLogsFallbackKernelVersion) {
         try {
-            return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, tracers)
+            return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, tracers, false)
                     .getTailMetadata(databaseLayout, memoryTracker, emptyLogsFallbackKernelVersion);
         } catch (IOException ioe) {
             throw new UncheckedIOException("Fail to load log tail.", ioe);

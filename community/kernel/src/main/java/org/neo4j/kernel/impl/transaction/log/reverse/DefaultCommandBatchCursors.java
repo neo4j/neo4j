@@ -62,15 +62,24 @@ public class DefaultCommandBatchCursors implements CommandBatchCursors {
         }
 
         try {
-            LogPosition position = currentVersion > beginning.getLogVersion()
-                    ? logFile.extractHeader(currentVersion).getStartPosition()
-                    : beginning;
+            LogPosition position = getCursorStartPosition();
             CommandBatchCursor cursor = createCursor(logFile.getReader(position, NO_MORE_CHANNELS));
             currentVersion--;
             return Optional.of(cursor);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private LogPosition getCursorStartPosition() throws IOException {
+        while (currentVersion > beginning.getLogVersion()) {
+            if (logFile.hasAnyEntries(currentVersion)) {
+                return logFile.extractHeader(currentVersion).getStartPosition();
+            } else {
+                currentVersion--;
+            }
+        }
+        return beginning;
     }
 
     private CommandBatchCursor createCursor(ReadableLogChannel channel) throws IOException {

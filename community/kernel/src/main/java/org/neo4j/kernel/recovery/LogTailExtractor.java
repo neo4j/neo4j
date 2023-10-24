@@ -38,6 +38,7 @@ public class LogTailExtractor {
     private final Config config;
     private final StorageEngineFactory storageEngineFactory;
     private final DatabaseTracers databaseTracers;
+    private final boolean readOnly;
 
     public LogTailExtractor(
             FileSystemAbstraction fs,
@@ -45,11 +46,22 @@ public class LogTailExtractor {
             Config config,
             StorageEngineFactory storageEngineFactory,
             DatabaseTracers databaseTracers) {
+        this(fs, pageCache, config, storageEngineFactory, databaseTracers, true);
+    }
+
+    public LogTailExtractor(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config,
+            StorageEngineFactory storageEngineFactory,
+            DatabaseTracers databaseTracers,
+            boolean readOnly) {
         this.fs = fs;
         this.pageCache = pageCache;
         this.config = config;
         this.storageEngineFactory = storageEngineFactory;
         this.databaseTracers = databaseTracers;
+        this.readOnly = readOnly;
     }
 
     /**
@@ -73,8 +85,10 @@ public class LogTailExtractor {
     private LogFiles buildLogFiles(
             DatabaseLayout databaseLayout, MemoryTracker memoryTracker, KernelVersionProvider kernelVersionProvider)
             throws IOException {
-        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, kernelVersionProvider)
-                .withConfig(config)
+        var builder = readOnly
+                ? LogFilesBuilder.readOnlyBuilder(databaseLayout, fs, pageCache, kernelVersionProvider)
+                : LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, kernelVersionProvider);
+        return builder.withConfig(config)
                 .withMemoryTracker(memoryTracker)
                 .withDatabaseTracers(databaseTracers)
                 .withStorageEngineFactory(storageEngineFactory)
