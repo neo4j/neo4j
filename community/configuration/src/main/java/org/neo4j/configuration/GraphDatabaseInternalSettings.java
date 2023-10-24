@@ -253,6 +253,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.cypher.enable_runtime_monitors", BOOL, false).build();
 
     @Internal
+    @Description("Set this to enable tracer monitors in the Cypher query caches.")
+    public static final Setting<Boolean> cypher_enable_query_cache_monitors = newBuilder(
+                    "internal.cypher.enable_query_cache_monitors", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Enable tracing of pipelined runtime scheduler.")
     public static final Setting<Boolean> enable_pipelined_runtime_trace = newBuilder(
                     "internal.cypher.pipelined.enable_runtime_trace", BOOL, false)

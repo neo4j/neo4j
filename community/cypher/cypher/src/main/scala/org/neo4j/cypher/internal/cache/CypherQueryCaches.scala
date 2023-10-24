@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.PreParserCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.QueryCacheStaleLogger
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.withDebugMonitor
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -92,7 +93,8 @@ object CypherQueryCaches {
     cacheSize: CacheSize,
     executionPlanCacheSize: ExecutionPlanCacheSize,
     divergenceConfig: StatsDivergenceCalculatorConfig,
-    enableExecutionPlanCacheTracing: Boolean
+    enableExecutionPlanCacheTracing: Boolean,
+    enableDebugMonitors: Boolean
   ) {
 
     // Java helper
@@ -100,7 +102,8 @@ object CypherQueryCaches {
       cacheSize,
       ExecutionPlanCacheSize.fromInt(cypherConfig.executionPlanCacheSize),
       cypherConfig.statsDivergenceCalculator,
-      cypherConfig.enableMonitors
+      cypherConfig.enableMonitors,
+      cypherConfig.enableQueryCacheMonitors
     )
   }
 
@@ -305,6 +308,17 @@ object CypherQueryCaches {
       )
     }
   }
+
+  def withDebugMonitor[T](
+    config: Config,
+    cacheTracer: CacheTracer[T],
+    monitorTracer: => CacheTracer[T]
+  ): CacheTracer[T] = {
+    if (config.enableDebugMonitors)
+      new CombinedCacheTracer[T](cacheTracer, monitorTracer)
+    else
+      cacheTracer
+  }
 }
 
 /**
@@ -356,7 +370,7 @@ class CypherQueryCaches(
     registerCache(new PreParserCache.Cache(
       cacheFactory,
       config.cacheSize,
-      cacheTracers.preParser
+      withDebugMonitor(config, cacheTracers.preParser, PreParserCache.newMonitor(kernelMonitors))
     ))
 
   /**
@@ -370,7 +384,7 @@ class CypherQueryCaches(
     val astCache: AstCache.Cache = registerCache(new AstCache.Cache(
       cacheFactory,
       config.cacheSize,
-      cacheTracers.ast
+      withDebugMonitor(config, cacheTracers.ast, AstCache.newMonitor(kernelMonitors))
     ))
 
     /**
@@ -388,7 +402,7 @@ class CypherQueryCaches(
             (state, _) => state.reusability,
             log
           ),
-          tracer = cacheTracers.logicalPlan
+          tracer = withDebugMonitor(config, cacheTracers.logicalPlan, LogicalPlanCache.newMonitor(kernelMonitors))
         )
       )
   }
@@ -400,12 +414,13 @@ class CypherQueryCaches(
 
     private type InnerCache = LFUCache[ExecutionPlanCache.Key, ExecutionPlanCache.Value]
 
-    private val tracer: CacheTracer[ExecutionPlanCache.Key] =
+    private val tracer: CacheTracer[ExecutionPlanCache.Key] = {
       if (config.enableExecutionPlanCacheTracing) {
-        cacheTracers.executionPlan
+        withDebugMonitor(config, cacheTracers.executionPlan, ExecutionPlanCache.newMonitor(kernelMonitors))
       } else {
         new CacheTracer[ExecutionPlanCache.Key] {}
       }
+    }
 
     private val maybeCache: Option[InnerCache] = config.executionPlanCacheSize match {
       case Disabled => None
@@ -455,7 +470,7 @@ class CypherQueryCaches(
           reusabilityInfo = (eq, ctx) => eq.reusabilityState(lastCommittedTxIdProvider, ctx),
           log = log
         ),
-        tracer = cacheTracers.executablePlan
+        tracer = withDebugMonitor(config, cacheTracers.executablePlan, ExecutableQueryCache.newMonitor(kernelMonitors))
       )
     )
 

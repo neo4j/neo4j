@@ -112,6 +112,8 @@ class CypherConfiguration private (val config: Config) {
 
   val enableMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
 
+  val enableQueryCacheMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_query_cache_monitors)
+
   val enableExtraSemanticFeatures: Set[String] =
     config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
 

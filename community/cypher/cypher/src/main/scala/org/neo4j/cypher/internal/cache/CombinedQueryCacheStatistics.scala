@@ -68,3 +68,41 @@ class CombinedCacheMetrics(a: CacheMetrics, b: CacheMetrics) extends CacheMetric
 
   override def getCacheFlushes: Long = a.getCacheFlushes + b.getCacheFlushes
 }
+
+class CombinedCacheTracer[T](a: CacheTracer[T], b: CacheTracer[T]) extends CacheTracer[T] {
+
+  override def cacheHit(key: T, metaData: String): Unit = {
+    a.cacheHit(key, metaData)
+    b.cacheHit(key, metaData)
+  }
+
+  override def cacheMiss(key: T, metaData: String): Unit = {
+    a.cacheMiss(key, metaData)
+    b.cacheMiss(key, metaData)
+  }
+
+  override def compute(key: T, metaData: String): Unit = {
+    a.compute(key, metaData)
+    b.compute(key, metaData)
+  }
+
+  override def discard(key: T, metaData: String): Unit = {
+    a.discard(key, metaData)
+    b.discard(key, metaData)
+  }
+
+  override def computeWithExpressionCodeGen(key: T, metaData: String): Unit = {
+    a.computeWithExpressionCodeGen(key, metaData)
+    b.computeWithExpressionCodeGen(key, metaData)
+  }
+
+  override def cacheStale(key: T, secondsSinceCompute: Int, metaData: String, maybeReason: Option[String]): Unit = {
+    a.cacheStale(key, secondsSinceCompute, metaData, maybeReason)
+    b.cacheStale(key, secondsSinceCompute, metaData, maybeReason)
+  }
+
+  override def cacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {
+    a.cacheFlush(sizeOfCacheBeforeFlush)
+    b.cacheFlush(sizeOfCacheBeforeFlush)
+  }
+}

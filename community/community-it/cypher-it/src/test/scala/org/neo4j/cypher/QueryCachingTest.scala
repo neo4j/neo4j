@@ -45,6 +45,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     // String cache JIT compiles on the first hit
     GraphDatabaseInternalSettings.cypher_expression_recompilation_limit -> Integer.valueOf(2),
     GraphDatabaseInternalSettings.cypher_enable_runtime_monitors -> java.lang.Boolean.TRUE,
+    GraphDatabaseInternalSettings.cypher_enable_query_cache_monitors -> java.lang.Boolean.TRUE,
     GraphDatabaseInternalSettings.query_execution_plan_cache_size -> Integer.valueOf(executionPlanCacheSize),
     GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ofSeconds(0)
   )
