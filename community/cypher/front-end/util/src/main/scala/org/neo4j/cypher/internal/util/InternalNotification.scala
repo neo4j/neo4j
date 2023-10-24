@@ -72,7 +72,8 @@ case class UnsatisfiableRelationshipTypeExpression(position: InputPosition, labe
 case class RepeatedRelationshipReference(position: InputPosition, relName: String, pattern: String)
     extends InternalNotification
 
-case class RepeatedVarLengthRelationshipReference(position: InputPosition, relName: String) extends InternalNotification
+case class RepeatedVarLengthRelationshipReference(position: InputPosition, relName: String, pattern: String)
+    extends InternalNotification
 
 case class DeprecatedConnectComponentsPlannerPreParserOption(position: InputPosition) extends InternalNotification
 

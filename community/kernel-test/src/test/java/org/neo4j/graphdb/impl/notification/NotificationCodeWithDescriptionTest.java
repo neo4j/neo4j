@@ -726,8 +726,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE() {
-        NotificationImplementation notification =
-                repeatedVarLengthRelationshipReference(InputPosition.empty, repeatedRelationship("r"));
+        NotificationImplementation notification = repeatedVarLengthRelationshipReference(
+                InputPosition.empty, repeatedRelationship("r"), "r", "()-[r*]->()-[r*]->()");
 
         verifyNotification(
                 notification,
@@ -736,7 +736,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
                 "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC,
-                null);
+                "`r` is repeated in `()-[r*]->()-[r*]->()`, which leads to no results.");
     }
 
     @Test

@@ -224,7 +224,8 @@ public enum NotificationCodeWithDescription {
     REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
             "A variable-length relationship variable is bound more than once, which leads to no results because"
-                    + " relationships must not occur more than once in each result. (%s)"),
+                    + " relationships must not occur more than once in each result. (%s)",
+            "`%s` is repeated in `%s`, which leads to no results."),
     DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION(
             Status.Statement.FeatureDeprecationWarning,
             "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement. "
@@ -508,8 +509,9 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation repeatedVarLengthRelationshipReference(
-            InputPosition position, String param) {
-        return REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notification(position, param);
+            InputPosition position, String param, String relName, String pattern) {
+        return REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notificationWithMessage(
+                position, new String[] {param}, new String[] {relName, pattern});
     }
 
     public static NotificationImplementation deprecatedConnectComponentsPlannerPreParserOption(InputPosition position) {

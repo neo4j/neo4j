@@ -645,6 +645,24 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
    * @param astNode the sub-tree to traverse.
    */
   private def ensureNoRepeatedRelationships(astNode: ASTNode): SemanticCheck = {
+    findRepeatedRelationships(astNode, varLength = false).foldSemanticCheck {
+      repeated =>
+        warn(RepeatedRelationshipReference(repeated.position, repeated.name, extractPattern(astNode)))
+    }
+  }
+
+  /**
+   * Traverse the sub-tree at astNode. Warn if any repeated var length relationships are found in that sub-tree.
+   *
+   * @param astNode the sub-tree to traverse.
+   */
+  private def ensureNoRepeatedVarLengthRelationships(astNode: ASTNode): SemanticCheck = {
+    findRepeatedRelationships(astNode, varLength = true).foldSemanticCheck { repeated =>
+      warn(RepeatedVarLengthRelationshipReference(repeated.position, repeated.name, extractPattern(astNode)))
+    }
+  }
+
+  private def extractPattern(astNode: ASTNode) = {
     val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
     val patternStringifier = PatternStringifier(expressionStringifier)
     val pattern =
@@ -654,21 +672,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         case x =>
           throw new IllegalArgumentException(s"Expected Pattern or RelationshipsPattern, but was ${x.getClass}.")
       }
-    findRepeatedRelationships(astNode, varLength = false).foldSemanticCheck {
-      repeated =>
-        warn(RepeatedRelationshipReference(repeated.position, repeated.name, pattern))
-    }
+    pattern
   }
-
-  /**
-   * Traverse the sub-tree at astNode. Warn if any repeated var length relationships are found in that sub-tree.
-   *
-   * @param astNode the sub-tree to traverse.
-   */
-  private def ensureNoRepeatedVarLengthRelationships(astNode: ASTNode): SemanticCheck =
-    findRepeatedRelationships(astNode, varLength = true).foldSemanticCheck { repeated =>
-      warn(RepeatedVarLengthRelationshipReference(repeated.position, repeated.name))
-    }
 
   /**
    * This method will traverse into any ASTNode and find repeated relationship variables inside of RelationshipChains.

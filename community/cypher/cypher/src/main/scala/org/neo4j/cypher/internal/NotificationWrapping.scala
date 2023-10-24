@@ -291,10 +291,12 @@ object NotificationWrapping {
         pattern
       )
 
-    case RepeatedVarLengthRelationshipReference(position, relName) =>
+    case RepeatedVarLengthRelationshipReference(position, relName, pattern) =>
       NotificationCodeWithDescription.repeatedVarLengthRelationshipReference(
         position.withOffset(offset).asInputPosition,
-        NotificationDetail.repeatedVarLengthRel(relName)
+        NotificationDetail.repeatedVarLengthRel(relName),
+        relName,
+        pattern
       )
 
     case DeprecatedIdentifierWhitespaceUnicode(position, unicode, identifier) =>
