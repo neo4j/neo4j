@@ -69,6 +69,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
@@ -2872,11 +2873,24 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     private static void checkAllPagesForZeroHorizon(int maxPages, MuninnPageCache pageCache) throws IOException {
         var pageRefs = LongLists.mutable.withInitialCapacity(maxPages);
         for (int i = 0; i < maxPages; i++) {
-            long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
-            assertEquals(0, getPageHorizon(pageRef));
-            pageRefs.add(pageRef);
+            lockAndCheckPage(pageCache, pageRefs);
         }
         pageRefs.forEach(pageRef -> pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL));
+    }
+
+    private static void lockAndCheckPage(MuninnPageCache pageCache, MutableLongList pageRefs) throws IOException {
+        while (true) {
+            try {
+                long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
+                assertEquals(0, getPageHorizon(pageRef));
+                pageRefs.add(pageRef);
+                return;
+            }
+            // we can be racing with evictor and throwing live lock exception in some rare cases, retry should be good
+            // enough
+            catch (CacheLiveLockException ignored) {
+            }
+        }
     }
 
     private void generateFile(Path file, int numberOfPages) throws IOException {
