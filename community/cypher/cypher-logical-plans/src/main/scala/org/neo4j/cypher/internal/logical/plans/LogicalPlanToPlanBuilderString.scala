@@ -408,22 +408,19 @@ object LogicalPlanToPlanBuilderString {
       case Skip(_, count) =>
         integerString(count)
       case NodeByLabelScan(idName, label, argumentIds, indexOrder) =>
-        val args = Seq(idName.name, label.name).map(wrapInQuotations) ++ Seq(objectName(indexOrder)) ++ argumentIds.map(
-          wrapInQuotations
-        )
+        val args = Seq(escapeIdentifier(idName.name), label.name).map(wrapInQuotations) ++
+          Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
         args.mkString(", ")
       case UnionNodeByLabelsScan(idName, labels, argumentIds, indexOrder) =>
         val labelNames = labels.map(l => wrapInQuotations(l.name)).mkString(", ")
-        val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++ argumentIds.map(
-          wrapInQuotations
-        )
+        val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++
+          argumentIds.map(wrapInQuotations)
         args.mkString(", ")
 
       case IntersectionNodeByLabelsScan(idName, labels, argumentIds, indexOrder) =>
         val labelNames = labels.map(l => wrapInQuotations(l.name)).mkString(", ")
-        val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++ argumentIds.map(
-          wrapInQuotations
-        )
+        val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++
+          argumentIds.map(wrapInQuotations)
         args.mkString(", ")
 
       case DirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds, indexOrder) =>
