@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.Rows
@@ -153,6 +154,75 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       }
 
     runtimeResult should beColumns("a", "bs", "d").withRows(expected)
+  }
+
+  // THIS test was found in fuzz testing
+  test("different results in slotted with compiled expressions") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("var7", "var0", "var13", "var2", "var11", "var12", "var15", "var1")
+      .letSelectOrSemiApply("var15", "var11 OR false")
+      .|.allNodeScan("var14", "var7", "var0", "var1", "var13", "var2", "var11", "var12")
+      .optional()
+      .projectEndpoints("(var12)<-[var0:AB|BA]-(var13)", startInScope = false, endInScope = false)
+      .skip(1)
+      .sort("var1 ASC", "var11 ASC", "var0 ASC", "var7 ASC", "var2 ASC")
+      .letSemiApply("var11")
+      .|.sort("var8 ASC", "var10 ASC", "var9 ASC")
+      .|.allRelationshipsScan("(var8)-[var10]->(var9)", "var0", "var1", "var2", "var7")
+      .skip(0)
+      .sort("var0 ASC", "var1 ASC", "var2 ASC", "var7 ASC")
+      .letSelectOrAntiSemiApply("var7", "true < false <> 0o123 XOR false")
+      .|.apply()
+      .|.|.sort("var5 ASC", "var4 ASC")
+      .|.|.directedRelationshipByIdSeek("var4", "var5", "var6", Set("var0", "var1", "var2", "var3"))
+      .|.nodeByIdSeek("var3", Set("var0", "var1", "var2"))
+      .sort("var0 ASC", "var1 ASC", "var2 ASC")
+      .relationshipTypeScan("(var1)-[var0:BA]-(var2)", IndexOrderNone)
+      .build()
+
+    execute(query, runtime) should beColumns(
+      "var7",
+      "var0",
+      "var13",
+      "var2",
+      "var11",
+      "var12",
+      "var15",
+      "var1"
+    ).withSingleRow(null, null, null, null, null, null, null, null)
+  }
+
+  // THIS test was found in fuzz testing
+  test("NoValue cannot be cast to class org.neo4j.values.storable.BooleanValue") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("var11", "var0", "var9", "var2", "var15", "var1")
+      .filter("true")
+      .rollUpApply("var15", "var14")
+      .|.sort("var12 ASC", "var13 ASC", "var14 ASC")
+      .|.unionRelationshipTypesScan(
+        "(var13)-[var12:BA]->(var14)",
+        IndexOrderNone,
+        "var0",
+        "var11",
+        "var2",
+        "var9",
+        "var1"
+      )
+      .letSelectOrAntiSemiApply("var11", "$u XOR var9")
+      .|.unionNodeByLabelsScan("var10", Seq("B"), IndexOrderNone, "var2", "var0", "var1", "var9")
+      .optional()
+      .letSemiApply("var9")
+      .|.aggregation(Seq("NULL AS var7"), Seq("stdev(DISTINCT -3.4228540263130627E-149) AS var8"))
+      .|.semiApply()
+      .|.|.sort("var5 ASC", "var4 ASC")
+      .|.|.directedRelationshipByIdSeek("var4", "var5", "var6", Set("var2", "var0", "var1", "var3"))
+      .|.sort("var3 DESC")
+      .|.relationshipCountFromCountStore("var3", Some("C"), Seq(), None, "var2", "var0", "var1")
+      .sort("var0 ASC", "var2 ASC", "var1 ASC")
+      .allRelationshipsScan("(var0)-[var2]-(var1)")
+      .build()
+
+    executeAndConsumeTransactionally(query, runtime, Map("u" -> false))
   }
 
   case object populated extends RowsMatcher {

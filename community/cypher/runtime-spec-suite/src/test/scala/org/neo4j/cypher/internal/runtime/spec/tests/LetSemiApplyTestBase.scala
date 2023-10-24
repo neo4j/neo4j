@@ -237,4 +237,16 @@ abstract class LetSemiApplyTestBase[CONTEXT <: RuntimeContext](
     result should beColumns("x").withRows(Seq(Array(1), Array(2), Array(4)))
   }
 
+  test("letSemiApply should preserve nullability") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .projection("a OR false AS b")
+      .optional()
+      .letSemiApply("a")
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    execute(query, runtime) should beColumns("b").withSingleRow(null)
+  }
 }

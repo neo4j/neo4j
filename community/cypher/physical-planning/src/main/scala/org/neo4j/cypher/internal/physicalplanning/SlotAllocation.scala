@@ -938,11 +938,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         result
 
       case LetSemiApply(_, _, name) =>
-        lhs.newReference(name, false, CTBoolean)
+        lhs.newReference(name, nullable, CTBoolean)
         lhs
 
       case LetAntiSemiApply(_, _, name) =>
-        lhs.newReference(name, false, CTBoolean)
+        lhs.newReference(name, nullable, CTBoolean)
         lhs
 
       case LetSelectOrSemiApply(_, _, name, _) =>
@@ -959,7 +959,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
-        // Note, we can potentially carry discaded slots from rhs here to save memory
+        // Note, we can potentially carry discarded slots from rhs here to save memory
         rhs.addAllSlotsInOrderTo(result, argument.argumentSize)
         result
 
