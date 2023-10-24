@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.PreParser;
 import org.neo4j.cypher.internal.ast.AdministrationCommand;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.compiler.CypherParsing;
+import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.util.CancellationChecker;
@@ -82,7 +83,7 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
 
     private BaseState parse(
             Query query, CompilationTracer.QueryCompilationEvent queryTracer, PreParsedQuery preParsedQuery) {
-        return parsing.queryRouterParseQuery(
+        return parsing.parseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
                 new RecordingNotificationLogger(),
@@ -90,21 +91,25 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
                 Option.apply(preParsedQuery.options().offset()),
                 queryTracer,
                 query.parameters(),
-                cancellationChecker,
-                globalProcedures);
+                cancellationChecker);
     }
 
     private PreParsedInfo preParsedInfo(BaseState parsedQuery) {
         var statement = parsedQuery.statement();
         Optional<ObfuscationMetadata> obfuscationMetadata = toJava(parsedQuery.maybeObfuscationMetadata());
+        var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
 
         if (statement instanceof AdministrationCommand) {
             return new PreParsedInfo(
-                    Optional.of(SYSTEM_DATABASE_CATALOG_NAME), obfuscationMetadata, StatementType.of(statement));
+                    Optional.of(SYSTEM_DATABASE_CATALOG_NAME),
+                    obfuscationMetadata,
+                    StatementType.of(statement, resolver));
         } else {
             var catalogNameOption = staticUseEvaluation.evaluateStaticLeadingGraphSelection(statement);
             return new PreParsedInfo(
-                    OptionConverters.toJava(catalogNameOption), obfuscationMetadata, StatementType.of(statement));
+                    OptionConverters.toJava(catalogNameOption),
+                    obfuscationMetadata,
+                    StatementType.of(statement, resolver));
         }
     }
 }

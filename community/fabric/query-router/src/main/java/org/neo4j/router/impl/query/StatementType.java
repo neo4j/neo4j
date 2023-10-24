@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand;
 import org.neo4j.cypher.internal.ast.Query;
 import org.neo4j.cypher.internal.ast.SchemaCommand;
 import org.neo4j.cypher.internal.ast.Statement;
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -59,9 +60,9 @@ public enum StatementType {
         return isSchemaCommand;
     }
 
-    public static StatementType of(Statement statement) {
+    public static StatementType of(Statement statement, ProcedureSignatureResolver resolver) {
         if (statement instanceof Query) {
-            var queryType = QueryType.of(statement);
+            var queryType = QueryType.of(statement, resolver);
             if (queryType == org.neo4j.fabric.planning.QueryType.READ_PLUS_UNRESOLVED()) {
                 return READ_PLUS_UNRESOLVED_QUERY;
             }

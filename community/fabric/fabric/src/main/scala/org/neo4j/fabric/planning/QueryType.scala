@@ -26,9 +26,12 @@ import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UpdateClause
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
+
+import scala.util.Try
 
 sealed trait QueryType {
   def isRead: Boolean = false
@@ -57,9 +60,15 @@ object QueryType {
   val default: QueryType = Read
 
   def of(ast: ASTNode): QueryType =
+    of(ast, callClause => of(callClause))
+
+  def of(ast: ASTNode, resolver: ProcedureSignatureResolver): QueryType =
+    of(ast, callClause => of(callClause, resolver))
+
+  private def of(ast: ASTNode, callClauseHandler: CallClause => QueryType): QueryType =
     ast.folded(default)(merge) {
       case _: UpdateClause          => Stop(Write)
-      case c: CallClause            => Stop(of(c))
+      case c: CallClause            => Stop(callClauseHandler.apply(c))
       case _: SchemaCommand         => Stop(Write)
       case a: AdministrationCommand => Stop(if (a.isReadOnly) Read else Write)
     }
@@ -72,6 +81,14 @@ object QueryType {
     case c: ResolvedCall if c.containsNoUpdates => Read
     case _                                      => Write
   }
+
+  private def of(ast: CallClause, resolver: ProcedureSignatureResolver): QueryType = ast match {
+    case unresolved: UnresolvedCall => of(tryResolve(unresolved, resolver))
+    case c                          => of(c)
+  }
+
+  private def tryResolve(unresolved: UnresolvedCall, resolver: ProcedureSignatureResolver): CallClause =
+    Try(ResolvedCall(resolver.procedureSignature)(unresolved)).getOrElse(unresolved)
 
   def recursive(fragment: Fragment): QueryType =
     fragment match {
