@@ -815,6 +815,58 @@ class EnvelopeWriteChannelTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {10, 100})
+    void truncateWillDoRotation(int numberOfTruncatedLongs) throws IOException {
+        final var fileChannel = storeChannel();
+
+        int segmentSize = 128;
+
+        try (var channel = writeChannel(
+                fileChannel,
+                segmentSize,
+                buffer(segmentSize * 2),
+                logRotation(fileChannel, header(segmentSize), segmentSize * 100),
+                DatabaseTracer.NULL)) {
+            channel.putVersion(KERNEL_VERSION);
+            channel.putLong(100);
+            channel.endCurrentEntry();
+            long truncatePosition = channel.position();
+
+            for (int i = 0; i < numberOfTruncatedLongs; i++) {
+                channel.putVersion(KERNEL_VERSION);
+                channel.putLong(i);
+                channel.endCurrentEntry();
+            }
+            channel.prepareForFlush();
+
+            // Truncate to first entry
+            channel.truncateToPosition(truncatePosition, 0xCF1AE743);
+
+            // Channel should be usable after truncate
+            channel.putVersion(KERNEL_VERSION);
+            channel.putLong(101);
+            channel.endCurrentEntry();
+            channel.prepareForFlush();
+            long secondFilePosition = channel.position();
+
+            assertThat(fileSystem.getFileSize(logPath(1)))
+                    .as("file should be truncated")
+                    .isEqualTo(truncatePosition);
+
+            ByteBuffer byteBuffer = channelData(fileChannel, (int) truncatePosition, segmentSize);
+            assertEnvelopeContents(
+                    byteBuffer, envelope(EnvelopeType.FULL, 0xCF1AE743, new byte[] {100, 0, 0, 0, 0, 0, 0, 0}));
+
+            try (var rotatedFileChannel = storeChannel(2)) {
+                assertEnvelopeContents(
+                        channelData(rotatedFileChannel, (int) secondFilePosition, segmentSize),
+                        0xCF1AE743,
+                        envelope(EnvelopeType.FULL, 0x7DBD3BE8, new byte[] {101, 0, 0, 0, 0, 0, 0, 0}));
+            }
+        }
+    }
+
     private PhysicalLogVersionedStoreChannel storeChannel() throws IOException {
         return storeChannel(1L);
     }

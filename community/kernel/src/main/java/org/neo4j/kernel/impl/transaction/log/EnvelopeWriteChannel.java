@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.IGNORE_KERNEL_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.MAX_ZERO_PADDING_SIZE;
 import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requireMultipleOf;
+import static org.neo4j.util.Preconditions.requireNonNegative;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 import java.io.Flushable;
@@ -264,7 +266,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         int srcIndex = offset;
         while (srcIndex < length) {
             int remainingPayloadSpace = nextSegmentOffset - buffer.position();
-            int payloadChunk = Math.min(length - srcIndex, remainingPayloadSpace);
+            int payloadChunk = min(length - srcIndex, remainingPayloadSpace);
             buffer.put(src, srcIndex, payloadChunk);
             srcIndex += payloadChunk;
 
@@ -284,7 +286,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         int srcIndex = src.position();
         while (srcIndex < length) {
             int remainingPayloadSpace = nextSegmentOffset - buffer.position();
-            int payloadChunk = Math.min(length - srcIndex, remainingPayloadSpace);
+            int payloadChunk = min(length - srcIndex, remainingPayloadSpace);
             buffer.put(buffer.position(), src, srcIndex, payloadChunk);
             buffer.position(buffer.position() + payloadChunk);
             srcIndex += payloadChunk;
@@ -313,6 +315,15 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     @Override
     public boolean isOpen() {
         return !closed;
+    }
+
+    public void truncateToPosition(long position, int previousChecksum) throws IOException {
+        requireNonNegative(position);
+        checkArgument(position <= channel.position(), "Can only truncate written data.");
+        checkArgument(position >= segmentBlockSize, "Truncating the first segment is not possible");
+        this.previousChecksum = previousChecksum;
+        channel.truncate(position);
+        rotateLogFile();
     }
 
     @Override
