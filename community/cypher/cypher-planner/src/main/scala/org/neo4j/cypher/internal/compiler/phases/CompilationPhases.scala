@@ -176,7 +176,6 @@ object CompilationPhases {
       ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       SemanticTypeCheck andThen
-      AmbiguousAggregationAnalysis(config.semanticFeatures: _*) andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures) andThen
 //      IsolateSubqueriesInMutatingPatterns andThen
 //      SemanticAnalysis(warn = false, config.semanticFeatures: _*) andThen
@@ -212,6 +211,7 @@ object CompilationPhases {
   // Phase 2
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
     RewriteProcedureCalls andThen
+      AmbiguousAggregationAnalysis() andThen
       ProcedureAndFunctionDeprecationWarnings andThen
       ProcedureWarnings andThen
       ObfuscationMetadataCollection

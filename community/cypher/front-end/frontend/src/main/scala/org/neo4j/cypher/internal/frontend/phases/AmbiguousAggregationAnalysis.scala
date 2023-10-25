@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -32,7 +33,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 /**
  * Verify aggregation expressions and make sure there are no ambiguous grouping keys.
  */
-case class AmbiguousAggregationAnalysis(features: SemanticFeature*)
+case class AmbiguousAggregationAnalysis()
     extends VisitorPhase[BaseContext, BaseState] {
 
   override def visit(from: BaseState, context: BaseContext): Unit = {
@@ -57,7 +58,8 @@ case object AmbiguousAggregationAnalysis extends StepSequencer.Step with Default
     BaseContains[Statement],
     // This is needed, because ExpressionWithComputedDependencies will otherwise have an incorrect
     // `.introducedVariables`, which is called in this Phase.
-    ExpressionsHaveComputedDependencies
+    ExpressionsHaveComputedDependencies,
+    FunctionInvocationsResolved
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
@@ -67,5 +69,5 @@ case object AmbiguousAggregationAnalysis extends StepSequencer.Step with Default
     parameterTypeMapping: Map[String, ParameterTypeInfo],
     semanticFeatures: Seq[SemanticFeature],
     obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = AmbiguousAggregationAnalysis(semanticFeatures: _*)
+  ): Transformer[BaseContext, BaseState, BaseState] = AmbiguousAggregationAnalysis()
 }

@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 
@@ -53,13 +54,16 @@ object AmbiguousAggregation {
           TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
       case IsAggregate(_) =>
         acc => SkipChildren(acc)
-      case e: LogicalVariable if !variablesUsedForGrouping.contains(e) =>
+      case e: LogicalVariable
+        if !variablesUsedForGrouping.contains(e) && AnonymousVariableNameGenerator.isNamed(e.name) =>
         acc => if (!acc.inScope(e)) SkipChildren(acc.mapData(exprs => exprs :+ e)) else SkipChildren(acc)
       case e: LogicalProperty if nonNestedPropertiesUsedForGrouping.contains(e) =>
         acc => SkipChildren(acc)
       case p @ LogicalProperty(v: LogicalVariable, _) =>
         acc => // In order to report, in the error message, a property access as invalid, we do a separate check for properties here.
-          if (!variablesUsedForGrouping.contains(v) && !acc.inScope(v)) SkipChildren(acc.mapData(exprs => exprs :+ p))
+          if (
+            !variablesUsedForGrouping.contains(v) && !acc.inScope(v) && AnonymousVariableNameGenerator.isNamed(v.name)
+          ) SkipChildren(acc.mapData(exprs => exprs :+ p))
           else SkipChildren(acc)
     }.data
 

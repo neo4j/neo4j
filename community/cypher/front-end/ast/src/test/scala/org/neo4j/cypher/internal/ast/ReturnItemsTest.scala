@@ -129,6 +129,31 @@ class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
             Some(varFor("x"))
           ))(pos)
         ))
+      ), // RETURN { a: count(*), b: "foo" }
+      Seq(
+        autoAliasedReturnItem(
+          mapOf(
+            "a" -> countStar(),
+            "b" -> literalString("foo")
+          )
+        )
+      ), // RETURN $x, { a: count($x), b: $x }
+      Seq(
+        autoAliasedReturnItem(paramX),
+        autoAliasedReturnItem(
+          mapOf(
+            "a" -> count(paramX),
+            "b" -> paramX
+          )
+        )
+      ), // RETURN { a: count($x), b: sum($x) }
+      Seq(
+        autoAliasedReturnItem(
+          mapOf(
+            "a" -> count(paramX),
+            "b" -> sum(paramX)
+          )
+        )
       )
     )
 
@@ -289,6 +314,29 @@ class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
           autoAliasedReturnItem(add(prop("n", "x"), prop("n", "y")))
         ),
         invalidExpr = Seq("n.x", "n.y")
+      ), // RETURN { a: m, b: (n.x + n.y) + count(*), c: n.x + n.y }
+      Scenario(
+        returnItems = Seq(
+          autoAliasedReturnItem(
+            mapOf(
+              "a" -> varFor("m"),
+              "b" -> add(add(prop("n", "x"), prop("n", "y")), countStar()),
+              "c" -> add(prop("n", "x"), prop("n", "y"))
+            )
+          )
+        ),
+        invalidExpr = Seq("m", "n.x", "n.y")
+      ), // RETURN { a: n.x, b: count(n.x)}
+      Scenario(
+        returnItems = Seq(
+          autoAliasedReturnItem(
+            mapOf(
+              "a" -> prop("n", "x"),
+              "b" -> count(prop("n", "x"))
+            )
+          )
+        ),
+        invalidExpr = Seq("n.x")
       )
     )
 
