@@ -351,7 +351,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                         // in this case we will deal with this page later on postponed sweep or eviction will do its
                         // business
                         if (PageList.isLoaded(pageRef)) {
-                            if (PageList.decrementUsage(pageRef) && pages.tryEvict(pageRef, evictionEvent)) {
+                            if (pages.tryEvict(pageRef, evictionEvent)) {
                                 pageCache.addFreePageToFreelist(pageRef, evictionEvent);
                                 evictedPages++;
                             }

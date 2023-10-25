@@ -162,6 +162,11 @@ public class DatabasePageCache implements PageCache {
     }
 
     @Override
+    public long freePages() {
+        return globalPageCache.freePages();
+    }
+
+    @Override
     public IOBufferFactory getBufferFactory() {
         return globalPageCache.getBufferFactory();
     }

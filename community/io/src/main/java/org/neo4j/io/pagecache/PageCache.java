@@ -210,6 +210,11 @@ public interface PageCache extends AutoCloseable {
     long maxCachedPages();
 
     /**
+     * Number of currently free pages.
+     */
+    long freePages();
+
+    /**
      * Factory for file local buffers that are used on page cache mapped files
      * @return temporary flush buffer factory
      */

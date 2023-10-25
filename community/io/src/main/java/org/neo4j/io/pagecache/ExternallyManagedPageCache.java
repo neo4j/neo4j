@@ -92,6 +92,11 @@ public class ExternallyManagedPageCache implements PageCache {
     }
 
     @Override
+    public long freePages() {
+        return delegate.freePages();
+    }
+
+    @Override
     public IOBufferFactory getBufferFactory() {
         return delegate.getBufferFactory();
     }

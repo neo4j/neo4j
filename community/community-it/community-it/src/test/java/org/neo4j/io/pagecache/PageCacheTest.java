@@ -3047,7 +3047,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void readingAndRetryingOnPageWithOptimisticReadLockingAfterUnmappingMustNotThrow() {
+    void readingAndRetryingOnPageWithOptimisticReadLockingAfterUnmappingMustThrow() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
 
@@ -3065,8 +3065,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pageCache = null;
 
             cursor.getByte();
-            assertDoesNotThrow(cursor::shouldRetry);
-            assertThrows(FileIsNotMappedException.class, cursor::next);
+            assertThrows(FileIsNotMappedException.class, cursor::shouldRetry);
         });
     }
 
@@ -3996,6 +3995,56 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     // THEN eviction happening here should not result in any exception
                     assertTrue(cursor.next());
                 }
+            }
+        });
+    }
+
+    @Test
+    void mustEvictPagesFromUnmappedFilesWithFewUsages() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            try (PagedFile pagedFile = map(file("a"), filePageSize);
+                    PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(cursor.next(1));
+            }
+
+            try (PagedFile pagedFile = map(file("a"), filePageSize);
+                    PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                // touch pages few times to increase their usage
+                cursor.next(0);
+                cursor.next(1);
+                cursor.next(0);
+                cursor.next(1);
+                cursor.next(0);
+                cursor.next(1);
+            }
+            // all pages must be free in page cache
+            assertThat(pageCache.freePages()).isEqualTo(pageCache.maxCachedPages());
+        });
+    }
+
+    @Test
+    void mustEvictPagesFromUnmappedFilesWithHangingReadLock() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            try (PagedFile pagedFile = map(file("a"), filePageSize);
+                    PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(cursor.next(1));
+            }
+
+            PagedFile pagedFile = map(file("a"), filePageSize);
+            try (PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                // touch pages few times to increase their usage
+                cursor.next(0);
+                cursor.next(1);
+                cursor.next(0);
+                cursor.next(1);
+                cursor.next(0);
+                cursor.next(1);
+
+                pagedFile.close();
+                // all pages must be free in page cache
+                assertThat(pageCache.freePages()).isEqualTo(pageCache.maxCachedPages());
             }
         });
     }

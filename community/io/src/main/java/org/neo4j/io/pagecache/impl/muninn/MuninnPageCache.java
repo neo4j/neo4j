@@ -880,6 +880,11 @@ public class MuninnPageCache implements PageCache {
     }
 
     @Override
+    public long freePages() {
+        return getFreeListSize(pages, getFreelistHead());
+    }
+
+    @Override
     public IOBufferFactory getBufferFactory() {
         return bufferFactory;
     }
