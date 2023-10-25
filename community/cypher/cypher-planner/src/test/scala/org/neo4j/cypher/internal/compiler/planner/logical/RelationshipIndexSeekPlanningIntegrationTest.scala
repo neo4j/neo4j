@@ -157,10 +157,10 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("r")
           // the filter got pushed up through the apply
-          .filter("a = anon_1")
+          .filter("a = anon_0")
           .apply()
           .|.relationshipIndexOperator(
-            s"(anon_1)-[r:REL($indexStr)]-(b)",
+            s"(anon_0)-[r:REL($indexStr)]-(b)",
             argumentIds = Set("a"),
             indexType = IndexType.RANGE,
             unique = isUnique
@@ -182,10 +182,10 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("r")
           // the filter got pushed up through the apply
-          .filter("b = anon_1")
+          .filter("b = anon_0")
           .apply()
           .|.relationshipIndexOperator(
-            s"(a)-[r:REL($indexStr)]-(anon_1)",
+            s"(a)-[r:REL($indexStr)]-(anon_0)",
             argumentIds = Set("b"),
             indexType = IndexType.RANGE,
             unique = isUnique
@@ -205,10 +205,10 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("r")
           // the filter got pushed up through the apply
-          .filter("a = anon_2", "b = anon_3")
+          .filter("a = anon_0", "b = anon_1")
           .apply()
           .|.relationshipIndexOperator(
-            s"(anon_2)-[r:REL($indexStr)]-(anon_3)",
+            s"(anon_0)-[r:REL($indexStr)]-(anon_1)",
             argumentIds = Set("a", "b"),
             indexType = IndexType.RANGE,
             unique = isUnique
@@ -379,8 +379,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     planner.plan(s"MATCH (a)-[r:REL {prop: 1}]-(a) RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .filter("a = anon_1")
-        .relationshipIndexOperator("(a)-[r:REL(prop = 1)]-(anon_1)", indexType = IndexType.RANGE)
+        .filter("a = anon_0")
+        .relationshipIndexOperator("(a)-[r:REL(prop = 1)]-(anon_0)", indexType = IndexType.RANGE)
         .build()
     )
   }

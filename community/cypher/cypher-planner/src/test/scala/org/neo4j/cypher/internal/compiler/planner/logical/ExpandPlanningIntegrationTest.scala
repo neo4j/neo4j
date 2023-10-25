@@ -244,8 +244,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     plan shouldBe planner.planBuilder()
       .produceResults("a", "b")
       // this filter should go on top as we do not know the node b before finishing the expand.
-      .filter("all(anon_2 IN r WHERE anon_2.bProp = b.prop)")
-      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("anon_1", "anon_1.aProp = a.prop")))
+      .filter("all(anon_1 IN r WHERE anon_1.bProp = b.prop)")
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("anon_0", "anon_0.aProp = a.prop")))
       .nodeByLabelScan("a", "A")
       .build()
   }
