@@ -16,10 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator.prefix
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator.anonymousVarName
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
-
-import scala.collection.mutable
 
 /**
  * @param negativeNumbers if false, the numbers to use for variable names start with 0 and increase.
@@ -28,29 +26,20 @@ import scala.collection.mutable
 class AnonymousVariableNameGenerator(negativeNumbers: Boolean = false) {
   private var counter = if (negativeNumbers) -1 else 0
   private val inc = if (negativeNumbers) -1 else 1
-  private val aliases = mutable.Map.empty[String, Seq[String]]
 
   def nextName: String = {
-    val result = s"$prefix$counter"
+    val result = anonymousVarName(counter)
     counter += inc
     result
-  }
-
-  def getAlias(name: String, index: Int): String = {
-    val aliasesForName = aliases.getOrElseUpdate(name, Seq(nextName))
-    if (aliasesForName.size <= index) {
-      val newAliases = aliasesForName ++ Seq.fill(index - aliasesForName.size + 1)(nextName)
-      aliases.update(name, newAliases)
-      newAliases(index)
-    } else {
-      aliasesForName(index)
-    }
   }
 }
 
 object AnonymousVariableNameGenerator {
   val generatorName = "UNNAMED"
   private val prefix = s"  $generatorName"
+
+  def anonymousVarName(counter: Int) =
+    s"$prefix$counter"
 
   def isNamed(x: String): Boolean = !notNamed(x)
   def notNamed(x: String): Boolean = UNNAMED_PATTERN.matches(x)

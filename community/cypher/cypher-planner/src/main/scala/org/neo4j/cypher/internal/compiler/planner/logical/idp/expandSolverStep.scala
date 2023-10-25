@@ -392,7 +392,7 @@ object expandSolverStep {
           // In case we've already encountered this node
           case Some(aliases) =>
             // Generate a new name for it
-            val newName = context.staticComponents.anonymousVariableNameGenerator.getAlias(currentEndNode, aliases.size)
+            val newName = context.staticComponents.anonymousVariableNameGenerator.nextName
             // Save it as a known alias
             aliases.addOne(newName)
             // Use it as the new end node
