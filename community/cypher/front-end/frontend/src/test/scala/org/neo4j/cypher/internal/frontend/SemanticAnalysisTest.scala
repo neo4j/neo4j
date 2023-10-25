@@ -453,8 +453,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("Allow view invocation in USE when UseAsMultipleGraphsSelector feature is set") {
     val query =
       """
-        |WITH 1 AS g, 2 AS k
-        |USE v(g, w(k))
+        |USE v($g, w($k))
         |RETURN 1
         |""".stripMargin
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
@@ -463,14 +462,13 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("Don't allow view invocation in USE when UseAsSingleGraphSelector feature is set") {
     val query =
       """
-        |WITH 1 AS g, 2 AS k
-        |USE v(g, w(k))
+        |USE v($g, w($k))
         |RETURN 1
         |""".stripMargin
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(messageProvider.createDynamicGraphReferenceUnsupportedError(), InputPosition(21, 3, 1))
+        SemanticError(messageProvider.createDynamicGraphReferenceUnsupportedError(), InputPosition(1, 2, 1))
       ),
       pipelineWithUseAsSingleGraphSelector
     )
@@ -479,8 +477,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("Allow qualified view invocation in USE") {
     val query =
       """
-        |WITH 1 AS g, 2 AS k
-        |USE a.b.v(g, x.g(), x.v(k))
+        |USE a.b.v($g, x.g(), x.v($k))
         |RETURN 1
         |""".stripMargin
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
@@ -505,15 +502,15 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   }
 
   test("Allow expressions in view invocations (with feature flag)") {
-    val query = "WITH 1 AS x USE v(2, 'x', x, x+3) RETURN 1"
+    val query = "USE v(2, 'x', $x, $x+3) RETURN 1"
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
   test("Expressions in view invocations are checked (with feature flag)") {
-    val query = "WITH 1 AS x USE v(2, 'x', y, x+3) RETURN 1"
+    val query = "USE v(2, 'x', y, $x+3) RETURN 1"
     expectErrorsFrom(
       query,
-      Set(SemanticError("Variable `y` not defined", InputPosition(26, 1, 27))),
+      Set(SemanticError("Variable `y` not defined", InputPosition(14, 1, 15))),
       pipelineWithUseAsMultipleGraphsSelector
     )
   }
@@ -578,6 +575,70 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |""".stripMargin
 
     expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
+  }
+
+  test("should allow USE only in leading position") {
+    val query =
+      """
+        |MATCH (n)
+        |USE g
+        |RETURN n
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+          InputPosition(11, 3, 1)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
+  // WITH is a bit special as importing WITH is allowed in sub-queries,
+  // so let's test we accidentally don't allow WITH at a start of a query.
+  test("should not allow USE preceded by WITH") {
+    val query =
+      """
+        |WITH 1 AS x
+        |USE g
+        |MATCH (n)
+        |RETURN n
+        |""".stripMargin
+
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+          InputPosition(13, 3, 1)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
+  test("should allow USE only in leading position in UNION") {
+    val query =
+      """
+        |MATCH (n)
+        |USE g
+        |RETURN n
+        |UNION
+        |MATCH (n)
+        |RETURN n
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+          InputPosition(11, 3, 1)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
   }
 
   // positive tests that we get the error message

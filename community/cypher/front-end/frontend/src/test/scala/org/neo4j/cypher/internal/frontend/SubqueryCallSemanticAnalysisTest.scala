@@ -359,6 +359,142 @@ class SubqueryCallSemanticAnalysisTest
     )
   }
 
+  test("Allow view invocation in USE when UseAsMultipleGraphsSelector feature is set") {
+    val query =
+      """
+        |WITH 1 AS g, 2 AS k
+        |CALL {
+        |  USE v(g, w(k))
+        |  RETURN 1 AS a
+        |}
+        |RETURN a
+        |""".stripMargin
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
+  }
+
+  test("Don't allow view invocation in USE when UseAsSingleGraphSelector feature is set") {
+    val query =
+      """
+        |WITH 1 AS g, 2 AS k
+        |CALL {
+        |  USE v(g, w(k))
+        |  RETURN 1 AS a
+        |}
+        |RETURN a
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(messageProvider.createDynamicGraphReferenceUnsupportedError(), InputPosition(30, 4, 3))
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
+  test("Allow qualified view invocation in USE") {
+    val query =
+      """
+        |WITH 1 AS g, 2 AS k
+        |CALL {
+        |  USE a.b.v(g, x.g(), x.v(k))
+        |  RETURN 1 AS a
+        |}
+        |RETURN a
+        |""".stripMargin
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
+  }
+
+  test("Allow expressions in view invocations (with feature flag)") {
+    val query =
+      """
+        |WITH 1 AS x
+        |CALL {
+        |  USE v(2, 'x', x, x+3)
+        |  RETURN 1 AS a
+        |}
+        |RETURN a
+        |""".stripMargin
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
+  }
+
+  test("Expressions in view invocations are checked (with feature flag)") {
+    val query =
+      """
+        |WITH 1 AS x
+        |CALL {
+        |  USE v(2, 'x', y, x+3)
+        |  RETURN 1 AS a
+        |}
+        |RETURN a
+        |""".stripMargin
+
+    expectErrorsFrom(
+      query,
+      Set(SemanticError("Variable `y` not defined", InputPosition(36, 4, 17))),
+      pipelineWithUseAsMultipleGraphsSelector
+    )
+  }
+
+  test("should allow USE only in leading sub-query position") {
+    val query =
+      """
+        |WITH 1 AS x
+        |CALL {
+        |  MATCH (n)
+        |  USE g
+        |  RETURN n
+        |}
+        |RETURN n
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+          InputPosition(34, 5, 3)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
+  test("should not allow non-importing WITH before USE in sub-query position") {
+    val query =
+      """
+        |WITH 1 AS x
+        |CALL {
+        |  WITH 1 AS y
+        |  USE g
+        |  RETURN 1 AS a
+        |}
+        |RETURN a
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+          InputPosition(36, 5, 3)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
+  test("should allow importing WITH before USE in sub-query position") {
+    val query =
+      """
+        |WITH 1 AS x
+        |CALL {
+        |  WITH x
+        |  USE g
+        |  RETURN 1 AS a
+        |}
+        |RETURN a
+        |""".stripMargin
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
+  }
+
   test("Subquery with only MATCH") {
     val query = "WITH 1 AS a CALL { MATCH (n) } RETURN a"
     expectErrorsFrom(
@@ -495,6 +631,9 @@ class SubqueryCallSemanticAnalysisTest
   }
 
   override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
+
+    override def createDynamicGraphReferenceUnsupportedError(): String =
+      "A very nice message explaining why dynamic graph references are not allowed"
 
     override def createMultipleGraphReferencesError(): String =
       "A very nice message explaining why multiple graph references are not allowed"

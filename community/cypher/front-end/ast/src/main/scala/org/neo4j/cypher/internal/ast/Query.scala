@@ -451,6 +451,28 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
+  override protected def checkUse(): SemanticCheck = {
+    super.checkUse() chain checkUsePosition()
+  }
+
+  private def checkUsePosition(): SemanticCheck = {
+    val maybeFirstUse = clauses.find(_.isInstanceOf[UseGraph])
+    if (maybeFirstUse.isEmpty) {
+      return success
+    }
+
+    clausesExceptLeadingImportWith.headOption match {
+      case None => success
+      case Some(clause) => clause match {
+          case _: UseGraph => success
+          case _: Clause => error(
+              "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+              maybeFirstUse.get.position
+            )
+        }
+    }
+  }
+
   private def checkShadowedVariables(outer: SemanticState): SemanticCheck = { inner: SemanticState =>
     val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
     val innerScopeSymbols: Map[String, Set[Symbol]] = inner.currentScope.scope.allSymbols

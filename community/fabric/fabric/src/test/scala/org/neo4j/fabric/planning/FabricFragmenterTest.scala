@@ -57,7 +57,9 @@ class FabricFragmenterTest
           )
         )
         .getMessage
-        .should(include("USE can only appear at the beginning of a (sub-)query"))
+        .should(include(
+          "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query."
+        ))
 
     }
 
@@ -263,7 +265,9 @@ class FabricFragmenterTest
           )
         )
         .getMessage
-        .should(include("USE can only appear at the beginning of a (sub-)query"))
+        .should(include(
+          "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query."
+        ))
     }
 
     "allow USE to reference outer variable" in {
