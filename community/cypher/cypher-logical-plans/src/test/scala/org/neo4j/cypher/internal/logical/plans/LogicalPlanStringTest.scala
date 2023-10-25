@@ -90,7 +90,7 @@ class LogicalPlanStringTest extends CypherFunSuite {
   }
 
   test("logical plans are not allowed to refer to variables by string") {
-    val seen = mutable.Set.empty[Class[?]]
+    val seen = mutable.Set.empty[Class[_]]
     subTypes(classOf[LogicalPlan]).foreach { planClass =>
       if (!Modifier.isAbstract(planClass.getModifiers)) {
         checkStringFields(planClass, planClass.getName, seen)
@@ -110,9 +110,9 @@ class LogicalPlanStringTest extends CypherFunSuite {
   }
 
   private def checkStringFields(
-    cls: Class[?],
+    cls: Class[_],
     path: String,
-    seen: mutable.Set[Class[?]]
+    seen: mutable.Set[Class[_]]
   ): Unit = {
     if (seen.add(cls) && !isWhiteListedClass(cls)) {
       if (mightBeVariableAsString(cls)) {
