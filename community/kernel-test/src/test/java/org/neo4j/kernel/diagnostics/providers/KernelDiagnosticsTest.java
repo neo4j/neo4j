@@ -39,6 +39,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.kernel.impl.device.DeviceMapperService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -72,12 +73,15 @@ class KernelDiagnosticsTest {
     }
 
     @Test
-    void printDatabaseFileStoreType() {
+    void printCommunityDatabaseFileStoreType() {
         StorageEngineFactory storageEngineFactory = mock(StorageEngineFactory.class);
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles =
-                new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout, UNKNOWN_MAPPER);
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(
+                storageEngineFactory,
+                fs,
+                databaseLayout,
+                DeviceMapperService.getInstance().createDeviceMapper(logProvider));
         storeFiles.dump(logProvider.getLog(getClass())::debug);
 
         assertThat(logProvider).containsMessages("Storage files stored on file store: ");

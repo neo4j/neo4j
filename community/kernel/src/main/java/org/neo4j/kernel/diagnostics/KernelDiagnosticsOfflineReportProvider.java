@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.diagnostics;
 
-import static org.neo4j.io.device.DeviceMapper.UNKNOWN_MAPPER;
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 
@@ -32,12 +31,15 @@ import java.util.function.Supplier;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
+import org.neo4j.kernel.impl.device.DeviceMapperService;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 @ServiceProvider
@@ -126,15 +128,19 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listDataDirectory(List<DiagnosticsReportSource> sources) {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        // TODO:
+
         StoreFilesDiagnostics storeFiles =
-                new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout, UNKNOWN_MAPPER);
+                new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout, loadDeviceMapper());
 
         List<String> files = new ArrayList<>();
         storeFiles.dump(files::add);
 
         sources.add(DiagnosticsReportSources.newDiagnosticsString(
                 "tree.txt", () -> String.join(System.lineSeparator(), files)));
+    }
+
+    private static DeviceMapper loadDeviceMapper() {
+        return DeviceMapperService.getInstance().createDeviceMapper(NullLogProvider.getInstance());
     }
 
     /**
