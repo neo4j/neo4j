@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CompressAnonymousVariables
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
@@ -70,6 +71,7 @@ import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.IfPhase
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
@@ -111,6 +113,7 @@ import scala.language.implicitConversions
 object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val pushdownPropertyReads: Boolean = true
+  val compressAnonymousVariables: Boolean = true
   val deduplicateNames: Boolean = true
 
   sealed trait QueryGraphSolverSetup {
@@ -189,17 +192,20 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   def pipeLine(
     parsingConfig: ParsingConfig,
     pushdownPropertyReads: Boolean = pushdownPropertyReads,
+    compressAnonymousVariables: Boolean = compressAnonymousVariables,
     deduplicateNames: Boolean = deduplicateNames
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
     val p1 = parsing(parsingConfig) andThen
       prepareForCaching andThen
       planPipeLine(pushdownPropertyReads = pushdownPropertyReads, semanticFeatures = parsingConfig.semanticFeatures)
-    if (deduplicateNames) {
-      p1 andThen NameDeduplication
-    } else {
-      p1
-    }
+    p1 andThen
+      IfPhase((_: LogicalPlanState) => compressAnonymousVariables)(
+        CompressAnonymousVariables
+      ) andThen
+      IfPhase((_: LogicalPlanState) => deduplicateNames)(
+        NameDeduplication
+      )
   }
 }
 
