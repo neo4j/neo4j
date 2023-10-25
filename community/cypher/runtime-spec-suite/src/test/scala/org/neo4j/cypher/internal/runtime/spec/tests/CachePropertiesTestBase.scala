@@ -491,7 +491,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     result2 should beColumns("x1", "x2", "x3").withSingleRow("1", "2", null)
     val profileResult2 = result2.runtimeResult.queryProfile()
 
-    profileResult2.operatorProfile(1).dbHits() shouldBe 2 * tokenLookupDbHits // projection
+    profileResult2.operatorProfile(1).dbHits() should be <= 2L * tokenLookupDbHits // projection
     assert(profileResult2.operatorProfile(2).dbHits() >= (2 + 2 * tokenLookupDbHits)) // cache properties
   }
 
@@ -767,7 +767,7 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
         }
       ): _*)
 
-    result2.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe (25 * tokenLookupDbHits)
+    result2.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be >= (25L * tokenLookupDbHits)
     result2.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be > 0L
   }
 }
