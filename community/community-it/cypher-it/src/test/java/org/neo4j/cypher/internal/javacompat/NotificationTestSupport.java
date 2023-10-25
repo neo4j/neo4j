@@ -146,6 +146,17 @@ public class NotificationTestSupport {
         }
     }
 
+    void shouldNotifyInStreamWithDetail(String query, NotificationImplementation expectedNotification) {
+        try (Transaction transaction = db.beginTx()) {
+            // when
+            try (Result result = transaction.execute(query)) {
+                // then
+                assertThat(result.getNotifications()).contains(expectedNotification);
+            }
+            transaction.commit();
+        }
+    }
+
     void shouldNotNotifyInStream(String query) {
         try (Transaction transaction = db.beginTx()) {
             // when

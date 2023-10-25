@@ -166,7 +166,9 @@ case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[Runtim
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
   override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
-    throw new CantCompileQueryException(s"This version of Neo4j does not support requested runtime: $requestedRuntime")
+    throw new CantCompileQueryException(
+      s"This version of Neo4j does not support the requested runtime: `$requestedRuntime`"
+    )
 }
 
 /**
@@ -194,9 +196,16 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](
     val logger = new RecordingNotificationLogger()
 
     var i = 0
+    var failedAttempt: (CypherRuntime[CONTEXT], String) = null
     var lastException: Exception = null
     while (i < runtimes.length) {
       val runtime = runtimes(i)
+
+      if (failedAttempt != null && runtime != SchemaCommandRuntime) {
+        val (failingRuntime, message) = failedAttempt
+        logger.log(RuntimeUnsupportedNotification(runtimeConf(failingRuntime), runtimeConf(runtime), message))
+        failedAttempt = null
+      }
 
       try {
         val plan = runtime.compileToExecutable(logicalQuery, context)
@@ -206,8 +215,13 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](
       } catch {
         case e: CantCompileQueryException =>
           lastException = e
-          if (runtime != SchemaCommandRuntime && requestedRuntime != CypherRuntimeOption.default) {
-            logger.log(RuntimeUnsupportedNotification(e.getMessage))
+
+          if (
+            runtime != SchemaCommandRuntime &&
+            requestedRuntime != CypherRuntimeOption.default &&
+            i < runtimes.length - 1
+          ) {
+            failedAttempt = (runtime, e.getMessage)
           }
         case e: RuntimeUnsupportedException =>
           // this is an explicit failure that we shouldn't try to fallback from
@@ -229,6 +243,13 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](
       case e =>
         throw e
 
+    }
+  }
+
+  private def runtimeConf(runtime: CypherRuntime[CONTEXT]): String = {
+    runtime match {
+      case UnknownRuntime(requestedRuntime) => s"runtime=$requestedRuntime"
+      case _ => runtime.correspondingRuntimeOption.map(_.renderExplicit).getOrElse(s"runtime=${runtime.name}")
     }
   }
 }

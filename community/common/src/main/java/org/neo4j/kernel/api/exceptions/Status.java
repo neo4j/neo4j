@@ -321,6 +321,7 @@ public interface Status {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 NotificationCategory.DEPRECATION),
+        @Deprecated
         RuntimeExperimental(
                 ClientNotification,
                 "This feature is experimental and should not be used in production systems.",

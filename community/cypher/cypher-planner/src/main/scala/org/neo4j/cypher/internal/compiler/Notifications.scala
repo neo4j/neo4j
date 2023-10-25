@@ -24,7 +24,11 @@ import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 
-case class RuntimeUnsupportedNotification(msg: String) extends InternalNotification
+case class RuntimeUnsupportedNotification(
+  failingRuntimeConf: String,
+  fallbackRuntimeConf: String,
+  msg: String
+) extends InternalNotification
 
 case class IndexHintUnfulfillableNotification(
   variableName: String,

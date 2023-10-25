@@ -33,7 +33,9 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
     val result = execute("CYPHER runtime=pipelined EXPLAIN RETURN 1")
     result.notifications should contain(runtimeUnsupported(
       InputPosition.empty,
-      "This version of Neo4j does not support requested runtime: pipelined"
+      "runtime=pipelined",
+      "runtime=slotted",
+      "This version of Neo4j does not support the requested runtime: `pipelined`"
     ))
   }
 
@@ -42,6 +44,6 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
     eengine = createEngine(graph)
 
     val exception = intercept[RuntimeUnsupportedException](execute("CYPHER runtime=pipelined EXPLAIN RETURN 1"))
-    exception.getMessage should be("This version of Neo4j does not support requested runtime: pipelined")
+    exception.getMessage should be("This version of Neo4j does not support the requested runtime: `pipelined`")
   }
 }

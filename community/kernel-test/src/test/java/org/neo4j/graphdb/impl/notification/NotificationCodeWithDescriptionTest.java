@@ -247,7 +247,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_RUNTIME_UNSUPPORTED() {
-        NotificationImplementation notification = runtimeUnsupported(InputPosition.empty, "PARALLEL");
+        NotificationImplementation notification =
+                runtimeUnsupported(InputPosition.empty, "runtime=parallel", "runtime=pipelined", "PARALLEL");
 
         verifyNotification(
                 notification,
@@ -256,7 +257,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.RuntimeUnsupportedWarning",
                 "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (PARALLEL)",
                 NotificationCategory.UNSUPPORTED,
-                null);
+                "The query cannot be executed with `runtime=parallel`, `runtime=pipelined` is used. Cause: `PARALLEL`.");
     }
 
     @Test
@@ -918,8 +919,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            101, -75, 76, 118, 106, -68, 108, -11, 90, -66, 54, -8, -31, 79, 91, -93, -14, -10, -11, 3, -30, 70, 49, 81,
-            -87, -79, 51, -34, -123, -78, -56, -114
+            -83, -50, -62, 67, 107, -33, 99, 119, 51, -28, -35, -123, -8, -126, -109, 91, -62, -115, -111, -57, 57, -35,
+            120, 38, -45, 109, 54, -53, 43, -82, -102, -25
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

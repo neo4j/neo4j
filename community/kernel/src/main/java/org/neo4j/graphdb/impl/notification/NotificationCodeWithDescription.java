@@ -42,7 +42,8 @@ public enum NotificationCodeWithDescription {
                     + "data and slow down query processing. See Status Codes documentation for suggestions."),
     RUNTIME_UNSUPPORTED(
             Status.Statement.RuntimeUnsupportedWarning,
-            "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)"),
+            "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)",
+            "The query cannot be executed with `%s`, `%s` is used. Cause: `%s`."),
     INDEX_HINT_UNFULFILLABLE(
             Status.Schema.HintedIndexNotFound,
             "The hinted index does not exist, please check the schema (%s)",
@@ -164,7 +165,6 @@ public enum NotificationCodeWithDescription {
             "The query runs with exhaustive shortest path due to the existential predicate(s) `%s`. "
                     + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s). See Status Codes documentation "
                     + "for suggestions."),
-    RUNTIME_EXPERIMENTAL(Status.Statement.RuntimeExperimental, "You are using an experimental feature (%s)"),
     MISSING_PARAMETERS_FOR_EXPLAIN(
             Status.Statement.ParameterNotProvided,
             "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (%s)",
@@ -285,8 +285,11 @@ public enum NotificationCodeWithDescription {
         return CARTESIAN_PRODUCT.notificationWithMessage(position, new String[] {oldDetail}, new String[] {pattern});
     }
 
-    public static NotificationImplementation runtimeUnsupported(InputPosition position, String param) {
-        return RUNTIME_UNSUPPORTED.notification(position, param);
+    public static NotificationImplementation runtimeUnsupported(
+            InputPosition position, String failingRuntimeConf, String fallbackRuntimeConf, String cause) {
+        final var oldDetails = new String[] {cause};
+        final var params = new String[] {failingRuntimeConf, fallbackRuntimeConf, cause};
+        return RUNTIME_UNSUPPORTED.notificationWithMessage(position, oldDetails, params);
     }
 
     public static NotificationImplementation indexHintUnfulfillable(

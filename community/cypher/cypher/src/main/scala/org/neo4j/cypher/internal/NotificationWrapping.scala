@@ -85,10 +85,12 @@ object NotificationWrapping {
         NotificationDetail.cartesianProductDescription(variables.asJava),
         pattern
       )
-    case RuntimeUnsupportedNotification(msg) =>
+    case RuntimeUnsupportedNotification(failingConf, fallbackRuntimeConf, cause) =>
       NotificationCodeWithDescription.runtimeUnsupported(
         graphdb.InputPosition.empty,
-        msg
+        failingConf,
+        fallbackRuntimeConf,
+        cause
       )
     case IndexHintUnfulfillableNotification(variableName, label, propertyKeys, entityType, indexType) =>
       val indexHintType = indexType match {

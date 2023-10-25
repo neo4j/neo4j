@@ -163,7 +163,7 @@ public final class NotificationImplementation implements Notification {
 
     @Override
     public int hashCode() {
-        return Objects.hash(position, description);
+        return Objects.hash(position, description, title, message);
     }
 
     private SeverityLevel mapSeverity(String severityLevel) {

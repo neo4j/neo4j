@@ -53,7 +53,8 @@ abstract class CypherOption(inputName: String) {
  * @param inputName Used to parse values and in error messages etc.
  */
 abstract class CypherKeyValueOption(inputName: String) extends CypherOption(inputName) {
-  override def render: String = if (this == companion.default) "" else s"${companion.name}=$name"
+  override def render: String = if (this == companion.default) "" else renderExplicit
+  def renderExplicit: String = s"${companion.name}=$name"
 }
 
 /**
