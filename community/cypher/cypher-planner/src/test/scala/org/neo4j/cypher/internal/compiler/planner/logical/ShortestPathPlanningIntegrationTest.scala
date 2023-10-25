@@ -244,7 +244,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("s"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          false
+          reverseGroupVariableProjections = false
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -577,6 +577,131 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set(("g", "g"), ("c", "c"), ("f", "f"), ("b", "b"), ("e", "e"), ("h", "h")),
           Set(("r", "r"), ("s", "s"), ("t", "t")),
           Set("d", "anon_0", "anon_1"),
+          Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          reverseGroupVariableProjections = false
+        )
+        .nodeByLabelScan("a", "User")
+        .build()
+    )
+  }
+
+  test("should allow planning of shortest with leaf node repeated as interior nodes") {
+    val query =
+      "MATCH ANY SHORTEST (a:User) ((b)-[r]->(c))* (a) ((e)-[s]->(f))* (a) ((g)-[t]->(h))* (d) RETURN *"
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (b)")
+        .addTransition(0, 3, "(a) (anon_0 WHERE a = anon_0)")
+        .addTransition(1, 2, "(b)-[r]->(c)")
+        .addTransition(2, 1, "(c) (b)")
+        .addTransition(2, 3, "(c) (anon_0 WHERE a = anon_0)")
+        .addTransition(3, 4, "(anon_0) (e)")
+        .addTransition(3, 6, "(anon_0) (anon_1 WHERE a = anon_1)")
+        .addTransition(4, 5, "(e)-[s]->(f)")
+        .addTransition(5, 4, "(f) (e)")
+        .addTransition(5, 6, "(f) (anon_1 WHERE a = anon_1)")
+        .addTransition(6, 7, "(anon_1) (g)")
+        .addTransition(6, 9, "(anon_1) (d)")
+        .addTransition(7, 8, "(g)-[t]->(h)")
+        .addTransition(8, 7, "(h) (g)")
+        .addTransition(8, 9, "(h) (d)")
+        .addFinalState(9)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "d",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) ((e)-[s]->(f)){0, } (anon_1) ((g)-[t]->(h)){0, } (d) WHERE a = `anon_0` AND a = `anon_1` AND disjoint(`r`, `s`) AND disjoint(`r`, `t`) AND disjoint(`s`, `t`) AND unique(`r`) AND unique(`s`) AND unique(`t`))",
+          None,
+          Set(("g", "g"), ("c", "c"), ("f", "f"), ("b", "b"), ("e", "e"), ("h", "h")),
+          Set(("r", "r"), ("s", "s"), ("t", "t")),
+          Set("anon_0", "anon_1", "d"),
+          Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          reverseGroupVariableProjections = false
+        )
+        .nodeByLabelScan("a", "User")
+        .build()
+    )
+  }
+
+  test("should allow planning of shortest with repeated strictly interior node") {
+    val query =
+      "MATCH ANY SHORTEST (a:User) ((b)-[r]->(c))* (d) ((e)-[s]->(f))* (d) ((g)-[t]->(h))* (i) RETURN *"
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (b)")
+        .addTransition(0, 3, "(a) (d)")
+        .addTransition(1, 2, "(b)-[r]->(c)")
+        .addTransition(2, 1, "(c) (b)")
+        .addTransition(2, 3, "(c) (d)")
+        .addTransition(3, 4, "(d) (e)")
+        .addTransition(3, 6, "(d) (anon_0)")
+        .addTransition(4, 5, "(e)-[s]->(f)")
+        .addTransition(5, 4, "(f) (e)")
+        .addTransition(5, 6, "(f) (anon_0)")
+        .addTransition(6, 7, "(anon_0) (g)")
+        .addTransition(6, 9, "(anon_0) (i)")
+        .addTransition(7, 8, "(g)-[t]->(h)")
+        .addTransition(8, 7, "(h) (g)")
+        .addTransition(8, 9, "(h) (i)")
+        .addFinalState(9)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "i",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (anon_0) ((g)-[t]->(h)){0, } (i) WHERE d = `anon_0` AND disjoint(`r`, `s`) AND disjoint(`r`, `t`) AND disjoint(`s`, `t`) AND unique(`r`) AND unique(`s`) AND unique(`t`))",
+          Some("d = anon_0"),
+          Set(("g", "g"), ("c", "c"), ("f", "f"), ("b", "b"), ("e", "e"), ("h", "h")),
+          Set(("r", "r"), ("s", "s"), ("t", "t")),
+          Set("d", "anon_0", "i"),
+          Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          reverseGroupVariableProjections = false
+        )
+        .nodeByLabelScan("a", "User")
+        .build()
+    )
+  }
+
+  test("should allow planning of shortest with exterior node") {
+    val query =
+      "MATCH ANY SHORTEST (a:User) ((b)-[r]->(c))* (a) RETURN *"
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (b)")
+        .addTransition(0, 3, "(a) (anon_0 WHERE a = anon_0)")
+        .addTransition(1, 2, "(b)-[r]->(c)")
+        .addTransition(2, 1, "(c) (b)")
+        .addTransition(2, 3, "(c) (anon_0 WHERE a = anon_0)")
+        .addFinalState(3)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "anon_0",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) WHERE a = `anon_0` AND unique(`r`))",
+          None,
+          Set(("b", "b"), ("c", "c")),
+          Set(("r", "r")),
+          Set("anon_0"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
