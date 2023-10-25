@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -75,4 +77,65 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     val columnOrder = Asc(differentRelationships("r", "rr"), projections)
     columnOrder.dependencies shouldBe Set(pathVar)
   }
+
+  // `RETURN actor AS keanu ORDER BY keanu{.name}` depends on `actor`
+  test(
+    "Column Order on map projection of a projected variable should return the original variable as a dependency"
+  ) {
+    val projections = Map(
+      "keanu" -> varFor("actor")
+    )
+    val desugaredMapProjection = DesugaredMapProjection(
+      variable = varFor("keanu"),
+      items = List(
+        LiteralEntry(propName("name"), prop("keanu", "name"))(pos)
+      ),
+      includeAllProps = false
+    )(pos)
+    val columnOrder = Asc(desugaredMapProjection, projections)
+    columnOrder.dependencies shouldBe Set(varFor("actor"))
+  }
+
+  // `RETURN actor AS keanu, collect(movie) AS movies ORDER BY keanu{.name, movies: movies}` depends on `actor` and `movie`
+  test(
+    "Column Order on map projection of a projected variable with a literal entry should return the original variable and the one in the literal entry as dependencies"
+  ) {
+    val projections = Map(
+      "keanu" -> varFor("actor"),
+      "movies" -> collect(varFor("movie"))
+    )
+    val desugaredMapProjection = DesugaredMapProjection(
+      variable = varFor("keanu"),
+      items = List(
+        LiteralEntry(propName("name"), prop("keanu", "name"))(pos),
+        LiteralEntry(propName("movies"), varFor("movies"))(pos)
+      ),
+      includeAllProps = false
+    )(pos)
+    val columnOrder = Asc(desugaredMapProjection, projections)
+    columnOrder.dependencies shouldBe Set(varFor("actor"), varFor("movie"))
+  }
+
+  // `RETURN {'name': 'Keanu Reeves'} AS keanu, collect(movie) AS movies ORDER BY keanu{.name, movies: movies}` depends on `keanu` and `movie`
+  test(
+    "Column Order on map projection of a projected non-variable expression with a literal entry should return the projected expression and the variable in the literal entry as dependencies"
+  ) {
+    val projections = Map(
+      "keanu" -> mapOf(
+        "name" -> literalString("Keanu Reeves")
+      ),
+      "movies" -> collect(varFor("movie"))
+    )
+    val desugaredMapProjection = DesugaredMapProjection(
+      variable = varFor("keanu"),
+      items = List(
+        LiteralEntry(propName("name"), prop("keanu", "name"))(pos),
+        LiteralEntry(propName("movies"), varFor("movies"))(pos)
+      ),
+      includeAllProps = false
+    )(pos)
+    val columnOrder = Asc(desugaredMapProjection, projections)
+    columnOrder.dependencies shouldBe Set(varFor("keanu"), varFor("movie"))
+  }
+
 }

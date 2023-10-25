@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.ir.ordering
 
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.cypher.internal.util.RewriterWithParent
+import org.neo4j.cypher.internal.util.topDownWithParent
 
 /**
  * A column of either an [[OrderCandidate]] or a [[ProvidedOrder]].
@@ -89,9 +90,21 @@ object ColumnOrder {
    * @return the original expression, or the same expression.
    */
   def projectExpression(expression: Expression, projections: Map[String, Expression]): Expression = {
-    expression.endoRewrite(topDown(Rewriter.lift {
-      case v @ Variable(varName) =>
-        projections.getOrElse(varName, v)
-    }))
+    expression.endoRewrite(topDownWithParent(
+      RewriterWithParent.lift {
+        // We must be careful when rewriting the logical variable used in a map projection
+        case (v @ LogicalVariable(varName), Some(DesugaredMapProjection(mapVar, _, _))) if mapVar == v =>
+          projections.get(varName) match {
+            // Replacing the variable with another logical variable is sound
+            case Some(lv: LogicalVariable) => lv
+            // Any other type is not
+            case Some(_) => v
+            // If v isn't a projected value, keep it as is
+            case None => v
+          }
+        case (v @ Variable(varName), _) =>
+          projections.getOrElse(varName, v)
+      }
+    ))
   }
 }

@@ -29,9 +29,12 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -2536,6 +2539,86 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .sort("common ASC")
       .aggregation(Seq("x AS x"), Seq("count(y) AS common"))
       .relationshipTypeScan("(x)-[anon_0:HAS_ATTRIBUTE]->(y)", IndexOrderNone)
+      .build()
+  }
+
+  test("ORDER BY the map projection of a renamed variable") {
+    val query =
+      """MATCH p = (a:A)-[:R]->+(:B)
+        |WITH a AS n ORDER BY n{.prop}
+        |RETURN n.prop""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("()-[:R]->()", 100)
+      .setRelationshipCardinality("(:A)-[:R]->()", 100)
+      .setRelationshipCardinality("()-[:R]->(:B)", 100)
+      .setRelationshipCardinality("(:A)-[:R]->(:B)", 100)
+      .build()
+
+    val mapProjection = DesugaredMapProjection(
+      varFor("n"),
+      Seq(LiteralEntry(propName("prop"), cachedNodeProp("a", "prop", "n", knownToAccessStore = true))(pos)),
+      includeAllProps = false
+    )(pos)
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`n.prop`")
+        .projection(Map("n.prop" -> cachedNodeProp("a", "prop", "n")))
+        .filter("anon_3:B")
+        .expand("(a)-[anon_4:R*1..]->(anon_3)")
+        .sort("`n{prop: n.prop}` ASC")
+        .projection(Map("n{prop: n.prop}" -> mapProjection))
+        .projection("a AS n")
+        .nodeByLabelScan("a", "A", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("ORDER BY the map projection of a complex expression") {
+    val query =
+      """MATCH p = (a:A)-[:R*]->(:B)
+        |WITH nodes(p)[1] AS n ORDER BY n{.prop}
+        |RETURN n.prop""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("()-[:R]->()", 100)
+      .setRelationshipCardinality("(:A)-[:R]->()", 100)
+      .setRelationshipCardinality("()-[:R]->(:B)", 100)
+      .setRelationshipCardinality("(:A)-[:R]->(:B)", 100)
+      .build()
+
+    val mapProjection = DesugaredMapProjection(
+      varFor("n"),
+      Seq(LiteralEntry(propName("prop"), cachedNodeProp("n", "prop", "n", knownToAccessStore = true))(pos)),
+      includeAllProps = false
+    )(pos)
+
+    val secondNodeInPathProjection =
+      containerIndex(nodes(PathExpressionBuilder.node("a").outToVarLength("anon_0", "anon_1").build()), 1)
+
+    planner.plan(query) shouldEqual planner.planBuilder()
+      .produceResults("`n.prop`")
+      .projection(Map("n.prop" -> cachedNodeProp("n", "prop", "n")))
+      .sort("`n{prop: n.prop}` ASC")
+      .projection(Map("n{prop: n.prop}" -> mapProjection))
+      .projection(Map("n" -> secondNodeInPathProjection))
+      .expand(
+        "(a)-[anon_0:R*1..]->(anon_1)",
+        expandMode = Expand.ExpandInto,
+        projectedDir = SemanticDirection.OUTGOING,
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq()
+      )
+      .cartesianProduct()
+      .|.nodeByLabelScan("anon_1", "B", IndexOrderNone)
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
   }
 }
