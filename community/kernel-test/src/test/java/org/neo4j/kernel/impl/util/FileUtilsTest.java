@@ -265,17 +265,6 @@ class FileUtilsTest {
     }
 
     @Test
-    void mustCountDirectoryContents() throws Exception {
-        Path dir = directory("dir");
-        Path file = dir.resolve("file");
-        Path subdir = dir.resolve("subdir");
-        Files.createFile(file);
-        Files.createDirectories(subdir);
-
-        assertThat(FileUtils.countFilesInDirectoryPath(dir)).isEqualTo(2L);
-    }
-
-    @Test
     void nonExistingDirectoryCanBeDeleted() throws IOException {
         Path dir = path.resolve("dir");
         FileUtils.deleteFile(dir);

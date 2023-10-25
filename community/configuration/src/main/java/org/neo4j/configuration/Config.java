@@ -65,6 +65,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemProperties;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.neo4j.graphdb.config.Configuration;
@@ -393,7 +394,7 @@ public class Config implements Configuration {
                     }
                 }
             } else if (SystemUtils.IS_OS_WINDOWS) {
-                String processOwner = SystemUtils.getUserName();
+                String processOwner = SystemProperties.getUserName();
                 for (Path path : files) {
                     try {
                         AclFileAttributeView attrs = Files.getFileAttributeView(path, AclFileAttributeView.class);

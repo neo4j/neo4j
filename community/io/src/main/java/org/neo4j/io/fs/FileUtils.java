@@ -38,13 +38,9 @@ import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
@@ -57,7 +53,6 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
 import java.util.Set;
@@ -274,32 +269,6 @@ public final class FileUtils {
         walkFileTree(from, new CopyingFileVisitor(from, to, filter, REPLACE_EXISTING, COPY_ATTRIBUTES));
     }
 
-    public static void writeToFile(Path target, String text, boolean append) throws IOException {
-        if (notExists(target)) {
-            Files.createDirectories(target.getParent());
-            Files.createFile(target);
-        }
-
-        try (Writer out = Files.newBufferedWriter(target, StandardCharsets.UTF_8, StandardOpenOption.APPEND)) {
-            out.write(text);
-        }
-    }
-
-    public static PrintWriter newFilePrintWriter(Path file, Charset charset) throws IOException {
-        return new PrintWriter(Files.newBufferedWriter(file, charset, StandardOpenOption.APPEND));
-    }
-
-    public static Path path(String root, String... path) {
-        return path(Path.of(root), path);
-    }
-
-    public static Path path(Path root, String... path) {
-        for (String part : path) {
-            root = root.resolve(part);
-        }
-        return root;
-    }
-
     /**
      * Resolve toDir against fileToMove relativized against fromDir, resulting in a path denoting the location of
      * fileToMove after being moved fromDir toDir.
@@ -320,20 +289,6 @@ public final class FileUtils {
         }
 
         return toDir.resolve(fromDir.relativize(fileToMove));
-    }
-
-    /**
-     * Count the number of files and directories, contained in the given {@link Path}, which must be a directory.
-     * @param dir The directory whose contents to count.
-     * @return The number of files and directories in the given directory.
-     * @throws NotDirectoryException If the given {@link Path} is not a directory. This exception is an optionally
-     * specific exception. {@link IOException} might be thrown instead.
-     * @throws IOException If the given directory could not be opened for some reason.
-     */
-    public static long countFilesInDirectoryPath(Path dir) throws IOException {
-        try (Stream<Path> listing = Files.list(dir)) {
-            return listing.count();
-        }
     }
 
     public interface Operation {

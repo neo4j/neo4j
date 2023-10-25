@@ -57,7 +57,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.storemigration.StoreMigrationTestUtils.getStoreVersion;
@@ -1871,7 +1870,7 @@ class ImportCommandTest {
         String arguments = format(
                 "--additional-config=%s%n" + "--nodes=%s%n" + "--relationships=%s%n",
                 dbConfig.toAbsolutePath(), nodesEscapedSpaces, relationshipsEscapedSpaced);
-        writeToFile(argumentFile, arguments, false);
+        Files.writeString(argumentFile, arguments);
 
         // when
         runImport("@" + argumentFile.toAbsolutePath());

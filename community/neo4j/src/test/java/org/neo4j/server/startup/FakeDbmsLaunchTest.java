@@ -73,7 +73,6 @@ import org.neo4j.configuration.SettingMigrators;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.server.NeoBootstrapper;
@@ -287,17 +286,22 @@ class FakeDbmsLaunchTest {
         @Test
         void shouldUseIncludeLibAndPluginAndConfInClassPath() throws IOException {
             // Empty dirs are ignored, create fake jars
-            FileUtils.writeToFile(config.get(BootloaderSettings.lib_directory).resolve("fake.jar"), "foo", true);
-            FileUtils.writeToFile(config.get(GraphDatabaseSettings.plugin_dir).resolve("fake.jar"), "foo", true);
-            FileUtils.writeToFile(confFile.getParent().resolve("fake.jar"), "foo", true);
+            var libDirectoryPath = config.get(BootloaderSettings.lib_directory);
+            var pluginDirPath = config.get(GraphDatabaseSettings.plugin_dir);
+            fs.mkdirs(libDirectoryPath);
+            fs.mkdirs(pluginDirPath);
+
+            Files.writeString(libDirectoryPath.resolve("fake.jar"), "foo");
+            Files.writeString(pluginDirPath.resolve("fake.jar"), "foo");
+            Files.writeString(confFile.getParent().resolve("fake.jar"), "foo");
 
             assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString())
                     .containsSubsequence(
                             IS_OS_WINDOWS ? "--Classpath" : "-cp",
-                            config.get(GraphDatabaseSettings.plugin_dir).toString() + File.separator + "*",
+                            pluginDirPath.toString() + File.separator + "*",
                             confFile.getParent() + File.separator + "*",
-                            config.get(BootloaderSettings.lib_directory).toString() + File.separator + "*");
+                            libDirectoryPath.toString() + File.separator + "*");
         }
 
         @Test
