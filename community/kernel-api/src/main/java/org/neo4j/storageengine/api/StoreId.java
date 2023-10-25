@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import static org.apache.commons.lang3.StringUtils.defaultString;
-
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -66,7 +64,7 @@ public class StoreId extends StoreVersionIdentifier {
 
     @Override
     public String getStoreVersionUserString() {
-        return defaultString(versionString, super.getStoreVersionUserString());
+        return Objects.toString(versionString, super.getStoreVersionUserString());
     }
 
     public static StoreId generateNew(String storageEngineName, String formatName, int majorVersion, int minorVersion) {

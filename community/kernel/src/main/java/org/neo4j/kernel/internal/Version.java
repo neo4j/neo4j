@@ -22,8 +22,8 @@ package org.neo4j.kernel.internal;
 import static java.lang.System.getProperty;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
-import static org.apache.commons.lang3.StringUtils.defaultString;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +36,7 @@ public class Version {
     static String selectVersion() {
         var versionString =
                 getProperty(CUSTOM_VERSION_SETTING, Version.class.getPackage().getImplementationVersion());
-        return defaultString(versionString, DEFAULT_DEV_VERSION);
+        return Objects.toString(versionString, DEFAULT_DEV_VERSION);
     }
 
     private final String artifactId;
