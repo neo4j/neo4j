@@ -21,7 +21,6 @@ package org.neo4j.bolt.protocol;
 
 import org.neo4j.bolt.fsm.StateMachineConfiguration;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.States;
 import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
@@ -142,10 +141,5 @@ public abstract class AbstractBoltProtocol implements BoltProtocol {
     @Override
     public String toString() {
         return this.version().toString();
-    }
-
-    @Override
-    public ConnectionHintProvider connectionHintProvider() {
-        return ConnectionHintProvider.noop();
     }
 }

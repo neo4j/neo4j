@@ -24,7 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -43,7 +43,7 @@ public abstract class AbstractNettyConnectorTest<C extends AbstractNettyConnecto
     protected Authentication authentication;
     protected AuthConfigProvider authConfigProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
-    protected ConnectionHintProvider connectionHintProvider;
+    protected ConnectionHintRegistry connectionHintRegistry;
     protected AssertableLogProvider logging;
 
     protected C connector;
@@ -57,7 +57,7 @@ public abstract class AbstractNettyConnectorTest<C extends AbstractNettyConnecto
         authentication = Mockito.mock(Authentication.class);
         authConfigProvider = Mockito.mock(AuthConfigProvider.class);
         defaultDatabaseResolver = Mockito.mock(DefaultDatabaseResolver.class);
-        connectionHintProvider = Mockito.mock(ConnectionHintProvider.class);
+        connectionHintRegistry = Mockito.mock(ConnectionHintRegistry.class);
         logging = new AssertableLogProvider();
     }
 

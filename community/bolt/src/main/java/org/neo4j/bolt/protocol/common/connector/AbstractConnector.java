@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
@@ -51,7 +51,7 @@ public abstract class AbstractConnector implements Connector {
     private final Authentication authentication;
     private final AuthConfigProvider authConfigProvider;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
-    private final ConnectionHintProvider connectionHintProvider;
+    private final ConnectionHintRegistry connectionHintRegistry;
     private final TransactionManager transactionManager;
 
     private final RoutingService routingService;
@@ -76,7 +76,7 @@ public abstract class AbstractConnector implements Connector {
             Authentication authentication,
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
-            ConnectionHintProvider connectionHintProvider,
+            ConnectionHintRegistry connectionHintRegistry,
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
@@ -92,7 +92,7 @@ public abstract class AbstractConnector implements Connector {
         this.authentication = authentication;
         this.authConfigProvider = authConfigProvider;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
-        this.connectionHintProvider = connectionHintProvider;
+        this.connectionHintRegistry = connectionHintRegistry;
         this.transactionManager = transactionManager;
 
         this.routingService = routingService;
@@ -151,8 +151,8 @@ public abstract class AbstractConnector implements Connector {
     }
 
     @Override
-    public ConnectionHintProvider connectionHintProvider() {
-        return this.connectionHintProvider;
+    public ConnectionHintRegistry connectionHintRegistry() {
+        return this.connectionHintRegistry;
     }
 
     @Override

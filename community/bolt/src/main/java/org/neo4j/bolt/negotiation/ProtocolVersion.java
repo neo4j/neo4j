@@ -28,14 +28,20 @@ public record ProtocolVersion(short major, short minor, short range) implements 
      */
     public static final int ENCODED_SIZE = 4;
 
+    public static final int MAX_MAJOR_BIT = 255;
+    public static final int MAX_MINOR_BIT = 255;
+
     /**
      * Provides an "invalid" protocol version which may be used for the purposes of padding empty fields or indicating that none of the proposed versions is
      * supported.
      */
     public static final ProtocolVersion INVALID = new ProtocolVersion((short) 0, (short) 0, (short) 0);
 
-    public static final int MAX_MAJOR_BIT = 255;
-    public static final int MAX_MINOR_BIT = 255;
+    /**
+     * Provides a maximum protocol version which may be used for the purposes of defining an
+     * infinite upper range.
+     */
+    public static final ProtocolVersion MAX = new ProtocolVersion(MAX_MAJOR_BIT, MAX_MINOR_BIT, 0);
 
     public ProtocolVersion {
         if (major < 0 || major > MAX_MAJOR_BIT) {
@@ -91,6 +97,14 @@ public record ProtocolVersion(short major, short minor, short range) implements 
 
         var lowerBound = this.minor - this.range;
         return other.minor >= lowerBound && other.minor <= this.minor;
+    }
+
+    public boolean isAtLeast(ProtocolVersion version) {
+        return this.compareTo(version) >= 0;
+    }
+
+    public boolean isAtMost(ProtocolVersion version) {
+        return this.compareTo(version) <= 0;
     }
 
     public int encode() {

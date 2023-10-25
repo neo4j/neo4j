@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.ConnectionRegistry;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -121,8 +121,8 @@ public final class ConnectorMockFactory extends AbstractMockFactory<Connector, C
         return this.withDefaultDatabaseResolver(resolver);
     }
 
-    public ConnectorMockFactory withConnectionHintProvider(ConnectionHintProvider connectionHintProvider) {
-        return this.withStaticValue(Connector::connectionHintProvider, connectionHintProvider);
+    public ConnectorMockFactory withConnectionHintRegistry(ConnectionHintRegistry connectionHintRegistry) {
+        return this.withStaticValue(Connector::connectionHintRegistry, connectionHintRegistry);
     }
 
     public ConnectorMockFactory withTransactionManager(TransactionManager transactionManager) {

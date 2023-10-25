@@ -74,7 +74,10 @@ public final class HelloStateTransition extends AbstractStateTransition<HelloMes
         handler.onMetadata("server", Values.stringValue("Neo4j/" + Version.getNeo4jVersion()));
 
         var connectionHints = new MapValueBuilder();
-        ctx.connection().connector().connectionHintProvider().append(connectionHints);
+        ctx.connection()
+                .connector()
+                .connectionHintRegistry()
+                .applyTo(ctx.connection().protocol().version(), connectionHints);
         handler.onMetadata("hints", connectionHints.build());
 
         // advance the default state to authentication so that negotiation does not happen again

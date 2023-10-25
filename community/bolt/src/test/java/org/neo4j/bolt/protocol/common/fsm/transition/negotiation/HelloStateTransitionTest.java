@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.neo4j.bolt.fsm.error.StateMachineException;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.States;
@@ -46,7 +46,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage, HelloStateTransition> {
 
     private Connector connector;
-    private ConnectionHintProvider connectionHintProvider;
+    private ConnectionHintRegistry connectionHintRegistry;
 
     @Override
     protected HelloStateTransition getTransition() {
@@ -56,10 +56,10 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
     @BeforeEach
     void prepareConnector() {
         this.connector = Mockito.mock(Connector.class);
-        this.connectionHintProvider = Mockito.mock(ConnectionHintProvider.class);
+        this.connectionHintRegistry = Mockito.mock(ConnectionHintRegistry.class);
 
         Mockito.doReturn(this.connector).when(this.connection).connector();
-        Mockito.doReturn(this.connectionHintProvider).when(this.connector).connectionHintProvider();
+        Mockito.doReturn(this.connectionHintRegistry).when(this.connector).connectionHintRegistry();
     }
 
     @Test
@@ -67,12 +67,12 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         Mockito.doReturn("bolt-42").when(this.connection).id();
 
         Mockito.doAnswer(invocation -> {
-                    MapValueBuilder builder = invocation.getArgument(0);
+                    MapValueBuilder builder = invocation.getArgument(1);
                     builder.add("someHint", Values.stringValue("42"));
                     return null;
                 })
-                .when(this.connectionHintProvider)
-                .append(Mockito.notNull());
+                .when(this.connectionHintRegistry)
+                .applyTo(Mockito.notNull(), Mockito.notNull());
 
         var request = new HelloMessage(
                 "Test/1.0",
@@ -85,7 +85,7 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         Assertions.assertThat(targetState).isEqualTo(States.AUTHENTICATION);
 
         var inOrder = Mockito.inOrder(
-                this.context, this.connection, this.connector, this.responseHandler, this.connectionHintProvider);
+                this.context, this.connection, this.connector, this.responseHandler, this.connectionHintRegistry);
 
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection)
@@ -104,7 +104,7 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         var hintsCaptor = ArgumentCaptor.forClass(MapValue.class);
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).connector();
-        inOrder.verify(this.connectionHintProvider).append(Mockito.notNull());
+        inOrder.verify(this.connectionHintRegistry).applyTo(Mockito.notNull(), Mockito.notNull());
         inOrder.verify(this.responseHandler).onMetadata(Mockito.eq("hints"), hintsCaptor.capture());
 
         MapValueAssertions.assertThat(hintsCaptor.getValue())
@@ -122,12 +122,12 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
                 .negotiate(Mockito.anyList(), Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any());
 
         Mockito.doAnswer(invocation -> {
-                    MapValueBuilder builder = invocation.getArgument(0);
+                    MapValueBuilder builder = invocation.getArgument(1);
                     builder.add("someHint", Values.stringValue("42"));
                     return null;
                 })
-                .when(this.connectionHintProvider)
-                .append(Mockito.notNull());
+                .when(this.connectionHintRegistry)
+                .applyTo(Mockito.notNull(), Mockito.notNull());
 
         var request = new HelloMessage(
                 "Test/1.0",
@@ -140,7 +140,7 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         Assertions.assertThat(targetState).isEqualTo(States.AUTHENTICATION);
 
         var inOrder = Mockito.inOrder(
-                this.context, this.connection, this.connector, this.responseHandler, this.connectionHintProvider);
+                this.context, this.connection, this.connector, this.responseHandler, this.connectionHintRegistry);
 
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection)
@@ -161,7 +161,7 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         var hintsCaptor = ArgumentCaptor.forClass(MapValue.class);
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).connector();
-        inOrder.verify(this.connectionHintProvider).append(Mockito.notNull());
+        inOrder.verify(this.connectionHintRegistry).applyTo(Mockito.notNull(), Mockito.notNull());
         inOrder.verify(this.responseHandler).onMetadata(Mockito.eq("hints"), hintsCaptor.capture());
 
         MapValueAssertions.assertThat(hintsCaptor.getValue())
@@ -176,12 +176,12 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         Mockito.doReturn("bolt-42").when(this.connection).id();
 
         Mockito.doAnswer(invocation -> {
-                    MapValueBuilder builder = invocation.getArgument(0);
+                    MapValueBuilder builder = invocation.getArgument(1);
                     builder.add("someHint", Values.stringValue("42"));
                     return null;
                 })
-                .when(this.connectionHintProvider)
-                .append(Mockito.notNull());
+                .when(this.connectionHintRegistry)
+                .applyTo(Mockito.notNull(), Mockito.notNull());
 
         var agent = Map.of(
                 "product", "neo4j-bogus/0.0",
@@ -202,7 +202,7 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         Assertions.assertThat(targetState).isEqualTo(States.AUTHENTICATION);
 
         var inOrder = Mockito.inOrder(
-                this.context, this.connection, this.connector, this.responseHandler, this.connectionHintProvider);
+                this.context, this.connection, this.connector, this.responseHandler, this.connectionHintRegistry);
 
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection)
@@ -221,7 +221,7 @@ class HelloStateTransitionTest extends AbstractStateTransitionTest<HelloMessage,
         var hintsCaptor = ArgumentCaptor.forClass(MapValue.class);
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).connector();
-        inOrder.verify(this.connectionHintProvider).append(Mockito.notNull());
+        inOrder.verify(this.connectionHintRegistry).applyTo(Mockito.notNull(), Mockito.notNull());
         inOrder.verify(this.responseHandler).onMetadata(Mockito.eq("hints"), hintsCaptor.capture());
 
         MapValueAssertions.assertThat(hintsCaptor.getValue())

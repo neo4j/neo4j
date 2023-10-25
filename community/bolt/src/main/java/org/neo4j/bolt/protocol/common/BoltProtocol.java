@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.neo4j.bolt.fsm.StateMachineConfiguration;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
@@ -92,15 +91,6 @@ public interface BoltProtocol {
      */
     default Set<Feature> features() {
         return Set.of(Feature.UTC_DATETIME);
-    }
-
-    /**
-     * Retrieves a provider which registers a set of connection hints upon connection creation.
-     *
-     * @return a hint provider.
-     */
-    default ConnectionHintProvider connectionHintProvider() {
-        return ConnectionHintProvider.noop();
     }
 
     /**

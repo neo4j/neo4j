@@ -25,7 +25,7 @@ import java.time.Clock;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
@@ -121,9 +121,9 @@ public interface Connector extends Lifecycle {
      * authentication.
      *
      * @return a hint provider
-     * @see ConnectionHintProvider
+     * @see ConnectionHintRegistry
      */
-    ConnectionHintProvider connectionHintProvider();
+    ConnectionHintRegistry connectionHintRegistry();
 
     /**
      * Retrieves the transaction manager which shall manage the transactions within this connector.

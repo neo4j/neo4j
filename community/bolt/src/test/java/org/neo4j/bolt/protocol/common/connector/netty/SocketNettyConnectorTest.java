@@ -97,7 +97,7 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 authentication,
                 authConfigProvider,
                 defaultDatabaseResolver,
-                connectionHintProvider,
+                connectionHintRegistry,
                 Mockito.mock(TransactionManager.class),
                 512,
                 0,

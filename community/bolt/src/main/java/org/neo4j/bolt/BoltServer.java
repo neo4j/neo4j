@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt;
 
-import static org.neo4j.bolt.protocol.common.connection.DefaultConnectionHintProvider.CONNECTION_HINT_PROVIDER_FUNCTION;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
 import static org.neo4j.function.Suppliers.lazySingleton;
@@ -41,7 +40,9 @@ import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
+import org.neo4j.bolt.protocol.common.connection.hint.KeepAliveConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.TelemetryConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -111,7 +112,7 @@ public class BoltServer extends LifecycleAdapter {
     private final AuthManager loopbackAuthManager;
     private final MemoryPools memoryPools;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
-    private final ConnectionHintProvider connectionHintProvider;
+    private final ConnectionHintRegistry connectionHintRegistry;
 
     private final ExecutorServiceFactory executorServiceFactory;
     private final SslPolicyLoader sslPolicyLoader;
@@ -159,7 +160,10 @@ public class BoltServer extends LifecycleAdapter {
         this.loopbackAuthManager = loopbackAuthManager;
         this.memoryPools = memoryPools;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
-        this.connectionHintProvider = CONNECTION_HINT_PROVIDER_FUNCTION.apply(config);
+        this.connectionHintRegistry = ConnectionHintRegistry.newBuilder()
+                .withProvider(new KeepAliveConnectionHintProvider(config))
+                .withProvider(new TelemetryConnectionHintProvider(config))
+                .build();
 
         this.executorServiceFactory = new ThreadPoolExecutorServiceFactory(
                 config.get(BoltConnector.thread_pool_min_size),
@@ -485,7 +489,7 @@ public class BoltServer extends LifecycleAdapter {
                 authentication,
                 authConfigProvider,
                 defaultDatabaseResolver,
-                connectionHintProvider,
+                connectionHintRegistry,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
@@ -522,7 +526,7 @@ public class BoltServer extends LifecycleAdapter {
                 authentication,
                 authConfigProvider,
                 defaultDatabaseResolver,
-                connectionHintProvider,
+                connectionHintRegistry,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
@@ -550,7 +554,7 @@ public class BoltServer extends LifecycleAdapter {
                 authentication,
                 authConfigProvider,
                 defaultDatabaseResolver,
-                connectionHintProvider,
+                connectionHintRegistry,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,

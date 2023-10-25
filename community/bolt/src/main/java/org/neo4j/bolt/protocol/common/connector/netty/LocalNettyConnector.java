@@ -28,7 +28,7 @@ import java.net.SocketAddress;
 import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.handler.BoltChannelInitializer;
@@ -66,7 +66,7 @@ public class LocalNettyConnector extends AbstractNettyConnector {
             Authentication authentication,
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
-            ConnectionHintProvider connectionHintProvider,
+            ConnectionHintRegistry connectionHintRegistry,
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
@@ -90,7 +90,7 @@ public class LocalNettyConnector extends AbstractNettyConnector {
                 authentication,
                 authConfigProvider,
                 defaultDatabaseResolver,
-                connectionHintProvider,
+                connectionHintRegistry,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,

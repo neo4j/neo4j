@@ -177,6 +177,7 @@ final class StateMachineImpl implements StateMachine, Context {
             }
 
             // notify the response handler to generate an appropriate response to the client
+            ex.printStackTrace();
             handler.onFailure(error);
 
             // when an exception indicates that it should lead to connection termination,
