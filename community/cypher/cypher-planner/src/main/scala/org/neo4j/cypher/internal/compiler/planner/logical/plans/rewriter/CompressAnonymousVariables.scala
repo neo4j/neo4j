@@ -56,24 +56,13 @@ case object CompressAnonymousVariables extends Phase[PlannerContext, LogicalPlan
       .zipWithIndex
       .map {
         case (key, value) =>
-          key -> AnonymousVariableNameGenerator.anonymousVarName(value)
+          s"${key.name}\\b" -> AnonymousVariableNameGenerator.anonymousVarName(value)
       }
 
-    val stringCompression = compression.map {
-      // if we backtick something in a string which looks like an anonymous variable, then it probably is an anonymous variable
-      case (key, value) => s"`${key.name}`" -> s"`$value`"
-    }
-
-    val compressionMap = compression.toMap
-
     val rewriter = bottomUp(Rewriter.lift {
-      case v: LogicalVariable
-        if compressionMap.contains(v) =>
-        val compressedId = compressionMap(v)
-        v.renameId(compressedId)
       case s: String =>
         // We need string replacement to fix up solved expression string
-        stringCompression.foldLeft(s)((s, replacement) => s.replace(replacement._1, replacement._2))
+        compression.foldLeft(s)((s, replacement) => s.replaceAll(replacement._1, replacement._2))
     })
 
     rewriter.apply(input).asInstanceOf[T]

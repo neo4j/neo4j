@@ -137,26 +137,28 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "s",
           "t",
-          "SHORTEST 1 ((s) ((anon_21)-[anon_11:R]->(anon_22)-[anon_12:T]-(anon_23)-[anon_13:T]-(anon_24)-[anon_14:T]-(anon_25)-[anon_15:R]->(anon_10) WHERE NOT `anon_5` = `anon_1` AND NOT `anon_4` = `anon_3` AND NOT `anon_4` = `anon_2` AND NOT `anon_3` = `anon_2`){1, } (t) WHERE unique((((`anon_10` + `anon_6`) + `anon_7`) + `anon_8`) + `anon_9`))",
+          "SHORTEST 1 ((s) ((anon_11)-[anon_1:R]->(anon_12)-[anon_2:T]-(anon_13)-[anon_3:T]-(anon_14)-[anon_4:T]-(anon_15)-[anon_5:R]->(anon_0) " +
+            "WHERE NOT `anon_5` = `anon_1` AND NOT `anon_4` = `anon_3` AND NOT `anon_4` = `anon_2` AND NOT `anon_3` = `anon_2`){1, } (t) " +
+            "WHERE unique((((`anon_10` + `anon_6`) + `anon_7`) + `anon_8`) + `anon_9`))",
           None,
-          Set(
+          groupNodes = Set(
             ("anon_11", "anon_17"),
             ("anon_12", "anon_18"),
-            ("anon_15", "anon_19"),
             ("anon_13", "anon_20"),
-            ("anon_14", "anon_16")
+            ("anon_14", "anon_16"),
+            ("anon_15", "anon_19")
           ),
-          Set(
+          groupRelationships = Set(
             ("anon_1", "anon_10"),
-            ("anon_3", "anon_7"),
-            ("anon_5", "anon_9"),
             ("anon_2", "anon_6"),
-            ("anon_4", "anon_8")
+            ("anon_3", "anon_7"),
+            ("anon_4", "anon_8"),
+            ("anon_5", "anon_9")
           ),
-          Set("t"),
-          Set(),
-          StatefulShortestPath.Selector.Shortest(1),
-          new TestNFABuilder(0, "s")
+          singletonNodeVariables = Set("t"),
+          singletonRelationshipVariables = Set(),
+          selector = StatefulShortestPath.Selector.Shortest(1),
+          nfa = new TestNFABuilder(0, "s")
             .addTransition(0, 1, "(s) (anon_11)")
             .addTransition(1, 2, "(anon_11)-[anon_1:R]->(anon_12)")
             .addTransition(2, 3, "(anon_12)-[anon_2:T]-(anon_13)")
