@@ -29,7 +29,14 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -39,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -2106,6 +2114,90 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .aggregation(Seq("x AS x"), Seq("count(y) AS common"))
       .expandAll("(x)-[anon_0:HAS_ATTRIBUTE]->(y)")
       .allNodeScan("x")
+      .build()
+  }
+
+  test("ORDER BY the map projection of a renamed variable") {
+    val query =
+      """MATCH p = (a:A)-[:R*]->(:B)
+        |WITH a AS n ORDER BY n{.prop}
+        |RETURN n.prop""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("()-[:R]->()", 100)
+      .setRelationshipCardinality("(:A)-[:R]->()", 100)
+      .setRelationshipCardinality("()-[:R]->(:B)", 100)
+      .setRelationshipCardinality("(:A)-[:R]->(:B)", 100)
+      .build()
+
+    val mapProjection = DesugaredMapProjection(
+      varFor("n"),
+      Seq(LiteralEntry(propName("prop"), cachedNodeProp("a", "prop", "n", knownToAccessStore = true))(pos)),
+      includeAllProps = false
+    )(pos)
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`n.prop`")
+        .projection(Map("n.prop" -> cachedNodeProp("a", "prop", "n")))
+        .expand("(a)-[anon_0:R*1..]->(anon_1)", expandMode = ExpandInto, projectedDir = SemanticDirection.OUTGOING)
+        .cartesianProduct()
+        .|.nodeByLabelScan("anon_1", "B", IndexOrderNone)
+        .sort(List(Ascending("DesugaredMapProjection(Variable(n),List(LiteralEntry(PropertyKeyName(prop),Property(Variable(n),PropertyKeyName(prop)))),false)")))
+        .projection(Map("DesugaredMapProjection(Variable(n),List(LiteralEntry(PropertyKeyName(prop),Property(Variable(n),PropertyKeyName(prop)))),false)" -> mapProjection))
+        .projection("a AS n")
+        .nodeByLabelScan("a", "A", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("ORDER BY the map projection of a complex expression") {
+    val query =
+      """MATCH p = (a:A)-[:R*]->(:B)
+        |WITH nodes(p)[1] AS n ORDER BY n{.prop}
+        |RETURN n.prop""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("()-[:R]->()", 100)
+      .setRelationshipCardinality("(:A)-[:R]->()", 100)
+      .setRelationshipCardinality("()-[:R]->(:B)", 100)
+      .setRelationshipCardinality("(:A)-[:R]->(:B)", 100)
+      .build()
+
+    val mapProjection = DesugaredMapProjection(
+      varFor("n"),
+      Seq(LiteralEntry(propName("prop"), cachedNodeProp("n", "prop", "n", knownToAccessStore = true))(pos)),
+      includeAllProps = false
+    )(pos)
+
+    val pathExpression =
+      PathExpression(
+        NodePathStep(varFor("a"),
+          MultiRelationshipPathStep(varFor("anon_0"), SemanticDirection.OUTGOING, Some(varFor("anon_1")),
+            NilPathStep()(pos)
+          )(pos)
+        )(pos)
+      )(pos)
+
+    val secondNodeInPathProjection =
+      containerIndex(nodes(pathExpression), literal(1))
+
+    planner.plan(query) shouldEqual planner.planBuilder()
+      .produceResults("`n.prop`")
+      .projection(Map("n.prop" -> cachedNodeProp("n", "prop", "n")))
+      .sort(List(Ascending("DesugaredMapProjection(Variable(n),List(LiteralEntry(PropertyKeyName(prop),Property(Variable(n),PropertyKeyName(prop)))),false)")))
+      .projection(Map("DesugaredMapProjection(Variable(n),List(LiteralEntry(PropertyKeyName(prop),Property(Variable(n),PropertyKeyName(prop)))),false)" -> mapProjection))
+      .projection(Map("n" -> secondNodeInPathProjection))
+      .expand("(a)-[anon_0:R*1..]->(anon_1)", expandMode = ExpandInto, projectedDir = SemanticDirection.OUTGOING)
+      .cartesianProduct()
+      .|.nodeByLabelScan("anon_1", "B", IndexOrderNone)
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
   }
 }
