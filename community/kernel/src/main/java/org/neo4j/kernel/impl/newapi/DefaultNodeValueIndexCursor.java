@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
-import java.util.Arrays;
 import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
@@ -54,11 +53,9 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
     @Override
     protected boolean canAccessAllDescribedEntities(IndexDescriptor descriptor, AccessMode accessMode) {
         propertyIds = descriptor.schema().getPropertyIds();
-        final long[] labelIds = Arrays.stream(descriptor.schema().getEntityTokenIds())
-                .mapToLong(i -> i)
-                .toArray();
+        int[] labelIds = descriptor.schema().getEntityTokenIds();
 
-        for (long label : labelIds) {
+        for (int label : labelIds) {
             /*
              * If there can be nodes in the index that that are disallowed to traverse,
              * post-filtering is needed.
@@ -83,7 +80,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
              * there can be property values in the index that are disallowed,
              * so post-filtering is needed.
              */
-            for (long label : labelIds) {
+            for (int label : labelIds) {
                 if (!accessMode.allowsReadNodeProperty(() -> Labels.from(label), propId)) {
                     return false;
                 }
