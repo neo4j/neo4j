@@ -47,17 +47,19 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider {
     private FileSystemAbstraction fs;
     private Config config;
-    private DatabaseLayout databaseLayout;
+    private Set<String> databaseNames;
+    private Neo4jLayout neo4jLayout;
 
     public KernelDiagnosticsOfflineReportProvider() {
         super("logs", "plugins", "tree", "tx", "version");
     }
 
     @Override
-    public void init(FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory) {
+    public void init(FileSystemAbstraction fs, Config config, Set<String> databaseNames) {
         this.fs = fs;
         this.config = config;
-        this.databaseLayout = DatabaseLayout.of(Neo4jLayout.of(config), defaultDatabaseName);
+        this.databaseNames = databaseNames;
+        this.neo4jLayout = Neo4jLayout.of(config);
     }
 
     @Override
@@ -70,10 +72,14 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
             listPlugins(sources);
         }
         if (classifiers.contains("tree")) {
-            listDataDirectory(sources);
+            for (String databaseName : databaseNames) {
+                listDataDirectory(sources, databaseName);
+            }
         }
         if (classifiers.contains("tx")) {
-            getTransactionLogFiles(sources);
+            for (String databaseName : databaseNames) {
+                getTransactionLogFiles(sources, databaseName);
+            }
         }
         if (classifiers.contains("version")) {
             getVersion(sources);
@@ -127,7 +133,8 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      *
      * @param sources destination of the sources.
      */
-    private void listDataDirectory(List<DiagnosticsReportSource> sources) {
+    private void listDataDirectory(List<DiagnosticsReportSource> sources, String databaseName) {
+        DatabaseLayout databaseLayout = DatabaseLayout.of(neo4jLayout, databaseName);
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(fs, databaseLayout, null);
         StoreFilesDiagnostics storeFiles =
                 new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout, loadDeviceMapper());
@@ -136,7 +143,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         storeFiles.dump(files::add);
 
         sources.add(DiagnosticsReportSources.newDiagnosticsString(
-                "tree.txt", () -> String.join(System.lineSeparator(), files)));
+                databaseName + "/tree.txt", () -> String.join(System.lineSeparator(), files)));
     }
 
     private static DeviceMapper loadDeviceMapper() {
@@ -176,17 +183,19 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      *
      * @param sources destination of the sources.
      */
-    private void getTransactionLogFiles(List<DiagnosticsReportSource> sources) {
+    private void getTransactionLogFiles(List<DiagnosticsReportSource> sources, String databaseName) {
         try {
+            DatabaseLayout databaseLayout = DatabaseLayout.of(neo4jLayout, databaseName);
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(
                             databaseLayout.getTransactionLogsDirectory(), fs)
                     .build();
             for (Path file : logFiles.logFiles()) {
-                sources.add(DiagnosticsReportSources.newDiagnosticsFile("tx/" + file.getFileName(), fs, file));
+                sources.add(DiagnosticsReportSources.newDiagnosticsFile(
+                        databaseName + "/tx/" + file.getFileName(), fs, file));
             }
         } catch (IOException e) {
             sources.add(DiagnosticsReportSources.newDiagnosticsString(
-                    "tx.txt", () -> "Error getting tx logs: " + e.getMessage()));
+                    databaseName + "/tx.txt", () -> "Error getting tx logs: " + e.getMessage()));
         }
     }
 }

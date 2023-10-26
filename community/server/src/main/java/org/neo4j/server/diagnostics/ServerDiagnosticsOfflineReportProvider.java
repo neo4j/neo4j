@@ -43,7 +43,7 @@ public class ServerDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     }
 
     @Override
-    public void init(FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory) {
+    public void init(FileSystemAbstraction fs, Config config, Set<String> databaseNames) {
         this.fs = fs;
         this.config = config;
     }

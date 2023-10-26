@@ -114,11 +114,18 @@ class Neo4jAdminCommandTest {
         @DisabledOnOs(OS.WINDOWS)
         @DisabledIf("isMissingTestRequiredTools")
         void shouldPassThroughAndAcceptVerboseAndExpandCommands() throws Exception {
-            addConf(GraphDatabaseSettings.initial_default_database, "$(echo foo)");
+            // The command will fail if the databases directory doesn't exist.
+            // Exception would be thrown if expand commands didn't work.
+            Path customDbDir = home.resolve("customDbDir");
+            Path databasesDir = customDbDir.resolve("databases");
+            Files.createDirectories(databasesDir.resolve("customDbName"));
+
+            addConf(GraphDatabaseSettings.data_directory, "$(echo " + customDbDir.toAbsolutePath() + ")");
             if (fork.run(() -> assertThat(
                             execute("server", "report", "--to-path", home.toString(), "--verbose", "--expand-commands"))
                     .isEqualTo(EXIT_CODE_OK))) {
-                assertThat(out.toString()).containsSubsequence("Writing report to", "100%");
+                System.out.println(out.toString());
+                assertThat(out.toString()).containsSubsequence("Writing report to", "customDbName", "100%");
                 assertThat(err.toString()).contains("WARNING: Using incubator modules: jdk.incubator.vector");
             }
         }

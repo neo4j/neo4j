@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
-import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
@@ -143,7 +142,7 @@ public class DumpCommand extends AbstractAdminCommand {
             List<FailedDump> failedDumps = new ArrayList<>();
 
             try (DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction()) {
-                dbNames = getDbNames(config, fs);
+                dbNames = getDbNames(config, fs, database);
 
                 var memoryTracker = EmptyMemoryTracker.INSTANCE;
 
@@ -224,32 +223,6 @@ public class DumpCommand extends AbstractAdminCommand {
     }
 
     record FailedDump(String dbName, Exception e) {}
-
-    private Set<String> getDbNames(Config config, FileSystemAbstraction fs) {
-        if (!database.containsPattern()) {
-            return Set.of(database.getDatabaseName());
-        } else {
-            Set<String> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
-            Path databasesDir = Neo4jLayout.of(config).databasesDirectory();
-            try {
-                for (Path path : fs.listFiles(databasesDir)) {
-                    if (fs.isDirectory(path)) {
-                        String name = path.getFileName().toString();
-                        if (database.matches(name)) {
-                            dbNames.add(name);
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                throw new CommandFailedException("Failed to list databases", e);
-            }
-            if (dbNames.isEmpty()) {
-                throw new CommandFailedException(
-                        "Pattern '" + database.getDatabaseName() + "' did not match any database");
-            }
-            return dbNames;
-        }
-    }
 
     private static Path buildArchivePath(String database, Path to) {
         return to.resolve(database + DUMP_EXTENSION);

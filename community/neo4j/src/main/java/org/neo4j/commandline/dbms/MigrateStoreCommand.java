@@ -30,13 +30,11 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
-import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
@@ -185,7 +183,7 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
 
         InternalLog resultLog = logProvider.getLog(getClass());
         try (FileSystemAbstraction fs = new DefaultFileSystemAbstraction()) {
-            Set<String> dbNames = getDbNames(config, fs);
+            Set<String> dbNames = getDbNames(config, fs, database);
 
             for (String dbName : dbNames) {
 
@@ -300,33 +298,6 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
     }
 
     record FailedMigration(String dbName, Exception e) {}
-
-    private Set<String> getDbNames(Config config, FileSystemAbstraction fs) {
-        if (!database.containsPattern()) {
-            return Set.of(database.getDatabaseName());
-        } else {
-            Set<String> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
-            Path databasesDir = Neo4jLayout.of(config).databasesDirectory();
-            try {
-                for (Path path : fs.listFiles(databasesDir)) {
-                    if (fs.isDirectory(path)) {
-                        String name = path.getFileName().toString();
-                        if (database.matches(name)) {
-                            dbNames.add(name);
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                throw new CommandFailedException(
-                        format("Failed to list databases: %s: %s", e.getClass().getSimpleName(), e.getMessage()), e);
-            }
-            if (dbNames.isEmpty()) {
-                throw new CommandFailedException(
-                        "Pattern '" + database.getDatabaseName() + "' did not match any database");
-            }
-            return dbNames;
-        }
-    }
 
     private static void upgradeSystemDb(
             Config config, Log4jLogProvider logProvider, Log4jLogProvider systemDbStartupLogProvider) {

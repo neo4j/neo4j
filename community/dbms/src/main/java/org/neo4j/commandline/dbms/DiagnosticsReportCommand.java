@@ -21,7 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import static java.lang.String.join;
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
@@ -43,9 +42,11 @@ import org.jutils.jprocesses.JProcesses;
 import org.jutils.jprocesses.model.ProcessInfo;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.dbms.diagnostics.profile.ProfileCommand;
@@ -70,6 +71,16 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         "logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"
     };
     private static final DateTimeFormatter filenameDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss");
+
+    @Option(
+            names = "--database",
+            paramLabel = "<database>",
+            defaultValue = "*",
+            description = "Name of the database to report for. Can contain * and ? for globbing. "
+                    + "Note that * and ? have special meaning in some shells "
+                    + "and might need to be escaped or used with quotes.",
+            converter = Converters.DatabaseNamePatternConverter.class)
+    private DatabaseNamePattern database;
 
     @Option(names = "--list", description = "List all available classifiers.")
     private boolean list;
@@ -104,7 +115,9 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         Config config = getConfig();
 
         jmxDumper = new JMXDumper(config, ctx.fs(), ctx.out(), ctx.err(), verbose);
-        DiagnosticsReporter reporter = createAndRegisterSources(config);
+
+        Set<String> dbNames = getDbNames(config, ctx.fs(), database);
+        DiagnosticsReporter reporter = createAndRegisterSources(config, dbNames);
 
         if (list) {
             listClassifiers(reporter.getAvailableClassifiers());
@@ -174,14 +187,11 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         }
     }
 
-    private DiagnosticsReporter createAndRegisterSources(Config config) {
+    private DiagnosticsReporter createAndRegisterSources(Config config, Set<String> databaseNames) {
         DiagnosticsReporter reporter = new DiagnosticsReporter();
 
-        Path storeDirectory = config.get(databases_root_path);
-
         FileSystemAbstraction fs = ctx.fs();
-        reporter.registerAllOfflineProviders(
-                config, storeDirectory, fs, config.get(GraphDatabaseSettings.initial_default_database));
+        reporter.registerAllOfflineProviders(config, fs, databaseNames);
 
         // Register sources provided by this tool
         try {

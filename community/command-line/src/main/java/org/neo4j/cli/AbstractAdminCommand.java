@@ -27,11 +27,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.Neo4jLayout;
 import picocli.CommandLine;
 
 /**
@@ -138,6 +143,34 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
             return p.toRealPath();
         } catch (IOException e) {
             throw new CommandFailedException(format("Path '%s' does not exist.", p), e);
+        }
+    }
+
+    protected static Set<String> getDbNames(Config config, FileSystemAbstraction fs, DatabaseNamePattern database)
+            throws CommandFailedException {
+        if (!database.containsPattern()) {
+            return Set.of(database.getDatabaseName());
+        } else {
+            Set<String> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
+            Path databasesDir = Neo4jLayout.of(config).databasesDirectory();
+            try {
+                for (Path path : fs.listFiles(databasesDir)) {
+                    if (fs.isDirectory(path)) {
+                        String name = path.getFileName().toString();
+                        if (database.matches(name)) {
+                            dbNames.add(name);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                throw new CommandFailedException(
+                        format("Failed to list databases: %s: %s", e.getClass().getSimpleName(), e.getMessage()), e);
+            }
+            if (dbNames.isEmpty()) {
+                throw new CommandFailedException(
+                        "Pattern '" + database.getDatabaseName() + "' did not match any database");
+            }
+            return dbNames;
         }
     }
 }

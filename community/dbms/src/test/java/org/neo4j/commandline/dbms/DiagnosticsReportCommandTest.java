@@ -47,8 +47,8 @@ class DiagnosticsReportCommandTest {
                 USAGE
 
                 report [-h] [--expand-commands] [--list] [--verbose] [--ignore-disk-space-check
-                       [=true|false]] [--additional-config=<file>] [--to-path=<path>]
-                       [<classifier>...] [COMMAND]
+                       [=true|false]] [--additional-config=<file>] [--database=<database>]
+                       [--to-path=<path>] [<classifier>...] [COMMAND]
 
                 DESCRIPTION
 
@@ -65,6 +65,12 @@ class DiagnosticsReportCommandTest {
 
                       --additional-config=<file>
                                           Configuration file with additional configuration.
+                      --database=<database>
+                                          Name of the database to report for. Can contain * and
+                                            ? for globbing. Note that * and ? have special
+                                            meaning in some shells and might need to be escaped
+                                            or used with quotes.
+                                            Default: *
                       --expand-commands   Allow command expansion in config value evaluation.
                   -h, --help              Show this help message and exit.
                       --ignore-disk-space-check[=true|false]

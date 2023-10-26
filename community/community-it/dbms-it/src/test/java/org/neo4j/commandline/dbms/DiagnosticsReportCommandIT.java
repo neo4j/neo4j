@@ -37,6 +37,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Optional;
 import org.apache.commons.io.output.NullPrintStream;
@@ -78,6 +79,7 @@ class DiagnosticsReportCommandIT {
     @BeforeEach
     void setUp() throws Exception {
         homeDir = testDirectory.directory("home-dir");
+        createDatabaseDir(homeDir);
         configDir = testDirectory.directory("config-dir");
 
         // Touch config
@@ -86,6 +88,11 @@ class DiagnosticsReportCommandIT {
         // To make sure files are resolved from the working directory
         originalUserDir =
                 System.setProperty("user.dir", testDirectory.absolutePath().toString());
+    }
+
+    private void createDatabaseDir(Path homeDir) throws IOException {
+        // Database directory needed for command to be able to collect anything
+        Files.createDirectories(homeDir.resolve("data").resolve("databases").resolve("neo4j"));
     }
 
     @AfterEach
@@ -99,18 +106,14 @@ class DiagnosticsReportCommandIT {
         long pid = getPID();
         assertThat(pid).isNotEqualTo(0);
 
-        // Write config file
-        Files.createFile(testDirectory.file("neo4j.conf"));
-
         // write neo4j.pid file
-        Path run = testDirectory.directory("run");
+        Path run = testDirectory.directory("run", homeDir.getFileName().toString());
         Files.write(run.resolve("neo4j.pid"), String.valueOf(pid).getBytes());
 
         // Run command, should detect running instance
         String[] args = {"threads", "--to-path=" + testDirectory.absolutePath() + "/reports"};
-        Path homeDir = testDirectory.homePath();
         var signalToIgnoreThisTest = new MutableBoolean();
-        withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
             try {
                 DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
                 diagnosticsReportCommand.execute();
@@ -148,18 +151,14 @@ class DiagnosticsReportCommandIT {
         long pid = getPID();
         assertThat(pid).isNotEqualTo(0);
 
-        // Write config file
-        Files.createFile(testDirectory.file("neo4j.conf"));
-
         // write neo4j.pid file
-        Path run = testDirectory.directory("run");
-        Files.write(run.resolve("neo4j.pid"), String.valueOf(pid).getBytes());
+        Path run = testDirectory.directory("run", homeDir.getFileName().toString());
+        Files.write(run.resolve("neo4j.pid"), String.valueOf(pid).getBytes(), StandardOpenOption.CREATE);
 
         // Run command, should detect running instance
         String[] args = {"heap", "--to-path=" + testDirectory.absolutePath() + "/reports"};
-        Path homeDir = testDirectory.homePath();
         var signalToIgnoreThisTest = new MutableBoolean();
-        withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
             try {
                 DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
                 diagnosticsReportCommand.execute();
@@ -191,19 +190,21 @@ class DiagnosticsReportCommandIT {
     @Test
     void includeAllLogFiles() throws IOException {
         // Write config file and specify a custom name for the neo4j.log file.
-        Path confFile = testDirectory.createFile("neo4j.conf");
-        Files.write(confFile, singletonList(GraphDatabaseSettings.logs_directory.name() + "=customLogDir/"));
+        Files.write(
+                configDir.resolve("neo4j.conf"),
+                singletonList(GraphDatabaseSettings.logs_directory.name() + "=customLogDir/"));
 
         // Create some log files that should be found.
-        testDirectory.directory("customLogDir");
-        testDirectory.createFile("customLogDir/debug.log");
-        testDirectory.createFile("customLogDir/debug.log.01.zip");
-        testDirectory.createFile("customLogDir/neo4j.log");
-        testDirectory.createFile("customLogDir/neo4j.log.01");
+        Path customLogDir =
+                testDirectory.directory("customLogDir", homeDir.getFileName().toString());
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        fs.write(customLogDir.resolve("debug.log")).close();
+        fs.write(customLogDir.resolve("debug.log.01.zip"));
+        fs.write(customLogDir.resolve("neo4j.log"));
+        fs.write(customLogDir.resolve("neo4j.log.01"));
 
         String[] args = {"logs", "--to-path=" + testDirectory.absolutePath() + "/reports"};
-        Path homeDir = testDirectory.homePath();
-        withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
+        withSuppressedOutput(homeDir, configDir, this.fs, ctx -> {
             DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
             diagnosticsReportCommand.execute();
         });
@@ -214,6 +215,7 @@ class DiagnosticsReportCommandIT {
 
         try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
             Path logsDir = fileSystem.getPath("logs");
+            System.out.println(Files.list(logsDir).toList());
             assertTrue(Files.exists(logsDir.resolve("debug.log")));
             assertTrue(Files.exists(logsDir.resolve("debug.log.01.zip")));
             assertTrue(Files.exists(logsDir.resolve("neo4j.log")));
