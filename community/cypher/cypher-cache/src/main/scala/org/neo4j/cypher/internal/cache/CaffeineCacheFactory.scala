@@ -43,8 +43,6 @@ import java.util.function.Consumer
 import scala.collection.concurrent.TrieMap
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.MapHasAsScala
-import scala.reflect.ClassTag
-import scala.reflect.classTag
 
 object ExecutorBasedCaffeineCacheFactory {
 
@@ -154,8 +152,8 @@ trait CaffeineCacheFactory extends CacheFactory {
   def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: CacheSize): Cache[K, V]
 }
 
-trait CacheTracerFactory {
-  def createTracer[K](cacheTracerClassTag: ClassTag[CacheTracer[K]], monitorTag: String): CacheTracer[K]
+trait CacheTracerRepository {
+  def tracerForCacheKind(cacheKind: String): CacheTracer[_]
 }
 
 class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCacheFactory {
@@ -199,7 +197,7 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
   override def resolveCacheKind(kind: String): CaffeineCacheFactory = this
 }
 
-class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFactory: CacheTracerFactory)
+class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTracerRepository: CacheTracerRepository)
     extends CacheFactory {
   self =>
 
@@ -217,7 +215,6 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFac
       externalListeners.update(id, listener)
   }
 
-  private val sharedTracer: TrieMap[String, CacheTracer[_]] = scala.collection.concurrent.TrieMap()
   private val cacheKindToCache: TrieMap[String, Cache[_, _]] = scala.collection.concurrent.TrieMap()
 
   private val cacheKindToListener: TrieMap[String, InternalRemovalListener[_, _]] =
@@ -239,22 +236,18 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFac
     cacheKindToCache.get(kind).foreach(_.cleanUp())
   }
 
-  private def tracer[K <: AnyRef](cacheKind: String, monitorTag: String): CacheTracer[K] = {
-    sharedTracer.getOrElseUpdate(
-      cacheKind,
-      cacheTracerFactory.createTracer[K](classTag[CacheTracer[K]], monitorTag)
-    ).asInstanceOf[CacheTracer[K]]
+  private def tracer[K <: AnyRef](cacheKind: String): CacheTracer[K] = {
+    cacheTracerRepository.tracerForCacheKind(cacheKind).asInstanceOf[CacheTracer[K]]
   }
 
   def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, cacheKind: String): Cache[K, V] = {
-    val monitorTag: String = s"cypher.cache.$cacheKind.global"
     SharedCacheContainer(
       cacheKindToCache.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, size)
       ).asInstanceOf[Cache[(Int, K), V]],
       SharedCacheContainerIdGen.getNewId,
-      tracer(cacheKind, monitorTag)
+      tracer(cacheKind)
     )
   }
 
@@ -263,9 +256,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFac
     removalListener: RemovalListener[K, V],
     cacheKind: String
   ): Cache[K, V] = {
-    val monitorTag: String = s"cypher.cache.$cacheKind.global"
     val id = SharedCacheContainerIdGen.getNewId
-    val globalTracer: CacheTracer[K] = tracer(cacheKind, monitorTag)
+    val globalTracer: CacheTracer[K] = tracer(cacheKind)
     val globalRemovalListener: RemovalListener[K, V] =
       (key: K, value: V, cause: RemovalCause) => globalTracer.discard(key, "")
     val internalRemovalListener =
@@ -285,14 +277,13 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFac
   }
 
   def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, ttlAfterAccess: Long, cacheKind: String): Cache[K, V] = {
-    val monitorTag: String = s"cypher.cache.$cacheKind.global"
     SharedCacheContainer(
       cacheKindToCache.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache(executor, size, ttlAfterAccess)
       ).asInstanceOf[Cache[(Int, K), V]],
       SharedCacheContainerIdGen.getNewId,
-      tracer(cacheKind, monitorTag)
+      tracer(cacheKind)
     )
   }
 
@@ -302,14 +293,13 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFac
     size: CacheSize,
     cacheKind: String
   ): Cache[K, V] = {
-    val monitorTag: String = s"cypher.cache.$cacheKind.global"
     SharedCacheContainer(
       cacheKindToCache.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache(executor, ticker, ttlAfterWrite, size)
       ).asInstanceOf[Cache[(Int, K), V]],
       SharedCacheContainerIdGen.getNewId,
-      tracer(cacheKind, monitorTag)
+      tracer(cacheKind)
     )
   }
 

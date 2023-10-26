@@ -37,6 +37,7 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] with CacheMetri
   private val discards = new AtomicLong
   private val staleEntries = new AtomicLong
   private val cacheFlushes = new AtomicLong
+
   override def cacheHit(key: KEY, metaData: String): Unit = hits.incrementAndGet()
 
   override def cacheMiss(key: KEY, metaData: String): Unit = misses.incrementAndGet()
@@ -67,31 +68,28 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] with CacheMetri
   override def getCacheFlushes: Long = cacheFlushes.get()
 }
 
-class PreParserCacheMetricsMonitor(extraTag: String) extends CacheMetricsMonitor[CypherQueryCaches.PreParserCache.Key] {
-  override val monitorTag: String = CypherQueryCaches.PreParserCache.monitorTag + extraTag
+class PreParserCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQueryCaches.PreParserCache.Key] {
+  override val monitorTag: String = CypherQueryCaches.PreParserCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.PreParserCache.kind
 }
 
-class ASTCacheMetricsMonitor(extraTag: String) extends CacheMetricsMonitor[CypherQueryCaches.AstCache.Key] {
-  override val monitorTag: String = CypherQueryCaches.AstCache.monitorTag + extraTag
+class ASTCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQueryCaches.AstCache.Key] {
+  override val monitorTag: String = CypherQueryCaches.AstCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.AstCache.kind
 }
 
-class LogicalPlanCacheMetricsMonitor(extraTag: String)
-    extends CacheMetricsMonitor[CypherQueryCaches.LogicalPlanCache.Key] {
-  override val monitorTag: String = CypherQueryCaches.LogicalPlanCache.monitorTag + extraTag
+class LogicalPlanCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQueryCaches.LogicalPlanCache.Key] {
+  override val monitorTag: String = CypherQueryCaches.LogicalPlanCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.LogicalPlanCache.kind
 }
 
-class ExecutionPlanCacheMetricsMonitor(extraTag: String)
-    extends CacheMetricsMonitor[CypherQueryCaches.ExecutionPlanCache.Key] {
-  override val monitorTag: String = CypherQueryCaches.ExecutionPlanCache.monitorTag + extraTag
+class ExecutionPlanCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQueryCaches.ExecutionPlanCache.Key] {
+  override val monitorTag: String = CypherQueryCaches.ExecutionPlanCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.ExecutionPlanCache.kind
 }
 
-class ExecutableQueryCacheMetricsMonitor(extraTag: String)
-    extends CacheMetricsMonitor[CypherQueryCaches.ExecutableQueryCache.Key] {
-  override val monitorTag: String = CypherQueryCaches.ExecutableQueryCache.monitorTag + extraTag
+class ExecutableQueryCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQueryCaches.ExecutableQueryCache.Key] {
+  override val monitorTag: String = CypherQueryCaches.ExecutableQueryCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.ExecutableQueryCache.kind
 
   private val counter = new AtomicLong()

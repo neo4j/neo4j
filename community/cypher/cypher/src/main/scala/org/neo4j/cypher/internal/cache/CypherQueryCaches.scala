@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.cache
 import com.github.benmanes.caffeine.cache
 import com.github.benmanes.caffeine.cache.RemovalListener
 import org.neo4j.cypher.ASTCacheMetricsMonitor
+import org.neo4j.cypher.CacheMetricsMonitor
 import org.neo4j.cypher.ExecutableQueryCacheMetricsMonitor
 import org.neo4j.cypher.ExecutionPlanCacheMetricsMonitor
 import org.neo4j.cypher.LogicalPlanCacheMetricsMonitor
@@ -50,6 +51,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutableQueryCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.PreParserCache
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.PredefinedCacheTracers
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.QueryCacheStaleLogger
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.withDebugMonitor
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
@@ -371,6 +373,24 @@ object CypherQueryCaches {
     else
       cacheTracer
   }
+
+  trait PredefinedCacheTracers {
+    val preParser: PreParserCacheMetricsMonitor = new PreParserCacheMetricsMonitor
+    val ast: ASTCacheMetricsMonitor = new ASTCacheMetricsMonitor
+    val executionPlan: ExecutionPlanCacheMetricsMonitor = new ExecutionPlanCacheMetricsMonitor
+    val logicalPlan: LogicalPlanCacheMetricsMonitor = new LogicalPlanCacheMetricsMonitor
+    val executablePlan: ExecutableQueryCacheMetricsMonitor = new ExecutableQueryCacheMetricsMonitor
+
+    def perCacheKind: Map[String, CacheMetricsMonitor[_]] = {
+      Seq(
+        preParser,
+        ast,
+        executionPlan,
+        logicalPlan,
+        executablePlan
+      ).map(tracer => tracer.cacheKind -> tracer).toMap
+    }
+  }
 }
 
 /**
@@ -396,20 +416,16 @@ class CypherQueryCaches(
 
   private val allCaches = new CopyOnWriteArrayList[CacheCommon]()
 
-  private object cacheTracers {
+  private object cacheTracers extends PredefinedCacheTracers {
 
-    val preParser: PreParserCacheMetricsMonitor = new PreParserCacheMetricsMonitor("")
-    val ast: ASTCacheMetricsMonitor = new ASTCacheMetricsMonitor("")
-    val executionPlan: ExecutionPlanCacheMetricsMonitor = new ExecutionPlanCacheMetricsMonitor("")
-
-    val logicalPlan: LogicalPlanCacheMetricsMonitor =
-      new LogicalPlanCacheMetricsMonitor("") with QueryCacheStaleLogger[CypherQueryCaches.LogicalPlanCache.Key] {
+    override val logicalPlan: LogicalPlanCacheMetricsMonitor =
+      new LogicalPlanCacheMetricsMonitor with QueryCacheStaleLogger[CypherQueryCaches.LogicalPlanCache.Key] {
         override protected val itemType: String = "plan"
         override protected val doLog: String => Unit = log.debug
       }
 
-    val executablePlan: ExecutableQueryCacheMetricsMonitor =
-      new ExecutableQueryCacheMetricsMonitor("") with QueryCacheStaleLogger[ExecutableQueryCache.Key] {
+    override val executablePlan: ExecutableQueryCacheMetricsMonitor =
+      new ExecutableQueryCacheMetricsMonitor with QueryCacheStaleLogger[ExecutableQueryCache.Key] {
         override protected val itemType: String = "query"
         override protected val doLog: String => Unit = log.info
       }
@@ -577,16 +593,7 @@ class CypherQueryCaches(
       executableQueryCache.estimatedSize()
 
     override def metricsPerCacheKind(): java.util.Map[String, CacheMetrics] = {
-      Seq[CacheMetrics](
-        cacheTracers.logicalPlan,
-        cacheTracers.preParser,
-        cacheTracers.ast,
-        cacheTracers.executablePlan,
-        cacheTracers.executionPlan
-      )
-        .map(t => t.cacheKind() -> t)
-        .toMap
-        .asJava
+      (cacheTracers.perCacheKind: Map[String, CacheMetrics]).asJava
     }
   }
 
