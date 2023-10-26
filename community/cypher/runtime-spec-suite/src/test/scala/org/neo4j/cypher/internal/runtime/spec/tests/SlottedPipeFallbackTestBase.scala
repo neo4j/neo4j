@@ -41,6 +41,58 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
       runtime
     ) {
 
+  test("should work with limit cancellation in nested apply") {
+    val (nodes1, nodes2, rels1, rels2) = given {
+      bidirectionalBipartiteGraph(5, "A", "B", "AB", "BA")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("var3")
+      .apply()
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.apply()
+      .|.|.|.argument()
+      .|.|.pruningVarExpand("(var3)<-[*1..1]-(var4)")
+      .|.|.argument("var0", "var1", "var2", "var3")
+      .|.allNodeScan("var3", "var0", "var1", "var2")
+      .allRelationshipsScan("(var1)-[var0]->(var2)")
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    val rels = rels1 ++ rels2
+    val nodes = nodes1 ++ nodes2
+
+    val expected = for {
+      r <- rels
+      n <- nodes
+    } yield Array[Any](n)
+
+    runtimeResult should beColumns("var3").withRows(expected)
+  }
+
+  test("should work with limit cancellation") {
+    val (_, rels) = given {
+      circleGraph(sizeHint, "R", 1)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .semiApply()
+      .|.limit(1)
+      .|.pruningVarExpand("(c)<-[*1..1]-(d)")
+      .|.allNodeScan("c")
+      .relationshipTypeScan("(a)-[r:R]->(b)")
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    val expected = rels.map(Array(_))
+
+    runtimeResult should beColumns("r").withRows(expected)
+  }
+
   test("should expand into and provide variables for relationship - outgoing") {
     // given
     val n = sizeHint
@@ -60,7 +112,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
       .expandInto("(x)-[r]->(y)")
-      .expandAll("(x)-->(y)")
+      .pruningVarExpand("(x)-[*1..1]->(y)")
       .allNodeScan("x")
       .build()
 
