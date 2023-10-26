@@ -25,47 +25,47 @@ import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.kernel.impl.query.CacheMetrics
 
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.LongAdder
 
 abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] with CacheMetrics {
   val monitorTag: String
 
-  private val hits = new AtomicLong
-  private val misses = new AtomicLong
-  private val compiled = new AtomicLong
-  private val compiledWithExpressionCodeGen = new AtomicLong
-  private val discards = new AtomicLong
-  private val staleEntries = new AtomicLong
-  private val cacheFlushes = new AtomicLong
+  private val hits = new LongAdder
+  private val misses = new LongAdder
+  private val compiled = new LongAdder
+  private val compiledWithExpressionCodeGen = new LongAdder
+  private val discards = new LongAdder
+  private val staleEntries = new LongAdder
+  private val cacheFlushes = new LongAdder
 
-  override def cacheHit(key: KEY, metaData: String): Unit = hits.incrementAndGet()
+  override def cacheHit(key: KEY, metaData: String): Unit = hits.increment()
 
-  override def cacheMiss(key: KEY, metaData: String): Unit = misses.incrementAndGet()
+  override def cacheMiss(key: KEY, metaData: String): Unit = misses.increment()
 
-  override def compute(key: KEY, metaData: String): Unit = compiled.incrementAndGet()
+  override def compute(key: KEY, metaData: String): Unit = compiled.increment()
 
-  override def discard(key: KEY, metaData: String): Unit = discards.incrementAndGet()
+  override def discard(key: KEY, metaData: String): Unit = discards.increment()
 
   override def computeWithExpressionCodeGen(key: KEY, metaData: String): Unit = {
-    compiled.incrementAndGet()
-    compiledWithExpressionCodeGen.incrementAndGet()
+    compiled.increment()
+    compiledWithExpressionCodeGen.increment()
   }
 
   override def cacheStale(key: KEY, secondsSinceCompute: Int, metaData: String, maybeReason: Option[String]): Unit =
-    staleEntries.incrementAndGet()
+    staleEntries.increment()
 
   override def cacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {
-    discards.addAndGet(sizeOfCacheBeforeFlush)
-    cacheFlushes.incrementAndGet()
+    discards.add(sizeOfCacheBeforeFlush)
+    cacheFlushes.increment()
   }
 
-  override def getHits: Long = hits.get()
-  override def getMisses: Long = misses.get()
-  override def getCompiled: Long = compiled.get()
-  override def getCompiledWithExpressionCodeGen(): Long = compiledWithExpressionCodeGen.get()
-  override def getDiscards: Long = discards.get()
-  override def getStaleEntries: Long = staleEntries.get()
-  override def getCacheFlushes: Long = cacheFlushes.get()
+  override def getHits: Long = hits.sum()
+  override def getMisses: Long = misses.sum()
+  override def getCompiled: Long = compiled.sum()
+  override def getCompiledWithExpressionCodeGen(): Long = compiledWithExpressionCodeGen.sum()
+  override def getDiscards: Long = discards.sum()
+  override def getStaleEntries: Long = staleEntries.sum()
+  override def getCacheFlushes: Long = cacheFlushes.sum()
 }
 
 class PreParserCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQueryCaches.PreParserCache.Key] {
@@ -92,8 +92,8 @@ class ExecutableQueryCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQue
   override val monitorTag: String = CypherQueryCaches.ExecutableQueryCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.ExecutableQueryCache.kind
 
-  private val counter = new AtomicLong()
-  private val waitTime = new AtomicLong()
+  private val counter = new LongAdder
+  private val waitTime = new LongAdder
 
   override def cacheStale(
     queryKey: CacheKey[InputQuery.CacheKey],
@@ -102,11 +102,11 @@ class ExecutableQueryCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQue
     maybeReason: Option[String]
   ): Unit = {
     super.cacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
-    counter.incrementAndGet()
-    waitTime.addAndGet(secondsSincePlan)
+    counter.increment()
+    waitTime.add(secondsSincePlan)
   }
 
-  def numberOfReplans: Long = counter.get()
+  def numberOfReplans: Long = counter.sum()
 
-  def replanWaitTime: Long = waitTime.get()
+  def replanWaitTime: Long = waitTime.sum()
 }
