@@ -28,6 +28,7 @@ import static org.neo4j.util.Preconditions.requireNonNegative;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 import java.util.function.BooleanSupplier;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Memory allocation tracker that can be used as an alternative to LocalMemoryTracker for a set of execution contexts with
@@ -278,6 +279,11 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     @Override
     public void setLimit(long localBytesLimit) {
         this.localBytesLimit = validateLimit(localBytesLimit);
+    }
+
+    @VisibleForTesting
+    public long localHeapPool() {
+        return localHeapPool;
     }
 
     /**

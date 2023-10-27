@@ -34,6 +34,7 @@ import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.memory.ScopedMemoryTracker
+import org.neo4j.util.VisibleForTesting
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.LongAdder
@@ -269,6 +270,11 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
 
   override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit = {
     _initializationMemoryTracker = memoryTracker
+  }
+
+  @VisibleForTesting
+  def initializationMemoryTracker: MemoryTracker = {
+    _initializationMemoryTracker
   }
 }
 
