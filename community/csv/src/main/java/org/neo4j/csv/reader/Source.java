@@ -65,34 +65,11 @@ public interface Source extends Closeable {
         int backPosition();
     }
 
-    class Empty extends SourceTraceability.Empty implements Chunk {
-        @Override
-        public int startPosition() {
-            return 0;
-        }
+    record GivenChunk(
+            char[] data, int length, int maxFieldSize, String sourceDescription, int startPosition, int backPosition)
+            implements Chunk {}
 
-        @Override
-        public int maxFieldSize() {
-            return 0;
-        }
-
-        @Override
-        public int length() {
-            return 0;
-        }
-
-        @Override
-        public char[] data() {
-            return null;
-        }
-
-        @Override
-        public int backPosition() {
-            return 0;
-        }
-    }
-
-    Chunk EMPTY_CHUNK = new Empty();
+    Chunk EMPTY_CHUNK = new GivenChunk(null, 0, 0, SourceTraceability.EMPTY.sourceDescription(), 0, 0);
 
     static Source singleChunk(Chunk chunk) {
         return new Source() {

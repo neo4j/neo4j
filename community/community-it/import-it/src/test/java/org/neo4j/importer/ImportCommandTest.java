@@ -2240,6 +2240,38 @@ class ImportCommandTest {
         assertThat(actualNodes.toImmutable()).isEqualTo(expectedNodes);
     }
 
+    @Test
+    void autoSkipSubsequentHeadersOnMultiLineData() throws Exception {
+        // GIVEN
+        var part1 = createAndWriteFile("part1.csv", Charset.defaultCharset(), writer -> {
+            writer.println(":LABEL,node_id:ID,count:int");
+            writer.println("A,1,1");
+        });
+        var part2 = createAndWriteFile("part2.csv", Charset.defaultCharset(), writer -> {
+            writer.println(":LABEL,node_id:ID,count:int");
+            writer.println("A,2,1");
+            writer.println("A,3,1");
+        });
+        var part3 = createAndWriteFile("part3.csv", Charset.defaultCharset(), writer -> {
+            writer.println("A,4,2");
+            writer.println("A,5,2");
+        });
+
+        // WHEN
+        runImport(
+                "--multiline-fields=true",
+                "--auto-skip-subsequent-headers=true",
+                "--nodes=" + part1.toAbsolutePath() + "," + part2.toAbsolutePath() + "," + part3.toAbsolutePath());
+
+        // THEN
+        try (var tx = getDatabaseApi().beginTx();
+                var nodes = tx.findNodes(label("A"))) {
+            var actualNodes = new HashSet<String>();
+            nodes.forEachRemaining(node -> actualNodes.add((String) node.getProperty("node_id")));
+            assertThat(actualNodes).isEqualTo(Set.of("1", "2", "3", "4", "5"));
+        }
+    }
+
     private static void assertContains(String linesType, List<String> lines, String string) {
         for (String line : lines) {
             if (line.contains(string)) {

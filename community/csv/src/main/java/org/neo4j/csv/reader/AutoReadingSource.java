@@ -43,38 +43,13 @@ public class AutoReadingSource implements Source {
     @Override
     public Chunk nextChunk(int seekStartPos) throws IOException {
         charBuffer = reader.read(charBuffer, seekStartPos == -1 ? charBuffer.pivot() : seekStartPos);
-
-        return new Chunk() {
-            @Override
-            public int startPosition() {
-                return charBuffer.pivot();
-            }
-
-            @Override
-            public String sourceDescription() {
-                return reader.sourceDescription();
-            }
-
-            @Override
-            public int backPosition() {
-                return charBuffer.back();
-            }
-
-            @Override
-            public int length() {
-                return charBuffer.available();
-            }
-
-            @Override
-            public int maxFieldSize() {
-                return charBuffer.pivot();
-            }
-
-            @Override
-            public char[] data() {
-                return charBuffer.array();
-            }
-        };
+        return new GivenChunk(
+                charBuffer.array(),
+                charBuffer.available(),
+                charBuffer.pivot(),
+                reader.sourceDescription(),
+                charBuffer.pivot(),
+                charBuffer.back());
     }
 
     @Override

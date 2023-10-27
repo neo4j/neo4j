@@ -149,7 +149,7 @@ class CsvInputIterator implements SourceTraceability, Closeable {
         return seeker(firstChunk, config);
     }
 
-    private static HeaderSkipper headerSkip(boolean autoSkipHeaders, Configuration config, IdType idType) {
+    static HeaderSkipper headerSkip(boolean autoSkipHeaders, Configuration config, IdType idType) {
         if (!autoSkipHeaders) {
             return HeaderSkipper.NO_SKIP;
         }

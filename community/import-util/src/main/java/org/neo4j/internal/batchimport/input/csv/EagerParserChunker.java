@@ -22,11 +22,16 @@ package org.neo4j.internal.batchimport.input.csv;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
 import java.io.IOException;
+import java.util.Objects;
+import org.neo4j.csv.reader.AutoReadingSource;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.csv.reader.HeaderSkipper;
+import org.neo4j.csv.reader.SectionedCharBuffer;
+import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
@@ -54,7 +59,13 @@ public class EagerParserChunker implements Chunker {
             boolean autoSkipHeaders) {
         this.chunkSize = chunkSize;
         this.decorator = decorator;
-        this.seeker = charSeeker(reader, config, true);
+        this.seeker = charSeeker(
+                reader,
+                config,
+                true,
+                (r, c) -> autoSkipHeaders
+                        ? new AutoSkipHeaderSource(r, c, idType)
+                        : new AutoReadingSource(r, c.bufferSize()));
         this.parser = new CsvInputParser(seeker, config.delimiter(), idType, header, badCollector, extractors);
     }
 
@@ -86,5 +97,45 @@ public class EagerParserChunker implements Chunker {
     @Override
     public Chunk newChunk() {
         throw new UnsupportedOperationException();
+    }
+
+    private static class AutoSkipHeaderSource implements Source {
+        private final CharReadable reader;
+        private final HeaderSkipper headerSkipper;
+        private SectionedCharBuffer charBuffer;
+        private String sourceDescription;
+
+        public AutoSkipHeaderSource(CharReadable reader, Configuration configuration, IdType idType) {
+            this.reader = reader;
+            this.charBuffer = new SectionedCharBuffer(configuration.bufferSize());
+            this.headerSkipper = CsvInputIterator.headerSkip(true, configuration, idType);
+        }
+
+        @Override
+        public Chunk nextChunk(int seekStartPos) throws IOException {
+            charBuffer = reader.read(charBuffer, seekStartPos == -1 ? charBuffer.pivot() : seekStartPos);
+            int back = charBuffer.back();
+            int length = charBuffer.available();
+            int startPosition = charBuffer.pivot();
+            var newSourceDescription = reader.sourceDescription();
+            if (!Objects.equals(sourceDescription, newSourceDescription)) {
+                // We've crossed over to a new file. See if the first line looks like a header.
+                int charsSkipped =
+                        headerSkipper.skipHeader(charBuffer.array(), charBuffer.back(), charBuffer.available());
+                if (charsSkipped > 0) {
+                    back += charsSkipped;
+                    length -= charsSkipped;
+                    startPosition += charsSkipped;
+                }
+                sourceDescription = newSourceDescription;
+            }
+            return new GivenChunk(
+                    charBuffer.array(), length, charBuffer.pivot(), reader.sourceDescription(), startPosition, back);
+        }
+
+        @Override
+        public void close() throws IOException {
+            reader.close();
+        }
     }
 }

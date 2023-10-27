@@ -22,6 +22,7 @@ package org.neo4j.csv.reader;
 import static org.neo4j.csv.reader.ThreadAheadReadable.threadAhead;
 
 import java.io.FileReader;
+import java.util.function.BiFunction;
 
 /**
  * Factory for common {@link CharSeeker} implementations.
@@ -30,22 +31,35 @@ public final class CharSeekers {
     private CharSeekers() {}
 
     /**
+     * @see #charSeeker(CharReadable, Configuration, boolean, BiFunction) where the {@link Source}
+     * is {@link AutoReadingSource}.
+     */
+    public static CharSeeker charSeeker(CharReadable reader, Configuration config, boolean readAhead) {
+        return charSeeker(reader, config, readAhead, (r, c) -> new AutoReadingSource(r, c.bufferSize()));
+    }
+
+    /**
      * Instantiates a {@link BufferedCharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      *
      * @param reader the {@link CharReadable} which is the source of data, f.ex. a {@link FileReader}.
      * @param config {@link Configuration} for the resulting {@link CharSeeker}.
-     * @param readAhead whether or not to start a {@link ThreadAheadReadable read-ahead thread}
+     * @param readAhead whether to start a {@link ThreadAheadReadable read-ahead thread}
      * which strives towards always keeping one buffer worth of data read and available from I/O when it's
      * time for the {@link BufferedCharSeeker} to read more data.
+     * @param sourceFactory factory for the internal {@link Source} reading more data.
      * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      */
-    public static CharSeeker charSeeker(CharReadable reader, Configuration config, boolean readAhead) {
+    public static CharSeeker charSeeker(
+            CharReadable reader,
+            Configuration config,
+            boolean readAhead,
+            BiFunction<CharReadable, Configuration, Source> sourceFactory) {
         if (readAhead) { // Thread that always has one buffer read ahead
             reader = threadAhead(reader, config.bufferSize());
         }
 
         // Give the reader to the char seeker
-        return new BufferedCharSeeker(new AutoReadingSource(reader, config.bufferSize()), config);
+        return new BufferedCharSeeker(sourceFactory.apply(reader, config), config);
     }
 
     /**
