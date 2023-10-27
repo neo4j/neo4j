@@ -91,6 +91,22 @@ object ExecutorBasedCaffeineCacheFactory {
         .build[K, V]()
     )
 
+  def createSoftValuesCache[K <: AnyRef, V <: AnyRef](
+    executor: Executor,
+    removalListener: RemovalListener[K, V],
+    size: CacheSize
+  ): Cache[K, V] = {
+    size.withSize[K, V, Cache[K, V]](size =>
+      Caffeine
+        .newBuilder()
+        .executor(executor)
+        .maximumSize(size)
+        .evictionListener(removalListener)
+        .softValues()
+        .build[K, V]()
+    )
+  }
+
   def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: CacheSize, ttlAfterAccess: Long): Cache[K, V] = {
     size.withSize[K, V, Cache[K, V]](size =>
       Caffeine
@@ -127,6 +143,13 @@ trait CacheFactory {
 trait CaffeineCacheFactory extends CacheFactory {
   def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize): Cache[K, V]
   def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, removalListener: RemovalListener[K, V]): Cache[K, V]
+
+  def createWithSoftBackingCache[K <: AnyRef, V <: AnyRef](
+    primarySize: CacheSize,
+    secondarySize: CacheSize,
+    removalListener: RemovalListener[K, V]
+  ): Cache[K, V]
+
   def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, ttlAfterAccess: Long): Cache[K, V]
   def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: CacheSize): Cache[K, V]
 }
@@ -146,6 +169,20 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
     removalListener: RemovalListener[K, V]
   ): Cache[K, V] = {
     ExecutorBasedCaffeineCacheFactory.createCache(executor, removalListener, size)
+  }
+
+  override def createWithSoftBackingCache[K <: AnyRef, V <: AnyRef](
+    strongSize: CacheSize,
+    softSize: CacheSize,
+    removalListener: RemovalListener[K, V]
+  ): Cache[K, V] = {
+    val secondary = ExecutorBasedCaffeineCacheFactory.createSoftValuesCache(executor, removalListener, softSize)
+    val primary = ExecutorBasedCaffeineCacheFactory.createCache(
+      executor,
+      TwoLayerCache.evictionListener(secondary),
+      strongSize
+    )
+    new TwoLayerCache[K, V](primary, secondary)
   }
 
   override def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize, ttlAfterAccess: Long): Cache[K, V] = {
@@ -276,6 +313,47 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFac
     )
   }
 
+  def createWithSoftBackingCache[K <: AnyRef, V <: AnyRef](
+    strongSize: CacheSize,
+    softSize: CacheSize,
+    removalListener: RemovalListener[K, V],
+    cacheKind: String
+  ): Cache[K, V] = {
+
+    val monitorTag: String = s"cypher.cache.$cacheKind.global"
+    val id = SharedCacheContainerIdGen.getNewId
+    val globalTracer: CacheTracer[K] = tracer(cacheKind, monitorTag)
+    val globalRemovalListener: RemovalListener[K, V] =
+      (key: K, value: V, cause: RemovalCause) => globalTracer.discard(key, "")
+    val internalRemovalListener =
+      cacheKindToListener.getOrElseUpdate(cacheKind, InternalRemovalListener(globalRemovalListener)).asInstanceOf[
+        InternalRemovalListener[K, V]
+      ]
+    internalRemovalListener.registerExternalListener(id, removalListener)
+
+    def newCache: Cache[(Int, K), V] = {
+      val secondary = ExecutorBasedCaffeineCacheFactory.createSoftValuesCache[(Int, K), V](
+        executor,
+        internalRemovalListener,
+        softSize
+      )
+      val primary = ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](
+        executor,
+        TwoLayerCache.evictionListener(secondary),
+        strongSize
+      )
+      new TwoLayerCache[(Int, K), V](primary, secondary)
+    }
+    SharedCacheContainer(
+      cacheKindToCache.getOrElseUpdate(
+        cacheKind,
+        newCache
+      ).asInstanceOf[Cache[(Int, K), V]],
+      id,
+      globalTracer
+    )
+  }
+
   override def resolveCacheKind(kind: String): CaffeineCacheFactory = new CaffeineCacheFactory {
     override def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize): Cache[K, V] = self.createCache(size, kind)
 
@@ -295,6 +373,13 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, cacheTracerFac
     ): Cache[K, V] =
       self.createCache(ticker, ttlAfterWrite, size, kind)
     override def resolveCacheKind(kind: String): CaffeineCacheFactory = this
+
+    override def createWithSoftBackingCache[K <: AnyRef, V <: AnyRef](
+      primarySize: CacheSize,
+      secondarySize: CacheSize,
+      removalListener: RemovalListener[K, V]
+    ): Cache[K, V] =
+      self.createWithSoftBackingCache(primarySize, secondarySize, removalListener, kind)
   }
 }
 

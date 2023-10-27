@@ -72,6 +72,77 @@ class DynamicQueryCacheSizeAcceptanceTest extends ExecutionEngineFunSuite with C
     }
   }
 
+  Seq(
+    CypherQueryCaches.LogicalPlanCache,
+    CypherQueryCaches.ExecutableQueryCache
+  ).foreach(cache => {
+    test(s"should resize the strong ${cache.getClass.getSimpleName} dynamically") {
+      restartWithConfig(Map(
+        GraphDatabaseInternalSettings.cypher_enable_runtime_monitors -> TRUE,
+        GraphDatabaseInternalSettings.cypher_soft_cache_enabled -> TRUE,
+        GraphDatabaseInternalSettings.query_cache_strong_size -> Int.box(1),
+        GraphDatabaseInternalSettings.query_cache_soft_size -> Int.box(0)
+      ))
+
+      val wrapper = new TestWrapper(cache)
+
+      wrapper.expectEvents(misses = 1, discards = 0) {
+        runNovelQuery()
+      }
+
+      wrapper.expectEvents(misses = 1, discards = 1) {
+        runNovelQuery()
+      }
+
+      setCacheSize(2, 0)
+
+      wrapper.expectEvents(misses = 1, discards = 0) {
+        runNovelQuery()
+      }
+
+      wrapper.expectEvents(misses = 0, discards = 1) {
+        setCacheSize(1, 0)
+      }
+
+    }
+
+  })
+
+  Seq(
+    CypherQueryCaches.LogicalPlanCache,
+    CypherQueryCaches.ExecutableQueryCache
+  ).foreach(cache => {
+    test(s"should resize the soft ${cache.getClass.getSimpleName} dynamically") {
+      restartWithConfig(Map(
+        GraphDatabaseInternalSettings.cypher_enable_runtime_monitors -> TRUE,
+        GraphDatabaseInternalSettings.cypher_soft_cache_enabled -> TRUE,
+        GraphDatabaseInternalSettings.query_cache_strong_size -> Int.box(1),
+        GraphDatabaseInternalSettings.query_cache_soft_size -> Int.box(1)
+      ))
+
+      val wrapper = new TestWrapper(cache)
+
+      wrapper.expectEvents(misses = 1, discards = 0) {
+        runNovelQuery()
+      }
+
+      wrapper.expectEvents(misses = 1, discards = 0) {
+        runNovelQuery()
+      }
+
+      setCacheSize(1, 2)
+
+      wrapper.expectEvents(misses = 1, discards = 0) {
+        runNovelQuery()
+      }
+
+      wrapper.expectEvents(misses = 0, discards = 1) {
+        setCacheSize(1, 1)
+      }
+    }
+
+  })
+
   private val queries = Iterator.from(1).map("return 1 as a" + _)
 
   private def runNovelQuery(): Unit = {
@@ -83,6 +154,19 @@ class DynamicQueryCacheSizeAcceptanceTest extends ExecutionEngineFunSuite with C
   }
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(Span(10, Seconds))
+
+  protected def setCacheSize(strongSize: Int, softSize: Int): Unit = {
+    graph.config().setDynamic(
+      GraphDatabaseInternalSettings.query_cache_strong_size,
+      Int.box(strongSize),
+      "dynamic query cache size test"
+    )
+    graph.config().setDynamic(
+      GraphDatabaseInternalSettings.query_cache_soft_size,
+      Int.box(softSize),
+      "dynamic query cache size test"
+    )
+  }
 
   private class TestWrapper(cache: CacheCompanion) {
 

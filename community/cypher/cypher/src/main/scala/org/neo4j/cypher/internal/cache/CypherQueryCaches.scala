@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.cache
 
+import com.github.benmanes.caffeine.cache
+import com.github.benmanes.caffeine.cache.RemovalListener
 import org.neo4j.cypher.ASTCacheMetricsMonitor
 import org.neo4j.cypher.ExecutableQueryCacheMetricsMonitor
 import org.neo4j.cypher.ExecutionPlanCacheMetricsMonitor
@@ -43,6 +45,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.Config.ExecutionPlanCac
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.Config.ExecutionPlanCacheSize.Default
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.Config.ExecutionPlanCacheSize.Disabled
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.Config.ExecutionPlanCacheSize.Sized
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.Config.SoftCacheSize
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutableQueryCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
@@ -94,7 +97,8 @@ object CypherQueryCaches {
     executionPlanCacheSize: ExecutionPlanCacheSize,
     divergenceConfig: StatsDivergenceCalculatorConfig,
     enableExecutionPlanCacheTracing: Boolean,
-    enableDebugMonitors: Boolean
+    enableDebugMonitors: Boolean,
+    softCacheSize: SoftCacheSize
   ) {
 
     // Java helper
@@ -103,7 +107,15 @@ object CypherQueryCaches {
       ExecutionPlanCacheSize.fromInt(cypherConfig.executionPlanCacheSize),
       cypherConfig.statsDivergenceCalculator,
       cypherConfig.enableMonitors,
-      cypherConfig.enableQueryCacheMonitors
+      cypherConfig.enableQueryCacheMonitors,
+      if (cypherConfig.softQueryCacheEnabled) {
+        SoftCacheSize.Sized(
+          CacheSize.Dynamic(cypherConfig.queryCacheStrongSize),
+          CacheSize.Dynamic(cypherConfig.queryCacheSoftSize)
+        )
+      } else {
+        SoftCacheSize.Disabled
+      }
     )
   }
 
@@ -133,6 +145,15 @@ object CypherQueryCaches {
         case 0  => Disabled
         case n  => Sized(n)
       }
+    }
+
+    sealed trait SoftCacheSize
+
+    object SoftCacheSize {
+      case object Disabled extends SoftCacheSize
+
+      case class Sized(strongSize: CacheSize, softSize: CacheSize) extends SoftCacheSize
+
     }
   }
 
@@ -241,6 +262,21 @@ object CypherQueryCaches {
         ) with CacheCommon {
       def companion: CacheCompanion = LogicalPlanCache
     }
+
+    class SoftCache(
+      cacheFactory: CacheFactory,
+      strongSize: CacheSize,
+      softSize: CacheSize,
+      stalenessCaller: PlanStalenessCaller[Value],
+      tracer: CacheTracer[Key]
+    ) extends Cache(cacheFactory, maximumSize = strongSize, stalenessCaller = stalenessCaller, tracer = tracer) {
+
+      override protected def createInner(
+        innerFactory: CaffeineCacheFactory,
+        size: CacheSize,
+        listener: RemovalListener[CacheKey[Statement], CachedValue]
+      ): cache.Cache[Key, CachedValue] = innerFactory.createWithSoftBackingCache(size, softSize, listener)
+    }
   }
 
   case class ExecutionPlanCacheKey(
@@ -289,6 +325,22 @@ object CypherQueryCaches {
           ExecutableQueryCacheQueryTracer
         ) with CacheCommon {
       def companion: CacheCompanion = ExecutableQueryCache
+    }
+
+    class SoftCache(
+      cacheFactory: CacheFactory,
+      strongSize: CacheSize,
+      softSize: CacheSize,
+      stalenessCaller: PlanStalenessCaller[Value],
+      tracer: CacheTracer[Key]
+    ) extends Cache(cacheFactory, strongSize, stalenessCaller, tracer) {
+
+      override protected def createInner(
+        innerFactory: CaffeineCacheFactory,
+        size: CacheSize,
+        listener: RemovalListener[CacheKey[InputQuery.CacheKey], CachedValue]
+      ): cache.Cache[CacheKey[InputQuery.CacheKey], CachedValue] =
+        innerFactory.createWithSoftBackingCache(size, softSize, listener)
     }
   }
 
@@ -390,26 +442,37 @@ class CypherQueryCaches(
     /**
      * Caches logical planning
      */
-    val logicalPlanCache: LogicalPlanCache.Cache =
-      registerCache(
-        new LogicalPlanCache.Cache(
-          cacheFactory = cacheFactory,
-          maximumSize = config.cacheSize,
-          stalenessCaller = new DefaultPlanStalenessCaller[LogicalPlanCache.Value](
-            clock,
-            divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
-            lastCommittedTxIdProvider,
-            (state, _) => state.reusability,
-            log
-          ),
-          tracer = withDebugMonitor(config, cacheTracers.logicalPlan, LogicalPlanCache.newMonitor(kernelMonitors))
-        )
+    val logicalPlanCache: LogicalPlanCache.Cache = {
+      val stalenessCaller = new DefaultPlanStalenessCaller[LogicalPlanCache.Value](
+        clock,
+        divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
+        lastCommittedTxIdProvider,
+        (state, _) => state.reusability,
+        log
       )
+      registerCache(
+        config.softCacheSize match {
+          case SoftCacheSize.Disabled => new LogicalPlanCache.Cache(
+              cacheFactory = cacheFactory,
+              maximumSize = config.cacheSize,
+              stalenessCaller = stalenessCaller,
+              tracer = withDebugMonitor(config, cacheTracers.logicalPlan, LogicalPlanCache.newMonitor(kernelMonitors))
+            )
+          case SoftCacheSize.Sized(strongSize, softSize) => new LogicalPlanCache.SoftCache(
+              cacheFactory = cacheFactory,
+              strongSize = strongSize,
+              softSize = softSize,
+              stalenessCaller = stalenessCaller,
+              tracer = withDebugMonitor(config, cacheTracers.logicalPlan, LogicalPlanCache.newMonitor(kernelMonitors))
+            )
+        }
+      )
+    }
   }
 
   /**
-   * Caches physical planning
-   */
+     * Caches physical planning
+     */
   val executionPlanCache: ExecutionPlanCache.Cache = registerCache(new ExecutionPlanCache.Cache {
 
     private type InnerCache = LFUCache[ExecutionPlanCache.Key, ExecutionPlanCache.Value]
@@ -456,23 +519,36 @@ class CypherQueryCaches(
   })
 
   /**
-   * Caches complete query processing
-   */
-  val executableQueryCache: ExecutableQueryCache.Cache =
-    registerCache(
-      new ExecutableQueryCache.Cache(
-        cacheFactory = cacheFactory,
-        maximumSize = config.cacheSize,
-        stalenessCaller = new DefaultPlanStalenessCaller[ExecutableQuery](
-          clock = clock,
-          divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
-          lastCommittedTxIdProvider = lastCommittedTxIdProvider,
-          reusabilityInfo = (eq, ctx) => eq.reusabilityState(lastCommittedTxIdProvider, ctx),
-          log = log
-        ),
-        tracer = withDebugMonitor(config, cacheTracers.executablePlan, ExecutableQueryCache.newMonitor(kernelMonitors))
-      )
+     * Caches complete query processing
+     */
+  val executableQueryCache: ExecutableQueryCache.Cache = {
+    val stalenessCaller = new DefaultPlanStalenessCaller[ExecutableQuery](
+      clock = clock,
+      divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.divergenceConfig),
+      lastCommittedTxIdProvider = lastCommittedTxIdProvider,
+      reusabilityInfo = (eq, ctx) => eq.reusabilityState(lastCommittedTxIdProvider, ctx),
+      log = log
     )
+    registerCache(
+      config.softCacheSize match {
+        case SoftCacheSize.Disabled => new ExecutableQueryCache.Cache(
+            cacheFactory = cacheFactory,
+            maximumSize = config.cacheSize,
+            stalenessCaller = stalenessCaller,
+            tracer =
+              withDebugMonitor(config, cacheTracers.executablePlan, ExecutableQueryCache.newMonitor(kernelMonitors))
+          )
+        case SoftCacheSize.Sized(strongSize, softSize) => new ExecutableQueryCache.SoftCache(
+            cacheFactory = cacheFactory,
+            strongSize = strongSize,
+            softSize = softSize,
+            stalenessCaller = stalenessCaller,
+            tracer =
+              withDebugMonitor(config, cacheTracers.executablePlan, ExecutableQueryCache.newMonitor(kernelMonitors))
+          )
+      }
+    )
+  }
 
   private def registerCache[T <: CacheCommon](cache: T): T = {
     allCaches.add(cache)

@@ -1249,4 +1249,34 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> available_reserved_space_metric_enabled = newBuilder(
                     "internal.server.metrics.available_reserved_space_metric_enabled", BOOL, false)
             .build();
+
+    @Internal
+    @Description(
+            "Feature flag to enable/disable the use of soft references for Cypher query caches (Executable query and Logical plan caches only). "
+                    + "The cache will consist of one part strongly referenced items and one part softly referenced items, which can be individually sized. "
+                    + "Softly referenced objects can be cleared at any time by the garbage collector in response to memory demand. "
+                    + "The total maximum number of entries per cache will be the sum of 'internal.memory.query_cache.strong.num_entries' and 'internal.server.memory.query_cache.soft.num_entries',"
+                    + "The soft cache is experimental and disabled by default. ")
+    public static final Setting<Boolean> cypher_soft_cache_enabled =
+            newBuilder("internal.cypher.enable_soft_query_cache", BOOL, false).build();
+
+    @Internal
+    @Description(
+            "Size of the query cache with strong references. "
+                    + "This setting is only deciding cache size when `internal.cypher.enable_soft_query_cache` is set to `true`.")
+    public static final Setting<Integer> query_cache_strong_size = newBuilder(
+                    "internal.server.memory.query_cache.strong_cache_num_entries", INT, 200)
+            .addConstraint(min(0))
+            .dynamic()
+            .build();
+
+    @Internal
+    @Description(
+            "Size of the query cache with soft references. "
+                    + "This setting is only deciding cache size when `internal.cypher.enable_soft_query_cache` is set to `true`.")
+    public static final Setting<Integer> query_cache_soft_size = newBuilder(
+                    "internal.server.memory.query_cache.soft_cache_num_entries", INT, 800)
+            .addConstraint(min(0))
+            .dynamic()
+            .build();
 }

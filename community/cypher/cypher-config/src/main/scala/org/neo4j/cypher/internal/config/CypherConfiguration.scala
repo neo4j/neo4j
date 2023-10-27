@@ -66,6 +66,15 @@ class CypherConfiguration private (val config: Config) {
   val planner: CypherPlannerOption = CypherPlannerOption.fromConfig(config)
   val runtime: CypherRuntimeOption = CypherRuntimeOption.fromConfig(config)
   val queryCacheSize: ObservableSetting[Integer] = new ObservableSetting(config, GraphDatabaseSettings.query_cache_size)
+
+  val softQueryCacheEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.cypher_soft_cache_enabled).booleanValue()
+
+  val queryCacheStrongSize: ObservableSetting[Integer] =
+    new ObservableSetting[Integer](config, GraphDatabaseInternalSettings.query_cache_strong_size)
+
+  val queryCacheSoftSize: ObservableSetting[Integer] =
+    new ObservableSetting(config, GraphDatabaseInternalSettings.query_cache_soft_size)
   val executionPlanCacheSize: Int = config.get(GraphDatabaseInternalSettings.query_execution_plan_cache_size).toInt
   val statsDivergenceCalculator: StatsDivergenceCalculatorConfig = statsDivergenceFromConfig(config)
   val useErrorsOverWarnings: Boolean = config.get(GraphDatabaseSettings.cypher_hints_error)

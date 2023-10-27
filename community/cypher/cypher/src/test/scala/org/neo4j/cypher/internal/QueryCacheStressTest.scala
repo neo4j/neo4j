@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.verify
 import org.neo4j.cypher.internal.QueryCacheTest.TC
+import org.neo4j.cypher.internal.QueryCacheTest.Tracer
 import org.neo4j.cypher.internal.QueryCacheTest.compilerWithExpressionCodeGenOption
-import org.neo4j.cypher.internal.QueryCacheTest.newCache
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.options.CypherReplanOption
@@ -35,6 +35,10 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class QueryCacheStressTest extends CypherFunSuite {
+
+  def newCache(tracer: Tracer): QueryCache[QueryCache.CacheKey[String], QueryCacheTest.MyValue] = {
+    QueryCacheTest.newCache(tracer)
+  }
 
   test("should recompile at least once when running from multiple threads") {
     // Given
@@ -73,4 +77,10 @@ class QueryCacheStressTest extends CypherFunSuite {
     verify(tracer, atLeastOnce()).cacheHit(key, "")
     verify(tracer, atLeastOnce()).cacheMiss(key, "")
   }
+}
+
+class SoftQueryCacheStressTest extends QueryCacheStressTest {
+
+  override def newCache(tracer: Tracer): QueryCache[QueryCache.CacheKey[String], QueryCacheTest.MyValue] =
+    QueryCacheTest.newSoftCache(tracer)
 }

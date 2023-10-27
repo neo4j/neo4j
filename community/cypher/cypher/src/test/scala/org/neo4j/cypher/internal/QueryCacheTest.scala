@@ -19,22 +19,27 @@
  */
 package org.neo4j.cypher.internal
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.RemovalListener
 import org.mockito.Mockito
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCacheTest.MyValue
 import org.neo4j.cypher.internal.QueryCacheTest.QueryCacheUsageQueue
 import org.neo4j.cypher.internal.QueryCacheTest.TC
+import org.neo4j.cypher.internal.QueryCacheTest.Tracer
 import org.neo4j.cypher.internal.QueryCacheTest.alwaysStale
 import org.neo4j.cypher.internal.QueryCacheTest.compiled
 import org.neo4j.cypher.internal.QueryCacheTest.compilerWithExpressionCodeGenOption
-import org.neo4j.cypher.internal.QueryCacheTest.newCache
+import org.neo4j.cypher.internal.QueryCacheTest.neverStale
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.QueryCacheTest.staleAfterNTimes
 import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CacheTracer
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -49,6 +54,13 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.collection.mutable
 
 class QueryCacheTest extends CypherFunSuite {
+
+  def newCache(
+    tracer: Tracer = newTracer(),
+    stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(),
+    size: Int = 10,
+    queryTracer: ExecutingQueryTracer = ExecutingQueryTracer.NoOp
+  ): QueryCache[CacheKey[String], MyValue] = QueryCacheTest.newCache(tracer, stalenessCaller, size, queryTracer)
 
   test("size 0 cache should never 'hit' or 'miss' and never compile with expression code generation") {
     // Given
@@ -498,6 +510,17 @@ class QueryCacheTest extends CypherFunSuite {
       }
     }
   }
+
+}
+
+class SoftQueryCacheTest extends QueryCacheTest {
+
+  override def newCache(
+    tracer: Tracer,
+    stalenessCaller: PlanStalenessCaller[MyValue],
+    size: Int,
+    queryTracer: ExecutingQueryTracer
+  ): QueryCache[CacheKey[String], MyValue] = QueryCacheTest.newSoftCache(tracer, stalenessCaller, size, queryTracer)
 }
 
 object QueryCacheTest extends MockitoSugar {
@@ -541,6 +564,30 @@ object QueryCacheTest extends MockitoSugar {
       tracer,
       queryTracer
     )
+  }
+
+  def newSoftCache(
+    tracer: Tracer = newTracer(),
+    stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(),
+    size: Int = 10,
+    queryTracer: ExecutingQueryTracer = ExecutingQueryTracer.NoOp,
+    softSize: Int = 10
+  ): QueryCache[CacheKey[String], MyValue] = {
+    new QueryCache[CacheKey[String], MyValue](
+      cacheFactory,
+      CacheSize.Static(size),
+      stalenessCaller,
+      tracer,
+      queryTracer
+    ) {
+      override protected def createInner(
+        innerFactory: CaffeineCacheFactory,
+        size: CacheSize,
+        listener: RemovalListener[CacheKey[String], CachedValue]
+      ): Cache[CacheKey[String], CachedValue] = {
+        innerFactory.createWithSoftBackingCache(size, CacheSize.Static(softSize), listener)
+      }
+    }
   }
 
   def newTracer(): Tracer = mock[Tracer]
