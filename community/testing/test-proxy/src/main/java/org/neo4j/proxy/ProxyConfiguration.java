@@ -26,10 +26,10 @@ public record ProxyConfiguration(InetSocketAddress listenAddress, InetSocketAddr
     /**
      * Construct listenAddress and advertisedAddress by allocating ports
      * */
-    public static ProxyConfiguration buildProxyConfig() {
+    public static ProxyConfiguration buildProxyConfig(String hostName) {
         return new ProxyConfiguration(
-                new InetSocketAddress("localhost", PortAuthority.allocatePort()),
-                new InetSocketAddress("localhost", PortAuthority.allocatePort()));
+                new InetSocketAddress(hostName, PortAuthority.allocatePort()),
+                new InetSocketAddress(hostName, PortAuthority.allocatePort()));
     }
 
     public String advertisedAddressToStr() {

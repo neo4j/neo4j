@@ -129,7 +129,8 @@ public class TcpCrusherProxy implements Neo4jProxy {
         }
 
         public Neo4jProxy build() {
-            var proxyConfig = this.proxyConfiguration.orElse(ProxyConfiguration.buildProxyConfig());
+            var proxyConfig = this.proxyConfiguration.orElseThrow(
+                    () -> new IllegalStateException("Initialize the proxy configuration"));
             try {
                 var reactor = this.reactor.orElse(new NioReactor());
                 return new TcpCrusherProxy(proxyConfig, reactor);
