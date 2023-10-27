@@ -20,7 +20,6 @@
 package org.neo4j.fabric.transaction.parent;
 
 import java.util.function.Supplier;
-import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -50,13 +49,13 @@ public interface CompoundTransaction<Child extends ChildTransaction> {
      * </ul>
      */
     <Tx extends Child> Tx registerNewChildTransaction(
-            Location location, TransactionMode mode, Supplier<Tx> transactionSupplier) throws FabricException;
+            Location location, TransactionMode mode, Supplier<Tx> transactionSupplier);
 
     /**
      * Upgrades the childTransaction to become the single DEFINITELY_WRITE transaction
      * of this parent transaction, if possible.
      */
-    <Tx extends Child> void upgradeToWritingTransaction(Tx childTransaction) throws FabricException;
+    <Tx extends Child> void upgradeToWritingTransaction(Tx childTransaction);
 
     /**
      * A callback invoked when a child transaction is terminated.

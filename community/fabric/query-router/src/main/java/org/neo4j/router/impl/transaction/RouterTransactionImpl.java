@@ -19,14 +19,27 @@
  */
 package org.neo4j.router.impl.transaction;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionRollbackFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTerminationFailed;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.TransactionMode;
-import org.neo4j.fabric.transaction.parent.AbstractCompoundTransaction;
+import org.neo4j.fabric.transaction.parent.CompoundTransaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
@@ -38,18 +51,46 @@ import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RouterTransaction;
 import org.neo4j.router.transaction.TransactionInfo;
 import org.neo4j.time.SystemNanoClock;
-import reactor.core.publisher.Mono;
 
-public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseTransaction>
-        implements RouterTransaction {
+public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransaction>, RouterTransaction {
     private final TransactionInfo transactionInfo;
     private final DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory;
     private final DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory;
     private final TransactionBookmarkManager transactionBookmarkManager;
-    private final ConcurrentHashMap<UUID, DatabaseTransaction> databaseTransactions;
+    private final Map<UUID, DatabaseTransaction> databaseTransactions;
     private final TransactionInitializationTrace initializationTrace;
     private final QueryRouterTransactionMonitor routerTransactionMonitor;
+    private final SystemNanoClock clock;
+    private final ErrorReporter errorReporter;
+
+    // Concurrency note:
+    // Transaction termination is the only modification operation that can be invoked
+    // concurrently with other operations. It iterates through all child transactions
+    // and marks them as terminated, which is a thread-safe operation for both kernel
+    // and driver transactions.
+    // Transactions being non-thread-safe apart from termination has been a feature of Kernel
+    // transactions since the dawn of time and all clients of the API are build to respect it.
+    // Therefore since a Query Router transaction is just a thin layer between those clients
+    // and kernel transactions (and driver transactions), it can rely on this concurrency model.
+    // Apart from that status, terminationMark and statementType can be queried by another thread.
+
+    // Why a concurrent collection? Because transaction termination operation can iterate over
+    // it while it is being modified by another thread.
+    private final Set<ReadingChildTransaction> readingTransactions = new CopyOnWriteArraySet<>();
+    private volatile DatabaseTransaction writingTransaction;
+    private final AtomicReference<State> state = new AtomicReference<>(State.OPEN);
+    private volatile TerminationMark terminationMark;
     private volatile StatementType statementType = null;
+
+    private record ReadingChildTransaction(DatabaseTransaction inner, boolean readingOnly) {}
+
+    private enum State {
+        OPEN,
+        CLOSED,
+        TERMINATED
+    }
+
+    private record ErrorRecord(String message, Throwable error) {}
 
     public RouterTransactionImpl(
             TransactionInfo transactionInfo,
@@ -60,14 +101,15 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
             TransactionBookmarkManager transactionBookmarkManager,
             TraceProvider traceProvider,
             QueryRouterTransactionMonitor transactionMonitor) {
-        super(errorReporter, clock);
         this.transactionInfo = transactionInfo;
         this.localDatabaseTransactionFactory = localDatabaseTransactionFactory;
         this.remoteDatabaseTransactionFactory = remoteDatabaseTransactionFactory;
         this.transactionBookmarkManager = transactionBookmarkManager;
         this.initializationTrace = traceProvider.getTraceInfo();
         this.routerTransactionMonitor = transactionMonitor;
-        this.databaseTransactions = new ConcurrentHashMap<>();
+        this.clock = clock;
+        this.errorReporter = errorReporter;
+        this.databaseTransactions = new HashMap<>();
     }
 
     @Override
@@ -94,30 +136,8 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
         }
     }
 
-    @Override
-    protected boolean isUninitialized() {
-        return false;
-    }
-
-    @Override
-    protected void closeContextsAndRemoveTransaction() {
-        databaseTransactions.values().forEach(DatabaseTransaction::close);
-        routerTransactionMonitor.stopMonitoringTransaction(this);
-    }
-
-    @Override
-    protected Mono<Void> childTransactionCommit(DatabaseTransaction databaseTransaction) {
-        return Mono.fromRunnable(databaseTransaction::commit);
-    }
-
-    @Override
-    protected Mono<Void> childTransactionRollback(DatabaseTransaction databaseTransaction) {
-        return Mono.fromRunnable(databaseTransaction::rollback);
-    }
-
-    @Override
-    protected Mono<Void> childTransactionTerminate(DatabaseTransaction databaseTransaction, Status reason) {
-        return Mono.fromRunnable(() -> databaseTransaction.terminate(reason));
+    public Optional<TerminationMark> getTerminationMark() {
+        return Optional.ofNullable(terminationMark);
     }
 
     @Override
@@ -164,5 +184,271 @@ public class RouterTransactionImpl extends AbstractCompoundTransaction<DatabaseT
 
     TransactionInitializationTrace initializationTrace() {
         return initializationTrace;
+    }
+
+    @Override
+    public void commit() {
+        if (!state.compareAndSet(State.OPEN, State.CLOSED)) {
+            if (state.get() == State.TERMINATED) {
+                // Wait for all children to be rolled back. Ignore errors
+                doRollbackAndIgnoreErrors();
+                throw new TransactionTerminatedException(terminationMark.getReason());
+            }
+
+            if (state.get() == State.CLOSED) {
+                throw new QueryRouterException(TransactionCommitFailed, "Trying to commit closed transaction");
+            }
+        }
+
+        var allFailures = new ArrayList<ErrorRecord>();
+
+        doOnChildren(
+                readingTransactions,
+                null,
+                allFailures,
+                DatabaseTransaction::commit,
+                () -> "Failed to commit a child read transaction");
+
+        if (!allFailures.isEmpty()) {
+            doOnChildren(
+                    Set.of(),
+                    writingTransaction,
+                    allFailures,
+                    DatabaseTransaction::rollback,
+                    () -> "Failed to rollback a child write transaction");
+        } else {
+            doOnChildren(
+                    Set.of(),
+                    writingTransaction,
+                    allFailures,
+                    DatabaseTransaction::commit,
+                    () -> "Failed to commit a child write transaction");
+        }
+        closeContextsAndRemoveTransaction();
+
+        throwIfNonEmpty(allFailures, TransactionCommitFailed);
+    }
+
+    @Override
+    public void rollback() {
+        if (!state.compareAndSet(State.OPEN, State.CLOSED)) {
+            if (state.get() == State.TERMINATED) {
+                // Wait for all children to be rolled back. Ignore errors
+                doRollbackAndIgnoreErrors();
+                return;
+            }
+
+            if (state.get() == State.CLOSED) {
+                return;
+            }
+        }
+        var allFailures = new ArrayList<ErrorRecord>();
+
+        doOnChildren(
+                readingTransactions,
+                writingTransaction,
+                allFailures,
+                DatabaseTransaction::rollback,
+                () -> "Failed to rollback a child transaction");
+        closeContextsAndRemoveTransaction();
+
+        throwIfNonEmpty(allFailures, TransactionRollbackFailed);
+    }
+
+    private void doRollbackAndIgnoreErrors() {
+        try {
+            doOnChildren(
+                    readingTransactions,
+                    writingTransaction,
+                    new ArrayList<>(),
+                    DatabaseTransaction::rollback,
+                    () -> "");
+        } finally {
+            closeContextsAndRemoveTransaction();
+        }
+    }
+
+    @Override
+    public boolean markForTermination(Status reason) {
+        if (!state.compareAndSet(State.OPEN, State.TERMINATED)) {
+            return false;
+        }
+
+        terminationMark = new TerminationMark(reason, clock.nanos());
+
+        var allFailures = new ArrayList<ErrorRecord>();
+
+        doOnChildren(
+                readingTransactions,
+                writingTransaction,
+                allFailures,
+                tx -> tx.terminate(reason),
+                () -> "Failed to terminate a child transaction");
+        throwIfNonEmpty(allFailures, TransactionTerminationFailed);
+        return true;
+    }
+
+    private void doOnChildren(
+            Set<ReadingChildTransaction> readingTransactions,
+            DatabaseTransaction writingTransaction,
+            List<ErrorRecord> errors,
+            Consumer<DatabaseTransaction> operation,
+            Supplier<String> errorMessage) {
+        for (var readingTransaction : readingTransactions) {
+            try {
+                operation.accept(readingTransaction.inner);
+            } catch (RuntimeException e) {
+                errors.add(new ErrorRecord(errorMessage.get(), e));
+            }
+        }
+
+        try {
+            if (writingTransaction != null) {
+                operation.accept(writingTransaction);
+            }
+        } catch (RuntimeException e) {
+            errors.add(new ErrorRecord(errorMessage.get(), e));
+        }
+    }
+
+    @Override
+    public <Tx extends DatabaseTransaction> Tx registerNewChildTransaction(
+            Location location, TransactionMode mode, Supplier<Tx> transactionSupplier) {
+        return switch (mode) {
+            case DEFINITELY_WRITE -> startWritingTransaction(location, transactionSupplier);
+            case MAYBE_WRITE -> startReadingTransaction(false, transactionSupplier);
+            case DEFINITELY_READ -> startReadingTransaction(true, transactionSupplier);
+        };
+    }
+
+    private <Tx extends DatabaseTransaction> Tx startWritingTransaction(
+            Location location, Supplier<Tx> writeTransactionSupplier) {
+        checkTransactionOpenForStatementExecution();
+
+        if (writingTransaction != null) {
+            throw multipleWriteError(location, writingTransaction.location());
+        }
+
+        var tx = writeTransactionSupplier.get();
+        writingTransaction = tx;
+        // The Query Router transaction might have been terminated as this tx was being created
+        if (terminationMark != null) {
+            tx.terminate(terminationMark.getReason());
+        }
+        return tx;
+    }
+
+    private <TX extends DatabaseTransaction> TX startReadingTransaction(
+            boolean readOnly, Supplier<TX> readingTransactionSupplier) {
+        checkTransactionOpenForStatementExecution();
+
+        var tx = readingTransactionSupplier.get();
+        readingTransactions.add(new ReadingChildTransaction(tx, readOnly));
+        // The Query Router transaction might have been terminated as this tx was being created
+        if (terminationMark != null) {
+            tx.terminate(terminationMark.getReason());
+        }
+        return tx;
+    }
+
+    @Override
+    public <Tx extends DatabaseTransaction> void upgradeToWritingTransaction(Tx childTransaction) {
+        if (this.writingTransaction == childTransaction) {
+            return;
+        }
+
+        if (this.writingTransaction != null) {
+            throw multipleWriteError(childTransaction.location(), this.writingTransaction.location());
+        }
+
+        var readingTransaction = readingTransactions.stream()
+                .filter(readingTx -> readingTx.inner == childTransaction)
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException("The supplied transaction has not been registered"));
+
+        if (readingTransaction.readingOnly) {
+            throw new IllegalStateException("Upgrading reading-only transaction to a writing one is not allowed");
+        }
+
+        readingTransactions.remove(readingTransaction);
+        this.writingTransaction = readingTransaction.inner;
+        // The Query Router transaction might have been terminated as this tx was being created
+        // If that happens between the transaction being removed from the list of reading transactions
+        // and being assigned as the writing transaction, it will not be terminated.
+        if (terminationMark != null) {
+            writingTransaction.terminate(terminationMark.getReason());
+        }
+    }
+
+    @Override
+    public void childTransactionTerminated(Status reason) {
+        markForTermination(reason);
+    }
+
+    private void throwIfNonEmpty(List<ErrorRecord> failures, Status defaultStatusCode) {
+        if (!failures.isEmpty()) {
+            // The main exception is not logged, because it will be logged by Bolt
+            // and the log would contain two lines reporting the same thing without any additional info.
+            var mainException = transform(defaultStatusCode, failures.get(0).error);
+            for (int i = 1; i < failures.size(); i++) {
+                var errorRecord = failures.get(i);
+                mainException.addSuppressed(errorRecord.error);
+                errorReporter.report(errorRecord.message, errorRecord.error, defaultStatusCode);
+            }
+
+            throw mainException;
+        }
+    }
+
+    private void closeContextsAndRemoveTransaction() {
+        databaseTransactions.values().forEach(DatabaseTransaction::close);
+        routerTransactionMonitor.stopMonitoringTransaction(this);
+    }
+
+    private QueryRouterException multipleWriteError(Location attempt, Location current) {
+        // There are two situations and the error should reflect them in order not to confuse the users:
+        // 1. This is actually the same database, but the location has changed, because of leader switch in the cluster.
+        if (current.getUuid().equals(attempt.getUuid())) {
+            return new QueryRouterException(
+                    Status.Transaction.LeaderSwitch,
+                    "Could not write to a database due to a cluster leader switch that occurred during the transaction. "
+                            + "Previous leader: %s, Current leader: %s.",
+                    current,
+                    attempt);
+        }
+
+        // 2. The user is really trying to write to two different databases.
+        return new QueryRouterException(
+                Status.Statement.AccessMode,
+                "Writing to more than one database per transaction is not allowed. Attempted write to %s, currently writing to %s",
+                attempt.databaseReference().toPrettyString(),
+                current.databaseReference().toPrettyString());
+    }
+
+    private void checkTransactionOpenForStatementExecution() {
+        if (terminationMark != null) {
+            throw new TransactionTerminatedException(terminationMark.getReason());
+        }
+
+        if (state.get() == State.CLOSED) {
+            throw new QueryRouterException(
+                    Status.Statement.ExecutionFailed, "Trying to execute query in a closed transaction");
+        }
+    }
+
+    private RuntimeException transform(Status defaultStatus, Throwable t) {
+        String message = t.getMessage();
+
+        // preserve the original exception if possible
+        // or try to preserve  at least the original status
+        if (t instanceof Status.HasStatus) {
+            if (t instanceof RuntimeException) {
+                return (RuntimeException) t;
+            }
+
+            return new QueryRouterException(((Status.HasStatus) t).status(), message, t);
+        }
+
+        return new QueryRouterException(defaultStatus, message, t);
     }
 }
