@@ -310,9 +310,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
     cacheKind: String
   ): Cache[K, V] = {
 
-    val monitorTag: String = s"cypher.cache.$cacheKind.global"
     val id = SharedCacheContainerIdGen.getNewId
-    val globalTracer: CacheTracer[K] = tracer(cacheKind, monitorTag)
+    val globalTracer: CacheTracer[K] = tracer(cacheKind)
     val globalRemovalListener: RemovalListener[K, V] =
       (key: K, value: V, cause: RemovalCause) => globalTracer.discard(key, "")
     val internalRemovalListener =
