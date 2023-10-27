@@ -372,10 +372,12 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   override def execute(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    inputStream: InputDataStream
+    inputStream: InputDataStream,
+    parameters: Map[String, Any]
   ): RecordingRuntimeResult = {
     val subscriber = newRecordingQuerySubscriber
-    val result = runLogical(logicalQuery, runtime, inputStream, (_, result) => result, subscriber, profile = false)
+    val result =
+      runLogical(logicalQuery, runtime, inputStream, (_, result) => result, subscriber, profile = false, parameters)
     newRecordingRuntimeResult(result, subscriber)
   }
 

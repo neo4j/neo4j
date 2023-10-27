@@ -76,7 +76,14 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
    * Execute a Logical query.
    */
   def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): RecordingRuntimeResult =
-    execute(logicalQuery, runtime, NoInput)
+    execute(logicalQuery, runtime, NoInput, Map.empty)
+
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    parameters: Map[String, Any]
+  ): RecordingRuntimeResult =
+    execute(logicalQuery, runtime, NoInput, parameters)
 
   /**
    * Execute a Logical query with some input.
@@ -86,8 +93,7 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     runtime: CypherRuntime[CONTEXT],
     input: InputValues
   ): RecordingRuntimeResult = {
-    val r = execute(logicalQuery, runtime, input.stream())
-    r
+    execute(logicalQuery, runtime, input.stream(), Map.empty)
   }
 
   /**
@@ -97,6 +103,13 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     inputStream: InputDataStream
+  ): RecordingRuntimeResult = execute(logicalQuery, runtime, inputStream, Map.empty)
+
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputStream: InputDataStream,
+    parameters: Map[String, Any]
   ): RecordingRuntimeResult
 
   /**

@@ -53,8 +53,9 @@ trait RuntimeTestSupportExecution[CONTEXT <: RuntimeContext] extends RuntimeExec
   override def execute(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    inputStream: InputDataStream
-  ): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, inputStream)
+    inputStream: InputDataStream,
+    parameters: Map[String, Any]
+  ): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, inputStream, parameters)
 
   override def executeAndConsumeTransactionally(
     logicalQuery: LogicalQuery,
