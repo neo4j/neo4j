@@ -855,6 +855,24 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("should work nested under semi apply") {
+    val (n1, n2, n3, n4, _, _, _) = smallChainGraph
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me")
+      .semiApply()
+      .|.trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
+      .|.|.filterExpression(isRepeatTrailUnique("r_inner"))
+      .|.|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.|.argument("me", "a_inner")
+      .|.argument("me")
+      .allNodeScan("me")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("me").withRows(singleColumn(Seq(n1, n2, n3, n4)))
+  }
+
   test("should produce rows with nullable slots") {
 
     // given: MATCH (me) OPTIONAL MATCH (me) [(a)-[r]->(b)]{0,*} (you:User) RETURN *
@@ -3717,6 +3735,27 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
         )
       )
     ))
+  }
+
+  test("should work nested under semi apply - with leveraged order on LHS") {
+    val (n1, n2, n3, n4, _, _, _) = smallChainGraph
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me")
+      .semiApply()
+      .|.trail(`(me) [(a)-[r]->(b)]{0,*} (you)`).withLeveragedOrder()
+      .|.|.filterExpression(isRepeatTrailUnique("r_inner"))
+      .|.|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.|.argument("me", "a_inner")
+      .|.argument("me")
+      .sort("id ASC")
+      .projection("id(me) as id")
+      .allNodeScan("me")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = Seq(n1, n2, n3, n4).map(Array(_))
+    runtimeResult should beColumns("me").withRows(inOrder(expected))
   }
 
   test("should produce rows with nullable slots - with leveraged order on LHS") {
