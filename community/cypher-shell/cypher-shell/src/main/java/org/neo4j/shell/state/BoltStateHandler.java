@@ -555,8 +555,10 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     private Driver getDriver(ConnectionConfig connectionConfig, AuthToken authToken) {
-        Config.ConfigBuilder configBuilder =
-                Config.builder().withLogging(driverLogger()).withUserAgent(USER_AGENT);
+        Config.ConfigBuilder configBuilder = Config.builder()
+                .withLogging(driverLogger())
+                .withTelemetryDisabled(true)
+                .withUserAgent(USER_AGENT);
         switch (connectionConfig.encryption()) {
             case TRUE -> configBuilder = configBuilder.withEncryption();
             case FALSE -> configBuilder = configBuilder.withoutEncryption();

@@ -55,8 +55,11 @@ case class DriverCypherExecutorFactory(
       if (config.get(BoltConnector.enabled))
         URI.create(s"neo4j://${connectorPortRegister.getLocalAddress(ConnectorType.BOLT)}/")
       else throw new IllegalStateException("Bolt connector is not configured")
-
-    token.map(t => GraphDatabase.driver(boltURI, t)).getOrElse(GraphDatabase.driver(boltURI))
+    val driverConfig = org.neo4j.driver.Config.builder().withTelemetryDisabled(true).build()
+    token.map(t => GraphDatabase.driver(boltURI, t, driverConfig)).getOrElse(GraphDatabase.driver(
+      boltURI,
+      driverConfig
+    ))
   }
 
   def setNotificationConfig(config: NotificationConfig): Unit =

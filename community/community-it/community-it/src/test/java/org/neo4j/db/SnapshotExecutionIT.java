@@ -233,6 +233,7 @@ class SnapshotExecutionIT {
                 AuthTokens.none(),
                 org.neo4j.driver.Config.builder()
                         .withoutEncryption()
+                        .withTelemetryDisabled(true)
                         .withMaxConnectionPoolSize(3)
                         .build());
     }

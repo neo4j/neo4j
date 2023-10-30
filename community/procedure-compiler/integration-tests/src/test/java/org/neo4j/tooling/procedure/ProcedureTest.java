@@ -121,6 +121,7 @@ class ProcedureTest {
     private Config configuration() {
         return Config.builder()
                 .withoutEncryption()
+                .withTelemetryDisabled(true)
                 .withLogging(Logging.none())
                 .withConnectionTimeout(10, TimeUnit.SECONDS)
                 .build();
