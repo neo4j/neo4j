@@ -34,12 +34,10 @@ import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FilenameUtils;
@@ -49,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
@@ -68,11 +67,14 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
+@ExtendWith(RandomExtension.class)
 class CorruptedLogsTruncatorTest {
     // Size of the log files, except the last one
     private static final long LOG_FILES_SIZE = 1162L;
@@ -88,6 +90,9 @@ class CorruptedLogsTruncatorTest {
 
     @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    private RandomSupport random;
 
     private final LifeSupport life = new LifeSupport();
 
@@ -155,22 +160,22 @@ class CorruptedLogsTruncatorTest {
         LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
 
         var logFile = logFiles.getLogFile();
-        long fileSizeBeforeAppend = Files.size(logFile.getHighestLogFile());
-
-        try (OutputStream outputStream = fs.openAsOutputStream(logFile.getHighestLogFile(), true)) {
-            int zeroes = ThreadLocalRandom.current().nextInt(100, 10240);
-            outputStream.write(new byte[zeroes]);
-        }
+        FlushableLogPositionAwareChannel channel =
+                logFile.getTransactionLogWriter().getChannel();
+        int zeroes = random.nextInt(100, 10240);
+        channel.put(new byte[zeroes], zeroes);
 
         long fileAfterZeroAppend = Files.size(logFile.getHighestLogFile());
-
-        assertNotEquals(fileSizeBeforeAppend, fileAfterZeroAppend);
+        LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
 
         logPruner.truncate(logPosAfterGeneratingLogs);
+        LogPosition logPosAfterTruncate =
+                logFiles.getLogFile().getTransactionLogWriter().getCurrentPosition();
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
         assertEquals(fileAfterZeroAppend, Files.size(logFile.getHighestLogFile()));
-        assertNotEquals(fileSizeBeforeAppend, Files.size(logFile.getHighestLogFile()));
+        assertNotEquals(logPosAfterGeneratingLogs, logPosAfterTruncate);
+        assertEquals(logPosAfterExtraWrite, logPosAfterTruncate);
         assertTrue(ArrayUtils.isEmpty(databaseDirectory.toFile().listFiles(File::isDirectory)));
     }
 
@@ -182,14 +187,16 @@ class CorruptedLogsTruncatorTest {
         var logFile = logFiles.getLogFile();
         FlushableLogPositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
-        for (int i = 0; i < ThreadLocalRandom.current().nextInt(100, 10240); i++) {
-            channel.putLong(0);
-        }
+
+        // Pad with zeroes before the corrupted byte
+        int beforeZeroes = random.nextInt(100, 10240);
+        channel.put(new byte[beforeZeroes], beforeZeroes);
         // corruption byte
         channel.put((byte) 7);
-        for (int i = 0; i < ThreadLocalRandom.current().nextInt(10, 1024); i++) {
-            channel.putLong(0);
-        }
+        // After corrupted byte, pad with a few more zeroes.
+        int afterZeroes = random.nextInt(10, 1024);
+        channel.put(new byte[afterZeroes], afterZeroes);
+
         channel.prepareForFlush().flush();
         LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
         assertNotEquals(logPosAfterGeneratingLogs, logPosAfterExtraWrite);
