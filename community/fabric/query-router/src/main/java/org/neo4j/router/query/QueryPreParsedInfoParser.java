@@ -19,6 +19,7 @@
  */
 package org.neo4j.router.query;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.ast.CatalogName;
@@ -35,9 +36,13 @@ import org.neo4j.router.impl.query.StatementType;
 public interface QueryPreParsedInfoParser {
 
     record PreParsedInfo(
-            Optional<CatalogName> catalogName,
-            Optional<ObfuscationMetadata> obfuscationMetadata,
-            StatementType statementType) {}
+            CatalogInfo catalogInfo, Optional<ObfuscationMetadata> obfuscationMetadata, StatementType statementType) {}
+
+    sealed interface CatalogInfo permits SingleQueryCatalogInfo, UnionQueryCatalogInfo {}
+
+    record SingleQueryCatalogInfo(Optional<CatalogName> catalogName) implements CatalogInfo {}
+
+    record UnionQueryCatalogInfo(List<Optional<CatalogName>> catalogNames) implements CatalogInfo {}
 
     PreParsedInfo parseQuery(Query query);
 

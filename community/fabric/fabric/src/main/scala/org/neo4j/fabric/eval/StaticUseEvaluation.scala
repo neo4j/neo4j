@@ -30,56 +30,52 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.fabric.util.Errors
 
-import scala.annotation.tailrec
-
 class StaticUseEvaluation {
 
-  def isStatic(graphSelection: GraphSelection): Boolean =
-    graphSelection.expression match {
-      case _: Variable | _: Property => true
-      case _                         => false
-    }
+  /**
+   * This function finds graph selections only on the highest level without descending into sub-queries.
+   * It returns one item for Single Queries and multiple items for Union Queries.
+   */
+  def evaluateStaticTopQueriesGraphSelections(statement: Statement): Seq[Option[CatalogName]] =
+    topQueriesGraphSelections(statement).map(maybeGraphSelection => maybeGraphSelection.map(evaluateStatic))
 
-  def evaluateStaticOption(graphSelection: GraphSelection): Option[CatalogName] =
+  private def evaluateStaticOption(graphSelection: GraphSelection): Option[CatalogName] =
     graphSelection.expression match {
       case v: Variable => Some(nameFromVar(v))
       case p: Property => Some(nameFromProp(p))
       case _           => None
     }
 
-  def evaluateStaticLeadingGraphSelection(statement: Statement): Option[CatalogName] =
-    leadingGraphSelection(statement).map(evaluateStatic)
-
   private def evaluateStatic(graphSelection: GraphSelection): CatalogName =
     evaluateStaticOption(graphSelection).getOrElse(Errors.dynamicGraphNotAllowed(graphSelection))
 
-  @tailrec
-  private def leftmostSingleQuery(statement: Statement): Option[SingleQuery] =
+  private def singleQueries(statement: Statement): Seq[SingleQuery] =
     statement match {
-      case sq: SingleQuery => Some(sq)
-      case union: Union    => leftmostSingleQuery(union.lhs)
-      case _               => None
+      case sq: SingleQuery => Seq(sq)
+      case union: Union    => singleQueries(union.lhs) ++ singleQueries(union.rhs)
+      case _               => Seq()
     }
 
-  private def leadingGraphSelection(statement: Statement): Option[GraphSelection] = {
+  private def topQueriesGraphSelections(statement: Statement): Seq[Option[GraphSelection]] = {
     statement match {
-      case sc: SchemaCommand => sc.useGraph
-      case _                 => queryLeadingGraphSelection(statement)
+      case sc: SchemaCommand => Seq(sc.useGraph)
+      case _                 => queryTopGraphSelections(statement)
     }
   }
 
-  private def queryLeadingGraphSelection(statement: Statement): Option[GraphSelection] = {
-    val singleQuery = leftmostSingleQuery(statement)
-    val clause = singleQuery.flatMap(_.clauses.headOption)
-    clause.collect {
-      case gs: GraphSelection => gs
-    }
+  private def queryTopGraphSelections(statement: Statement): Seq[Option[GraphSelection]] = {
+    singleQueries(statement).map(singleQuery => {
+      val clause = singleQuery.clauses.headOption
+      clause.collect {
+        case gs: GraphSelection => gs
+      }
+    })
   }
 
-  protected def nameFromVar(variable: Variable): CatalogName =
+  private def nameFromVar(variable: Variable): CatalogName =
     CatalogName(variable.name)
 
-  protected def nameFromProp(property: Property): CatalogName = {
+  private def nameFromProp(property: Property): CatalogName = {
     def parts(expr: Expression): List[String] = expr match {
       case p: Property    => parts(p.map) :+ p.propertyKey.name
       case Variable(name) => List(name)

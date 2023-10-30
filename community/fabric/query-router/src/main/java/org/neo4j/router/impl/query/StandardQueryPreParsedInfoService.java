@@ -19,6 +19,7 @@
  */
 package org.neo4j.router.impl.query;
 
+import java.util.Optional;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -37,8 +38,7 @@ public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInf
 
     @Override
     public DatabaseReference target(QueryPreParsedInfoParser.PreParsedInfo preParsedInfo) {
-        var parsedTarget = preParsedInfo
-                .catalogName()
+        var parsedTarget = toCatalogName(preParsedInfo.catalogInfo())
                 .map(CatalogName::qualifiedNameString)
                 .map(databaseReferenceResolver::resolve);
         if (parsedTarget
@@ -51,5 +51,37 @@ public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInf
                     String.format(message, parsedTarget.get().toPrettyString(), sessionDatabase.toPrettyString()));
         }
         return parsedTarget.orElse(sessionDatabase);
+    }
+
+    private Optional<CatalogName> toCatalogName(QueryPreParsedInfoParser.CatalogInfo catalogInfo) {
+        if (catalogInfo instanceof QueryPreParsedInfoParser.SingleQueryCatalogInfo singleQueryCatalogInfo) {
+            return singleQueryCatalogInfo.catalogName();
+        }
+
+        if (catalogInfo instanceof QueryPreParsedInfoParser.UnionQueryCatalogInfo unionQueryCatalogInfo) {
+            var catalogName = unionQueryCatalogInfo.catalogNames().get(0);
+            // We have to check for one specific combination of an ambient and explicit graph:
+
+            // USE foo
+            // MATCH (n) RETURN n
+            // UNION
+            // MATCH (n) RETURN n
+
+            // The reason is that the meaning of what is the ambient graph changes when routing is performed.
+            // The example query would become valid after being routed to database foo, which is incorrect.
+            // Any other invalid combinations are either caught in semantic analysis or in the target database.
+
+            if (catalogName.isPresent()
+                    && unionQueryCatalogInfo.catalogNames().stream().anyMatch(Optional::isEmpty)) {
+                if (!sessionDatabase.fullName().name().equals(catalogName.get().qualifiedNameString())) {
+                    throw new InvalidSemanticsException(
+                            "Using multiple graphs in the same query is not supported on standard databases. "
+                                    + "This capability is supported on composite databases only.");
+                }
+            }
+            return catalogName;
+        }
+
+        throw new IllegalArgumentException("Unexpected catalog info " + catalogInfo);
     }
 }

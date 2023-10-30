@@ -40,6 +40,8 @@ import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryPreParsedInfoParser;
 import scala.Option;
+import scala.collection.immutable.Seq;
+import scala.jdk.javaapi.CollectionConverters;
 import scala.jdk.javaapi.OptionConverters;
 
 public class StandardQueryPreParser implements QueryPreParsedInfoParser {
@@ -101,15 +103,24 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
 
         if (statement instanceof AdministrationCommand) {
             return new PreParsedInfo(
-                    Optional.of(SYSTEM_DATABASE_CATALOG_NAME),
+                    new SingleQueryCatalogInfo(Optional.of(SYSTEM_DATABASE_CATALOG_NAME)),
                     obfuscationMetadata,
                     StatementType.of(statement, resolver));
         } else {
-            var catalogNameOption = staticUseEvaluation.evaluateStaticLeadingGraphSelection(statement);
-            return new PreParsedInfo(
-                    OptionConverters.toJava(catalogNameOption),
-                    obfuscationMetadata,
-                    StatementType.of(statement, resolver));
+            var graphSelections = staticUseEvaluation.evaluateStaticTopQueriesGraphSelections(statement);
+            var catalogInfo = toCatalogInfo(graphSelections);
+            return new PreParsedInfo(catalogInfo, obfuscationMetadata, StatementType.of(statement, resolver));
         }
+    }
+
+    private CatalogInfo toCatalogInfo(Seq<Option<CatalogName>> graphSelections) {
+        if (graphSelections.size() == 1) {
+            return new SingleQueryCatalogInfo(OptionConverters.toJava(graphSelections.head()));
+        }
+
+        var catalogNames = CollectionConverters.asJava(graphSelections).stream()
+                .map(OptionConverters::toJava)
+                .toList();
+        return new UnionQueryCatalogInfo(catalogNames);
     }
 }
